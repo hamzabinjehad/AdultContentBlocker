@@ -1,0 +1,58 @@
+{
+  "artifacts": {
+    "dnr_block_rules.json": {
+      "bytes": 5409833,
+      "sha256": "4eb3eca472c4aae7e3940b15bed41272a9e03c23bb8a24b6c423801db16e711e"
+    },
+    "domains.index": {
+      "bytes": 8192,
+      "sha256": "7d2c7ac4888bfd75cd5f56e8d61f69595121183afc81556c876732fd3782c62f"
+    },
+    "domains.packed": {
+      "bytes": 18802132,
+      "sha256": "9676887767e563155c1d1e6fab0eac409b1ebbb0f0bd617dc0f037a4c48af110"
+    },
+    "domains.txt": {
+      "bytes": 18802263,
+      "sha256": "dc65f68c0bcdf444b5262ba8cdb82cea94a84a324ff690cb0c081c07b595cb09"
+    },
+    "domains_core.txt": {
+      "bytes": 2381121,
+      "sha256": "171aaa843fa74cd7636199d953b53ed0e7e641aa4e4c9562e260f48da88b8822"
+    }
+  },
+  "built_at": "2026-08-28T18:41:43+00:00",
+  "core_domain_count": 148356,
+  "dnr_rule_count": 298,
+  "domain_count": 982260,
+  "never_block_removed": 1,
+  "schema": 1,
+  "sources": [
+    {
+      "domains": 952054,
+      "id": "blocklistproject-porn",
+      "ok": true
+    },
+    {
+      "domains": 5934,
+      "id": "chadmayfield-top1m",
+      "ok": true
+    },
+    {
+      "domains": 114590,
+      "id": "hagezi-nsfw",
+      "ok": true
+    },
+    {
+      "domains": 53907,
+      "id": "sinfonietta-porn",
+      "ok": true
+    },
+    {
+      "domains": 64249,
+      "id": "stevenblack-porn",
+      "ok": true
+    }
+  ],
+  "version": 4
+}

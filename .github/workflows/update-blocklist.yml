@@ -1,0 +1,101 @@
+name: Build and publish blocklist
+
+on:
+  schedule:
+    - cron: "17 3 * * *"        # daily, 03:17 UTC
+  workflow_dispatch:
+  push:
+    paths:
+      - "blocklist/**"
+      - ".github/workflows/update-blocklist.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: blocklist-publish
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install --quiet 'cryptography>=42'
+
+      # Pull the previously published manifest so the version counter keeps
+      # increasing. Clients reject any manifest older than the one they hold,
+      # so a reset-to-1 would brick every installed copy until the counter
+      # climbed back past it.
+      - name: Fetch previous manifest
+        continue-on-error: true
+        run: |
+          mkdir -p dist
+          curl -fsSL -o dist/manifest.json \
+            "https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/lists/manifest.json" \
+            || echo "no previous manifest; starting at version 1"
+
+      - name: Write signing key
+        env:
+          SIGNING_KEY: ${{ secrets.BLOCKLIST_SIGNING_KEY }}
+        run: |
+          if [ -z "$SIGNING_KEY" ]; then
+            echo "::error::BLOCKLIST_SIGNING_KEY secret is not set."
+            exit 1
+          fi
+          mkdir -p keys
+          printf '%s' "$SIGNING_KEY" > keys/blocklist_ed25519.pem
+          chmod 600 keys/blocklist_ed25519.pem
+
+      - name: Build
+        run: |
+          python3 blocklist/build.py \
+            --sources blocklist/sources.json \
+            --out dist \
+            --sign-key keys/blocklist_ed25519.pem
+
+      - name: Verify what we are about to publish
+        run: |
+          python3 blocklist/keys.py verify \
+            --dist dist \
+            --pub blocklist/public_key.hex
+
+      # A build that collapses to a fraction of its usual size almost always
+      # means an upstream source changed format or started returning an error
+      # page that happened to parse. Publishing it would quietly unblock most
+      # of the internet, which is the single worst failure mode this system has.
+      - name: Sanity floor
+        run: |
+          COUNT=$(python3 -c "import json;print(json.load(open('dist/manifest.json'))['domain_count'])")
+          echo "domain_count=$COUNT"
+          if [ "$COUNT" -lt 200000 ]; then
+            echo "::error::Only $COUNT domains — refusing to publish a degraded list."
+            exit 1
+          fi
+
+      - name: Remove signing key
+        if: always()
+        run: rm -f keys/blocklist_ed25519.pem
+
+      # Published to an orphan `lists` branch so the artifacts never bloat the
+      # main branch history — a ~19MB file changing daily would be brutal.
+      - name: Publish to lists branch
+        run: |
+          git config user.name  "hisn-bot"
+          git config user.email "bot@users.noreply.github.com"
+          VERSION=$(python3 -c "import json;print(json.load(open('dist/manifest.json'))['version'])")
+          rm -rf /tmp/publish && mkdir -p /tmp/publish
+          cp dist/* /tmp/publish/
+          git checkout --orphan lists-tmp
+          git rm -rf --cached . >/dev/null 2>&1 || true
+          find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+          cp /tmp/publish/* .
+          git add -A
+          git commit -m "blocklist v${VERSION}"
+          git push --force origin lists-tmp:lists

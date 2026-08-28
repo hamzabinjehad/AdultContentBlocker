@@ -1,0 +1,50 @@
+{
+  "manifest_version": 3,
+  "name": "Hisn Protection",
+  "version": "1.0.0",
+  "description": "Blocks adult content. Once a lock period starts it cannot be turned off until the timer expires.",
+  "minimum_chrome_version": "137",
+
+  "permissions": [
+    "declarativeNetRequest",
+    "storage",
+    "alarms",
+    "nativeMessaging"
+  ],
+
+  "host_permissions": ["<all_urls>"],
+
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "blocklist",
+        "enabled": true,
+        "path": "rules/dnr_block_rules.json"
+      },
+      {
+        "id": "lockdown",
+        "enabled": false,
+        "path": "rules/lockdown.json"
+      }
+    ]
+  },
+
+  "action": {
+    "default_title": "Hisn Protection",
+    "default_popup": "popup.html"
+  },
+
+  "options_page": "options.html",
+
+  "_comment_incognito": "split would give the user an unfiltered profile in incognito. The managed policy disables incognito outright, but not_allowed is the belt to that suspenders.",
+  "incognito": "not_allowed",
+
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}

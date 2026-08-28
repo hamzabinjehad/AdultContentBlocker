@@ -1,0 +1,134 @@
+# Hisn — macOS content protection
+
+A commitment device for adults who want to restrict their own access to adult
+content, built so that the person who set it up cannot casually undo it.
+
+**Read [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) before changing anything.**
+Every design decision in this repo is downstream of that document, and several
+of them look wrong until you know which bypass they close.
+
+---
+
+## What's here
+
+```
+blocklist/       list pipeline: fetch → merge → sign         (Python, tested)
+profile/         .mobileconfig generator: DNS, DoH, Private Relay   (Python)
+extension/       Chrome/Edge MV3 extension                    (JS, verified)
+macos/           the app + content filter                     (Swift, needs Xcode)
+.github/         daily signed rebuild                          (Actions)
+```
+
+## The four layers
+
+| Layer | Closes | Defeated by |
+|---|---|---|
+| Browser extension | Casual browsing in Chrome/Edge | Another browser, disabling the extension |
+| Configuration profile | Encrypted DNS, Private Relay, browser DoH | A VPN; a local admin removing the profile |
+| **Content filter (system extension)** | **Everything above, including VPNs** | Recovery mode; an admin disabling it |
+| **Accountability partner** | **The admin, and the human at 2am** | A second device |
+
+The load-bearing layers are the bottom two. The top two are convenience and
+defence in depth — they are not what makes this work.
+
+Why the content filter matters more than DNS: DNS filtering is defeated by
+turning on any VPN, because resolution moves inside the tunnel. A
+`NEFilterDataProvider` evaluates flows at the *socket* level, before packets
+reach a VPN interface, so a VPN does not bypass it. That is why the Swift
+filter — not the DNS profile — is the primary control on macOS.
+
+---
+
+## Building
+
+### Blocklist
+
+```bash
+cd blocklist
+python3 keys.py generate --out ../keys          # once, offline. Guard the .pem.
+python3 build.py --out ../dist --sign-key ../keys/blocklist_ed25519.pem
+python3 keys.py verify --dist ../dist --pub ../keys/blocklist_ed25519.pub
+python3 test_build.py                            # 17 tests
+```
+
+Produces ~982k domains from five upstream sources in about 12 seconds.
+`domains_core.txt` (~148k, high-confidence sources only) is what the browser
+extension ships; the full list goes to the network filter, which has no rule
+budget.
+
+For CI, put the PEM in the `BLOCKLIST_SIGNING_KEY` secret. The workflow refuses
+to publish a build under 200,000 domains — a list that quietly collapses is the
+worst failure this system has, because it looks like it is working.
+
+### Hardening profile
+
+```bash
+cd profile
+python3 make_profile.py --doh https://dns.example.com/dns-query \
+                        --extension-id <chrome-web-store-id> \
+                        --out ../dist/hisn-hardening.mobileconfig
+```
+
+Add `--lock-settings` to also hide the Network, Users and Screen Time panes.
+That trade is real: the user can no longer fix their own Wi-Fi. Add
+`--supervised` only if the Mac is genuinely supervised — `ProhibitDisablement`
+is ignored otherwise, and shipping it unsupervised creates a false sense of
+protection.
+
+The generated removal password is random and is not printed by default. Escrow
+it with the accountability partner; the user must never see it.
+
+### Extension
+
+Load `extension/` unpacked in `chrome://extensions`. Needs Chrome 137+ for
+Ed25519 in WebCrypto. `rules/dnr_block_rules.json` is copied from `dist/` —
+re-copy it after each blocklist build.
+
+### macOS app
+
+Needs Xcode and a paid Apple Developer account. Create an app target `Hisn` and
+a Network Extension target `HisnFilter`, then add the sources from `macos/`.
+Entitlements are in the repo; the two you must request from Apple are
+`com.apple.developer.networking.networkextension` (content-filter-provider) and
+`com.apple.developer.system-extension.install`.
+
+> The Swift here has not been compiled — it was written outside Xcode and
+> imports macOS-only frameworks. Expect to fix small things on first build.
+
+---
+
+## Setup that actually holds
+
+Software alone tops out well short of "unbreakable", because the person owns the
+machine. The configuration that closes the remaining gaps is procedural:
+
+1. The person uses a **standard (non-admin) account**.
+2. A **second person holds the admin password** and the profile removal
+   password. Generate both; the user never sees either.
+3. **iOS is set up at the same time.** A locked Mac beside an unlocked phone is
+   theatre.
+
+Steps 1 and 2 are what upgrade this from "annoying to bypass" to "cannot be
+bypassed alone". Everything in `macos/` is built to make them the default rather
+than an advanced option.
+
+---
+
+## Licensing note
+
+This deliberately does **not** fork SelfControl. SelfControl is GPL-3.0, which
+would require publishing any derivative under the same terms — incompatible
+with a closed paid tier. The Swift here is original work built on Apple's
+NetworkExtension framework, so you are free to license it as you choose.
+
+Upstream blocklists carry their own licences (MIT, GPL-3.0, Unlicense) and are
+recorded per-source in `blocklist/sources.json`. You redistribute the merged
+list, not their code — but check the terms before shipping commercially.
+
+## Privacy
+
+Domain matching happens entirely on-device. Do not build a feature that reports
+which sites a user tried to visit. A server-side log of blocked adult domains,
+tied to identities, is the most damaging thing this company could hold, and one
+breach away from ruining the people it was built to help. The accountability
+partner learns that a release was *requested*, and when — nothing else.

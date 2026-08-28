@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hisn</title>
+<style>
+  :root { --bg:#f7f7f5; --fg:#1a1a18; --muted:#6b6b66; --line:#e3e3df; --accent:#2f6f4f; --warn:#8a5a2b; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#161614; --fg:#f0efec; --muted:#9a9a94; --line:#33322e; --accent:#7fb79a; --warn:#d2a464; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin:0; width:300px; padding:18px;
+    background:var(--bg); color:var(--fg);
+    font:14px/1.5 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  }
+  h1 { margin:0 0 14px; font-size:15px; font-weight:600; letter-spacing:-0.01em; }
+  .row { display:flex; justify-content:space-between; align-items:baseline;
+         padding:9px 0; border-top:1px solid var(--line); }
+  .row:first-of-type { border-top:none; }
+  .k { color:var(--muted); font-size:13px; }
+  .v { font-weight:500; font-variant-numeric:tabular-nums; }
+  .pill { display:inline-block; padding:2px 8px; border-radius:999px;
+          font-size:12px; font-weight:600; background:var(--accent); color:#fff; }
+  .pill.off { background:var(--muted); }
+  .banner { margin-top:14px; padding:10px; border-radius:8px; font-size:12.5px;
+            background:color-mix(in srgb, var(--warn) 14%, transparent);
+            color:var(--warn); border:1px solid color-mix(in srgb, var(--warn) 30%, transparent); }
+  .foot { margin-top:14px; font-size:12px; color:var(--muted); }
+</style>
+</head>
+<body>
+  <h1>Hisn Protection</h1>
+  <div class="row"><span class="k">Status</span><span class="v" id="status">…</span></div>
+  <div class="row"><span class="k">Mode</span><span class="v" id="mode">…</span></div>
+  <div class="row"><span class="k">Time left</span><span class="v" id="left">…</span></div>
+  <div class="row"><span class="k">List version</span><span class="v" id="ver">…</span></div>
+  <div id="banner" hidden></div>
+  <p class="foot" id="foot"></p>
+<script src="popup.js"></script>
+</body>
+</html>
