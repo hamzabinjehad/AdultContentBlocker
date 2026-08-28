@@ -15,7 +15,7 @@ of them look wrong until you know which bypass they close.
 blocklist/       list pipeline: fetch → merge → sign         (Python, 17 tests)
 profile/         .mobileconfig generator: DNS, DoH, Private Relay   (Python)
 extension/       Chrome/Edge MV3 extension                    (JS, verified)
-macos/           the app + content filter                    (Swift, 28 tests)
+macos/           the app + content filter                    (Swift, 45 tests)
 seed/            signed starter list, bundled into the filter
 .github/         daily signed rebuild                          (Actions)
 ```
@@ -89,7 +89,7 @@ re-copy it after each blocklist build.
 
 ```bash
 cd macos
-xcodebuild -scheme Hisn -configuration Debug test    # 28 tests
+xcodebuild -scheme Hisn -configuration Debug test    # 45 tests
 xcodebuild -scheme Hisn -configuration Release build
 ```
 
@@ -129,6 +129,25 @@ before suspecting anything else, check this manifest. Installing to `/Library`
 admin password the user is not supposed to hold.
 
 ---
+
+## Choosing a length, and your own two lists
+
+The four presets are the common cases; **Custom** takes a typed length in hours,
+days or weeks. Anything outside one minute to one year is refused rather than
+clamped — a lock cannot be shortened afterwards, so silently turning a mistyped
+`3650` into the one-year cap would commit someone to a year they never chose.
+
+**Your site lists…** opens the two hand-maintained lists: sites to block on top
+of the published list, and the sites that stay reachable in strict mode. Write
+them in the app, not in the browser extension — the extension takes both from
+the app on every heartbeat, so anything typed on that side is overwritten within
+a minute.
+
+While a lock is running the lists may only move one way: you can add a block and
+withdraw an allowance, never the reverse. That is checked by membership rather
+than by count, because swapping one allowed domain for another leaves the count
+identical, and in strict mode — where the allowlist is the only thing reachable
+at all — that swap is a complete bypass rather than a small loosening.
 
 ## Setup that actually holds
 

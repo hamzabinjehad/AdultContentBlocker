@@ -292,6 +292,190 @@ final class LookupTests: XCTestCase {
         store.setAllowlist(["example.com"])
         XCTAssertFalse(store.isBlocked(host: "example.com"))
     }
+
+    /// A hand-added block applies on top of the published list, and covers
+    /// subdomains through the same parent walk.
+    func testCustomBlocksAreEnforced() throws {
+        let store = try loaded(["example.com"])
+        store.setCustomBlocks(["reddit.com"])
+
+        XCTAssertTrue(store.isBlocked(host: "reddit.com"))
+        XCTAssertTrue(store.isBlocked(host: "old.reddit.com"))
+        XCTAssertFalse(store.isBlocked(host: "unrelated.org"))
+    }
+
+    /// Naming a domain explicitly is a more specific statement than a broad
+    /// allowance, so contradicting yourself resolves to blocking.
+    func testCustomBlockBeatsTheAllowlist() throws {
+        let store = try loaded([])
+        store.setAllowlist(["example.com"])
+        store.setCustomBlocks(["example.com"])
+
+        XCTAssertTrue(store.isBlocked(host: "example.com"))
+        XCTAssertFalse(store.isAllowedInStrictMode(host: "example.com"),
+                       "strict mode must not readmit a domain blocked by hand")
+    }
+}
+
+// MARK: - Hand-written site lists
+
+final class SiteListParsingTests: XCTestCase {
+
+    func testNormalizesWhatPeopleActuallyPaste() {
+        XCTAssertEqual(SiteLists.normalize("https://www.Example.com/watch?v=1"),
+                       "example.com")
+        XCTAssertEqual(SiteLists.normalize("  EXAMPLE.com.  "), "example.com")
+        XCTAssertEqual(SiteLists.normalize("http://user@example.com:8443/x"),
+                       "example.com")
+        XCTAssertEqual(SiteLists.normalize("sub.example.co.uk"), "sub.example.co.uk")
+    }
+
+    /// `example.com` already covers `www.example.com` through the parent walk,
+    /// so both spellings in the list is redundancy that looks like a bug.
+    func testStripsWWW() {
+        XCTAssertEqual(SiteLists.normalize("www.example.com"), "example.com")
+    }
+
+    func testRejectsThingsThatAreNotDomains() {
+        for junk in ["", "   ", "localhost", "no-dot", "-lead.com", "trail-.com",
+                     "under_score.com", "1.2.3.4", "..", "a..b.com"] {
+            XCTAssertNil(SiteLists.normalize(junk), "accepted \(junk)")
+        }
+    }
+
+    func testParseDeduplicatesSortsAndCountsWhatItDropped() {
+        let result = SiteLists.parse("""
+        www.example.com
+        example.com
+        # a comment
+
+        alpha.org
+        not a domain
+        """)
+        XCTAssertEqual(result.domains, ["alpha.org", "example.com"])
+        XCTAssertEqual(result.ignored, 1, "only the junk line counts as ignored")
+    }
+}
+
+final class SiteListGuardTests: XCTestCase {
+
+    private var namespace: String!
+
+    override func setUp() {
+        super.setUp()
+        namespace = "app.hisn.tests.\(UUID().uuidString)"
+        LockStore.appGroup = namespace
+    }
+
+    override func tearDown() {
+        UserDefaults().removePersistentDomain(forName: namespace)
+        super.tearDown()
+    }
+
+    func testUnlockedAnythingGoes() throws {
+        try SiteLists.save(customBlocks: ["a.com"], allowlist: ["b.com"], locked: false)
+        try SiteLists.save(customBlocks: [], allowlist: ["c.com", "d.com"], locked: false)
+        XCTAssertEqual(SiteLists.customBlocks(), [])
+        XCTAssertEqual(SiteLists.allowlist(), ["c.com", "d.com"])
+    }
+
+    func testLockedAllowsTightening() throws {
+        try SiteLists.save(customBlocks: ["a.com"], allowlist: ["x.com", "y.com"],
+                           locked: false)
+        // Add a block, drop an allowance: both tighten.
+        try SiteLists.save(customBlocks: ["a.com", "b.com"], allowlist: ["x.com"],
+                           locked: true)
+        XCTAssertEqual(SiteLists.customBlocks(), ["a.com", "b.com"])
+        XCTAssertEqual(SiteLists.allowlist(), ["x.com"])
+    }
+
+    func testLockedRefusesRemovingABlock() throws {
+        try SiteLists.save(customBlocks: ["a.com", "b.com"], allowlist: [],
+                           locked: false)
+        XCTAssertThrowsError(
+            try SiteLists.save(customBlocks: ["a.com"], allowlist: [], locked: true))
+        XCTAssertEqual(SiteLists.customBlocks(), ["a.com", "b.com"],
+                       "a refused save must not partially apply")
+    }
+
+    func testLockedRefusesAddingAnAllowance() throws {
+        try SiteLists.save(customBlocks: [], allowlist: ["x.com"], locked: false)
+        XCTAssertThrowsError(
+            try SiteLists.save(customBlocks: [], allowlist: ["x.com", "new.com"],
+                               locked: true))
+        XCTAssertEqual(SiteLists.allowlist(), ["x.com"])
+    }
+
+    /// The case a length comparison waves through. In strict mode the allowlist
+    /// is the only thing reachable, so swapping one entry for another is not a
+    /// small loosening — it is a complete change of what the lock permits.
+    func testLockedRefusesSwappingAnAllowanceOfTheSameLength() throws {
+        try SiteLists.save(customBlocks: [], allowlist: ["work.example"],
+                           locked: false)
+        XCTAssertThrowsError(
+            try SiteLists.save(customBlocks: [], allowlist: ["anything.example"],
+                               locked: true),
+            "same count, entirely different permissions"
+        )
+        XCTAssertEqual(SiteLists.allowlist(), ["work.example"])
+    }
+}
+
+// MARK: - Typed lock lengths
+
+/// A typed duration is the one number in this app a person can get wrong in a
+/// way they cannot take back, so the range check gets its own tests.
+final class LockDurationTests: XCTestCase {
+
+    func testAcceptsALengthInsideTheRange() {
+        XCTAssertEqual(LockManager.validated(seconds: 7 * 86400), 7 * 86400)
+        XCTAssertEqual(LockManager.validated(seconds: LockManager.minimumLock),
+                       LockManager.minimumLock)
+        XCTAssertEqual(LockManager.validated(seconds: LockManager.maximumLock),
+                       LockManager.maximumLock)
+    }
+
+    /// Zero, blank-parsed-as-zero and negatives would all start a lock that has
+    /// already expired.
+    func testRejectsNothingAndLessThanNothing() {
+        XCTAssertNil(LockManager.validated(seconds: 0))
+        XCTAssertNil(LockManager.validated(seconds: -86400))
+        XCTAssertNil(LockManager.validated(seconds: 30))
+    }
+
+    /// The typo case: 3650 typed where 365 was meant. It must be refused, not
+    /// clamped — clamping starts a year-long lock nobody chose.
+    func testRejectsAndDoesNotClampTooLong() {
+        XCTAssertNil(LockManager.validated(seconds: 3650 * 86400))
+        XCTAssertNil(LockManager.validated(seconds: LockManager.maximumLock + 1))
+    }
+
+    /// `Double("inf")` and `Double("nan")` both parse, so a text field can hand
+    /// either one straight to the validator.
+    func testRejectsNonFiniteInput() {
+        XCTAssertNil(LockManager.validated(seconds: .infinity))
+        XCTAssertNil(LockManager.validated(seconds: .nan))
+        XCTAssertNil(LockManager.validated(seconds: Double("1e400") ?? 0))
+    }
+
+    /// A typed length is charged like the preset it matches, or "Custom: 8
+    /// days" is just a way around the paywall.
+    func testTypedLengthsAreGatedLikePresets() {
+        XCTAssertFalse(LockManager.requiresSubscription(seconds: 7 * 86400))
+        XCTAssertFalse(LockManager.requiresSubscription(seconds: 3600))
+        XCTAssertTrue(LockManager.requiresSubscription(seconds: 8 * 86400))
+    }
+
+    func testEveryPresetIsInsideTheAllowedRange() {
+        for preset in LockManager.Duration.allCases {
+            guard let seconds = preset.seconds else {
+                XCTAssertEqual(preset, .custom, "only .custom may have no length")
+                continue
+            }
+            XCTAssertNotNil(LockManager.validated(seconds: seconds),
+                            "the \(preset.rawValue) preset cannot be started")
+        }
+    }
 }
 
 // MARK: - The committed seed

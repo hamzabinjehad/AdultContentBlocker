@@ -68,6 +68,7 @@ public final class BlocklistStore {
     /// 64-bit hashes of every blocked domain.
     private var hashes: Set<UInt64> = []
     private var allowlist: Set<UInt64> = []
+    private var customBlocks: Set<UInt64> = []
     private var _version: Int = 0
     private var _domainCount: Int = 0
 
@@ -101,38 +102,49 @@ public final class BlocklistStore {
         return h
     }
 
-    /// True if `host` or any of its parent domains is blocked.
+    /// Walk `host` and each of its parent domains, stopping at the first
+    /// decision `decide` returns. Returning nil means "keep walking up".
     ///
-    /// Walks from the full host up to the registrable domain, so a list entry
-    /// of `example.com` covers `cdn.videos.example.com` without needing the
-    /// child in the list — which is what lets the builder collapse subdomains.
-    public func isBlocked(host: String) -> Bool {
-        let lower = host.lowercased()
-        var candidate = Substring(lower)
+    /// Walking is what lets the builder collapse subdomains: a list entry of
+    /// `example.com` covers `cdn.videos.example.com` without the child being
+    /// listed. Every lookup shares this loop so the block, allow and strict
+    /// questions cannot drift apart in how far they walk.
+    ///
+    /// Callers must already hold `queue`.
+    @inline(__always)
+    private func walk(_ host: String, _ decide: (UInt64) -> Bool?) -> Bool {
+        var candidate = Substring(host.lowercased())
+        while true {
+            if let decision = decide(Self.hash(candidate)) { return decision }
+            guard let dot = candidate.firstIndex(of: ".") else { return false }
+            candidate = candidate[candidate.index(after: dot)...]
+            // A bare TLD is never a useful match.
+            if !candidate.contains(".") { return false }
+        }
+    }
 
-        return queue.sync {
-            while true {
-                let h = Self.hash(candidate)
+    /// True if `host` or any of its parent domains is blocked.
+    public func isBlocked(host: String) -> Bool {
+        queue.sync {
+            walk(host) { h in
+                // An explicit "always block this" is a statement about one
+                // named domain, so it outranks a broad allowance. Contradicting
+                // yourself resolves to the safer answer.
+                if customBlocks.contains(h) { return true }
                 if allowlist.contains(h) { return false }
                 if hashes.contains(h) { return true }
-                guard let dot = candidate.firstIndex(of: ".") else { return false }
-                candidate = candidate[candidate.index(after: dot)...]
-                // A bare TLD is never a useful match.
-                if !candidate.contains(".") { return false }
+                return nil
             }
         }
     }
 
     /// Strict mode inverts the question: everything is blocked unless allowed.
     public func isAllowedInStrictMode(host: String) -> Bool {
-        let lower = host.lowercased()
-        var candidate = Substring(lower)
-        return queue.sync {
-            while true {
-                if allowlist.contains(Self.hash(candidate)) { return true }
-                guard let dot = candidate.firstIndex(of: ".") else { return false }
-                candidate = candidate[candidate.index(after: dot)...]
-                if !candidate.contains(".") { return false }
+        queue.sync {
+            walk(host) { h in
+                if customBlocks.contains(h) { return false }
+                if allowlist.contains(h) { return true }
+                return nil
             }
         }
     }
@@ -140,6 +152,12 @@ public final class BlocklistStore {
     public func setAllowlist(_ domains: [String]) {
         let set = Set(domains.map { Self.hash(Substring($0.lowercased())) })
         queue.sync(flags: .barrier) { self.allowlist = set }
+    }
+
+    /// Domains the person added by hand, on top of the published list.
+    public func setCustomBlocks(_ domains: [String]) {
+        let set = Set(domains.map { Self.hash(Substring($0.lowercased())) })
+        queue.sync(flags: .barrier) { self.customBlocks = set }
     }
 
     // MARK: - Loading

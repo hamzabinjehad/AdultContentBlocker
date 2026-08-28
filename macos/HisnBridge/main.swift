@@ -76,8 +76,8 @@ func handle(_ message: [String: Any]) -> [String: Any] {
         return [
             "lockUntil": locked ? state.deadline.timeIntervalSince1970 * 1000 : 0,
             "mode": locked ? state.mode : "off",
-            "allowlist": defaults?.stringArray(forKey: "allowlist") ?? [],
-            "customBlocks": defaults?.stringArray(forKey: "customBlocks") ?? [],
+            "allowlist": SiteLists.allowlist(),
+            "customBlocks": SiteLists.customBlocks(),
             "listVersion": defaults?.integer(forKey: "listVersion") ?? 0,
         ]
 

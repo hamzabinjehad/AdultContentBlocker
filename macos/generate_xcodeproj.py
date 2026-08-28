@@ -44,7 +44,7 @@ TESTS_BUNDLE_ID = "app.hisn.HisnTests"
 # same files rather than linking a framework, which keeps the extension a
 # single self-contained bundle with no embedded dylib to sign and load.
 SHARED = ["Hisn/BlocklistStore.swift", "Hisn/LockStore.swift",
-          "Hisn/PartnerService.swift"]
+          "Hisn/PartnerService.swift", "Hisn/SiteLists.swift"]
 
 APP_SOURCES = SHARED + [
     "Hisn/ContentView.swift",

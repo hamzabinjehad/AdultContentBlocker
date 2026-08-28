@@ -253,9 +253,21 @@ async function updateList() {
 // Guards
 // --------------------------------------------------------------------------
 
+/** Entries in `next` that are not in `prev`. */
+function added(next, prev) {
+  const before = new Set(prev || []);
+  return (next || []).filter((d) => !before.has(d));
+}
+
 /**
  * Refuse to relax settings while locked. Every path that could weaken
  * protection funnels through here.
+ *
+ * The list checks compare membership, not length. Counting was the obvious
+ * version and it is wrong in the case that matters: swapping one allowed domain
+ * for another leaves the count identical, and in strict mode — where the
+ * allowlist is the only thing reachable at all — that swap is not a small
+ * loosening, it is a complete bypass.
  */
 async function guardedUpdate(patch) {
   const state = await getState();
@@ -264,7 +276,12 @@ async function guardedUpdate(patch) {
       (patch.mode && patch.mode === "off") ||
       (patch.mode === "blocklist" && state.mode === "strict") ||
       (patch.lockUntil !== undefined && patch.lockUntil < state.lockUntil) ||
-      (patch.allowlist && patch.allowlist.length > state.allowlist.length);
+      (patch.allowlist && added(patch.allowlist, state.allowlist).length > 0) ||
+      // Dropping a custom block is the same move in the other direction.
+      // options.js merges add-only before sending, but a UI-only guard is no
+      // guard at all — anything can post this message from a devtools console.
+      (patch.customBlocks &&
+        added(state.customBlocks, patch.customBlocks).length > 0);
     if (relaxing) {
       return { ok: false, reason: "locked", until: state.lockUntil };
     }

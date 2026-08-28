@@ -37,18 +37,61 @@ public final class LockManager: ObservableObject {
         case month = "30 days"
         case quarter = "90 days"
         case year = "1 year"
+        case custom = "Custom"
 
         public var id: String { rawValue }
-        public var seconds: TimeInterval {
+
+        /// The preset length. `nil` for `.custom`, which takes its length from
+        /// what the person types instead.
+        public var seconds: TimeInterval? {
             switch self {
             case .week:    return 7 * 86400
             case .month:   return 30 * 86400
             case .quarter: return 90 * 86400
             case .year:    return 365 * 86400
+            case .custom:  return nil
             }
         }
-        /// Free tier gets the 7-day plan; longer commitments are paid.
-        public var requiresSubscription: Bool { self != .week }
+    }
+
+    /// Free tier gets a week; longer commitments are paid.
+    ///
+    /// Applies to a typed length exactly as it does to a preset — otherwise
+    /// "Custom: 8 days" is simply a way around the paywall.
+    public nonisolated static func requiresSubscription(seconds: TimeInterval) -> Bool {
+        seconds > 7 * 86400
+    }
+
+    /// The shortest and longest lock that may be started.
+    ///
+    /// The floor stops a blank or zero field starting a lock that is already
+    /// over. The ceiling is the one that matters: a lock cannot be shortened,
+    /// so without it a slipped keystroke — 3650 where 365 was meant — is a
+    /// decade-long commitment entered by accident. A year matches the longest
+    /// preset, and past it the answer is to extend, which is always allowed.
+    public nonisolated static let minimumLock: TimeInterval = 60
+    public nonisolated static let maximumLock: TimeInterval = 365 * 86400
+
+    /// A length we are willing to act on, or `nil`.
+    ///
+    /// Returns nil rather than clamping. Rounding 3650 days down to the cap
+    /// would start a year-long lock nobody asked for, and the one thing this
+    /// type must never do is commit someone to a deadline they did not choose.
+    /// The `isFinite` check is not decoration: `Double("inf")` parses.
+    public nonisolated static func validated(seconds: TimeInterval) -> TimeInterval? {
+        guard seconds.isFinite,
+              seconds >= minimumLock,
+              seconds <= maximumLock else { return nil }
+        return seconds
+    }
+
+    /// "7 days", "36 hours" — for telling someone what they are about to start.
+    public nonisolated static func describe(_ seconds: TimeInterval) -> String {
+        let formatter = DateComponentsFormatter()
+        formatter.unitsStyle = .full
+        formatter.allowedUnits = [.year, .month, .day, .hour, .minute]
+        formatter.maximumUnitCount = 2
+        return formatter.string(from: seconds) ?? "\(Int(seconds)) seconds"
     }
 
     public enum LockError: LocalizedError {
@@ -57,9 +100,14 @@ public final class LockManager: ObservableObject {
         case notLocked
         case releaseNotDue(at: Date)
         case filterUnavailable(String)
+        case durationOutOfRange
 
         public var errorDescription: String? {
             switch self {
+            case .durationOutOfRange:
+                return "A lock has to be between "
+                    + "\(LockManager.describe(LockManager.minimumLock)) and "
+                    + "\(LockManager.describe(LockManager.maximumLock))."
             case let .alreadyLocked(until):
                 return "A lock is already running until \(until.formatted())."
             case .wouldShorten:
@@ -110,8 +158,16 @@ public final class LockManager: ObservableObject {
     // MARK: - Starting
 
     /// Begin a lock. Extending an existing lock is fine; shortening is not.
-    public func start(duration: Duration, strict: Bool) async throws {
-        let deadline = LockStore.trustedNow().addingTimeInterval(duration.seconds)
+    ///
+    /// Takes a length rather than a `Duration` because the length may have been
+    /// typed. The range is re-checked here and not only in the view: this is
+    /// the last point before a deadline becomes unshortenable, so it is the
+    /// wrong place to trust a caller.
+    public func start(seconds: TimeInterval, strict: Bool) async throws {
+        guard let seconds = Self.validated(seconds: seconds) else {
+            throw LockError.durationOutOfRange
+        }
+        let deadline = LockStore.trustedNow().addingTimeInterval(seconds)
 
         if isLocked && deadline < state.deadline {
             throw LockError.wouldShorten

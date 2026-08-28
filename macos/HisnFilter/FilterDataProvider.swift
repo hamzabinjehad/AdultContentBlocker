@@ -101,10 +101,12 @@ final class FilterDataProvider: NEFilterDataProvider {
         let strict = state.mode == "strict" && LockStore.trustedNow() < state.deadline
         strictModeActive.withLock { $0 = strict }
 
-        if let allow = UserDefaults(suiteName: LockStore.appGroup)?
-            .stringArray(forKey: "allowlist") {
-            store.setAllowlist(allow)
-        }
+        // Both hand-maintained lists, re-read on the same tick. The custom
+        // blocks used to be read by the browser extension and ignored here,
+        // which meant a domain the person added by hand was blocked in Chrome
+        // and reachable from every other app on the machine.
+        store.setAllowlist(SiteLists.allowlist())
+        store.setCustomBlocks(SiteLists.customBlocks())
     }
 
     /// Pull a hostname out of a flow.

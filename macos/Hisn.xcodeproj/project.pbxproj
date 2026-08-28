@@ -65,6 +65,12 @@
 			path = PartnerService.swift;
 			sourceTree = "<group>";
 		};
+		9A85D28497AE287B0A4C4E8C /* SiteLists.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = SiteLists.swift;
+			sourceTree = "<group>";
+		};
 		2ABF69CF9B6C0FFE5468AC8C /* HisnBridge.entitlements */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = text.plist.entitlements;
@@ -166,6 +172,7 @@
 				00DEA34098A0930C4F010EB9,
 				10B6D354DDF0586B5B0D7A22,
 				0DDFAADBE7361D65F79BE5B5,
+				9A85D28497AE287B0A4C4E8C,
 			);
 			path = Hisn;
 			sourceTree = "<group>";
@@ -325,6 +332,10 @@
 			isa = PBXBuildFile;
 			fileRef = 0DDFAADBE7361D65F79BE5B5;
 		};
+		873B1F284D99348FC3C66127 /* SiteLists.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 9A85D28497AE287B0A4C4E8C;
+		};
 		99490269661966C5C223E7E7 /* FilterDataProvider.swift in Sources */ = {
 			isa = PBXBuildFile;
 			fileRef = 483809EFEA23DC4C65C7B5CE;
@@ -340,6 +351,7 @@
 				A94EB14899ADCA602A404D0F,
 				5E2F76FFE6F5C926D10B81AC,
 				16E9947CD4242E49F347299A,
+				873B1F284D99348FC3C66127,
 				99490269661966C5C223E7E7,
 				0589130EFE01265E5D48A0F4,
 			);
@@ -464,6 +476,10 @@
 			isa = PBXBuildFile;
 			fileRef = 0DDFAADBE7361D65F79BE5B5;
 		};
+		3F2BDF1C8BC05034A32C0BCE /* SiteLists.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 9A85D28497AE287B0A4C4E8C;
+		};
 		C005460B15C7112981DEA59F /* main.swift in Sources */ = {
 			isa = PBXBuildFile;
 			fileRef = C3C58103FBA89CB0F57E6381;
@@ -475,6 +491,7 @@
 				E63497301DD2F99C0893CFC5,
 				75397D87714B502554323803,
 				C170097EEA3ED9E11C8310BD,
+				3F2BDF1C8BC05034A32C0BCE,
 				C005460B15C7112981DEA59F,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -650,6 +667,10 @@
 			isa = PBXBuildFile;
 			fileRef = 0DDFAADBE7361D65F79BE5B5;
 		};
+		A862EF0F416EB1AF4E9B1992 /* SiteLists.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 9A85D28497AE287B0A4C4E8C;
+		};
 		A6FB482C49EF9319FAE69EAD /* ContentView.swift in Sources */ = {
 			isa = PBXBuildFile;
 			fileRef = A1954A7D9F26A7718A4AAAD4;
@@ -677,6 +698,7 @@
 				38645BD4412B827FC5CA06C6,
 				1F726C46E79D2589C7D5466F,
 				C443CF91599B47291668BF96,
+				A862EF0F416EB1AF4E9B1992,
 				A6FB482C49EF9319FAE69EAD,
 				61CAEB8F0184033FD53D9C6D,
 				BBEC95CEB0C5C5CAFDED43AB,
