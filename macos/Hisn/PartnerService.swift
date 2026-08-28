@@ -145,8 +145,11 @@ public final class PartnerService {
     }
 
     private func post<Body: Encodable>(_ path: String, body: Body) async throws -> Bool {
-        struct Ack: Decodable { let ok: Bool }
         let ack: Ack = try await post(path, body: body)
         return ack.ok
     }
 }
+
+/// Declared at file scope because Swift forbids nesting a type inside a generic
+/// function, and the acknowledgement-only `post` overload is generic over Body.
+private struct Ack: Decodable { let ok: Bool }

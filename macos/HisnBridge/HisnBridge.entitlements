@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  The bridge only reads the lock state, so the app group is the whole of
+	  what it needs.
+
+	  It is sandboxed on purpose, and not only for containment: a sandboxed
+	  process addresses an app group as "group.app.hisn", while an unsandboxed
+	  one has to spell the same group "TEAMID.group.app.hisn". The app is
+	  sandboxed, so making the bridge sandboxed too is what keeps both processes
+	  naming one container. Unsandbox this and it silently reads a different,
+	  empty container — the browser extension then sees no lock and, per its own
+	  fail-closed rule, tightens to strict.
+	-->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.app.hisn</string>
+	</array>
+</dict>
+</plist>

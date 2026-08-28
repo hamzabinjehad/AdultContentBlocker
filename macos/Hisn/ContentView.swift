@@ -156,22 +156,43 @@ struct ContentView: View {
 }
 
 /// Reports what is genuinely being enforced right now.
+///
+/// "Enforced" is three separate facts, and the header is wrong unless it checks
+/// all of them: a lock is running, the filter is on, *and* the filter holds a
+/// list. A filter running with no list blocks nothing while every other signal
+/// still reads green — which the threat model rates worse than being switched
+/// off, because the person stops being careful.
 private struct StatusHeader: View {
     @ObservedObject var lock: LockManager
     @ObservedObject var filter: FilterController
 
-    private var isHealthy: Bool { !lock.isLocked || filter.isEnabled }
+    /// Written by the extension after it loads a list. The app and the filter
+    /// are separate processes with separate stores, so this is the only
+    /// honest source; anything else would be the app reporting on itself.
+    private var filterDomainCount: Int {
+        UserDefaults(suiteName: LockStore.appGroup)?
+            .integer(forKey: "filterDomainCount") ?? 0
+    }
+
+    private var problem: String? {
+        guard lock.isLocked else { return nil }
+        if !filter.isEnabled { return "The system filter is off — reopening it now" }
+        if filterDomainCount == 0 {
+            return "The filter has no block list — nothing is being blocked"
+        }
+        return nil
+    }
 
     var body: some View {
         HStack(spacing: 10) {
             Circle()
-                .fill(isHealthy ? Color.green : Color.orange)
+                .fill(problem == nil ? Color.green : Color.orange)
                 .frame(width: 9, height: 9)
             VStack(alignment: .leading, spacing: 1) {
                 Text(lock.isLocked ? "Protected" : "Not locked")
                     .font(.subheadline.weight(.semibold))
-                if lock.isLocked && !filter.isEnabled {
-                    Text("The system filter is off — reopening it now")
+                if let problem {
+                    Text(problem)
                         .font(.caption2).foregroundStyle(.orange)
                 }
             }

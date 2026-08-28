@@ -1,0 +1,970 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+		6B0A4D54BFD2F08FF0BF42BB /* BlocklistStore.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = BlocklistStore.swift;
+			sourceTree = "<group>";
+		};
+		A1954A7D9F26A7718A4AAAD4 /* ContentView.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = ContentView.swift;
+			sourceTree = "<group>";
+		};
+		CE441D8FDF481728F9B3694F /* FilterController.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = FilterController.swift;
+			sourceTree = "<group>";
+		};
+		72164236627E5336E7EFBABC /* Hisn.entitlements */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = text.plist.entitlements;
+			path = Hisn.entitlements;
+			sourceTree = "<group>";
+		};
+		07AFF5599709FBC667EAC9DC /* HisnApp.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = HisnApp.swift;
+			sourceTree = "<group>";
+		};
+		75885CCB6C132FED593384D7 /* Info.plist */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = text.plist.xml;
+			path = Info.plist;
+			sourceTree = "<group>";
+		};
+		1F89B5A1A0E8503E6DE665E9 /* ListUpdater.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = ListUpdater.swift;
+			sourceTree = "<group>";
+		};
+		00DEA34098A0930C4F010EB9 /* LockManager.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = LockManager.swift;
+			sourceTree = "<group>";
+		};
+		10B6D354DDF0586B5B0D7A22 /* LockStore.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = LockStore.swift;
+			sourceTree = "<group>";
+		};
+		0DDFAADBE7361D65F79BE5B5 /* PartnerService.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = PartnerService.swift;
+			sourceTree = "<group>";
+		};
+		2ABF69CF9B6C0FFE5468AC8C /* HisnBridge.entitlements */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = text.plist.entitlements;
+			path = HisnBridge.entitlements;
+			sourceTree = "<group>";
+		};
+		C3C58103FBA89CB0F57E6381 /* main.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = main.swift;
+			sourceTree = "<group>";
+		};
+		483809EFEA23DC4C65C7B5CE /* FilterDataProvider.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = FilterDataProvider.swift;
+			sourceTree = "<group>";
+		};
+		72141B20B04B65029C41CE8F /* HisnFilter.entitlements */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = text.plist.entitlements;
+			path = HisnFilter.entitlements;
+			sourceTree = "<group>";
+		};
+		1E0C1B80DE2B39A0260CE8A1 /* Info.plist */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = text.plist.xml;
+			path = Info.plist;
+			sourceTree = "<group>";
+		};
+		A0DF15BD71B1EEE6A6C45915 /* main.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = main.swift;
+			sourceTree = "<group>";
+		};
+		80C98DE5808DA52CC4D9E0DD /* BlocklistStoreTests.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = BlocklistStoreTests.swift;
+			sourceTree = "<group>";
+		};
+		F1F4679AE1DB96D841F82719 /* manifest.json */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = text.json;
+			path = manifest.json;
+			sourceTree = "<group>";
+		};
+		55126988B9BFC4348934186A /* manifest.json.sig */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = text;
+			path = manifest.json.sig;
+			sourceTree = "<group>";
+		};
+		D56AB3BF962A101BB48A97AC /* domains_core.txt */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = text;
+			path = domains_core.txt;
+			sourceTree = "<group>";
+		};
+		5BA8BA274EB5BFB1180F80B1 /* Hisn.app */ = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.application;
+			includeInIndex = 0;
+			path = Hisn.app;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		9C9FFA6603EF912D8A28480B /* HisnFilter.systemextension */ = {
+			isa = PBXFileReference;
+			explicitFileType = "wrapper.system-extension";
+			includeInIndex = 0;
+			path = HisnFilter.systemextension;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		91B7F1CE86382AA4D7074255 /* HisnBridge */ = {
+			isa = PBXFileReference;
+			explicitFileType = "compiled.mach-o.executable";
+			includeInIndex = 0;
+			path = HisnBridge;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		2F2920DDE73E55C7EC03FFD3 /* HisnTests.xctest */ = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.cfbundle;
+			includeInIndex = 0;
+			path = HisnTests.xctest;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		E5B5BA2D0DC56930613A8351 /* Hisn */ = {
+			isa = PBXGroup;
+			children = (
+				6B0A4D54BFD2F08FF0BF42BB,
+				A1954A7D9F26A7718A4AAAD4,
+				CE441D8FDF481728F9B3694F,
+				72164236627E5336E7EFBABC,
+				07AFF5599709FBC667EAC9DC,
+				75885CCB6C132FED593384D7,
+				1F89B5A1A0E8503E6DE665E9,
+				00DEA34098A0930C4F010EB9,
+				10B6D354DDF0586B5B0D7A22,
+				0DDFAADBE7361D65F79BE5B5,
+			);
+			path = Hisn;
+			sourceTree = "<group>";
+		};
+		952370683EBE372EA84D0EBC /* HisnFilter */ = {
+			isa = PBXGroup;
+			children = (
+				483809EFEA23DC4C65C7B5CE,
+				72141B20B04B65029C41CE8F,
+				1E0C1B80DE2B39A0260CE8A1,
+				A0DF15BD71B1EEE6A6C45915,
+			);
+			path = HisnFilter;
+			sourceTree = "<group>";
+		};
+		CFCAD78C75934B02F892B6CA /* HisnBridge */ = {
+			isa = PBXGroup;
+			children = (
+				2ABF69CF9B6C0FFE5468AC8C,
+				C3C58103FBA89CB0F57E6381,
+			);
+			path = HisnBridge;
+			sourceTree = "<group>";
+		};
+		17AF22E3634A3628D8708404 /* HisnTests */ = {
+			isa = PBXGroup;
+			children = (
+				80C98DE5808DA52CC4D9E0DD,
+			);
+			path = HisnTests;
+			sourceTree = "<group>";
+		};
+		938213E66EA8A4079FC417A5 /* seed */ = {
+			isa = PBXGroup;
+			children = (
+				F1F4679AE1DB96D841F82719,
+				55126988B9BFC4348934186A,
+				D56AB3BF962A101BB48A97AC,
+			);
+			name = seed;
+			path = "../seed";
+			sourceTree = "<group>";
+		};
+		43931CF8D8FF624E4C75AE32 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				5BA8BA274EB5BFB1180F80B1,
+				9C9FFA6603EF912D8A28480B,
+				91B7F1CE86382AA4D7074255,
+				2F2920DDE73E55C7EC03FFD3,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		361FF3508AF23F4E0CB329EA  = {
+			isa = PBXGroup;
+			children = (
+				E5B5BA2D0DC56930613A8351,
+				952370683EBE372EA84D0EBC,
+				CFCAD78C75934B02F892B6CA,
+				17AF22E3634A3628D8708404,
+				938213E66EA8A4079FC417A5,
+				43931CF8D8FF624E4C75AE32,
+			);
+			sourceTree = "<group>";
+		};
+		59C5F1D49841AA8D6DEA6494 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		83F1F6AD69DE2BC2B957B80F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
+		FB71138AD31B0629EBDFB955 /* Build configuration list for PBXProject */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				59C5F1D49841AA8D6DEA6494,
+				83F1F6AD69DE2BC2B957B80F,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F10FCF86271847C467E5DFF0 /* manifest.json in Resources */ = {
+			isa = PBXBuildFile;
+			fileRef = F1F4679AE1DB96D841F82719;
+		};
+		CFB0B2C0F77D30DA4C1934F9 /* manifest.json.sig in Resources */ = {
+			isa = PBXBuildFile;
+			fileRef = 55126988B9BFC4348934186A;
+		};
+		0AFDC11DFB4A3D12A3E421E1 /* domains_core.txt in Resources */ = {
+			isa = PBXBuildFile;
+			fileRef = D56AB3BF962A101BB48A97AC;
+		};
+		6FA049AA7B44D79733D114DF /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F10FCF86271847C467E5DFF0,
+				CFB0B2C0F77D30DA4C1934F9,
+				0AFDC11DFB4A3D12A3E421E1,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A94EB14899ADCA602A404D0F /* BlocklistStore.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 6B0A4D54BFD2F08FF0BF42BB;
+		};
+		5E2F76FFE6F5C926D10B81AC /* LockStore.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 10B6D354DDF0586B5B0D7A22;
+		};
+		16E9947CD4242E49F347299A /* PartnerService.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 0DDFAADBE7361D65F79BE5B5;
+		};
+		99490269661966C5C223E7E7 /* FilterDataProvider.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 483809EFEA23DC4C65C7B5CE;
+		};
+		0589130EFE01265E5D48A0F4 /* main.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = A0DF15BD71B1EEE6A6C45915;
+		};
+		0BC1AA933493432E15C2049D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A94EB14899ADCA602A404D0F,
+				5E2F76FFE6F5C926D10B81AC,
+				16E9947CD4242E49F347299A,
+				99490269661966C5C223E7E7,
+				0589130EFE01265E5D48A0F4,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		ACA9CA4265F668D8F05D0B4E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EAD27ABD6F98EE8115420245 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				CODE_SIGN_ENTITLEMENTS = HisnFilter/HisnFilter.entitlements;
+				CURRENT_PROJECT_VERSION = 1;
+				MARKETING_VERSION = 1.0;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = HisnFilter/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = app.hisn.Hisn.HisnFilter;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+				"$(inherited)",
+				"@executable_path/../Frameworks",
+			);
+			};
+			name = Debug;
+		};
+		1ED240B115893FE0D33E9C41 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				CODE_SIGN_ENTITLEMENTS = HisnFilter/HisnFilter.entitlements;
+				CURRENT_PROJECT_VERSION = 1;
+				MARKETING_VERSION = 1.0;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = HisnFilter/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = app.hisn.Hisn.HisnFilter;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+				"$(inherited)",
+				"@executable_path/../Frameworks",
+			);
+			};
+			name = Release;
+		};
+		F7458A6953BD062F13FC9A4D /* Build configuration list for HisnFilter */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EAD27ABD6F98EE8115420245,
+				1ED240B115893FE0D33E9C41,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5AA25C4F72E5F502DB22DE8F /* HisnFilter */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F7458A6953BD062F13FC9A4D;
+			buildPhases = (
+				0BC1AA933493432E15C2049D,
+				ACA9CA4265F668D8F05D0B4E,
+				6FA049AA7B44D79733D114DF,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HisnFilter;
+			productName = HisnFilter;
+			productReference = 9C9FFA6603EF912D8A28480B;
+			productType = "com.apple.product-type.system-extension";
+		};
+		E63497301DD2F99C0893CFC5 /* BlocklistStore.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 6B0A4D54BFD2F08FF0BF42BB;
+		};
+		75397D87714B502554323803 /* LockStore.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 10B6D354DDF0586B5B0D7A22;
+		};
+		C170097EEA3ED9E11C8310BD /* PartnerService.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 0DDFAADBE7361D65F79BE5B5;
+		};
+		C005460B15C7112981DEA59F /* main.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = C3C58103FBA89CB0F57E6381;
+		};
+		0CD0477C5D19A732D130E31C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E63497301DD2F99C0893CFC5,
+				75397D87714B502554323803,
+				C170097EEA3ED9E11C8310BD,
+				C005460B15C7112981DEA59F,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		07F6B28A75002D8E2DD0F73F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1359A80ADC1AB72A906B25E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				CODE_SIGN_ENTITLEMENTS = HisnBridge/HisnBridge.entitlements;
+				CURRENT_PROJECT_VERSION = 1;
+				MARKETING_VERSION = 1.0;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		FAD139AD084D7F006A7F6AD2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				CODE_SIGN_ENTITLEMENTS = HisnBridge/HisnBridge.entitlements;
+				CURRENT_PROJECT_VERSION = 1;
+				MARKETING_VERSION = 1.0;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+		7A89C3EA17A9DF693F663862 /* Build configuration list for HisnBridge */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C1359A80ADC1AB72A906B25E,
+				FAD139AD084D7F006A7F6AD2,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		85E375A773CC2286FFC7A2E0 /* HisnBridge */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7A89C3EA17A9DF693F663862;
+			buildPhases = (
+				0CD0477C5D19A732D130E31C,
+				07F6B28A75002D8E2DD0F73F,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HisnBridge;
+			productName = HisnBridge;
+			productReference = 91B7F1CE86382AA4D7074255;
+			productType = "com.apple.product-type.tool";
+		};
+		E0899B67D06D52F76B7620C2 /* HisnFilter.systemextension in Embed System Extensions */ = {
+			isa = PBXBuildFile;
+			fileRef = 9C9FFA6603EF912D8A28480B;
+			settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); };
+		};
+		0C0FD9E698FB375310304AE7 /* Embed System Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "Contents/Library/SystemExtensions";
+			dstSubfolderSpec = 1;
+			files = (
+				E0899B67D06D52F76B7620C2,
+			);
+			name = "Embed System Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0EF8053566C4215658167630 /* HisnBridge in Embed Bridge */ = {
+			isa = PBXBuildFile;
+			fileRef = 91B7F1CE86382AA4D7074255;
+			settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); };
+		};
+		C78F4DDFC37208B7186FF56D /* Embed Bridge */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 6;
+			files = (
+				0EF8053566C4215658167630,
+			);
+			name = "Embed Bridge";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7E4B2B42202196B8DEDF4BBA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F1F35F49E69233E372DFC5BA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 85D368FE68C556A9B7942C75;
+			proxyType = 1;
+			remoteGlobalIDString = 5AA25C4F72E5F502DB22DE8F;
+			remoteInfo = HisnFilter;
+		};
+		4D3C8E960720F808B094000F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5AA25C4F72E5F502DB22DE8F;
+			targetProxy = F1F35F49E69233E372DFC5BA;
+		};
+		05FF8658807A19E31FC115CC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 85D368FE68C556A9B7942C75;
+			proxyType = 1;
+			remoteGlobalIDString = 85E375A773CC2286FFC7A2E0;
+			remoteInfo = HisnBridge;
+		};
+		DA4B9EB09FB2AF0F02FDC0B8 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 85E375A773CC2286FFC7A2E0;
+			targetProxy = 05FF8658807A19E31FC115CC;
+		};
+		38645BD4412B827FC5CA06C6 /* BlocklistStore.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 6B0A4D54BFD2F08FF0BF42BB;
+		};
+		1F726C46E79D2589C7D5466F /* LockStore.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 10B6D354DDF0586B5B0D7A22;
+		};
+		C443CF91599B47291668BF96 /* PartnerService.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 0DDFAADBE7361D65F79BE5B5;
+		};
+		A6FB482C49EF9319FAE69EAD /* ContentView.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = A1954A7D9F26A7718A4AAAD4;
+		};
+		61CAEB8F0184033FD53D9C6D /* FilterController.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = CE441D8FDF481728F9B3694F;
+		};
+		BBEC95CEB0C5C5CAFDED43AB /* HisnApp.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 07AFF5599709FBC667EAC9DC;
+		};
+		9E6560DDB2E30CF063E1CC2D /* ListUpdater.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 1F89B5A1A0E8503E6DE665E9;
+		};
+		55EEFF567258F1CEE1CFC3FF /* LockManager.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 00DEA34098A0930C4F010EB9;
+		};
+		079A944B3E87101645898B0C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				38645BD4412B827FC5CA06C6,
+				1F726C46E79D2589C7D5466F,
+				C443CF91599B47291668BF96,
+				A6FB482C49EF9319FAE69EAD,
+				61CAEB8F0184033FD53D9C6D,
+				BBEC95CEB0C5C5CAFDED43AB,
+				9E6560DDB2E30CF063E1CC2D,
+				55EEFF567258F1CEE1CFC3FF,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BDA66D03DAF314C0FA6996DD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		287F1F6160A7CBABCBCA0B7B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				CODE_SIGN_ENTITLEMENTS = Hisn/Hisn.entitlements;
+				CURRENT_PROJECT_VERSION = 1;
+				MARKETING_VERSION = 1.0;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = Hisn/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = app.hisn.Hisn;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+				"$(inherited)",
+				"@executable_path/../Frameworks",
+			);
+			};
+			name = Debug;
+		};
+		3FB10815246EB3533579F7DC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				CODE_SIGN_ENTITLEMENTS = Hisn/Hisn.entitlements;
+				CURRENT_PROJECT_VERSION = 1;
+				MARKETING_VERSION = 1.0;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = Hisn/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = app.hisn.Hisn;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+				"$(inherited)",
+				"@executable_path/../Frameworks",
+			);
+			};
+			name = Release;
+		};
+		E03E3D145312480538703605 /* Build configuration list for Hisn */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				287F1F6160A7CBABCBCA0B7B,
+				3FB10815246EB3533579F7DC,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		6F9279DAC3DCCAF5F23A04C6 /* Hisn */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E03E3D145312480538703605;
+			buildPhases = (
+				079A944B3E87101645898B0C,
+				BDA66D03DAF314C0FA6996DD,
+				7E4B2B42202196B8DEDF4BBA,
+				0C0FD9E698FB375310304AE7,
+				C78F4DDFC37208B7186FF56D,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				4D3C8E960720F808B094000F,
+				DA4B9EB09FB2AF0F02FDC0B8,
+			);
+			name = Hisn;
+			productName = Hisn;
+			productReference = 5BA8BA274EB5BFB1180F80B1;
+			productType = "com.apple.product-type.application";
+		};
+		2A31C5473ADF5E4980D32783 /* manifest.json in Resources */ = {
+			isa = PBXBuildFile;
+			fileRef = F1F4679AE1DB96D841F82719;
+		};
+		DF1D1C37F0D7BA900691D64F /* manifest.json.sig in Resources */ = {
+			isa = PBXBuildFile;
+			fileRef = 55126988B9BFC4348934186A;
+		};
+		555126B016456229CB9F14FD /* domains_core.txt in Resources */ = {
+			isa = PBXBuildFile;
+			fileRef = D56AB3BF962A101BB48A97AC;
+		};
+		86BDA4A092F382143898023B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2A31C5473ADF5E4980D32783,
+				DF1D1C37F0D7BA900691D64F,
+				555126B016456229CB9F14FD,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		161A3AC9791EA0D161705785 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 85D368FE68C556A9B7942C75;
+			proxyType = 1;
+			remoteGlobalIDString = 6F9279DAC3DCCAF5F23A04C6;
+			remoteInfo = Hisn;
+		};
+		A673384D39A6475B2C696A36 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 6F9279DAC3DCCAF5F23A04C6;
+			targetProxy = 161A3AC9791EA0D161705785;
+		};
+		48F8CCB2379E4EC0B604E88F /* BlocklistStoreTests.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 80C98DE5808DA52CC4D9E0DD;
+		};
+		A29CD87A3F623C88ED8997D1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				48F8CCB2379E4EC0B604E88F,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1BE106B3B693A9A5284616AF /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		100F55B8AFA76893F7B5A00D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = app.hisn.HisnTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Hisn.app/Contents/MacOS/Hisn";
+			};
+			name = Debug;
+		};
+		31203BC604D3B126FE62BAC1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = app.hisn.HisnTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Hisn.app/Contents/MacOS/Hisn";
+			};
+			name = Release;
+		};
+		40E392F256EFF174CF37311F /* Build configuration list for HisnTests */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				100F55B8AFA76893F7B5A00D,
+				31203BC604D3B126FE62BAC1,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CCEFF62698B14A0B5AE19BC1 /* HisnTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 40E392F256EFF174CF37311F;
+			buildPhases = (
+				A29CD87A3F623C88ED8997D1,
+				1BE106B3B693A9A5284616AF,
+				86BDA4A092F382143898023B,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A673384D39A6475B2C696A36,
+			);
+			name = HisnTests;
+			productName = HisnTests;
+			productReference = 2F2920DDE73E55C7EC03FFD3;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		85D368FE68C556A9B7942C75 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					CCEFF62698B14A0B5AE19BC1 = {TestTargetID = 6F9279DAC3DCCAF5F23A04C6;};
+				};
+			};
+			buildConfigurationList = FB71138AD31B0629EBDFB955;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 361FF3508AF23F4E0CB329EA;
+			productRefGroup = 43931CF8D8FF624E4C75AE32;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				6F9279DAC3DCCAF5F23A04C6,
+				5AA25C4F72E5F502DB22DE8F,
+				85E375A773CC2286FFC7A2E0,
+				CCEFF62698B14A0B5AE19BC1,
+			);
+		};
+	};
+	rootObject = 85D368FE68C556A9B7942C75;
+}

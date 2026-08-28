@@ -108,6 +108,13 @@ Everything still looks green. Defences: refuse to publish if fewer than half the
 sources succeeded, refuse under 200k domains in CI, and refuse a manifest whose
 `domain_count` is implausible on the client too.
 
+The same hole opens from the other end, with no bad build involved: a machine
+that has never completed an update has no list at all. So the filter ships the
+signed seed inside its own bundle and falls back to it, and the status header
+reports the domain count the filter actually holds rather than the fact that it
+is running. "Filter on, list empty" has to be visibly different from "protected",
+because it is the state in which the person stops being careful.
+
 **A rollback.** An old manifest is still validly signed. Anyone who can serve
 one can revert the list to before a domain was added. Defence: monotonic
 version, and clients reject any version below the one they hold.

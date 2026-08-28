@@ -25,18 +25,25 @@ import Security
 ///  3. **Failure is closed.** A store that cannot be read is ignored; a store
 ///     that cannot be written is a logged error, not a reason to abandon the
 ///     lock. No error path in this file ever shortens a deadline.
-enum LockStore {
+public enum LockStore {
 
     // MARK: - Locations
+    //
+    // These three are `var` rather than `let` only so a test run can point them
+    // somewhere private. Sharing them with the installed app means a test
+    // writes a real multi-week lock onto the machine running it — and because
+    // `write` refuses to shorten a deadline, the suite then passes once and
+    // fails every run after that. Nothing in the app reassigns them.
 
     /// Shared with the network extension, which needs the deadline too.
-    static let appGroup = "group.app.hisn"
+    public static var appGroup = "group.app.hisn"
 
     /// Root-owned. Removing this needs administrator authority — which the
     /// person running under a standard account does not have.
-    static let systemPath = "/Library/Application Support/Hisn/lock.plist"
+    public static var systemPath = "/Library/Application Support/Hisn/lock.plist"
 
-    private static let keychainService = "app.hisn.lock"
+    public static var keychainService = "app.hisn.lock"
+
     private static let keychainAccount = "deadline"
 
     private static let deadlineKey = "lockDeadline"
@@ -45,14 +52,20 @@ enum LockStore {
 
     // MARK: - Public API
 
-    struct LockState: Codable, Equatable {
-        var deadline: Date
-        var mode: String          // "blocklist" | "strict"
-        var startedAt: Date
+    public struct LockState: Codable, Equatable {
+        public var deadline: Date
+        public var mode: String          // "blocklist" | "strict"
+        public var startedAt: Date
 
-        static let unlocked = LockState(deadline: .distantPast,
-                                        mode: "off",
-                                        startedAt: .distantPast)
+        public init(deadline: Date, mode: String, startedAt: Date) {
+            self.deadline = deadline
+            self.mode = mode
+            self.startedAt = startedAt
+        }
+
+        public static let unlocked = LockState(deadline: .distantPast,
+                                               mode: "off",
+                                               startedAt: .distantPast)
     }
 
     /// The effective current time, protected against a rewound system clock.
@@ -60,7 +73,7 @@ enum LockStore {
     /// Returns the later of "what the clock says" and "the latest time we have
     /// ever seen". Setting the date back one year makes the countdown stand
     /// still; it does not make it run out.
-    static func trustedNow() -> Date {
+    public static func trustedNow() -> Date {
         let wall = Date()
         let mark = highWaterMark()
         let now = max(wall, mark)
@@ -69,7 +82,7 @@ enum LockStore {
     }
 
     /// Read the authoritative lock state: the latest deadline any store holds.
-    static func read() -> LockState {
+    public static func read() -> LockState {
         let candidates = [
             readFromDefaults(),
             readFromKeychain(),
@@ -95,7 +108,7 @@ enum LockStore {
     /// shortening is precisely the operation this whole system exists to
     /// prevent, so it is rejected here rather than trusted to callers.
     @discardableResult
-    static func write(_ state: LockState) -> Bool {
+    public static func write(_ state: LockState) -> Bool {
         let current = readWithoutHealing()
         if let current, state.deadline < current.deadline {
             NSLog("[Hisn] refused to shorten lock: %@ < %@",
@@ -114,7 +127,7 @@ enum LockStore {
 
     /// Clear the lock. Only legal once the deadline has genuinely passed.
     @discardableResult
-    static func clearIfExpired() -> Bool {
+    public static func clearIfExpired() -> Bool {
         let state = read()
         guard trustedNow() >= state.deadline else { return false }
         wipeAllStores()
@@ -132,7 +145,7 @@ enum LockStore {
     ///   `PartnerService` has already verified. Passed in only so that this
     ///   function cannot be called from a code path that skipped verification.
     @discardableResult
-    static func clearWithPartnerApproval(_ approval: PartnerApproval) -> Bool {
+    public static func clearWithPartnerApproval(_ approval: PartnerApproval) -> Bool {
         NSLog("[Hisn] lock ended early under approval %@", approval.id)
         wipeAllStores()
         return true
@@ -148,7 +161,7 @@ enum LockStore {
         // the clock back to before this one.
     }
 
-    static func isLocked() -> Bool {
+    public static func isLocked() -> Bool {
         trustedNow() < read().deadline
     }
 

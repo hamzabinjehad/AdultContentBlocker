@@ -13,11 +13,27 @@ import Foundation
 
 // MARK: - Wire format
 
+/// Read exactly `count` bytes, or nil at end of input.
+///
+/// A pipe is free to hand back fewer bytes than asked for, so a single
+/// `readData(ofLength:)` is not the same question as "read this many bytes".
+/// Treating a short read as end-of-input exits the host mid-conversation, and
+/// the extension — which reads silence as tampering — then fails closed to
+/// strict. Loop until the request is satisfied.
+func readExactly(_ count: Int) -> Data? {
+    var buffer = Data()
+    buffer.reserveCapacity(count)
+    while buffer.count < count {
+        let chunk = FileHandle.standardInput.readData(ofLength: count - buffer.count)
+        if chunk.isEmpty { return nil }          // genuine EOF
+        buffer.append(chunk)
+    }
+    return buffer
+}
+
 func readMessage() -> [String: Any]? {
-    var lengthBytes = [UInt8](repeating: 0, count: 4)
-    let read = FileHandle.standardInput.readData(ofLength: 4)
-    guard read.count == 4 else { return nil }
-    read.copyBytes(to: &lengthBytes, count: 4)
+    guard let header = readExactly(4) else { return nil }
+    let lengthBytes = [UInt8](header)
 
     let length = UInt32(lengthBytes[0])
         | UInt32(lengthBytes[1]) << 8
@@ -29,8 +45,7 @@ func readMessage() -> [String: Any]? {
     // easy denial of service.
     guard length > 0, length <= 4 * 1024 * 1024 else { return nil }
 
-    let body = FileHandle.standardInput.readData(ofLength: Int(length))
-    guard body.count == Int(length) else { return nil }
+    guard let body = readExactly(Int(length)) else { return nil }
 
     return try? JSONSerialization.jsonObject(with: body) as? [String: Any]
 }
