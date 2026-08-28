@@ -18,9 +18,16 @@ struct HisnApp: App {
 /// by a crash, or by someone toggling it in System Settings — and nobody
 /// noticed. Re-arming on every launch turns a permanent hole into a gap that
 /// closes the next time the app opens.
+///
+/// `installIfNeeded` belongs in the same list for the same reason: a browser
+/// extension that can never reach this app is a permanent hole too, just a
+/// quieter one — nothing crashes, nothing errors, blocking simply never turns
+/// on. See `NativeMessagingInstaller` for why this cannot be a one-time setup
+/// step.
 final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        NativeMessagingInstaller.installIfNeeded()
         Task { @MainActor in
             await FilterController.shared.reassertIfNeeded()
             await ListUpdater.shared.updateIfStale()

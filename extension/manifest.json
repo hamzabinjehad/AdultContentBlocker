@@ -2,6 +2,10 @@
   "manifest_version": 3,
   "name": "Hisn Protection",
   "version": "1.0.0",
+
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoaysT5wF/Cs85r5wQZGDpgrrVe2iEO4R1ExiZnzhTn/JmMZTf/n/5I8E4rYZFmtQNWwIm+khyos5cQ0UFy0/GW9qlQimk3rYwl1x/s7UuQrbS8/QsvIX/MPkom5yQbybd2aFBxT+I0gGwKAILLQtSqbFnc0s//P8YUUswk4lbn0wgXiwp57uFbk4MoJL6tTu+2KuNLj/4AFBszlKc3Y2+0LBbqZKG41YHNmSUV1DkDIDYhAqXQhci5pQH8MoFGnW6yDX1M4lNMcVWNM6sEhB0+gkL5lP9GHrIgGyMvpKRd47bqeAd9M7tKH0jOi1gNxyhFGoJPNoBopCZo4jVdDCdwIDAQAB",
+  "_comment_key": "Pins this extension's Chrome/Edge ID to hfhaffbmoeepcdolgejeidkgaoapcjig regardless of where it is loaded from. The native messaging host manifest that lets the browser reach the macOS app has to name this ID in allowed_origins before the extension is ever loaded, so the ID cannot be left to chance. See extension/keys/README.md.",
+
   "description": "Blocks adult content. Once a lock period starts it cannot be turned off until the timer expires.",
   "minimum_chrome_version": "137",
 

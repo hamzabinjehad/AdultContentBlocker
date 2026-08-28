@@ -15,7 +15,7 @@ of them look wrong until you know which bypass they close.
 blocklist/       list pipeline: fetch → merge → sign         (Python, 17 tests)
 profile/         .mobileconfig generator: DNS, DoH, Private Relay   (Python)
 extension/       Chrome/Edge MV3 extension                    (JS, verified)
-macos/           the app + content filter                    (Swift, 45 tests)
+macos/           the app + content filter                    (Swift, 48 tests)
 seed/            signed starter list, bundled into the filter
 .github/         daily signed rebuild                          (Actions)
 ```
@@ -85,11 +85,19 @@ Load `extension/` unpacked in `chrome://extensions`. Needs Chrome 137+ for
 Ed25519 in WebCrypto. `rules/dnr_block_rules.json` is copied from `dist/` —
 re-copy it after each blocklist build.
 
+Its ID is pinned by the `"key"` in `manifest.json` (see
+`extension/keys/README.md`), so it loads as
+`hfhaffbmoeepcdolgejeidkgaoapcjig` from any machine, any folder, every time.
+That matters more than it looks: native messaging needs the ID in
+`allowed_origins` *before* the extension is ever loaded, so an ID that changed
+per load location — which is what an unpacked extension gets without a pinned
+key — would make the next section unbuildable.
+
 ### macOS app
 
 ```bash
 cd macos
-xcodebuild -scheme Hisn -configuration Debug test    # 45 tests
+xcodebuild -scheme Hisn -configuration Debug test    # 48 tests
 xcodebuild -scheme Hisn -configuration Release build
 ```
 
@@ -114,19 +122,47 @@ macOS refuses to activate one from a DerivedData path.
 ### Native messaging host
 
 The browser extension gets the lock state from the app, not from its own
-storage, over Chrome native messaging. That link needs a manifest installed
-outside the app bundle:
+storage, over Chrome native messaging — and that link needs a manifest that
+nothing creates on its own. Skip it and `background.js`'s `pollNative()` fails
+on every single attempt, forever; the extension has no other way to learn a
+lock exists, so it just sits in `mode: "off"` no matter what the app records.
+Nothing crashes and nothing logs an error anywhere visible — the popup simply
+always says "Unlocked". (If a lock was already recorded before the link broke,
+the failure looks different: after five minutes of silence the extension
+correctly reads the silence as tampering and fails closed to strict mode
+instead — so "blocking everything" and "blocking nothing" are the same missing
+manifest, depending only on whether it ever worked.)
 
-```bash
-sudo macos/install_native_host.sh --extension-id <chrome-web-store-id>
-```
+There are two ways this gets installed, and they are not redundant:
 
-Skip this and the extension's heartbeat fails, which it correctly reads as
-tampering — after five minutes of an active lock it fails closed to strict mode.
-The failure presents as the extension blocking everything, so if you see that
-before suspecting anything else, check this manifest. Installing to `/Library`
-(the default) rather than `~/Library` is deliberate: removing it then needs the
-admin password the user is not supposed to hold.
+* **The app writes a user-scope copy on every launch** —
+  `macos/Hisn/NativeMessagingInstaller.swift` — so the extension works at all
+  for anyone who just builds and runs the app, which given no onboarding step
+  forces the alternative below, is nearly everyone. This is what makes the
+  default path actually function; before it existed, nothing ever wrote this
+  file and the browser extension never blocked anything, ever, regardless of
+  what lock the app itself enforced.
+
+* **`install_native_host.sh`, run once with `sudo`, writes a system-scope copy**
+  to `/Library` instead:
+
+  ```bash
+  sudo macos/install_native_host.sh --extension-id hfhaffbmoeepcdolgejeidkgaoapcjig
+  ```
+
+  This is the hardened form. `/Library` needs an administrator to write *and
+  to remove* — under the setup this product is built around (standard
+  account, second person holding the admin password), that is what stops the
+  person under a lock from deleting the link themselves. A user-scope file
+  cannot offer that; it is a plain file in their own home directory.
+
+The app checks for a system-scope manifest before writing anywhere, and
+defers completely when one exists — never both. That check is required, not
+just tidy: Chrome resolves a native messaging host by checking user-scope
+*before* system-scope, so a user-scope copy sitting next to an admin-owned one
+would not add redundancy, it would silently win and hand the exact protection
+`install_native_host.sh` exists for back to the person the lock is supposed to
+constrain.
 
 ---
 

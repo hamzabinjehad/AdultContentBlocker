@@ -59,6 +59,12 @@
 			path = LockStore.swift;
 			sourceTree = "<group>";
 		};
+		0EE6D2898CA933202ECEECFB /* NativeMessagingInstaller.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = NativeMessagingInstaller.swift;
+			sourceTree = "<group>";
+		};
 		0DDFAADBE7361D65F79BE5B5 /* PartnerService.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -171,6 +177,7 @@
 				1F89B5A1A0E8503E6DE665E9,
 				00DEA34098A0930C4F010EB9,
 				10B6D354DDF0586B5B0D7A22,
+				0EE6D2898CA933202ECEECFB,
 				0DDFAADBE7361D65F79BE5B5,
 				9A85D28497AE287B0A4C4E8C,
 			);
@@ -616,8 +623,8 @@
 		C78F4DDFC37208B7186FF56D /* Embed Bridge */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 6;
+			dstPath = "Contents/MacOS";
+			dstSubfolderSpec = 1;
 			files = (
 				0EF8053566C4215658167630,
 			);
@@ -691,6 +698,10 @@
 			isa = PBXBuildFile;
 			fileRef = 00DEA34098A0930C4F010EB9;
 		};
+		E2AEF87216467A0BAEB3B90C /* NativeMessagingInstaller.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 0EE6D2898CA933202ECEECFB;
+		};
 		079A944B3E87101645898B0C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -704,6 +715,7 @@
 				BBEC95CEB0C5C5CAFDED43AB,
 				9E6560DDB2E30CF063E1CC2D,
 				55EEFF567258F1CEE1CFC3FF,
+				E2AEF87216467A0BAEB3B90C,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

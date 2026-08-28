@@ -52,6 +52,7 @@ APP_SOURCES = SHARED + [
     "Hisn/HisnApp.swift",
     "Hisn/ListUpdater.swift",
     "Hisn/LockManager.swift",
+    "Hisn/NativeMessagingInstaller.swift",
 ]
 FILTER_SOURCES = SHARED + ["HisnFilter/FilterDataProvider.swift",
                            "HisnFilter/main.swift"]
@@ -371,9 +372,16 @@ def main() -> int:
     # A system extension lives in Contents/Library/SystemExtensions inside the
     # app that installs it; the bridge is an executable the browser launches, so
     # it goes next to the app binary in Contents/MacOS.
+    #
+    # Both use dstSubfolderSpec 1 ("Wrapper") with an explicit dstPath, not the
+    # documented-nowhere numeric spec for "Executables" (commonly cited as 6).
+    # That value produced an Embed Bridge phase that built cleanly and copied
+    # nothing — no Contents/Executables/ directory, no error, no log line — so
+    # NativeMessagingInstaller pointed at a path that could never exist. Both
+    # phases now use the one form actually verified against a real build.
     embed_sysext = phase_copy("Embed System Extensions",
                               "Contents/Library/SystemExtensions", 1, [FILTER])
-    embed_bridge = phase_copy("Embed Bridge", "", 6, [BRIDGE])
+    embed_bridge = phase_copy("Embed Bridge", "Contents/MacOS", 1, [BRIDGE])
 
     native_target(APP, "com.apple.product-type.application", APP_SOURCES,
                   app_settings, [phase_resources(APP), embed_sysext, embed_bridge],

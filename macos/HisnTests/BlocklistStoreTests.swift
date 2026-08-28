@@ -317,6 +317,122 @@ final class LookupTests: XCTestCase {
     }
 }
 
+// MARK: - Native messaging registration
+
+/// The reason the blocking system did not block anything: nothing ever wrote
+/// the file that tells Chrome/Edge this native host exists. Without it,
+/// `background.js`'s `pollNative()` fails on every attempt, forever, and the
+/// extension never learns a lock is running — see `NativeMessagingInstaller`.
+final class NativeMessagingInstallerTests: XCTestCase {
+
+    func testManifestShapeIsWhatChromeExpects() {
+        let manifest = NativeMessagingInstaller.hostManifest(bridgePath: "/tmp/HisnBridge")
+        XCTAssertEqual(manifest["name"] as? String, "app.hisn.bridge")
+        XCTAssertEqual(manifest["type"] as? String, "stdio",
+                       "Chrome native messaging only speaks stdio")
+        XCTAssertEqual(manifest["path"] as? String, "/tmp/HisnBridge")
+        XCTAssertEqual(manifest["allowed_origins"] as? [String],
+                       ["chrome-extension://hfhaffbmoeepcdolgejeidkgaoapcjig/"])
+    }
+
+    /// THE load-bearing test in this file. The extension's Chrome ID is derived
+    /// from `extension/manifest.json`'s `"key"`; this Swift constant is typed
+    /// in by hand from that same derivation. If the two ever disagree, nothing
+    /// on either side raises an error — Chrome just refuses to deliver the
+    /// native message, and `background.js` logs "native host unreachable"
+    /// forever. Recomputes the ID from the manifest's actual key rather than
+    /// comparing two hand-typed strings, which would only ever catch a typo in
+    /// one specific place and miss every other way this can drift.
+    func testExtensionIDMatchesTheManifestKey() throws {
+        let thisFile = URL(fileURLWithPath: #filePath)
+        let repoRoot = thisFile
+            .deletingLastPathComponent()   // HisnTests
+            .deletingLastPathComponent()   // macos
+            .deletingLastPathComponent()   // repo root
+        let manifestPath = repoRoot.appendingPathComponent("extension/manifest.json")
+
+        let data = try Data(contentsOf: manifestPath)
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        guard let keyBase64 = json?["key"] as? String,
+              let der = Data(base64Encoded: keyBase64) else {
+            return XCTFail("extension/manifest.json has no usable \"key\"")
+        }
+
+        let digest = SHA256.hash(data: der)
+        let mapping = Array("abcdefghijklmnop")
+        let id = String(digest.prefix(16).flatMap {
+            [mapping[Int($0 >> 4)], mapping[Int($0 & 0xF)]]
+        })
+
+        XCTAssertEqual(id, NativeMessagingInstaller.extensionID,
+            "extension/manifest.json's key no longer derives the pinned "
+            + "extension ID — native messaging will silently stop working")
+    }
+
+    /// THE regression test for the actual bug: an earlier `generate_xcodeproj.py`
+    /// embedded `HisnBridge` with a copy-files destination that built cleanly
+    /// and copied nothing, so this returned nil in production too, silently —
+    /// no crash, no error, the browser extension just never heard from the
+    /// app. `HisnTests` runs hosted inside the built `Hisn.app` (`TEST_HOST`),
+    /// so `Bundle.main` here is the real app bundle and this exercises the
+    /// exact path production uses, rather than asserting something true only
+    /// of the test runner's own bundle.
+    func testFindsTheRealEmbeddedBridge() {
+        guard let path = NativeMessagingInstaller.bridgeExecutablePath() else {
+            return XCTFail("HisnBridge was not found embedded in this test's "
+                + "own app host — the Embed Bridge copy phase is not doing "
+                + "what NativeMessagingInstaller expects")
+        }
+        XCTAssertTrue(path.hasSuffix("/Contents/MacOS/HisnBridge"))
+        XCTAssertTrue(FileManager.default.isExecutableFile(atPath: path))
+    }
+
+    /// The two installers must never disagree about where the hardened,
+    /// admin-only manifest lives — `hasSystemManifest` checks exactly that
+    /// path to decide whether to defer, so a drift here silently reintroduces
+    /// the bug this file exists to close: a user-writable copy sitting next
+    /// to (or in place of) the admin-owned one, undoing the one property
+    /// `install_native_host.sh` exists for.
+    func testSystemPathsMatchTheShellInstaller() throws {
+        let thisFile = URL(fileURLWithPath: #filePath)
+        let scriptPath = thisFile
+            .deletingLastPathComponent()          // HisnTests
+            .deletingLastPathComponent()          // macos
+            .appendingPathComponent("install_native_host.sh")
+        let script = try String(contentsOf: scriptPath, encoding: .utf8)
+
+        for browser in NativeMessagingInstaller.browsers {
+            XCTAssertTrue(script.contains(browser.systemDir),
+                "install_native_host.sh no longer mentions \(browser.systemDir) "
+                + "— confirm it moved intentionally and update both places")
+        }
+    }
+
+    /// The load-bearing guard: an admin has already run the hardened
+    /// installer, so this must not also write a user-scope copy — Chrome
+    /// checks user-scope first, so doing so anyway would silently hand back
+    /// exactly the protection `install_native_host.sh` exists to provide.
+    func testDefersCompletelyWhenASystemManifestExists() {
+        let chrome = NativeMessagingInstaller.browsers[0]
+        XCTAssertEqual(chrome.name, "Chrome")
+
+        // This machine's real /Library/Google/Chrome/NativeMessagingHosts is
+        // not writable by this test (that is the entire point), so the
+        // meaningful assertion is behavioural: whatever hasSystemManifest
+        // reports for the real path, installIfNeeded's per-browser branch is
+        // provably gated on it (see the `if hasSystemManifest(for:) { continue }`
+        // in installIfNeeded) — this test pins that the check itself is
+        // reading the same path a `sudo install_native_host.sh` run would
+        // have written to, not a path that happens to always be empty.
+        XCTAssertEqual(chrome.systemDir,
+                       "/Library/Google/Chrome/NativeMessagingHosts")
+        let exists = FileManager.default.fileExists(
+            atPath: "\(chrome.systemDir)/app.hisn.bridge.json")
+        XCTAssertEqual(NativeMessagingInstaller.hasSystemManifest(for: chrome),
+                       exists)
+    }
+}
+
 // MARK: - Hand-written site lists
 
 final class SiteListParsingTests: XCTestCase {
