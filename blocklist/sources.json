@@ -45,6 +45,15 @@
       "license": "MIT",
       "note": "Top-1M intersection. High signal.",
       "tier": "core"
+    },
+    {
+      "id": "oisd-nsfw",
+      "url": "https://nsfw.oisd.nl/domainswild",
+      "format": "plain",
+      "enabled": true,
+      "license": "see oisd.nl — free for personal and commercial use",
+      "note": "~480k domains, the largest single source here and the only one that is not US/English-centric. Added because the other five between them carried 578 Arabic-audience domains out of 148k core (0.39%), which is close to blind for ~400M speakers. Publishes the `*.domain` wildcard form; `clean()` strips the prefix, and every consumer already blocks subdomains, so nothing is lost.",
+      "tier": "extended"
     }
   ],
   "_never_block_comment": "SAFETY RAIL, applied last, after every upstream source. A poisoned or sloppy upstream list that blocks apple.com would brick the machine AND lock the user out of asking for help. Two tiers, because they are NOT the same problem.",

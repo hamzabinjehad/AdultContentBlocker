@@ -72,14 +72,26 @@ func handle(_ message: [String: Any]) -> [String: Any] {
     switch message["type"] as? String {
     case "getLockState":
         let state = LockStore.read()
-        let locked = LockStore.trustedNow() < state.deadline
-        return [
-            "lockUntil": locked ? state.deadline.timeIntervalSince1970 * 1000 : 0,
+        // The EFFECTIVE deadline, so a matured self-release ends the lock in
+        // the browser at the same moment it ends everywhere else. Comparing
+        // against `state.deadline` here would leave the extension enforcing a
+        // lock the app had already released.
+        let locked = LockStore.trustedNow() < LockStore.effectiveDeadline(state)
+        var reply: [String: Any] = [
+            "lockUntil": locked
+                ? LockStore.effectiveDeadline(state).timeIntervalSince1970 * 1000
+                : 0,
             "mode": locked ? state.mode : "off",
             "allowlist": SiteLists.allowlist(),
             "customBlocks": SiteLists.customBlocks(),
             "listVersion": defaults?.integer(forKey: "listVersion") ?? 0,
         ]
+        // Inspection settings ride the same heartbeat. Still read-only: there
+        // is deliberately no message that lets the browser change any of these,
+        // because an extension is far too easy to talk to from a devtools
+        // console to be given that authority.
+        reply.merge(Inspection.bridgePayload()) { current, _ in current }
+        return reply
 
     case "ping":
         return ["ok": true, "at": Date().timeIntervalSince1970 * 1000]

@@ -1,0 +1,251 @@
+# Arabic-script explicit terms — page-text scoring tier.
+#
+# Format:  term<TAB>weight     (see terms.en.tsv for what the weights mean)
+#
+# Terms are normalised at compile time by `terms.normalize()`, so write them
+# however is natural: hamza forms (أ إ آ ٱ), alef maqsura (ى), taa marbuta (ة),
+# tashkeel and tatweel are all folded away. `إباحية` and `اباحيه` compile to the
+# same entry, and either spelling on a page matches it.
+#
+# ── ORGANISED BY DIALECT, ON PURPOSE ───────────────────────────────────────
+# Modern Standard Arabic is what a filter written from a dictionary covers, and
+# it is almost never what adult content is actually written in. The material a
+# user meets is in Egyptian (the dialect of most consumed media), Levantine,
+# Gulf or Maghrebi — and those share very little explicit vocabulary. An
+# MSA-only list looks comprehensive and catches a small fraction of real pages.
+#
+# Sections below are additive: a term listed under one dialect is often
+# understood across several, so do not remove a duplicate just because it also
+# appears elsewhere — the compiler dedupes by normalised form anyway.
+#
+# ── THE TRAP THIS FILE MUST AVOID ──────────────────────────────────────────
+# Arabic glues the definite article and prepositions onto the following word, so
+# matching strips a BOUNDED set of affixes — and that stripping is exactly what
+# makes short roots dangerous. `جنس` (sex) is a substring of `الجنسية`
+# (nationality): matched carelessly, this list blocks every passport and visa
+# page in Arabic.
+#
+# Two-part defence, both halves here:
+#   1. Short ambiguous roots get a LOW weight, never enough to block alone.
+#   2. `negatives.tsv` carries the innocent words containing them, weighted
+#      strongly enough to cancel the root.
+# `test_terms.py::test_arabic_substring_false_positive` pins this.
+# ───────────────────────────────────────────────────────────────────────────
+
+# ═══ فصحى / MSA — unambiguous ══════════════════════════════════════════════
+إباحية	8.0
+إباحي	8.0
+اباحيه	8.0
+الإباحية	8.0
+أفلام إباحية	8.0
+مواقع إباحية	8.0
+صور إباحية	8.0
+مقاطع إباحية	8.0
+فيديو إباحي	8.0
+قصص إباحية	8.0
+محتوى إباحي	8.0
+سكس	8.0
+سكسي	8.0
+سيكس	8.0
+نيك	8.0
+نيج	7.0
+شرموطة	8.0
+شراميط	8.0
+عاهرة	7.0
+عاهرات	7.0
+قحبة	8.0
+قحاب	8.0
+قحبات	8.0
+داعرة	7.0
+دعارة	7.0
+زنا	6.0
+الزنا	6.0
+لواط	7.0
+لوطي	7.0
+سحاق	7.0
+سحاقية	7.0
+مثير جنسيا	7.0
+خليعة	7.0
+خلاعة	7.0
+فاضحة	5.0
+صور فاضحة	7.0
+مقاطع فاضحة	7.0
+عري	6.0
+عارية	6.0
+عاريات	7.0
+تعري	7.0
+متعرية	7.0
+شهواني	6.0
+شهوانية	6.0
+فجور	5.0
+فاجرة	6.0
+مومس	7.0
+بغاء	6.0
+بغي	4.0
+عهر	7.0
+ماجنة	5.0
+مجون	5.0
+
+# ═══ فصحى — strong ═════════════════════════════════════════════════════════
+جنسي	5.0
+جنسية فاضحة	7.0
+علاقة جنسية	6.0
+ممارسة الجنس	7.0
+ممارسة جنسية	7.0
+شهوة	4.0
+الشهوة	4.0
+إثارة جنسية	7.0
+مثيرة	3.0
+صور مثيرة	6.0
+مقاطع مثيرة	6.0
+مؤخرة كبيرة	6.0
+مؤخرات	5.0
+صدر كبير	5.0
+نهود	7.0
+نهد	6.0
+أثداء	6.0
+ثدي	3.0
+حلمات	5.0
+مؤخرة عارية	8.0
+جسد عاري	8.0
+بدون ملابس	6.0
+ملابس داخلية	4.0
+لانجيري	5.0
+بكيني	3.0
+مايوه	2.0
+فرج	3.0
+عورة	3.0
+كشف العورة	5.0
+
+# ═══ فصحى — moderate ═══════════════════════════════════════════════════════
+شات جنسي	8.0
+دردشة جنسية	8.0
+كاميرا جنسية	8.0
+بث مباشر جنسي	8.0
+مواقع للكبار	7.0
+للكبار فقط	6.0
+محتوى للبالغين	6.0
+أفلام للكبار	7.0
+قصص جنسية	8.0
+قصص محارم	8.0
+محارم	6.0
+سفاح المحارم	8.0
+خيانة زوجية	4.0
+مساج جنسي	7.0
+تدليك جنسي	7.0
+شذوذ	4.0
+شاذ جنسيا	6.0
+مثلية جنسية	4.0
+استمناء	7.0
+عادة سرية	7.0
+نشوة	5.0
+هزة الجماع	8.0
+جماع	5.0
+مضاجعة	7.0
+معاشرة	4.0
+مواقعة	5.0
+افتضاض	6.0
+بكارة	4.0
+غشاء البكارة	5.0
+
+# ═══ مصري / Egyptian ═══════════════════════════════════════════════════════
+# The dialect of most widely consumed Arabic media, and therefore the one an
+# MSA-only list misses most expensively.
+كس	7.0
+كسها	8.0
+كساس	8.0
+زب	6.0
+زبر	7.0
+بزاز	8.0
+بز	4.0
+طيز	6.0
+متناكة	8.0
+متناك	8.0
+خول	6.0
+خولات	7.0
+لبوة	7.0
+معرص	7.0
+شرمطة	8.0
+يتناك	8.0
+ينيك	8.0
+منيوك	8.0
+مزة	4.0
+مزز	5.0
+هايجة	6.0
+هايج	5.0
+سخن	3.0
+سخنة	4.0
+
+# ═══ شامي / Levantine ══════════════════════════════════════════════════════
+عرص	7.0
+عرصات	7.0
+منيوكة	8.0
+شرموط	8.0
+كسختك	8.0
+جسمها	3.0
+مثيرة جدا	5.0
+حرمة عارية	8.0
+بنات عاريات	8.0
+صور بنات	4.0
+فيديوهات بنات	5.0
+تعرية	7.0
+مغرية	4.0
+إغراء	5.0
+مغريات	5.0
+
+# ═══ خليجي / Gulf ══════════════════════════════════════════════════════════
+لوطية	7.0
+سحاقيات	7.0
+مقاطع خليجية مثيرة	7.0
+بنات الخليج	3.0
+شيميل	7.0
+تحرش	3.0
+
+# ═══ مغاربي / Maghrebi ═════════════════════════════════════════════════════
+زبي	7.0
+طبون	8.0
+قحبه	8.0
+زوق	3.0
+نيكة	8.0
+حشومة	2.0
+
+# ═══ تلميحات وتحايل / euphemisms and evasions ═════════════════════════════
+# What people write when they know a filter is watching. Individually weak,
+# which is why the scorer sums rather than matching one term at a time.
+للكبار	5.0
++18	5.0
+18 سنة فما فوق	5.0
+ممنوع لأقل من	4.0
+محتوى حساس	4.0
+مشاهد جريئة	6.0
+جريء	3.0
+جرأة	3.0
+بدون رقابة	5.0
+غير محجوب	4.0
+سري جدا	2.0
+حصري ساخن	5.0
+ساخن جدا	5.0
+مقاطع ساخنة	7.0
+صور ساخنة	7.0
+لقطات مسربة	5.0
+فيديو مسرب	5.0
+تسريبات	3.0
+
+# ═══ من LDNOOBW ═══════════════════════════════════════════════════════════
+# The canonical multilingual obscenity list (the one Shutterstock uses). Only
+# 38 Arabic entries against our 176, so it adds little breadth — but every one
+# below is a real gap it caught, and most are clinical or anatomical terms that
+# a list written from slang alone misses entirely.
+شرج	5.0
+جنس شرجي	8.0
+قضيب	5.0
+بظر	7.0
+حلمة	4.0
+تمص	5.0
+لعق	4.0
+لحس	4.0
+مبادلة الأزواج	8.0
+خنثى	5.0
+احتلام	5.0
+بيضان	4.0
+مفلقسة	7.0

@@ -1,0 +1,88 @@
+# Negative terms — phrases that CANCEL an explicit root.
+#
+# Format:  term<TAB>weight     (sign is ignored; always applied as negative)
+#
+# Every entry here exists because a real, innocent page would otherwise be
+# blocked. The scorer sums positives and negatives, so a page about nationality
+# law picks up `جنس` from `الجنسية` and immediately loses more than it gained.
+#
+# Rule for adding one: name the page you are keeping reachable. If you cannot
+# name it, the fix belongs in the positive list (a more specific term) rather
+# than here.
+
+# --- Arabic: the nationality/citizenship family -----------------------------
+# Keeps: passport renewal, visa applications, naturalisation law, any consular
+# page. This is the highest-traffic false positive in Arabic and the reason the
+# short root `جنس` carries a low weight.
+الجنسية	7.0
+جنسية	6.0
+الجنسيه	7.0
+جنسيات	6.0
+متعدد الجنسيات	7.0
+ازدواج الجنسية	7.0
+قانون الجنسية	7.0
+منح الجنسية	7.0
+سحب الجنسية	7.0
+عديم الجنسية	7.0
+
+# --- Arabic: health, education and news -------------------------------------
+# Keeps: ministry-of-health pages, medical references, school curricula, and
+# reporting on sexual violence — all of which use the clinical vocabulary.
+الصحة الجنسية	6.0
+التربية الجنسية	6.0
+الثقافة الجنسية	6.0
+الأمراض المنقولة جنسيا	7.0
+العدوى المنقولة جنسيا	7.0
+التحرش الجنسي	6.0
+العنف الجنسي	6.0
+الاعتداء الجنسي	6.0
+استغلال الأطفال	6.0
+الهوية الجنسية	5.0
+الجنس البشري	7.0
+تحديد الجنس	5.0
+الخلايا الجنسية	6.0
+الهرمونات الجنسية	6.0
+الطب الشرعي	4.0
+منظمة الصحة العالمية	6.0
+
+# --- English: clinical and academic ----------------------------------------
+# Keeps: NHS/CDC/Mayo pages, biology coursework, and journalism.
+sex education	6.0
+sexual health	6.0
+sexually transmitted	7.0
+sexual harassment	6.0
+sexual assault	6.0
+sexual violence	6.0
+sex determination	7.0
+sex chromosome	7.0
+sex chromosomes	7.0
+sex differences	5.0
+sexual reproduction	6.0
+sexual dimorphism	7.0
+sexual orientation	5.0
+opposite sex	4.0
+same sex marriage	6.0
+reproductive health	5.0
+contraception	5.0
+public health	4.0
+peer reviewed	4.0
+clinical trial	5.0
+world health organization	6.0
+
+# --- English: words whose innocence is purely contextual --------------------
+# Keeps: naval and security reporting ("escort carrier", "police escort"),
+# art history ("nude study"), and fashion retail ("lingerie department").
+escort carrier	6.0
+police escort	6.0
+naval escort	6.0
+escort vehicle	5.0
+military escort	6.0
+nude descending	5.0
+life drawing	5.0
+art history	4.0
+renaissance art	4.0
+lingerie department	4.0
+swimwear collection	3.0
+breast cancer	6.0
+breast screening	6.0
+breastfeeding	6.0

@@ -37,6 +37,38 @@ from pathlib import Path
 ORG = "Hisn"
 ID_PREFIX = "app.hisn.profile"
 
+# Public filtering resolvers that actually exist, need no account, and filter
+# adult content by default.
+#
+# ── WHY THIS TABLE EXISTS ──────────────────────────────────────────────────
+# The default used to be `dns.hisn.app`, which does not resolve — there is no
+# such host. A profile built with it does not "fail to filter"; it points the
+# whole machine at a nameserver that is not there and takes the network down.
+# That is the worst possible failure for this product: the person disables the
+# profile within a minute, having learned that the tool breaks their computer.
+#
+# `addresses` are the plain-IP resolvers used before DoH bootstraps. They must
+# be the SAME service as the DoH endpoint, or the machine filters differently
+# depending on which one answered.
+RESOLVERS = {
+    "cloudflare": {
+        "doh": "https://family.cloudflare-dns.com/dns-query",
+        "addresses": ["1.1.1.3", "1.0.0.3", "2606:4700:4700::1113"],
+        "blurb": "Cloudflare Families — malware + adult content. Fast, free, no signup.",
+    },
+    "cleanbrowsing": {
+        "doh": "https://doh.cleanbrowsing.org/doh/adult-filter/",
+        "addresses": ["185.228.168.10", "185.228.169.11"],
+        "blurb": "CleanBrowsing Adult filter — stricter, also forces SafeSearch.",
+    },
+    "adguard": {
+        "doh": "https://family.adguard-dns.com/dns-query",
+        "addresses": ["94.140.14.15", "94.140.15.16"],
+        "blurb": "AdGuard Family — adult content + ads, forces SafeSearch.",
+    },
+}
+DEFAULT_RESOLVER = "cloudflare"
+
 
 def new_uuid() -> str:
     return str(uuid.uuid4()).upper()
@@ -219,6 +251,29 @@ def gen_password(length: int = 40) -> str:
     return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
+def resolver_is_reachable(doh_url: str) -> bool:
+    """
+    Does the DoH endpoint's hostname actually resolve?
+
+    A profile pointing at a nameserver that does not exist does not filter
+    badly — it takes the machine's DNS down entirely. This check is cheap and
+    catches the one mistake that guarantees the profile is uninstalled within
+    the minute. It is the same instinct as the blocklist pipeline's refusal to
+    publish a list that collapsed: fail the build, never ship the broken thing.
+    """
+    import socket
+    from urllib.parse import urlparse
+
+    host = urlparse(doh_url).hostname
+    if not host:
+        return False
+    try:
+        socket.getaddrinfo(host, 443)
+        return True
+    except OSError:
+        return False
+
+
 def build(args: argparse.Namespace) -> tuple[dict, str]:
     removal_password = args.removal_password or gen_password()
 
@@ -255,10 +310,19 @@ def build(args: argparse.Namespace) -> tuple[dict, str]:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--doh", default="https://dns.hisn.app/dns-query",
-                    help="DoH endpoint of your filtering resolver.")
-    ap.add_argument("--dns-addresses", nargs="*", default=[],
-                    help="Optional IPs of the resolver, used before DoH resolves.")
+    ap.add_argument("--resolver", choices=sorted(RESOLVERS),
+                    default=DEFAULT_RESOLVER,
+                    help="Filtering resolver preset. "
+                         + " | ".join(f"{k}: {v['blurb']}"
+                                      for k, v in RESOLVERS.items()))
+    ap.add_argument("--doh", default=None,
+                    help="Override the preset's DoH endpoint with your own.")
+    ap.add_argument("--dns-addresses", nargs="*", default=None,
+                    help="Override the preset's plain-IP resolvers.")
+    ap.add_argument("--allow-unreachable-resolver", action="store_true",
+                    help="Build even if the resolver hostname does not resolve. "
+                         "Only for building offline — a profile pointing at a "
+                         "nonexistent resolver takes the machine's DNS down.")
     ap.add_argument("--extension-id", default="",
                     help="Chrome Web Store ID of the Hisn extension.")
     ap.add_argument("--update-url",
@@ -277,6 +341,22 @@ def main() -> int:
                          "on the end user's machine.")
     args = ap.parse_args()
 
+    # Resolve the preset, letting explicit flags override either half.
+    preset = RESOLVERS[args.resolver]
+    args.doh = args.doh or preset["doh"]
+    if args.dns_addresses is None:
+        args.dns_addresses = preset["addresses"]
+
+    if not resolver_is_reachable(args.doh):
+        print(f"ERROR: {args.doh} does not resolve.\n"
+              "A profile pointing at a nameserver that is not there does not "
+              "filter badly — it takes the machine's DNS down completely.\n"
+              "Pick a --resolver preset, or pass "
+              "--allow-unreachable-resolver if you are building offline.",
+              file=sys.stderr)
+        if not args.allow_unreachable_resolver:
+            return 1
+
     profile, removal_password = build(args)
 
     out = Path(args.out)
@@ -285,6 +365,22 @@ def main() -> int:
 
     print(f"wrote {out}  ({out.stat().st_size:,} bytes, "
           f"{len(profile['PayloadContent'])} payloads)", file=sys.stderr)
+    print(f"resolver: {args.doh}  ({', '.join(args.dns_addresses)})",
+          file=sys.stderr)
+
+    # Safari is not covered by the browser payloads above, and saying so is the
+    # point. Chrome/Edge/Firefox policy keys have no Safari equivalent that
+    # works on an unsupervised Mac, so on a Safari-only machine what this
+    # profile actually delivers is the system DNS payload plus the Private
+    # Relay switch — real protection, but DNS-level, and any VPN walks around
+    # it. Claiming browser-level coverage here would be the "looks protected,
+    # is not" failure the threat model rates worst.
+    print("\nSafari note: the Chrome/Edge/Firefox payloads do nothing on a "
+          "Mac that only runs Safari. What covers Safari here is the system "
+          "DNS payload and the Private Relay switch — both real, both "
+          "defeated by a VPN. The socket-level content filter is the only "
+          "layer that closes that, and it needs a paid Apple Developer team.",
+          file=sys.stderr)
 
     if args.print_password:
         print(removal_password)

@@ -30,7 +30,12 @@ public final class LockManager: ObservableObject {
 
     /// How long a self-requested early release takes to arrive. Long enough
     /// that the urge has passed; short enough to handle a genuine emergency.
-    public static let selfReleaseDelay: TimeInterval = 48 * 3600
+    ///
+    /// Defined in `LockStore` because `effectiveDeadline` — which every
+    /// enforcement path consults, including the network extension, where no
+    /// `LockManager` exists — has to apply it. Re-exported here so callers on
+    /// this side read it from the type they already hold.
+    public static var selfReleaseDelay: TimeInterval { LockStore.selfReleaseDelay }
 
     public enum Duration: String, CaseIterable, Identifiable {
         case week = "7 days"
@@ -135,7 +140,11 @@ public final class LockManager: ObservableObject {
         now = LockStore.trustedNow()
         let fresh = LockStore.read()
         if fresh != state { state = fresh }
-        if now >= state.deadline, state.mode != "off" {
+        // The EFFECTIVE deadline, so a matured self-release actually ends the
+        // lock. Comparing against `state.deadline` here is what made the whole
+        // release mechanism inert: the date was recorded and then never
+        // consulted by anything.
+        if now >= LockStore.effectiveDeadline(state), state.mode != "off" {
             Task { await expire() }
         }
     }
@@ -220,25 +229,49 @@ public final class LockManager: ObservableObject {
 
     /// Request early release. Does not end the lock — it schedules the end.
     ///
-    /// The delay is the entire mechanism. The request itself is recorded and
-    /// cannot be accelerated, only cancelled.
+    /// The delay is the entire mechanism: requestable at any time, cannot be
+    /// accelerated, can be cancelled.
+    ///
+    /// The date goes into `LockState`, so it inherits every protection the
+    /// deadline has — written to all three stores, resolved by taking the
+    /// LATEST value any of them reports, and refused by `LockStore.write` if it
+    /// would move earlier. It previously lived in a plain preferences key that
+    /// one `defaults write` could set to any value, and nothing read it back
+    /// anyway; either half alone was a bug, and together they made the only
+    /// documented way out of a lock inoperable.
+    @discardableResult
     public func requestSelfRelease() throws -> Date {
         guard isLocked else { throw LockError.notLocked }
+        if let existing = state.selfReleaseAt { return existing }
+
         let at = min(LockStore.trustedNow().addingTimeInterval(Self.selfReleaseDelay),
                      state.deadline)
-        UserDefaults(suiteName: LockStore.appGroup)?
-            .set(at, forKey: "selfReleaseAt")
+        var next = state
+        next.selfReleaseAt = at
+        guard LockStore.write(next) else { throw LockError.wouldShorten }
+        state = next
         return at
     }
 
+    /// Withdraw a pending request. Always allowed — it makes the lock longer.
     public func cancelSelfRelease() {
-        UserDefaults(suiteName: LockStore.appGroup)?
-            .removeObject(forKey: "selfReleaseAt")
+        guard state.selfReleaseAt != nil else { return }
+        var next = state
+        next.selfReleaseAt = nil
+        LockStore.write(next)
+        state = LockStore.read()
     }
 
+    /// The pending release date as the user should see it: the moment the lock
+    /// will actually end, not merely what was asked for.
+    ///
+    /// These differ when a release date was tampered with — the store honours
+    /// `selfReleaseDelay` from when it first saw the date, so a forged past
+    /// date still waits. Showing the requested value there would promise an
+    /// unlock that is not coming.
     public var pendingSelfRelease: Date? {
-        UserDefaults(suiteName: LockStore.appGroup)?
-            .object(forKey: "selfReleaseAt") as? Date
+        guard state.selfReleaseAt != nil else { return nil }
+        return LockStore.effectiveDeadline(state)
     }
 
     /// End a lock now, on an accountability partner's authority.

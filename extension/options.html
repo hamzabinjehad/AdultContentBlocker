@@ -1,19 +1,34 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>Hisn Settings</title>
 <style>
-:root{--bg:#f7f7f5;--fg:#1a1a18;--muted:#6b6b66;--line:#e3e3df;--accent:#2f6f4f}
-@media(prefers-color-scheme:dark){:root{--bg:#161614;--fg:#f0efec;--muted:#9a9a94;--line:#33322e;--accent:#7fb79a}}
+:root{--bg:#f7f7f5;--fg:#1a1a18;--muted:#6b6b66;--line:#e3e3df;--accent:#2f6f4f;--warn:#8a5a2b}
+@media(prefers-color-scheme:dark){:root{--bg:#161614;--fg:#f0efec;--muted:#9a9a94;--line:#33322e;--accent:#7fb79a;--warn:#d2a464}}
 *{box-sizing:border-box}
 body{margin:0;padding:40px 24px;background:var(--bg);color:var(--fg);
      font:15px/1.6 -apple-system,BlinkMacSystemFont,system-ui,sans-serif}
 main{max-width:560px;margin:0 auto}
 h1{font-size:20px;margin:0 0 6px}
-p.sub{color:var(--muted);margin:0 0 28px;font-size:14px}
+p.sub{color:var(--muted);margin:0 0 20px;font-size:14px}
+.mode{padding:12px 14px;border-radius:9px;font-size:13.5px;margin:0 0 24px;
+      border:1px solid var(--line)}
+.mode.standalone{background:color-mix(in srgb,var(--accent) 10%,transparent);
+      color:var(--accent);border-color:color-mix(in srgb,var(--accent) 30%,transparent)}
+.mode.managed{background:color-mix(in srgb,var(--warn) 12%,transparent);
+      color:var(--warn);border-color:color-mix(in srgb,var(--warn) 30%,transparent)}
 fieldset{border:1px solid var(--line);border-radius:10px;padding:18px;margin:0 0 18px}
+fieldset:disabled{opacity:.55}
 legend{padding:0 8px;font-size:13px;font-weight:600;color:var(--muted)}
-textarea{width:100%;min-height:130px;padding:10px;border:1px solid var(--line);
+.hint{color:var(--muted);font-size:12.5px;margin:0 0 10px}
+textarea{width:100%;min-height:120px;padding:10px;border:1px solid var(--line);
          border-radius:8px;background:var(--bg);color:var(--fg);
          font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;resize:vertical}
+textarea:disabled{cursor:not-allowed}
+label.row{display:flex;align-items:flex-start;gap:9px;margin:0 0 6px}
+label.row input{margin-top:4px}
+.slider{display:flex;align-items:center;gap:12px;margin:14px 0 4px}
+.slider input{flex:1}
+.slider output{font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted);
+               min-width:2.2em;text-align:right}
 button{margin-top:12px;padding:9px 18px;border:none;border-radius:8px;
        background:var(--accent);color:#fff;font-weight:600;font-size:14px;cursor:pointer}
 button:disabled{opacity:.45;cursor:not-allowed}
@@ -23,15 +38,38 @@ button:disabled{opacity:.45;cursor:not-allowed}
 <h1>Hisn Settings</h1>
 <p class="sub">Additions take effect immediately. Removals are blocked while a lock is running.</p>
 
+<div class="mode" id="mode">…</div>
+
 <fieldset><legend>Sites you always want blocked</legend>
+<p class="hint">One domain per line. Subdomains are included automatically, so
+example.com also covers cdn.example.com.</p>
 <textarea id="custom" placeholder="one domain per line&#10;example.com"></textarea>
 <button id="saveCustom">Save block list</button>
 <div class="msg" id="msgCustom"></div>
 </fieldset>
 
 <fieldset><legend>Strict mode allowlist</legend>
+<p class="hint">In strict mode nothing outside this list opens at all.</p>
 <textarea id="allow" placeholder="one domain per line&#10;github.com"></textarea>
 <button id="saveAllow">Save allowlist</button>
 <div class="msg" id="msgAllow"></div>
+</fieldset>
+
+<fieldset><legend>Content checking</legend>
+<p class="hint">On top of the domain and address lists, which are always on.</p>
+<label class="row">
+  <input type="checkbox" id="inspectText">
+  <span>Check the words on a page — reads the page itself, so it catches
+  explicit content on an ordinary site.</span>
+</label>
+<div class="slider">
+  <span style="font-size:13px">How strict</span>
+  <input type="range" id="textSensitivity" min="0" max="100" step="5">
+  <output id="sensitivityValue">50</output>
+</div>
+<p class="hint">Higher catches more, and blocks more pages that turn out to be
+innocent. Medical and reference sites are exempt from this check at any setting.</p>
+<button id="saveChecks">Save</button>
+<div class="msg" id="msgChecks"></div>
 </fieldset>
 </main><script src="options.js"></script></body></html>

@@ -9,11 +9,13 @@
   "description": "Blocks adult content. Once a lock period starts it cannot be turned off until the timer expires.",
   "minimum_chrome_version": "137",
 
+  "_comment_scripting": "`scripting` is here for registerContentScripts, not executeScript. The page-text scanner is registered dynamically rather than declared below, so that switching text scanning off actually stops the injection instead of merely making it a no-op — a manifest content_scripts block would run on every page of every site regardless of settings.",
   "permissions": [
     "declarativeNetRequest",
     "storage",
     "alarms",
-    "nativeMessaging"
+    "nativeMessaging",
+    "scripting"
   ],
 
   "host_permissions": ["<all_urls>"],
@@ -31,12 +33,26 @@
         "path": "rules/dnr_block_rules.json"
       },
       {
+        "_comment_keywords": "Keyword rules match the whole URL — host, path AND query string — which is the one thing the macOS socket filter provably cannot do, because HTTPS encrypts everything after the hostname. This is therefore the only layer that can stop a search for an explicit term on a domain that must stay reachable, and the only one that sees adult paths on otherwise legitimate hosts. Short or ambiguous terms use regexFilter with explicit non-letter boundaries so `sex` cannot match essex.gov.uk and `sks` cannot match tasks.office.com; every rule also carries an excludedRequestDomains rail for reference and public-health sites.",
+        "id": "keywords",
+        "enabled": true,
+        "path": "rules/dnr_keyword_rules.json"
+      },
+      {
         "id": "lockdown",
         "enabled": false,
         "path": "rules/lockdown.json"
       }
     ]
   },
+
+  "_comment_war": "Chrome refuses a declarativeNetRequest redirect whose extensionPath is not web-accessible, and it refuses it SILENTLY — the navigation simply fails instead of landing on the block page. All 259 block rules target /blocked.html, so without this entry every one of them produced an error page rather than the calm, deliberate screen the user is supposed to see. Listing a resource does expose the extension ID to page script, which is a real cost this extension had otherwise avoided entirely; it is accepted only for this one file, and only because the ID is already pinned and public (see keys/README.md). Nothing else is listed, and nothing else should be.",
+  "web_accessible_resources": [
+    {
+      "resources": ["blocked.html"],
+      "matches": ["<all_urls>"]
+    }
+  ],
 
   "action": {
     "default_title": "Hisn Protection",

@@ -1,0 +1,49 @@
+# Domains exempt from the PAGE-TEXT block only.
+#
+# ── WHAT THIS DOES AND DOES NOT DO ─────────────────────────────────────────
+# Exempt:      the layer-B page-text score can never redirect these to
+#              blocked.html, however many clinical terms the page uses.
+# NOT exempt:  image classification still runs on every image, and the
+#              domain blocklist still applies.
+#
+# That split is the whole reason an exemption is safe to grant. A Wikipedia
+# article on human anatomy is text we do not want to block and images we very
+# much still do.
+# ───────────────────────────────────────────────────────────────────────────
+#
+# Keep this list short and institutional. Every entry is a site whose ordinary
+# subject matter collides with the clinical vocabulary — reference works, public
+# health bodies, and news. It is not a general allowlist and must never be used
+# as a way to unblock something inconvenient; that is what the app's own
+# allowlist is for, and unlike this file that one is lock-guarded.
+
+# --- reference --------------------------------------------------------------
+wikipedia.org
+wikimedia.org
+wiktionary.org
+britannica.com
+scholar.google.com
+jstor.org
+pubmed.ncbi.nlm.nih.gov
+arxiv.org
+
+# --- public health ----------------------------------------------------------
+who.int
+nih.gov
+cdc.gov
+nhs.uk
+mayoclinic.org
+clevelandclinic.org
+medlineplus.gov
+unicef.org
+un.org
+
+# --- news -------------------------------------------------------------------
+bbc.com
+bbc.co.uk
+reuters.com
+apnews.com
+aljazeera.net
+aljazeera.com
+theguardian.com
+nytimes.com

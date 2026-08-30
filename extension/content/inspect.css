@@ -1,0 +1,98 @@
+/**
+ * Fail-closed media rules.
+ *
+ * THE WHOLE POINT: media is hidden BEFORE it is judged, and revealed only once
+ * something has decided it is safe. The opposite order — show, classify, then
+ * hide — means every explicit image is visible for the 50-300ms the classifier
+ * takes, which for this product is the same as not blocking it at all.
+ *
+ * This file is applied at `document_start` through
+ * `chrome.scripting.registerContentScripts`, NOT through a manifest
+ * `content_scripts` block. A manifest block is unconditional, so it would
+ * flash-hide every image on every page even when inspection is switched off.
+ * See `syncInspection()` in background.js.
+ *
+ * ── DRIFT WARNING ────────────────────────────────────────────────────────────
+ * The rule text between the BEGIN/END markers below is duplicated verbatim in
+ * `inspect.js` (as a synchronous belt-and-braces <style>) and in `shadow.js`
+ * (which pushes it into every shadow root, since document CSS does not cross a
+ * shadow boundary). `extension/test/css-parity.test.js` asserts all three
+ * copies are byte-identical. If you edit one, edit all three.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
+/* HISN-RULES-BEGIN */
+img:not([data-hisn]),
+video:not([data-hisn]),
+canvas:not([data-hisn]),
+svg image:not([data-hisn]) {
+  visibility: hidden !important;
+}
+
+[data-hisn="x"] {
+  visibility: visible !important;
+  content: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Crect width='8' height='8' fill='%23262622'/%3E%3C/svg%3E") !important;
+  object-fit: cover !important;
+  background: #262622 !important;
+  filter: none !important;
+  pointer-events: none !important;
+}
+
+[data-hisn="x"]::selection {
+  background: transparent !important;
+}
+/* HISN-RULES-END */
+
+/*
+ * Why each declaration is the one it is:
+ *
+ * `visibility: hidden` rather than `display: none` — `display: none` collapses
+ * the box and reflows every grid on the page, so a timeline turns into a wall
+ * of text and then jumps back when verdicts arrive. `visibility` keeps the
+ * element's intrinsic size, so layout is identical whether or not anything is
+ * hidden. `opacity: 0` was the third candidate and loses on both counts: it
+ * still composites, and a page's own `opacity` rule can beat it.
+ *
+ * `content: url(...)` on a replaced element is the one CSS mechanism that
+ * swaps what an <img> renders while keeping its box. The 8x8 flat SVG tiles to
+ * any size through `object-fit: cover`, so one tiny data URI covers a 16px
+ * avatar and a 4K hero image alike.
+ *
+ * A `data:` URI, specifically, so this file needs no `web_accessible_resources`
+ * entry. That matters beyond tidiness: a web-accessible resource makes the
+ * extension ID readable by page script, and this extension currently has zero
+ * page-visible surface. Keep it at zero.
+ *
+ * `filter: none` because a page that sets its own `filter` on images would
+ * otherwise be able to transform the placeholder.
+ *
+ * `pointer-events: none` so a hidden image cannot be clicked through to
+ * whatever it linked to, and so no hover affordance exists. The user asked for
+ * permanent hiding specifically to remove the hover-to-reveal escape hatch that
+ * comparable extensions ship; leaving the element clickable would put a smaller
+ * version of that hatch back.
+ *
+ * NOTE the attribute selector's specificity is only (0,1,0), which loses to a
+ * page's inline style. The CSS here is the pre-paint guarantee; `applyHide()`
+ * in inspect.js ALSO writes these as an inline style, which is the part that
+ * survives a hostile page. Neither alone is sufficient.
+ */
+
+/* The degraded banner: shown when nothing is judging media, so that "not
+ * checking" can never be mistaken for "checked and clean". Fixed rather than
+ * absolute so it survives a page that scrolls its own container. */
+#hisn-degraded-banner {
+  position: fixed !important;
+  inset: 0 0 auto 0 !important;
+  z-index: 2147483647 !important;
+  height: 28px !important;
+  line-height: 28px !important;
+  padding: 0 12px !important;
+  margin: 0 !important;
+  background: #8a5a2b !important;
+  color: #fff !important;
+  font: 500 12px/28px -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
+  text-align: center !important;
+  pointer-events: none !important;
+  visibility: visible !important;
+}

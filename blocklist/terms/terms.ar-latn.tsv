@@ -1,0 +1,109 @@
+# Romanised Franco-Arabic explicit terms.
+#
+# Format:  term<TAB>weight     (see terms.en.tsv for what the weights mean)
+#
+# ── WHY THIS TIER EXISTS, AND WHY IT MATTERS MORE THAN THE ARABIC ONE ───────
+# Hostnames are ASCII. An Arabic-audience adult site is almost never registered
+# in Arabic script — it is `sks-arab.com`, not `سكس-عرب.com`. So an
+# Arabic-script-only term list matches essentially NO hostnames, and the whole
+# network-layer keyword mechanism (the layer that closes the threat model's
+# "new domain, registered today" row, system-wide, for every app on the Mac)
+# would be a no-op for exactly the audience this product is built for.
+#
+# This tier is also what catches Franco-Arabic written in page text, which is
+# how a large share of Arabic-speaking users type online.
+# ───────────────────────────────────────────────────────────────────────────
+#
+# Franco-Arabic substitutes digits for letters that have no Latin equivalent:
+#
+#     2 → ء/أ      3 → ع      5 → خ      6 → ط
+#     7 → ح        8 → ق      9 → ص
+#
+# `terms.normalize()` does NOT fold these away — they are letters here, not
+# decoration — so write them exactly as people type them. `token_variants()`
+# strips only a TRAILING digit run, which is hostname decoration ("sks123"),
+# never a leading or embedded one ("3ahira").
+#
+# Spelling is not standardised, so the same word appears several ways. List
+# every common variant rather than hoping normalisation will bridge them — it
+# will not.
+
+# --- unambiguous -----------------------------------------------------------
+sks	8.0
+seks	8.0
+sex arab	8.0
+sexarab	8.0
+arabsex	8.0
+sksarab	8.0
+sks arab	8.0
+sharmota	8.0
+sharmoot	8.0
+sharameet	8.0
+shrmota	8.0
+2a7a	8.0
+a7a	7.0
+gahba	8.0
+9a7ba	8.0
+kahba	8.0
+kahbat	8.0
+3ahira	8.0
+3aherat	8.0
+da3ara	8.0
+daara	6.0
+neek	8.0
+neik	8.0
+nayek	8.0
+niek	8.0
+manyak	7.0
+zeb	6.0
+kos	7.0
+kuss	7.0
+koss	7.0
+tiz	6.0
+teez	6.0
+bezaz	8.0
+bzaz	8.0
+nhod	7.0
+nohod	7.0
+
+# --- strong ----------------------------------------------------------------
+e7a	7.0
+ebahia	8.0
+ebahiya	8.0
+ibahia	8.0
+ibahiya	8.0
+aflam ebahia	8.0
+aflam sex	8.0
+soar sex	8.0
+sowar sex	8.0
+suwar ebahia	8.0
+mokhtalet	3.0
+mo3akasa	4.0
+3ary	6.0
+3aria	6.0
+3ryan	6.0
+aryan arab	5.0
+ta3ry	7.0
+khala3a	7.0
+khalii3a	7.0
+fadi7a	5.0
+fada7e7	5.0
+shahwa	6.0
+shahwani	6.0
+mothir	3.0
+mothira	4.0
+so2ar mothira	6.0
+jins	4.0
+jinsi	5.0
+jinsiya fadi7a	7.0
+momarasa jinsiya	7.0
+qesas jinsiya	8.0
+qusas jinsiya	8.0
+ma7arem	6.0
+qesas ma7arem	8.0
+estemna	7.0
+3ada serriya	7.0
+nashwa	5.0
+jema3	5.0
+modaja3a	7.0
+massage jinsi	7.0

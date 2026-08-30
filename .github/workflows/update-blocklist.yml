@@ -79,6 +79,29 @@ jobs:
             exit 1
           fi
 
+          # The keyword layer gets the same treatment, for the same reason. It
+          # is the only thing covering domains registered since the last list
+          # build, so a silently emptied term list reopens exactly the gap it
+          # exists to close — and, like an empty blocklist, looks healthy from
+          # every other angle.
+          TERMS=$(python3 -c "import json;print(json.load(open('dist/manifest.json')).get('term_count',0))")
+          HOSTTERMS=$(python3 -c "import json;print(json.load(open('dist/manifest.json')).get('host_term_count',0))")
+          AR=$(python3 -c "import json;print(json.load(open('dist/manifest.json')).get('term_langs',{}).get('ar',0))")
+          ARLATN=$(python3 -c "import json;print(json.load(open('dist/manifest.json')).get('term_langs',{}).get('ar-latn',0))")
+          echo "term_count=$TERMS host_term_count=$HOSTTERMS ar=$AR ar-latn=$ARLATN"
+          if [ "$TERMS" -lt 200 ] || [ "$HOSTTERMS" -lt 50 ]; then
+            echo "::error::Only $TERMS terms / $HOSTTERMS host terms — refusing to publish a degraded keyword layer."
+            exit 1
+          fi
+          # Arabic is a requirement of this product, not a nice-to-have, and the
+          # romanised tier specifically is what makes hostname matching work at
+          # all for Arabic-audience domains. Either dropping to zero is a build
+          # bug, never an intentional change.
+          if [ "$AR" -lt 1 ] || [ "$ARLATN" -lt 1 ]; then
+            echo "::error::Arabic coverage collapsed (ar=$AR, ar-latn=$ARLATN) — refusing to publish."
+            exit 1
+          fi
+
       - name: Remove signing key
         if: always()
         run: rm -f keys/blocklist_ed25519.pem

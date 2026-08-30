@@ -1,0 +1,152 @@
+import XCTest
+@testable import Hisn
+
+/// The lock guard on inspection settings.
+///
+/// Same asymmetry the rest of the product enforces, in a new place: a check may
+/// be turned ON or made stricter at any time; turning one off or lowering
+/// sensitivity waits for the lock to end. The guard exists twice on purpose —
+/// here for authoring, and in `guardedUpdate` in background.js for anything a
+/// devtools console can post — so both need testing, and they need to agree.
+final class InspectionTests: XCTestCase {
+
+    private var namespace: String!
+
+    override func setUp() {
+        super.setUp()
+        namespace = "app.hisn.tests.\(UUID().uuidString)"
+        LockStore.appGroup = namespace
+    }
+
+    override func tearDown() {
+        UserDefaults().removePersistentDomain(forName: namespace)
+        super.tearDown()
+    }
+
+    private func store(_ s: Inspection.Settings) {
+        try? Inspection.save(s, locked: false)
+    }
+
+    // MARK: - Defaults
+
+    /// Prevents a fresh install waving everything through.
+    ///
+    /// `UserDefaults.bool(forKey:)` returns `false` for a missing key, so the
+    /// naive read turns every check OFF on a machine that has never saved
+    /// these — the exact inversion of what an absent setting should mean.
+    func testAbsentSettingsDefaultToChecking() {
+        let s = Inspection.read()
+        XCTAssertTrue(s.text, "page-text checking defaulted to off")
+        XCTAssertTrue(s.hostKeywords, "keyword checking defaulted to off")
+        XCTAssertEqual(s.textSensitivity, 50)
+    }
+
+    /// Prevents a percentage outside 0–100 reaching the scorer, where the
+    /// derived threshold would go negative and block every page ever loaded.
+    func testSensitivityIsClamped() {
+        store(Inspection.Settings(textSensitivity: 900))
+        XCTAssertEqual(Inspection.read().textSensitivity, 100)
+        store(Inspection.Settings(textSensitivity: -50))
+        XCTAssertEqual(Inspection.read().textSensitivity, 0)
+    }
+
+    // MARK: - The lock guard
+
+    func testUnlockedAnythingGoes() throws {
+        try Inspection.save(Inspection.Settings(text: false,
+                                                textSensitivity: 10,
+                                                hostKeywords: false),
+                            locked: false)
+        let s = Inspection.read()
+        XCTAssertFalse(s.text)
+        XCTAssertFalse(s.hostKeywords)
+        XCTAssertEqual(s.textSensitivity, 10)
+    }
+
+    /// Prevents the obvious escape: switch the check off, browse, switch it on.
+    func testCannotTurnOffTextCheckingWhileLocked() {
+        store(Inspection.Settings(text: true))
+        XCTAssertThrowsError(
+            try Inspection.save(Inspection.Settings(text: false), locked: true))
+        XCTAssertTrue(Inspection.read().text,
+                      "a refused save must not partially apply")
+    }
+
+    func testCannotTurnOffKeywordCheckingWhileLocked() {
+        store(Inspection.Settings(hostKeywords: true))
+        XCTAssertThrowsError(
+            try Inspection.save(Inspection.Settings(hostKeywords: false),
+                                locked: true))
+        XCTAssertTrue(Inspection.read().hostKeywords)
+    }
+
+    /// The quieter escape, and the one a length- or flag-based guard misses:
+    /// leave everything switched on and simply make it not catch anything.
+    func testCannotLowerSensitivityWhileLocked() {
+        store(Inspection.Settings(textSensitivity: 60))
+        XCTAssertThrowsError(
+            try Inspection.save(Inspection.Settings(textSensitivity: 10),
+                                locked: true))
+        XCTAssertEqual(Inspection.read().textSensitivity, 60)
+    }
+
+    /// The permitted direction. Making a lock stricter is always available —
+    /// refusing this would be a bug, and a user who cannot tighten mid-lock
+    /// has no way to respond to something the filter missed.
+    func testCanTightenWhileLocked() throws {
+        store(Inspection.Settings(text: false, textSensitivity: 30,
+                                  hostKeywords: false))
+        try Inspection.save(Inspection.Settings(text: true,
+                                                textSensitivity: 80,
+                                                hostKeywords: true),
+                            locked: true)
+        let s = Inspection.read()
+        XCTAssertTrue(s.text)
+        XCTAssertTrue(s.hostKeywords)
+        XCTAssertEqual(s.textSensitivity, 80)
+    }
+
+    /// A refusal must name every reason, not just the first one it hits.
+    /// Fixing one weakening and being refused again for a second is the kind of
+    /// small cruelty that makes people fight the tool.
+    func testRefusalNamesEveryReason() {
+        store(Inspection.Settings(text: true, textSensitivity: 60,
+                                  hostKeywords: true))
+        do {
+            try Inspection.save(Inspection.Settings(text: false,
+                                                    textSensitivity: 10,
+                                                    hostKeywords: false),
+                                locked: true)
+            XCTFail("expected a refusal")
+        } catch {
+            let msg = error.localizedDescription
+            XCTAssertTrue(msg.contains("page-text"), msg)
+            XCTAssertTrue(msg.contains("keyword"), msg)
+            XCTAssertTrue(msg.contains("sensitivity"), msg)
+        }
+    }
+
+    // MARK: - The bridge contract
+
+    /// Prevents a field added to `Inspection` but forgotten in the bridge
+    /// payload, which `pollNative` would then leave at the extension's own
+    /// default forever — with nothing anywhere to signal the gap.
+    ///
+    /// The key NAMES are the contract: they must match `DEFAULT_STATE` in
+    /// background.js exactly, and a rename on one side is invisible on the
+    /// other until someone notices the setting no longer does anything.
+    func testBridgeReplyCarriesEveryField() {
+        store(Inspection.Settings(text: false, textSensitivity: 35,
+                                  hostKeywords: true))
+        let payload = Inspection.bridgePayload()
+
+        XCTAssertEqual(payload["inspectText"] as? Bool, false)
+        XCTAssertEqual(payload["textSensitivity"] as? Int, 35)
+        XCTAssertEqual(payload["hostKeywords"] as? Bool, true)
+        XCTAssertEqual(payload.count, 3,
+                       "a field was added to Inspection.Settings without being "
+                       + "added to bridgePayload — the extension will never "
+                       + "see it. Update background.js's DEFAULT_STATE and "
+                       + "pollNative's key list at the same time.")
+    }
+}

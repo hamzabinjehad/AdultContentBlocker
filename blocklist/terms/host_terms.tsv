@@ -1,0 +1,171 @@
+# Hostname / URL keyword terms — the NETWORK-LAYER tier.
+#
+# Format:  term<TAB>kind        kind ∈ {token, substring}
+#
+# This is the list the socket filter and Chrome's declarativeNetRequest consult.
+# It closes the threat model's "New domain, registered today — Open in blocklist
+# mode" row, and unlike the browser extension it works for every application on
+# the Mac.
+#
+# ╔═══════════════════════════════════════════════════════════════════════════╗
+# ║  READ THIS BEFORE ADDING A LINE                                           ║
+# ║                                                                           ║
+# ║  A wrong verdict here takes out an ENTIRE SITE, not one page. That makes  ║
+# ║  this the highest-blast-radius file in the repo. `kind` is the whole      ║
+# ║  safety mechanism:                                                        ║
+# ║                                                                           ║
+# ║    token      the term must equal a complete hostname label token         ║
+# ║               (split on . - _ and a trailing digit run). Safe for short   ║
+# ║               and ambiguous strings.                                      ║
+# ║                                                                           ║
+# ║    substring  matches anywhere in the hostname. ONLY for strings you have ║
+# ║               verified appear inside no innocent word, in any language    ║
+# ║               we serve. The compiler refuses substring terms under 4      ║
+# ║               characters, but that floor is not a substitute for actually ║
+# ║               checking.                                                   ║
+# ║                                                                           ║
+# ║  Every `token` line below that could have been `substring` carries the    ║
+# ║  reason it is not. Those reasons are load-bearing — they are the sites    ║
+# ║  that stay reachable. `never_keyword.txt` is the second net under this    ║
+# ║  one, and `test_terms.py::test_host_keyword_never_blocks_innocent_hosts`  ║
+# ║  is the third.                                                            ║
+# ╚═══════════════════════════════════════════════════════════════════════════╝
+
+# --- substring: verified unambiguous ---------------------------------------
+# No innocent English or transliterated-Arabic word contains any of these.
+porn	substring
+pornhub	substring
+porno	substring
+xnxx	substring
+xvideos	substring
+xhamster	substring
+redtube	substring
+youporn	substring
+brazzers	substring
+spankbang	substring
+chaturbate	substring
+onlyfans	substring
+youjizz	substring
+tnaflix	substring
+hentai	substring
+rule34	substring
+camgirl	substring
+camgirls	substring
+sexcam	substring
+camsex	substring
+livesex	substring
+sexchat	substring
+milf	substring
+blowjob	substring
+handjob	substring
+gangbang	substring
+creampie	substring
+cumshot	substring
+deepthroat	substring
+bukkake	substring
+erotic	substring
+erotik	substring
+nudity	substring
+striptease	substring
+sextube	substring
+sexvideo	substring
+sexfilm	substring
+adultvideo	substring
+sharmota	substring
+sharmoot	substring
+shrmota	substring
+sharameet	substring
+3ahira	substring
+3aherat	substring
+da3ara	substring
+ebahia	substring
+ebahiya	substring
+ibahia	substring
+ibahiya	substring
+sksarab	substring
+arabsex	substring
+sexarab	substring
+estemna	substring
+
+# --- token: short or ambiguous ----------------------------------------------
+# Each line names what it would have broken as a substring.
+
+sex	token
+# ^ essex.gov.uk, sussex.ac.uk, middlesex.edu, wessex.nhs.uk, sexton, sextant
+xxx	token
+# ^ too short to be meaningful anywhere; also matches version strings
+anal	token
+# ^ analytics.google.com, analysis, analog, canal, banal
+ass	token
+# ^ class, assets, assist, passage, embassy, massachusetts
+tit	token
+# ^ title, institute, constitution, competition, attitude, entity
+tits	token
+# ^ titles, entities
+boobs	token
+cum	token
+# ^ cucumber, document, accumulate, circumstance
+nude	token
+# ^ denude, denuded
+nudes	token
+naked	token
+escort	token
+# ^ Ford Escort, escort carrier, police escort — a legitimate word in three
+#   unrelated domains
+escorts	token
+slut	token
+whore	token
+fetish	token
+bdsm	token
+orgy	token
+horny	token
+swinger	token
+swingers	token
+hookup	token
+adult	token
+# ^ adulteducation.org, adult-learning.ac.uk, adultsocialcare.gov.uk
+xxxsex	token
+
+# --- token: Franco-Arabic ---------------------------------------------------
+# The digit-for-letter forms are short by nature, so almost all of them are
+# token-only. This tier is what makes the mechanism work for Arabic hostnames
+# at all — see terms.ar-latn.tsv for why.
+
+sks	token
+# ^ CRITICAL: tasks, asks, desks, risks, masks, kiosks. As a substring this one
+#   term alone would block a large fraction of the web.
+seks	token
+neek	token
+neik	token
+nayek	token
+kos	token
+# ^ kosovo, kosher, kiosk, kosice
+kuss	token
+koss	token
+tiz	token
+teez	token
+zeb	token
+# ^ zebra, zebu
+bzaz	token
+bezaz	token
+nhod	token
+nohod	token
+gahba	token
+kahba	token
+kahbat	token
+9a7ba	token
+2a7a	token
+a7a	token
+e7a	token
+jins	token
+# ^ jinsiya (nationality) — the hostname twin of the الجنسية text trap
+jinsi	token
+3ary	token
+3aria	token
+3ryan	token
+ta3ry	token
+khala3a	token
+fadi7a	token
+shahwa	token
+ma7arem	token
+manyak	token

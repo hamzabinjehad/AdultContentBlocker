@@ -18,6 +18,11 @@ const REASONS = {
     title: "You blocked this site",
     subtitle: "You added this one to your own block list.",
   },
+  terms: {
+    title: "Blocked by content check",
+    subtitle:
+      "The words in this address matched what you asked Hisn to keep out.",
+  },
   default: {
     title: "This page is blocked",
     subtitle: "You set this up. It is working.",

@@ -44,7 +44,14 @@ TESTS_BUNDLE_ID = "app.hisn.HisnTests"
 # same files rather than linking a framework, which keeps the extension a
 # single self-contained bundle with no embedded dylib to sign and load.
 SHARED = ["Hisn/BlocklistStore.swift", "Hisn/LockStore.swift",
-          "Hisn/PartnerService.swift", "Hisn/SiteLists.swift"]
+          "Hisn/PartnerService.swift", "Hisn/SiteLists.swift",
+          # The keyword layer. `BlocklistStore.hostMatchesTerm` calls into both,
+          # so they are shared by the same three targets it is — the app, the
+          # network extension and the bridge.
+          "Hisn/TextNormalizer.swift", "Hisn/Punycode.swift",
+          # Inspection settings: the app authors them, the bridge
+          # reports them, so both targets need the file.
+          "Hisn/Inspection.swift"]
 
 APP_SOURCES = SHARED + [
     "Hisn/ContentView.swift",
@@ -57,19 +64,29 @@ APP_SOURCES = SHARED + [
 FILTER_SOURCES = SHARED + ["HisnFilter/FilterDataProvider.swift",
                            "HisnFilter/main.swift"]
 BRIDGE_SOURCES = SHARED + ["HisnBridge/main.swift"]
-TEST_SOURCES = ["HisnTests/BlocklistStoreTests.swift"]
+TEST_SOURCES = ["HisnTests/BlocklistStoreTests.swift",
+                "HisnTests/KeywordLayerTests.swift",
+                "HisnTests/SelfReleaseTests.swift",
+                "HisnTests/InspectionTests.swift"]
 
 # The signed seed list, bundled into the extension so a machine that has never
 # completed a list update still enforces something. Verified on the same path as
 # a downloaded list — being bundled buys it no trust.
 FILTER_RESOURCES = ["../seed/manifest.json", "../seed/manifest.json.sig",
-                    "../seed/domains_core.txt"]
+                    "../seed/domains_core.txt", "../seed/terms.json"]
+
+# The shared fixture tables the Swift, Python and JavaScript suites all assert.
+# Bundled into the test target so `KeywordLayerTests` reads the same bytes
+# `test_terms.py` does — a copy would drift and the drift is exactly what these
+# tests exist to catch.
+TEST_RESOURCES = ["../blocklist/terms/normalize_cases.json",
+                  "../blocklist/terms/host_cases.json"]
 
 ALL_FILES = sorted(set(APP_SOURCES + FILTER_SOURCES + BRIDGE_SOURCES + TEST_SOURCES) | {
     "Hisn/Info.plist", "Hisn/Hisn.entitlements",
     "HisnFilter/Info.plist", "HisnFilter/HisnFilter.entitlements",
     "HisnBridge/HisnBridge.entitlements",
-}) + FILTER_RESOURCES
+}) + FILTER_RESOURCES + TEST_RESOURCES
 
 
 def oid(*parts: str) -> str:
@@ -179,6 +196,9 @@ def main() -> int:
     dir_groups.append(group(oid("group", "seed"),
                             [file_refs[f] for f in FILTER_RESOURCES],
                             "seed", "../seed"))
+    dir_groups.append(group(oid("group", "fixtures"),
+                            [file_refs[f] for f in TEST_RESOURCES],
+                            "fixtures", "../blocklist/terms"))
 
     products_group = group(oid("group", "Products"),
                            [ref for ref, _, _ in products.values()], "Products")
@@ -389,7 +409,8 @@ def main() -> int:
     # The tests get the seed too, so they can assert that the artifacts actually
     # committed to this repo verify against the key actually shipped in the app.
     native_target(TESTS, "com.apple.product-type.bundle.unit-test", TEST_SOURCES,
-                  test_settings, [phase_resources(TESTS, FILTER_RESOURCES)],
+                  test_settings,
+                  [phase_resources(TESTS, FILTER_RESOURCES + TEST_RESOURCES)],
                   [dependency(TESTS, APP)])
 
     target_ids = [oid("target", n) for n in (APP, FILTER, BRIDGE, TESTS)]

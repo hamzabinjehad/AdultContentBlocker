@@ -23,6 +23,10 @@
   .pill { display:inline-block; padding:2px 8px; border-radius:999px;
           font-size:12px; font-weight:600; background:var(--accent); color:#fff; }
   .pill.off { background:var(--muted); }
+  /* "Protecting" — baseline filtering with no lock. Not the full-strength
+     green of a lock, but emphatically not grey either: grey read as "off",
+     and blocking is running. */
+  .pill.on { background:color-mix(in srgb, var(--accent) 72%, var(--bg)); }
   .banner { margin-top:14px; padding:10px; border-radius:8px; font-size:12.5px;
             background:color-mix(in srgb, var(--warn) 14%, transparent);
             color:var(--warn); border:1px solid color-mix(in srgb, var(--warn) 30%, transparent); }

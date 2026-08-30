@@ -17,8 +17,19 @@ struct ContentView: View {
     @State private var error: String?
     @State private var showConfirm = false
     @State private var showLists = false
+    @State private var showInspection = false
+    @State private var showReleaseConfirm = false
 
     enum CustomUnit: String, CaseIterable, Identifiable {
+        // Minutes exist so a lock can be TRIED. Without them the shortest
+        // startable lock is an hour, and an hour that cannot be shortened,
+        // cancelled or escaped is a steep price for finding out what the
+        // button does — so nobody tries it, and the first real lock someone
+        // starts is also the first one they have ever seen run.
+        //
+        // This does not weaken anything: `LockManager.validated` still refuses
+        // anything under `minimumLock`, so the floor is 60 seconds either way.
+        case minutes = "minutes"
         case hours = "hours"
         case days = "days"
         case weeks = "weeks"
@@ -26,9 +37,10 @@ struct ContentView: View {
         var id: String { rawValue }
         var seconds: TimeInterval {
             switch self {
-            case .hours: return 3600
-            case .days:  return 86400
-            case .weeks: return 7 * 86400
+            case .minutes: return 60
+            case .hours:   return 3600
+            case .days:    return 86400
+            case .weeks:   return 7 * 86400
             }
         }
     }
@@ -57,8 +69,10 @@ struct ContentView: View {
             // an allowance are the two edits that stay legal during a lock, and
             // they are exactly the ones someone wants at the moment they find a
             // site the list missed.
-            HStack {
+            HStack(spacing: 16) {
                 Button("Your site lists…") { showLists = true }
+                    .buttonStyle(.link)
+                Button("Content checking…") { showInspection = true }
                     .buttonStyle(.link)
                 Spacer()
             }
@@ -69,6 +83,9 @@ struct ContentView: View {
         .task { await filter.reassertIfNeeded() }
         .sheet(isPresented: $showLists) {
             SiteListsSheet(isLocked: lock.isLocked)
+        }
+        .sheet(isPresented: $showInspection) {
+            InspectionSheet(isLocked: lock.isLocked)
         }
         .alert("Something went wrong", isPresented: .constant(error != nil)) {
             Button("OK") { error = nil }
@@ -196,6 +213,32 @@ struct ContentView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(4)
                 }
+            } else {
+                // The way out. Without this button the request could not be
+                // created at all, and the panel above — which only ever offered
+                // to *cancel* one — was showing an exit nobody could reach.
+                //
+                // Deliberately quiet, and deliberately present. The threat model
+                // is explicit that a lock with no exit is not the safer design:
+                // it is the one people uninstall pre-emptively, and it is
+                // dangerous when someone genuinely needs the web. What keeps it
+                // honest is that the exit is slow and cannot be hurried.
+                Button("Request early release…") { showReleaseConfirm = true }
+                    .buttonStyle(.link)
+                    .font(.caption)
+                    .confirmationDialog(
+                        "Request early release?",
+                        isPresented: $showReleaseConfirm, titleVisibility: .visible
+                    ) {
+                        Button("Request it") { requestRelease() }
+                        Button("Never mind", role: .cancel) {}
+                    } message: {
+                        Text("The lock would end "
+                             + Date().addingTimeInterval(LockManager.selfReleaseDelay)
+                                 .formatted()
+                             + ". You can cancel the request at any time, but you "
+                             + "cannot make it arrive sooner.")
+                    }
             }
 
             HStack {
@@ -253,6 +296,11 @@ struct ContentView: View {
             do { try await lock.start(seconds: seconds, strict: strict) }
             catch { self.error = error.localizedDescription }
         }
+    }
+
+    private func requestRelease() {
+        do { _ = try lock.requestSelfRelease() }
+        catch { self.error = error.localizedDescription }
     }
 }
 
@@ -366,6 +414,111 @@ private struct SiteListsSheet: View {
     }
 }
 
+/// The content-inspection settings.
+///
+/// Only layers that actually run appear here. A switch for a feature that is
+/// not built would be the "looks protected, is not" failure the threat model
+/// rates as worse than being switched off — so there is no image control until
+/// there is image classification.
+///
+/// The copy under each control says WHERE it applies, because the two layers
+/// have genuinely different reach and a user who assumes otherwise is being
+/// misled: keyword matching runs in the system filter and therefore covers
+/// every browser and app, while page-text checking exists only inside the
+/// Chrome extension.
+private struct InspectionSheet: View {
+    let isLocked: Bool
+
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var settings = Inspection.Settings.default
+    @State private var message: String?
+    @State private var isError = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Content checking").font(.headline)
+            Text(isLocked
+                 ? "A lock is running. You can turn checks on and raise "
+                   + "sensitivity; the reverse waits until it ends."
+                 : "These run on top of the site lists, and catch pages the "
+                   + "lists have never seen.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Toggle(isOn: $settings.hostKeywords) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Match keywords in addresses")
+                    Text("Catches a site registered today, before any list has "
+                         + "it. Works in every app on this Mac.")
+                        .font(.caption).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            Divider()
+
+            Toggle(isOn: $settings.text) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Check the words on a page")
+                    Text("Reads the page itself, so it catches explicit content "
+                         + "on an ordinary site. Chrome and Edge only.")
+                        .font(.caption).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("How strict").font(.subheadline)
+                    Spacer()
+                    Text("\(settings.textSensitivity)")
+                        .font(.caption).monospacedDigit()
+                        .foregroundStyle(.secondary)
+                }
+                Slider(value: Binding(
+                    get: { Double(settings.textSensitivity) },
+                    set: { settings.textSensitivity = Int($0) }
+                ), in: 0...100, step: 5)
+                .disabled(!settings.text)
+                Text("Higher catches more, and blocks more pages that turn out "
+                     + "to be innocent. Medical and reference sites are exempt "
+                     + "from this check at any setting.")
+                    .font(.caption2).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if let message {
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(isError ? Color.red : Color.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            HStack {
+                Spacer()
+                Button("Cancel") { dismiss() }
+                Button("Save") { save() }
+                    .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(20)
+        .frame(width: 440)
+        .onAppear { settings = Inspection.read() }
+    }
+
+    private func save() {
+        do {
+            try Inspection.save(settings, locked: isLocked)
+            dismiss()
+        } catch {
+            isError = true
+            message = error.localizedDescription
+        }
+    }
+}
+
 /// Reports what is genuinely being enforced right now.
 ///
 /// "Enforced" is three separate facts, and the header is wrong unless it checks
@@ -394,14 +547,27 @@ private struct StatusHeader: View {
         return nil
     }
 
+    /// The headline word. A lock being *recorded* is not the same as protection
+    /// being *enforced* — the countdown can be running while the filter never
+    /// activated (no signed extension) or is running with no list. Saying
+    /// "Protected" in that state is the one dishonesty this header exists to
+    /// prevent, so a lock with an unresolved `problem` reads "Not protected"
+    /// even though `lock.isLocked` is true. The countdown below still shows the
+    /// lock is real; this line is only about whether anything is being blocked.
+    private var headline: String {
+        if !lock.isLocked { return "Not locked" }
+        return problem == nil ? "Protected" : "Not protected"
+    }
+
     var body: some View {
         HStack(spacing: 10) {
             Circle()
                 .fill(problem == nil ? Color.green : Color.orange)
                 .frame(width: 9, height: 9)
             VStack(alignment: .leading, spacing: 1) {
-                Text(lock.isLocked ? "Protected" : "Not locked")
+                Text(headline)
                     .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(problem == nil ? Color.primary : Color.orange)
                 if let problem {
                     Text(problem)
                         .font(.caption2).foregroundStyle(.orange)

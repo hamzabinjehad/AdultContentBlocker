@@ -1,0 +1,144 @@
+# English explicit terms — page-text scoring tier.
+#
+# Format:  term<TAB>weight
+#
+# Weight is a confidence, not a severity. It answers one question: "if this word
+# appears on a page, how sure am I that the page is adult content?"
+#
+#   8.0  unambiguous — appears essentially nowhere else
+#   6.0  strong      — a medical or news page could use it, but rarely
+#   4.0  moderate    — needs company to mean anything
+#   2.0  weak        — only ever a tie-breaker
+#
+# The scorer caps each term at 3 occurrences and divides by document length, so
+# a long clinical article that uses a 6.0 term twice does not cross the
+# threshold. That is what keeps Wikipedia and medical sites reachable — do NOT
+# compensate for a missed page by inflating a weight here; add a more specific
+# term instead.
+#
+# Terms are normalised at compile time, so case and accents do not matter.
+
+# --- unambiguous -----------------------------------------------------------
+porn	8.0
+porno	8.0
+pornography	8.0
+pornographic	8.0
+hardcore porn	8.0
+xxx	8.0
+xnxx	8.0
+xvideos	8.0
+pornhub	8.0
+redtube	8.0
+youporn	8.0
+brazzers	8.0
+onlyfans	8.0
+camgirl	8.0
+camgirls	8.0
+sexcam	8.0
+livesex	8.0
+live sex	8.0
+sex cam	8.0
+sex chat	8.0
+sexchat	8.0
+adult video	8.0
+adult videos	8.0
+adult movies	8.0
+sex video	8.0
+sex videos	8.0
+sex tape	8.0
+nude photos	8.0
+nude pics	8.0
+naked girls	8.0
+naked women	8.0
+hentai	8.0
+rule34	8.0
+nsfw	6.0
+
+# --- strong ----------------------------------------------------------------
+nude	6.0
+nudes	6.0
+nudity	6.0
+naked	5.0
+erotic	6.0
+erotica	7.0
+explicit content	6.0
+adult content	6.0
+adults only	5.0
+18＋	4.0
+escort	6.0
+escorts	6.0
+call girl	7.0
+call girls	7.0
+strip club	6.0
+stripper	5.0
+striptease	7.0
+lingerie	4.0
+topless	6.0
+bikini	3.0
+cleavage	4.0
+seductive	4.0
+sensual	4.0
+horny	7.0
+aroused	4.0
+orgasm	7.0
+climax	2.0
+masturbation	7.0
+masturbate	7.0
+fetish	6.0
+bdsm	7.0
+bondage	5.0
+threesome	7.0
+orgy	7.0
+swinger	6.0
+swingers	6.0
+milf	8.0
+cougar	3.0
+teen sex	8.0
+anal sex	8.0
+oral sex	7.0
+blowjob	8.0
+handjob	8.0
+creampie	8.0
+cumshot	8.0
+gangbang	8.0
+deepthroat	8.0
+squirting	7.0
+dildo	7.0
+vibrator	5.0
+sex toy	7.0
+sex toys	7.0
+buttplug	8.0
+big ass	6.0
+big butt	5.0
+big boobs	7.0
+big tits	8.0
+boobs	6.0
+tits	7.0
+titties	8.0
+nipples	5.0
+cleavage shot	6.0
+
+# --- moderate --------------------------------------------------------------
+sexy	4.0
+sexy girls	7.0
+sexy women	7.0
+hot girls	6.0
+hot women	6.0
+babe	3.0
+babes	4.0
+slut	7.0
+whore	6.0
+hooker	6.0
+prostitute	5.0
+prostitution	4.0
+brothel	6.0
+seduction	4.0
+foreplay	6.0
+intercourse	4.0
+copulation	4.0
+libido	3.0
+arousal	3.0
+kinky	5.0
+raunchy	5.0
+risque	4.0
+provocative	2.0

@@ -36,6 +36,8 @@ import sys
 import urllib.request
 from pathlib import Path
 
+from terms import compile_terms, lang_counts
+
 USER_AGENT = "hisn-blocklist-builder/1.0 (+https://github.com/hisn-app)"
 FETCH_TIMEOUT = 120
 
@@ -124,6 +126,15 @@ def clean(domains: set[str]) -> set[str]:
         # entry like "Example.com" — which is exactly how a human adds one to
         # extra_block — would otherwise be dropped silently rather than fixed.
         d = d.strip().lower().rstrip(".")
+        # `*.example.com` — the wildcard form several large lists publish
+        # (oisd's `domainswild`, AdGuard exports). Every consumer of these
+        # artifacts already blocks a domain AND all its subdomains, so the
+        # wildcard is exactly what we mean by a bare entry; stripping it is
+        # lossless. Without this the whole source is silently discarded by
+        # DOMAIN_RE, which rejects the asterisk — a source that "succeeds" and
+        # contributes nothing is the failure mode this pipeline fears most.
+        if d.startswith("*."):
+            d = d[2:]
         if d.startswith("www."):
             d = d[4:]
         if not DOMAIN_RE.match(d):
@@ -248,6 +259,89 @@ def write_dnr_rules(path: Path, domains: list[str], mode: str, limit: int) -> in
                     ],
                 },
             })
+    path.write_text(json.dumps(rules, separators=(",", ":")), encoding="utf-8")
+    return len(rules)
+
+
+# Chrome guarantees 30,000 static rules but only ~1,000 `regexFilter` rules,
+# and regex rules are the expensive kind. Staying well under the documented
+# ceiling leaves room for the strict-mode and custom-block rules the extension
+# adds at runtime.
+MAX_REGEX_RULES = 500
+
+
+def write_keyword_rules(path: Path, terms: list[dict], never: list[str],
+                        exempt: list[str], start_id: int) -> int:
+    """
+    Emit DNR rules that match keywords in the URL, not just the hostname.
+
+    ── WHY THIS IS THE ONLY LAYER THAT CAN DO IT ──────────────────────────
+    HTTPS encrypts the path, so the macOS socket filter sees a hostname and
+    nothing else. Chrome's declarativeNetRequest sees the whole URL — host,
+    path AND query string. That makes this the only place a search for an
+    explicit term can be stopped, because the term lives in `?q=…` on a domain
+    (google.com, bing.com, a forum) that must obviously stay reachable.
+    It also catches adult material on paths of otherwise legitimate hosts,
+    which is the gap the threat model's coverage table calls out for X, Reddit
+    and image search.
+
+    `substring` terms become `urlFilter`, which is a cheap literal scan.
+    `token` terms become `regexFilter` with explicit boundaries, because they
+    are the short, ambiguous ones — `sex` as a bare substring matches
+    `essex.gov.uk`, and `sks` matches `tasks.office.com`. The boundary class is
+    the same idea as the tokenizer on the Swift side: a match only counts when
+    the term is delimited by something that is not a letter or digit.
+
+    Every rule carries an `excludedRequestDomains` rail built from the
+    exempt-domain list, so a keyword can never take out a reference or
+    public-health site through a URL that merely quotes it.
+    """
+    rules: list[dict] = []
+    rid = start_id
+    never_set = {n.lower() for n in never}
+    regex_used = 0
+
+    for entry in terms:
+        term = entry["t"]
+        if term in never_set:
+            continue
+        # A regex metacharacter in a term would silently change its meaning, and
+        # a term list is not a place to allow that.
+        if not re.fullmatch(r"[a-z0-9؀-ۿ]+", term):
+            continue
+
+        if entry.get("kind") == "substring":
+            condition = {"urlFilter": term}
+        else:
+            if regex_used >= MAX_REGEX_RULES:
+                continue
+            regex_used += 1
+            # (?:^|[^\w]) would be wrong for Arabic — \w is ASCII-oriented in
+            # RE2's default mode. Spell the boundary out as "not a letter or
+            # digit in any script".
+            b = r"(?:[^\p{L}\p{N}]|^)"
+            condition = {"regexFilter": f"{b}{re.escape(term)}(?:[^\\p{{L}}\\p{{N}}]|$)",
+                         "isUrlFilterCaseSensitive": False}
+
+        condition["resourceTypes"] = ["main_frame", "sub_frame"]
+        # The rail that keeps reference and public-health sites reachable.
+        # `porn` as a URL keyword otherwise blocks Wikipedia's own article on
+        # pornography, every dictionary entry, and any news report that puts the
+        # word in a slug — pages whose whole purpose is to discuss the subject
+        # rather than serve it. Domain rules still apply to these hosts; only
+        # the KEYWORD layer steps aside.
+        if exempt:
+            condition["excludedRequestDomains"] = exempt
+
+        rules.append({
+            "id": rid,
+            "priority": 2,          # above the domain rules
+            "action": {"type": "redirect",
+                       "redirect": {"extensionPath": "/blocked.html?reason=terms"}},
+            "condition": condition,
+        })
+        rid += 1
+
     path.write_text(json.dumps(rules, separators=(",", ":")), encoding="utf-8")
     return len(rules)
 
@@ -398,9 +492,37 @@ def main() -> int:
         index[bit >> 3] |= 1 << (bit & 7)
     (out / "domains.index").write_bytes(bytes(index))
 
+    # The keyword layer. Compiled from blocklist/terms/ and covered by the same
+    # single signature as everything else — see terms.py for why it exists and
+    # what the `essex.gov.uk` problem is. `compile_terms` raises SystemExit if
+    # the list is degraded or has lost a language tier, so a broken term source
+    # fails the build rather than shipping a silently empty keyword layer.
+    terms_payload = compile_terms(Path(__file__).parent / "terms")
+    terms_payload["version"] = version
+    (out / "terms.json").write_text(
+        json.dumps(terms_payload, ensure_ascii=False, separators=(",", ":"),
+                   sort_keys=True),
+        encoding="utf-8")
+    term_langs = lang_counts(terms_payload)
+    print(f"Terms: {len(terms_payload['terms']):,} "
+          f"({', '.join(f'{k}:{v}' for k, v in sorted(term_langs.items()))}), "
+          f"{len(terms_payload['host_terms'])} host terms", file=sys.stderr)
+
+    # Keyword rules go in their own artifact and their own id range, above the
+    # domain rules, so the two can be reasoned about and budgeted separately.
+    n_keyword_rules = write_keyword_rules(
+        out / "dnr_keyword_rules.json",
+        terms_payload["host_terms"],
+        terms_payload["never_keyword"],
+        terms_payload["exempt_domains"],
+        start_id=n_rules + 1)
+    print(f"Keyword rules: {n_keyword_rules} "
+          f"(ids {n_rules + 1}–{n_rules + n_keyword_rules})", file=sys.stderr)
+
     artifacts = {}
     for name in ("domains.txt", "domains_core.txt", "domains.packed",
-                 "dnr_block_rules.json", "domains.index"):
+                 "dnr_block_rules.json", "dnr_keyword_rules.json",
+                 "domains.index", "terms.json"):
         p = out / name
         artifacts[name] = {"sha256": sha256_file(p), "bytes": p.stat().st_size}
 
@@ -411,6 +533,9 @@ def main() -> int:
         "domain_count": len(domains),
         "core_domain_count": len(core_domains),
         "dnr_rule_count": n_rules,
+        "term_count": len(terms_payload["terms"]),
+        "host_term_count": len(terms_payload["host_terms"]),
+        "term_langs": term_langs,
         "sources": sorted(stats, key=lambda s: s["id"]),
         "never_block_removed": len(removed),
         "artifacts": artifacts,

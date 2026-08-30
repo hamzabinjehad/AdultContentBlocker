@@ -1,0 +1,124 @@
+# Tokens that must NEVER trigger a keyword block, whatever the term list says.
+#
+# The second net under `host_terms.tsv`'s token/substring split. Checked first:
+# a hostname token appearing here is removed before any substring term is tested
+# against what remains — so `essex.gov.uk` survives while `essex-porn.com` is
+# still caught.
+#
+# This is the "Scunthorpe problem" list. It is expected to GROW from real
+# reports, and every addition needs a case in
+# `test_terms.py::test_host_keyword_never_blocks_innocent_hosts` naming the site
+# it keeps reachable. A silent addition with no test is how one of these gets
+# dropped in a refactor and a county council goes dark again.
+#
+# The compiler refuses to build if a term appears both here and in
+# host_terms.tsv, so the two files cannot contradict each other.
+
+# --- contains "sex" ---------------------------------------------------------
+essex
+sussex
+middlesex
+wessex
+sexton
+sextant
+sextet
+sexagenarian
+sexism
+sexist
+
+# --- contains "anal" --------------------------------------------------------
+analytics
+analytic
+analysis
+analyst
+analysts
+analog
+analogue
+analogy
+canal
+banal
+annals
+
+# --- contains "ass" ---------------------------------------------------------
+class
+classic
+classes
+classic
+assets
+asset
+assist
+assistant
+assign
+assessment
+assembly
+passage
+passenger
+embassy
+massachusetts
+glass
+grass
+compass
+password
+associate
+association
+
+# --- contains "tit" ---------------------------------------------------------
+title
+titles
+institute
+institution
+constitution
+competition
+petition
+attitude
+entity
+entities
+identity
+quantity
+partition
+repetition
+nutrition
+substitute
+
+# --- contains "cum" ---------------------------------------------------------
+document
+documents
+documentation
+accumulate
+circumstance
+cucumber
+curriculum
+vacuum
+
+# --- contains "sks" / "kos" (the Franco-Arabic collisions) ------------------
+tasks
+asks
+desks
+risks
+masks
+disks
+kiosk
+kiosks
+kosher
+kosovo
+kosice
+
+# --- contains "adult" / miscellaneous ---------------------------------------
+adulthood
+adulteducation
+therapist
+therapists
+therapy
+expert
+experts
+speech
+specialist
+special
+scunthorpe
+penistone
+clitheroe
+cockburn
+cockermouth
+lightwater
+arsenal
+shitake
