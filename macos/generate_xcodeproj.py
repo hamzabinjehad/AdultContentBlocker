@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import hashlib
 import shutil
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).parent
@@ -142,6 +143,27 @@ def build_settings(pairs: dict) -> str:
 
 def main() -> int:
     p = Project()
+
+    # Refuse to emit a project referencing files that are not there.
+    #
+    # Without this the generator happily writes a valid-looking .xcodeproj for
+    # sources that do not exist, and the failure only surfaces later as
+    # "Build input files cannot be found" — from xcodebuild, on someone else's
+    # machine. That is exactly how five of these files (BlocklistStore,
+    # LockStore, PartnerService, FilterDataProvider and their tests) once got
+    # dropped from git while every local build kept working off the untracked
+    # copies still sitting on disk: `git clone && xcodebuild` was broken for
+    # anyone else, and nothing on the machine that made the commit could tell.
+    missing = [f for f in ALL_FILES if not (ROOT / f).exists()]
+    if missing:
+        print("error: these sources are listed in this generator but do not "
+              "exist on disk:", file=sys.stderr)
+        for f in missing:
+            print(f"  {f}", file=sys.stderr)
+        print("\nEither restore them (check `git status` for untracked or "
+              "deleted files) or remove them from the source lists above.",
+              file=sys.stderr)
+        return 1
 
     # ---------------------------------------------------------------- files
     file_refs: dict[str, str] = {}
