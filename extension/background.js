@@ -41,6 +41,7 @@ const DEFAULT_STATE = {
   lockUntil: 0,             // epoch ms; 0 = not locked
   allowlist: [],            // strict mode: the only domains permitted
   customBlocks: [],         // user-added domains
+  customTerms: [],          // user-added words, scored like the compiled list
   listVersion: 0,
   rulesApplied: 0,          // downloaded rules actually installed, not claimed
   lastHeartbeat: 0,
@@ -197,12 +198,36 @@ async function applyRules(state) {
  *  A service worker is torn down aggressively, so this is a cache, not state:
  *  everything it holds can be rebuilt from the bundled file. */
 let termIndex = null;
+let termJson = null;
+let customIndex = null;
+let customTermsKey = "";
 
-async function getTermIndex() {
-  if (termIndex) return termIndex;
-  const res = await fetch(chrome.runtime.getURL("seed/terms.json"));
-  termIndex = buildIndex(await res.json());
-  return termIndex;
+async function getTermIndex(customTerms = []) {
+  if (!termIndex) {
+    const res = await fetch(chrome.runtime.getURL("seed/terms.json"));
+    termJson = await res.json();
+    termIndex = buildIndex(termJson);
+  }
+  // Hand-typed words, folded in on top of the compiled list.
+  //
+  // Rebuilt only when the set actually changes, because buildIndex walks every
+  // one of ~5,800 terms and this is called on every scored page. The words
+  // arrive from the app over the heartbeat and are stored, like everything else
+  // the native side owns, as state the browser may read and not write.
+  const key = customTerms.join("\u0000");
+  if (key !== customTermsKey) {
+    customTermsKey = key;
+    // A word someone typed deliberately is a stronger signal than one mined
+    // from a corpus: they know their own triggers. It still goes through the
+    // same scorer, so a single mention of it does not block a long article —
+    // the density floor applies to these exactly as it does to the rest.
+    customIndex = customTerms.length
+      ? buildIndex({ ...termJson,
+                     terms: [...termJson.terms,
+                             ...customTerms.map((t) => ({ t, w: 8, l: "user" }))] })
+      : null;
+  }
+  return customIndex ?? termIndex;
 }
 
 /**
@@ -253,7 +278,7 @@ async function scoreText(zones, sender) {
     return { block: false };
   }
 
-  const index = await getTermIndex();
+  const index = await getTermIndex(state.customTerms ?? []);
   let host = "";
   try {
     host = new URL(sender?.url ?? "").hostname;
@@ -304,7 +329,7 @@ async function pollNative() {
       failClosed: false,
       appPresent: true,
     };
-    for (const key of ["allowlist", "customBlocks",
+    for (const key of ["allowlist", "customBlocks", "customTerms",
                        "inspectText", "textSensitivity", "hostKeywords"]) {
       if (key in reply) patch[key] = reply[key];
     }

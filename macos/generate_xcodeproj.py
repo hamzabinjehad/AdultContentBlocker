@@ -52,7 +52,10 @@ SHARED = ["Hisn/BlocklistStore.swift", "Hisn/LockStore.swift",
           "Hisn/TextNormalizer.swift", "Hisn/Punycode.swift",
           # Inspection settings: the app authors them, the bridge
           # reports them, so both targets need the file.
-          "Hisn/Inspection.swift"]
+          "Hisn/Inspection.swift",
+          # Hand-typed words and blocked apps: the app authors them, the
+          # filter enforces both, the bridge reports the words.
+          "Hisn/UserBlocks.swift"]
 
 APP_SOURCES = SHARED + [
     "Hisn/ContentView.swift",

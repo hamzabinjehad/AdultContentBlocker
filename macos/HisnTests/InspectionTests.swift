@@ -150,3 +150,99 @@ final class InspectionTests: XCTestCase {
                        + "pollNative's key list at the same time.")
     }
 }
+
+// MARK: - Hand-typed words and blocked apps
+
+/// `UserBlocks` is the only place a person's own judgement enters the filter,
+/// which makes it the only place a person can break their own machine. The
+/// guards it carries — a length floor, a count ceiling, tighten-only while
+/// locked — are the subject of these tests.
+final class UserBlocksTests: XCTestCase {
+
+    private var namespace: String!
+
+    override func setUp() {
+        super.setUp()
+        namespace = "app.hisn.tests.\(UUID().uuidString)"
+        LockStore.appGroup = namespace
+    }
+
+    override func tearDown() {
+        UserDefaults().removePersistentDomain(forName: namespace)
+        super.tearDown()
+    }
+
+    func testUnlockedAnythingGoes() throws {
+        try UserBlocks.save(terms: ["gambling"], apps: ["com.example.a"], locked: false)
+        try UserBlocks.save(terms: [], apps: [], locked: false)
+        XCTAssertEqual(UserBlocks.terms(), [])
+        XCTAssertEqual(UserBlocks.apps(), [])
+    }
+
+    func testLockedAllowsAdding() throws {
+        try UserBlocks.save(terms: ["gambling"], apps: ["com.example.a"], locked: false)
+        try UserBlocks.save(terms: ["gambling", "betting"],
+                            apps: ["com.example.a", "com.example.b"], locked: true)
+        XCTAssertEqual(UserBlocks.terms().count, 2)
+        XCTAssertEqual(UserBlocks.apps().count, 2)
+    }
+
+    func testLockedRefusesRemovingAWord() throws {
+        try UserBlocks.save(terms: ["gambling", "betting"], apps: [], locked: false)
+        XCTAssertThrowsError(
+            try UserBlocks.save(terms: ["gambling"], apps: [], locked: true))
+        XCTAssertEqual(Set(UserBlocks.terms()), ["betting", "gambling"],
+                       "a refused save must not partially apply")
+    }
+
+    func testLockedRefusesUnblockingAnApp() throws {
+        try UserBlocks.save(terms: [], apps: ["com.example.a"], locked: false)
+        XCTAssertThrowsError(
+            try UserBlocks.save(terms: [], apps: [], locked: true))
+        XCTAssertEqual(UserBlocks.apps(), ["com.example.a"])
+    }
+
+    /// The failure mode this exists to prevent: a three-letter word matches
+    /// initials, acronyms and half of another language, and the person has no
+    /// way to see why an ordinary page stopped loading.
+    func testShortWordsAreRefused() {
+        XCTAssertThrowsError(
+            try UserBlocks.save(terms: ["sex"], apps: [], locked: false))
+        let parsed = UserBlocks.parseTerms("sex\ngambling\nxx")
+        XCTAssertEqual(parsed.terms, ["gambling"])
+        XCTAssertEqual(parsed.tooShort.sorted(), ["sex", "xx"])
+    }
+
+    /// A phrase is judged on its longest word: `hot sex` is safe to block even
+    /// though neither half would be, because it only matches together.
+    func testPhrasesAreJudgedOnTheirLongestWord() {
+        let parsed = UserBlocks.parseTerms("hot sex")
+        XCTAssertEqual(parsed.terms, ["hot sex"])
+    }
+
+    func testTooManyWordsRefused() {
+        let many = (0..<(UserBlocks.maximumTerms + 1)).map { "word\($0)" }
+        XCTAssertThrowsError(
+            try UserBlocks.save(terms: many, apps: [], locked: false))
+    }
+
+    /// Typed words are normalised the same way the compiled list is, so an
+    /// Arabic word matches whichever way it is spelled — otherwise a person
+    /// would have to type every hamza and taa-marbuta variant themselves.
+    func testWordsAreNormalisedLikeTheCompiledList() {
+        XCTAssertEqual(UserBlocks.normalizeTerm("إباحية"),
+                       UserBlocks.normalizeTerm("اباحيه"))
+        XCTAssertEqual(UserBlocks.parseTerms("  GAMBLING  ").terms, ["gambling"])
+    }
+
+    /// Apps are enforced by the filter only. Sending the list of someone's
+    /// installed apps to the browser would be exposure bought for nothing.
+    func testAppsAreNotSentToTheBrowser() throws {
+        try UserBlocks.save(terms: ["gambling"], apps: ["com.example.a"],
+                            locked: false)
+        let payload = UserBlocks.bridgePayload()
+        XCTAssertEqual(payload["customTerms"] as? [String], ["gambling"])
+        XCTAssertNil(payload["blockedApps"],
+                     "the browser cannot enforce apps and must not receive them")
+    }
+}

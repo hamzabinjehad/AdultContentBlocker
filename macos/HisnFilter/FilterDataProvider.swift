@@ -1,4 +1,5 @@
 import NetworkExtension
+import Security
 import Foundation
 import Network
 import os
@@ -47,6 +48,10 @@ final class FilterDataProvider: NEFilterDataProvider {
     /// tens of nanoseconds — the keychain query it replaces is milliseconds.
     private let strictModeActive = OSAllocatedUnfairLock(initialState: false)
 
+    /// Signing identifiers of apps whose traffic is refused outright.
+    /// Same locking rationale as `strictModeActive` above.
+    private let blockedApps = OSAllocatedUnfairLock(initialState: Set<String>())
+
     // MARK: - Lifecycle
 
     override func startFilter(completionHandler: @escaping (Error?) -> Void) {
@@ -92,6 +97,23 @@ final class FilterDataProvider: NEFilterDataProvider {
     override func handleNewFlow(_ flow: NEFilterFlow) -> NEFilterNewFlowVerdict {
         let isStrict = strictModeActive.withLock { $0 }
 
+        // App blocking, before any hostname work: a blocked app reaches
+        // nothing, whatever host it is asking for. Note what this is NOT — the
+        // app still launches and still works offline. macOS gives a normal
+        // application no way to stop a launch; refusing the traffic is the
+        // whole of what a content filter can do here.
+        //
+        // The empty check comes first and is doing real work. Resolving the app
+        // behind a flow costs several Security framework calls (see
+        // `signingIdentifier`), and this runs for every socket the machine
+        // opens. Nobody who has not used this feature should pay for it.
+        let blocked = blockedApps.withLock { $0 }
+        if !blocked.isEmpty,
+           let appID = Self.signingIdentifier(for: flow),
+           blocked.contains(appID) {
+            return .drop()
+        }
+
         guard let host = Self.hostname(for: flow) else {
             // No hostname to judge. In strict mode an unidentifiable flow is
             // exactly what a bypass tool looks like, so deny; otherwise allow.
@@ -118,7 +140,60 @@ final class FilterDataProvider: NEFilterDataProvider {
         // and reachable from every other app on the machine.
         store.setAllowlist(SiteLists.allowlist())
         store.setCustomBlocks(SiteLists.customBlocks())
+
+        // Apps the person blocked by hand. Cached in the same way and for the
+        // same reason as `strictModeActive`: `handleNewFlow` is on the
+        // connection path for every socket the machine opens, and reading
+        // defaults there would put a preference lookup in front of every one.
+        blockedApps.withLock { $0 = Set(UserBlocks.apps()) }
     }
+
+    /// The signing identifier of the app that opened this flow.
+    ///
+    /// `NEFilterFlow.sourceAppIdentifier` is the obvious API and it is iOS
+    /// only — on macOS it does not compile. What macOS gives instead is
+    /// `sourceAppAuditToken`, and turning that into something comparable to a
+    /// bundle id means asking the Security framework which code the token
+    /// belongs to. That is the whole of the extra work here; the identifier it
+    /// returns is the same string `UserBlocks.bundleIdentifier(forAppAt:)`
+    /// reads out of the app the person picked, which is what lets the two ends
+    /// of this feature agree.
+    ///
+    /// Results are cached by audit token because a browser opens hundreds of
+    /// flows and the answer cannot change for a given token — the token
+    /// identifies one running process, and a process cannot re-sign itself.
+    private static func signingIdentifier(for flow: NEFilterFlow) -> String? {
+        guard let token = flow.sourceAppAuditToken else { return nil }
+
+        if let hit = identifierCache.withLock({ $0[token] }) { return hit }
+
+        var code: SecCode?
+        let attributes = [kSecGuestAttributeAudit: token] as CFDictionary
+        guard SecCodeCopyGuestWithAttributes(nil, attributes, [], &code) == errSecSuccess,
+              let code else { return nil }
+
+        var staticCode: SecStaticCode?
+        guard SecCodeCopyStaticCode(code, [], &staticCode) == errSecSuccess,
+              let staticCode else { return nil }
+
+        var infoRef: CFDictionary?
+        guard SecCodeCopySigningInformation(staticCode, [], &infoRef) == errSecSuccess,
+              let info = infoRef as? [String: Any],
+              let identifier = info[kSecCodeInfoIdentifier as String] as? String
+        else { return nil }
+
+        identifierCache.withLock { cache in
+            // A bound, not a policy: the cache exists to spare repeated lookups
+            // for the handful of apps actually opening sockets, and an unbounded
+            // one in a long-lived filter process is a slow leak.
+            if cache.count > 512 { cache.removeAll() }
+            cache[token] = identifier
+        }
+        return identifier
+    }
+
+    private static let identifierCache =
+        OSAllocatedUnfairLock(initialState: [Data: String]())
 
     /// Pull a hostname out of a flow.
     ///

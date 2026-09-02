@@ -71,6 +71,15 @@ func handle(_ message: [String: Any]) -> [String: Any] {
 
     switch message["type"] as? String {
     case "getLockState":
+        // Record that the browser reached us. Nothing else in the system can
+        // observe this: the extension heartbeats *into* this process, so
+        // without a timestamp here the app has no way to distinguish "the
+        // extension is running and polling" from "the extension was never
+        // loaded" — and those look identical from the app's side while meaning
+        // opposite things. StatusHeader reports it, because an extension that
+        // never connected is a whole enforcement layer that is quietly absent.
+        defaults?.set(Date(), forKey: "extensionLastSeen")
+
         let state = LockStore.read()
         // The EFFECTIVE deadline, so a matured self-release ends the lock in
         // the browser at the same moment it ends everywhere else. Comparing
@@ -91,6 +100,11 @@ func handle(_ message: [String: Any]) -> [String: Any] {
         // because an extension is far too easy to talk to from a devtools
         // console to be given that authority.
         reply.merge(Inspection.bridgePayload()) { current, _ in current }
+        // Hand-typed words ride the same heartbeat. Apps deliberately do
+        // not: the browser cannot enforce them, and shipping a list of
+        // someone's installed apps into a process that has no use for it
+        // is exposure bought for nothing.
+        reply.merge(UserBlocks.bridgePayload()) { current, _ in current }
         return reply
 
     case "ping":

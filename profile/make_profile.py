@@ -194,14 +194,22 @@ CHROMIUM_POLICY = {
     "IncognitoModeAvailability": 1,          # 1 = disabled
     # Stops the user pointing the browser at a proxy to escape the filter.
     "ProxySettings": {"ProxyMode": "system"},
-    # DevTools can edit extension state and request headers.
-    "DeveloperToolsAvailability": 2,         # 2 = disallowed
+    # DevTools can edit extension state and request headers, which is why this
+    # is locked by default. It is a flag rather than a constant because the
+    # person developing the extension needs the console on their own machine,
+    # and a profile that makes the project undebuggable is one they will simply
+    # not install — leaving every other control in this file unapplied too.
     "URLAllowlist": ["chrome://settings/help"],
 }
 
+CHROMIUM_DEVTOOLS_LOCK = {"DeveloperToolsAvailability": 2}   # 2 = disallowed
 
-def p_chrome(extension_id: str, update_url: str) -> dict:
+
+def p_chrome(extension_id: str, update_url: str,
+             lock_devtools: bool = True) -> dict:
     policy = dict(CHROMIUM_POLICY)
+    if lock_devtools:
+        policy.update(CHROMIUM_DEVTOOLS_LOCK)
     if extension_id:
         policy["ExtensionInstallForcelist"] = [f"{extension_id};{update_url}"]
         policy["ExtensionSettings"] = {
@@ -218,15 +226,18 @@ def p_chrome(extension_id: str, update_url: str) -> dict:
                    "Locks Chrome DNS, proxy, and extension settings.", **policy)
 
 
-def p_edge(extension_id: str, update_url: str) -> dict:
+def p_edge(extension_id: str, update_url: str,
+           lock_devtools: bool = True) -> dict:
     policy = dict(CHROMIUM_POLICY)
+    if lock_devtools:
+        policy.update(CHROMIUM_DEVTOOLS_LOCK)
     if extension_id:
         policy["ExtensionInstallForcelist"] = [f"{extension_id};{update_url}"]
     return payload("com.microsoft.Edge", "edge", "Microsoft Edge Policy",
                    "Locks Edge DNS, proxy, and extension settings.", **policy)
 
 
-def p_firefox() -> dict:
+def p_firefox(lock_devtools: bool = True) -> dict:
     """
     Firefox reads enterprise policy from com.mozilla.firefox on macOS.
     `Locked: True` is what stops the user flipping it back in about:config.
@@ -236,7 +247,7 @@ def p_firefox() -> dict:
         "Locks Firefox DNS-over-HTTPS and private browsing.",
         DNSOverHTTPS={"Enabled": False, "Locked": True},
         DisablePrivateBrowsing=True,
-        DisableDeveloperTools=True,
+        DisableDeveloperTools=lock_devtools,
         Proxy={"Mode": "system", "Locked": True},
         BlockAboutConfig=True,
     )
@@ -281,9 +292,11 @@ def build(args: argparse.Namespace) -> tuple[dict, str]:
         p_dns(args.doh, args.dns_addresses, args.supervised),
         p_restrictions(),
         p_removal_password(removal_password),
-        p_chrome(args.extension_id, args.update_url),
-        p_edge(args.extension_id, args.update_url),
-        p_firefox(),
+        p_chrome(args.extension_id, args.update_url,
+                 lock_devtools=not args.allow_devtools),
+        p_edge(args.extension_id, args.update_url,
+               lock_devtools=not args.allow_devtools),
+        p_firefox(lock_devtools=not args.allow_devtools),
     ]
     if args.lock_settings:
         payloads.append(p_system_settings())
@@ -330,6 +343,11 @@ def main() -> int:
     ap.add_argument("--display-name", default="Hisn Content Protection")
     ap.add_argument("--supervised", action="store_true",
                     help="Emit supervision-only keys (ProhibitDisablement).")
+    ap.add_argument("--allow-devtools", action="store_true",
+                    help="Leave browser DevTools enabled. Weakens the profile — "
+                         "DevTools can edit extension state — but is what makes "
+                         "the profile installable while you are still building "
+                         "the extension.")
     ap.add_argument("--lock-settings", action="store_true",
                     help="Also hide Network/Users/Screen Time panes. "
                          "Warning: the user can no longer fix their own Wi-Fi.")

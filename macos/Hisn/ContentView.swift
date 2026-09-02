@@ -18,6 +18,7 @@ struct ContentView: View {
     @State private var showConfirm = false
     @State private var showLists = false
     @State private var showInspection = false
+    @State private var showUserBlocks = false
     @State private var showReleaseConfirm = false
 
     enum CustomUnit: String, CaseIterable, Identifiable {
@@ -74,6 +75,8 @@ struct ContentView: View {
                     .buttonStyle(.link)
                 Button("Content checking…") { showInspection = true }
                     .buttonStyle(.link)
+                Button("Words & apps…") { showUserBlocks = true }
+                    .buttonStyle(.link)
                 Spacer()
             }
             .padding(.horizontal, 20)
@@ -86,6 +89,9 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showInspection) {
             InspectionSheet(isLocked: lock.isLocked)
+        }
+        .sheet(isPresented: $showUserBlocks) {
+            UserBlocksSheet(isLocked: lock.isLocked)
         }
         .alert("Something went wrong", isPresented: .constant(error != nil)) {
             Button("OK") { error = nil }
@@ -538,6 +544,20 @@ private struct StatusHeader: View {
             .integer(forKey: "filterDomainCount") ?? 0
     }
 
+    /// When the browser extension last reached `HisnBridge`. Written by the
+    /// bridge on every heartbeat; nil means it has never once connected.
+    private var extensionLastSeen: Date? {
+        UserDefaults(suiteName: LockStore.appGroup)?
+            .object(forKey: "extensionLastSeen") as? Date
+    }
+
+    /// The extension polls once a minute, so a gap this long means it stopped
+    /// rather than that we caught it between beats.
+    private var extensionIsLive: Bool {
+        guard let seen = extensionLastSeen else { return false }
+        return Date().timeIntervalSince(seen) < 5 * 60
+    }
+
     private var problem: String? {
         guard lock.isLocked else { return nil }
         if !filter.isEnabled { return "The system filter is off — reopening it now" }
@@ -546,6 +566,44 @@ private struct StatusHeader: View {
         }
         return nil
     }
+
+    /// What is actually enforcing anything, right now, whether or not a lock is
+    /// running.
+    ///
+    /// The header used to answer only "is a lock running", and suppressed every
+    /// diagnostic when one was not — `problem` returns nil immediately in the
+    /// unlocked state. That left the honest-status promise half kept: a machine
+    /// where the system extension had never been approved and the browser
+    /// extension had never been loaded showed a green dot and the word "Not
+    /// locked", which reads as *nothing is wrong* when the truth is *nothing
+    /// would work if you started a lock right now*. Both layers can be absent
+    /// silently and independently, so both are named individually rather than
+    /// summarised into one word.
+    struct Layer: Identifiable {
+        let name: String
+        let detail: String
+        let ok: Bool
+        var id: String { name }
+    }
+
+    private var layers: [Layer] {
+        [
+            Layer(name: "System filter", detail:
+                  filter.isEnabled
+                    ? (filterDomainCount > 0
+                        ? "\(filterDomainCount.formatted()) domains"
+                        : "running, no list")
+                    : "not running",
+                  ok: filter.isEnabled && filterDomainCount > 0),
+            Layer(name: "Browser extension",
+                  detail: extensionIsLive
+                    ? "connected"
+                    : (extensionLastSeen == nil ? "never connected" : "not responding"),
+                  ok: extensionIsLive),
+        ]
+    }
+
+    private var enforcingCount: Int { layers.filter(\.ok).count }
 
     /// The headline word. A lock being *recorded* is not the same as protection
     /// being *enforced* — the countdown can be running while the filter never
@@ -559,23 +617,243 @@ private struct StatusHeader: View {
         return problem == nil ? "Protected" : "Not protected"
     }
 
+    /// Grey rather than green when unlocked. Green is a claim that something is
+    /// working, and when no lock is running nothing is — reserving it for the
+    /// enforcing state is the difference between a status light and decoration.
+    private var dotColour: Color {
+        if !lock.isLocked { return enforcingCount == 0 ? .orange : .secondary }
+        return problem == nil ? .green : .orange
+    }
+
     var body: some View {
-        HStack(spacing: 10) {
-            Circle()
-                .fill(problem == nil ? Color.green : Color.orange)
-                .frame(width: 9, height: 9)
-            VStack(alignment: .leading, spacing: 1) {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                Circle()
+                    .fill(dotColour)
+                    .frame(width: 9, height: 9)
                 Text(headline)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(problem == nil ? Color.primary : Color.orange)
-                if let problem {
-                    Text(problem)
-                        .font(.caption2).foregroundStyle(.orange)
+                Spacer()
+            }
+
+            if let problem {
+                Text(problem)
+                    .font(.caption2)
+                    .foregroundStyle(.orange)
+                    .padding(.leading, 19)
+            }
+
+            // The enforcement layers, always. Naming them individually is the
+            // point: each can be absent on its own, and "Not locked" alone
+            // never said so.
+            VStack(alignment: .leading, spacing: 3) {
+                ForEach(layers) { layer in
+                    HStack(spacing: 6) {
+                        Image(systemName: layer.ok
+                              ? "checkmark.circle.fill" : "exclamationmark.circle")
+                            .font(.caption2)
+                            .foregroundStyle(layer.ok ? Color.green : Color.orange)
+                        Text(layer.name)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                        Text(layer.detail)
+                            .font(.caption2)
+                            .foregroundStyle(layer.ok ? Color.secondary : Color.orange)
+                        Spacer()
+                    }
                 }
             }
-            Spacer()
+            .padding(.leading, 19)
+
+            if !lock.isLocked && enforcingCount == 0 {
+                Text("Nothing would be enforced if you started a lock now.")
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(.orange)
+                    .padding(.leading, 19)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// Words and apps the person blocks by hand.
+///
+/// Separate from `SiteListsSheet` because the two ask different questions. A
+/// site list is "which addresses", answered from memory. This is "which words"
+/// and "which apps" — the first needs a warning about how easily a bad word
+/// blocks the wrong thing, the second needs a file picker, and neither belongs
+/// crammed into a sheet about domains.
+private struct UserBlocksSheet: View {
+    let isLocked: Bool
+
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var wordsText = ""
+    @State private var apps: [String] = []
+    @State private var message: String?
+    @State private var isError = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Your words and apps").font(.headline)
+            Text(isLocked
+                 ? "A lock is running. You can add words and apps; removing "
+                   + "them waits until it ends."
+                 : "Blocked on top of the built-in lists.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            // --- words ---------------------------------------------------
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Words").font(.subheadline.weight(.medium))
+                Text("One per line. A page is blocked when these appear often "
+                     + "enough in it — so a common word blocks ordinary pages "
+                     + "too. Minimum \(UserBlocks.minimumTermLength) letters.")
+                    .font(.caption2).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                ZStack(alignment: .topLeading) {
+                    if wordsText.isEmpty {
+                        Text("gambling\nbetting odds")
+                            .font(.system(.body, design: .monospaced))
+                            .foregroundStyle(.tertiary)
+                            .padding(.horizontal, 5).padding(.vertical, 8)
+                            .allowsHitTesting(false)
+                    }
+                    TextEditor(text: $wordsText)
+                        .font(.system(.body, design: .monospaced))
+                        .scrollContentBackground(.hidden)
+                }
+                .frame(height: 88)
+                .overlay(RoundedRectangle(cornerRadius: 6)
+                    .stroke(Color.secondary.opacity(0.35)))
+            }
+
+            // --- apps ----------------------------------------------------
+            VStack(alignment: .leading, spacing: 3) {
+                HStack {
+                    Text("Apps").font(.subheadline.weight(.medium))
+                    Spacer()
+                    Button("Add app…") { pickApp() }
+                        .controlSize(.small)
+                }
+                // Said plainly rather than discovered later. Someone who blocks
+                // a note-taking app and finds it still opens will conclude the
+                // feature is broken, when it is working exactly as designed.
+                Text("Blocks the app's internet access. It still opens, and "
+                     + "still works offline — stopping a launch needs Screen "
+                     + "Time, which no app can do for you.")
+                    .font(.caption2).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if apps.isEmpty {
+                    Text("No apps blocked.")
+                        .font(.caption).foregroundStyle(.tertiary)
+                        .padding(.vertical, 6)
+                } else {
+                    VStack(alignment: .leading, spacing: 2) {
+                        ForEach(apps, id: \.self) { id in
+                            HStack(spacing: 6) {
+                                Text(displayName(for: id)).font(.caption)
+                                Text(id).font(.caption2).foregroundStyle(.tertiary)
+                                Spacer()
+                                Button {
+                                    apps.removeAll { $0 == id }
+                                } label: {
+                                    Image(systemName: "minus.circle")
+                                }
+                                .buttonStyle(.borderless)
+                                .disabled(isLocked)
+                                .help(isLocked
+                                      ? "Cannot remove while a lock is running"
+                                      : "Remove")
+                            }
+                        }
+                    }
+                    .padding(.vertical, 2)
+                }
+            }
+
+            if let message {
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(isError ? Color.red : Color.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            HStack {
+                Spacer()
+                Button("Cancel") { dismiss() }
+                Button("Save") { save() }.keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(20)
+        .frame(width: 460)
+        .onAppear {
+            wordsText = UserBlocks.terms().joined(separator: "\n")
+            apps = UserBlocks.apps()
+        }
+    }
+
+    private func displayName(for bundleID: String) -> String {
+        guard let url = NSWorkspace.shared
+            .urlForApplication(withBundleIdentifier: bundleID) else { return bundleID }
+        return FileManager.default.displayName(atPath: url.path)
+    }
+
+    /// Pick the app rather than type its identifier. The filter compares a
+    /// signing identifier, which is not something anyone knows by heart, and a
+    /// typo produces a rule that silently never matches.
+    private func pickApp() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.application]
+        panel.allowsMultipleSelection = true
+        panel.directoryURL = URL(fileURLWithPath: "/Applications")
+        panel.prompt = "Block"
+        guard panel.runModal() == .OK else { return }
+
+        var added = 0, failed: [String] = []
+        for url in panel.urls {
+            if let id = UserBlocks.bundleIdentifier(forAppAt: url) {
+                if !apps.contains(id) { apps.append(id); added += 1 }
+            } else {
+                failed.append(FileManager.default.displayName(atPath: url.path))
+            }
+        }
+        apps.sort()
+        isError = !failed.isEmpty
+        message = failed.isEmpty
+            ? (added == 0 ? "Already on the list." : nil)
+            : "Could not read an identifier for \(failed.joined(separator: ", "))."
+    }
+
+    private func save() {
+        let parsed = UserBlocks.parseTerms(wordsText)
+        do {
+            try UserBlocks.save(terms: parsed.terms, apps: apps, locked: isLocked)
+        } catch {
+            isError = true
+            message = error.localizedDescription
+            return
+        }
+
+        // Stay open when something was dropped. A word silently left out looks
+        // identical to one that saved, and the person finds out only when the
+        // page they expected to be blocked opens normally.
+        var notes: [String] = []
+        if !parsed.tooShort.isEmpty {
+            notes.append("too short to use: \(parsed.tooShort.joined(separator: ", "))")
+        }
+        if parsed.ignored > 0 {
+            notes.append("\(parsed.ignored) line(s) were not usable words")
+        }
+        guard !notes.isEmpty else { return dismiss() }
+        isError = false
+        message = "Saved \(parsed.terms.count) words and \(apps.count) apps. "
+            + notes.joined(separator: "; ") + "."
     }
 }
