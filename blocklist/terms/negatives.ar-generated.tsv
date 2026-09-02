@@ -1,0 +1,123 @@
+# Arabic negative terms — GENERATED, do not edit by hand.
+#
+#   python3 gen_terms_ar.py
+#
+# These CANCEL explicit terms that co-occur with them, and they are the reason
+# this filter can carry 5,000 Arabic terms without blocking the Arabic web.
+#
+# The fiqh register is the point. نكاح is the Islamic marriage contract; زنا,
+# لواط, سحاق, عورة, جنابة and حيض are core jurisprudence vocabulary appearing in
+# every tafsir, hadith collection and fatwa archive. A filter that treats them
+# as pornography does not block pornography — it blocks Islamic scholarship,
+# for precisely the audience a tool called حصن exists to serve. So those words
+# are absent from the positive tables at any weight, and the phrases below
+# actively pull a page back below threshold when it reads like scholarship.
+#
+# The medical and legal register is here for the same reason: reproductive
+# health, gynaecology, child-protection reporting and criminal-code text all
+# discuss sex explicitly and none of it is adult content.
+
+ابن باز	7.0
+ابن تيميه	7.0
+ابن عثيمين	7.0
+احكام النكاح	7.0
+اسلام ويب	7.0
+اصول الفقه	7.0
+الابلاغ	7.0
+الاتجار بالبشر	7.0
+الادله	7.0
+الاستغفار	7.0
+الاسلام سوال وجواب	7.0
+البلوغ	7.0
+التثقيف	7.0
+التفسير	7.0
+التوبه	7.0
+التوعيه	7.0
+الجنابه	7.0
+الجواب	7.0
+الحجاب	7.0
+الحديث	7.0
+الحكم الشرعي	7.0
+الحمد لله	7.0
+الحمل	7.0
+الحنبلي	7.0
+الحنفي	7.0
+الحيض	7.0
+الخلوه	7.0
+الدوره الشهريه	7.0
+الذنوب	7.0
+الراجح	7.0
+الرضاعه	7.0
+الزنا في الاسلام	7.0
+السنه	7.0
+السوال	7.0
+الشافعي	7.0
+الشريعه	7.0
+الشهود	7.0
+الشيخ	7.0
+الصحه الانجابيه	7.0
+الطلاق	7.0
+الطهاره	7.0
+العده	7.0
+العقوبات	7.0
+العلامه	7.0
+العوره	7.0
+الغدد	7.0
+الغسل	7.0
+الفتوي	7.0
+الفقه	7.0
+القانون	7.0
+القران	7.0
+اللجنه الدايمه	7.0
+الله اعلم	7.0
+الماده	7.0
+المالكي	7.0
+المحكمه	7.0
+المذهب	7.0
+المراهقه	7.0
+المهر	7.0
+النظر	7.0
+النفاس	7.0
+النكاح في الاسلام	7.0
+النيابه	7.0
+الهرمونات	7.0
+الوضوء	7.0
+الولاده	7.0
+الولي	7.0
+امراض النساء	7.0
+اهل العلم	7.0
+ايه	7.0
+تفسير	7.0
+جمهور الفقهاء	7.0
+حد الزنا	7.0
+حرام	7.0
+حرم الله	7.0
+حرمه الله	7.0
+حكم	7.0
+حلال	7.0
+حمايه الطفل	7.0
+دار الافتاء	7.0
+دليل	7.0
+رضي الله عنه	7.0
+روي	7.0
+ستر العوره	7.0
+سرطان الثدي	7.0
+سوره	7.0
+شروط النكاح	7.0
+صحيح البخاري	7.0
+صحيح مسلم	7.0
+صلي الله عليه وسلم	7.0
+طب النساء	7.0
+عقد النكاح	7.0
+علم النفس	7.0
+فتوي	7.0
+فحص الثدي	7.0
+فقه	7.0
+قال تعالي	7.0
+كباير	7.0
+كفاره	7.0
+مكافحه	7.0
+من الكباير	7.0
+منظمه الصحه	7.0
+والله اعلم	7.0
+وزاره الصحه	7.0

@@ -1,0 +1,1389 @@
+# Franco-Arabic explicit terms — GENERATED, do not edit by hand.
+#
+#   python3 gen_terms_ar.py
+#
+# Latin spellings expanded from the curated Arabic vocabulary in
+# gen_terms_ar.py. Read after terms.ar-latn.tsv, which wins on weight.
+
+3aara	8.0
+3aarat	8.0
+3aarh	8.0
+3aart	8.0
+3ahra	8.0
+3ahra 3iraqi	8.0
+3ahra arab	8.0
+3ahra arabi	8.0
+3ahra hd	8.0
+3ahra jadid	8.0
+3ahra khaliji	8.0
+3ahra lebnani	8.0
+3ahra maghribi	8.0
+3ahra mahareem	8.0
+3ahra masri	8.0
+3ahra masry	8.0
+3ahra mojani	8.0
+3ahra motarjam	8.0
+3ahra saudi	8.0
+3ahra souri	8.0
+3ahrat	8.0
+3ahrh	8.0
+3ahrt	8.0
+3ara	8.0
+3arat	8.0
+3are	6.0
+3area	6.0
+3areat	8.0
+3areh	6.0
+3aret	8.0
+3arh	8.0
+3ari	6.0
+3aria	6.0
+3ariat	8.0
+3arih	6.0
+3arit	8.0
+3art	8.0
+3ary	6.0
+3arya	6.0
+3aryat	8.0
+3aryh	6.0
+3aryt	8.0
+3ere	6.0
+3eri	6.0
+3ery	6.0
+3hra	8.0
+3hrat	8.0
+3hrh	8.0
+3hrt	8.0
+3ire	6.0
+3iri	6.0
+3iry	6.0
+3rea	6.0
+3rean	6.0
+3reana	6.0
+3reanat	8.0
+3reanh	6.0
+3reant	8.0
+3reat	8.0
+3reh	6.0
+3ren	6.0
+3rena	6.0
+3renat	8.0
+3renh	6.0
+3rent	8.0
+3ret	8.0
+3ria	6.0
+3rian	6.0
+3riana	6.0
+3rianat	8.0
+3rianh	6.0
+3riant	8.0
+3riat	8.0
+3rih	6.0
+3rin	6.0
+3rina	6.0
+3rinat	8.0
+3rinh	6.0
+3rint	8.0
+3rit	8.0
+3rya	6.0
+3ryan	6.0
+3ryana	6.0
+3ryanat	8.0
+3ryanh	6.0
+3ryant	8.0
+3ryat	8.0
+3ryh	6.0
+3ryn	6.0
+3ryna	6.0
+3rynat	8.0
+3rynh	6.0
+3rynt	8.0
+3ryt	8.0
+3yre	6.0
+3yri	6.0
+3yry	6.0
+5l3a	8.0
+5l3e	8.0
+5l3h	8.0
+5l3i	8.0
+5l3y	8.0
+5la3a	8.0
+5la3e	8.0
+5la3h	8.0
+5la3i	8.0
+5la3y	8.0
+5laa	8.0
+5laaa	8.0
+5laae	8.0
+5laah	8.0
+5laai	8.0
+5laay	8.0
+5lae	8.0
+5lah	8.0
+5lai	8.0
+5lay	8.0
+5le3	6.0
+5le3a	6.0
+5le3h	6.0
+5lea	6.0
+5leaa	6.0
+5leah	6.0
+5li3	6.0
+5li3a	6.0
+5li3h	6.0
+5lia	6.0
+5liaa	6.0
+5liah	6.0
+5ly3	6.0
+5ly3a	6.0
+5ly3h	6.0
+5lya	6.0
+5lyaa	6.0
+5lyah	6.0
+5olat	6.0
+5olt	6.0
+5ulat	6.0
+5ult	6.0
+5wlat	6.0
+5wlt	6.0
+6abon	8.0
+6abun	8.0
+6abwn	8.0
+6bon	8.0
+6bun	8.0
+6bwn	8.0
+6eaz	8.0
+6ezg	8.0
+6ezj	8.0
+6ezk	8.0
+6iaz	8.0
+6izg	8.0
+6izj	8.0
+6izk	8.0
+6yaz	8.0
+6yzg	8.0
+6yzha	8.0
+6yzj	8.0
+6yzk	8.0
+7lmata	6.0
+7lmataa	6.0
+7lmath	6.0
+7lmatha	6.0
+7lmta	6.0
+7lmtaa	6.0
+7lmth	6.0
+7lmtha	6.0
+97ab	8.0
+97ba	8.0
+97ban	8.0
+97bat	8.0
+97bh	8.0
+97bn	8.0
+97bt	8.0
+9hab	8.0
+9hba	8.0
+9hban	8.0
+9hbat	8.0
+9hbh	8.0
+9hbn	8.0
+9hbt	8.0
+aaara	8.0
+aaarat	8.0
+aaarh	8.0
+aaart	8.0
+aahra	8.0
+aahrat	8.0
+aahrh	8.0
+aahrt	8.0
+aare	6.0
+aari	6.0
+aary	6.0
+ab7e	8.0
+ab7i	8.0
+ab7y	8.0
+aba7e	8.0
+aba7ea	8.0
+aba7eat	8.0
+aba7eh	8.0
+aba7et	8.0
+aba7i	8.0
+aba7ia	8.0
+aba7iat	8.0
+aba7ih	8.0
+aba7it	8.0
+aba7y	8.0
+aba7ya	8.0
+aba7yat	8.0
+aba7yh	8.0
+aba7yt	8.0
+abahe	8.0
+abahea	8.0
+abaheat	8.0
+abaheh	8.0
+abahet	8.0
+abahi	8.0
+abahia	8.0
+abahiat	8.0
+abahih	8.0
+abahit	8.0
+abahy	8.0
+abahya	8.0
+abahyat	8.0
+abahyh	8.0
+abahyt	8.0
+abhe	8.0
+abhi	8.0
+abhy	8.0
+aera	6.0
+aerh	6.0
+aflam 3ahra	8.0
+aflam ebahy	8.0
+aflam ebahy 3iraqi	8.0
+aflam ebahy arab	8.0
+aflam ebahy arabi	8.0
+aflam ebahy khaliji	8.0
+aflam ebahy lebnani	8.0
+aflam ebahy maghribi	8.0
+aflam ebahy masri	8.0
+aflam ebahy masry	8.0
+aflam ebahy saudi	8.0
+aflam ebahy souri	8.0
+aflam kahba	8.0
+aflam neek	8.0
+aflam neek 3iraqi	8.0
+aflam neek arab	8.0
+aflam neek arabi	8.0
+aflam neek khaliji	8.0
+aflam neek lebnani	8.0
+aflam neek maghribi	8.0
+aflam neek masri	8.0
+aflam neek masry	8.0
+aflam neek saudi	8.0
+aflam neek souri	8.0
+aflam nik	8.0
+aflam nik 3iraqi	8.0
+aflam nik arab	8.0
+aflam nik arabi	8.0
+aflam nik khaliji	8.0
+aflam nik lebnani	8.0
+aflam nik maghribi	8.0
+aflam nik masri	8.0
+aflam nik masry	8.0
+aflam nik saudi	8.0
+aflam nik souri	8.0
+aflam porn	8.0
+aflam porn 3iraqi	8.0
+aflam porn arab	8.0
+aflam porn arabi	8.0
+aflam porn khaliji	8.0
+aflam porn lebnani	8.0
+aflam porn maghribi	8.0
+aflam porn masri	8.0
+aflam porn masry	8.0
+aflam porn saudi	8.0
+aflam porn souri	8.0
+aflam qahba	8.0
+aflam sex	8.0
+aflam sex 3iraqi	8.0
+aflam sex arab	8.0
+aflam sex arabi	8.0
+aflam sex khaliji	8.0
+aflam sex lebnani	8.0
+aflam sex maghribi	8.0
+aflam sex masri	8.0
+aflam sex masry	8.0
+aflam sex saudi	8.0
+aflam sex souri	8.0
+aflam shrmota	8.0
+aflam sks	8.0
+aflam sks 3iraqi	8.0
+aflam sks arab	8.0
+aflam sks arabi	8.0
+aflam sks khaliji	8.0
+aflam sks lebnani	8.0
+aflam sks maghribi	8.0
+aflam sks masri	8.0
+aflam sks masry	8.0
+aflam sks saudi	8.0
+aflam sks souri	8.0
+airh	6.0
+alaba7ea	8.0
+alaba7eh	8.0
+alaba7ia	8.0
+alaba7ih	8.0
+alaba7ya	8.0
+alaba7yh	8.0
+alabahea	8.0
+alabaheh	8.0
+alabahia	8.0
+alabahih	8.0
+alabahya	8.0
+alabahyh	8.0
+ald3ara	8.0
+ald3arh	8.0
+ald3ra	8.0
+ald3rh	8.0
+aldaara	8.0
+aldaarh	8.0
+aldara	8.0
+aldarh	8.0
+alt3re	6.0
+alt3ri	6.0
+alt3ry	6.0
+altare	6.0
+altari	6.0
+altary	6.0
+aren	6.0
+arin	6.0
+aryn	6.0
+atnakt	8.0
+atnkt	8.0
+ayra	6.0
+ayre	6.0
+ayrh	6.0
+ayri	6.0
+ayry	6.0
+b3'2	6.0
+b3'a	6.0
+b3'a2	6.0
+benek	8.0
+benik	8.0
+benyk	8.0
+bgh2	6.0
+bgha	6.0
+bgha2	6.0
+binek	8.0
+binik	8.0
+binyk	8.0
+bynek	8.0
+bynik	8.0
+bynyk	8.0
+bzaa	8.0
+bzaz	8.0
+bzaza	8.0
+bzazaa	8.0
+bzazh	8.0
+bzazha	8.0
+bzha	8.0
+bzza	8.0
+bzzaa	8.0
+bzzh	8.0
+bzzha	8.0
+chb9	6.0
+chb9a	6.0
+chb9h	6.0
+chbg	6.0
+chbk	6.0
+chbq	6.0
+chbqa	6.0
+chbqh	6.0
+chramet	8.0
+chramit	8.0
+chramyt	8.0
+chrm6a	8.0
+chrm6h	8.0
+chrmet	8.0
+chrmit	8.0
+chrmo6	8.0
+chrmot	8.0
+chrmta	8.0
+chrmth	8.0
+chrmu6	8.0
+chrmut	8.0
+chrmw6	8.0
+chrmwt	8.0
+chrmyt	8.0
+d3ara	8.0
+d3arh	8.0
+d3ra	8.0
+d3rh	8.0
+daara	8.0
+daarh	8.0
+dara	8.0
+darh	8.0
+dios	6.0
+dioth	6.0
+dius	6.0
+diuth	6.0
+diws	6.0
+diwth	6.0
+dyos	6.0
+dyoth	6.0
+dyus	6.0
+dyuth	6.0
+dyws	6.0
+dywth	6.0
+ebahy 3iraqi	8.0
+ebahy arab	8.0
+ebahy arabi	8.0
+ebahy hd	8.0
+ebahy jadid	8.0
+ebahy khaliji	8.0
+ebahy lebnani	8.0
+ebahy maghribi	8.0
+ebahy mahareem	8.0
+ebahy masri	8.0
+ebahy masry	8.0
+ebahy mojani	8.0
+ebahy motarjam	8.0
+ebahy saudi	8.0
+ebahy souri	8.0
+enek	8.0
+enik	8.0
+enyk	8.0
+etnak	8.0
+etnk	8.0
+fad7	6.0
+fad7a	6.0
+fad7h	6.0
+fadh	6.0
+fadha	6.0
+fadhh	6.0
+fd7a	6.0
+fd7h	6.0
+fdha	6.0
+fdhh	6.0
+fedio 3ahra	8.0
+fedio ebahy	8.0
+fedio ebahy 3iraqi	8.0
+fedio ebahy arab	8.0
+fedio ebahy arabi	8.0
+fedio ebahy khaliji	8.0
+fedio ebahy lebnani	8.0
+fedio ebahy maghribi	8.0
+fedio ebahy masri	8.0
+fedio ebahy masry	8.0
+fedio ebahy saudi	8.0
+fedio ebahy souri	8.0
+fedio kahba	8.0
+fedio neek	8.0
+fedio neek 3iraqi	8.0
+fedio neek arab	8.0
+fedio neek arabi	8.0
+fedio neek khaliji	8.0
+fedio neek lebnani	8.0
+fedio neek maghribi	8.0
+fedio neek masri	8.0
+fedio neek masry	8.0
+fedio neek saudi	8.0
+fedio neek souri	8.0
+fedio nik	8.0
+fedio nik 3iraqi	8.0
+fedio nik arab	8.0
+fedio nik arabi	8.0
+fedio nik khaliji	8.0
+fedio nik lebnani	8.0
+fedio nik maghribi	8.0
+fedio nik masri	8.0
+fedio nik masry	8.0
+fedio nik saudi	8.0
+fedio nik souri	8.0
+fedio porn	8.0
+fedio porn 3iraqi	8.0
+fedio porn arab	8.0
+fedio porn arabi	8.0
+fedio porn khaliji	8.0
+fedio porn lebnani	8.0
+fedio porn maghribi	8.0
+fedio porn masri	8.0
+fedio porn masry	8.0
+fedio porn saudi	8.0
+fedio porn souri	8.0
+fedio qahba	8.0
+fedio sex	8.0
+fedio sex 3iraqi	8.0
+fedio sex arab	8.0
+fedio sex arabi	8.0
+fedio sex khaliji	8.0
+fedio sex lebnani	8.0
+fedio sex maghribi	8.0
+fedio sex masri	8.0
+fedio sex masry	8.0
+fedio sex saudi	8.0
+fedio sex souri	8.0
+fedio shrmota	8.0
+fedio sks	8.0
+fedio sks 3iraqi	8.0
+fedio sks arab	8.0
+fedio sks arabi	8.0
+fedio sks khaliji	8.0
+fedio sks lebnani	8.0
+fedio sks maghribi	8.0
+fedio sks masri	8.0
+fedio sks masry	8.0
+fedio sks saudi	8.0
+fedio sks souri	8.0
+film 3ahra	8.0
+film ebahy	8.0
+film ebahy 3iraqi	8.0
+film ebahy arab	8.0
+film ebahy arabi	8.0
+film ebahy khaliji	8.0
+film ebahy lebnani	8.0
+film ebahy maghribi	8.0
+film ebahy masri	8.0
+film ebahy masry	8.0
+film ebahy saudi	8.0
+film ebahy souri	8.0
+film kahba	8.0
+film neek	8.0
+film neek 3iraqi	8.0
+film neek arab	8.0
+film neek arabi	8.0
+film neek khaliji	8.0
+film neek lebnani	8.0
+film neek maghribi	8.0
+film neek masri	8.0
+film neek masry	8.0
+film neek saudi	8.0
+film neek souri	8.0
+film nik	8.0
+film nik 3iraqi	8.0
+film nik arab	8.0
+film nik arabi	8.0
+film nik khaliji	8.0
+film nik lebnani	8.0
+film nik maghribi	8.0
+film nik masri	8.0
+film nik masry	8.0
+film nik saudi	8.0
+film nik souri	8.0
+film porn	8.0
+film porn 3iraqi	8.0
+film porn arab	8.0
+film porn arabi	8.0
+film porn khaliji	8.0
+film porn lebnani	8.0
+film porn maghribi	8.0
+film porn masri	8.0
+film porn masry	8.0
+film porn saudi	8.0
+film porn souri	8.0
+film qahba	8.0
+film sex	8.0
+film sex 3iraqi	8.0
+film sex arab	8.0
+film sex arabi	8.0
+film sex khaliji	8.0
+film sex lebnani	8.0
+film sex maghribi	8.0
+film sex masri	8.0
+film sex masry	8.0
+film sex saudi	8.0
+film sex souri	8.0
+film shrmota	8.0
+film sks	8.0
+film sks 3iraqi	8.0
+film sks arab	8.0
+film sks arabi	8.0
+film sks khaliji	8.0
+film sks lebnani	8.0
+film sks maghribi	8.0
+film sks masri	8.0
+film sks masry	8.0
+film sks saudi	8.0
+film sks souri	8.0
+g7ab	8.0
+ghab	8.0
+hlmata	6.0
+hlmataa	6.0
+hlmath	6.0
+hlmatha	6.0
+idag3	6.0
+idaga	6.0
+idaj3	6.0
+idaja	6.0
+inek	8.0
+inik	8.0
+inyk	8.0
+itnak	8.0
+itnk	8.0
+k7ab	8.0
+k7ba	8.0
+k7ban	8.0
+k7bat	8.0
+k7bh	8.0
+k7bn	8.0
+k7bt	8.0
+kahba 3iraqi	8.0
+kahba arab	8.0
+kahba arabi	8.0
+kahba hd	8.0
+kahba jadid	8.0
+kahba khaliji	8.0
+kahba lebnani	8.0
+kahba maghribi	8.0
+kahba mahareem	8.0
+kahba masri	8.0
+kahba masry	8.0
+kahba mojani	8.0
+kahba motarjam	8.0
+kahba saudi	8.0
+kahba souri	8.0
+khab	8.0
+khba	8.0
+khban	8.0
+khbat	8.0
+khbh	8.0
+khbn	8.0
+khbt	8.0
+khla3a	8.0
+khla3h	8.0
+khlaaa	8.0
+khlaah	8.0
+khle3	6.0
+khlea	6.0
+khli3	6.0
+khlia	6.0
+khly3	6.0
+khlya	6.0
+khol	6.0
+kholat	6.0
+kholt	6.0
+khul	6.0
+khulat	6.0
+khult	6.0
+khwl	6.0
+khwlat	6.0
+khwlt	6.0
+ksaa	8.0
+ksha	8.0
+ksmk	8.0
+lboa	6.0
+lboh	6.0
+lbua	6.0
+lbuh	6.0
+lbwa	6.0
+lbwh	6.0
+ld3ara	8.0
+ld3arh	8.0
+ld3ra	8.0
+ld3rh	8.0
+lt3re	6.0
+lt3ri	6.0
+lt3ry	6.0
+ltare	6.0
+ltari	6.0
+ltary	6.0
+m3rs	6.0
+m3rsen	6.0
+m3rsin	6.0
+m3rsyn	6.0
+marsen	6.0
+marsin	6.0
+marsyn	6.0
+mawqe3 3ahra	8.0
+mawqe3 ebahy	8.0
+mawqe3 kahba	8.0
+mawqe3 neek	8.0
+mawqe3 nik	8.0
+mawqe3 porn	8.0
+mawqe3 qahba	8.0
+mawqe3 sex	8.0
+mawqe3 shrmota	8.0
+mawqe3 sks	8.0
+mdag3a	6.0
+mdag3h	6.0
+mdagaa	6.0
+mdagah	6.0
+mdaj3a	6.0
+mdaj3h	6.0
+mdajaa	6.0
+mdajah	6.0
+mdj3a	6.0
+mdj3h	6.0
+mdjaa	6.0
+mdjah	6.0
+mnaek	8.0
+mnaik	8.0
+mnayk	8.0
+mnek	8.0
+mneok	8.0
+mneuk	8.0
+mnewk	8.0
+mnik	8.0
+mniog	8.0
+mnioj	8.0
+mniok	8.0
+mnioka	8.0
+mniokh	8.0
+mniug	8.0
+mniuj	8.0
+mniuk	8.0
+mniuka	8.0
+mniukh	8.0
+mniwg	8.0
+mniwj	8.0
+mniwk	8.0
+mniwka	8.0
+mniwken	8.0
+mniwkh	8.0
+mniwkin	8.0
+mniwkyn	8.0
+mnyk	8.0
+mnyog	8.0
+mnyoj	8.0
+mnyok	8.0
+mnyoka	8.0
+mnyoken	8.0
+mnyokh	8.0
+mnyokin	8.0
+mnyokyn	8.0
+mnyug	8.0
+mnyuj	8.0
+mnyuk	8.0
+mnyuka	8.0
+mnyuken	8.0
+mnyukh	8.0
+mnyukin	8.0
+mnyukyn	8.0
+mnywg	8.0
+mnywj	8.0
+mnywk	8.0
+mnywka	8.0
+mnywken	8.0
+mnywkh	8.0
+mnywkin	8.0
+mnywkyn	8.0
+mo5rta	6.0
+mo5rtaa	6.0
+mo5rth	6.0
+mo5rtha	6.0
+moms	6.0
+momsat	8.0
+momst	8.0
+moshahda 3ahra	8.0
+moshahda ebahy	8.0
+moshahda kahba	8.0
+moshahda neek	8.0
+moshahda nik	8.0
+moshahda porn	8.0
+moshahda qahba	8.0
+moshahda sex	8.0
+moshahda shrmota	8.0
+moshahda sks	8.0
+mt3rea	8.0
+mt3reh	8.0
+mt3ria	8.0
+mt3rih	8.0
+mt3rya	8.0
+mt3ryh	8.0
+mtarea	8.0
+mtareh	8.0
+mtaria	8.0
+mtarih	8.0
+mtarya	8.0
+mtaryh	8.0
+mtchrm6a	8.0
+mtchrm6h	8.0
+mtchrmta	8.0
+mtchrmth	8.0
+mtnak	8.0
+mtnaka	8.0
+mtnaken	8.0
+mtnakh	8.0
+mtnakin	8.0
+mtnakyn	8.0
+mtnk	8.0
+mtnka	8.0
+mtnken	8.0
+mtnkh	8.0
+mtnkin	8.0
+mtnkyn	8.0
+mtshrm6a	8.0
+mtshrm6h	8.0
+mtshrmta	8.0
+mtshrmth	8.0
+mums	6.0
+mumsat	8.0
+mumst	8.0
+mw5rta	6.0
+mw5rtaa	6.0
+mw5rth	6.0
+mw5rtha	6.0
+mwkhrta	6.0
+mwkhrtaa	6.0
+mwkhrth	6.0
+mwkhrtha	6.0
+mwms	6.0
+mwmsat	8.0
+mwmst	8.0
+neaka	8.0
+neakh	8.0
+neek 3iraqi	8.0
+neek arab	8.0
+neek arabi	8.0
+neek hd	8.0
+neek jadid	8.0
+neek khaliji	8.0
+neek lebnani	8.0
+neek maghribi	8.0
+neek mahareem	8.0
+neek masri	8.0
+neek masry	8.0
+neek mojani	8.0
+neek motarjam	8.0
+neek saudi	8.0
+neek souri	8.0
+neka	8.0
+nekaa	8.0
+nekh	8.0
+nekha	8.0
+nekne	8.0
+nekni	8.0
+nekny	8.0
+nhoda	6.0
+nhodaa	6.0
+nhodh	6.0
+nhodha	6.0
+nhuda	6.0
+nhudaa	6.0
+nhudh	6.0
+nhudha	6.0
+nhwda	6.0
+nhwdaa	6.0
+nhwdh	6.0
+nhwdha	6.0
+niaka	8.0
+niakh	8.0
+nik 3iraqi	8.0
+nik arab	8.0
+nik arabi	8.0
+nik hd	8.0
+nik jadid	8.0
+nik khaliji	8.0
+nik lebnani	8.0
+nik maghribi	8.0
+nik mahareem	8.0
+nik masri	8.0
+nik masry	8.0
+nik mojani	8.0
+nik motarjam	8.0
+nik saudi	8.0
+nik souri	8.0
+nika	8.0
+nikaa	8.0
+nikh	8.0
+nikha	8.0
+nikne	8.0
+nikni	8.0
+nikny	8.0
+nyaka	8.0
+nyakh	8.0
+nyka	8.0
+nykaa	8.0
+nykh	8.0
+nykha	8.0
+nykne	8.0
+nykni	8.0
+nykny	8.0
+porn 3iraqi	8.0
+porn arab	8.0
+porn arabi	8.0
+porn hd	8.0
+porn jadid	8.0
+porn khaliji	8.0
+porn lebnani	8.0
+porn maghribi	8.0
+porn mahareem	8.0
+porn masri	8.0
+porn masry	8.0
+porn mojani	8.0
+porn motarjam	8.0
+porn saudi	8.0
+porn souri	8.0
+q7ab	8.0
+q7ba	8.0
+q7ban	8.0
+q7bat	8.0
+q7bh	8.0
+q7bn	8.0
+q7bt	8.0
+qahba 3iraqi	8.0
+qahba arab	8.0
+qahba arabi	8.0
+qahba hd	8.0
+qahba jadid	8.0
+qahba khaliji	8.0
+qahba lebnani	8.0
+qahba maghribi	8.0
+qahba mahareem	8.0
+qahba masri	8.0
+qahba masry	8.0
+qahba mojani	8.0
+qahba motarjam	8.0
+qahba saudi	8.0
+qahba souri	8.0
+qesas 3ahra	8.0
+qesas ebahy	8.0
+qesas kahba	8.0
+qesas neek	8.0
+qesas nik	8.0
+qesas porn	8.0
+qesas qahba	8.0
+qesas sex	8.0
+qesas shrmota	8.0
+qesas sks	8.0
+qhab	8.0
+qhba	8.0
+qhban	8.0
+qhbat	8.0
+qhbh	8.0
+qhbn	8.0
+qhbt	8.0
+s7a9eat	6.0
+s7a9et	6.0
+s7a9iat	6.0
+s7a9it	6.0
+s7a9yat	6.0
+s7a9yt	6.0
+s7aqeat	6.0
+s7aqet	6.0
+s7aqiat	6.0
+s7aqit	6.0
+s7aqyat	6.0
+s7aqyt	6.0
+seks	8.0
+sex 3iraqi	8.0
+sex arab	8.0
+sex arabi	8.0
+sex hd	8.0
+sex jadid	8.0
+sex khaliji	8.0
+sex lebnani	8.0
+sex maghribi	8.0
+sex mahareem	8.0
+sex masri	8.0
+sex masry	8.0
+sex mojani	8.0
+sex motarjam	8.0
+sex saudi	8.0
+sex souri	8.0
+shb9	6.0
+shb9a	6.0
+shb9h	6.0
+shbg	6.0
+shbga	6.0
+shbgh	6.0
+shbk	6.0
+shbka	6.0
+shbkh	6.0
+shbq	6.0
+shbqa	6.0
+shbqh	6.0
+shhoane	6.0
+shhoani	6.0
+shhoany	6.0
+shhone	6.0
+shhoni	6.0
+shhony	6.0
+shhwane	6.0
+shhwanea	6.0
+shhwaneh	6.0
+shhwani	6.0
+shhwania	6.0
+shhwanih	6.0
+shhwany	6.0
+shhwanya	6.0
+shhwanyh	6.0
+shhwne	6.0
+shhwnea	6.0
+shhwneh	6.0
+shhwni	6.0
+shhwnia	6.0
+shhwnih	6.0
+shhwny	6.0
+shhwnya	6.0
+shhwnyh	6.0
+shrame6	8.0
+shramet	8.0
+shrami6	8.0
+shramit	8.0
+shramy6	8.0
+shramyt	8.0
+shrm6a	8.0
+shrm6h	8.0
+shrme6	8.0
+shrmet	8.0
+shrmi6	8.0
+shrmit	8.0
+shrmo6	8.0
+shrmo6a	8.0
+shrmo6h	8.0
+shrmot	8.0
+shrmota	8.0
+shrmota 3iraqi	8.0
+shrmota arab	8.0
+shrmota arabi	8.0
+shrmota hd	8.0
+shrmota jadid	8.0
+shrmota khaliji	8.0
+shrmota lebnani	8.0
+shrmota maghribi	8.0
+shrmota mahareem	8.0
+shrmota masri	8.0
+shrmota masry	8.0
+shrmota mojani	8.0
+shrmota motarjam	8.0
+shrmota saudi	8.0
+shrmota souri	8.0
+shrmoth	8.0
+shrmta	8.0
+shrmth	8.0
+shrmu6	8.0
+shrmu6a	8.0
+shrmu6h	8.0
+shrmut	8.0
+shrmuta	8.0
+shrmuth	8.0
+shrmw6	8.0
+shrmw6a	8.0
+shrmw6h	8.0
+shrmwt	8.0
+shrmwta	8.0
+shrmwth	8.0
+shrmy6	8.0
+shrmyt	8.0
+siks	8.0
+sks 3iraqi	8.0
+sks arab	8.0
+sks arabi	8.0
+sks hd	8.0
+sks jadid	8.0
+sks khaliji	8.0
+sks lebnani	8.0
+sks maghribi	8.0
+sks mahareem	8.0
+sks masri	8.0
+sks masry	8.0
+sks mojani	8.0
+sks motarjam	8.0
+sks saudi	8.0
+sks souri	8.0
+sksaoe	8.0
+sksaoi	8.0
+sksaoy	8.0
+sksaue	8.0
+sksaui	8.0
+sksauy	8.0
+sksawe	8.0
+sksawi	8.0
+sksawy	8.0
+skse	8.0
+sksea	8.0
+skseh	8.0
+sksi	8.0
+sksia	8.0
+sksih	8.0
+skswe	8.0
+skswi	8.0
+skswy	8.0
+sksy	8.0
+sksya	8.0
+sksyh	8.0
+sour 3ahra	8.0
+sour ebahy	8.0
+sour ebahy 3iraqi	8.0
+sour ebahy arab	8.0
+sour ebahy arabi	8.0
+sour ebahy khaliji	8.0
+sour ebahy lebnani	8.0
+sour ebahy maghribi	8.0
+sour ebahy masri	8.0
+sour ebahy masry	8.0
+sour ebahy saudi	8.0
+sour ebahy souri	8.0
+sour kahba	8.0
+sour neek	8.0
+sour neek 3iraqi	8.0
+sour neek arab	8.0
+sour neek arabi	8.0
+sour neek khaliji	8.0
+sour neek lebnani	8.0
+sour neek maghribi	8.0
+sour neek masri	8.0
+sour neek masry	8.0
+sour neek saudi	8.0
+sour neek souri	8.0
+sour nik	8.0
+sour nik 3iraqi	8.0
+sour nik arab	8.0
+sour nik arabi	8.0
+sour nik khaliji	8.0
+sour nik lebnani	8.0
+sour nik maghribi	8.0
+sour nik masri	8.0
+sour nik masry	8.0
+sour nik saudi	8.0
+sour nik souri	8.0
+sour porn	8.0
+sour porn 3iraqi	8.0
+sour porn arab	8.0
+sour porn arabi	8.0
+sour porn khaliji	8.0
+sour porn lebnani	8.0
+sour porn maghribi	8.0
+sour porn masri	8.0
+sour porn masry	8.0
+sour porn saudi	8.0
+sour porn souri	8.0
+sour qahba	8.0
+sour sex	8.0
+sour sex 3iraqi	8.0
+sour sex arab	8.0
+sour sex arabi	8.0
+sour sex khaliji	8.0
+sour sex lebnani	8.0
+sour sex maghribi	8.0
+sour sex masri	8.0
+sour sex masry	8.0
+sour sex saudi	8.0
+sour sex souri	8.0
+sour shrmota	8.0
+sour sks	8.0
+sour sks 3iraqi	8.0
+sour sks arab	8.0
+sour sks arabi	8.0
+sour sks khaliji	8.0
+sour sks lebnani	8.0
+sour sks maghribi	8.0
+sour sks masri	8.0
+sour sks masry	8.0
+sour sks saudi	8.0
+sour sks souri	8.0
+sowar 3ahra	8.0
+sowar ebahy	8.0
+sowar ebahy 3iraqi	8.0
+sowar ebahy arab	8.0
+sowar ebahy arabi	8.0
+sowar ebahy khaliji	8.0
+sowar ebahy lebnani	8.0
+sowar ebahy maghribi	8.0
+sowar ebahy masri	8.0
+sowar ebahy masry	8.0
+sowar ebahy saudi	8.0
+sowar ebahy souri	8.0
+sowar kahba	8.0
+sowar neek	8.0
+sowar neek 3iraqi	8.0
+sowar neek arab	8.0
+sowar neek arabi	8.0
+sowar neek khaliji	8.0
+sowar neek lebnani	8.0
+sowar neek maghribi	8.0
+sowar neek masri	8.0
+sowar neek masry	8.0
+sowar neek saudi	8.0
+sowar neek souri	8.0
+sowar nik	8.0
+sowar nik 3iraqi	8.0
+sowar nik arab	8.0
+sowar nik arabi	8.0
+sowar nik khaliji	8.0
+sowar nik lebnani	8.0
+sowar nik maghribi	8.0
+sowar nik masri	8.0
+sowar nik masry	8.0
+sowar nik saudi	8.0
+sowar nik souri	8.0
+sowar porn	8.0
+sowar porn 3iraqi	8.0
+sowar porn arab	8.0
+sowar porn arabi	8.0
+sowar porn khaliji	8.0
+sowar porn lebnani	8.0
+sowar porn maghribi	8.0
+sowar porn masri	8.0
+sowar porn masry	8.0
+sowar porn saudi	8.0
+sowar porn souri	8.0
+sowar qahba	8.0
+sowar sex	8.0
+sowar sex 3iraqi	8.0
+sowar sex arab	8.0
+sowar sex arabi	8.0
+sowar sex khaliji	8.0
+sowar sex lebnani	8.0
+sowar sex maghribi	8.0
+sowar sex masri	8.0
+sowar sex masry	8.0
+sowar sex saudi	8.0
+sowar sex souri	8.0
+sowar shrmota	8.0
+sowar sks	8.0
+sowar sks 3iraqi	8.0
+sowar sks arab	8.0
+sowar sks arabi	8.0
+sowar sks khaliji	8.0
+sowar sks lebnani	8.0
+sowar sks maghribi	8.0
+sowar sks masri	8.0
+sowar sks masry	8.0
+sowar sks saudi	8.0
+sowar sks souri	8.0
+syks	8.0
+t3re	6.0
+t3ri	6.0
+t3ry	6.0
+tabon	8.0
+tabun	8.0
+tabwn	8.0
+tahmil 3ahra	8.0
+tahmil ebahy	8.0
+tahmil kahba	8.0
+tahmil neek	8.0
+tahmil nik	8.0
+tahmil porn	8.0
+tahmil qahba	8.0
+tahmil sex	8.0
+tahmil shrmota	8.0
+tahmil sks	8.0
+tary	6.0
+tbon	8.0
+tbun	8.0
+tbwn	8.0
+tdag3	6.0
+tdaga	6.0
+tdaj3	6.0
+tdaja	6.0
+tdg3	6.0
+tdga	6.0
+tdj3	6.0
+tdja	6.0
+teaz	8.0
+teza	8.0
+tezaa	8.0
+tezg	8.0
+tezh	8.0
+tezha	8.0
+tezj	8.0
+tezk	8.0
+tiaz	8.0
+tizaa	8.0
+tizg	8.0
+tizh	8.0
+tizha	8.0
+tizj	8.0
+tizk	8.0
+tnakt	8.0
+tnek	8.0
+tnik	8.0
+tnkt	8.0
+tnyk	8.0
+tyaz	8.0
+tyza	8.0
+tyzaa	8.0
+tyzg	8.0
+tyzh	8.0
+tyzha	8.0
+tyzj	8.0
+tyzk	8.0
+video 3ahra	8.0
+video ebahy	8.0
+video ebahy 3iraqi	8.0
+video ebahy arab	8.0
+video ebahy arabi	8.0
+video ebahy khaliji	8.0
+video ebahy lebnani	8.0
+video ebahy maghribi	8.0
+video ebahy masri	8.0
+video ebahy masry	8.0
+video ebahy saudi	8.0
+video ebahy souri	8.0
+video kahba	8.0
+video neek	8.0
+video neek 3iraqi	8.0
+video neek arab	8.0
+video neek arabi	8.0
+video neek khaliji	8.0
+video neek lebnani	8.0
+video neek maghribi	8.0
+video neek masri	8.0
+video neek masry	8.0
+video neek saudi	8.0
+video neek souri	8.0
+video nik	8.0
+video nik 3iraqi	8.0
+video nik arab	8.0
+video nik arabi	8.0
+video nik khaliji	8.0
+video nik lebnani	8.0
+video nik maghribi	8.0
+video nik masri	8.0
+video nik masry	8.0
+video nik saudi	8.0
+video nik souri	8.0
+video porn	8.0
+video porn 3iraqi	8.0
+video porn arab	8.0
+video porn arabi	8.0
+video porn khaliji	8.0
+video porn lebnani	8.0
+video porn maghribi	8.0
+video porn masri	8.0
+video porn masry	8.0
+video porn saudi	8.0
+video porn souri	8.0
+video qahba	8.0
+video sex	8.0
+video sex 3iraqi	8.0
+video sex arab	8.0
+video sex arabi	8.0
+video sex khaliji	8.0
+video sex lebnani	8.0
+video sex maghribi	8.0
+video sex masri	8.0
+video sex masry	8.0
+video sex saudi	8.0
+video sex souri	8.0
+video shrmota	8.0
+video sks	8.0
+video sks 3iraqi	8.0
+video sks arab	8.0
+video sks arabi	8.0
+video sks khaliji	8.0
+video sks lebnani	8.0
+video sks maghribi	8.0
+video sks masri	8.0
+video sks masry	8.0
+video sks saudi	8.0
+video sks souri	8.0
+ydag3	6.0
+ydaga	6.0
+ydaj3	6.0
+ydaja	6.0
+ydg3	6.0
+ydga	6.0
+ydj3	6.0
+ydja	6.0
+ynek	8.0
+yneka	8.0
+ynekaa	8.0
+ynekh	8.0
+ynekha	8.0
+ynik	8.0
+ynika	8.0
+ynikaa	8.0
+ynikh	8.0
+ynikha	8.0
+ynyk	8.0
+ynyka	8.0
+ynykaa	8.0
+ynykh	8.0
+ynykha	8.0
+ytnak	8.0
+ytnk	8.0
+zanea	6.0
+zaneh	6.0
+zania	6.0
+zanih	6.0
+zanya	6.0
+zanyh	6.0
+zbra	6.0
+zbrh	6.0
+znea	6.0
+zneh	6.0
+znia	6.0
+znih	6.0
+znya	6.0
+znyh	6.0

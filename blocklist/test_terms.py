@@ -303,3 +303,125 @@ class TestCompiler(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+# --------------------------------------------------------------------------- #
+# The generated Arabic tables
+# --------------------------------------------------------------------------- #
+
+class TestGeneratedArabic(unittest.TestCase):
+    """
+    Guards on `gen_terms_ar.py`'s output.
+
+    The Arabic tier is ~5,600 of the ~5,800 terms in the compiled list, and
+    almost all of it is machine-expanded. That is only safe while the
+    expansion cannot reach an innocent word, so the checks below are the price
+    of the size.
+    """
+
+    def setUp(self):
+        sys.path.insert(0, str(Path(__file__).parent))
+        import gen_terms_ar
+        self.gen = gen_terms_ar
+        self.arabic, self.latin = gen_terms_ar.build()
+
+    def test_no_innocent_word_matches(self):
+        """
+        The check that caught the real one.
+
+        `الزب` was emitted as an affixed form of the two-letter stem `زب`, and
+        `الزبون` — the customer — strips its `ون` suffix down to exactly that.
+        Every page with a customer-service section scored as pornography. The
+        bare word `زبون` is clean, so this has to test the inflected forms a
+        page actually contains, not the dictionary form.
+        """
+        hits = self.gen.false_positives(self.arabic)
+        self.assertEqual(hits, [], f"innocent words would be blocked: {hits[:10]}")
+
+    def test_generated_files_match_the_generator(self):
+        """A hand-edit to a generated table is silently lost on the next run."""
+        for name, rows in (("terms.ar-generated.tsv", self.arabic),
+                           ("terms.ar-latn-generated.tsv", self.latin)):
+            on_disk = {
+                line.split("\t")[0]
+                for line in (SRC / name).read_text(encoding="utf-8").splitlines()
+                if line.strip() and not line.startswith("#")
+            }
+            self.assertEqual(
+                on_disk, set(rows),
+                f"{name} is out of sync — run: python3 gen_terms_ar.py")
+
+    def test_fiqh_vocabulary_is_never_a_positive_term(self):
+        """
+        Islamic jurisprudence must stay reachable.
+
+        نكاح is the marriage contract; عورة, جنابة and حيض are core fiqh. A
+        filter that scores them as pornography blocks scholarship for exactly
+        the audience this product is built for, which is a worse failure than
+        missing a tube site.
+        """
+        payload = compiled()
+        positives = {r["t"]: r["w"] for r in payload["terms"]}
+        for word in ("نكاح", "عقد النكاح", "جنابة", "حيض", "طهارة", "محرم"):
+            self.assertNotIn(normalize(word), positives,
+                             f"{word} is fiqh vocabulary, not pornography")
+
+    def test_zina_stays_a_tie_breaker(self):
+        """
+        Regression: `زنا` at 6.0 blocked a four-line islamqa fatwa outright.
+
+        The page `ما حكم الزنا؟` scored 77 against a threshold of 7.5 on the
+        strength of its title alone. It is also a poor signal in the other
+        direction — adult sites advertise with سكس and نيك, not with the legal
+        term — so it earns tie-breaker weight and no more.
+        """
+        positives = {r["t"]: r["w"] for r in compiled()["terms"]}
+        for spelling in ("زنا", "الزنا"):
+            weight = positives.get(normalize(spelling))
+            if weight is not None:
+                self.assertLessEqual(
+                    weight, 3.0,
+                    f"{spelling} at {weight} blocks fatwa pages")
+
+    def test_fatwa_register_is_negative(self):
+        """
+        A short fatwa carries almost no signal except its subject.
+
+        `والله أعلم` and the Q-and-A frame are what separate scholarship from a
+        page that merely uses the same nouns, and without them the four-line
+        case above has nothing to pull it back down.
+        """
+        negatives = {r["t"] for r in compiled()["negatives"]}
+        for marker in ("والله أعلم", "السؤال", "الجواب", "فتوى"):
+            self.assertIn(normalize(marker), negatives)
+
+    def test_franco_terms_avoid_english_words(self):
+        """
+        `عريان` romanises to `aryan`, `معرص` to `mars`, `طيز` to `tare`.
+
+        Every one of those is an ordinary English word, and a generated Franco
+        spelling that collides with one blocks pages that have nothing to do
+        with Arabic at all.
+        """
+        try:
+            words = {w.strip().lower()
+                     for w in open("/usr/share/dict/words", encoding="utf-8")}
+        except OSError:
+            self.skipTest("no system dictionary on this machine")
+        collisions = sorted(set(self.latin) & words)
+        self.assertEqual(collisions, [],
+                         f"Franco terms collide with English: {collisions}")
+
+    def test_arabic_coverage_is_substantial(self):
+        """
+        The floor the expansion exists to clear.
+
+        Arabic adult content spans dialects that share little explicit
+        vocabulary, so a few hundred MSA terms look comprehensive and catch a
+        fraction of real pages.
+        """
+        by_lang: dict[str, int] = {}
+        for row in compiled()["terms"]:
+            by_lang[row["l"]] = by_lang.get(row["l"], 0) + 1
+        self.assertGreaterEqual(by_lang.get("ar", 0) + by_lang.get("ar-latn", 0),
+                                5000)

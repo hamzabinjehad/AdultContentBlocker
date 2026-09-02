@@ -287,8 +287,13 @@ def read_list(path: Path) -> list[str]:
 def compile_terms(src: Path) -> dict:
     """Build the `terms.json` payload from the hand-maintained sources."""
     langs = {
-        "ar": read_tsv(src / "terms.ar.tsv"),
-        "ar-latn": read_tsv(src / "terms.ar-latn.tsv"),
+        # Hand-curated first, generated second. The loop below keeps the first
+        # weight it sees for a term, so a weight chosen by a human always beats
+        # the one `gen_terms_ar.py` derived for the same spelling.
+        "ar": read_tsv(src / "terms.ar.tsv")
+              + read_tsv(src / "terms.ar-generated.tsv"),
+        "ar-latn": read_tsv(src / "terms.ar-latn.tsv")
+                   + read_tsv(src / "terms.ar-latn-generated.tsv"),
         "en": read_tsv(src / "terms.en.tsv"),
     }
 
@@ -301,7 +306,9 @@ def compile_terms(src: Path) -> dict:
             terms.append({"t": row["t"], "w": row["w"], "l": lang})
 
     negatives = [
-        {"t": r["t"], "w": -abs(r["w"])} for r in read_tsv(src / "negatives.tsv")
+        {"t": r["t"], "w": -abs(r["w"])}
+        for r in read_tsv(src / "negatives.tsv")
+        + read_tsv(src / "negatives.ar-generated.tsv")
     ]
     never_keyword = read_list(src / "never_keyword.txt")
 

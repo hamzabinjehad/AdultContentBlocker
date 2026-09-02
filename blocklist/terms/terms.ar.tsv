@@ -58,8 +58,14 @@
 قحبات	8.0
 داعرة	7.0
 دعارة	7.0
-زنا	6.0
-الزنا	6.0
+# `زنا` is fiqh and criminal-law vocabulary before it is anything else, and
+# it is a poor pornography signal: adult sites advertise with سكس and نيك,
+# not with the legal term. At 6.0 it blocked a four-line islamqa fatwa
+# titled `ما حكم الزنا؟` outright (score 77 against a threshold of 7.5).
+# Demoted to tie-breaker weight; the fatwa register in
+# negatives.ar-generated.tsv carries the rest.
+زنا	2.0
+الزنا	2.0
 لواط	7.0
 لوطي	7.0
 سحاق	7.0
