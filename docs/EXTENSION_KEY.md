@@ -1,7 +1,13 @@
 # Extension signing key
 
-`hisn-extension-signing.pem` (git-ignored, matches `*.pem` in the root
-`.gitignore`) pins this extension's Chrome/Edge ID so it stays the same across
+The key itself lives at `keys/hisn-extension-signing.pem`, which the root
+`.gitignore` excludes. It used to live in `extension/keys/`, and that was a
+mistake: everything under `extension/` is the extension, so the private key was
+copied into every build of it — it shipped inside the converted Safari
+`.appex`, and a Chrome Web Store upload would have carried it too. A signing
+key inside the artefact it signs is the artefact handing out its own identity.
+
+`keys/hisn-extension-signing.pem` (git-ignored via `/keys/`) pins this extension's Chrome/Edge ID so it stays the same across
 every unpacked load, every dev machine, and eventual Chrome Web Store
 publication — without it, an unpacked extension gets a random ID on every
 install location, which is fatal here specifically: the native messaging host
@@ -24,7 +30,7 @@ keep it, do not rotate it casually.
 To regenerate from scratch (do not do this unless the old key is compromised):
 
     openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 \
-        -out keys/hisn-extension-signing.pem
+        -out keys/hisn-extension-signing.pem   # repo root, not extension/
     openssl rsa -in keys/hisn-extension-signing.pem -pubout -outform DER \
         -out /tmp/pub.der
     python3 -c "
