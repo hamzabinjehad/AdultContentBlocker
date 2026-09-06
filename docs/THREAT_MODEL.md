@@ -90,6 +90,15 @@ That single change converts rows 10, 11 and 13 from "open" to "requires
 contacting another human". It is the highest-leverage thing in this entire
 document, and it costs nothing to implement.
 
+`macos/setup_guardian.sh` performs exactly this split, with both people present:
+the second person sets an admin password this Mac never reveals to the daily
+user, the new account is granted a FileVault secure token so the disk stays
+unlockable, and only after that account is proven to work does the daily user
+step down to standard. It is deliberately not a hidden vendor-held admin — that
+would be a backdoor, extractable from the binary or catastrophic on a breach,
+and it is the exact failure Part 5 warns against. The secret is held by a
+human, which is the only holder a person cannot reach alone at 2am.
+
 Row 15 — another device — is closed by no software on this Mac. It is the
 reason iOS ships in v1 rather than "later". A locked Mac next to an unlocked
 phone is not 90% of a solution; it is closer to 0%, because the constraint is
