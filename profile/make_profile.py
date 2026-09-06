@@ -226,6 +226,48 @@ def p_chrome(extension_id: str, update_url: str,
                    "Locks Chrome DNS, proxy, and extension settings.", **policy)
 
 
+# Every Chromium fork reads the SAME policy keys, just under its own bundle
+# identifier. Naming only Chrome and Edge left the obvious escape open: install
+# Brave, turn on its built-in DNS-over-HTTPS, and every DNS-layer control on
+# this Mac — the hosts file, the managed resolver, all of it — is bypassed,
+# because the browser stopped asking the system to resolve anything.
+#
+# These are the Chromium browsers a person actually reaches for. It is not a
+# complete list and cannot be: a fork published tomorrow needs adding here. That
+# is the structural weakness of naming browsers one at a time, and the reason
+# the socket-level filter — which never asks which browser it is — is the layer
+# that actually closes this row of the threat model.
+CHROMIUM_FAMILY = [
+    ("com.brave.Browser", "brave", "Brave"),
+    ("com.vivaldi.Vivaldi", "vivaldi", "Vivaldi"),
+    ("com.operasoftware.Opera", "opera", "Opera"),
+    ("company.thebrowser.Browser", "arc", "Arc"),
+    ("org.chromium.Chromium", "chromium", "Chromium"),
+    ("com.google.Chrome.beta", "chrome-beta", "Chrome Beta"),
+    ("com.google.Chrome.dev", "chrome-dev", "Chrome Dev"),
+    ("com.google.Chrome.canary", "chrome-canary", "Chrome Canary"),
+]
+
+
+def p_chromium_family(lock_devtools: bool = True) -> list[dict]:
+    """DNS and proxy locks for every Chromium fork we know the id of.
+
+    Deliberately WITHOUT the extension policy: the extension is not published,
+    so a force-install entry would fail forever, and `"*": blocked` would stop
+    the unpacked copy loading. Locking DNS is the part that matters here — the
+    fork exists in this list because it can resolve names on its own, not
+    because anyone will run the extension in it.
+    """
+    out = []
+    for bundle_id, slug, name in CHROMIUM_FAMILY:
+        policy = dict(CHROMIUM_POLICY)
+        if lock_devtools:
+            policy.update(CHROMIUM_DEVTOOLS_LOCK)
+        out.append(payload(bundle_id, slug, f"{name} Policy",
+                           f"Locks {name} DNS and proxy settings.", **policy))
+    return out
+
+
 def p_edge(extension_id: str, update_url: str,
            lock_devtools: bool = True) -> dict:
     policy = dict(CHROMIUM_POLICY)
@@ -297,6 +339,7 @@ def build(args: argparse.Namespace) -> tuple[dict, str]:
         p_edge(args.extension_id, args.update_url,
                lock_devtools=not args.allow_devtools),
         p_firefox(lock_devtools=not args.allow_devtools),
+        *p_chromium_family(lock_devtools=not args.allow_devtools),
     ]
     if args.lock_settings:
         payloads.append(p_system_settings())

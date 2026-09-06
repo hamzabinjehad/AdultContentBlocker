@@ -162,6 +162,60 @@ class TestNetworkHardening(unittest.TestCase):
                         "about:config is where a Firefox user re-enables DoH")
 
 
+class TestChromiumFamily(unittest.TestCase):
+    """
+    Naming only Chrome and Edge left the obvious escape open.
+
+    Every Chromium fork reads the same policy keys under its own bundle id, and
+    every one of them ships a built-in DNS-over-HTTPS client. Install Brave,
+    switch that on, and the hosts file and the managed resolver both stop being
+    consulted — the browser resolves names itself. Locking Chrome while leaving
+    Brave open is not a partial defence, it is a signpost to the way out.
+    """
+
+    # Written out rather than read from CHROMIUM_FAMILY on purpose. A test that
+    # iterates the list it is checking cannot notice the list getting shorter —
+    # deleting Brave from the source would delete it from the expectations too,
+    # and the suite would go green while the hole reopened. Verified by doing
+    # exactly that: with the list-driven version the mutation passed.
+    MUST_COVER = [
+        "com.google.Chrome", "com.microsoft.Edge", "org.mozilla.firefox",
+        "com.brave.Browser", "com.vivaldi.Vivaldi", "com.operasoftware.Opera",
+        "company.thebrowser.Browser", "org.chromium.Chromium",
+    ]
+
+    def test_every_known_fork_has_its_dns_locked(self):
+        types = {p["PayloadType"] for p in build()["PayloadContent"]}
+        for bundle_id in self.MUST_COVER:
+            self.assertIn(bundle_id, types, f"{bundle_id} is unprotected")
+
+    def test_forks_lock_dns_and_proxy(self):
+        profile = build()
+        for bundle_id, _, name in make_profile.CHROMIUM_FAMILY:
+            p = payload(profile, bundle_id)
+            self.assertEqual(p["DnsOverHttpsMode"], "off", name)
+            self.assertFalse(p["BuiltInDnsClientEnabled"], name)
+            self.assertEqual(p["ProxySettings"]["ProxyMode"], "system", name)
+
+    def test_forks_carry_no_extension_policy(self):
+        """The extension is not published, so a force-install entry there would
+        fail forever and `"*": blocked` would stop an unpacked copy loading —
+        for a browser nobody is going to run the extension in anyway."""
+        profile = build(extension_id="abc")
+        for bundle_id, _, name in make_profile.CHROMIUM_FAMILY:
+            p = payload(profile, bundle_id)
+            self.assertNotIn("ExtensionSettings", p, name)
+            self.assertNotIn("ExtensionInstallForcelist", p, name)
+
+    def test_devtools_flag_reaches_the_forks_too(self):
+        locked, open_ = build(), build(allow_devtools=True)
+        for bundle_id, _, name in make_profile.CHROMIUM_FAMILY:
+            self.assertEqual(
+                payload(locked, bundle_id)["DeveloperToolsAvailability"], 2, name)
+            self.assertNotIn("DeveloperToolsAvailability",
+                             payload(open_, bundle_id), name)
+
+
 class TestRemoval(unittest.TestCase):
 
     def test_removal_needs_the_password(self):
