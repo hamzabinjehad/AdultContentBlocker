@@ -75,11 +75,30 @@ System Settings → General → Device Management → install
 Chromium browsers and disables iCloud Private Relay — the network bypasses a
 blocklist cannot reach.
 
+## 5. Verify it actually took
+
+```bash
+macos/verify_enforcement.sh
+```
+
+Read-only. It reports which layers are genuinely live — account split, hosts,
+Chrome incognito, Chrome DoH, Private Relay, the system filter — and exits
+non-zero if any critical one is open. Run it as the second person after setup:
+the whole point of this product is that "looks protected" and "is protected"
+can differ, and this is where you catch the difference.
+
+**Incognito is the row people miss.** The extension is `not_allowed` in
+incognito, so it does not run there — an incognito window bypasses the entire
+page-text layer. The only thing that closes it is the profile's
+`IncognitoModeAvailability = 1`, which removes incognito entirely. Until the
+profile is installed, `verify_enforcement.sh` reports this row OPEN, and it is.
+
 ## What this gets you, and what it still does not
 
 Enforced: the extension cannot be disabled or removed, no rival extension can be
-installed, DoH is off, page text is scanned against the ~5,800-term list
-including the 5,547 Arabic terms.
+installed, incognito is gone (so it cannot be used to escape the extension), DoH
+is off, page text is scanned against the ~5,800-term list including the 5,547
+Arabic terms.
 
 Still open, honestly: an admin removing the profile (closed only by the account
 split), Recovery mode (`THREAT_MODEL.md` row 13), and another device (row 15).
