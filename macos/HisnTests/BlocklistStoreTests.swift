@@ -364,9 +364,10 @@ final class NativeMessagingInstallerTests: XCTestCase {
             [mapping[Int($0 >> 4)], mapping[Int($0 & 0xF)]]
         })
 
-        XCTAssertEqual(id, NativeMessagingInstaller.extensionID,
-            "extension/manifest.json's key no longer derives the pinned "
-            + "extension ID — native messaging will silently stop working")
+        XCTAssertTrue(NativeMessagingInstaller.extensionIDs.contains(id),
+            "extension/manifest.json's key no longer derives the pinned local "
+            + "extension ID, or that ID was dropped from allowed_origins — "
+            + "native messaging for the unpacked extension will silently stop")
     }
 
     /// THE regression test for the actual bug: an earlier `generate_xcodeproj.py`

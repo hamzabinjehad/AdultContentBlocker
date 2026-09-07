@@ -1,0 +1,89 @@
+# Forcing the extension on Chrome/Edge
+
+The browser extension is the only layer that reads **page text** — the socket
+filter sees hosts and flows, never content. So catching adult material inside a
+general site (X, Reddit) or on a domain registered today, un-removably, means
+forcing the extension. On macOS that is possible for Chrome/Edge and **not** for
+Safari without supervised MDM (see `THREAT_MODEL.md`). This is the Chrome path,
+in order.
+
+Every step depends on the one before it. Do them in this sequence or the result
+is an extension that looks installed and enforces nothing.
+
+## 0. Prerequisite: the account split
+
+None of this is a lock until the person under it is a **standard user** and a
+second person holds admin — `macos/setup_guardian.sh`. A managed profile keeps
+the extension un-removable only for as long as the profile itself cannot be
+removed, and removing a profile needs admin. Skip this and everything below is a
+setting the user can undo in a minute.
+
+## 1. Package the extension
+
+```bash
+extension/package.sh          # -> dist/hisn-extension-<version>.zip
+```
+
+Strips the private key, the `key` field, `_comment_*` keys, and `test/`. The zip
+is what you upload; it is verified to contain no `.pem` and a clean manifest.
+
+## 2. Publish to the Chrome Web Store
+
+Upload the zip at <https://chrome.google.com/webstore/devconsole> (one-time $5
+developer registration, separate from Apple's $99). It goes through review.
+
+**THE gotcha, and it is a silent one.** The Web Store assigns the extension its
+own id and ignores the manifest `key`. So the published extension's id is **not**
+`hfhaffbmoeepcdolgejeidkgaoapcjig` — that id belongs to the local unpacked key.
+Read the real id from the dashboard after upload. Everything downstream that
+names an id must use the store id, or the browser and the app stop talking with
+no error anywhere visible.
+
+## 3. Wire the store id into the two places that hardcode one
+
+* **Native messaging** — add the store id to `extensionIDs` in
+  `macos/Hisn/NativeMessagingInstaller.swift`, then rebuild the app. The list
+  already carries the local id; adding the store id lets one app build serve
+  both the unpacked and the published extension. Miss this and `pollNative()`
+  fails forever: the extension never hears the lock state and fails closed to
+  strict.
+
+* **The force-install profile** — pass the store id when generating it:
+
+  ```bash
+  python3 profile/make_profile.py --resolver cloudflare \
+      --extension-id <STORE_ID> \
+      --out dist/hisn-hardening.mobileconfig --print-password
+  ```
+
+  This emits `ExtensionInstallForcelist` (force-install by id from the store)
+  plus `ExtensionSettings` with `"*": blocked` — the extension cannot be
+  disabled or removed, and no other extension can be installed to proxy around
+  it. Save the printed removal password; give it to the second person, never the
+  user.
+
+  Do **not** install this profile until the extension is actually live on the
+  store. Before then, the force-install fails and `"*": blocked` stops even the
+  unpacked copy from loading — you get no extension at all. `make_profile.py`
+  with no `--extension-id` deliberately omits this whole block for exactly that
+  reason, and a test pins the behaviour.
+
+## 4. Install the profile, as the second person
+
+System Settings → General → Device Management → install
+`dist/hisn-hardening.mobileconfig`. It also locks DNS-over-HTTPS across eleven
+Chromium browsers and disables iCloud Private Relay — the network bypasses a
+blocklist cannot reach.
+
+## What this gets you, and what it still does not
+
+Enforced: the extension cannot be disabled or removed, no rival extension can be
+installed, DoH is off, page text is scanned against the ~5,800-term list
+including the 5,547 Arabic terms.
+
+Still open, honestly: an admin removing the profile (closed only by the account
+split), Recovery mode (`THREAT_MODEL.md` row 13), and another device (row 15).
+The profile narrows the browser gap to a list of known Chromium forks; a fork
+published tomorrow needs adding by hand. The socket filter — which never asks
+which browser opened a flow — is the layer that closes that class for good, and
+it needs Apple's $99 and the same account split to be un-disableable.

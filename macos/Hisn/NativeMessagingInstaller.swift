@@ -44,9 +44,28 @@ import Foundation
 ///    would break the moment someone drags the app anywhere else.
 public enum NativeMessagingInstaller {
 
-    /// Derived from `extension/keys/hisn-extension-signing.pem` — see
-    /// `extension/keys/README.md` for how, and for what changing it breaks.
-    static let extensionID = "hfhaffbmoeepcdolgejeidkgaoapcjig"
+    /// Every extension id allowed to reach the bridge.
+    ///
+    /// A list, not one id, because the same extension has TWO ids depending on
+    /// how it was loaded, and both are legitimate:
+    ///
+    ///   * unpacked, from `extension/` — the id is derived from the pinned
+    ///     `key` in the manifest, `hfhaffbmoeepcdolgejeidkgaoapcjig`. This is
+    ///     what a developer runs, and what `docs/EXTENSION_KEY.md` documents.
+    ///
+    ///   * published to the Chrome Web Store — the store assigns its OWN id and
+    ///     ignores the manifest key, so the shipping extension has a different
+    ///     one. `package.sh` says this out loud when it strips the key.
+    ///
+    /// Listing both means one app build serves the developer and the published
+    /// extension without a rebuild. When the extension is published, add its
+    /// store id here (and to the force-install profile). `allowed_origins` is
+    /// an allowlist of exact ids, so listing an id that does not exist yet
+    /// costs nothing — it simply never matches until that extension is loaded.
+    static let extensionIDs = [
+        "hfhaffbmoeepcdolgejeidkgaoapcjig",   // unpacked / local dev
+        // "…store-assigned id…",             // add after first Web Store publish
+    ]
 
     static let hostName = "app.hisn.bridge"
 
@@ -139,7 +158,7 @@ public enum NativeMessagingInstaller {
             "description": "Hisn lock-state bridge",
             "path": bridgePath,
             "type": "stdio",
-            "allowed_origins": ["chrome-extension://\(extensionID)/"],
+            "allowed_origins": extensionIDs.map { "chrome-extension://\($0)/" },
         ]
     }
 
