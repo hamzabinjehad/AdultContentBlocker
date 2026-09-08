@@ -7,6 +7,9 @@ content, built so that the person who set it up cannot casually undo it.
 Every design decision in this repo is downstream of that document, and several
 of them look wrong until you know which bypass they close.
 
+**To actually deploy it on a Mac, follow [`docs/SETUP.md`](docs/SETUP.md)** —
+the whole thing in dependency order, with what each step needs and who does it.
+
 ---
 
 ## What's here
