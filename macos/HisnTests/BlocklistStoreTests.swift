@@ -575,14 +575,6 @@ final class LockDurationTests: XCTestCase {
         XCTAssertNil(LockManager.validated(seconds: Double("1e400") ?? 0))
     }
 
-    /// A typed length is charged like the preset it matches, or "Custom: 8
-    /// days" is just a way around the paywall.
-    func testTypedLengthsAreGatedLikePresets() {
-        XCTAssertFalse(LockManager.requiresSubscription(seconds: 7 * 86400))
-        XCTAssertFalse(LockManager.requiresSubscription(seconds: 3600))
-        XCTAssertTrue(LockManager.requiresSubscription(seconds: 8 * 86400))
-    }
-
     func testEveryPresetIsInsideTheAllowedRange() {
         for preset in LockManager.Duration.allCases {
             guard let seconds = preset.seconds else {

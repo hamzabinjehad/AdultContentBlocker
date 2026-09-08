@@ -104,9 +104,6 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 6) {
                 Text("How long?").font(.headline)
-                // The Pro marker moved out of the segments. With a fifth
-                // option they no longer fit alongside four repeats of " · Pro",
-                // and one line below says the same thing once.
                 Picker("", selection: $duration) {
                     ForEach(LockManager.Duration.allCases) { d in
                         Text(d.rawValue).tag(d)
@@ -301,10 +298,7 @@ struct ContentView: View {
             return "Between \(LockManager.describe(LockManager.minimumLock)) and "
                 + "\(LockManager.describe(LockManager.maximumLock))."
         }
-        let ends = "Ends \(Date().addingTimeInterval(seconds).formatted(date: .abbreviated, time: .shortened))."
-        return LockManager.requiresSubscription(seconds: seconds)
-            ? ends + " Longer than 7 days is a Pro plan."
-            : ends
+        return "Ends \(Date().addingTimeInterval(seconds).formatted(date: .abbreviated, time: .shortened))."
     }
 
     /// The confirmation-dialog body: the wall-clock deadline, and — when

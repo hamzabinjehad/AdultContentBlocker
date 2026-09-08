@@ -59,13 +59,6 @@ public final class LockManager: ObservableObject {
         }
     }
 
-    /// Free tier gets a week; longer commitments are paid.
-    ///
-    /// Applies to a typed length exactly as it does to a preset — otherwise
-    /// "Custom: 8 days" is simply a way around the paywall.
-    public nonisolated static func requiresSubscription(seconds: TimeInterval) -> Bool {
-        seconds > 7 * 86400
-    }
 
     /// The shortest and longest lock that may be started.
     ///
