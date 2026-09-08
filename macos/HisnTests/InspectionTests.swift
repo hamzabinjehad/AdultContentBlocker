@@ -309,3 +309,57 @@ final class EditorSummaryTests: XCTestCase {
         XCTAssertTrue(s.text.contains("over the \(UserBlocks.maximumTerms)-word limit"))
     }
 }
+
+// MARK: - Enforcement snapshot (drives header tone and the Start warning)
+
+/// `Enforcement` is the single source both the status header and the setup
+/// screen read to answer "would a lock actually block anything?". Pinned here
+/// because the honest-status promise turns on it: a wrong answer either alarms a
+/// correctly-set-up user or reassures one whose lock enforces nothing.
+final class EnforcementTests: XCTestCase {
+
+    private var namespace: String!
+    private var d: UserDefaults!
+
+    override func setUp() {
+        super.setUp()
+        namespace = "app.hisn.tests.\(UUID().uuidString)"
+        LockStore.appGroup = namespace
+        d = UserDefaults(suiteName: namespace)
+    }
+    override func tearDown() {
+        UserDefaults().removePersistentDomain(forName: namespace)
+        super.tearDown()
+    }
+
+    func testNothingEnforcingOnAFreshMachine() {
+        // No filter, no list, extension never seen.
+        XCTAssertEqual(Enforcement.enforcingCount(filterEnabled: false), 0)
+        let layers = Enforcement.layers(filterEnabled: false)
+        XCTAssertFalse(layers[0].ok)
+        XCTAssertEqual(layers[0].detail, "not running")
+        XCTAssertEqual(layers[1].detail, "never connected")
+    }
+
+    func testFilterCountsOnlyWithAList() {
+        // Enabled but with no list is NOT enforcing — the "looks on, blocks
+        // nothing" state the header exists to expose.
+        XCTAssertEqual(Enforcement.enforcingCount(filterEnabled: true), 0)
+        XCTAssertEqual(Enforcement.layers(filterEnabled: true)[0].detail,
+                       "running, no list")
+        d.set(150_000, forKey: "filterDomainCount")
+        XCTAssertEqual(Enforcement.enforcingCount(filterEnabled: true), 1)
+        XCTAssertTrue(Enforcement.layers(filterEnabled: true)[0].ok)
+    }
+
+    func testExtensionLivenessIsTimeBounded() {
+        d.set(Date(), forKey: "extensionLastSeen")
+        XCTAssertTrue(Enforcement.layers(filterEnabled: false)[1].ok)
+
+        // A stale heartbeat is "not responding", not "connected".
+        d.set(Date().addingTimeInterval(-600), forKey: "extensionLastSeen")
+        let ext = Enforcement.layers(filterEnabled: false)[1]
+        XCTAssertFalse(ext.ok)
+        XCTAssertEqual(ext.detail, "not responding")
+    }
+}

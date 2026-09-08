@@ -164,6 +164,20 @@ struct ContentView: View {
                 .padding(4)
             }
 
+            // Just-in-time, at the point of decision rather than as a permanent
+            // banner up top. Someone about to commit to a lock that enforces
+            // nothing is the one moment this warning earns its alarm — and the
+            // confirmation dialog repeats it, so it cannot be clicked past by
+            // reflex.
+            if Enforcement.enforcingCount(filterEnabled: filter.isEnabled) == 0 {
+                Label("Nothing is set up to enforce a lock yet — it would run "
+                      + "but block nothing. See docs/SETUP.md.",
+                      systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             Button {
                 showConfirm = true
             } label: {
@@ -183,10 +197,7 @@ struct ContentView: View {
                 // Names the wall-clock moment, not just the length. "90 days"
                 // is abstract in a way "18 February" is not, and the point of
                 // this dialog is that nobody starts a lock they misjudged.
-                Text(selectedSeconds.map {
-                    "You will not be able to turn this off until "
-                        + Date().addingTimeInterval($0).formatted() + "."
-                } ?? "")
+                Text(confirmMessage)
             }
         }
     }
@@ -294,6 +305,21 @@ struct ContentView: View {
         return LockManager.requiresSubscription(seconds: seconds)
             ? ends + " Longer than 7 days is a Pro plan."
             : ends
+    }
+
+    /// The confirmation-dialog body: the wall-clock deadline, and — when
+    /// nothing is set up to enforce it — the fact that the lock will block
+    /// nothing, repeated here so it cannot be clicked past by reflex from the
+    /// Start button.
+    private var confirmMessage: String {
+        guard let seconds = selectedSeconds else { return "" }
+        var msg = "You will not be able to turn this off until "
+            + Date().addingTimeInterval(seconds).formatted() + "."
+        if Enforcement.enforcingCount(filterEnabled: filter.isEnabled) == 0 {
+            msg += "\n\nNothing is set up to enforce it yet, so it will run but "
+                + "block nothing until you finish setup."
+        }
+        return msg
     }
 
     private func start() {
@@ -554,31 +580,66 @@ private struct InspectionSheet: View {
 /// list. A filter running with no list blocks nothing while every other signal
 /// still reads green — which the threat model rates worse than being switched
 /// off, because the person stops being careful.
+/// One enforcement layer's live state, and the reasons behind the whole design
+/// live in `StatusHeader` below. Split out of the header so the setup screen can
+/// ask the same question — "would a lock actually enforce anything?" — from the
+/// same source, rather than a second copy that drifts.
+struct EnforcementLayer: Identifiable {
+    let name: String
+    let detail: String
+    let ok: Bool
+    var id: String { name }
+}
+
+enum Enforcement {
+    /// The two layers the app can actually observe, read fresh.
+    ///
+    /// Takes `filterEnabled` rather than the controller so it needs no actor
+    /// isolation and stays a plain value computation. The domain count and the
+    /// extension heartbeat come from the shared container — the only honest
+    /// source, since the filter and the bridge are separate processes and the
+    /// app reporting on itself would be no evidence at all.
+    static func layers(filterEnabled: Bool) -> [EnforcementLayer] {
+        let d = UserDefaults(suiteName: LockStore.appGroup)
+        let domainCount = d?.integer(forKey: "filterDomainCount") ?? 0
+        let lastSeen = d?.object(forKey: "extensionLastSeen") as? Date
+        // The extension polls once a minute; a gap this long means it stopped,
+        // not that we caught it between beats.
+        let extLive = lastSeen.map { Date().timeIntervalSince($0) < 5 * 60 } ?? false
+        return [
+            EnforcementLayer(
+                name: "System filter",
+                detail: filterEnabled
+                    ? (domainCount > 0 ? "\(domainCount.formatted()) domains"
+                                       : "running, no list")
+                    : "not running",
+                ok: filterEnabled && domainCount > 0),
+            EnforcementLayer(
+                name: "Browser extension",
+                detail: extLive ? "connected"
+                    : (lastSeen == nil ? "never connected" : "not responding"),
+                ok: extLive),
+        ]
+    }
+
+    static func enforcingCount(filterEnabled: Bool) -> Int {
+        layers(filterEnabled: filterEnabled).filter(\.ok).count
+    }
+}
+
 private struct StatusHeader: View {
     @ObservedObject var lock: LockManager
     @ObservedObject var filter: FilterController
 
-    /// Written by the extension after it loads a list. The app and the filter
-    /// are separate processes with separate stores, so this is the only
-    /// honest source; anything else would be the app reporting on itself.
     private var filterDomainCount: Int {
         UserDefaults(suiteName: LockStore.appGroup)?
             .integer(forKey: "filterDomainCount") ?? 0
     }
 
-    /// When the browser extension last reached `HisnBridge`. Written by the
-    /// bridge on every heartbeat; nil means it has never once connected.
-    private var extensionLastSeen: Date? {
-        UserDefaults(suiteName: LockStore.appGroup)?
-            .object(forKey: "extensionLastSeen") as? Date
+    private var layers: [EnforcementLayer] {
+        Enforcement.layers(filterEnabled: filter.isEnabled)
     }
-
-    /// The extension polls once a minute, so a gap this long means it stopped
-    /// rather than that we caught it between beats.
-    private var extensionIsLive: Bool {
-        guard let seen = extensionLastSeen else { return false }
-        return Date().timeIntervalSince(seen) < 5 * 60
-    }
+    private var enforcingCount: Int { layers.filter(\.ok).count }
 
     private var problem: String? {
         guard lock.isLocked else { return nil }
@@ -589,70 +650,34 @@ private struct StatusHeader: View {
         return nil
     }
 
-    /// What is actually enforcing anything, right now, whether or not a lock is
-    /// running.
-    ///
-    /// The header used to answer only "is a lock running", and suppressed every
-    /// diagnostic when one was not — `problem` returns nil immediately in the
-    /// unlocked state. That left the honest-status promise half kept: a machine
-    /// where the system extension had never been approved and the browser
-    /// extension had never been loaded showed a green dot and the word "Not
-    /// locked", which reads as *nothing is wrong* when the truth is *nothing
-    /// would work if you started a lock right now*. Both layers can be absent
-    /// silently and independently, so both are named individually rather than
-    /// summarised into one word.
-    struct Layer: Identifiable {
-        let name: String
-        let detail: String
-        let ok: Bool
-        var id: String { name }
-    }
-
-    private var layers: [Layer] {
-        [
-            Layer(name: "System filter", detail:
-                  filter.isEnabled
-                    ? (filterDomainCount > 0
-                        ? "\(filterDomainCount.formatted()) domains"
-                        : "running, no list")
-                    : "not running",
-                  ok: filter.isEnabled && filterDomainCount > 0),
-            Layer(name: "Browser extension",
-                  detail: extensionIsLive
-                    ? "connected"
-                    : (extensionLastSeen == nil ? "never connected" : "not responding"),
-                  ok: extensionIsLive),
-        ]
-    }
-
-    private var enforcingCount: Int { layers.filter(\.ok).count }
-
     /// The headline word. A lock being *recorded* is not the same as protection
-    /// being *enforced* — the countdown can be running while the filter never
-    /// activated (no signed extension) or is running with no list. Saying
-    /// "Protected" in that state is the one dishonesty this header exists to
-    /// prevent, so a lock with an unresolved `problem` reads "Not protected"
-    /// even though `lock.isLocked` is true. The countdown below still shows the
-    /// lock is real; this line is only about whether anything is being blocked.
+    /// being *enforced* — the countdown can run while the filter never activated
+    /// or has no list. Saying "Protected" in that state is the one dishonesty
+    /// this header exists to prevent.
     private var headline: String {
         if !lock.isLocked { return "Not locked" }
         return problem == nil ? "Protected" : "Not protected"
     }
 
-    /// Grey rather than green when unlocked. Green is a claim that something is
-    /// working, and when no lock is running nothing is — reserving it for the
-    /// enforcing state is the difference between a status light and decoration.
+    /// Colour follows meaning, and meaning depends on whether a lock is running.
+    ///
+    /// This used to glow orange whenever nothing was enforcing — including on a
+    /// fresh, unlocked, not-yet-set-up app, where "nothing is enforcing" is not
+    /// a fault but the obvious truth of not being locked. Leading a first run
+    /// with a wall of alarm reads as "broken" and trains the user to ignore the
+    /// colour. So: green only when a lock is genuinely enforcing, orange only
+    /// when a lock is running and something is wrong, and calm grey otherwise.
+    /// The sharp "you are about to lock nothing" warning moved to the Start
+    /// button, where the decision is actually made.
     private var dotColour: Color {
-        if !lock.isLocked { return enforcingCount == 0 ? .orange : .secondary }
+        guard lock.isLocked else { return .secondary }
         return problem == nil ? .green : .orange
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
-                Circle()
-                    .fill(dotColour)
-                    .frame(width: 9, height: 9)
+                Circle().fill(dotColour).frame(width: 9, height: 9)
                 Text(headline)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(problem == nil ? Color.primary : Color.orange)
@@ -666,35 +691,29 @@ private struct StatusHeader: View {
                     .padding(.leading, 19)
             }
 
-            // The enforcement layers, always. Naming them individually is the
-            // point: each can be absent on its own, and "Not locked" alone
-            // never said so.
+            // The layers, always — each can be absent on its own, and "Not
+            // locked" alone never said so. But an off layer is only *alarming*
+            // (orange) while a lock is running and depending on it; when not
+            // locked it is merely not-yet-set-up, shown in calm grey.
             VStack(alignment: .leading, spacing: 3) {
                 ForEach(layers) { layer in
+                    let alarm = !layer.ok && lock.isLocked
                     HStack(spacing: 6) {
-                        Image(systemName: layer.ok
-                              ? "checkmark.circle.fill" : "exclamationmark.circle")
+                        Image(systemName: layer.ok ? "checkmark.circle.fill"
+                              : (alarm ? "exclamationmark.circle" : "circle"))
                             .font(.caption2)
-                            .foregroundStyle(layer.ok ? Color.green : Color.orange)
+                            .foregroundStyle(layer.ok ? Color.green
+                                             : (alarm ? Color.orange : Color.secondary))
                         Text(layer.name)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .font(.caption2).foregroundStyle(.secondary)
                         Text(layer.detail)
                             .font(.caption2)
-                            .foregroundStyle(layer.ok ? Color.secondary : Color.orange)
+                            .foregroundStyle(alarm ? Color.orange : Color.secondary)
                         Spacer()
                     }
                 }
             }
             .padding(.leading, 19)
-
-            if !lock.isLocked && enforcingCount == 0 {
-                Text("Nothing would be enforced if you started a lock now.")
-                    .font(.caption2.weight(.medium))
-                    .foregroundStyle(.orange)
-                    .padding(.leading, 19)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 14)
