@@ -316,7 +316,7 @@ struct ContentView: View {
 /// is about the pair: while a lock runs you may add blocks and withdraw
 /// allowances, and neither of the opposites. Saving them separately would let
 /// a refused half leave the other half applied.
-private struct SiteListsSheet: View {
+struct SiteListsSheet: View {
     let isLocked: Bool
 
     @Environment(\.dismiss) private var dismiss
@@ -332,8 +332,9 @@ private struct SiteListsSheet: View {
             Text(isLocked
                  ? "A lock is running. You can add blocks and remove allowances; "
                    + "the reverse waits until it ends."
-                 : "One domain per line. Subdomains are included automatically, "
-                   + "so example.com also covers cdn.example.com.")
+                 : "One domain per line — a full URL is fine, it becomes just the "
+                   + "domain. Subdomains are included automatically, so "
+                   + "example.com also covers cdn.example.com.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -372,7 +373,12 @@ private struct SiteListsSheet: View {
 
     private func editor(_ title: String, subtitle: String,
                         text: Binding<String>, placeholder: String) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
+        // Counted as you type, from the same parser Save uses, so the number
+        // here and the outcome on Save can never disagree. A dropped line is
+        // the failure this exists to prevent: it looks identical to a saved one
+        // and is only discovered when the page you meant to block opens.
+        let summary = Self.summarize(text.wrappedValue)
+        return VStack(alignment: .leading, spacing: 3) {
             Text(title).font(.subheadline.weight(.medium))
             Text(subtitle).font(.caption2).foregroundStyle(.secondary)
             ZStack(alignment: .topLeading) {
@@ -390,8 +396,24 @@ private struct SiteListsSheet: View {
             }
             .frame(height: 96)
             .overlay(RoundedRectangle(cornerRadius: 6)
-                .stroke(Color.secondary.opacity(0.35)))
+                .stroke(summary.hasProblem ? Color.orange.opacity(0.7)
+                                           : Color.secondary.opacity(0.35)))
+            Text(summary.text)
+                .font(.caption2)
+                .foregroundStyle(summary.hasProblem ? Color.orange : Color.secondary)
+                .frame(minHeight: 12, alignment: .leading)
         }
+    }
+
+    /// Live one-line summary of a domain editor's contents.
+    static func summarize(_ text: String) -> (text: String, hasProblem: Bool) {
+        let r = SiteLists.parse(text)
+        let n = r.domains.count
+        if r.ignored == 0 {
+            return (n == 0 ? "" : "\(n) domain\(n == 1 ? "" : "s")", false)
+        }
+        return ("\(n) valid · \(r.ignored) line\(r.ignored == 1 ? "" : "s") "
+                + "not a domain, will be skipped", true)
     }
 
     private func save() {
@@ -687,7 +709,7 @@ private struct StatusHeader: View {
 /// and "which apps" — the first needs a warning about how easily a bad word
 /// blocks the wrong thing, the second needs a file picker, and neither belongs
 /// crammed into a sheet about domains.
-private struct UserBlocksSheet: View {
+struct UserBlocksSheet: View {
     let isLocked: Bool
 
     @Environment(\.dismiss) private var dismiss
@@ -730,7 +752,15 @@ private struct UserBlocksSheet: View {
                 }
                 .frame(height: 88)
                 .overlay(RoundedRectangle(cornerRadius: 6)
-                    .stroke(Color.secondary.opacity(0.35)))
+                    .stroke(wordsSummary.hasProblem ? Color.orange.opacity(0.7)
+                                                    : Color.secondary.opacity(0.35)))
+                // Live, from the same parser Save uses. Catches the too-short
+                // words and the 200-word cap here, where they can be fixed,
+                // rather than as a refusal after Save.
+                Text(wordsSummary.text)
+                    .font(.caption2)
+                    .foregroundStyle(wordsSummary.hasProblem ? Color.orange : Color.secondary)
+                    .frame(minHeight: 12, alignment: .leading)
             }
 
             // --- apps ----------------------------------------------------
@@ -797,6 +827,31 @@ private struct UserBlocksSheet: View {
             wordsText = UserBlocks.terms().joined(separator: "\n")
             apps = UserBlocks.apps()
         }
+    }
+
+    private var wordsSummary: (text: String, hasProblem: Bool) {
+        Self.summarizeWords(wordsText)
+    }
+
+    /// Live one-line summary of the words box: valid count, and any reason a
+    /// line will not be used (too short, unusable, or over the cap). Static and
+    /// pure so it is testable without standing up the view.
+    static func summarizeWords(_ text: String) -> (text: String, hasProblem: Bool) {
+        let r = UserBlocks.parseTerms(text)
+        var problems: [String] = []
+        if !r.tooShort.isEmpty {
+            problems.append("\(r.tooShort.count) too short "
+                + "(min \(UserBlocks.minimumTermLength) letters)")
+        }
+        if r.ignored > 0 { problems.append("\(r.ignored) unusable") }
+        if r.terms.count > UserBlocks.maximumTerms {
+            problems.append("over the \(UserBlocks.maximumTerms)-word limit")
+        }
+        if problems.isEmpty {
+            let n = r.terms.count
+            return (n == 0 ? "" : "\(n) word\(n == 1 ? "" : "s")", false)
+        }
+        return ("\(r.terms.count) valid · " + problems.joined(separator: ", "), true)
     }
 
     private func displayName(for bundleID: String) -> String {

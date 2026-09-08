@@ -246,3 +246,66 @@ final class UserBlocksTests: XCTestCase {
                      "the browser cannot enforce apps and must not receive them")
     }
 }
+
+// MARK: - Live editor summaries
+
+/// The count under each editor is computed from the SAME parser Save uses, so
+/// what the person is told as they type and what happens on Save can never
+/// disagree. These pin that: a dropped line is the failure the whole feature
+/// exists to surface, and it must show as a problem before Save, not after.
+@MainActor
+final class EditorSummaryTests: XCTestCase {
+
+    // ── domains (SiteListsSheet) ────────────────────────────────────────────
+
+    func testEmptyDomainsSummaryIsBlankAndClean() {
+        let s = SiteListsSheet.summarize("")
+        XCTAssertEqual(s.text, "")
+        XCTAssertFalse(s.hasProblem)
+    }
+
+    func testValidDomainsCountAndPluralise() {
+        XCTAssertEqual(SiteListsSheet.summarize("reddit.com").text, "1 domain")
+        XCTAssertEqual(SiteListsSheet.summarize("reddit.com\nx.com").text, "2 domains")
+    }
+
+    func testDomainsNormaliseBeforeCounting() {
+        // A URL and its bare domain are one entry, not two.
+        let s = SiteListsSheet.summarize("https://www.reddit.com/r/x\nreddit.com")
+        XCTAssertEqual(s.text, "1 domain")
+        XCTAssertFalse(s.hasProblem)
+    }
+
+    func testBadDomainLineIsFlaggedBeforeSave() {
+        let s = SiteListsSheet.summarize("reddit.com\nnot a domain")
+        XCTAssertTrue(s.hasProblem)
+        XCTAssertTrue(s.text.contains("1 valid"))
+        XCTAssertTrue(s.text.contains("not a domain"))
+    }
+
+    // ── words (UserBlocksSheet) ─────────────────────────────────────────────
+
+    func testValidWordsCountAndPluralise() {
+        XCTAssertEqual(UserBlocksSheet.summarizeWords("gambling").text, "1 word")
+        XCTAssertEqual(UserBlocksSheet.summarizeWords("gambling\nbetting").text,
+                       "2 words")
+    }
+
+    func testShortWordFlaggedWithTheMinimum() {
+        let s = UserBlocksSheet.summarizeWords("gambling\nxx")
+        XCTAssertTrue(s.hasProblem)
+        XCTAssertTrue(s.text.contains("1 valid"))
+        XCTAssertTrue(s.text.contains("too short"))
+        XCTAssertTrue(s.text.contains("\(UserBlocks.minimumTermLength)"))
+    }
+
+    /// The 200-word cap is caught here, where it can be fixed, rather than as a
+    /// refusal after Save.
+    func testOverTheCapFlaggedBeforeSave() {
+        let many = (0..<(UserBlocks.maximumTerms + 5))
+            .map { "word\($0)" }.joined(separator: "\n")
+        let s = UserBlocksSheet.summarizeWords(many)
+        XCTAssertTrue(s.hasProblem)
+        XCTAssertTrue(s.text.contains("over the \(UserBlocks.maximumTerms)-word limit"))
+    }
+}
