@@ -1,7 +1,10 @@
-# Hisn — macOS content protection
+# Hisn — content protection for the Apple ecosystem
 
-A commitment device for adults who want to restrict their own access to adult
-content, built so that the person who set it up cannot casually undo it.
+A deep, transparent, **Arabic-aware** adult-content filter — designed to run
+*under* Apple's own lock (Screen Time + Family Sharing, or MDM), not to reinvent
+it. Apple gives you the lock; this gives you the coverage Apple's black-box
+filter misses. **Start with [`docs/POSITIONING.md`](docs/POSITIONING.md)** — why
+this exists next to Screen Time, and what it should and should not try to be.
 
 **Read [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) before changing anything.**
 Every design decision in this repo is downstream of that document, and several
