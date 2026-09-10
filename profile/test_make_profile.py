@@ -198,15 +198,28 @@ class TestChromiumFamily(unittest.TestCase):
             self.assertFalse(p["BuiltInDnsClientEnabled"], name)
             self.assertEqual(p["ProxySettings"]["ProxyMode"], "system", name)
 
-    def test_forks_carry_no_extension_policy(self):
-        """The extension is not published, so a force-install entry there would
-        fail forever and `"*": blocked` would stop an unpacked copy loading —
-        for a browser nobody is going to run the extension in anyway."""
+    def test_forks_force_install_when_an_id_is_given(self):
+        """
+        The extension must be non-removable on the forks the user actually runs,
+        Helium above all — not just on Chrome. Without this it was removable on
+        Helium, defeating the profile's purpose. Verified end-to-end that Helium
+        keeps Chromium's policy engine (the keys are compiled into its
+        framework), so this policy is honoured there once delivered.
+        """
         profile = build(extension_id="abc")
         for bundle_id, _, name in make_profile.CHROMIUM_FAMILY:
             p = payload(profile, bundle_id)
-            self.assertNotIn("ExtensionSettings", p, name)
-            self.assertNotIn("ExtensionInstallForcelist", p, name)
+            self.assertEqual(p["ExtensionSettings"]["abc"]["installation_mode"],
+                             "force_installed", name)
+            self.assertEqual(p["ExtensionSettings"]["*"]["installation_mode"],
+                             "blocked", name)
+
+    def test_no_extension_policy_on_the_forks_without_an_id(self):
+        """No id, nothing to force-install — and `"*": blocked` without it would
+        stop the unpacked dev copy loading. Same guard as Chrome's."""
+        profile = build()
+        for bundle_id, _, name in make_profile.CHROMIUM_FAMILY:
+            self.assertNotIn("ExtensionSettings", payload(profile, bundle_id), name)
 
     def test_devtools_flag_reaches_the_forks_too(self):
         locked, open_ = build(), build(allow_devtools=True)

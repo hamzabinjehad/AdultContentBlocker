@@ -213,6 +213,30 @@ CHROMIUM_DEVTOOLS_LOCK = {"DeveloperToolsAvailability": 2}   # 2 = disallowed
 CHROMIUM_INCOGNITO_BLOCK = {"IncognitoModeAvailability": 1}   # 1 = disabled
 
 
+def chromium_extension_policy(extension_id: str, update_url: str) -> dict:
+    """Force-install our extension and block every other one — for ANY Chromium.
+
+    Force-installed means no Remove or Disable button; `"*": blocked` stops a
+    proxy/"unblock" extension being added to route around it. Emitted only when
+    an id is given, and only satisfiable once the extension is actually
+    published (force-install pulls from an update URL, not a local folder) — the
+    same caveat `docs/CHROME_ENFORCEMENT.md` states. Shared so Helium and the
+    other forks the user actually runs get the same non-removable treatment as
+    Chrome, not just DNS locks.
+    """
+    return {
+        "ExtensionInstallForcelist": [f"{extension_id};{update_url}"],
+        "ExtensionSettings": {
+            extension_id: {
+                "installation_mode": "force_installed",
+                "update_url": update_url,
+                "toolbar_pin": "force_pinned",
+            },
+            "*": {"installation_mode": "blocked"},
+        },
+    }
+
+
 def p_chrome(extension_id: str, update_url: str,
              lock_devtools: bool = True, block_incognito: bool = True) -> dict:
     policy = dict(CHROMIUM_POLICY)
@@ -221,17 +245,7 @@ def p_chrome(extension_id: str, update_url: str,
     if block_incognito:
         policy.update(CHROMIUM_INCOGNITO_BLOCK)
     if extension_id:
-        policy["ExtensionInstallForcelist"] = [f"{extension_id};{update_url}"]
-        policy["ExtensionSettings"] = {
-            extension_id: {
-                "installation_mode": "force_installed",
-                "update_url": update_url,
-                "toolbar_pin": "force_pinned",
-            },
-            # Deny-by-default for everything else: an unvetted extension is a
-            # trivial filter bypass (any proxy or "unblock" extension works).
-            "*": {"installation_mode": "blocked"},
-        }
+        policy.update(chromium_extension_policy(extension_id, update_url))
     return payload("com.google.Chrome", "chrome", "Google Chrome Policy",
                    "Locks Chrome DNS, proxy, and extension settings.", **policy)
 
@@ -260,15 +274,17 @@ CHROMIUM_FAMILY = [
 ]
 
 
-def p_chromium_family(lock_devtools: bool = True,
+def p_chromium_family(extension_id: str = "", update_url: str = "",
+                      lock_devtools: bool = True,
                       block_incognito: bool = True) -> list[dict]:
     """DNS and proxy locks for every Chromium fork we know the id of.
 
-    Deliberately WITHOUT the extension policy: the extension is not published,
-    so a force-install entry would fail forever, and `"*": blocked` would stop
-    the unpacked copy loading. Locking DNS is the part that matters here — the
-    fork exists in this list because it can resolve names on its own, not
-    because anyone will run the extension in it.
+    With the same force-install policy as Chrome when an id is given. This used
+    to be omitted on the theory that nobody runs the extension in a fork — false
+    for the fork the user actually runs (Helium). Without it the extension is
+    removable on that browser, which is the whole thing the profile is meant to
+    prevent. The publish caveat is identical to Chrome's, so an id is passed
+    only when there is something to force-install.
     """
     out = []
     for bundle_id, slug, name in CHROMIUM_FAMILY:
@@ -277,6 +293,8 @@ def p_chromium_family(lock_devtools: bool = True,
             policy.update(CHROMIUM_DEVTOOLS_LOCK)
         if block_incognito:
             policy.update(CHROMIUM_INCOGNITO_BLOCK)
+        if extension_id:
+            policy.update(chromium_extension_policy(extension_id, update_url))
         out.append(payload(bundle_id, slug, f"{name} Policy",
                            f"Locks {name} DNS and proxy settings.", **policy))
     return out
@@ -290,7 +308,7 @@ def p_edge(extension_id: str, update_url: str,
     if block_incognito:
         policy.update(CHROMIUM_INCOGNITO_BLOCK)
     if extension_id:
-        policy["ExtensionInstallForcelist"] = [f"{extension_id};{update_url}"]
+        policy.update(chromium_extension_policy(extension_id, update_url))
     return payload("com.microsoft.Edge", "edge", "Microsoft Edge Policy",
                    "Locks Edge DNS, proxy, and extension settings.", **policy)
 
@@ -358,7 +376,8 @@ def build(args: argparse.Namespace) -> tuple[dict, str]:
                block_incognito=not args.allow_incognito),
         p_firefox(lock_devtools=not args.allow_devtools,
                   block_incognito=not args.allow_incognito),
-        *p_chromium_family(lock_devtools=not args.allow_devtools,
+        *p_chromium_family(args.extension_id, args.update_url,
+                           lock_devtools=not args.allow_devtools,
                            block_incognito=not args.allow_incognito),
     ]
     if args.lock_settings:

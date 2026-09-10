@@ -57,10 +57,24 @@ no error anywhere visible.
   ```
 
   This emits `ExtensionInstallForcelist` (force-install by id from the store)
-  plus `ExtensionSettings` with `"*": blocked` — the extension cannot be
+  plus `ExtensionSettings` with `"*": blocked`, for Chrome, Edge **and every
+  Chromium fork in the family — Helium included**. The extension cannot be
   disabled or removed, and no other extension can be installed to proxy around
   it. Save the printed removal password; give it to the second person, never the
   user.
+
+  **Helium (`net.imput.helium`), verified and still to verify.** Its framework
+  is Chromium 152 with the full enterprise-policy engine — `ExtensionSettings`,
+  `ExtensionInstallForcelist`, `IncognitoModeAvailability`, `DnsOverHttpsMode`
+  are all compiled in — so the profile's DNS lock and incognito block will hold
+  there, and the force-install policy is now written into its payload. Two
+  things need a real install to confirm and cannot be checked from the binary:
+  (1) that Helium reads managed policy from
+  `/Library/Managed Preferences/net.imput.helium.plist` (standard Chromium
+  behaviour, but confirm via `helium://policy` after installing the profile),
+  and (2) that Helium's force-install accepts the Chrome Web Store update URL —
+  if it uses a different extension source, the `update_url` needs changing for
+  its payload.
 
   Do **not** install this profile until the extension is actually live on the
   store. Before then, the force-install fails and `"*": blocked` stops even the
