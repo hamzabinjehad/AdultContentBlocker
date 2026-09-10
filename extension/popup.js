@@ -90,12 +90,45 @@ function checkIncognitoAccess() {
     if (allowed) return;
     const el = document.getElementById("incognito");
     if (!el) return;
+
+    // Guide, not just a warning. An extension cannot grant itself incognito
+    // access or open a private window (both are the browser's own consent
+    // gates, on purpose), so the most it can do is walk the user to the exact
+    // toggle. Numbered steps plus a button that opens this extension's details
+    // page, where "Allow in Incognito" lives.
     el.hidden = false;
-    el.textContent =
-      "Not active in private windows yet. To block there too, open this "
-      + "browser's Extensions page and turn on “Allow in Incognito” (or "
-      + "“Allow in Private”) for Hisn.";
+    el.innerHTML =
+      "<strong>Not active in private windows yet.</strong>"
+      + "<ol>"
+      + "<li>Open this extension's details page (button below).</li>"
+      + "<li>Turn on <strong>Allow in Incognito</strong> (or “Allow in "
+      + "Private”).</li>"
+      + "</ol>";
+
+    const btn = document.createElement("button");
+    btn.textContent = "Open extension settings";
+    btn.addEventListener("click", openDetailsPage);
+    el.appendChild(btn);
   });
+}
+
+/**
+ * Open this extension's own details page — where the "Allow in Incognito"
+ * toggle is. `chrome://extensions/?id=<id>` is the Chromium target and works
+ * on the forks too (Helium included). Wrapped because a browser that refuses
+ * to let an extension open its internal pages throws here, and the numbered
+ * steps above already tell the user how to get there by hand.
+ */
+function openDetailsPage() {
+  const url = `chrome://extensions/?id=${chrome.runtime.id}`;
+  try {
+    // A refusal to open an internal page arrives via lastError, not a throw,
+    // so read it to avoid an unchecked-error warning. Either way the written
+    // steps stay on screen as the fallback.
+    chrome.tabs.create({ url }, () => void chrome.runtime.lastError);
+  } catch (_) {
+    /* leave the written steps as the fallback */
+  }
 }
 
 chrome.runtime.sendMessage({ type: "getState" }, (state) => {
