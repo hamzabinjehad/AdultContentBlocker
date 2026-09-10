@@ -4,12 +4,10 @@
   "version": "1.0.0",
 
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoaysT5wF/Cs85r5wQZGDpgrrVe2iEO4R1ExiZnzhTn/JmMZTf/n/5I8E4rYZFmtQNWwIm+khyos5cQ0UFy0/GW9qlQimk3rYwl1x/s7UuQrbS8/QsvIX/MPkom5yQbybd2aFBxT+I0gGwKAILLQtSqbFnc0s//P8YUUswk4lbn0wgXiwp57uFbk4MoJL6tTu+2KuNLj/4AFBszlKc3Y2+0LBbqZKG41YHNmSUV1DkDIDYhAqXQhci5pQH8MoFGnW6yDX1M4lNMcVWNM6sEhB0+gkL5lP9GHrIgGyMvpKRd47bqeAd9M7tKH0jOi1gNxyhFGoJPNoBopCZo4jVdDCdwIDAQAB",
-  "_comment_key": "Pins this extension's Chrome/Edge ID to hfhaffbmoeepcdolgejeidkgaoapcjig regardless of where it is loaded from. The native messaging host manifest that lets the browser reach the macOS app has to name this ID in allowed_origins before the extension is ever loaded, so the ID cannot be left to chance. See extension/keys/README.md.",
 
   "description": "Blocks adult content. Once a lock period starts it cannot be turned off until the timer expires.",
   "minimum_chrome_version": "137",
 
-  "_comment_scripting": "`scripting` is here for registerContentScripts, not executeScript. The page-text scanner is registered dynamically rather than declared below, so that switching text scanning off actually stops the injection instead of merely making it a no-op — a manifest content_scripts block would run on every page of every site regardless of settings.",
   "permissions": [
     "declarativeNetRequest",
     "storage",
@@ -33,7 +31,6 @@
         "path": "rules/dnr_block_rules.json"
       },
       {
-        "_comment_keywords": "Keyword rules match the whole URL — host, path AND query string — which is the one thing the macOS socket filter provably cannot do, because HTTPS encrypts everything after the hostname. This is therefore the only layer that can stop a search for an explicit term on a domain that must stay reachable, and the only one that sees adult paths on otherwise legitimate hosts. Short or ambiguous terms use regexFilter with explicit non-letter boundaries so `sex` cannot match essex.gov.uk and `sks` cannot match tasks.office.com; every rule also carries an excludedRequestDomains rail for reference and public-health sites.",
         "id": "keywords",
         "enabled": true,
         "path": "rules/dnr_keyword_rules.json"
@@ -46,7 +43,6 @@
     ]
   },
 
-  "_comment_war": "Chrome refuses a declarativeNetRequest redirect whose extensionPath is not web-accessible, and it refuses it SILENTLY — the navigation simply fails instead of landing on the block page. All 259 block rules target /blocked.html, so without this entry every one of them produced an error page rather than the calm, deliberate screen the user is supposed to see. Listing a resource does expose the extension ID to page script, which is a real cost this extension had otherwise avoided entirely; it is accepted only for this one file, and only because the ID is already pinned and public (see keys/README.md). Nothing else is listed, and nothing else should be.",
   "web_accessible_resources": [
     {
       "resources": ["blocked.html"],
@@ -61,7 +57,6 @@
 
   "options_page": "options.html",
 
-  "_comment_incognito": "spanning, not split or not_allowed. `split` would give incognito its own storage — an UNLOCKED context the user could browse in freely — so it is out. `not_allowed` kept the extension out of incognito entirely, which meant page-text scanning simply did not happen in a private window; the only thing closing that hole was the managed profile removing incognito outright. `spanning` shares the one background context (so the lock state carries in), and Chrome keeps the extension OFF in incognito until the user turns on 'Allow in incognito' — so it is opt-in by design, which the popup detects and asks for. The two real answers to the incognito question are thus both available: remove incognito with the profile (make_profile.py, default), or keep it and let the user enable the extension there.",
   "incognito": "spanning",
 
   "content_security_policy": {
