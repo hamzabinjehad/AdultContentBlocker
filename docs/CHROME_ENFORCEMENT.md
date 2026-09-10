@@ -87,11 +87,18 @@ non-zero if any critical one is open. Run it as the second person after setup:
 the whole point of this product is that "looks protected" and "is protected"
 can differ, and this is where you catch the difference.
 
-**Incognito is the row people miss.** The extension is `not_allowed` in
-incognito, so it does not run there — an incognito window bypasses the entire
-page-text layer. The only thing that closes it is the profile's
-`IncognitoModeAvailability = 1`, which removes incognito entirely. Until the
-profile is installed, `verify_enforcement.sh` reports this row OPEN, and it is.
+**Incognito is the row people miss, and there are two ways to close it.**
+The extension is `incognito: spanning`: it *can* run in a private window, but
+the browser keeps it off there until the user turns on "Allow in Incognito" —
+so the popup detects that and asks. That path depends on the user opting in,
+which a determined person will not.
+
+The enforceable path is to remove private browsing altogether:
+`make_profile.py` sets `IncognitoModeAvailability = 1` by default (and
+`DisablePrivateBrowsing` for Firefox), so there is no private window to slip
+through. Pass `--allow-incognito` only if you deliberately want incognito to
+exist and to rely on the opt-in extension coverage instead. Until the profile
+is installed, `verify_enforcement.sh` reports this row OPEN, and it is.
 
 ## What this gets you, and what it still does not
 

@@ -39,6 +39,7 @@ def build(**overrides) -> dict:
         display_name="Test",
         lock_settings=False,
         allow_devtools=False,
+        allow_incognito=False,
         removal_password="test-password",
     )
     for key, value in overrides.items():
@@ -251,3 +252,46 @@ class TestSerialisation(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class TestIncognito(unittest.TestCase):
+    """
+    Blocking private/incognito windows is a first-class, flag-controlled feature.
+
+    It is the ONLY thing that closes the incognito hole for the extension: the
+    extension is `spanning`, so it runs in a private window only if the user
+    enabled it there, which a determined person will not. Removing the window is
+    the enforceable answer. Default on; `--allow-incognito` turns it off for the
+    person who instead wants incognito to exist and be covered by the extension.
+    """
+
+    def test_incognito_blocked_by_default_everywhere(self):
+        profile = build()
+        for bundle_id in ("com.google.Chrome", "com.microsoft.Edge",
+                          "net.imput.helium", "com.brave.Browser"):
+            self.assertEqual(payload(profile, bundle_id)["IncognitoModeAvailability"],
+                             1, f"{bundle_id} still allows incognito")
+        # Firefox's equivalent.
+        self.assertTrue(payload(profile, "org.mozilla.firefox")["DisablePrivateBrowsing"])
+
+    def test_allow_incognito_leaves_private_browsing_available(self):
+        profile = build(allow_incognito=True)
+        for bundle_id in ("com.google.Chrome", "com.microsoft.Edge",
+                          "net.imput.helium"):
+            self.assertNotIn("IncognitoModeAvailability", payload(profile, bundle_id))
+        self.assertFalse(payload(profile, "org.mozilla.firefox")["DisablePrivateBrowsing"])
+
+    def test_allow_incognito_does_not_loosen_dns(self):
+        """The flag is about private windows, not the network locks around them."""
+        chrome = payload(build(allow_incognito=True), "com.google.Chrome")
+        self.assertEqual(chrome["DnsOverHttpsMode"], "off")
+        self.assertFalse(chrome["BuiltInDnsClientEnabled"])
+
+    def test_helium_is_covered(self):
+        """The user's actual browser. A Chromium fork reads the same policy keys,
+        so leaving it out is a signposted way around every DNS lock."""
+        ids = [b for b, _, _ in make_profile.CHROMIUM_FAMILY]
+        self.assertIn("net.imput.helium", ids)
+        helium = payload(build(), "net.imput.helium")
+        self.assertEqual(helium["DnsOverHttpsMode"], "off")
+        self.assertEqual(helium["IncognitoModeAvailability"], 1)

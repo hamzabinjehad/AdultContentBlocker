@@ -61,8 +61,8 @@
 
   "options_page": "options.html",
 
-  "_comment_incognito": "split would give the user an unfiltered profile in incognito. The managed policy disables incognito outright, but not_allowed is the belt to that suspenders.",
-  "incognito": "not_allowed",
+  "_comment_incognito": "spanning, not split or not_allowed. `split` would give incognito its own storage — an UNLOCKED context the user could browse in freely — so it is out. `not_allowed` kept the extension out of incognito entirely, which meant page-text scanning simply did not happen in a private window; the only thing closing that hole was the managed profile removing incognito outright. `spanning` shares the one background context (so the lock state carries in), and Chrome keeps the extension OFF in incognito until the user turns on 'Allow in incognito' — so it is opt-in by design, which the popup detects and asks for. The two real answers to the incognito question are thus both available: remove incognito with the profile (make_profile.py, default), or keep it and let the user enable the extension there.",
+  "incognito": "spanning",
 
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"

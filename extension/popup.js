@@ -70,6 +70,35 @@ function render(state) {
         + "browser on this Mac, not just this one.";
 }
 
+/**
+ * Ask the user to enable the extension in private windows.
+ *
+ * The manifest is `incognito: spanning`, which means the extension CAN run in a
+ * private window — but Chrome keeps it off there until the user turns on "Allow
+ * in Incognito/Private". That opt-in is deliberate (it is the browser's own
+ * consent gate), so the honest thing is not to pretend it happened: this
+ * detects when the extension has NOT been allowed in private windows and says
+ * so, rather than letting page-text scanning silently not run there.
+ *
+ * If the profile has removed private browsing entirely (the other answer to the
+ * incognito question), there is no private window to allow into and this is
+ * simply never relevant — `isAllowedIncognitoAccess` reports the real setting.
+ */
+function checkIncognitoAccess() {
+  if (!chrome.extension?.isAllowedIncognitoAccess) return;
+  chrome.extension.isAllowedIncognitoAccess((allowed) => {
+    if (allowed) return;
+    const el = document.getElementById("incognito");
+    if (!el) return;
+    el.hidden = false;
+    el.textContent =
+      "Not active in private windows yet. To block there too, open this "
+      + "browser's Extensions page and turn on “Allow in Incognito” (or "
+      + "“Allow in Private”) for Hisn.";
+  });
+}
+
 chrome.runtime.sendMessage({ type: "getState" }, (state) => {
   render(state || {});
 });
+checkIncognitoAccess();

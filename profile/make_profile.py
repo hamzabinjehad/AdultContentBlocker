@@ -190,8 +190,6 @@ CHROMIUM_POLICY = {
     # the system resolver, so the DNS payload above would be a no-op for it.
     "DnsOverHttpsMode": "off",
     "BuiltInDnsClientEnabled": False,
-    # Private windows are not "more private" here, they are just unlogged.
-    "IncognitoModeAvailability": 1,          # 1 = disabled
     # Stops the user pointing the browser at a proxy to escape the filter.
     "ProxySettings": {"ProxyMode": "system"},
     # DevTools can edit extension state and request headers, which is why this
@@ -204,12 +202,24 @@ CHROMIUM_POLICY = {
 
 CHROMIUM_DEVTOOLS_LOCK = {"DeveloperToolsAvailability": 2}   # 2 = disallowed
 
+# Disabling private/incognito windows outright. This is the ONLY thing that
+# closes the incognito hole for the extension: the extension declares
+# `incognito: spanning`, so it runs in a private window only if the user has
+# enabled it there — a determined person simply does not. Removing incognito
+# means there is no private window to slip through. A flag rather than a
+# constant because it is one of the two answers to the same question (the other
+# is letting incognito exist and having the extension cover it), and the user
+# chooses which.
+CHROMIUM_INCOGNITO_BLOCK = {"IncognitoModeAvailability": 1}   # 1 = disabled
+
 
 def p_chrome(extension_id: str, update_url: str,
-             lock_devtools: bool = True) -> dict:
+             lock_devtools: bool = True, block_incognito: bool = True) -> dict:
     policy = dict(CHROMIUM_POLICY)
     if lock_devtools:
         policy.update(CHROMIUM_DEVTOOLS_LOCK)
+    if block_incognito:
+        policy.update(CHROMIUM_INCOGNITO_BLOCK)
     if extension_id:
         policy["ExtensionInstallForcelist"] = [f"{extension_id};{update_url}"]
         policy["ExtensionSettings"] = {
@@ -242,6 +252,7 @@ CHROMIUM_FAMILY = [
     ("com.vivaldi.Vivaldi", "vivaldi", "Vivaldi"),
     ("com.operasoftware.Opera", "opera", "Opera"),
     ("company.thebrowser.Browser", "arc", "Arc"),
+    ("net.imput.helium", "helium", "Helium"),
     ("org.chromium.Chromium", "chromium", "Chromium"),
     ("com.google.Chrome.beta", "chrome-beta", "Chrome Beta"),
     ("com.google.Chrome.dev", "chrome-dev", "Chrome Dev"),
@@ -249,7 +260,8 @@ CHROMIUM_FAMILY = [
 ]
 
 
-def p_chromium_family(lock_devtools: bool = True) -> list[dict]:
+def p_chromium_family(lock_devtools: bool = True,
+                      block_incognito: bool = True) -> list[dict]:
     """DNS and proxy locks for every Chromium fork we know the id of.
 
     Deliberately WITHOUT the extension policy: the extension is not published,
@@ -263,23 +275,27 @@ def p_chromium_family(lock_devtools: bool = True) -> list[dict]:
         policy = dict(CHROMIUM_POLICY)
         if lock_devtools:
             policy.update(CHROMIUM_DEVTOOLS_LOCK)
+        if block_incognito:
+            policy.update(CHROMIUM_INCOGNITO_BLOCK)
         out.append(payload(bundle_id, slug, f"{name} Policy",
                            f"Locks {name} DNS and proxy settings.", **policy))
     return out
 
 
 def p_edge(extension_id: str, update_url: str,
-           lock_devtools: bool = True) -> dict:
+           lock_devtools: bool = True, block_incognito: bool = True) -> dict:
     policy = dict(CHROMIUM_POLICY)
     if lock_devtools:
         policy.update(CHROMIUM_DEVTOOLS_LOCK)
+    if block_incognito:
+        policy.update(CHROMIUM_INCOGNITO_BLOCK)
     if extension_id:
         policy["ExtensionInstallForcelist"] = [f"{extension_id};{update_url}"]
     return payload("com.microsoft.Edge", "edge", "Microsoft Edge Policy",
                    "Locks Edge DNS, proxy, and extension settings.", **policy)
 
 
-def p_firefox(lock_devtools: bool = True) -> dict:
+def p_firefox(lock_devtools: bool = True, block_incognito: bool = True) -> dict:
     """
     Firefox reads enterprise policy from com.mozilla.firefox on macOS.
     `Locked: True` is what stops the user flipping it back in about:config.
@@ -288,7 +304,7 @@ def p_firefox(lock_devtools: bool = True) -> dict:
         "org.mozilla.firefox", "firefox", "Firefox Policy",
         "Locks Firefox DNS-over-HTTPS and private browsing.",
         DNSOverHTTPS={"Enabled": False, "Locked": True},
-        DisablePrivateBrowsing=True,
+        DisablePrivateBrowsing=block_incognito,
         DisableDeveloperTools=lock_devtools,
         Proxy={"Mode": "system", "Locked": True},
         BlockAboutConfig=True,
@@ -335,11 +351,15 @@ def build(args: argparse.Namespace) -> tuple[dict, str]:
         p_restrictions(),
         p_removal_password(removal_password),
         p_chrome(args.extension_id, args.update_url,
-                 lock_devtools=not args.allow_devtools),
+                 lock_devtools=not args.allow_devtools,
+                 block_incognito=not args.allow_incognito),
         p_edge(args.extension_id, args.update_url,
-               lock_devtools=not args.allow_devtools),
-        p_firefox(lock_devtools=not args.allow_devtools),
-        *p_chromium_family(lock_devtools=not args.allow_devtools),
+               lock_devtools=not args.allow_devtools,
+               block_incognito=not args.allow_incognito),
+        p_firefox(lock_devtools=not args.allow_devtools,
+                  block_incognito=not args.allow_incognito),
+        *p_chromium_family(lock_devtools=not args.allow_devtools,
+                           block_incognito=not args.allow_incognito),
     ]
     if args.lock_settings:
         payloads.append(p_system_settings())
@@ -391,6 +411,12 @@ def main() -> int:
                          "DevTools can edit extension state — but is what makes "
                          "the profile installable while you are still building "
                          "the extension.")
+    ap.add_argument("--allow-incognito", action="store_true",
+                    help="Leave private/incognito browsing available. By default "
+                         "the profile disables it entirely — the only thing that "
+                         "closes the incognito hole for the extension. Pass this "
+                         "if you instead want incognito to exist and rely on the "
+                         "extension covering it once enabled there.")
     ap.add_argument("--lock-settings", action="store_true",
                     help="Also hide Network/Users/Screen Time panes. "
                          "Warning: the user can no longer fix their own Wi-Fi.")

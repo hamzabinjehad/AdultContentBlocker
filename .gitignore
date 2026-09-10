@@ -26,3 +26,6 @@ xcuserdata/
 *.xcuserstate
 DerivedData/
 macos/build/
+
+# Packed browser-extension artifacts (built from extension/, not source).
+*.crx
