@@ -106,6 +106,18 @@ final class KeywordNormalizeTests: XCTestCase {
         XCTAssertTrue(TextNormalizer.variants(of: "sharmota123").contains("sharmota"))
         XCTAssertFalse(TextNormalizer.variants(of: "3ahira").contains("ahira"))
     }
+
+    /// Prevents shouted spellings from slipping the list: "pooorn" is "porn"
+    /// held down on the keyboard. Both reductions are emitted so a term's real
+    /// gemination survives ("ass" from "asssss"), while a mere double is left
+    /// alone. Kept identical to normalize.js and terms.py.
+    func testLetterElongationCollapsesToTheBaseWord() {
+        XCTAssertTrue(TextNormalizer.variants(of: "pooorn").contains("porn"))
+        XCTAssertTrue(TextNormalizer.variants(
+            of: TextNormalizer.normalize("نيييك")).contains("نيك"))
+        XCTAssertTrue(TextNormalizer.variants(of: "asssss").contains("ass"))
+        XCTAssertFalse(TextNormalizer.variants(of: "pass").contains("pas"))
+    }
 }
 
 // MARK: - Punycode

@@ -74,6 +74,20 @@ check(!variants(normalize("الجنسية")).has("جنس"),
 check(variants("sharmota123").has("sharmota"), "trailing digits are decoration");
 check(!variants("3ahira").has("ahira"), "leading digit is not decoration");
 
+// ── letter elongation ──────────────────────────────────────────────────────
+// "pooorn" is "porn" held down on the keyboard — one of the commonest ways spam
+// writes an explicit term so a literal list misses it. Emitting both the one-
+// and two-letter reductions is what lets a term's real gemination survive.
+check(variants("pooorn").has("porn"), "elongation collapses: pooorn -> porn");
+check(variants(normalize("نيييك")).has("نيك"), "arabic elongation: نيييك -> نيك");
+check(variants("asssss").has("ass"),
+      "two-letter reduction preserves gemination: asssss -> ass");
+// A run of only two is ordinary spelling; nothing is stripped.
+check(!variants("pass").has("pas"), "a double is not elongation: pass stays pass");
+// A collapse shorter than three letters is dropped — guards laughter and
+// interjections ("aaa", "هههه") from generating a stray one-letter token.
+check(!variants("aaa").has("a"), "collapsed forms under three letters are dropped");
+
 // ── result ─────────────────────────────────────────────────────────────────
 print(`  ${checks - failures}/${checks} checks passed`);
 if (failures) throw new Error(`${failures} check(s) failed`);

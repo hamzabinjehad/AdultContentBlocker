@@ -131,5 +131,24 @@ export function variants(token) {
   const trimmed = token.replace(/[0-9]+$/, "");
   if (trimmed !== token && trimmed.length >= 3) out.add(trimmed);
 
+  // Letter elongation: "pooorn", "seeexxx", "نيييك", "سكسسس" are the same word
+  // held down on the keyboard, and one of the commonest ways spam writes an
+  // explicit term so a literal list misses it. Only fires on a run of THREE or
+  // more of the same character — ordinary words top out at doubles ("pass",
+  // "الله"), and interjections like "hmmm"/"هههه" collapse below the 3-letter
+  // floor and are dropped — so this practically never touches real prose.
+  //
+  // Emits BOTH reductions, because the list itself is written with real
+  // doubles: collapsing every run to one letter reaches "porn" from "pooorn",
+  // while collapsing to two preserves a listed term's own gemination so "ass"
+  // is still reachable from "asssss". Matching stays exact against the list;
+  // this only ever adds candidate spellings, it never loosens a comparison.
+  if (/(.)\1\1/u.test(token)) {
+    const one = token.replace(/(.)\1{2,}/gu, "$1");
+    const two = token.replace(/(.)\1{2,}/gu, "$1$1");
+    if (one.length >= 3) out.add(one);
+    if (two.length >= 3) out.add(two);
+  }
+
   return out;
 }

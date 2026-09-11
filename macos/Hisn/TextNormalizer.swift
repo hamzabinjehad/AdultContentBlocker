@@ -133,6 +133,40 @@ public enum TextNormalizer {
         let trimmed = String(token.reversed().drop { $0.isNumber }.reversed())
         if trimmed != token, trimmed.count >= 3 { out.insert(trimmed) }
 
+        // Letter elongation: "pooorn", "نيييك" are the same word held down on
+        // the keyboard. `collapseElongation` only alters a token that carries a
+        // run of three or more identical characters (ordinary words top out at
+        // doubles), so `one != token` is the presence test. Both the one- and
+        // two-letter reductions are kept, so a term's real gemination survives
+        // ("ass" from "asssss") while "porn" is still reached from "pooorn".
+        // Identical to normalize.js `variants` and terms.py `token_variants`.
+        let one = collapseElongation(token, keep: 1)
+        if one != token {
+            if one.count >= 3 { out.insert(one) }
+            let two = collapseElongation(token, keep: 2)
+            if two.count >= 3 { out.insert(two) }
+        }
+
+        return out
+    }
+
+    /// Reduce every run of three-or-more identical characters to `keep` of them,
+    /// leaving runs of one or two untouched. Compares by `Character`, so Arabic
+    /// letters (single grapheme clusters) collapse the same way ASCII does.
+    private static func collapseElongation(_ token: String, keep: Int) -> String {
+        var out = ""
+        var i = token.startIndex
+        while i < token.endIndex {
+            let ch = token[i]
+            var j = token.index(after: i)
+            var count = 1
+            while j < token.endIndex, token[j] == ch {
+                count += 1
+                j = token.index(after: j)
+            }
+            out += String(repeating: ch, count: count >= 3 ? keep : count)
+            i = j
+        }
         return out
     }
 }

@@ -259,6 +259,13 @@ async function syncTextScanning(state) {
     js: ["content/scan.js"],
     runAt: "document_start",
     allFrames: true,
+    // `allFrames` alone still misses the frames that carry no real URL of their
+    // own — `about:srcdoc`, `blob:` and `data:` iframes — which is exactly how
+    // embedded players and popunder ad frames render their content. These
+    // inherit their embedder's origin, so `matchOriginAsFallback` injects the
+    // scanner into them by that inherited origin; without it a tube page can put
+    // the whole video in a srcdoc frame the text layer never reads.
+    matchOriginAsFallback: true,
     persistAcrossSessions: true,
   }]);
   console.info("[hisn] page-text scanning registered");
