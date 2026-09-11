@@ -11,7 +11,8 @@
  * the bug it prevents would ship.
  */
 
-import { buildIndex, scorePage, isExempt, threshold } from "../lib/score.js";
+import { buildIndex, scorePage, isExempt, threshold, hostInList }
+  from "../lib/score.js";
 
 let failures = 0, checks = 0;
 function check(ok, label) {
@@ -155,6 +156,20 @@ check(!isExempt("notwikipedia.org", index),
       "a lookalike host must NOT inherit the exemption");
 check(!isExempt("wikipedia.org.evil.com", index),
       "an exempt domain as a PREFIX must not exempt the whole host");
+
+// ── host matching underlies both exemption and the report-wrong allowlist ────
+// The false-positive report adds a host to `textAllow`, and the text layer then
+// skips it by the SAME rule isExempt uses, so a subdomain is covered and a
+// lookalike is not. If these two ever diverge, a reported host would keep being
+// blocked, or a lookalike would ride a report it never earned.
+check(hostInList("en.example.com", ["example.com"]), "subdomain matches the list");
+check(hostInList("example.com", ["example.com"]), "exact host matches");
+check(!hostInList("notexample.com", ["example.com"]), "a lookalike does not match");
+check(!hostInList("example.com.evil.com", ["example.com"]),
+      "the listed domain as a prefix does not match the whole host");
+check(!hostInList("example.com", []), "an empty allowlist matches nothing");
+check(hostInList("EXAMPLE.com.", ["example.com"]),
+      "the host is lowercased and its trailing dot dropped before matching");
 
 print(`  ${checks - failures}/${checks} checks passed`);
 if (failures) throw new Error(`${failures} check(s) failed`);

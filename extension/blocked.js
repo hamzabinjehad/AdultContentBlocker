@@ -21,7 +21,7 @@ const REASONS = {
   terms: {
     title: "Blocked by content check",
     subtitle:
-      "The words in this address matched what you asked Hisn to keep out.",
+      "This page's words matched what you asked Hisn to keep out.",
   },
   default: {
     title: "This page is blocked",
@@ -71,6 +71,89 @@ function render(state) {
   }
 }
 
+/** How recent a stashed block must be to trust that it is THIS page's. The
+ *  block page carries no identifier of its own — deliberately, so nothing about
+ *  the blocked address lands in history — so recency is the only link back to
+ *  the `chrome.storage.session` entry the worker wrote. */
+const RECENT_MS = 5 * 60 * 1000;
+
+function showStatus(el, kind, text) {
+  el.className = "report-status " + kind;
+  el.textContent = text;
+  el.hidden = false;
+}
+
+/**
+ * Only for a content-check block: show which words triggered it, and offer to
+ * say the block was wrong.
+ *
+ * The words come from session storage the worker filled — memory-only, never
+ * persisted, and read here in an extension page, a trusted context. They are
+ * put on screen with textContent, never innerHTML, so a term can never act as
+ * markup. Reporting is a local correction, not a message to anyone.
+ */
+async function setupContentReport() {
+  if (new URLSearchParams(location.search).get("reason") !== "terms") return;
+
+  const rowEl = document.getElementById("reportRow");
+  const matchedEl = document.getElementById("matched");
+  const statusEl = document.getElementById("reportStatus");
+  const btn = document.getElementById("report");
+
+  let last = null;
+  try {
+    ({ lastTextBlock: last } = await chrome.storage.session.get("lastTextBlock"));
+  } catch { /* no session storage — offer the button without the word list */ }
+
+  const fresh = last && Date.now() - (last.at || 0) < RECENT_MS;
+  const host = fresh ? (last.host || "") : "";
+
+  if (fresh && Array.isArray(last.terms) && last.terms.length) {
+    matchedEl.textContent = "Matched: ";
+    for (const term of last.terms) {
+      const chip = document.createElement("span");
+      chip.className = "w";
+      chip.textContent = term;
+      matchedEl.appendChild(chip);
+    }
+    matchedEl.hidden = false;
+  }
+
+  rowEl.hidden = false;
+  btn.addEventListener("click", () => {
+    btn.disabled = true;
+    chrome.runtime.sendMessage({ type: "reportWrongBlock", host }, (res) => {
+      res = res || {};
+      if (res.ok) {
+        showStatus(statusEl, "ok",
+          `Thanks — Hisn will not block ${res.host} by its content again. ` +
+          `The site's blocklist status is unchanged.`);
+        if (res.host) {
+          const a = document.createElement("a");
+          a.href = "https://" + res.host + "/";
+          a.textContent = "Open " + res.host;
+          statusEl.appendChild(document.createElement("br"));
+          statusEl.appendChild(a);
+        }
+      } else if (res.reason === "locked") {
+        showStatus(statusEl, "locked",
+          "Your lock is active, so this cannot be lifted right now. Once the " +
+          "lock ends, report it again and Hisn will stop blocking it.");
+      } else if (res.reason === "no-host") {
+        showStatus(statusEl, "err",
+          "This page was open too long to identify the site automatically — " +
+          "add it to your content allowlist in the app or options instead.");
+        btn.disabled = false;
+      } else {
+        showStatus(statusEl, "err", "Could not file that just now.");
+        btn.disabled = false;
+      }
+    });
+  });
+}
+
 chrome.runtime.sendMessage({ type: "getState" }, (state) => {
   render(state || { lockUntil: 0 });
 });
+
+setupContentReport();

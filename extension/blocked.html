@@ -47,6 +47,30 @@
   .timer strong { font-weight: 600; }
   .note { margin: 18px 0 0; font-size: 13px; color: var(--muted); }
   a { color: var(--accent); }
+  .matched {
+    margin: -4px 0 18px; font-size: 13px; color: var(--muted);
+    line-height: 1.8;
+  }
+  .matched .w {
+    display: inline-block; margin: 2px 3px;
+    padding: 1px 8px; border: 1px solid var(--line); border-radius: 20px;
+    color: var(--fg); background: var(--bg);
+    unicode-bidi: isolate;
+  }
+  .report { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line); }
+  .report button {
+    font: inherit; font-size: 14px; cursor: pointer;
+    color: var(--fg); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 9px; padding: 9px 16px;
+  }
+  .report button:hover { border-color: var(--accent); color: var(--accent); }
+  .report button:disabled {
+    opacity: .55; cursor: default;
+    border-color: var(--line); color: var(--muted);
+  }
+  .report-status { margin: 12px 0 0; font-size: 13px; }
+  .report-status.ok { color: var(--accent); }
+  .report-status.locked, .report-status.err { color: var(--muted); }
 </style>
 </head>
 <body>
@@ -54,8 +78,13 @@
     <div class="mark" aria-hidden="true">&#10003;</div>
     <h1 id="title">This page is blocked</h1>
     <p id="subtitle">You set this up. It is working.</p>
+    <p class="matched" id="matched" hidden></p>
     <div class="timer" id="timer" hidden></div>
     <p class="note" id="note"></p>
+    <div class="report" id="reportRow" hidden>
+      <button type="button" id="report">This block looks wrong</button>
+      <p class="report-status" id="reportStatus" hidden></p>
+    </div>
   </main>
 
 <script src="blocked.js"></script>

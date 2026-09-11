@@ -90,6 +90,23 @@ export function buildIndex(termsJson) {
   };
 }
 
+/** True if `hostname` equals, or is a subdomain of, any domain in `list`.
+ *
+ *  Suffix match on a dot boundary, never a substring: `en.wikipedia.org`
+ *  matches `wikipedia.org`, but `notwikipedia.org` and `wikipedia.org.evil.com`
+ *  do not. Exported because two lists need exactly this rule — the compiled
+ *  `exempt_domains` and a user's own page-text allowlist (the hosts they
+ *  reported as wrong blocks) — and one shared definition of "on this host" is
+ *  what keeps the false-positive report and the exemption from drifting apart. */
+export function hostInList(hostname, list) {
+  const host = String(hostname || "").toLowerCase().replace(/\.$/, "");
+  if (!host) return false;
+  for (const d of list) {
+    if (d && (host === d || host.endsWith("." + d))) return true;
+  }
+  return false;
+}
+
 /** True if this hostname is exempt from PAGE-TEXT blocking.
  *
  *  Exemption is narrow on purpose: it suppresses this layer only. The domain
@@ -98,11 +115,7 @@ export function buildIndex(termsJson) {
  *  reference article is text we do not want to block and images we very much
  *  still do. */
 export function isExempt(hostname, index) {
-  const host = hostname.toLowerCase().replace(/\.$/, "");
-  for (const d of index.exempt) {
-    if (host === d || host.endsWith("." + d)) return true;
-  }
-  return false;
+  return hostInList(hostname, index.exempt);
 }
 
 /**

@@ -13,7 +13,7 @@
  */
 
 import { acceptList } from "./lib/verify.js";
-import { buildIndex, scorePage, isExempt } from "./lib/score.js";
+import { buildIndex, scorePage, isExempt, hostInList } from "./lib/score.js";
 
 const NATIVE_HOST = "app.hisn.bridge";
 const LIST_BASE = "https://raw.githubusercontent.com/hisn-app/blocklist/lists";
@@ -48,6 +48,17 @@ const DEFAULT_STATE = {
   failClosed: false,        // true once we lost the native app mid-lock
   inspectText: true,        // page-text scoring
   textSensitivity: 50,      // 0-100, higher = stricter (see lib/score.js)
+  textAllow: [],            // hosts the user reported as WRONG page-text blocks;
+                            // page-text scoring skips them. Extension-local (the
+                            // app does not own this list), and add-only while
+                            // locked — see guardedUpdate. Never the domain
+                            // blocklist's business: this suppresses the text
+                            // layer only, exactly like the compiled exempt set.
+  disputed: [],             // {host, at} for reports filed DURING a lock, when
+                            // the exemption cannot take effect yet. Holds the
+                            // host the user calls safe and the time — never the
+                            // words that matched, which stay out of durable
+                            // storage entirely (docs/THREAT_MODEL.md Part 5).
 
   // Has the native app ever answered? Distinguishes the two ways this
   // extension is legitimately run, which behave differently and must be
@@ -290,15 +301,73 @@ async function scoreText(zones, sender) {
   try {
     host = new URL(sender?.url ?? "").hostname;
   } catch { /* opaque origin — no exemption, judge it on its text */ }
-  if (host && isExempt(host, index)) return { block: false };
+  // Two allowlists suppress this layer: the compiled `exempt_domains`, and the
+  // user's own `textAllow` — the hosts they reported as wrong blocks. Both are
+  // narrow (text layer only) and both are matched by the same host rule.
+  if (host && (isExempt(host, index)
+               || hostInList(host, state.textAllow ?? []))) {
+    return { block: false };
+  }
 
   const sensitivity = state.failClosed ? 80 : (state.textSensitivity ?? 50);
   const result = scorePage(zones, index, sensitivity);
 
-  // Return the verdict and NOTHING else. Sending back which terms matched
-  // would put that list one console.log away from being written somewhere it
-  // survives, which is the record docs/THREAT_MODEL.md Part 5 forbids.
+  // The content script still receives the verdict and NOTHING else — sending
+  // the matched terms into the page, the least trusted context there is, is the
+  // record docs/THREAT_MODEL.md Part 5 forbids. But a person deserves to see
+  // WHY their own page was blocked and to say it was wrong, so the terms are
+  // stashed for the block page in `chrome.storage.session`: memory-only, cleared
+  // when the browser closes, readable only by trusted extension pages, a single
+  // slot overwritten each block, and never persisted, sent, or put in a URL.
+  if (result.block) {
+    await rememberBlock(host, result.hits);
+  }
   return { block: result.block };
+}
+
+/** The top matched terms and their host, for the block page to show — held in
+ *  ephemeral session storage only. See the Part 5 note in `scoreText`. */
+async function rememberBlock(host, hits) {
+  const terms = [...(hits ?? new Map()).entries()]
+    .sort((a, b) => b[1] - a[1])   // most-hit first
+    .slice(0, 8)
+    .map(([term]) => term);
+  try {
+    await chrome.storage.session.set({
+      lastTextBlock: { host: host || "", terms, at: Date.now() },
+    });
+  } catch { /* session storage unavailable — the block still stands */ }
+}
+
+/**
+ * The user says a page-text block was wrong.
+ *
+ * This is a LOCAL correction, never a report to anyone: there is no server, and
+ * Part 5 forbids one. Unlocked, it adds the host to `textAllow` so the text
+ * layer skips it from now on — the domain blocklist and URL rules still apply,
+ * so this cannot turn a genuine porn domain reachable, only stop the text layer
+ * second-guessing a host the user vouches for. Locked, it cannot loosen
+ * anything (that is the whole point of a lock), so the host is queued in
+ * `disputed` — host and time only — to apply once the lock ends, and the user
+ * is told plainly that it will not lift before then.
+ */
+async function reportWrongBlock(host) {
+  const clean = String(host || "").toLowerCase().replace(/\.$/, "");
+  if (!clean) return { ok: false, reason: "no-host" };
+  const state = await getState();
+
+  if (isLocked(state)) {
+    if (!hostInList(clean, state.disputed.map((d) => d.host))) {
+      await setState({ disputed: [...state.disputed, { host: clean, at: Date.now() }] });
+    }
+    return { ok: false, reason: "locked", until: state.lockUntil, host: clean };
+  }
+
+  if (!hostInList(clean, state.textAllow)) {
+    const next = await setState({ textAllow: [...state.textAllow, clean] });
+    await applyRules(next);
+  }
+  return { ok: true, host: clean };
 }
 
 // --------------------------------------------------------------------------
@@ -553,7 +622,12 @@ async function guardedUpdate(patch) {
       // every other guard in this file enforces.
       (patch.inspectText === false && state.inspectText) ||
       (patch.textSensitivity !== undefined &&
-        patch.textSensitivity < state.textSensitivity);
+        patch.textSensitivity < state.textSensitivity) ||
+      // Exempting a host from the text layer is a loosening like any other, so
+      // it waits for the lock to end — reportWrongBlock enforces the same rule
+      // by queueing to `disputed` instead of writing `textAllow` while locked,
+      // but this closes the raw `update` path a devtools console could post.
+      (patch.textAllow && added(patch.textAllow, state.textAllow).length > 0);
     if (relaxing) {
       return { ok: false, reason: "locked", until: state.lockUntil };
     }
@@ -602,6 +676,9 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         break;
       case "scoreText":
         sendResponse(await scoreText(msg.zones || {}, _sender));
+        break;
+      case "reportWrongBlock":
+        sendResponse(await reportWrongBlock(msg.host));
         break;
       default:
         sendResponse({ ok: false, reason: "unknown-message" });
