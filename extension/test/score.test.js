@@ -11,7 +11,7 @@
  * the bug it prevents would ship.
  */
 
-import { buildIndex, scorePage, isExempt, threshold, hostInList }
+import { buildIndex, scorePage, isExempt, threshold, hostInList, withoutTerms }
   from "../lib/score.js";
 
 let failures = 0, checks = 0;
@@ -170,6 +170,28 @@ check(!hostInList("example.com.evil.com", ["example.com"]),
 check(!hostInList("example.com", []), "an empty allowlist matches nothing");
 check(hostInList("EXAMPLE.com.", ["example.com"]),
       "the host is lowercased and its trailing dot dropped before matching");
+
+// ── a user can disown one matched word ───────────────────────────────────────
+// "This word is wrong" removes exactly that term from scoring and nothing else,
+// so a page that blocked only because of it stops scoring on it, while every
+// other listed word keeps working — and the shared index is never mutated.
+const onlyPorn = { title: "porn" };
+const before = scorePage(onlyPorn, index, 50);
+check(before.score > 0, `the matched word scores to begin with (${before.score})`);
+
+const pruned = withoutTerms(index, ["porn"]);
+check(scorePage(onlyPorn, pruned, 50).score === 0,
+      "disowning the word drops its contribution to zero");
+
+const nudeBefore = scorePage({ title: "nude" }, index, 50).score;
+check(nudeBefore > 0, `the control word is itself listed (${nudeBefore})`);
+check(scorePage({ title: "nude" }, pruned, 50).score === nudeBefore,
+      "disowning 'porn' leaves every other listed word scoring as before");
+
+check(scorePage(onlyPorn, index, 50).score === before.score,
+      "withoutTerms copies — the original index is left unchanged");
+check(withoutTerms(index, []) === index,
+      "no terms to drop returns the very same index, allocating nothing");
 
 print(`  ${checks - failures}/${checks} checks passed`);
 if (failures) throw new Error(`${failures} check(s) failed`);

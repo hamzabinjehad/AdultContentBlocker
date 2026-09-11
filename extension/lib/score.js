@@ -107,6 +107,21 @@ export function hostInList(hostname, list) {
   return false;
 }
 
+/** A copy of `index` with `terms` removed from its positive map — the words a
+ *  user marked as wrong on a block page, so they stop counting as adult text
+ *  everywhere. Negatives are left untouched: a term the user disowns should
+ *  simply not score, not start pulling scores DOWN. `terms` must already be
+ *  normalised to the list's spelling (the keys of `positive`), which the matched
+ *  words the user taps already are. Returns `index` unchanged when there is
+ *  nothing to drop, so the common no-ignores path allocates nothing. */
+export function withoutTerms(index, terms) {
+  if (!terms || !terms.length) return index;
+  const drop = new Set(terms);
+  const positive = new Map();
+  for (const [t, w] of index.positive) if (!drop.has(t)) positive.set(t, w);
+  return { ...index, positive };
+}
+
 /** True if this hostname is exempt from PAGE-TEXT blocking.
  *
  *  Exemption is narrow on purpose: it suppresses this layer only. The domain

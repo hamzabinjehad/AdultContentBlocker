@@ -13,7 +13,9 @@
  */
 
 import { acceptList } from "./lib/verify.js";
-import { buildIndex, scorePage, isExempt, hostInList } from "./lib/score.js";
+import { buildIndex, scorePage, isExempt, hostInList, withoutTerms }
+  from "./lib/score.js";
+import { normalize } from "./lib/normalize.js";
 
 const NATIVE_HOST = "app.hisn.bridge";
 const LIST_BASE = "https://raw.githubusercontent.com/hisn-app/blocklist/lists";
@@ -54,6 +56,11 @@ const DEFAULT_STATE = {
                             // locked — see guardedUpdate. Never the domain
                             // blocklist's business: this suppresses the text
                             // layer only, exactly like the compiled exempt set.
+  ignoreTerms: [],          // individual words the user marked wrong on a block
+                            // page — a medical term, an over-broad stem. They
+                            // stop counting as adult text everywhere. Normalised
+                            // to the list's spelling, extension-local, add-only
+                            // while locked. The opposite number of customTerms.
   disputed: [],             // {host, at} for reports filed DURING a lock, when
                             // the exemption cannot take effect yet. Holds the
                             // host the user calls safe and the time — never the
@@ -210,10 +217,10 @@ async function applyRules(state) {
  *  everything it holds can be rebuilt from the bundled file. */
 let termIndex = null;
 let termJson = null;
-let customIndex = null;
-let customTermsKey = "";
+let effectiveIndex = null;
+let effectiveKey = " uninitialised";
 
-async function getTermIndex(customTerms = []) {
+async function getTermIndex(customTerms = [], ignoreTerms = []) {
   if (!termIndex) {
     const res = await fetch(chrome.runtime.getURL("seed/terms.json"));
     termJson = await res.json();
@@ -226,19 +233,25 @@ async function getTermIndex(customTerms = []) {
   // arrive from the app over the heartbeat and are stored, like everything else
   // the native side owns, as state the browser may read and not write.
   const key = customTerms.join("\u0000");
-  if (key !== customTermsKey) {
-    customTermsKey = key;
+  // Fold in the words the user disowned too; either set changing rebuilds.
+  const combinedKey = key + " ignore:" + ignoreTerms.join(" ");
+  if (combinedKey !== effectiveKey) {
+    effectiveKey = combinedKey;
     // A word someone typed deliberately is a stronger signal than one mined
     // from a corpus: they know their own triggers. It still goes through the
     // same scorer, so a single mention of it does not block a long article —
     // the density floor applies to these exactly as it does to the rest.
-    customIndex = customTerms.length
-      ? buildIndex({ ...termJson,
-                     terms: [...termJson.terms,
-                             ...customTerms.map((t) => ({ t, w: 8, l: "user" }))] })
-      : null;
+    let base = termIndex;
+    if (customTerms.length) {
+      base = buildIndex({ ...termJson,
+                          terms: [...termJson.terms,
+                                  ...customTerms.map((t) => ({ t, w: 8, l: "user" }))] });
+    }
+    // Then drop the disowned words, normalised to the list's spelling. Done
+    // last so it can also cancel a custom word the user added earlier.
+    effectiveIndex = withoutTerms(base, ignoreTerms.map(normalize));
   }
-  return customIndex ?? termIndex;
+  return effectiveIndex;
 }
 
 /**
@@ -296,7 +309,7 @@ async function scoreText(zones, sender) {
     return { block: false };
   }
 
-  const index = await getTermIndex(state.customTerms ?? []);
+  const index = await getTermIndex(state.customTerms ?? [], state.ignoreTerms ?? []);
   let host = "";
   try {
     host = new URL(sender?.url ?? "").hostname;
@@ -368,6 +381,41 @@ async function reportWrongBlock(host) {
     await applyRules(next);
   }
   return { ok: true, host: clean };
+}
+
+/**
+ * The user says one specific matched WORD was wrong — a medical term, or an
+ * over-broad stem catching an innocent word. Narrower than exempting the whole
+ * host: the word stops counting as adult text everywhere, and every other word
+ * on the list keeps working.
+ *
+ * Same two rails as the host report. Locked, it cannot loosen, so the word is
+ * queued to `disputed` and nothing changes yet. Unlocked, it joins
+ * `ignoreTerms`, and getTermIndex drops it from the positive map on the next
+ * scored page. Stored normalised — the same spelling the list and the matched
+ * chip already use — so `withoutTerms` finds it. A word the user disowns is not
+ * a record of anything they sought; it is the opposite, so keeping it is within
+ * Part 5 exactly as `customTerms` (their block words) already is.
+ */
+async function reportWrongWord(term) {
+  const norm = normalize(String(term || ""));
+  if (!norm) return { ok: false, reason: "no-term" };
+  const state = await getState();
+
+  if (isLocked(state)) {
+    if (!state.disputed.some((d) => d.term === norm)) {
+      await setState({ disputed: [...state.disputed, { term: norm, at: Date.now() }] });
+    }
+    return { ok: false, reason: "locked", until: state.lockUntil, term };
+  }
+
+  const ignore = state.ignoreTerms ?? [];
+  if (!ignore.includes(norm)) {
+    await setState({ ignoreTerms: [...ignore, norm] });
+    // No applyRules: this changes page-text scoring, not the DNR rule set.
+    // getTermIndex rebuilds on the next scored page because the key changed.
+  }
+  return { ok: true, term };
 }
 
 // --------------------------------------------------------------------------
@@ -627,7 +675,11 @@ async function guardedUpdate(patch) {
       // it waits for the lock to end — reportWrongBlock enforces the same rule
       // by queueing to `disputed` instead of writing `textAllow` while locked,
       // but this closes the raw `update` path a devtools console could post.
-      (patch.textAllow && added(patch.textAllow, state.textAllow).length > 0);
+      (patch.textAllow && added(patch.textAllow, state.textAllow).length > 0) ||
+      // Disowning a word (dropping it from scoring) is the same loosening at the
+      // term level — reportWrongWord queues it while locked; this guards the
+      // raw path, so a lock cannot be neutralised by ignoring "porn", "sex"…
+      (patch.ignoreTerms && added(patch.ignoreTerms, state.ignoreTerms).length > 0);
     if (relaxing) {
       return { ok: false, reason: "locked", until: state.lockUntil };
     }
@@ -679,6 +731,9 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         break;
       case "reportWrongBlock":
         sendResponse(await reportWrongBlock(msg.host));
+        break;
+      case "reportWrongWord":
+        sendResponse(await reportWrongWord(msg.term));
         break;
       default:
         sendResponse({ ok: false, reason: "unknown-message" });

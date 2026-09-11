@@ -83,45 +83,73 @@ function showStatus(el, kind, text) {
   el.hidden = false;
 }
 
+const LOCKED_NOTE =
+  "Your lock is active, so this cannot change right now. Once the lock ends, " +
+  "report it again and it will take effect.";
+
 /**
- * Only for a content-check block: show which words triggered it, and offer to
- * say the block was wrong.
+ * Only for a content-check block: show the words that triggered it and let the
+ * person point at the one that is WRONG, or say the whole site is fine.
  *
  * The words come from session storage the worker filled — memory-only, never
- * persisted, and read here in an extension page, a trusted context. They are
- * put on screen with textContent, never innerHTML, so a term can never act as
- * markup. Reporting is a local correction, not a message to anyone.
+ * persisted, and read here in an extension page, a trusted context. Each is put
+ * on screen with textContent, never innerHTML, so a term can never act as
+ * markup. Reporting is a local correction, not a message to anyone: tapping a
+ * word stops it counting as adult text; the site button exempts this host. Both
+ * only tighten-nothing while a lock is active.
  */
 async function setupContentReport() {
   if (new URLSearchParams(location.search).get("reason") !== "terms") return;
 
   const rowEl = document.getElementById("reportRow");
   const matchedEl = document.getElementById("matched");
+  const hintEl = document.getElementById("reportHint");
   const statusEl = document.getElementById("reportStatus");
-  const btn = document.getElementById("report");
+  const siteBtn = document.getElementById("reportSite");
 
   let last = null;
   try {
     ({ lastTextBlock: last } = await chrome.storage.session.get("lastTextBlock"));
-  } catch { /* no session storage — offer the button without the word list */ }
+  } catch { /* no session storage — offer the site button without the words */ }
 
   const fresh = last && Date.now() - (last.at || 0) < RECENT_MS;
   const host = fresh ? (last.host || "") : "";
+  const terms = fresh && Array.isArray(last.terms) ? last.terms : [];
 
-  if (fresh && Array.isArray(last.terms) && last.terms.length) {
+  if (terms.length) {
     matchedEl.textContent = "Matched: ";
-    for (const term of last.terms) {
-      const chip = document.createElement("span");
+    for (const term of terms) {
+      const chip = document.createElement("button");
+      chip.type = "button";
       chip.className = "w";
-      chip.textContent = term;
+      chip.textContent = term;               // never innerHTML
+      chip.addEventListener("click", () => {
+        chip.disabled = true;
+        chrome.runtime.sendMessage({ type: "reportWrongWord", term }, (res) => {
+          res = res || {};
+          if (res.ok) {
+            chip.classList.add("done");
+            showStatus(statusEl, "ok",
+              `Got it — “${res.term}” will no longer count as adult content.`);
+          } else if (res.reason === "locked") {
+            chip.disabled = false;
+            showStatus(statusEl, "locked", LOCKED_NOTE);
+          } else {
+            chip.disabled = false;
+            showStatus(statusEl, "err", "Could not file that just now.");
+          }
+        });
+      });
       matchedEl.appendChild(chip);
     }
     matchedEl.hidden = false;
+  } else {
+    hintEl.hidden = true;                     // no words to tap; just the site option
   }
 
   rowEl.hidden = false;
-  btn.addEventListener("click", () => {
-    btn.disabled = true;
+  siteBtn.addEventListener("click", () => {
+    siteBtn.disabled = true;
     chrome.runtime.sendMessage({ type: "reportWrongBlock", host }, (res) => {
       res = res || {};
       if (res.ok) {
@@ -136,17 +164,15 @@ async function setupContentReport() {
           statusEl.appendChild(a);
         }
       } else if (res.reason === "locked") {
-        showStatus(statusEl, "locked",
-          "Your lock is active, so this cannot be lifted right now. Once the " +
-          "lock ends, report it again and Hisn will stop blocking it.");
+        showStatus(statusEl, "locked", LOCKED_NOTE);
       } else if (res.reason === "no-host") {
         showStatus(statusEl, "err",
           "This page was open too long to identify the site automatically — " +
           "add it to your content allowlist in the app or options instead.");
-        btn.disabled = false;
+        siteBtn.disabled = false;
       } else {
         showStatus(statusEl, "err", "Could not file that just now.");
-        btn.disabled = false;
+        siteBtn.disabled = false;
       }
     });
   });

@@ -49,15 +49,23 @@
   a { color: var(--accent); }
   .matched {
     margin: -4px 0 18px; font-size: 13px; color: var(--muted);
-    line-height: 1.8;
+    line-height: 2;
   }
   .matched .w {
-    display: inline-block; margin: 2px 3px;
-    padding: 1px 8px; border: 1px solid var(--line); border-radius: 20px;
+    font: inherit; font-size: 13px; cursor: pointer;
+    display: inline-block; margin: 3px;
+    padding: 3px 11px; border: 1px solid var(--line); border-radius: 20px;
     color: var(--fg); background: var(--bg);
     unicode-bidi: isolate;
   }
+  .matched .w:hover { border-color: var(--accent); color: var(--accent); }
+  .matched .w:disabled { cursor: default; }
+  .matched .w.done {
+    text-decoration: line-through; color: var(--muted);
+    border-style: dashed; border-color: var(--accent);
+  }
   .report { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line); }
+  .report-hint { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
   .report button {
     font: inherit; font-size: 14px; cursor: pointer;
     color: var(--fg); background: var(--bg);
@@ -82,7 +90,8 @@
     <div class="timer" id="timer" hidden></div>
     <p class="note" id="note"></p>
     <div class="report" id="reportRow" hidden>
-      <button type="button" id="report">This block looks wrong</button>
+      <p class="report-hint" id="reportHint">Tap a word that should not count as adult content.</p>
+      <button type="button" id="reportSite">None of these — this whole site is fine</button>
       <p class="report-status" id="reportStatus" hidden></p>
     </div>
   </main>
