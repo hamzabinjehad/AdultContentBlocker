@@ -139,6 +139,17 @@ correctly reads the silence as tampering and fails closed to strict mode
 instead — so "blocking everything" and "blocking nothing" are the same missing
 manifest, depending only on whether it ever worked.)
 
+The manifest is written for **every Chromium-family browser** the profile
+force-installs the extension on — Chrome, Edge, Brave, Vivaldi, Opera, Arc,
+Chromium and Helium — not just Chrome and Edge. Those two lists must stay
+aligned: a browser the profile force-installs the extension on but the app
+never links is one where the extension is present and mute. Helium
+(`net.imput.helium`) is the case that made this concrete — it is the one
+non-Safari browser installed on the target machine, so leaving it out meant the
+only real browser in use had a force-installed extension that could never reach
+the lock clock. `NativeMessagingInstaller.browsers` and
+`install_native_host.sh`'s `TARGETS` carry the same set, cross-checked by a test.
+
 There are two ways this gets installed, and they are not redundant:
 
 * **The app writes a user-scope copy on every launch** —

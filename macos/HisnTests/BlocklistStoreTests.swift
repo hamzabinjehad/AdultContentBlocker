@@ -432,6 +432,56 @@ final class NativeMessagingInstallerTests: XCTestCase {
         XCTAssertEqual(NativeMessagingInstaller.hasSystemManifest(for: chrome),
                        exists)
     }
+
+    /// The gap this change closes. Helium is the one non-Safari browser the
+    /// user actually runs; the profile force-installs the extension there, so
+    /// the extension MUST also be able to reach the app there or it fails
+    /// closed to strict for a reason nothing surfaces. Covering only Chrome and
+    /// Edge left exactly that hole. Pins the folder Helium genuinely scans:
+    /// `net.imput.helium/NativeMessagingHosts`, alongside its `Default/`
+    /// profile, verified against a live install on the dev machine.
+    func testHeliumIsCovered() {
+        guard let helium = NativeMessagingInstaller.browsers
+            .first(where: { $0.name == "Helium" }) else {
+            return XCTFail("Helium dropped from the native-messaging family — "
+                + "the extension can no longer reach the app on the one "
+                + "non-Safari browser the user runs")
+        }
+        XCTAssertEqual(helium.userSupportDir, "net.imput.helium")
+        XCTAssertEqual(helium.systemDir,
+            "/Library/Application Support/net.imput.helium/NativeMessagingHosts")
+    }
+
+    /// Every browser the profile force-installs the extension on must also get
+    /// a native-messaging link, or the extension is installed there and mute.
+    /// The two lists living in different files (Swift here, Python in
+    /// `make_profile.py`) is the drift risk; this asserts the family the app
+    /// links matches the family the profile locks, by the bundle-id-free names
+    /// they share.
+    func testFamilyMatchesTheForceInstallProfile() {
+        let linked = Set(NativeMessagingInstaller.browsers.map(\.name))
+        for name in ["Chrome", "Edge", "Brave", "Vivaldi", "Opera",
+                     "Arc", "Chromium", "Helium"] {
+            XCTAssertTrue(linked.contains(name),
+                "\(name) is force-installed by the profile but has no "
+                + "native-messaging host written — it would run mute")
+        }
+    }
+
+    /// A fork's system-scope and user-scope directories must name the same
+    /// product folder — `hasSystemManifest` and the user-scope write both key
+    /// off it, and a mismatch would mean the app checks one browser's admin
+    /// directory while writing another's user file. Chrome and Edge are the two
+    /// branded exceptions Chromium hard-codes and are checked separately.
+    func testForkSystemPathsFollowTheConvention() {
+        for browser in NativeMessagingInstaller.browsers
+            where browser.name != "Chrome" && browser.name != "Edge" {
+            XCTAssertEqual(browser.systemDir,
+                "/Library/Application Support/\(browser.userSupportDir)/NativeMessagingHosts",
+                "\(browser.name)'s system and user directories name different "
+                + "product folders")
+        }
+    }
 }
 
 // MARK: - Hand-written site lists

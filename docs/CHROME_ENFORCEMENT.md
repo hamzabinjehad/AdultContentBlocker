@@ -96,8 +96,11 @@ macos/verify_enforcement.sh
 ```
 
 Read-only. It reports which layers are genuinely live — account split, hosts,
-Chrome incognito, Chrome DoH, Private Relay, the system filter — and exits
-non-zero if any critical one is open. Run it as the second person after setup:
+incognito and DoH **across every Chromium browser actually installed** (not just
+Chrome — a Helium-only Mac would otherwise read "enforced" off a browser nobody
+runs), whether the extension's native-messaging link is present on each of them,
+Private Relay, and the system filter — and exits non-zero if any critical one is
+open. Run it as the second person after setup:
 the whole point of this product is that "looks protected" and "is protected"
 can differ, and this is where you catch the difference.
 

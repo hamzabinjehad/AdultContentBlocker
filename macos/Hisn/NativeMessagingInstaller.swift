@@ -1,7 +1,10 @@
 import Foundation
 
-/// Registers `HisnBridge` as a Chrome/Edge native messaging host, at
-/// user-scope, only when nobody has already set it up at system-scope.
+/// Registers `HisnBridge` as a native messaging host for every Chromium-family
+/// browser the profile force-installs the extension on — Chrome, Edge, Brave,
+/// Vivaldi, Opera, Arc, Chromium and Helium — at user-scope, only when nobody
+/// has already set it up at system-scope. Covering only Chrome and Edge left
+/// the extension mute on Helium, the one non-Safari browser the user runs.
 ///
 /// Without a manifest *somewhere*, the browser extension has no working
 /// channel to the app at all. `background.js` learns the lock state
@@ -70,23 +73,59 @@ public enum NativeMessagingInstaller {
     static let hostName = "app.hisn.bridge"
 
     /// One manifest file, one pair of destination folders per browser.
-    /// Chromium-family browsers all read the same JSON shape; Chrome and Edge
-    /// cover the two this product supports (see `manifest.json`'s
-    /// `minimum_chrome_version`). Paths match `install_native_host.sh`
-    /// exactly — two independent implementations of where these go is exactly
-    /// the kind of drift that made the embed-path bug this file also fixes
-    /// invisible for as long as it was.
+    /// Every Chromium-family browser reads the same JSON shape; it just scans a
+    /// different folder, named after its own product directory. Paths match
+    /// `install_native_host.sh` exactly — two independent implementations of
+    /// where these go is exactly the kind of drift that made the embed-path bug
+    /// this file also fixes invisible for as long as it was.
+    ///
+    /// This list mirrors the profile's `CHROMIUM_FAMILY` in `make_profile.py`:
+    /// the profile force-installs the extension on these browsers, and this
+    /// writes the link that lets the extension, once installed, actually reach
+    /// the app. The two lists drifting apart is a silent hole — the earlier
+    /// version covered only Chrome and Edge, so on the one non-Safari browser
+    /// the user actually runs (Helium) the extension was force-installed by the
+    /// profile and then had no channel to the lock clock at all: it sat in
+    /// `mode: "off"`, or, if a lock had ever been recorded, failed closed to
+    /// strict after five minutes of silence, for a reason nothing surfaced.
     struct Browser {
         let name: String
-        /// Absolute; admin-writable only.
+        /// Absolute; admin-writable only. For Chromium forks this is derived
+        /// from `userSupportDir` by the standard convention (see `fork`); only
+        /// Chrome and Edge are the branded special cases Chromium hard-codes.
         let systemDir: String
-        /// Relative to `~/Library/Application Support`.
+        /// The product directory under `~/Library/Application Support` — the
+        /// same folder that holds the browser's `Default/` profile and
+        /// `Local State`. The host manifest goes in its `NativeMessagingHosts/`
+        /// subfolder, exactly as Chrome's own docs place it.
         let userSupportDir: String
+
+        /// A Chromium fork: the system-wide host directory is
+        /// `/Library/Application Support/<productDir>/NativeMessagingHosts`,
+        /// the location `chrome::DIR_NATIVE_MESSAGING` resolves to for any
+        /// non-Google, non-Microsoft build. Deriving it here, rather than
+        /// retyping it, means the system and user paths for a fork cannot
+        /// disagree about which product directory a browser uses.
+        static func fork(_ name: String, _ productDir: String) -> Browser {
+            Browser(
+                name: name,
+                systemDir: "/Library/Application Support/\(productDir)/NativeMessagingHosts",
+                userSupportDir: productDir)
+        }
     }
 
     /// Internal rather than private so a test can cross-check these against
     /// `install_native_host.sh`'s own `TARGETS` — see
     /// `NativeMessagingInstallerTests.testSystemPathsMatchTheShellInstaller`.
+    ///
+    /// Chrome and Edge keep the two branded directories Chromium special-cases
+    /// (`/Library/Google/Chrome`, `/Library/Microsoft/Edge`); every other fork
+    /// follows the `Browser.fork` convention. `installIfNeeded` writes only
+    /// where the product directory already exists, so listing a browser that is
+    /// not installed is free — it is simply skipped. Arc is the one entry that
+    /// could not be verified against a live install on the dev machine; it
+    /// follows Arc's documented `Arc/User Data` data directory and is skipped
+    /// harmlessly if that turns out wrong, like any absent browser.
     static let browsers = [
         Browser(name: "Chrome",
                systemDir: "/Library/Google/Chrome/NativeMessagingHosts",
@@ -94,6 +133,12 @@ public enum NativeMessagingInstaller {
         Browser(name: "Edge",
                systemDir: "/Library/Microsoft/Edge/NativeMessagingHosts",
                userSupportDir: "Microsoft Edge"),
+        Browser.fork("Brave", "BraveSoftware/Brave-Browser"),
+        Browser.fork("Vivaldi", "Vivaldi"),
+        Browser.fork("Opera", "com.operasoftware.Opera"),
+        Browser.fork("Arc", "Arc/User Data"),
+        Browser.fork("Chromium", "Chromium"),
+        Browser.fork("Helium", "net.imput.helium"),
     ]
 
     /// Write (or repair) the user-scope host manifest for every browser that

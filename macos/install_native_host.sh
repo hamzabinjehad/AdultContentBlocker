@@ -45,15 +45,37 @@ if [[ ! -x "$BRIDGE" ]]; then
     exit 1
 fi
 
+# The whole Chromium family, not just Chrome and Edge. The profile
+# force-installs the extension on every one of these (see CHROMIUM_FAMILY in
+# profile/make_profile.py); this writes the link the installed extension needs
+# to reach the app. Covering only Chrome/Edge left the one non-Safari browser
+# the user actually runs — Helium — force-installed but unable to talk to the
+# lock clock. Chrome and Edge are the two branded directories Chromium
+# special-cases; every other fork resolves its system host dir to
+# /Library/Application Support/<product>/NativeMessagingHosts. These must stay
+# byte-for-byte identical to NativeMessagingInstaller.browsers — a test asserts
+# each systemDir appears here (testSystemPathsMatchTheShellInstaller).
 if [[ "$SCOPE" == "system" ]]; then
     TARGETS=(
         "/Library/Google/Chrome/NativeMessagingHosts"
         "/Library/Microsoft/Edge/NativeMessagingHosts"
+        "/Library/Application Support/BraveSoftware/Brave-Browser/NativeMessagingHosts"
+        "/Library/Application Support/Vivaldi/NativeMessagingHosts"
+        "/Library/Application Support/com.operasoftware.Opera/NativeMessagingHosts"
+        "/Library/Application Support/Arc/User Data/NativeMessagingHosts"
+        "/Library/Application Support/Chromium/NativeMessagingHosts"
+        "/Library/Application Support/net.imput.helium/NativeMessagingHosts"
     )
 else
     TARGETS=(
         "$HOME/Library/Application Support/Google/Chrome/NativeMessagingHosts"
         "$HOME/Library/Application Support/Microsoft Edge/NativeMessagingHosts"
+        "$HOME/Library/Application Support/BraveSoftware/Brave-Browser/NativeMessagingHosts"
+        "$HOME/Library/Application Support/Vivaldi/NativeMessagingHosts"
+        "$HOME/Library/Application Support/com.operasoftware.Opera/NativeMessagingHosts"
+        "$HOME/Library/Application Support/Arc/User Data/NativeMessagingHosts"
+        "$HOME/Library/Application Support/Chromium/NativeMessagingHosts"
+        "$HOME/Library/Application Support/net.imput.helium/NativeMessagingHosts"
     )
 fi
 

@@ -8,16 +8,28 @@
 # ---------------
 # The app's own status header (ContentView.StatusHeader) is honest about the two
 # layers the app can see — its filter and its browser link. It cannot see the
-# rest: whether a configuration profile is installed, whether Chrome incognito is
+# rest: whether a configuration profile is installed, whether incognito is
 # actually disabled, whether iCloud Private Relay is off, whether the daily user
 # is still an administrator. Every one of those is silent when absent — the
 # machine looks protected and is not.
 #
-# Incognito is the sharp example. The extension is `not_allowed` in incognito, so
-# it does not run there at all; the ONLY thing that closes that hole is the
-# profile disabling incognito outright (IncognitoModeAvailability = 1). Without
-# the profile, an incognito window is a clean bypass of the whole page-text
-# layer, and nothing anywhere says so. This script says so.
+# It checks these across every Chromium browser actually installed, not just
+# Chrome. On a machine whose only non-Safari browser is Helium, a Chrome-only
+# check reads "enforced" off a browser nobody runs while the real one is wide
+# open — the exact false sense of safety this script exists to kill.
+#
+# Incognito is the sharp example. The extension is `spanning`, so it CAN run in a
+# private window — but the browser keeps it off there until the user turns on
+# "Allow in Incognito", which a determined person will not. The only thing that
+# closes that hole without relying on the opt-in is the profile disabling
+# incognito outright (IncognitoModeAvailability = 1). Without it, an incognito
+# window is a bypass of the whole page-text layer, and nothing anywhere says so.
+# This script says so.
+#
+# The browser link is the other silent one. The extension learns the lock state
+# only over native messaging; with no host manifest the extension is installed
+# and mute (see NativeMessagingInstaller). This checks that a manifest exists for
+# each installed Chromium browser, at user or system scope.
 #
 # Read-only. It changes nothing, needs no sudo, and is safe to run any time —
 # it is a mirror, not a switch. Exit status is 0 only if every critical control
@@ -31,21 +43,43 @@ ME="${SUDO_USER:-$(id -un)}"
 critical_open=0
 warnings=0
 
+# The Chromium browsers this product knows how to lock, as
+#   display name | managed-preferences domain (bundle id) | product dir
+# The domain is where a configuration profile lands the browser's policy; the
+# product dir (under ~/Library/Application Support) is both the browser's
+# presence marker and where its native-messaging host manifest lives. This is
+# the same family NativeMessagingInstaller.browsers and CHROMIUM_FAMILY carry —
+# they must stay aligned, or a browser is locked in one place and open in the
+# other. A browser is only checked when its product dir exists: an absent
+# browser is not a hole.
+CHROMIUM_BROWSERS="\
+Chrome|com.google.Chrome|Google/Chrome
+Edge|com.microsoft.Edge|Microsoft Edge
+Brave|com.brave.Browser|BraveSoftware/Brave-Browser
+Vivaldi|com.vivaldi.Vivaldi|Vivaldi
+Opera|com.operasoftware.Opera|com.operasoftware.Opera
+Arc|company.thebrowser.Browser|Arc/User Data
+Chromium|org.chromium.Chromium|Chromium
+Helium|net.imput.helium|net.imput.helium"
+
+# System-scope native-messaging host dirs are branded exceptions for Chrome and
+# Edge; every other fork resolves to /Library/Application Support/<product>/…
+# (matches NativeMessagingInstaller.Browser.fork and install_native_host.sh).
+nm_system_dir() {
+    case "$1" in
+        Chrome) echo "/Library/Google/Chrome/NativeMessagingHosts" ;;
+        Edge)   echo "/Library/Microsoft/Edge/NativeMessagingHosts" ;;
+        *)      echo "/Library/Application Support/$2/NativeMessagingHosts" ;;
+    esac
+}
+
+browser_installed() {   # product-dir -> present under this user's App Support?
+    [ -d "$HOME/Library/Application Support/$1" ]
+}
+
 ok()   { printf "  ${GRN}● enforced${OFF}  %-22s ${DIM}%s${OFF}\n" "$1" "$2"; }
 open() { printf "  ${RED}○ OPEN${OFF}      %-22s ${DIM}%s${OFF}\n" "$1" "$2"; critical_open=1; }
 warn() { printf "  ${YEL}◐ partial${OFF}   %-22s ${DIM}%s${OFF}\n" "$1" "$2"; warnings=1; }
-
-# Read one key from Chrome's effective managed policy. A configuration profile
-# lands it in /Library/Managed Preferences, device- or user-scoped; check both.
-chrome_policy() {
-    local key="$1" v=""
-    for domain in \
-        "/Library/Managed Preferences/com.google.Chrome" \
-        "/Library/Managed Preferences/$ME/com.google.Chrome"; do
-        v=$(defaults read "$domain" "$key" 2>/dev/null) && { echo "$v"; return 0; }
-    done
-    return 1
-}
 
 managed_pref() {   # domain key  -> value from device- or user-scope managed prefs
     local domain="$1" key="$2" v=""
@@ -75,19 +109,52 @@ else
     open "domain blocklist" "only $hosts_count hosts entries — run block_dns.sh"
 fi
 
-# ---- the profile-dependent controls, otherwise silent ----------------------
-incognito=$(chrome_policy IncognitoModeAvailability || echo "")
-if [ "$incognito" = "1" ]; then
-    ok "chrome incognito" "disabled by policy — no bypass window"
-else
-    open "chrome incognito" "AVAILABLE — the extension does not run there; the profile is not enforcing this"
-fi
+# ---- profile-dependent browser controls, per installed browser -------------
+# One pass over the family: for each browser that is actually installed, is
+# incognito disabled, is DoH locked off, and does a native-messaging host exist?
+# Aggregated so the output stays short but still names the browser that is open.
+incog_open=""; doh_open=""; link_missing=""; browsers_present=0
+while IFS='|' read -r name domain product; do
+    [ -n "$name" ] || continue
+    browser_installed "$product" || continue
+    browsers_present=1
 
-doh=$(chrome_policy DnsOverHttpsMode || echo "")
-if [ "$doh" = "off" ]; then
-    ok "chrome DoH" "off — resolution uses the system resolver"
+    [ "$(managed_pref "$domain" IncognitoModeAvailability || echo "")" = "1" ] \
+        || incog_open="$incog_open $name"
+    [ "$(managed_pref "$domain" DnsOverHttpsMode || echo "")" = "off" ] \
+        || doh_open="$doh_open $name"
+
+    sysman="$(nm_system_dir "$name" "$product")/app.hisn.bridge.json"
+    userman="$HOME/Library/Application Support/$product/NativeMessagingHosts/app.hisn.bridge.json"
+    { [ -f "$sysman" ] || [ -f "$userman" ]; } || link_missing="$link_missing $name"
+done <<EOF
+$CHROMIUM_BROWSERS
+EOF
+
+if [ "$browsers_present" -eq 0 ]; then
+    warn "chromium browsers" "none installed — only Safari matters on this Mac"
 else
-    open "chrome DoH" "not locked — a browser DoH toggle bypasses the hosts file"
+    if [ -z "$incog_open" ]; then
+        ok "browser incognito" "disabled by policy on every installed browser"
+    else
+        open "browser incognito" "AVAILABLE on:$incog_open — page-text layer is bypassed there"
+    fi
+
+    if [ -z "$doh_open" ]; then
+        ok "browser DoH" "off on every installed browser"
+    else
+        open "browser DoH" "not locked on:$doh_open — a DoH toggle bypasses the hosts file"
+    fi
+
+    # A missing link is fail-closed during an active lock (the extension reads
+    # silence as tampering and goes strict), so it is a partial, not a bypass —
+    # but it means custom allow/block lists never reach that browser, and with
+    # no lock ever recorded the page-text layer there is simply off.
+    if [ -z "$link_missing" ]; then
+        ok "extension link" "native-messaging host present on every installed browser"
+    else
+        warn "extension link" "no host on:$link_missing — extension there cannot reach the app (run install_native_host.sh or launch the app)"
+    fi
 fi
 
 relay=$(managed_pref com.apple.applicationaccess allowCloudPrivateRelay || echo "")
