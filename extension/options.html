@@ -33,10 +33,22 @@ button{margin-top:12px;padding:9px 18px;border:none;border-radius:8px;
        background:var(--accent);color:#fff;font-weight:600;font-size:14px;cursor:pointer}
 button:disabled{opacity:.45;cursor:not-allowed}
 .msg{margin-top:12px;font-size:13px;color:var(--muted);min-height:1.4em}
+.reported-group{margin:0 0 14px}
+.reported-group:last-of-type{margin-bottom:0}
+.reported-label{font-size:12.5px;color:var(--muted);margin:0 0 6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips:empty::after{content:"— none yet —";color:var(--muted);font-size:12.5px;font-style:italic}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:13px;
+      padding:3px 5px 3px 11px;border:1px solid var(--line);border-radius:20px;
+      background:var(--bg);unicode-bidi:isolate}
+.chip button{margin:0;padding:0;width:18px;height:18px;line-height:1;
+      border-radius:50%;background:transparent;color:var(--muted);
+      font-size:16px;font-weight:400;border:none;cursor:pointer}
+.chip button:hover{color:var(--fg);background:var(--line)}
 </style></head>
 <body><main>
 <h1>Hisn Settings</h1>
-<p class="sub">Additions take effect immediately. Removals are blocked while a lock is running.</p>
+<p class="sub">Changes that tighten protection apply immediately. Loosening ones wait until any lock ends.</p>
 
 <div class="mode" id="mode">…</div>
 
@@ -71,5 +83,19 @@ example.com also covers cdn.example.com.</p>
 innocent. Medical and reference sites are exempt from this check at any setting.</p>
 <button id="saveChecks">Save</button>
 <div class="msg" id="msgChecks"></div>
+</fieldset>
+
+<fieldset><legend>Marked as wrong</legend>
+<p class="hint">What you reported from a block page as wrongly caught. Removing
+one turns its blocking back on — that always works, even during a lock.</p>
+<div class="reported-group">
+  <div class="reported-label">Words that no longer count as adult content</div>
+  <div class="chips" id="ignoreTerms"></div>
+</div>
+<div class="reported-group">
+  <div class="reported-label">Sites the content check skips</div>
+  <div class="chips" id="textAllow"></div>
+</div>
+<div class="msg" id="msgReported"></div>
 </fieldset>
 </main><script src="options.js"></script></body></html>

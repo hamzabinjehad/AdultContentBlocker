@@ -32,6 +32,45 @@ const parse = (text) =>
 const send = (msg) => new Promise((res) => chrome.runtime.sendMessage(msg, res));
 const $ = (id) => document.getElementById(id);
 
+/**
+ * The false-positive corrections the user made from block pages: words they
+ * disowned (`ignoreTerms`) and hosts they exempted (`textAllow`). Unlike the
+ * lists above, the app never owns these, so this section stays editable even
+ * when managed — and REMOVING an entry re-enables that blocking, which is a
+ * tightening, so `guardedUpdate` allows it even during a lock. Each item mutates
+ * the local `state` copy so the list can re-render without a round trip.
+ */
+function renderReported(state) {
+  for (const key of ["ignoreTerms", "textAllow"]) {
+    const box = $(key);
+    box.textContent = "";
+    for (const item of state[key] || []) {
+      const chip = document.createElement("span");
+      chip.className = "chip";
+      const label = document.createElement("span");
+      label.textContent = item;                 // textContent, never innerHTML
+      const x = document.createElement("button");
+      x.type = "button";
+      x.textContent = "×";                  // ×
+      x.title = "Start blocking this again";
+      x.setAttribute("aria-label", `Remove ${item}`);
+      x.onclick = async () => {
+        const next = (state[key] || []).filter((v) => v !== item);
+        const r = await send({ type: "update", patch: { [key]: next } });
+        if (r.ok) {
+          state[key] = next;
+          renderReported(state);
+          $("msgReported").textContent = "";
+        } else {
+          $("msgReported").textContent = `Could not remove: ${r.reason}`;
+        }
+      };
+      chip.append(label, x);
+      box.appendChild(chip);
+    }
+  }
+}
+
 async function init() {
   const state = await send({ type: "getState" });
   const locked = (state.lockUntil || 0) > Date.now();
@@ -59,6 +98,10 @@ async function init() {
   $("inspectText").checked = state.inspectText !== false;
   $("textSensitivity").value = state.textSensitivity ?? 50;
   $("sensitivityValue").textContent = state.textSensitivity ?? 50;
+
+  // The false-positive corrections — browser-local, so shown and editable in
+  // both configurations, unlike the app-owned lists below.
+  renderReported(state);
 
   // Fields the app owns become read-only rather than merely futile.
   for (const id of ["custom", "allow", "inspectText", "textSensitivity"]) {
