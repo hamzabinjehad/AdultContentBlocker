@@ -418,6 +418,51 @@ async function reportWrongWord(term) {
   return { ok: true, term };
 }
 
+/**
+ * Resolve one report that was parked in `disputed` because a lock was running
+ * when it was filed. Without this the queue was a dead-end write — a person's
+ * mid-lock report was saved and never surfaced again.
+ *
+ *  * apply — move it into the real list (`ignoreTerms` for a word, `textAllow`
+ *    for a host). That is a loosening, so it is refused while a lock is still
+ *    running, exactly like the original report was; the entry stays queued.
+ *  * dismiss — just drop it from the queue. That loosens nothing, so it is
+ *    allowed at any time.
+ *
+ * `entry` names the item by its value: `{ term }` or `{ host }`, plus `apply`.
+ */
+async function resolveDisputed(entry) {
+  const term = typeof entry?.term === "string" ? entry.term : "";
+  const host = typeof entry?.host === "string" ? entry.host : "";
+  if (!term && !host) return { ok: false, reason: "no-entry" };
+
+  const state = await getState();
+  const matches = (d) => term ? d.term === term : d.host === host;
+  if (!state.disputed.some(matches)) return { ok: false, reason: "not-found" };
+  const remaining = state.disputed.filter((d) => !matches(d));
+
+  if (!entry.apply) {
+    const next = await setState({ disputed: remaining });
+    return { ok: true, applied: false, state: next };
+  }
+
+  if (isLocked(state)) {
+    return { ok: false, reason: "locked", until: state.lockUntil };
+  }
+
+  const patch = { disputed: remaining };
+  if (term) {
+    const ignore = state.ignoreTerms ?? [];
+    if (!ignore.includes(term)) patch.ignoreTerms = [...ignore, term];
+  } else {
+    const allow = state.textAllow ?? [];
+    if (!hostInList(host, allow)) patch.textAllow = [...allow, host];
+  }
+  const next = await setState(patch);
+  await applyRules(next);
+  return { ok: true, applied: true, state: next };
+}
+
 // --------------------------------------------------------------------------
 // Native app link
 // --------------------------------------------------------------------------
@@ -735,6 +780,9 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       case "reportWrongWord":
         sendResponse(await reportWrongWord(msg.term));
         break;
+      case "resolveDisputed":
+        sendResponse(await resolveDisputed(msg.entry));
+        break;
       default:
         sendResponse({ ok: false, reason: "unknown-message" });
     }
@@ -742,4 +790,4 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   return true; // async response
 });
 
-export { applyRules, guardedUpdate, strictRules, DEFAULT_STATE };
+export { applyRules, guardedUpdate, strictRules, DEFAULT_STATE, resolveDisputed };

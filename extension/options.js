@@ -71,6 +71,71 @@ function renderReported(state) {
   }
 }
 
+/**
+ * Reports made while a lock was running. They could not loosen the lock then,
+ * so they were parked in `disputed`. Here the user can APPLY one (move it into
+ * the real list — allowed only once the lock has ended, since applying is a
+ * loosening) or DISMISS it (drop it, which loosens nothing and works any time).
+ * Hidden entirely when the queue is empty, which is the normal case.
+ */
+function renderDisputed(state) {
+  const fs = $("disputedFs");
+  const list = state.disputed || [];
+  if (!list.length) { fs.hidden = true; return; }
+
+  const locked = (state.lockUntil || 0) > Date.now();
+  fs.hidden = false;
+  $("disputedHint").textContent = locked
+    ? "Reports you made while the lock is running. They cannot loosen a lock, "
+      + "so they wait here until it ends."
+    : "Your lock has ended. Apply a report to make it take effect, or dismiss it.";
+
+  const box = $("disputed");
+  box.textContent = "";
+  for (const entry of list) {
+    const value = entry.term || entry.host || "";
+    if (!value) continue;
+    const chip = document.createElement("span");
+    chip.className = "chip";
+    const label = document.createElement("span");
+    label.textContent = value;                  // textContent, never innerHTML
+    chip.appendChild(label);
+
+    if (!locked) {
+      const apply = document.createElement("button");
+      apply.type = "button";
+      apply.className = "apply";
+      apply.textContent = "Apply";
+      apply.onclick = () => resolveDisputed(state, entry, true);
+      chip.appendChild(apply);
+    }
+    const x = document.createElement("button");
+    x.type = "button";
+    x.textContent = "×";                    // ×
+    x.title = "Dismiss";
+    x.setAttribute("aria-label", `Dismiss ${value}`);
+    x.onclick = () => resolveDisputed(state, entry, false);
+    chip.appendChild(x);
+
+    box.appendChild(chip);
+  }
+}
+
+async function resolveDisputed(state, entry, apply) {
+  const payload = entry.term ? { term: entry.term, apply } : { host: entry.host, apply };
+  const r = await send({ type: "resolveDisputed", entry: payload });
+  if (r.ok) {
+    Object.assign(state, r.state);              // worker returns the new state
+    renderDisputed(state);
+    renderReported(state);                      // an applied item now appears above
+    $("msgDisputed").textContent = r.applied ? "Applied." : "";
+  } else {
+    $("msgDisputed").textContent = r.reason === "locked"
+      ? "That cannot take effect until the lock ends."
+      : `Could not do that: ${r.reason}`;
+  }
+}
+
 async function init() {
   const state = await send({ type: "getState" });
   const locked = (state.lockUntil || 0) > Date.now();
@@ -102,6 +167,7 @@ async function init() {
   // The false-positive corrections — browser-local, so shown and editable in
   // both configurations, unlike the app-owned lists below.
   renderReported(state);
+  renderDisputed(state);
 
   // Fields the app owns become read-only rather than merely futile.
   for (const id of ["custom", "allow", "inspectText", "textSensitivity"]) {

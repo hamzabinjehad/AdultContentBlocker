@@ -45,6 +45,9 @@ button:disabled{opacity:.45;cursor:not-allowed}
       border-radius:50%;background:transparent;color:var(--muted);
       font-size:16px;font-weight:400;border:none;cursor:pointer}
 .chip button:hover{color:var(--fg);background:var(--line)}
+.chip .apply{width:auto;height:auto;padding:2px 9px;font-size:11.5px;font-weight:600;
+      border:1px solid var(--accent);color:var(--accent);border-radius:20px}
+.chip .apply:hover{background:var(--accent);color:#fff}
 </style></head>
 <body><main>
 <h1>Hisn Settings</h1>
@@ -97,5 +100,11 @@ one turns its blocking back on — that always works, even during a lock.</p>
   <div class="chips" id="textAllow"></div>
 </div>
 <div class="msg" id="msgReported"></div>
+</fieldset>
+
+<fieldset id="disputedFs" hidden><legend>Waiting until your lock ends</legend>
+<p class="hint" id="disputedHint"></p>
+<div class="chips" id="disputed"></div>
+<div class="msg" id="msgDisputed"></div>
 </fieldset>
 </main><script src="options.js"></script></body></html>
