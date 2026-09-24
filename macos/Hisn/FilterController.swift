@@ -21,8 +21,24 @@ public final class FilterController: ObservableObject {
 
     public static let shared = FilterController()
 
-    @Published public private(set) var isEnabled = false
+    /// What `NEFilterManager` last told us, including "nothing yet".
+    ///
+    /// This used to be `isEnabled = false` from the first instant, so the
+    /// window said "not running" before the question had been asked and the
+    /// answer could not be told apart from the filter genuinely being off. A
+    /// missing answer is its own state; the status model shows it as
+    /// "checking", never as either verdict.
+    public enum Availability: Equatable {
+        case unknown
+        case unavailable(String)
+        case off
+        case on
+    }
+
+    @Published public private(set) var availability: Availability = .unknown
     @Published public private(set) var lastError: String?
+
+    public var isEnabled: Bool { availability == .on }
 
     private let extensionIdentifier = "app.hisn.Hisn.HisnFilter"
 
@@ -52,9 +68,10 @@ public final class FilterController: ObservableObject {
     public func refresh() async {
         do {
             try await NEFilterManager.shared().loadFromPreferences()
-            isEnabled = NEFilterManager.shared().isEnabled
+            availability = NEFilterManager.shared().isEnabled ? .on : .off
         } catch {
             lastError = error.localizedDescription
+            availability = .unavailable(error.localizedDescription)
         }
     }
 
@@ -79,7 +96,7 @@ public final class FilterController: ObservableObject {
         } catch {
             throw FilterError.configurationFailed(error.localizedDescription)
         }
-        isEnabled = true
+        availability = .on
     }
 
     /// Turn the filter off. Refused outright while a lock is running.
@@ -90,7 +107,7 @@ public final class FilterController: ObservableObject {
         try await manager.loadFromPreferences()
         manager.isEnabled = false
         try await manager.saveToPreferences()
-        isEnabled = false
+        availability = .off
     }
 
     /// Called at every app launch.

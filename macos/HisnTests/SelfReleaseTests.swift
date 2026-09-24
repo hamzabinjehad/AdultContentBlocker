@@ -172,6 +172,47 @@ final class SelfReleaseTests: XCTestCase {
                        "a pending release pushed the lock past its own deadline")
     }
 
+    /// Prevents the network filter enforcing a lock the app has released.
+    ///
+    /// The filter used to compare against the ORIGINAL deadline while the
+    /// bridge told the browser the lock had ended at the EFFECTIVE one. After
+    /// a matured self-release every unlisted socket on the Mac stayed dropped
+    /// for as long as the original lock had left, with the app reporting
+    /// "unlocked". `strictModeActive` is what the filter now consults; this
+    /// pins it to the same clock as everything else.
+    func testAMaturedReleaseEndsStrictEnforcementInTheFilter() {
+        let matured = Date().addingTimeInterval(-60)
+        var state = locked(release: matured)
+        state.mode = "strict"
+        XCTAssertTrue(LockStore.write(state))
+        UserDefaults(suiteName: namespace)?.set(
+            Date().addingTimeInterval(-LockStore.selfReleaseDelay - 120),
+            forKey: "selfReleaseFirstSeen.\(Int(matured.timeIntervalSince1970))")
+
+        let read = LockStore.read()
+        XCTAssertGreaterThan(read.deadline, Date(),
+                             "precondition: the original deadline is still ahead")
+        XCTAssertFalse(LockStore.strictModeActive(read),
+                       "the filter would keep enforcing strict mode after the release matured")
+        XCTAssertFalse(LockStore.isLocked(),
+                       "and the app agrees the lock is over")
+    }
+
+    /// The other direction: a pending, unmatured release changes nothing for
+    /// the filter — strict stays strict until the delay has run.
+    func testAFreshReleaseDoesNotRelaxTheFilter() {
+        var state = locked(release: Date().addingTimeInterval(LockStore.selfReleaseDelay))
+        state.mode = "strict"
+        XCTAssertTrue(LockStore.write(state))
+        XCTAssertTrue(LockStore.strictModeActive(LockStore.read()))
+    }
+
+    /// Blocklist mode is never "strict", whatever the deadline says.
+    func testBlocklistModeIsNeverStrict() {
+        XCTAssertTrue(LockStore.write(locked(days: 30)))
+        XCTAssertFalse(LockStore.strictModeActive(LockStore.read()))
+    }
+
     /// Prevents a lock recorded by an older build being lost on upgrade.
     ///
     /// `selfReleaseAt` is a new field; a state encoded without it must still

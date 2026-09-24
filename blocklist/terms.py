@@ -173,6 +173,19 @@ def token_variants(token: str) -> set[str]:
     stripped = token.rstrip("0123456789")
     if stripped and stripped != token and len(stripped) >= 3:
         out.add(stripped)
+    # Letter elongation: "pooorn", "نيييك" are the same word held down on the
+    # keyboard. Only fires on a run of THREE or more of one character — ordinary
+    # words top out at doubles — and emits both the one- and two-letter
+    # reductions so a term's real gemination survives ("ass" from "asssss")
+    # while "porn" is still reached from "pooorn". A canonical list entry has no
+    # such run, so this adds nothing when expanding the list itself; it only
+    # helps when matching shouted page or hostname text. Kept identical to
+    # normalize.js `variants` and TextNormalizer.swift `variants`.
+    if re.search(r"(.)\1\1", token):
+        for form in (re.sub(r"(.)\1{2,}", r"\1", token),
+                     re.sub(r"(.)\1{2,}", r"\1\1", token)):
+            if len(form) >= 3:
+                out.add(form)
     return out
 
 
@@ -287,16 +300,17 @@ def read_list(path: Path) -> list[str]:
 def compile_terms(src: Path) -> dict:
     """Build the `terms.json` payload from the hand-maintained sources."""
     langs = {
-        # Hand-curated first, generated second. The loop below keeps the first
-        # weight it sees for a term, so a weight chosen by a human always beats
-        # the one `gen_terms_ar.py` derived for the same spelling.
         "ar": read_tsv(src / "terms.ar.tsv")
               + read_tsv(src / "terms.ar-generated.tsv"),
         "ar-latn": read_tsv(src / "terms.ar-latn.tsv")
                    + read_tsv(src / "terms.ar-latn-generated.tsv"),
         "en": read_tsv(src / "terms.en.tsv"),
+        "es": read_tsv(src / "terms.es.tsv"),
+        "fr": read_tsv(src / "terms.fr.tsv"),
+        "it": read_tsv(src / "terms.it.tsv"),
+        "pt": read_tsv(src / "terms.pt.tsv"),
+        "de": read_tsv(src / "terms.de.tsv") + read_tsv(src / "terms.de-import.tsv"),
     }
-
     terms, seen = [], set()
     for lang, rows in langs.items():
         for row in rows:
@@ -352,6 +366,19 @@ def compile_terms(src: Path) -> dict:
     return payload
 
 
+def serialize_terms(payload: dict) -> str:
+    """The one serialisation of `terms.json`, byte for byte.
+
+    `build.py` writes the artifact with this, and `seed.py` recompiles the
+    sources and compares against the committed copy with it. Two call sites
+    with their own `json.dumps` arguments would agree until the day one of
+    them changed a separator, and from then on the seed gate would fail on
+    every commit for a difference no reviewer could see.
+    """
+    return json.dumps(payload, ensure_ascii=False, separators=(",", ":"),
+                      sort_keys=True)
+
+
 def validate(payload: dict) -> None:
     """
     Refuse to emit a list that would quietly stop working.
@@ -369,11 +396,14 @@ def validate(payload: dict) -> None:
     by_lang: dict[str, int] = {}
     for row in terms:
         by_lang[row["l"]] = by_lang.get(row["l"], 0) + 1
-    for required in ("ar", "ar-latn", "en"):
+    # Every language tier ships or the build fails. Arabic is the product's
+    # requirement; the rest are here so an import that silently produced an
+    # empty TSV cannot drop a language nobody was watching.
+    for required in ("ar", "ar-latn", "en", "de", "es", "fr", "it", "pt"):
         if not by_lang.get(required):
             raise SystemExit(
-                f"no {required!r} terms — Arabic coverage is a requirement, "
-                f"not a nice-to-have"
+                f"no {required!r} terms — a language tier vanished, which is a "
+                f"build bug, never an intentional change"
             )
     if not payload["host_terms"]:
         raise SystemExit("no host_terms — the network keyword layer would be a no-op")
@@ -395,11 +425,7 @@ def main() -> int:
 
     payload = compile_terms(args.src)
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(
-        json.dumps(payload, ensure_ascii=False, separators=(",", ":"),
-                   sort_keys=True),
-        encoding="utf-8",
-    )
+    args.out.write_text(serialize_terms(payload), encoding="utf-8")
     counts = lang_counts(payload)
     print(f"wrote {args.out} — {len(payload['terms'])} terms "
           f"({', '.join(f'{k}:{v}' for k, v in sorted(counts.items()))}), "

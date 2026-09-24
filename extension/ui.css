@@ -1,0 +1,90 @@
+/* Shared visual language for the extension's three surfaces. No remote assets. */
+:root {
+  --bg:#f5f6f2; --fg:#202c27; --muted:#59695f; --line:#d9e2d9;
+  --accent:#266749; --accent-ink:#fff; --card:#fff; --soft:#edf3ec; --warn:#855324;
+  --radius:16px;
+}
+@media(prefers-color-scheme:dark) {
+  :root { --bg:#141c18; --fg:#e5eee7; --muted:#a3b4a7; --line:#35443a;
+    --accent:#a6d5b3; --accent-ink:#152a1c; --card:#1c2821; --soft:#26372b; --warn:#e2b780; }
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{color:var(--fg);background:var(--bg);font:14px/1.6 -apple-system,BlinkMacSystemFont,system-ui,sans-serif}
+button,input,select,textarea{font:inherit}
+button{min-height:40px;border-radius:10px;background:var(--accent);color:var(--accent-ink);padding:9px 16px;cursor:pointer;border:1px solid transparent}
+button:disabled{opacity:.55;cursor:not-allowed}
+button:hover:not(:disabled){filter:brightness(.96)}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+a{color:var(--accent);text-underline-offset:3px}
+.brand{display:flex;align-items:center;gap:10px;color:var(--fg);font-size:19px;font-weight:700;letter-spacing:-.5px}
+.brand-mark{display:grid;place-items:center;width:34px;height:38px;background:var(--accent);color:var(--accent-ink);border-radius:10px 10px 16px 16px;font-size:18px}
+.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;font-weight:650;color:var(--muted)}
+.secondary,button.secondary{background:transparent;color:var(--fg);border:1px solid var(--line)}
+.hint,.detail,.sub{color:var(--muted)}
+.privacy-note{font-size:12px;color:var(--muted);padding:20px 0;border-top:1px solid var(--line)}
+
+/* Settings: persistent wayfinding and compact, independently saved sections. */
+body.settings{margin:0;padding:0}
+.settings-shell{display:grid;grid-template-columns:220px minmax(0,1fr);max-width:1320px;margin:auto;min-height:100vh}
+.sidebar{padding:34px 24px;border-right:1px solid var(--line);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:32px}
+.sidebar nav{display:grid;gap:6px}
+.sidebar nav a{padding:10px 12px;border-radius:10px;text-decoration:none;color:var(--muted);font-weight:550}
+.sidebar nav a:hover,.sidebar nav a:focus-visible{background:var(--soft);color:var(--fg)}
+.sidebar .privacy-note{margin-top:auto}
+.settings main{max-width:100%;min-width:0;margin:0;padding:40px clamp(20px,4vw,56px)}
+.settings h1{font-size:32px;letter-spacing:-1px;margin:5px 0 8px;line-height:1.2}
+.settings p.sub{font-size:14px;max-width:580px;margin-bottom:28px}
+.settings .mode{background:var(--soft);border:1px solid var(--line);border-radius:var(--radius);color:var(--fg);padding:22px 24px;margin:0 0 24px}
+.settings .mode.managed{background:var(--soft);color:var(--fg);border-color:var(--line)}
+.mode strong{font-size:17px}.mode p{max-width:640px}
+.mode button{min-height:36px}
+.settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start}
+.settings fieldset{min-width:0;border:1px solid var(--line);background:var(--card);border-radius:var(--radius);padding:22px;margin:0;scroll-margin-top:24px}
+.settings fieldset.wide{grid-column:1/-1}
+.settings legend{font-size:15px;color:var(--fg);font-weight:650;padding:0 7px}
+.settings textarea{min-height:150px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;color:var(--fg);line-height:1.7}
+.settings textarea:disabled{opacity:1;color:var(--muted);background:var(--soft)}
+.settings select{display:block;width:100%;max-width:100%;margin:8px 0 12px;background:var(--bg);color:var(--fg);border:1px solid var(--line);padding:10px;border-radius:10px}
+.settings .hint{font-size:13px;line-height:1.6}
+.settings .slider{flex-wrap:wrap}.settings .slider input{min-width:100px;accent-color:var(--accent)}
+.settings input[type=checkbox]{accent-color:var(--accent);width:17px;height:17px;flex-shrink:0}
+.settings .msg{min-height:20px;font-size:12px;margin-top:8px;overflow-wrap:anywhere}
+.settings .msg.error{color:var(--warn)}
+.settings .msg.success{color:var(--accent)}
+.field-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.field-actions button{font-size:13px}
+.draft-note{font-size:12px;color:var(--warn);min-height:19px;margin:5px 0}
+.draft-note:empty,.settings .msg:empty{display:none}
+.chip{overflow-wrap:anywhere;max-width:100%}
+.chip button{min-height:32px;min-width:32px;color:var(--muted);background:transparent}
+.chip .apply{color:var(--accent)}
+@media(max-width:850px){.settings-grid{grid-template-columns:1fr}.settings-shell{grid-template-columns:180px minmax(0,1fr)}.sidebar{padding:26px 16px}}
+@media(max-width:580px){.settings-shell{display:block}.sidebar{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:18px 20px;gap:12px}.sidebar nav{display:flex;flex-wrap:wrap;gap:2px}.sidebar nav a{padding:6px 9px;font-size:12px}.sidebar .privacy-note{display:none}.settings main{padding:24px 16px}.settings h1{font-size:27px}.settings .mode{padding:18px}}
+
+/* Popup: status first, one clear destination for editing. */
+body.popup{width:360px;padding:20px;margin:0}
+.popup header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.connection-badge{font-size:11px;padding:4px 9px;border-radius:99px;background:var(--soft);color:var(--muted)}
+.popup .block{border-radius:14px;padding:16px;background:var(--card)}
+.popup .block:first-of-type{background:var(--soft)}
+.popup h2{font-size:16px;letter-spacing:-.3px}
+.popup .detail{font-size:12px;margin-top:7px;line-height:1.65}
+.popup .actions{display:grid;grid-template-columns:1fr;margin-top:16px;gap:7px}
+.popup .actions button{min-height:40px;margin:0}
+.popup #openSettings{background:var(--accent);color:var(--accent-ink);font-weight:650;border-color:var(--accent)}
+.popup .notice button{background:var(--soft);color:var(--fg);border:1px solid var(--line)}
+.popup details{padding:12px 0 0;margin-top:14px;border-top:1px solid var(--line)}
+.popup .privacy-note{border:0;padding:0;margin:14px 0 0;text-align:center;font-size:11px}
+
+/* Blocked page: neutral explanation and a useful next step. */
+body.blocked{background:var(--bg)}
+.blocked .card{max-width:520px;padding:38px;border-radius:22px;box-shadow:0 12px 48px #152a1c08}
+.blocked .mark{border-radius:15px 15px 22px 22px;background:var(--soft);color:var(--accent);width:58px;height:64px}
+.blocked h1{font-size:27px;letter-spacing:-.7px;line-height:1.3}
+.blocked .report{text-align:left}
+.blocked .report button{min-height:40px}
+.blocked .actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:24px}
+.blocked .actions button{margin:0;font-size:13px}
+.blocked .report-status{overflow-wrap:anywhere}
+@media(max-width:420px){.blocked .card{padding:26px 20px}.blocked .actions{grid-template-columns:1fr}}

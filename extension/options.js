@@ -22,15 +22,71 @@
  * guard at all — anything here can be posted from a devtools console.
  */
 
-const parse = (text) =>
-  [...new Set(
-    text.split(/\r?\n/)
-        .map((l) => l.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, ""))
-        .filter((l) => l && /^[a-z0-9.-]+\.[a-z]{2,}$/.test(l))
-  )];
-
-const send = (msg) => new Promise((res) => chrome.runtime.sendMessage(msg, res));
+import { send } from "./lib/messages.js";
+import { connectionStatus, parseDomains, settingsError, restrictionsActive } from "./lib/settings.js";
 const $ = (id) => document.getElementById(id);
+let current = null;
+const fields = ["custom", "allow", "customTerms", "blockingMode", "inspectText", "textSensitivity"];
+const saves = ["saveCustom", "saveAllow", "saveTerms", "saveMode", "saveChecks"];
+const sections = [
+  { button: "saveCustom", message: "msgCustom", controls: { custom: "customBlocks" } },
+  { button: "saveAllow", message: "msgAllow", controls: { allow: "allowlist" } },
+  { button: "saveTerms", message: "msgTerms", controls: { customTerms: "customTerms" } },
+  { button: "saveMode", message: "msgMode", controls: { blockingMode: "mode" } },
+  { button: "saveChecks", message: "msgChecks", controls: { inspectText: "inspectText", textSensitivity: "textSensitivity" } },
+];
+
+function savedValue(id, key) {
+  if (id === "blockingMode") return current.mode === "strict" ? "strict" : "blocklist";
+  if (id === "inspectText") return current.inspectText !== false;
+  if (id === "textSensitivity") return String(current.textSensitivity ?? 50);
+  return (current[key] || []).join("\n");
+}
+function isDirty(section) {
+  return current && !current.appPresent && Object.entries(section.controls).some(([id, key]) =>
+    (id === "inspectText" ? $(id).checked : $(id).value) !== savedValue(id, key));
+}
+function updateDrafts() {
+  for (const section of sections) {
+    const dirty = isDirty(section);
+    section.note.textContent = dirty ? "Unsaved changes" : "";
+    section.reset.hidden = !dirty;
+  }
+}
+for (const section of sections) {
+  const actions = document.createElement("div");
+  actions.className = "field-actions";
+  const button = $(section.button);
+  button.before(actions);
+  actions.append(button);
+  const reset = document.createElement("button");
+  reset.type = "button";
+  reset.className = "secondary";
+  reset.textContent = "Discard edits";
+  reset.hidden = true;
+  reset.onclick = () => {
+    for (const [id, key] of Object.entries(section.controls)) {
+      if (id === "inspectText") $(id).checked = savedValue(id, key);
+      else $(id).value = savedValue(id, key);
+    }
+    $("sensitivityValue").textContent = $("textSensitivity").value;
+    $(section.message).textContent = "Edits discarded. Saved settings are unchanged.";
+    updateDrafts();
+  };
+  actions.append(reset);
+  section.reset = reset;
+  section.note = document.createElement("p");
+  section.note.className = "draft-note";
+  section.note.setAttribute("role", "status");
+  actions.before(section.note);
+  for (const id of Object.keys(section.controls)) $(id).addEventListener("input", () => {
+    $(section.message).textContent = "";
+    updateDrafts();
+  });
+}
+window.addEventListener("beforeunload", (event) => {
+  if (sections.some(isDirty)) { event.preventDefault(); event.returnValue = ""; }
+});
 
 /**
  * The false-positive corrections the user made from block pages: words they
@@ -83,7 +139,7 @@ function renderDisputed(state) {
   const list = state.disputed || [];
   if (!list.length) { fs.hidden = true; return; }
 
-  const locked = (state.lockUntil || 0) > Date.now();
+  const locked = restrictionsActive(state);
   fs.hidden = false;
   $("disputedHint").textContent = locked
     ? "Reports you made while the lock is running. They cannot loosen a lock, "
@@ -138,88 +194,107 @@ async function resolveDisputed(state, entry, apply) {
 
 async function init() {
   const state = await send({ type: "getState" });
-  const locked = (state.lockUntil || 0) > Date.now();
-  const managed = !!state.appPresent;
-
-  // ── the banner that tells you which product you are actually using ──────
-  const banner = $("mode");
-  if (managed) {
-    banner.className = "mode managed";
-    banner.textContent = locked
-      ? "The Hisn app is managing this browser, and a lock is running. "
-        + "Settings are edited in the app."
-      : "The Hisn app is managing this browser. Edit these lists in the app — "
-        + "changes made here are replaced within a minute.";
-  } else {
-    banner.className = "mode standalone";
-    banner.textContent =
-      "Running without the Hisn app. Blocking is active and these lists are "
-      + "yours to edit. Install the app to add a lock that cannot be undone, "
-      + "and to cover every browser on this Mac rather than this one.";
+  if (!state || state.ok === false) {
+    $("connectionMessage").textContent = settingsError({ reason: "unavailable" });
+    return;
   }
+  showState(state, true);
+}
 
+function showState(state, fill = false) {
+  current = state;
+  const connection = connectionStatus(state);
+  $("mode").className = `mode ${connection.managed ? "managed" : "standalone"}`;
+  $("modeTitle").textContent = connection.title;
+  $("modeDetail").textContent = connection.detail;
+  $("lockHint").textContent = restrictionsActive(state)
+    ? "An active lock or connection safeguard prevents changes that weaken protection."
+    : connection.managed ? "Timed locks and blocking settings are managed in the app."
+    : "No app is required for filtering. Browser-only settings remain editable; timed locks require the app.";
+  for (const id of [...fields, ...saves]) $(id).disabled = connection.managed;
+  if (fill) fillFields(state);
+  renderReported(state);
+  renderDisputed(state);
+  updateDrafts();
+}
+
+function fillFields(state) {
   $("custom").value = (state.customBlocks || []).join("\n");
   $("allow").value = (state.allowlist || []).join("\n");
+  $("customTerms").value = (state.customTerms || []).join("\n");
+  $("blockingMode").value = state.mode === "strict" ? "strict" : "blocklist";
   $("inspectText").checked = state.inspectText !== false;
   $("textSensitivity").value = state.textSensitivity ?? 50;
   $("sensitivityValue").textContent = state.textSensitivity ?? 50;
-
-  // The false-positive corrections — browser-local, so shown and editable in
-  // both configurations, unlike the app-owned lists below.
-  renderReported(state);
-  renderDisputed(state);
-
-  // Fields the app owns become read-only rather than merely futile.
-  for (const id of ["custom", "allow", "inspectText", "textSensitivity"]) {
-    $(id).disabled = managed;
-  }
-  for (const id of ["saveCustom", "saveAllow", "saveChecks"]) {
-    $(id).disabled = managed;
-  }
-
-  $("textSensitivity").oninput = () => {
-    $("sensitivityValue").textContent = $("textSensitivity").value;
-  };
-
-  $("saveCustom").onclick = async () => {
-    const domains = parse($("custom").value);
-    // Merge add-only while locked so the page never even attempts a removal —
-    // the worker would refuse it and the user would lose their other edits.
-    const merged = locked
-      ? [...new Set([...(state.customBlocks || []), ...domains])]
-      : domains;
-    const r = await send({ type: "update", patch: { customBlocks: merged } });
-    $("msgCustom").textContent = r.ok
-      ? `Saved ${merged.length} domains.`
-        + (locked ? " Removals are frozen until the lock ends." : "")
-      : `Not saved: ${r.reason}`;
-  };
-
-  $("saveAllow").onclick = async () => {
-    const domains = parse($("allow").value);
-    const r = await send({ type: "update", patch: { allowlist: domains } });
-    $("msgAllow").textContent = r.ok
-      ? `Saved ${domains.length} domains.`
-      : "You cannot add sites to the allowlist while a lock is running.";
-  };
-
-  $("saveChecks").onclick = async () => {
-    const r = await send({ type: "update", patch: {
-      inspectText: $("inspectText").checked,
-      textSensitivity: Number($("textSensitivity").value),
-    }});
-    $("msgChecks").textContent = r.ok
-      ? "Saved."
-      : "You cannot switch checking off or lower it while a lock is running.";
-    if (!r.ok) {
-      // Put the controls back to what is actually in force, rather than
-      // leaving them showing a setting that was refused.
-      const fresh = await send({ type: "getState" });
-      $("inspectText").checked = fresh.inspectText !== false;
-      $("textSensitivity").value = fresh.textSensitivity ?? 50;
-      $("sensitivityValue").textContent = fresh.textSensitivity ?? 50;
-    }
-  };
 }
 
+async function save(patch, messageID, buttonID) {
+  $(buttonID).disabled = true;
+  $(messageID).className = "msg";
+  $(messageID).textContent = "Saving…";
+  const r = await send({ type: "update", patch });
+  if (r.ok) {
+    // Update only the saved fields: another section may contain unsaved edits.
+    showState(r.state);
+    if (patch.customBlocks) $("custom").value = r.state.customBlocks.join("\n");
+    if (patch.allowlist) $("allow").value = r.state.allowlist.join("\n");
+    if (patch.customTerms) $("customTerms").value = r.state.customTerms.join("\n");
+    $(messageID).textContent = "Saved and applied in this browser.";
+    $(messageID).className = "msg success";
+    updateDrafts();
+  } else {
+    $(messageID).textContent = settingsError(r);
+    $(messageID).className = "msg error";
+    if (r.reason === "app-managed") await init();
+  }
+  $(buttonID).disabled = !current || !!current.appPresent;
+}
+
+for (const [input, key, msg, button] of [
+  ["custom", "customBlocks", "msgCustom", "saveCustom"],
+  ["allow", "allowlist", "msgAllow", "saveAllow"],
+]) {
+  $(button).onclick = () => {
+    const result = parseDomains($(input).value);
+    if (result.invalid.length) {
+      $(msg).className = "msg error";
+      $(msg).textContent = `Not saved. Fix domain entries on lines ${result.invalid.join(", ")}. Use a domain or a full web address.`;
+      return;
+    }
+    save({ [key]: result.domains }, msg, button);
+  };
+}
+$("saveMode").onclick = () => {
+  const mode = $("blockingMode").value;
+  if (mode === "strict" && current?.mode !== "strict"
+      && !window.confirm("Switch to Strict mode? Sites outside your saved allowed list will close or be blocked. Save the sites you need in Always allowed first. You can change this mode here while no app lock is active.")) return;
+  save({ mode }, "msgMode", "saveMode");
+};
+$("saveTerms").onclick = () => save({ customTerms:
+  [...new Set($("customTerms").value.split(/\r?\n/).map((t) => t.trim()).filter(Boolean))],
+}, "msgTerms", "saveTerms");
+$("textSensitivity").oninput = () => { $("sensitivityValue").textContent = $("textSensitivity").value; };
+$("saveChecks").onclick = () => save({
+  inspectText: $("inspectText").checked,
+  textSensitivity: Number($("textSensitivity").value),
+}, "msgChecks", "saveChecks");
+$("checkConnection").onclick = async () => {
+  $("checkConnection").disabled = true;
+  $("connectionMessage").textContent = "Checking for the Hisn app…";
+  const r = await send({ type: "forceSync" });
+  $("connectionMessage").textContent = r.ok ? "Connected. App settings are in use."
+    : "Could not connect. Open Hisn on your Mac and try again. Browser filtering continues with its current settings.";
+  const state = await send({ type: "getState" });
+  if (state && state.ok !== false) showState(state, !!state.appPresent);
+  $("checkConnection").disabled = false;
+};
+// Reflect a native connection that happens while Settings is open. Preserve
+// drafts for browser-only edits; app-owned values are always shown read-only.
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === "local" && changes.state?.newValue) {
+    const state = changes.state.newValue;
+    showState(state, !!state.appPresent);
+  }
+});
+for (const id of [...fields, ...saves]) $(id).disabled = true;
 init();

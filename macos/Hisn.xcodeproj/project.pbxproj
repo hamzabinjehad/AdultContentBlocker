@@ -77,6 +77,12 @@
 			path = PartnerService.swift;
 			sourceTree = "<group>";
 		};
+		53D7D153B4628D493F051EA9 /* ProtectionStatus.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = ProtectionStatus.swift;
+			sourceTree = "<group>";
+		};
 		EF9ED031BF18513FD91E71E0 /* Punycode.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -155,6 +161,18 @@
 			path = KeywordLayerTests.swift;
 			sourceTree = "<group>";
 		};
+		C15C5BA8E7F3C7A5B3CC9BFB /* PolicyContractTests.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = PolicyContractTests.swift;
+			sourceTree = "<group>";
+		};
+		96BE623FB252DAE97AF70C17 /* ProtectionStatusTests.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = ProtectionStatusTests.swift;
+			sourceTree = "<group>";
+		};
 		4792FDE5CE580FC1212B3EBD /* SelfReleaseTests.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -195,6 +213,12 @@
 			isa = PBXFileReference;
 			lastKnownFileType = text.json;
 			path = host_cases.json;
+			sourceTree = "<group>";
+		};
+		9F323B3D6F105E58985C5DC5 /* policy_cases.json */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = text.json;
+			path = policy_cases.json;
 			sourceTree = "<group>";
 		};
 		5BA8BA274EB5BFB1180F80B1 /* Hisn.app */ = {
@@ -240,6 +264,7 @@
 				10B6D354DDF0586B5B0D7A22,
 				0EE6D2898CA933202ECEECFB,
 				0DDFAADBE7361D65F79BE5B5,
+				53D7D153B4628D493F051EA9,
 				EF9ED031BF18513FD91E71E0,
 				9A85D28497AE287B0A4C4E8C,
 				94DA4ECBC1B15A13858FC4BB,
@@ -274,6 +299,8 @@
 				80C98DE5808DA52CC4D9E0DD,
 				5CEF7A7205FB28ED41D63CB3,
 				28A03C0E33E9129984BFCEA4,
+				C15C5BA8E7F3C7A5B3CC9BFB,
+				96BE623FB252DAE97AF70C17,
 				4792FDE5CE580FC1212B3EBD,
 			);
 			path = HisnTests;
@@ -296,6 +323,7 @@
 			children = (
 				D234FBB6EEAEEBE8EF56D3C6,
 				33770227E556A365C95726F0,
+				9F323B3D6F105E58985C5DC5,
 			);
 			name = fixtures;
 			path = "../blocklist/terms";
@@ -842,6 +870,10 @@
 			isa = PBXBuildFile;
 			fileRef = 0EE6D2898CA933202ECEECFB;
 		};
+		BF5115646CB0123EDCB52F30 /* ProtectionStatus.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 53D7D153B4628D493F051EA9;
+		};
 		079A944B3E87101645898B0C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -860,6 +892,7 @@
 				9E6560DDB2E30CF063E1CC2D,
 				55EEFF567258F1CEE1CFC3FF,
 				E2AEF87216467A0BAEB3B90C,
+				BF5115646CB0123EDCB52F30,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -998,6 +1031,10 @@
 			isa = PBXBuildFile;
 			fileRef = 33770227E556A365C95726F0;
 		};
+		59CAF865A4B68A1BDFDF8AA4 /* policy_cases.json in Resources */ = {
+			isa = PBXBuildFile;
+			fileRef = 9F323B3D6F105E58985C5DC5;
+		};
 		86BDA4A092F382143898023B /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1008,6 +1045,7 @@
 				07D0F9F7153BA59215D551BC,
 				7A634295144EF98C0FF8A753,
 				FF22EB67FFBDBB45BBB8B509,
+				59CAF865A4B68A1BDFDF8AA4,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1039,6 +1077,14 @@
 			isa = PBXBuildFile;
 			fileRef = 5CEF7A7205FB28ED41D63CB3;
 		};
+		0F3A22A9F1E013F828E2374D /* PolicyContractTests.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = C15C5BA8E7F3C7A5B3CC9BFB;
+		};
+		8FFF0FCD30890FE011507660 /* ProtectionStatusTests.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 96BE623FB252DAE97AF70C17;
+		};
 		A29CD87A3F623C88ED8997D1 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1047,6 +1093,8 @@
 				95881FC5B9EAEA94A10AD1F6,
 				237E5EDAD182DF94956C861A,
 				3407C1010A2C1472162620AB,
+				0F3A22A9F1E013F828E2374D,
+				8FFF0FCD30890FE011507660,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

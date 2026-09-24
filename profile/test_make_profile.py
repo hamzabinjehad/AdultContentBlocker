@@ -263,8 +263,6 @@ class TestSerialisation(unittest.TestCase):
             self.assertTrue(p.get("PayloadType"))
 
 
-if __name__ == "__main__":
-    unittest.main(verbosity=2)
 
 
 class TestIncognito(unittest.TestCase):
@@ -308,3 +306,6 @@ class TestIncognito(unittest.TestCase):
         helium = payload(build(), "net.imput.helium")
         self.assertEqual(helium["DnsOverHttpsMode"], "off")
         self.assertEqual(helium["IncognitoModeAvailability"], 1)
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)

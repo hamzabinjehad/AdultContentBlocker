@@ -12,7 +12,7 @@
 
 /** Public key of the Hisn list-signing key, raw 32 bytes, hex. */
 export const PUBLIC_KEY_HEX =
-  "e63cfca8c4fc01412cdaf006c3f654c7be4e8218e81f44f6b4daf47e55a360af";
+  "eb6751a0429413d0cfb24a778f7d6ecdd8436e573af94c325de5fcbd38e59ede";
 
 function hexToBytes(hex) {
   const clean = hex.trim();

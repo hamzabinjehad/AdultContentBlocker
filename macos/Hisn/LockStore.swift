@@ -38,8 +38,14 @@ public enum LockStore {
     /// Shared with the network extension, which needs the deadline too.
     public static var appGroup = "group.app.hisn"
 
-    /// Root-owned. Removing this needs administrator authority — which the
-    /// person running under a standard account does not have.
+    /// A third mirror under `/Library`, meant to be out of a standard user's
+    /// reach. Honestly: it is written by THIS process, as the user, so it can
+    /// only be created while that user is an administrator, and the file then
+    /// stays owned by them after `setup_guardian.sh --demote-me`. No privileged
+    /// writer exists yet — `docs/TAMPER_MODEL.md` has the audit and the design
+    /// (the filter, which runs as root, owning the authoritative copy). Until
+    /// then this mirror protects against accidents and casual deletion, not
+    /// against a standard user who knows the path.
     public static var systemPath = "/Library/Application Support/Hisn/lock.plist"
 
     public static var keychainService = "app.hisn.lock"
@@ -202,6 +208,20 @@ public enum LockStore {
 
     public static func isLocked() -> Bool {
         trustedNow() < effectiveDeadline(read())
+    }
+
+    /// Whether strict enforcement is in force for `state` right now.
+    ///
+    /// THE function the network filter consults on every tick, kept here so
+    /// it cannot drift from what the app and the bridge tell everyone else.
+    /// It used to live in the filter as `mode == "strict" && now < deadline`
+    /// — the ORIGINAL deadline — while the bridge told the browser the lock had
+    /// ended at the effective one. After a matured self-release the Mac kept
+    /// denying every socket that was not allowlisted for as long as the
+    /// original lock had left to run, and every status light said "unlocked".
+    public static func strictModeActive(_ state: LockState,
+                                        now: Date = trustedNow()) -> Bool {
+        state.mode == "strict" && now < effectiveDeadline(state)
     }
 
     // MARK: - Early release

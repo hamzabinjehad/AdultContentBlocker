@@ -1,0 +1,185 @@
+{
+  "_comment": "Pages that must NEVER be blocked by page-text scoring. Each is a regression case: a scoring change that blocks any of these fails the eval. Synthetic, short, and deliberately near the vocabulary — medicine, scholarship, news, short pages, mixed feeds — in the languages the list covers. Extend freely; keep every entry something a person would be harmed by losing.",
+  "cases": [
+    {
+      "id": "en-medicine-1",
+      "lang": "en",
+      "type": "medicine",
+      "label": "benign",
+      "zones": {
+        "title": "Breast cancer screening: what to expect",
+        "body": "Breast screening uses a mammogram to look for early signs of breast cancer. During the appointment a radiographer positions each breast between two plates. The examination takes a few minutes. Breastfeeding mothers should mention it to the radiographer. Results arrive within two weeks; most women receive a normal result and are recalled in three years."
+      }
+    },
+    {
+      "id": "en-medicine-2",
+      "lang": "en",
+      "type": "medicine",
+      "label": "benign",
+      "zones": {
+        "title": "Erectile dysfunction — NHS",
+        "body": "Erectile dysfunction (impotence) is very common, particularly in men over 40. It is usually nothing to worry about, but you should see a GP if it keeps happening. Causes include narrowing of the blood vessels, high blood pressure, diabetes, hormonal problems, and side effects of medicines. Treatments depend on the cause and include lifestyle changes and tablets."
+      }
+    },
+    {
+      "id": "en-scholarship-1",
+      "lang": "en",
+      "type": "scholarship",
+      "label": "benign",
+      "zones": {
+        "title": "Marriage in classical Islamic law: consent and the contract",
+        "body": "The jurists of the four schools treat the marriage contract as a civil agreement requiring offer, acceptance and witnesses. Consent of the bride is discussed at length; the Hanafi school allows an adult woman to contract her own marriage, while the others require a guardian. The chapter surveys the sources and the modern codifications in Egypt, Jordan and Morocco."
+      }
+    },
+    {
+      "id": "ar-scholarship-1",
+      "lang": "ar",
+      "type": "scholarship",
+      "label": "benign",
+      "zones": {
+        "title": "أحكام النكاح في الفقه الإسلامي",
+        "body": "يتناول هذا الباب أركان عقد النكاح وشروطه عند المذاهب الأربعة: الإيجاب والقبول، والولي، والشهود، والمهر. ويناقش الفقهاء مسألة رضا المرأة البالغة، وحكم الخلوة قبل العقد، وأحكام الطلاق والعدة. والله أعلم. السؤال: ما حكم عقد النكاح دون ولي؟ الجواب: اختلف الفقهاء في ذلك، والفتوى على قول الجمهور."
+      }
+    },
+    {
+      "id": "ar-medicine-1",
+      "lang": "ar",
+      "type": "medicine",
+      "label": "benign",
+      "zones": {
+        "title": "الصحة الإنجابية: الفحص الدوري للثدي",
+        "body": "توصي وزارة الصحة النساء فوق سن الأربعين بإجراء فحص الثدي بالأشعة كل سنتين للكشف المبكر عن سرطان الثدي. يستغرق الفحص دقائق قليلة ولا يحتاج إلى تحضير. كما تنصح الأمهات المرضعات باستشارة الطبيب حول الرضاعة الطبيعية وتغذية الطفل."
+      }
+    },
+    {
+      "id": "ar-news-1",
+      "lang": "ar",
+      "type": "news",
+      "label": "benign",
+      "zones": {
+        "title": "البرلمان يقر قانون الأسرة الجديد",
+        "body": "أقر مجلس النواب اليوم التعديلات على قانون الأحوال الشخصية بعد جلسة استمرت ست ساعات. وتشمل التعديلات رفع سن الزواج إلى ثمانية عشر عاما وتنظيم حضانة الأطفال بعد الطلاق. وقالت وزيرة العدل إن القانون يحمي المرأة والطفل."
+      }
+    },
+    {
+      "id": "en-news-1",
+      "lang": "en",
+      "type": "news",
+      "label": "benign",
+      "zones": {
+        "title": "Court rules on adult social care funding",
+        "body": "The High Court ruled on Tuesday that the council acted unlawfully when it cut funding for adult social care without consultation. The judgment affects around 4,000 residents who receive home visits. The council said it would consider an appeal."
+      }
+    },
+    {
+      "id": "en-short-1",
+      "lang": "en",
+      "type": "short",
+      "label": "benign",
+      "zones": {
+        "title": "Sign in",
+        "body": "Email. Password. Forgot your password? Sign in. Create an account."
+      }
+    },
+    {
+      "id": "en-short-2",
+      "lang": "en",
+      "type": "short",
+      "label": "benign",
+      "zones": {
+        "title": "Essex County Council",
+        "body": "Bins and recycling. Council tax. Schools and learning. Report a problem."
+      }
+    },
+    {
+      "id": "de-art-1",
+      "lang": "de",
+      "type": "scholarship",
+      "label": "benign",
+      "zones": {
+        "title": "Aktzeichnen an der Kunstakademie",
+        "body": "Der Kurs Aktzeichnen vermittelt die Grundlagen der Proportionslehre. Die Aktmalerei hat in der Kunstgeschichte eine lange Tradition; die Studierenden zeichnen nach Modell und studieren Werke von Dürer bis Schiele."
+      }
+    },
+    {
+      "id": "fr-medicine-1",
+      "lang": "fr",
+      "type": "medicine",
+      "label": "benign",
+      "zones": {
+        "title": "Troubles de l'érection : causes et traitements",
+        "body": "Les troubles de l'érection touchent un homme sur trois après cinquante ans. Les causes sont vasculaires, hormonales ou psychologiques. Le médecin traitant peut prescrire un bilan cardiovasculaire avant tout traitement."
+      }
+    },
+    {
+      "id": "es-news-1",
+      "lang": "es",
+      "type": "news",
+      "label": "benign",
+      "zones": {
+        "title": "El Congreso aprueba la ley contra la pornografía infantil",
+        "body": "El Congreso aprobó por unanimidad la reforma del código penal que endurece las penas por difusión de material de abuso infantil. La ministra de Justicia destacó la cooperación con las plataformas para retirar contenidos."
+      }
+    },
+    {
+      "id": "mixed-feed-1",
+      "lang": "en",
+      "type": "feed",
+      "label": "benign",
+      "zones": {
+        "title": "Home / Feed",
+        "body": "Posted 2h ago: Finally finished the marathon! Posted 3h ago: Recipe for my grandmother's lentil soup, thread below. Posted 5h ago: Anyone else's kid obsessed with dinosaurs? Posted 6h ago: The new season of the show is out and I have opinions. Posted 8h ago: Breastfeeding in public should not be controversial in 2026."
+      }
+    },
+    {
+      "id": "ar-latn-chat-1",
+      "lang": "ar-latn",
+      "type": "short",
+      "label": "benign",
+      "zones": {
+        "title": "Chat",
+        "body": "ahlan, kifak? ana bkhair el7amdulillah. shu akhbarak? bokra 3endi emti7an, ed3ili. yalla bye."
+      }
+    },
+    {
+      "id": "fr-comics-1",
+      "lang": "fr",
+      "type": "short",
+      "label": "benign",
+      "zones": {
+        "title": "Bande dessinée — nouveautés",
+        "body": "La bande dessinée franco-belge fête ses cent ans. Nouveautés de la semaine : une bande dessinée historique, un album jeunesse et la réédition d'un classique."
+      }
+    },
+    {
+      "id": "nl-news-1",
+      "lang": "nl",
+      "type": "news",
+      "label": "benign",
+      "zones": {
+        "title": "Nu ook in Utrecht: gratis openbaar vervoer voor kinderen",
+        "body": "Kinderen tot twaalf jaar reizen vanaf nu gratis met bus en tram in Utrecht. De gemeente hoopt dat ouders nu vaker de auto laten staan. Het is nu nog onduidelijk of andere steden volgen."
+      }
+    },
+    {
+      "id": "fr-form-1",
+      "lang": "fr",
+      "type": "short",
+      "label": "benign",
+      "zones": {
+        "title": "Créer un compte",
+        "body": "Nom. Prénom. Date de naissance. Sexe : Femme / Homme / Autre. Adresse e-mail. Mot de passe. Créer le compte."
+      }
+    },
+    {
+      "id": "es-recipe-1",
+      "lang": "es",
+      "type": "short",
+      "label": "benign",
+      "zones": {
+        "title": "Tortilla de patatas con cebolla",
+        "body": "Receta de tortilla de patatas con cebolla. Se fríen las patatas con la cebolla a fuego lento, se mezclan con los huevos batidos y se cuaja la tortilla por ambos lados. Servir con pan."
+      }
+    }
+  ]
+}

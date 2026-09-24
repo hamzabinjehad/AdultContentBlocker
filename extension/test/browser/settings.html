@@ -1,0 +1,81 @@
+<!doctype html><meta charset="utf-8"><title>Hisn settings tests</title>
+<style>body{font:14px system-ui}iframe{width:740px;height:650px;border:1px solid #ddd}pre{white-space:pre-wrap}</style>
+<h1>Settings: browser-only and app-connected</h1>
+<pre id="summary" data-result="pending">Running…</pre>
+<div id="frames"></div>
+<script type="module">
+const results = [];
+function check(ok, label) { results.push(`${ok ? "ok" : "FAIL"} ${label}`); if (!ok) throw new Error(label); }
+const pause = () => new Promise((resolve) => setTimeout(resolve, 100));
+try {
+  const source = await (await fetch("../../options.html")).text();
+  async function frame(managed) {
+    const f = document.createElement("iframe");
+    const fixture = {
+      appPresent: managed, mode: "blocklist", lockUntil: 0, lastHeartbeat: Date.now(),
+      failClosed: false, customBlocks: ["example.com"], allowlist: [], customTerms: [],
+      textAllow: [], ignoreTerms: [], disputed: [], inspectText: true, textSensitivity: 50,
+    };
+    const mock = `<script>
+      window.fixture = ${JSON.stringify(fixture)};
+      window.writes = 0;
+      window.changeHandlers = [];
+      window.chrome = { storage: { onChanged: { addListener(fn) { changeHandlers.push(fn); } } },
+        runtime: { sendMessage(msg, cb) {
+          if (msg.type === 'getState') return cb(structuredClone(fixture));
+          if (msg.type === 'forceSync') return cb({ok:false});
+          if (msg.type === 'update') {
+            writes++;
+            Object.assign(fixture, msg.patch);
+            return cb({ok:true,state:structuredClone(fixture)});
+          }
+        } }
+      };
+    <\/script>`;
+    f.srcdoc = source.replace('<head>', `<head><base href="${new URL('../../options.html', location.href).href}">${mock}`);
+    document.getElementById("frames").append(f);
+    await new Promise((resolve) => f.onload = resolve);
+    await pause();
+    return f;
+  }
+  const solo = await frame(false);
+  const s = solo.contentDocument, w = solo.contentWindow;
+  check(s.getElementById("modeTitle").textContent === "Browser-only protection", "standalone identity");
+  check(!s.getElementById("custom").disabled, "standalone fields editable");
+  s.getElementById("custom").value = "draft.example";
+  s.getElementById("custom").dispatchEvent(new Event("input"));
+  check(s.getElementById("siteSettings").querySelector(".draft-note").textContent === "Unsaved changes", "draft clearly distinguished from applied settings");
+  s.getElementById("siteSettings").querySelector(".secondary").click();
+  check(s.getElementById("custom").value === "example.com" && w.writes === 0, "discard restores saved value without writing policy");
+  s.getElementById("custom").value = "good.example\nbad domain";
+  s.getElementById("saveCustom").click(); await pause();
+  check(w.writes === 0 && s.getElementById("msgCustom").textContent.includes("2"), "invalid input is identified and never saved");
+  s.getElementById("custom").value = "https://www.good.example/path\ngood.example";
+  s.getElementById("saveCustom").click(); await pause();
+  check(w.fixture.customBlocks.join() === "good.example", "normalized domain reaches worker");
+  check(s.getElementById("custom").value === "good.example", "editor shows saved canonical value");
+  check(s.getElementById("siteSettings").querySelector(".draft-note").textContent === "", "saved edit clears draft indicator");
+  s.getElementById("allow").value = "unsaved.example";
+  s.getElementById("customTerms").value = "gambling";
+  s.getElementById("saveTerms").click(); await pause();
+  check(s.getElementById("allow").value === "unsaved.example", "saving another section preserves drafts");
+  check(w.fixture.customTerms[0] === "gambling", "custom terms saved");
+  w.fixture.appPresent = true;
+  w.fixture.customBlocks = ["app.example"];
+  for (const fn of w.changeHandlers) fn({state:{newValue:w.fixture}}, "local");
+  check(s.getElementById("custom").disabled && s.getElementById("custom").value === "app.example", "live native connection updates and locks app-owned controls");
+  const app = await frame(true), a = app.contentDocument;
+  check(a.getElementById("blockingMode").disabled && a.getElementById("saveChecks").disabled, "managed controls read-only on load");
+  a.getElementById("checkConnection").click(); await pause();
+  check(a.getElementById("custom").disabled, "connection failure never grants local policy ownership");
+  check(a.getElementById("connectionMessage").textContent.includes("Could not connect"), "connection error has visible feedback");
+  solo.style.width = "390px";
+  await pause();
+  check(s.documentElement.scrollWidth <= w.innerWidth, "narrow settings page has no horizontal overflow");
+  document.getElementById("summary").dataset.result = "pass";
+} catch (error) {
+  results.push(`FAIL ${error.stack}`);
+  document.getElementById("summary").dataset.result = "fail";
+}
+document.getElementById("summary").textContent = results.join("\n");
+</script>

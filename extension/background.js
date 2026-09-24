@@ -16,6 +16,12 @@ import { acceptList } from "./lib/verify.js";
 import { buildIndex, scorePage, isExempt, hostInList, withoutTerms }
   from "./lib/score.js";
 import { normalize } from "./lib/normalize.js";
+import { isLocked, effectiveStrict, shouldFailClosed, policyRules, tabsToBlock,
+         validatePatch, bridgePatch, RULE_DOWNLOADED_BASE, HEARTBEAT_GRACE_MS }
+  from "./lib/policy.js";
+import { createLock } from "./lib/serial.js";
+import { settingsAccess, restrictionsActive } from "./lib/settings.js";
+import { planGeneration, downloadedRuleIds, GENERATION_ARTIFACTS } from "./lib/generation.js";
 
 const NATIVE_HOST = "app.hisn.bridge";
 const LIST_BASE = "https://raw.githubusercontent.com/hisn-app/blocklist/lists";
@@ -24,28 +30,21 @@ const RULESET_BLOCKLIST = "blocklist";
 const RULESET_KEYWORDS = "keywords";
 const RULESET_LOCKDOWN = "lockdown";
 
-// Dynamic rule id space. Static rules live in their own space, so these are
-// free to reuse.
-const RULE_STRICT_BLOCK_ALL = 1;
-const RULE_STRICT_ALLOW = 2;
-const RULE_CUSTOM_BLOCK_BASE = 100;
-
-/// Downloaded blocklist rules start here, above everything `applyRules` owns.
-/// The split is what lets a lock change and a list update coexist: each
-/// function clears only its own range, so neither can wipe the other's rules.
-const RULE_DOWNLOADED_BASE = 10000;
-
-/** How long the native app may stay silent before we assume tampering. */
-const HEARTBEAT_GRACE_MS = 5 * 60 * 1000;
+// Rule ids, priorities and the grace period live in lib/policy.js with the
+// rules themselves, so the tests evaluate exactly what Chrome is given.
 
 const DEFAULT_STATE = {
   mode: "off",              // off | blocklist | strict
   lockUntil: 0,             // epoch ms; 0 = not locked
-  allowlist: [],            // strict mode: the only domains permitted
+  allowlist: [],            // always reachable: overrides the published list
+                            // and keyword rules; in strict mode, the ONLY
+                            // domains reachable. See lib/policy.js rule 2.
   customBlocks: [],         // user-added domains
   customTerms: [],          // user-added words, scored like the compiled list
   listVersion: 0,
   rulesApplied: 0,          // downloaded rules actually installed, not claimed
+  keywordRulesApplied: 0,   // downloaded keyword rules, same rule
+  lastListUpdate: 0,        // epoch ms of the last generation installed
   lastHeartbeat: 0,
   failClosed: false,        // true once we lost the native app mid-lock
   inspectText: true,        // page-text scoring
@@ -91,79 +90,34 @@ async function getState() {
   return { ...DEFAULT_STATE, ...(stored.state || {}) };
 }
 
+/**
+ * Every transaction that WRITES state or rules runs under this lock — see
+ * lib/serial.js for the lost-update it closes. Taken at the entry points
+ * (messages, alarms, lifecycle events), never inside the functions they call,
+ * so a transaction that calls another (pollNative → handleNativeLoss) does
+ * not wait for itself. Reads (`getState`, `scoreText`) do not take it.
+ */
+const transaction = createLock();
+
 async function setState(patch) {
   const next = { ...(await getState()), ...patch };
   await chrome.storage.local.set({ state: next });
   return next;
 }
 
-function isLocked(state) {
-  return state.lockUntil > Date.now();
-}
-
 // --------------------------------------------------------------------------
 // Rule application
 // --------------------------------------------------------------------------
 
-/**
- * Strict allowlist mode: deny everything, then carve out the allowlist.
- *
- * Two rules, not two thousand — `requestDomains` accepts a list, and one allow
- * rule at higher priority beats the catch-all block. Chrome's rule budget is
- * small enough that per-domain rules would be a real constraint.
+/*
+ * The dynamic rules — strict catch-all, allowlist carve-outs, custom blocks —
+ * are built by `policyRules` in lib/policy.js. That file is the decision
+ * contract shared with the macOS filter, and `blocklist/terms/policy_cases.json` is
+ * asserted against the very array it returns. Do not build rules here.
  */
-function strictRules(allowlist) {
-  const rules = [
-    {
-      id: RULE_STRICT_BLOCK_ALL,
-      priority: 1,
-      action: {
-        type: "redirect",
-        redirect: { extensionPath: "/blocked.html?reason=strict" },
-      },
-      condition: { urlFilter: "*", resourceTypes: ["main_frame"] },
-    },
-  ];
-  if (allowlist.length) {
-    rules.push({
-      id: RULE_STRICT_ALLOW,
-      priority: 100,
-      action: { type: "allow" },
-      condition: {
-        requestDomains: allowlist,
-        resourceTypes: [
-          "main_frame", "sub_frame", "script", "image", "media",
-          "xmlhttprequest", "stylesheet", "font", "object", "websocket", "other",
-        ],
-      },
-    });
-  }
-  return rules;
-}
-
-function customBlockRules(domains) {
-  if (!domains.length) return [];
-  return [{
-    id: RULE_CUSTOM_BLOCK_BASE,
-    priority: 50,
-    action: {
-      type: "redirect",
-      redirect: { extensionPath: "/blocked.html?reason=custom" },
-    },
-    condition: {
-      requestDomains: domains,
-      resourceTypes: ["main_frame", "sub_frame"],
-    },
-  }];
-}
 
 async function applyRules(state) {
-  const effectiveStrict = state.mode === "strict" || state.failClosed;
-
-  const dynamic = [
-    ...(effectiveStrict ? strictRules(state.allowlist) : []),
-    ...customBlockRules(state.customBlocks),
-  ];
+  const dynamic = policyRules(state);
 
   // Clear only the ids this function owns. Removing every dynamic rule here
   // would also delete the downloaded blocklist, so every lock state change
@@ -198,14 +152,44 @@ async function applyRules(state) {
   });
 
   await syncTextScanning(state);
+  await enforceOpenTabs(state);
 
   console.info("[hisn] rules applied", {
     mode: state.mode,
-    strict: effectiveStrict,
+    strict: effectiveStrict(state),
     failClosed: state.failClosed,
     locked: isLocked(state),
     dynamicRules: dynamic.length,
   });
+}
+
+/**
+ * Send already-open tabs that the policy now refuses to the block page.
+ *
+ * Rules only judge NEW requests; a tab opened before a lock began would
+ * otherwise stay up for as long as it is left alone. See `tabsToBlock`.
+ * Cheap when nothing is strict and no custom block exists, which is the
+ * common case: one `tabs.query` and no navigations. Errors are logged, not
+ * thrown — a tab that vanished mid-walk must not abort the rest.
+ */
+async function enforceOpenTabs(state) {
+  if (!effectiveStrict(state) && !(state.customBlocks || []).length) return;
+  let tabs;
+  try {
+    tabs = await chrome.tabs.query({});
+  } catch (err) {
+    console.warn("[hisn] could not enumerate tabs:", err?.message ?? err);
+    return;
+  }
+  for (const { id, reason } of tabsToBlock(tabs, state)) {
+    try {
+      await chrome.tabs.update(id, {
+        url: chrome.runtime.getURL(`blocked.html?reason=${reason}`),
+      });
+    } catch (err) {
+      console.warn("[hisn] could not close tab %d:", id, err?.message ?? err);
+    }
+  }
 }
 
 // --------------------------------------------------------------------------
@@ -222,9 +206,18 @@ let effectiveKey = " uninitialised";
 
 async function getTermIndex(customTerms = [], ignoreTerms = []) {
   if (!termIndex) {
-    const res = await fetch(chrome.runtime.getURL("seed/terms.json"));
-    termJson = await res.json();
+    // The downloaded generation's vocabulary first — it was verified against
+    // the signed manifest by updateList and is newer by construction — and
+    // the bundled seed only when no generation has been installed.
+    const stored = await chrome.storage.local.get("terms").catch(() => ({}));
+    if (stored.terms?.payload?.terms) {
+      termJson = stored.terms.payload;
+    } else {
+      const res = await fetch(chrome.runtime.getURL("seed/terms.json"));
+      termJson = await res.json();
+    }
     termIndex = buildIndex(termJson);
+    effectiveKey = " uninitialised";
   }
   // Hand-typed words, folded in on top of the compiled list.
   //
@@ -245,7 +238,7 @@ async function getTermIndex(customTerms = [], ignoreTerms = []) {
     if (customTerms.length) {
       base = buildIndex({ ...termJson,
                           terms: [...termJson.terms,
-                                  ...customTerms.map((t) => ({ t, w: 8, l: "user" }))] });
+                                  ...customTerms.map((t) => ({ t: normalize(t), w: 8, l: "user" }))] });
     }
     // Then drop the disowned words, normalised to the list's spelling. Done
     // last so it can also cancel a custom word the user added earlier.
@@ -369,7 +362,7 @@ async function reportWrongBlock(host) {
   if (!clean) return { ok: false, reason: "no-host" };
   const state = await getState();
 
-  if (isLocked(state)) {
+  if (restrictionsActive(state)) {
     if (!hostInList(clean, state.disputed.map((d) => d.host))) {
       await setState({ disputed: [...state.disputed, { host: clean, at: Date.now() }] });
     }
@@ -402,7 +395,7 @@ async function reportWrongWord(term) {
   if (!norm) return { ok: false, reason: "no-term" };
   const state = await getState();
 
-  if (isLocked(state)) {
+  if (restrictionsActive(state)) {
     if (!state.disputed.some((d) => d.term === norm)) {
       await setState({ disputed: [...state.disputed, { term: norm, at: Date.now() }] });
     }
@@ -446,7 +439,7 @@ async function resolveDisputed(entry) {
     return { ok: true, applied: false, state: next };
   }
 
-  if (isLocked(state)) {
+  if (restrictionsActive(state)) {
     return { ok: false, reason: "locked", until: state.lockUntil };
   }
 
@@ -479,7 +472,7 @@ async function pollNative() {
     const reply = await chrome.runtime.sendNativeMessage(NATIVE_HOST, {
       type: "getLockState",
     });
-    if (!reply || typeof reply.lockUntil !== "number") {
+    if (!reply || !Number.isFinite(reply.lockUntil)) {
       throw new Error("malformed reply");
     }
     // Build the patch by PRESENCE, not by defaulting.
@@ -491,17 +484,18 @@ async function pollNative() {
     // unblocks every domain they added by hand; for `inspectText` it would turn
     // a layer off. A field the bridge does not mention is a field we know
     // nothing about, and the safe reading of that is "leave it alone".
+    //
+    // `bridgePatch` applies that rule and one more: a field the reply mentions
+    // with a value of the wrong shape is ALSO left alone. It crossed a pipe as
+    // JSON; a malformed list is not an empty list.
     const patch = {
-      lockUntil: reply.lockUntil,
-      mode: reply.mode ?? "blocklist",
+      lockUntil: Math.max(0, Math.floor(reply.lockUntil)),
+      mode: "blocklist",
+      ...bridgePatch(reply),
       lastHeartbeat: Date.now(),
       failClosed: false,
       appPresent: true,
     };
-    for (const key of ["allowlist", "customBlocks", "customTerms",
-                       "inspectText", "textSensitivity", "hostKeywords"]) {
-      if (key in reply) patch[key] = reply[key];
-    }
     const state = await setState(patch);
     await applyRules(state);
     return true;
@@ -521,19 +515,17 @@ async function pollNative() {
  */
 async function handleNativeLoss() {
   const state = await getState();
-  const silentFor = Date.now() - (state.lastHeartbeat || 0);
 
   // Never having heard from the app is not the app going away. A browser-only
   // install is a supported configuration, not a fault, and treating it as
   // tampering would clamp every standalone user into strict mode forever —
   // which is both wrong and the fastest way to get the extension removed.
-  if (!state.appPresent) return;
+  // That gate, the lock check, the grace period and the already-clamped check
+  // are all in `shouldFailClosed`, where the tests can see them.
+  if (!shouldFailClosed(state)) return;
 
-  if (!isLocked(state)) return;
-  if (silentFor < HEARTBEAT_GRACE_MS) return;
-  if (state.failClosed) return;
-
-  console.error("[hisn] native app silent during an active lock — failing closed");
+  console.error("[hisn] native app silent for %d minutes during an active lock "
+                + "— failing closed", HEARTBEAT_GRACE_MS / 60000);
   const next = await setState({ failClosed: true });
   await applyRules(next);
 }
@@ -549,35 +541,34 @@ async function fetchBytes(url) {
 }
 
 /**
- * Install a downloaded, verified blocklist as dynamic rules.
+ * Install a downloaded, verified generation: domain rules, keyword rules and
+ * the scanner's vocabulary, together.
  *
- * Downloaded rules live in their OWN id space, above
- * `RULE_DOWNLOADED_BASE`, and `applyRules` only ever clears ids below it. Both
- * functions call `updateDynamicRules`, and without that split whichever ran
- * last would wipe the other's work — a lock change would silently delete the
- * blocklist, or a list update would silently delete strict mode.
+ * Downloaded rules live in their OWN id space, above `RULE_DOWNLOADED_BASE`,
+ * and `applyRules` only ever clears ids below it. Both functions call
+ * `updateDynamicRules`, and without that split whichever ran last would wipe
+ * the other's work — a lock change would silently delete the blocklist, or a
+ * list update would silently delete strict mode.
  *
- * The ids in the artifact start at 1 and would collide with the strict-mode
- * rules, so they are reassigned on the way in rather than trusted.
+ * One `updateDynamicRules` call, so the swap is atomic: there is no window in
+ * which the old rules are gone and the new ones are not yet in, and no window
+ * with new domain rules beside old keyword rules. The vocabulary is written
+ * after the rules land; a crash between the two leaves the previous
+ * vocabulary, which is stale, not wrong, and the next check repairs it.
  */
-async function applyDownloadedRules(rules) {
+async function applyGeneration(plan) {
   const existing = await chrome.declarativeNetRequest.getDynamicRules();
-  const previous = existing
-    .filter((r) => r.id >= RULE_DOWNLOADED_BASE)
-    .map((r) => r.id);
-
-  const remapped = rules.map((rule, i) => ({
-    ...rule,
-    id: RULE_DOWNLOADED_BASE + i,
-  }));
-
-  // One call, so the swap is atomic: there is no window in which the old rules
-  // are gone and the new ones are not yet in.
   await chrome.declarativeNetRequest.updateDynamicRules({
-    removeRuleIds: previous,
-    addRules: remapped,
+    removeRuleIds: downloadedRuleIds(existing),
+    addRules: [...plan.blockRules, ...plan.keywordRules],
   });
-  return remapped.length;
+  await chrome.storage.local.set({
+    terms: { version: plan.terms.version ?? 0, payload: plan.terms },
+  });
+  // Drop the cached index so the next scored page uses the new vocabulary.
+  termIndex = null;
+  termJson = null;
+  return { rules: plan.blockRules.length, keywordRules: plan.keywordRules.length };
 }
 
 /**
@@ -623,53 +614,44 @@ async function updateList() {
       console.error("[hisn] list rejected:", probe.reason);
       return;
     }
-    if (probe.manifest.version === state.listVersion && state.rulesApplied) {
+    if (probe.manifest.version === state.listVersion && state.rulesApplied
+        && state.keywordRulesApplied) {
       return;
     }
 
-    const rulesBytes = await fetchBytes(`${LIST_BASE}/dnr_block_rules.json`);
-
-    // Re-run acceptance WITH the artifact, so the signed manifest's SHA-256 is
-    // checked against the bytes we are about to enforce. Verifying the manifest
-    // alone proves only that someone signed a description of a file.
+    // The whole generation, fetched together. Every artifact is verified
+    // against the signed manifest before any is applied — verifying the
+    // manifest alone proves only that someone signed a description of files.
+    const artifacts = new Map();
+    await Promise.all(GENERATION_ARTIFACTS.map(async (name) => {
+      artifacts.set(name, await fetchBytes(`${LIST_BASE}/${name}`));
+    }));
     const verified = await acceptList({
-      manifestBytes,
-      signatureHex,
-      artifacts: new Map([["dnr_block_rules.json", rulesBytes]]),
-      heldVersion: state.listVersion,
+      manifestBytes, signatureHex, artifacts, heldVersion: state.listVersion,
     });
     if (!verified.ok) {
-      console.error("[hisn] rules rejected:", verified.reason);
+      console.error("[hisn] generation rejected:", verified.reason);
       return;
     }
 
-    let rules;
-    try {
-      rules = JSON.parse(new TextDecoder().decode(rulesBytes));
-    } catch {
-      console.error("[hisn] rules are not valid JSON — keeping current list");
+    // Shape and plausibility, after the hashes. A validly signed list that
+    // collapsed to a handful of rules or lost its vocabulary is a broken
+    // build, and keeping yesterday's is strictly safer than applying it.
+    const plan = planGeneration(verified.manifest, artifacts);
+    if (!plan.ok) {
+      console.error("[hisn] generation not installable:", plan.reason, "— keeping current");
       return;
     }
 
-    // The client-side plausibility floor, matching the one the build and CI
-    // already apply to domain counts. A validly signed list that collapsed to
-    // a handful of rules is a broken build, and keeping yesterday's is
-    // strictly safer than applying it.
-    const expected = verified.manifest.dnr_rule_count;
-    if (!Array.isArray(rules) || rules.length < 50
-        || (expected && rules.length !== expected)) {
-      console.error("[hisn] implausible ruleset:", rules?.length,
-        "rules, manifest says", expected, "— keeping current list");
-      return;
-    }
-
-    const applied = await applyDownloadedRules(rules);
+    const applied = await applyGeneration(plan);
     await setState({
       listVersion: verified.manifest.version,
-      rulesApplied: applied,
+      rulesApplied: applied.rules,
+      keywordRulesApplied: applied.keywordRules,
+      lastListUpdate: Date.now(),
     });
-    console.info("[hisn] blocklist v%d applied — %d rules",
-      verified.manifest.version, applied);
+    console.info("[hisn] generation v%d applied — %d domain rules, %d keyword rules, %d terms",
+      verified.manifest.version, applied.rules, applied.keywordRules, plan.terms.terms.length);
   } catch (err) {
     console.warn("[hisn] list update failed, keeping current list:",
       err?.message ?? err);
@@ -696,9 +678,25 @@ function added(next, prev) {
  * allowlist is the only thing reachable at all — that swap is not a small
  * loosening, it is a complete bypass.
  */
-async function guardedUpdate(patch) {
+async function guardedUpdate(rawPatch) {
+  // Shape first, then direction. A patch naming a field outside USER_FIELDS —
+  // `appPresent`, `failClosed`, `lastHeartbeat`, anything internal — is refused
+  // whole, because each of those is a way to switch the fail-closed defence
+  // off from a devtools console. See `validatePatch`.
+  const checked = validatePatch(rawPatch);
+  if (!checked.ok) return checked;
+  const patch = checked.patch;
+
   const state = await getState();
-  if (isLocked(state)) {
+  const access = settingsAccess(state, patch);
+  if (!access.ok) return access;
+  if (patch.customTerms) {
+    patch.customTerms = [...new Set(patch.customTerms.map(normalize))];
+    if (patch.customTerms.length > 200 || patch.customTerms.some((term) => term.replace(/\s/g, "").length < 4)) {
+      return { ok: false, reason: "invalid-field", field: "customTerms" };
+    }
+  }
+  if (restrictionsActive(state)) {
     const relaxing =
       (patch.mode && patch.mode === "off") ||
       (patch.mode === "blocklist" && state.mode === "strict") ||
@@ -709,6 +707,7 @@ async function guardedUpdate(patch) {
       // guard at all — anything can post this message from a devtools console.
       (patch.customBlocks &&
         added(state.customBlocks, patch.customBlocks).length > 0) ||
+      (patch.customTerms && added(state.customTerms, patch.customTerms).length > 0) ||
       // Switching text scanning off, or making it less sensitive, are both
       // weakenings and both wait for the lock to end. Turning it on or raising
       // sensitivity is tightening and is always allowed — the same asymmetry
@@ -739,24 +738,23 @@ async function guardedUpdate(patch) {
 // --------------------------------------------------------------------------
 
 chrome.runtime.onInstalled.addListener(async () => {
-  const state = await getState();
-  await applyRules(state);
+  await transaction(async () => applyRules(await getState()));
   await chrome.alarms.create("heartbeat", { periodInMinutes: 1 });
   await chrome.alarms.create("listUpdate", { periodInMinutes: 360 });
-  await pollNative();
-  await updateList();
+  await transaction(pollNative);
+  await transaction(updateList);
 });
 
 chrome.runtime.onStartup.addListener(async () => {
   // Re-assert on every browser start. A service worker that never woke up is
   // a browser session with no rules applied.
-  await applyRules(await getState());
-  await pollNative();
+  await transaction(async () => applyRules(await getState()));
+  await transaction(pollNative);
 });
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {
-  if (alarm.name === "heartbeat") await pollNative();
-  if (alarm.name === "listUpdate") await updateList();
+  if (alarm.name === "heartbeat") await transaction(pollNative);
+  if (alarm.name === "listUpdate") await transaction(updateList);
 });
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
@@ -766,28 +764,31 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         sendResponse(await getState());
         break;
       case "update":
-        sendResponse(await guardedUpdate(msg.patch || {}));
+        sendResponse(await transaction(() => guardedUpdate(msg.patch || {})));
         break;
       case "forceSync":
-        sendResponse({ ok: await pollNative() });
+        sendResponse({ ok: await transaction(pollNative) });
         break;
       case "scoreText":
         sendResponse(await scoreText(msg.zones || {}, _sender));
         break;
       case "reportWrongBlock":
-        sendResponse(await reportWrongBlock(msg.host));
+        sendResponse(await transaction(() => reportWrongBlock(msg.host)));
         break;
       case "reportWrongWord":
-        sendResponse(await reportWrongWord(msg.term));
+        sendResponse(await transaction(() => reportWrongWord(msg.term)));
         break;
       case "resolveDisputed":
-        sendResponse(await resolveDisputed(msg.entry));
+        sendResponse(await transaction(() => resolveDisputed(msg.entry)));
         break;
       default:
         sendResponse({ ok: false, reason: "unknown-message" });
     }
-  })();
+  })().catch((err) => {
+    console.error("[hisn] message failed:", msg?.type, err?.message ?? err);
+    sendResponse({ ok: false, reason: "internal-error" });
+  });
   return true; // async response
 });
 
-export { applyRules, guardedUpdate, strictRules, DEFAULT_STATE, resolveDisputed };
+export { applyRules, guardedUpdate, DEFAULT_STATE, resolveDisputed };

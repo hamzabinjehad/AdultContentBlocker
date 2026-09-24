@@ -1,17 +1,35 @@
-# Seed list
+# Seed bundle
 
-A starting blocklist so the extension and app work before the first CI run.
+The starting list and keyword layer the filter ships with, so a machine that
+has never completed an update — a first launch, or one with no network —
+enforces something rather than nothing.
 
-`domains_core.txt` is the high-confidence tier (~148k domains) — the same set
-the browser extension ships. The full ~982k list is not committed; it is built
-by `blocklist/build.py` and published to the `lists` branch.
-
-Verify this seed before trusting it:
-
-```bash
-python3 blocklist/keys.py verify --dist seed --pub blocklist/public_key.hex
+```
+manifest.json       the signed manifest of the build this was cut from
+manifest.json.sig   its Ed25519 signature
+domains_core.txt    the high-confidence tier (~148k domains)
+terms.json          the keyword layer, for domains registered since the build
 ```
 
-That will fail until you generate your own keypair and rebuild — the signature
-here was made with a throwaway key, and `blocklist/public_key.hex` must be
-replaced with your own public key before you ship anything.
+The extension carries the same build's `terms.json` and static rulesets under
+`extension/seed/` and `extension/rules/`. All of it is placed by one command
+and checked by one command:
+
+```bash
+python3 blocklist/seed.py verify                                       # CI and the tests run this
+python3 blocklist/seed.py sync --build --sign-key keys/blocklist_ed25519.pem
+```
+
+The filter verifies the manifest's signature with the public key pinned in
+`BlocklistStore.swift`, then checks each artifact's SHA-256 against it, on
+exactly the path a downloaded list takes. A file the manifest does not
+describe is a file the filter will not load — which is why `verify` fails on
+that state, and why editing `blocklist/terms/` is not finished until the seed
+is re-cut. Without the private key on your machine, dispatch the *Build and
+publish blocklist* workflow with **refresh_seed** ticked and CI commits the
+re-signed bundle to your branch.
+
+The full ~982k list is not committed; `blocklist/build.py` builds it and CI
+publishes it to the `lists` branch. The version in this manifest is also where
+CI starts its counter when nothing has been published yet, so a fresh install
+never rejects the first published list as a rollback.

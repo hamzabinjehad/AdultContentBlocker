@@ -1,0 +1,33 @@
+<!doctype html><meta charset="utf-8"><title>Hisn UI preview</title>
+<style>html,body{margin:0;height:100%;background:#f5f6f2}iframe{border:0;width:100%;height:100%}</style>
+<iframe title="Hisn preview" id="screen"></iframe>
+<pre id="summary" hidden data-result="pending"></pre>
+<script type="module">
+// Visual fixtures only: no native host, real settings, or browsing history.
+const params = new URLSearchParams(location.search);
+const page = ["options", "popup", "blocked"].includes(params.get("page")) ? params.get("page") : "options";
+const managed = params.get("managed") === "1";
+const base = new URL(`../../${page}.html`, location.href);
+const state = { appPresent:managed, mode:"blocklist", lockUntil:0, lastHeartbeat:Date.now(),
+  customBlocks:["example.com"],allowlist:["wikipedia.org"],customTerms:[],textAllow:[],ignoreTerms:[],disputed:[],
+  inspectText:true,textSensitivity:50,failClosed:false };
+const mock = `<script>
+const state = ${JSON.stringify(state)};
+window.chrome = {
+ runtime: { getManifest:()=>({version:'1.0.0'}), openOptionsPage(){},
+  sendMessage(msg, cb) { if(msg.type==='getState')cb({...state});
+   else if(msg.type==='forceSync')cb({ok:state.appPresent});
+   else if(msg.type==='update'){Object.assign(state,msg.patch);cb({ok:true,state:{...state}});}
+   else cb({ok:false}); } },
+ storage:{onChanged:{addListener(){}},session:{get:async()=>({})}},
+ extension:{isAllowedIncognitoAccess:cb=>cb(true)},
+ tabs:{getCurrent:cb=>cb({id:1}),update(){}},
+};
+<\/script>`;
+const html = await (await fetch(base)).text();
+document.getElementById("screen").srcdoc = html.replace('<head>', `<head><base href="${base.href}">${mock}`);
+document.getElementById("screen").onload = () => {
+  document.getElementById("summary").dataset.result = "pass";
+  document.getElementById("summary").textContent = "Preview loaded (simulated connection).";
+};
+</script>

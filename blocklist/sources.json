@@ -54,6 +54,36 @@
       "license": "see oisd.nl — free for personal and commercial use",
       "note": "~480k domains, the largest single source here and the only one that is not US/English-centric. Added because the other five between them carried 578 Arabic-audience domains out of 148k core (0.39%), which is close to blind for ~400M speakers. Publishes the `*.domain` wildcard form; `clean()` strips the prefix, and every consumer already blocks subdomains, so nothing is lost.",
       "tier": "extended"
+    },
+    {
+      "id": "ut1-adult",
+      "url": "https://dsi.ut-capitole.fr/blacklists/download/adult.tar.gz",
+      "member": "adult/domains",
+      "format": "plain",
+      "enabled": true,
+      "license": "free for non-commercial use — verify terms before shipping commercially",
+      "note": "Universite Toulouse Capitole's academic blacklist: 4.6M domains, larger than every other source here combined and the only one curated outside the English-speaking web. Added because the original five carried 578 Arabic-audience domains out of 148k core (0.39%). Distributed only as a tarball, which is why `fetch` grew a `member` argument.",
+      "tier": "extended"
+    },
+    {
+      "id": "ut1-strong-redirector",
+      "url": "https://dsi.ut-capitole.fr/blacklists/download/strong_redirector.tar.gz",
+      "member": "strong_redirector/domains",
+      "format": "plain",
+      "enabled": true,
+      "license": "free for non-commercial use — verify terms before shipping commercially",
+      "note": "132k proxy, anonymiser and 'unblock' services. Not adult content itself — it is the standard way around a filter, and docs/THREAT_MODEL.md marks that row 'Partly open: upstream lists chase these forever'. This is the one list that chases them.",
+      "tier": "extended"
+    },
+    {
+      "id": "ut1-mixed-adult",
+      "url": "https://dsi.ut-capitole.fr/blacklists/download/mixed_adult.tar.gz",
+      "member": "mixed_adult/domains",
+      "format": "plain",
+      "enabled": true,
+      "license": "free for non-commercial use — verify terms before shipping commercially",
+      "note": "Small but pointed: sites carrying adult content alongside ordinary content. Exactly the category a domain list normally cannot express, curated by hand upstream.",
+      "tier": "extended"
     }
   ],
   "_never_block_comment": "SAFETY RAIL, applied last, after every upstream source. A poisoned or sloppy upstream list that blocks apple.com would brick the machine AND lock the user out of asking for help. Two tiers, because they are NOT the same problem.",

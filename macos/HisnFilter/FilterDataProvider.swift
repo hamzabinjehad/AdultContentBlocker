@@ -57,23 +57,54 @@ final class FilterDataProvider: NEFilterDataProvider {
     override func startFilter(completionHandler: @escaping (Error?) -> Void) {
         NSLog("[Hisn] filter starting")
 
+        // Rollback protection across restarts: the highest version this
+        // filter ever installed is the floor for what it will accept now. A
+        // new process would otherwise start at 0 and take any signed old list.
+        store.versionFloor = Self.defaults?.integer(forKey: Self.listVersionKey) ?? 0
+
         loadListFromDisk()
         loadKeywordLayer()
         refreshLockState()
+        publishHealth()
 
         // The lock deadline can change while the filter runs (a partner grants
         // early release, the user extends). Re-read periodically rather than
-        // caching for the life of the process.
+        // caching for the life of the process. The same tick publishes a
+        // heartbeat: the app's "filter enabled" used to mean only that the
+        // preference was saved, and this is what turns it into evidence.
         let timer = DispatchSource.makeTimerSource(queue: .global(qos: .utility))
         timer.schedule(deadline: .now() + 30, repeating: 30)
         timer.setEventHandler { [weak self] in
             self?.refreshLockState()
             self?.reloadListIfUpdated()
+            self?.publishHealth()
         }
         timer.resume()
         refreshTimer = timer
 
         completionHandler(nil)
+    }
+
+    // MARK: - Health
+
+    static var defaults: UserDefaults? { UserDefaults(suiteName: LockStore.appGroup) }
+    static let listVersionKey = "filterListVersion"
+
+    /// Whether the keyword layer currently installed came from the downloaded
+    /// generation, the bundled seed, or nowhere. Reported, never assumed.
+    private var keywordSource = "none"
+
+    /// Everything the app needs to say what this filter is ACTUALLY doing,
+    /// written to the shared container every tick. Read by
+    /// `Enforcement.layers` in the app. Keys are the contract; see there.
+    private func publishHealth() {
+        guard let d = Self.defaults else { return }
+        d.set(Date(), forKey: "filterHeartbeatAt")
+        d.set(store.domainCount, forKey: "filterDomainCount")
+        d.set(store.hostTermCount, forKey: "filterHostTermCount")
+        d.set(keywordSource, forKey: "filterKeywordSource")
+        d.set(strictModeActive.withLock { $0 }, forKey: "filterStrictActive")
+        d.set(store.version, forKey: Self.listVersionKey)
     }
 
     override func stopFilter(with reason: NEProviderStopReason,
@@ -131,7 +162,9 @@ final class FilterDataProvider: NEFilterDataProvider {
 
     private func refreshLockState() {
         let state = LockStore.read()
-        let strict = state.mode == "strict" && LockStore.trustedNow() < state.deadline
+        // The EFFECTIVE deadline, via the one function the app and the bridge
+        // also use — see `LockStore.strictModeActive`.
+        let strict = LockStore.strictModeActive(state)
         strictModeActive.withLock { $0 = strict }
 
         // Both hand-maintained lists, re-read on the same tick. The custom
@@ -251,30 +284,69 @@ final class FilterDataProvider: NEFilterDataProvider {
     /// runs in the SOCKET filter, so unlike the browser rules it covers every
     /// application on the Mac.
     ///
-    /// Verified against the SHA-256 in the signed manifest on exactly the same
-    /// path a downloaded list takes. Being bundled buys it no trust. If the
-    /// manifest does not cover `terms.json` the layer stays off rather than
-    /// loading unverified terms — failing closed here means "no keyword
-    /// matching", never "unchecked keyword matching".
+    /// Verified against the SHA-256 in the SIGNED manifest on exactly the same
+    /// path a downloaded list takes: signature first, then the hash. Being
+    /// bundled buys it no trust. If the manifest does not cover `terms.json`
+    /// the layer stays off rather than loading unverified terms — failing
+    /// closed here means "no keyword matching", never "unchecked keyword
+    /// matching". `blocklist/seed.py verify` and `BundledSeedTests` exist so
+    /// that state is caught in CI rather than discovered on a user's machine.
     private func loadKeywordLayer() {
+        // The downloaded generation first — it is newer by construction — and
+        // the bundle only when the container has no verifiable terms. A
+        // container written by an older app carries no terms.json; that is
+        // the bundled case, not a failure.
+        if let container = FileManager.default
+            .containerURL(forSecurityApplicationGroupIdentifier: LockStore.appGroup) {
+            let dir = container.appendingPathComponent("list", isDirectory: true)
+            if loadKeywordLayer(manifest: dir.appendingPathComponent("manifest.json"),
+                                signature: dir.appendingPathComponent("manifest.json.sig"),
+                                terms: dir.appendingPathComponent("terms.json"),
+                                source: "downloaded") {
+                return
+            }
+        }
         guard let manifestURL = Bundle.main.url(forResource: "manifest",
                                                 withExtension: "json"),
+              let sigURL = Bundle.main.url(forResource: "manifest.json",
+                                           withExtension: "sig"),
               let termsURL = Bundle.main.url(forResource: "terms",
-                                             withExtension: "json"),
-              let manifestData = try? Data(contentsOf: manifestURL),
-              let termsData = try? Data(contentsOf: termsURL),
-              let manifest = try? JSONSerialization.jsonObject(with: manifestData)
-                  as? [String: Any],
-              let artifacts = manifest["artifacts"] as? [String: [String: Any]],
-              let expected = artifacts["terms.json"]?["sha256"] as? String
+                                             withExtension: "json")
         else {
-            NSLog("[Hisn] no verifiable terms.json — keyword layer stays off")
+            NSLog("[Hisn] no bundled terms.json or manifest — keyword layer stays off")
+            keywordSource = "none"
             return
         }
+        if !loadKeywordLayer(manifest: manifestURL, signature: sigURL,
+                             terms: termsURL, source: "bundled") {
+            keywordSource = "none"
+        }
+    }
+
+    /// One keyword layer from one signed manifest. Signature first, then the
+    /// hash, then the parse; any failure leaves the current layer untouched.
+    @discardableResult
+    private func loadKeywordLayer(manifest manifestURL: URL, signature sigURL: URL,
+                                  terms termsURL: URL, source: String) -> Bool {
+        guard let manifestData = try? Data(contentsOf: manifestURL),
+              let sig = try? String(contentsOf: sigURL, encoding: .utf8),
+              let termsData = try? Data(contentsOf: termsURL)
+        else { return false }
         do {
+            let manifest = try store.verifiedManifest(manifestData: manifestData,
+                                                      signatureHex: sig)
+            guard let expected = manifest.artifacts["terms.json"]?.sha256 else {
+                NSLog("[Hisn] %@ manifest does not cover terms.json — not using its keyword layer",
+                      source)
+                return false
+            }
             try store.loadHostTerms(termsData: termsData, expectedSHA256: expected)
+            keywordSource = source
+            NSLog("[Hisn] keyword layer from %@ generation v%d", source, manifest.version)
+            return true
         } catch {
-            NSLog("[Hisn] keyword layer rejected: %@", "\(error)")
+            NSLog("[Hisn] %@ keyword layer rejected: %@", source, "\(error)")
+            return false
         }
     }
 
@@ -299,10 +371,12 @@ final class FilterDataProvider: NEFilterDataProvider {
               version, installedDownloadedVersion)
         guard loadDownloadedList() else { return }
         installedDownloadedVersion = version
-        UserDefaults(suiteName: LockStore.appGroup)?
-            .set(store.domainCount, forKey: "filterDomainCount")
-        NSLog("[Hisn] reloaded blocklist v%d, %d domains",
-              version, store.domainCount)
+        // The generation is the pair. A new domain list with the old keyword
+        // layer is the half-state the updater exists to prevent.
+        loadKeywordLayer()
+        publishHealth()
+        NSLog("[Hisn] reloaded generation v%d: %d domains, %d host terms (%@)",
+              version, store.domainCount, store.hostTermCount, keywordSource)
     }
 
     /// The `version` field of the downloaded manifest, without decoding the

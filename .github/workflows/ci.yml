@@ -1,0 +1,84 @@
+name: CI
+
+# Every suite, on every pull request and push to main — and, via workflow_call,
+# as the gate in front of the daily list publish. A suite that cannot run on a
+# runner is a failure there, never a skip: `test.sh` is built that way, and
+# each job below asks only for the suites its runner can honestly run.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_call:
+    inputs:
+      # The publish workflow's `refresh_seed` run exists to FIX a failing seed
+      # gate, so it cannot be blocked by it. Only that caller sets this; the
+      # gate is re-run there against the re-cut seed before anything is pushed.
+      skip_seed_gate:
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    name: Python, seed bundle, and a real list build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install --quiet 'cryptography>=42'
+
+      # The seed gate first, on its own, so the failure is the first thing in
+      # the log: every artifact this repo ships must be described by the signed
+      # seed manifest and, for terms.json, equal what the sources compile to.
+      - name: Seed bundle verifies
+        if: ${{ !inputs.skip_seed_gate }}
+        run: ./test.sh seed
+
+      - name: Unit tests
+        env:
+          HISN_SKIP_SEED_GATE: ${{ inputs.skip_seed_gate && '1' || '0' }}
+        run: ./test.sh python
+
+      # A real, unsigned build of the list. Three of test_build.py's checks —
+      # known domains blocked, critical infrastructure NOT blocked, manifest
+      # covers every artifact — only run against a built dist/, and quietly
+      # skip otherwise. Those are the lockout checks; they must actually run.
+      - name: Build the list (unsigned)
+        run: python3 blocklist/build.py --sources blocklist/sources.json --out dist
+      - name: Real-artifact checks
+        run: |
+          cd blocklist && python3 test_build.py 2>&1 | tee /tmp/test_build.log
+          if grep -q "skipped=" /tmp/test_build.log; then
+            echo "::error::test_build.py skipped its real-artifact checks after a build"
+            exit 1
+          fi
+
+  extension:
+    name: Extension unit tests, package check, and browser harness
+    # JavaScriptCore's `jsc` is the test runner — it ships inside macOS, and it
+    # is why this repo has no Node toolchain to install or audit. The browser
+    # harness runs the page scanner in the runner's Google Chrome, headless.
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./test.sh extension
+      - run: ./test.sh browser
+
+  macos:
+    name: macOS app and filter tests
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./test.sh macos
+      - name: Keep the xcodebuild log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-test.log
+          path: ${{ runner.temp }}/xcodebuild-test.log
+          if-no-files-found: ignore

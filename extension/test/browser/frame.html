@@ -1,0 +1,118 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>scenario frame</title>
+<!--
+  One scanner scenario, in a real document.
+
+  harness.html loads this in an iframe with ?scenario=NAME. The page below sets
+  up the DOM the scenario needs, loads the production scanner unchanged, and
+  boots it with a stubbed worker channel and a stubbed navigation so the
+  harness can observe what the scanner asked and decided. Everything else —
+  MutationObserver, innerText, timers, the real location — is the browser's.
+-->
+<body>
+<h1 id="h">Scenario</h1>
+<div id="content"></div>
+<script src="../../content/scan.js"></script>
+<script>
+(() => {
+  const params = new URLSearchParams(location.search);
+  const scenario = params.get("scenario") || "";
+  const kind = scenario.replace(/-inner$/, "");   // the tally key and verdict table
+  const MARK = "xxxpornxxx";
+  // `top`, not `parent`: the nested scenario has a frame inside a frame, and
+  // the harness is the top window either way.
+  const report = (type, extra = {}) =>
+    top.postMessage({ hisn: true, scenario: kind, type, ...extra }, "*");
+
+  const content = document.getElementById("content");
+  const setText = (t) => { content.textContent = t; };
+
+  let asks = 0;
+  const verdicts = {
+    "equal-length": (z) => ({ block: z.body.includes(MARK) }),
+    "feed":         (z) => ({ block: z.body.includes(MARK) }),
+    "malformed":    (z) => ({ block: z.body.includes(MARK) }),
+    "worker":       () => { if (asks === 1) throw new Error("no worker");
+                            if (asks === 2) return undefined;
+                            return { block: true }; },
+    "nested":       (z) => ({ block: z.body.includes(MARK) }),
+  };
+
+  const deps = {
+    send: async (zones) => { asks++; report("ask", { url: zones.url, n: asks });
+                             return verdicts[kind](zones); },
+    navigate: (url) => report("navigate", { url }),
+    blockPageURL: () => "blocked.html?reason=terms",
+  };
+
+  switch (scenario) {
+    case "equal-length":
+      setText("a perfectly ordinary post about gardening.");
+      deps.isTop = true;
+      HisnScan.createScanner(deps).start();
+      // After the first verdict has had time to land, replace with the same
+      // number of characters. The old title+length signature saw no change.
+      setTimeout(() => setText("a perfectly ordinary post about " + MARK), 500);
+      break;
+
+    case "feed": {
+      setText("post 0");
+      deps.isTop = true;
+      HisnScan.createScanner(deps).start();
+      let n = 0;
+      const t = setInterval(() => {
+        const p = document.createElement("p");
+        p.textContent = `post ${++n}`;
+        content.appendChild(p);
+        if (n === 25) { const q = document.createElement("p"); q.textContent = MARK; content.appendChild(q); }
+        if (n >= 60) clearInterval(t);
+      }, 300);
+      break;
+    }
+
+    case "malformed":
+      // The URL carries ?q=%E0%A4%A — decodeURIComponent throws on it.
+      setText(MARK);
+      deps.isTop = true;
+      HisnScan.createScanner(deps).start();
+      break;
+
+    case "worker":
+      setText(MARK);
+      deps.isTop = true;
+      HisnScan.createScanner(deps).start();
+      break;
+
+    case "nested": {
+      // This frame is the "page"; the scanner runs in a frame INSIDE it, with
+      // the real isTop (false) and the real hide(). Only send/navigate are
+      // stubbed, so a navigation would be visible as a report.
+      const inner = document.createElement("iframe");
+      inner.src = "frame.html?scenario=nested-inner";
+      content.appendChild(inner);
+      // Poll what the inner document did to itself.
+      const poll = setInterval(() => {
+        try {
+          const d = inner.contentDocument;
+          if (d && d.documentElement.style.display === "none") {
+            clearInterval(poll); report("hidden");
+          }
+        } catch { /* cross-origin under file://; the inner frame reports itself */ }
+      }, 200);
+      break;
+    }
+
+    case "nested-inner":
+      setText(MARK);
+      // No isTop, no hide: the real ones. Report our own display so the
+      // harness can see it even when contentDocument is not readable.
+      HisnScan.createScanner({ ...deps }).start();
+      setInterval(() => {
+        if (document.documentElement.style.display === "none") report("hidden");
+      }, 200);
+      break;
+  }
+})();
+</script>
+</body>

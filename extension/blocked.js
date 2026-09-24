@@ -25,7 +25,7 @@ const REASONS = {
   },
   default: {
     title: "This page is blocked",
-    subtitle: "You set this up. It is working.",
+    subtitle: "This page matches your protection settings.",
   },
 };
 
@@ -84,8 +84,8 @@ function showStatus(el, kind, text) {
 }
 
 const LOCKED_NOTE =
-  "Your lock is active, so this cannot change right now. Once the lock ends, " +
-  "report it again and it will take effect.";
+  "Saved for review after your lock ends. Open extension Settings to apply " +
+  "or dismiss the report then. Protection has not changed.";
 
 /**
  * Only for a content-check block: show the words that triggered it and let the
@@ -183,3 +183,17 @@ chrome.runtime.sendMessage({ type: "getState" }, (state) => {
 });
 
 setupContentReport();
+
+document.getElementById("openSettings").addEventListener("click", () => chrome.runtime.openOptionsPage());
+document.getElementById("leavePage").addEventListener("click", () => {
+  // A new tab avoids navigating back to the same blocked page or guessing a
+  // destination that might itself be outside the user's allowed sites.
+  chrome.tabs.getCurrent((tab) => {
+    if (chrome.runtime.lastError || !tab?.id) {
+      document.getElementById("note").textContent = "Use your browser’s New Tab button to continue.";
+      return;
+    }
+    chrome.tabs.update(tab.id, { url: "chrome://newtab/" }, () => {
+      if (chrome.runtime.lastError) document.getElementById("note").textContent = "Use your browser’s New Tab button to continue.";
+    });
+  });

@@ -4,8 +4,26 @@
     {
       "name": "extension-preview",
       "runtimeExecutable": "/usr/bin/python3",
-      "runtimeArgs": ["/Users/x/Documents/GitHub/AdultContentBlocker/dist/extpreview/serve.py"],
+      "runtimeArgs": [
+        "/private/tmp/claude-501/-Users-x-Documents-GitHub-AdultContentBlocker/5f782606-089c-4381-b05b-29c95fdc356a/scratchpad/extpreview/serve.py"
+      ],
       "port": 8730
+    },
+    {
+      "name": "scan-harness",
+      "runtimeExecutable": "/usr/bin/python3",
+      "runtimeArgs": [
+        "/private/tmp/claude-501/-Users-x-Documents-GitHub-AdultContentBlocker/21de0c74-2e3a-474c-92fb-d5347834ffde/scratchpad/harness/serve.py"
+      ],
+      "port": 8731
+    },
+    {
+      "name": "popup-preview",
+      "runtimeExecutable": "/usr/bin/python3",
+      "runtimeArgs": [
+        "/private/tmp/claude-501/-Users-x-Documents-GitHub-AdultContentBlocker/68045f5f-7f08-426b-9376-816ae19cffdd/scratchpad/popup-preview/serve.py"
+      ],
+      "port": 8732
     }
   ]
 }

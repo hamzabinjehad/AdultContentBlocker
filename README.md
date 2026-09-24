@@ -18,13 +18,29 @@ the whole thing in dependency order, with what each step needs and who does it.
 ## What's here
 
 ```
-blocklist/       list pipeline: fetch → merge → sign         (Python, 17 tests)
-profile/         .mobileconfig generator: DNS, DoH, Private Relay   (Python)
-extension/       Chrome/Edge MV3 extension                    (JS, verified)
-macos/           the app + content filter                    (Swift, 48 tests)
-seed/            signed starter list, bundled into the filter
-.github/         daily signed rebuild                          (Actions)
+blocklist/       list pipeline: fetch → merge → sign, keyword layer, seed bundle  (Python)
+profile/         .mobileconfig generator: DNS, DoH, Private Relay                (Python)
+extension/       Chrome/Edge MV3 extension                                       (JS)
+macos/           the app + content filter                                        (Swift)
+seed/            signed starter list + keyword layer, bundled into the filter
+.github/         CI on every PR; daily signed rebuild and publish                 (Actions)
 ```
+
+## Testing
+
+```bash
+./test.sh              # python, seed, extension, macos
+./test.sh python seed  # the suites that run on any OS
+./test.sh browser      # the page scanner in headless Chrome (CI always runs it)
+extension/eval/run.sh  # score the evaluation corpus; a blocked benign page fails
+```
+
+One entry point, four suites, and the same script CI runs. `python` is the
+list pipeline, keyword layer, seed tool and profile generator; `seed` is the
+gate that every shipped artifact matches the signed seed manifest; `extension`
+is the JavaScript suites plus a check of the packaged zip; `macos` is
+`xcodebuild test`. A suite whose toolchain is missing fails rather than skips —
+"the tests passed" has to mean they ran.
 
 ## The four layers
 
@@ -55,17 +71,37 @@ cd blocklist
 python3 keys.py generate --out ../keys          # once, offline. Guard the .pem.
 python3 build.py --out ../dist --sign-key ../keys/blocklist_ed25519.pem
 python3 keys.py verify --dist ../dist --pub ../keys/blocklist_ed25519.pub
-python3 test_build.py                            # 17 tests
 ```
 
-Produces ~982k domains from five upstream sources in about 12 seconds.
+Produces ~982k domains from the upstream sources in under a minute.
 `domains_core.txt` (~148k, high-confidence sources only) is what the browser
 extension ships; the full list goes to the network filter, which has no rule
-budget.
+budget. `terms.json`, the keyword layer, is compiled from `blocklist/terms/`
+in the same build and covered by the same signature.
 
-For CI, put the PEM in the `BLOCKLIST_SIGNING_KEY` secret. The workflow refuses
-to publish a build under 200,000 domains — a list that quietly collapses is the
+For CI, put the PEM in the `BLOCKLIST_SIGNING_KEY` secret. The workflow runs
+the whole test suite first, then refuses to publish a build under 200,000
+domains or with a collapsed keyword layer — a list that quietly shrinks is the
 worst failure this system has, because it looks like it is working.
+
+### Seed bundle
+
+The filter and the extension each ship a starting list so a machine that has
+never completed an update still enforces something. Every one of those files
+comes from ONE signed build and is checked against its manifest:
+
+```bash
+python3 blocklist/seed.py verify                 # what CI and the tests run
+python3 blocklist/seed.py sync --build --sign-key keys/blocklist_ed25519.pem
+```
+
+`verify` fails if a shipped file is missing from the signed manifest, differs
+from it, or — for `terms.json` — differs from what `blocklist/terms/` compiles
+to today. So a term edit is not done until the seed is re-cut and re-signed.
+Without the private key on your machine, dispatch the *Build and publish
+blocklist* workflow on your branch with **refresh_seed** ticked; CI, which
+holds the key, commits the re-signed bundle to the branch. Details in
+`blocklist/seed.py`.
 
 ### Hardening profile
 
@@ -88,8 +124,8 @@ it with the accountability partner; the user must never see it.
 ### Extension
 
 Load `extension/` unpacked in `chrome://extensions`. Needs Chrome 137+ for
-Ed25519 in WebCrypto. `rules/dnr_block_rules.json` is copied from `dist/` —
-re-copy it after each blocklist build.
+Ed25519 in WebCrypto. `rules/*.json` and `seed/terms.json` are placed by
+`blocklist/seed.py sync`, never by hand — see *Seed bundle* above.
 
 Its ID is pinned by the `"key"` in `manifest.json` (see
 `extension/keys/README.md`), so it loads as
@@ -102,8 +138,9 @@ key — would make the next section unbuildable.
 ### macOS app
 
 ```bash
+./test.sh macos                                      # or, by hand:
 cd macos
-xcodebuild -scheme Hisn -configuration Debug test    # 48 tests
+xcodebuild -scheme Hisn -configuration Debug test -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO
 xcodebuild -scheme Hisn -configuration Release build
 ```
 
@@ -190,9 +227,9 @@ days or weeks. Anything outside one minute to one year is refused rather than
 clamped — a lock cannot be shortened afterwards, so silently turning a mistyped
 `3650` into the one-year cap would commit someone to a year they never chose.
 
-**Your site lists…** opens the two hand-maintained lists: sites to block on top
-of the published list, and the sites that stay reachable in strict mode. Write
-them in the app, not in the browser extension — the extension takes both from
+**Blocking Rules** in the app's sidebar holds the two hand-maintained lists:
+sites to block on top of the published list, and the sites that stay reachable
+in strict mode. Write them in the app, not in the browser extension — the extension takes both from
 the app on every heartbeat, so anything typed on that side is overwritten within
 a minute.
 

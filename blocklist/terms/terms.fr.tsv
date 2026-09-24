@@ -1,0 +1,22 @@
+# French explicit terms
+#
+# Not here, on purpose — each blocked ordinary pages in the evaluation corpus
+# (extension/eval): `con` is Spanish "with" and Italian "with"; `bande` is in
+# `bande dessinee` on every French comics page; `nu` is Dutch, Swedish and
+# Danish "now" and Romanian "no". A single-word term has to be adult in
+# EVERY language the page could be in, not only French.
+porno	8.0
+pornographie	8.0
+sexe	6.0
+érotique	6.0
+pute	8.0
+masturbation	8.0
+orgasme	6.0
+clitoris	6.0
+vagin	4.0
+pénis	4.0
+érection	6.0
+fétichisme	6.0
+hardcore	8.0
+amateur	4.0
+inceste	8.0

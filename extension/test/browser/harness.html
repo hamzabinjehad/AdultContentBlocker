@@ -1,0 +1,94 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Hisn scanner — browser harness</title>
+<!--
+  The page scanner, in a real browser.
+
+  `test/scan.test.js` proves the scanner's logic with a fake DOM and a fake
+  clock. This page proves the same scenarios against the real thing: a real
+  MutationObserver, real innerText, real timers, real frames. Each scenario is
+  an iframe of frame.html, which loads content/scan.js unchanged and boots it
+  with only the worker channel and navigation stubbed. Frames report what the
+  scanner asked and decided via postMessage; this page tallies and judges.
+
+  Open it in any browser, or run test/browser/run.sh for headless Chrome. The
+  verdict is written into the DOM (#summary, data-result) and the title, which
+  is what run.sh reads back from --dump-dom.
+-->
+<style>
+  body { font: 14px/1.4 system-ui, sans-serif; margin: 1rem; }
+  iframe { width: 100%; height: 90px; border: 1px solid #ccc; margin: .25rem 0 1rem; }
+  .pass { color: #0a0; } .fail { color: #c00; font-weight: bold; }
+  pre { background: #f4f4f4; padding: .5rem; }
+</style>
+<body>
+<h1>Hisn scanner harness</h1>
+<p id="status">running…</p>
+<pre id="summary" data-result="pending"></pre>
+<div id="frames"></div>
+<script>
+(() => {
+  const SCENARIOS = ["equal-length", "feed", "malformed", "worker", "nested"];
+  const DEADLINE_MS = 16_000;
+  const tally = Object.fromEntries(SCENARIOS.map((s) => [s, { asks: [], navigated: 0, hidden: 0 }]));
+
+  window.addEventListener("message", (e) => {
+    const m = e.data;
+    if (!m || m.hisn !== true || !tally[m.scenario]) return;
+    const t = tally[m.scenario];
+    if (m.type === "ask") t.asks.push(m.url);
+    if (m.type === "navigate") t.navigated++;
+    if (m.type === "hidden") t.hidden = 1;
+  });
+
+  const frames = document.getElementById("frames");
+  for (const s of SCENARIOS) {
+    const label = document.createElement("div");
+    label.textContent = s;
+    frames.appendChild(label);
+    const f = document.createElement("iframe");
+    f.src = `frame.html?scenario=${s}` + (s === "malformed" ? "&q=%E0%A4%A" : "");
+    frames.appendChild(f);
+  }
+
+  const results = [];
+  const check = (ok, label) => results.push({ ok, label });
+
+  setTimeout(() => {
+    const t = tally;
+    // 1. equal-length replacement
+    check(t["equal-length"].asks.length >= 2,
+          `equal-length: re-scored after a same-length replacement (${t["equal-length"].asks.length} asks)`);
+    check(t["equal-length"].navigated === 1, "equal-length: blocked once");
+
+    // 2. a feed that never settles (a post every 300ms for 18s)
+    check(t.feed.asks.length >= 3, `feed: scanned at least 3 times while mutating continuously (${t.feed.asks.length} asks)`);
+    check(t.feed.asks.length <= 8, `feed: not on every batch (${t.feed.asks.length} asks)`);
+    check(t.feed.navigated === 1, "feed: the bad post was caught mid-stream");
+
+    // 3. malformed URL
+    check(t.malformed.asks.length >= 1, "malformed: the scan ran despite a malformed escape in the URL");
+    check(t.malformed.asks[0]?.includes("%E0%A4%A") === true,
+          `malformed: the raw URL was scored (${t.malformed.asks[0]})`);
+    check(t.malformed.navigated === 1, "malformed: blocked");
+
+    // 4. worker restarts: throw, then undefined, then a verdict
+    check(t.worker.asks.length === 3, `worker: two failed asks were retried (${t.worker.asks.length} asks)`);
+    check(t.worker.navigated === 1, "worker: blocked once the worker answered");
+
+    // 5. nested frame: hides itself, never navigates
+    check(t.nested.hidden === 1, "nested: a blocked subframe hid itself");
+    check(t.nested.navigated === 0, "nested: and did not navigate the tab");
+
+    const failed = results.filter((r) => !r.ok);
+    const summary = document.getElementById("summary");
+    summary.textContent = results.map((r) => `${r.ok ? "ok  " : "FAIL"} ${r.label}`).join("\n")
+      + `\n\n${results.length - failed.length}/${results.length} checks passed`;
+    summary.dataset.result = failed.length ? "fail" : "pass";
+    document.getElementById("status").textContent = failed.length ? "FAILED" : "PASSED";
+    document.getElementById("status").className = failed.length ? "fail" : "pass";
+    document.title = failed.length ? "HISN-SCAN FAIL" : "HISN-SCAN PASS";
+  }, DEADLINE_MS);
+})();
+</script>
+</body>

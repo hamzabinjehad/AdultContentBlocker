@@ -6,7 +6,10 @@ struct HisnApp: App {
 
     var body: some Scene {
         WindowGroup { ContentView() }
-            .windowResizability(.contentSize)
+            // Resizable, with a floor set by `ContentView`. The old fixed
+            // 420-point column forced every explanation into caption-sized
+            // text; this window is mostly explanations.
+            .defaultSize(width: 880, height: 600)
             .commands { CommandGroup(replacing: .newItem) {} }
     }
 }

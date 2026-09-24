@@ -1,0 +1,24 @@
+# Portuguese explicit terms
+#
+# `nu` ("nude") is not here: it is Dutch, Swedish and Danish "now" and
+# Romanian "no", on every page in those languages — the evaluation corpus
+# (extension/eval) blocks a Dutch news story with it at the default
+# sensitivity. A single-word term must be adult in EVERY language a page
+# could be in.
+porno	8.0
+pornografia	8.0
+sexo	6.0
+erótico	6.0
+puta	8.0
+caralho	8.0
+bct	8.0
+masturbação	8.0
+orgasmo	6.0
+clitóris	6.0
+vagina	4.0
+pênis	4.0
+ereção	6.0
+fetichismo	6.0
+hardcore	8.0
+amateur	4.0
+incesto	8.0

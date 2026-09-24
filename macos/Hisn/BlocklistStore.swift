@@ -23,7 +23,7 @@ public final class BlocklistStore {
     /// Rotating this requires shipping an app update — treat the private half
     /// accordingly.
     public static let productionPublicKeyHex =
-        "e63cfca8c4fc01412cdaf006c3f654c7be4e8218e81f44f6b4daf47e55a360af"
+        "eb6751a0429413d0cfb24a778f7d6ecdd8436e573af94c325de5fcbd38e59ede"
 
     /// The key this instance verifies against.
     ///
@@ -88,6 +88,26 @@ public final class BlocklistStore {
     /// another, so an unsynchronised stored property here is a data race.
     public var version: Int { queue.sync { _version } }
     public var domainCount: Int { queue.sync { _domainCount } }
+    /// Host terms currently installed — the keyword layer's size, for the
+    /// status header. Zero means the layer is off.
+    public var hostTermCount: Int { queue.sync { hostTokens.count + hostSubstrings.count } }
+
+    /// The lowest version `load` will accept, whatever this instance has seen.
+    ///
+    /// Rollback protection compares against `version`, which starts at 0 in
+    /// every new process — so a filter restart used to forget every version it
+    /// had ever installed, and a validly signed OLD list would be accepted on
+    /// the next launch. The filter persists the highest version it installed
+    /// and sets this at startup, so the floor survives the process.
+    public var versionFloor: Int {
+        get { queue.sync { _versionFloor } }
+        set { queue.sync(flags: .barrier) { _versionFloor = max(_versionFloor, newValue) } }
+    }
+    private var _versionFloor: Int = 0
+
+    public static func sha256Hex(_ data: Data) -> String {
+        SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+    }
 
     public init(publicKeyHex: String = BlocklistStore.productionPublicKeyHex) {
         self.publicKeyHex = publicKeyHex
@@ -241,8 +261,7 @@ public final class BlocklistStore {
     /// so a term list is trusted on exactly the same evidence as a domain list.
     /// Being bundled buys it nothing — the seed goes through this path too.
     public func loadHostTerms(termsData: Data, expectedSHA256: String) throws {
-        let actual = SHA256.hash(data: termsData)
-            .map { String(format: "%02x", $0) }.joined()
+        let actual = Self.sha256Hex(termsData)
         guard actual == expectedSHA256 else {
             throw LoadError.hashMismatch("terms.json")
         }
@@ -288,6 +307,30 @@ public final class BlocklistStore {
 
     // MARK: - Loading
 
+    /// Check `manifestData` against this store's key and decode it.
+    ///
+    /// The one place a manifest earns trust. `load` uses it for the domain
+    /// list, and the filter uses it before reading the keyword layer's hash
+    /// out of the bundled manifest — which it once did WITHOUT this step,
+    /// trusting the hash of a file it had not verified. A code-signed bundle
+    /// makes that hard to exploit, but the domain path never relied on that
+    /// argument and the keyword path should not either.
+    public func verifiedManifest(manifestData: Data,
+                                 signatureHex: String) throws -> Manifest {
+        guard let keyBytes = Data(hexString: publicKeyHex),
+              let key = try? Curve25519.Signing.PublicKey(rawRepresentation: keyBytes)
+        else { throw LoadError.malformed("public key") }
+
+        guard let sig = Data(hexString: signatureHex.trimmingCharacters(
+            in: .whitespacesAndNewlines))
+        else { throw LoadError.malformed("signature hex") }
+
+        guard key.isValidSignature(sig, for: manifestData) else {
+            throw LoadError.badSignature
+        }
+        return try JSONDecoder().decode(Manifest.self, from: manifestData)
+    }
+
     /// Verify and install a downloaded list.
     ///
     /// - Parameters:
@@ -304,23 +347,13 @@ public final class BlocklistStore {
                      domainsData: Data,
                      artifact: String = "domains.packed") throws {
 
-        guard let keyBytes = Data(hexString: publicKeyHex),
-              let key = try? Curve25519.Signing.PublicKey(rawRepresentation: keyBytes)
-        else { throw LoadError.malformed("public key") }
-
-        guard let sig = Data(hexString: signatureHex.trimmingCharacters(
-            in: .whitespacesAndNewlines))
-        else { throw LoadError.malformed("signature hex") }
-
-        guard key.isValidSignature(sig, for: manifestData) else {
-            throw LoadError.badSignature
-        }
-
-        let manifest = try JSONDecoder().decode(Manifest.self, from: manifestData)
+        let manifest = try verifiedManifest(manifestData: manifestData,
+                                            signatureHex: signatureHex)
 
         // Rollback protection. A validly signed *old* manifest is still an
-        // attack: it unblocks everything added since.
-        let held = version
+        // attack: it unblocks everything added since. `versionFloor` carries
+        // the memory across restarts — see its comment.
+        let held = max(version, versionFloor)
         guard manifest.version >= held else {
             throw LoadError.rollback(offered: manifest.version, held: held)
         }

@@ -137,6 +137,18 @@ class TestTokenize(unittest.TestCase):
         self.assertIn("sharmota", token_variants("sharmota123"))
         self.assertNotIn("ahira", token_variants("3ahira"))
 
+    def test_letter_elongation_collapses_to_the_base_word(self):
+        """
+        Prevents shouted spellings from slipping the list: `pooorn` is `porn`
+        held down on the keyboard. Both reductions are emitted, so a term's real
+        gemination survives (`ass` from `asssss`) while a mere double is left
+        alone. Kept identical to normalize.js and TextNormalizer.swift.
+        """
+        self.assertIn("porn", token_variants("pooorn"))
+        self.assertIn("نيك", token_variants(normalize("نيييك")))
+        self.assertIn("ass", token_variants("asssss"))
+        self.assertNotIn("pas", token_variants("pass"))
+
 
 # --------------------------------------------------------------------------- #
 # Hostnames — the half that matters most
@@ -301,10 +313,6 @@ class TestCompiler(unittest.TestCase):
                       "host_terms": [{"t": "porn", "kind": "substring"}]})
 
 
-if __name__ == "__main__":
-    unittest.main(verbosity=2)
-
-
 # --------------------------------------------------------------------------- #
 # The generated Arabic tables
 # --------------------------------------------------------------------------- #
@@ -425,3 +433,7 @@ class TestGeneratedArabic(unittest.TestCase):
             by_lang[row["l"]] = by_lang.get(row["l"], 0) + 1
         self.assertGreaterEqual(by_lang.get("ar", 0) + by_lang.get("ar-latn", 0),
                                 5000)
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)

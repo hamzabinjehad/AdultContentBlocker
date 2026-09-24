@@ -1,0 +1,148 @@
+# German explicit terms — page-text scoring tier.
+#
+# Format:  term<TAB>weight     (see terms.en.tsv for what the weights mean)
+#
+# ── GERMAN COMPOUNDS CUT BOTH WAYS ─────────────────────────────────────────
+# German writes compounds solid: `Pornofilm`, `Sexvideo`, `Nacktbilder`,
+# `Amateursex` are single words. That makes this language unusually rewarding
+# for a filter — one stem catches a whole family — and unusually dangerous,
+# because the same property produces `Nacktschnecke` (a slug), `Nacktmull`
+# (naked mole-rat) and `Sexta` (a school year).
+#
+# The tokenizer splits on non-letters, so a solid compound is ONE token and a
+# stem does not match it. That is the safe default and it is why the entries
+# below list the compounds people actually write rather than relying on stems.
+#
+# ── THE TRAP: EVERYDAY WORDS THAT ARE ALSO EXPLICIT ────────────────────────
+# German has several words whose ordinary sense is far more common than the
+# explicit one. Each is listed at a LOW weight, never enough to block alone,
+# with the innocent sense carried in negatives.tsv:
+#
+#   geil      youth slang for "great" — overwhelmingly the common use
+#   schwanz   an animal's tail
+#   blasen    to blow; bubbles
+#   spritzen  to inject — ordinary medical vocabulary
+#   reifen    tyres; to ripen
+#   pissen    to urinate — crude, not adult content
+#
+# `test_terms.py` pins the negatives that keep medical and veterinary pages
+# reachable.
+
+# ═══ unambiguous ═══════════════════════════════════════════════════════════
+porno	8.0
+pornos	8.0
+pornofilm	8.0
+pornofilme	8.0
+pornovideo	8.0
+pornoseite	8.0
+pornografie	8.0
+pornographie	8.0
+pornografisch	8.0
+hardcore	6.0
+sexfilm	8.0
+sexfilme	8.0
+sexvideo	8.0
+sexvideos	8.0
+sexbilder	8.0
+sexbild	8.0
+sexchat	8.0
+sexcam	8.0
+sexkontakte	8.0
+sextreffen	8.0
+ficktreffen	8.0
+amateursex	8.0
+hausfrauensex	8.0
+analsex	8.0
+arschfick	8.0
+oralsex	7.0
+gruppensex	8.0
+dreier	6.0
+gangbang	8.0
+blowjob	8.0
+nacktbilder	8.0
+nacktfotos	8.0
+nacktvideo	8.0
+ficken	8.0
+fick	8.0
+gefickt	8.0
+fickt	8.0
+votze	8.0
+fotze	8.0
+muschi	7.0
+titten	8.0
+nutte	8.0
+nutten	8.0
+hure	7.0
+huren	6.0
+schlampe	7.0
+schlampen	7.0
+wichsen	8.0
+wichser	7.0
+wichse	7.0
+bumsen	7.0
+poppen	6.0
+rammeln	7.0
+vögeln	7.0
+
+# ═══ strong ════════════════════════════════════════════════════════════════
+erotik	6.0
+erotisch	5.0
+erotikfilm	8.0
+bordell	7.0
+bordelle	7.0
+puff	4.0
+freudenhaus	7.0
+callgirl	7.0
+callgirls	7.0
+escortservice	7.0
+rotlicht	6.0
+rotlichtviertel	7.0
+prostituierte	5.0
+prostitution	4.0
+strapse	6.0
+dessous	5.0
+reizwäsche	7.0
+unterwäsche	3.0
+busen	5.0
+brüste	3.0
+nippel	3.0
+schamlippen	7.0
+schwanzlutscher	8.0
+lutschen	4.0
+ejakulation	6.0
+orgasmus	6.0
+selbstbefriedigung	7.0
+onanieren	7.0
+fesselspiele	7.0
+swinger	6.0
+swingerclub	8.0
+pärchenclub	7.0
+seitensprung	4.0
+fremdgehen	4.0
+
+# ═══ moderate / evasions ═══════════════════════════════════════════════════
+nackt	5.0
+nackte	5.0
+nackten	5.0
+ab18	6.0
+ab 18	5.0
+volljährig	3.0
+jugendfrei	2.0
+nicht jugendfrei	6.0
+freizügig	4.0
+anzüglich	4.0
+versaut	6.0
+schmuddel	5.0
+unzensiert	5.0
+heimlich gefilmt	6.0
+geleakt	4.0
+
+# ═══ everyday words with an explicit second sense — LOW on purpose ═════════
+# See the header. These carry weight only in company; negatives.tsv cancels
+# them on veterinary, medical and ordinary pages.
+geil	2.0
+schwanz	2.0
+blasen	1.0
+spritzen	1.0
+reifen	1.0
+pissen	2.0

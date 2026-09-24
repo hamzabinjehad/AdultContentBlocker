@@ -1,0 +1,434 @@
+{
+  "_comment": "The decision contract, as cases. Asserted by extension/test/policy.test.js (against lib/policy.js `decide`) and macos/HisnTests/PolicyContractTests.swift (against BlocklistStore). `mode` is blocklist|strict; `listed` means the host is caught by the published rulesets — the domain list or a URL keyword rule, which the clients evaluate at the same rank; `expect` is allow|block. See docs/POLICY.md. Optional per case: `resourceType` (default main_frame) and `initiator` (the page making the request) — the Mac judges every socket by destination alone, so cases marked `browserOnly` describe the browser's plumbing carve-out (rule 6) and are skipped by the Swift suite.",
+  "cases": [
+    {
+      "host": "example.com",
+      "mode": "blocklist",
+      "allowlist": [],
+      "customBlocks": [],
+      "listed": false,
+      "expect": "allow",
+      "why": "blocklist mode: an unlisted host is reachable"
+    },
+    {
+      "host": "pornhub.com",
+      "mode": "blocklist",
+      "allowlist": [],
+      "customBlocks": [],
+      "listed": true,
+      "expect": "block",
+      "why": "blocklist mode: the published list applies"
+    },
+    {
+      "host": "www.pornhub.com",
+      "mode": "blocklist",
+      "allowlist": [],
+      "customBlocks": [],
+      "listed": true,
+      "expect": "block",
+      "why": "a listed apex covers its subdomains"
+    },
+    {
+      "host": "reddit.com",
+      "mode": "blocklist",
+      "allowlist": [],
+      "customBlocks": [
+        "reddit.com"
+      ],
+      "listed": false,
+      "expect": "block",
+      "why": "a custom block applies in blocklist mode"
+    },
+    {
+      "host": "old.reddit.com",
+      "mode": "blocklist",
+      "allowlist": [],
+      "customBlocks": [
+        "reddit.com"
+      ],
+      "listed": false,
+      "expect": "block",
+      "why": "a custom block covers its subdomains"
+    },
+    {
+      "host": "pornhub.com",
+      "mode": "blocklist",
+      "allowlist": [
+        "pornhub.com"
+      ],
+      "customBlocks": [],
+      "listed": true,
+      "expect": "allow",
+      "why": "RULE 2: the allowlist is an allowance in every mode — the escape valve for a false positive during a lock"
+    },
+    {
+      "host": "clip.pornhub.com",
+      "mode": "blocklist",
+      "allowlist": [
+        "pornhub.com"
+      ],
+      "customBlocks": [],
+      "listed": true,
+      "expect": "allow",
+      "why": "an allowance on the apex covers its subdomains, like every other entry"
+    },
+    {
+      "host": "reddit.com",
+      "mode": "blocklist",
+      "allowlist": [
+        "reddit.com"
+      ],
+      "customBlocks": [
+        "reddit.com"
+      ],
+      "listed": false,
+      "expect": "block",
+      "why": "RULE 1: nothing user-authored loosens a custom block"
+    },
+    {
+      "host": "old.reddit.com",
+      "mode": "blocklist",
+      "allowlist": [
+        "old.reddit.com"
+      ],
+      "customBlocks": [
+        "reddit.com"
+      ],
+      "listed": true,
+      "expect": "allow",
+      "why": "RULE 3 in blocklist mode: a more specific allowance beats an apex block AND the published list"
+    },
+    {
+      "host": "github.com",
+      "mode": "blocklist",
+      "allowlist": [
+        "github.com"
+      ],
+      "customBlocks": [],
+      "listed": false,
+      "expect": "allow",
+      "why": "an allowlisted, unlisted host is reachable"
+    },
+    {
+      "host": "example.com",
+      "mode": "strict",
+      "allowlist": [],
+      "customBlocks": [],
+      "listed": false,
+      "expect": "block",
+      "why": "strict mode with an empty allowlist reaches nothing"
+    },
+    {
+      "host": "github.com",
+      "mode": "strict",
+      "allowlist": [
+        "github.com"
+      ],
+      "customBlocks": [],
+      "listed": false,
+      "expect": "allow",
+      "why": "strict mode: the allowlist is the only thing reachable"
+    },
+    {
+      "host": "api.github.com",
+      "mode": "strict",
+      "allowlist": [
+        "github.com"
+      ],
+      "customBlocks": [],
+      "listed": false,
+      "expect": "allow",
+      "why": "an allowlisted apex covers its subdomains"
+    },
+    {
+      "host": "gitlab.com",
+      "mode": "strict",
+      "allowlist": [
+        "github.com"
+      ],
+      "customBlocks": [],
+      "listed": false,
+      "expect": "block",
+      "why": "strict mode: anything not allowlisted is blocked"
+    },
+    {
+      "host": "pornhub.com",
+      "mode": "strict",
+      "allowlist": [
+        "pornhub.com"
+      ],
+      "customBlocks": [],
+      "listed": true,
+      "expect": "allow",
+      "why": "strict mode is the allowlist's domain: a listed host the person allowlisted is reachable there (the Mac ignores the published list in strict mode; the browser's allow outranks it)"
+    },
+    {
+      "host": "reddit.com",
+      "mode": "strict",
+      "allowlist": [
+        "reddit.com"
+      ],
+      "customBlocks": [
+        "reddit.com"
+      ],
+      "listed": false,
+      "expect": "block",
+      "why": "RULE 3: at equal specificity the block wins"
+    },
+    {
+      "host": "mail.google.com",
+      "mode": "strict",
+      "allowlist": [
+        "google.com"
+      ],
+      "customBlocks": [
+        "mail.google.com"
+      ],
+      "listed": false,
+      "expect": "block",
+      "why": "RULE 3: the more specific entry wins — a block on the subdomain beats an allowance on the apex"
+    },
+    {
+      "host": "docs.google.com",
+      "mode": "strict",
+      "allowlist": [
+        "google.com"
+      ],
+      "customBlocks": [
+        "mail.google.com"
+      ],
+      "listed": false,
+      "expect": "allow",
+      "why": "the sibling subdomain is untouched by the more specific block"
+    },
+    {
+      "host": "google.com",
+      "mode": "strict",
+      "allowlist": [
+        "google.com"
+      ],
+      "customBlocks": [
+        "mail.google.com"
+      ],
+      "listed": false,
+      "expect": "allow",
+      "why": "the apex itself is allowed"
+    },
+    {
+      "host": "mail.google.com",
+      "mode": "strict",
+      "allowlist": [
+        "mail.google.com"
+      ],
+      "customBlocks": [
+        "google.com"
+      ],
+      "listed": false,
+      "expect": "allow",
+      "why": "RULE 3, the other direction: an allowance on the subdomain beats a block on the apex"
+    },
+    {
+      "host": "calendar.google.com",
+      "mode": "strict",
+      "allowlist": [
+        "mail.google.com"
+      ],
+      "customBlocks": [
+        "google.com"
+      ],
+      "listed": false,
+      "expect": "block",
+      "why": "only the named subdomain is carved out; the sibling is still blocked by the apex block"
+    },
+    {
+      "host": "deep.mail.google.com",
+      "mode": "strict",
+      "allowlist": [
+        "mail.google.com"
+      ],
+      "customBlocks": [
+        "google.com"
+      ],
+      "listed": false,
+      "expect": "allow",
+      "why": "an allowance on a subdomain covers everything beneath it"
+    },
+    {
+      "host": "PornHub.COM.",
+      "mode": "blocklist",
+      "allowlist": [],
+      "customBlocks": [],
+      "listed": true,
+      "expect": "block",
+      "why": "case and a trailing dot are not a bypass"
+    },
+    {
+      "host": "GitHub.com",
+      "mode": "strict",
+      "allowlist": [
+        "github.com"
+      ],
+      "customBlocks": [],
+      "listed": false,
+      "expect": "allow",
+      "why": "case-insensitive on the allow side too"
+    },
+    {
+      "host": "cdn.example",
+      "resourceType": "script",
+      "initiator": "forum.example",
+      "expect": "allow",
+      "browserOnly": true,
+      "why": "RULE 6: an allowed page may load a script from anywhere (plumbing)",
+      "mode": "strict",
+      "allowlist": [
+        "forum.example"
+      ],
+      "customBlocks": [
+        "tracker.example"
+      ],
+      "listed": false
+    },
+    {
+      "host": "cdn.example",
+      "resourceType": "image",
+      "initiator": "forum.example",
+      "expect": "allow",
+      "browserOnly": true,
+      "why": "RULE 6: ...and images, fonts, styles, fetches",
+      "mode": "strict",
+      "allowlist": [
+        "forum.example"
+      ],
+      "customBlocks": [
+        "tracker.example"
+      ],
+      "listed": false
+    },
+    {
+      "host": "tube.example",
+      "resourceType": "media",
+      "initiator": "forum.example",
+      "expect": "block",
+      "why": "RULE 6: an allowed page may NOT play media from an unapproved host",
+      "mode": "strict",
+      "allowlist": [
+        "forum.example"
+      ],
+      "customBlocks": [
+        "tracker.example"
+      ],
+      "listed": false
+    },
+    {
+      "host": "tube.example",
+      "resourceType": "sub_frame",
+      "initiator": "forum.example",
+      "expect": "block",
+      "why": "RULE 6: nor embed a frame from one",
+      "mode": "strict",
+      "allowlist": [
+        "forum.example"
+      ],
+      "customBlocks": [
+        "tracker.example"
+      ],
+      "listed": false
+    },
+    {
+      "host": "chat.example",
+      "resourceType": "websocket",
+      "initiator": "forum.example",
+      "expect": "block",
+      "why": "RULE 6: nor open a WebSocket to one",
+      "mode": "strict",
+      "allowlist": [
+        "forum.example"
+      ],
+      "customBlocks": [
+        "tracker.example"
+      ],
+      "listed": false
+    },
+    {
+      "host": "forum.example",
+      "resourceType": "media",
+      "initiator": "forum.example",
+      "expect": "allow",
+      "why": "media from the allowlisted host itself is fine",
+      "mode": "strict",
+      "allowlist": [
+        "forum.example"
+      ],
+      "customBlocks": [
+        "tracker.example"
+      ],
+      "listed": false
+    },
+    {
+      "host": "cdn.example",
+      "resourceType": "script",
+      "initiator": "other.example",
+      "expect": "block",
+      "why": "RULE 6: a page that is not allowlisted gets no plumbing either",
+      "mode": "strict",
+      "allowlist": [
+        "forum.example"
+      ],
+      "customBlocks": [
+        "tracker.example"
+      ],
+      "listed": false
+    },
+    {
+      "host": "tracker.example",
+      "resourceType": "script",
+      "initiator": "forum.example",
+      "expect": "block",
+      "why": "RULE 1: a custom block on the destination outranks the plumbing carve-out",
+      "mode": "strict",
+      "allowlist": [
+        "forum.example"
+      ],
+      "customBlocks": [
+        "tracker.example"
+      ],
+      "listed": false
+    },
+    {
+      "host": "cdn.example",
+      "resourceType": "script",
+      "initiator": "forum.example",
+      "expect": "block",
+      "why": "no allowlist, no carve-out: strict with nothing allowed blocks everything",
+      "mode": "strict",
+      "allowlist": [],
+      "customBlocks": [],
+      "listed": false
+    },
+    {
+      "host": "tracker.example",
+      "resourceType": "xmlhttprequest",
+      "initiator": "news.example",
+      "expect": "block",
+      "why": "blocklist mode: a custom block drops embedded requests too, like the Mac drops the socket",
+      "mode": "blocklist",
+      "allowlist": [],
+      "customBlocks": [
+        "tracker.example"
+      ],
+      "listed": false
+    },
+    {
+      "host": "cdn.example",
+      "resourceType": "script",
+      "initiator": "news.example",
+      "expect": "allow",
+      "why": "blocklist mode: unlisted plumbing is untouched",
+      "mode": "blocklist",
+      "allowlist": [],
+      "customBlocks": [],
+      "listed": false
+    }
+  ]
+}

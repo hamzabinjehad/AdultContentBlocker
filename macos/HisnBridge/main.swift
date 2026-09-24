@@ -76,7 +76,7 @@ func handle(_ message: [String: Any]) -> [String: Any] {
         // without a timestamp here the app has no way to distinguish "the
         // extension is running and polling" from "the extension was never
         // loaded" — and those look identical from the app's side while meaning
-        // opposite things. StatusHeader reports it, because an extension that
+        // opposite things. The Overview reports it, because an extension that
         // never connected is a whole enforcement layer that is quietly absent.
         defaults?.set(Date(), forKey: "extensionLastSeen")
 

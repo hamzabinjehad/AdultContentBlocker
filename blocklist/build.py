@@ -36,7 +36,7 @@ import sys
 import urllib.request
 from pathlib import Path
 
-from terms import compile_terms, lang_counts
+from terms import compile_terms, lang_counts, serialize_terms
 
 USER_AGENT = "hisn-blocklist-builder/1.0 (+https://github.com/hisn-app)"
 FETCH_TIMEOUT = 120
@@ -53,10 +53,30 @@ HOSTS_PREFIXES = ("0.0.0.0", "127.0.0.1", "::1", "::")
 # Fetching
 # --------------------------------------------------------------------------- #
 
-def fetch(url: str) -> str:
+def fetch(url: str, member: str | None = None) -> str:
+    """Fetch a source. With `member`, treat the response as a .tar.gz and
+    return that one file from inside it.
+
+    The archive case exists for the Université Toulouse Capitole blacklist,
+    which is distributed only as a tarball and is by a wide margin the largest
+    and most international source available — 4.6M domains against the ~1M the
+    five plain-text sources produce between them. Refusing to handle an archive
+    would mean leaving that on the table, and with it most of this project's
+    coverage outside English.
+    """
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT) as resp:
-        return resp.read().decode("utf-8", errors="replace")
+        raw = resp.read()
+    if member is None:
+        return raw.decode("utf-8", errors="replace")
+
+    import io
+    import tarfile
+    with tarfile.open(fileobj=io.BytesIO(raw)) as tf:
+        extracted = tf.extractfile(member)
+        if extracted is None:
+            raise ValueError(f"{member} not found in archive")
+        return extracted.read().decode("utf-8", errors="replace")
 
 
 # --------------------------------------------------------------------------- #
@@ -386,7 +406,8 @@ def main() -> int:
     stats: list[dict] = []
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
-        futures = {pool.submit(fetch, s["url"]): s for s in active}
+        futures = {pool.submit(fetch, s["url"], s.get("member")): s
+                   for s in active}
         for fut in concurrent.futures.as_completed(futures):
             src = futures[fut]
             try:
@@ -499,10 +520,8 @@ def main() -> int:
     # fails the build rather than shipping a silently empty keyword layer.
     terms_payload = compile_terms(Path(__file__).parent / "terms")
     terms_payload["version"] = version
-    (out / "terms.json").write_text(
-        json.dumps(terms_payload, ensure_ascii=False, separators=(",", ":"),
-                   sort_keys=True),
-        encoding="utf-8")
+    (out / "terms.json").write_text(serialize_terms(terms_payload),
+                                    encoding="utf-8")
     term_langs = lang_counts(terms_payload)
     print(f"Terms: {len(terms_payload['terms']):,} "
           f"({', '.join(f'{k}:{v}' for k, v in sorted(term_langs.items()))}), "
@@ -533,6 +552,7 @@ def main() -> int:
         "domain_count": len(domains),
         "core_domain_count": len(core_domains),
         "dnr_rule_count": n_rules,
+        "dnr_keyword_rule_count": n_keyword_rules,
         "term_count": len(terms_payload["terms"]),
         "host_term_count": len(terms_payload["host_terms"]),
         "term_langs": term_langs,

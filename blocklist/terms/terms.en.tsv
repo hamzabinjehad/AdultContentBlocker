@@ -142,3 +142,34 @@ kinky	5.0
 raunchy	5.0
 risque	4.0
 provocative	2.0
+
+# --- found by mining the 5M-domain corpus ----------------------------------
+# Every term below was surfaced by `mine_terms.py` as high-frequency in real
+# adult domain names and was absent from this list. Data found them; nobody
+# thought of them.
+webcam	6.0
+webcams	6.0
+cams	5.0
+camsex	8.0
+amateur	4.0
+amateurs	4.0
+voyeur	7.0
+interracial	6.0
+shemale	7.0
+transsexual	5.0
+mature	3.0
+lesbian	4.0
+lesbians	5.0
+pussy	8.0
+playboy	5.0
+hardcore	6.0
+softcore	6.0
+upskirt	8.0
+downblouse	8.0
+nudist	6.0
+naturist	4.0
+peeping	5.0
+hookup	5.0
+hookups	6.0
+onlyfans leaks	8.0
+leaked nudes	8.0

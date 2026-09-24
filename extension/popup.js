@@ -1,73 +1,56 @@
 /**
  * Popup — status only.
  *
- * There are intentionally NO controls here. Anything that can turn protection
- * off from a one-click popup is the first thing a person reaches for at 2am.
- * Starting a lock happens in the native app; ending one happens when the timer
- * expires or an accountability partner approves it.
+ * There are intentionally NO controls here that weaken anything. Anything
+ * that can turn protection off from a one-click popup is the first thing a
+ * person reaches for at 2am. Starting a lock happens in the native app;
+ * ending one happens when the timer expires or an accountability partner
+ * approves it. The one button opens the options page, which has its own
+ * guards.
+ *
+ * What to SAY is decided in lib/status.js, where the tests can see it. This
+ * file only puts the words on the page.
  */
 
-const MODE_LABEL = {
-  off: "Off",
-  blocklist: "Block list",
-  strict: "Strict allowlist",
-};
+import { describeStatus } from "./lib/status.js";
+import { send } from "./lib/messages.js";
+import { connectionStatus } from "./lib/settings.js";
 
-function humanRemaining(ms) {
-  if (ms <= 0) return "—";
-  const t = Math.floor(ms / 1000);
-  const d = Math.floor(t / 86400);
-  const h = Math.floor((t % 86400) / 3600);
-  const m = Math.floor((t % 3600) / 60);
-  if (d) return `${d}d ${h}h`;
-  if (h) return `${h}h ${m}m`;
-  return `${m}m`;
-}
+/** How long to wait for the worker before saying we could not reach it. */
+const REPLY_TIMEOUT_MS = 3000;
 
 function render(state) {
-  const locked = (state.lockUntil || 0) > Date.now();
+  const version = chrome.runtime.getManifest?.().version;
+  const s = describeStatus(state, { version });
+  const connection = connectionStatus(state);
+  document.getElementById("connectionBadge").textContent = !state ? "Unavailable"
+    : !connection.managed ? "Browser only"
+    : connection.title === "Managed by the Hisn app" ? "App connected" : "App offline";
 
-  // Three states, not two. "Unlocked" alone implied nothing was being blocked,
-  // which was never true and is now definitively false: baseline filtering runs
-  // whether or not a lock exists and whether or not the app is installed.
-  const statusEl = document.getElementById("status");
-  statusEl.innerHTML = locked
-    ? '<span class="pill">Locked</span>'
-    : '<span class="pill on">Protecting</span>';
+  document.getElementById("pDot").className = `dot ${s.protection.level}`;
+  document.getElementById("pHead").textContent = s.protection.headline;
+  document.getElementById("pDetail").textContent = s.protection.detail;
 
-  document.getElementById("mode").textContent =
-    MODE_LABEL[state.failClosed ? "strict" : state.mode] ?? state.mode;
-  document.getElementById("left").textContent =
-    humanRemaining((state.lockUntil || 0) - Date.now());
+  document.getElementById("lHead").textContent = s.lock.headline;
+  document.getElementById("lDetail").textContent = s.lock.detail;
 
-  // Report what is ENFORCED, not what was downloaded. A version number climbing
-  // while no rules are installed is precisely the "looks healthy, blocks
-  // nothing" state the threat model rates as worse than being switched off —
-  // and it is exactly what this extension did until the updater was fixed to
-  // actually fetch and apply the rules artifact.
-  const rules = state.rulesApplied || 0;
-  document.getElementById("ver").textContent =
-    rules ? `v${state.listVersion} · ${rules} rules` : "bundled only";
+  const notices = document.getElementById("notices");
+  notices.replaceChildren(...s.notices.map((n) => {
+    const el = document.createElement("div");
+    el.className = "notice";
+    el.setAttribute("role", n.kind === "warn" ? "alert" : "status");
+    el.textContent = n.text;
+    return el;
+  }));
 
-  if (state.failClosed) {
-    const b = document.getElementById("banner");
-    b.hidden = false;
-    b.className = "banner";
-    b.textContent =
-      "The Hisn app stopped responding during an active lock, so filtering " +
-      "tightened to strict mode automatically. Reopen the app to restore it.";
-  }
-
-  // Say which configuration this is. "Not locked" reads as "not protected"
-  // unless the page also says that baseline blocking is on regardless — and
-  // on a browser-only install there is no app to go and look at, so pointing
-  // the user at one would be a dead end.
-  document.getElementById("foot").textContent = locked
-    ? "Settings are frozen until the lock ends."
-    : state.appPresent
-      ? "Blocking is on. Start a lock from the Hisn app to make it permanent."
-      : "Blocking is on. Install the Hisn app to add a lock and to cover every "
-        + "browser on this Mac, not just this one.";
+  const dl = document.getElementById("details");
+  dl.replaceChildren(...s.details.flatMap(([k, v]) => {
+    const dt = document.createElement("dt");
+    dt.textContent = k;
+    const dd = document.createElement("dd");
+    dd.textContent = v;
+    return [dt, dd];
+  }));
 }
 
 /**
@@ -106,6 +89,7 @@ function checkIncognitoAccess() {
       + "</ol>";
 
     const btn = document.createElement("button");
+    btn.type = "button";
     btn.textContent = "Open extension settings";
     btn.addEventListener("click", openDetailsPage);
     el.appendChild(btn);
@@ -131,7 +115,36 @@ function openDetailsPage() {
   }
 }
 
+document.getElementById("openSettings").addEventListener("click", () => {
+  chrome.runtime.openOptionsPage?.();
+  window.close();
+});
+
+document.getElementById("checkConnection").addEventListener("click", async (event) => {
+  event.target.disabled = true;
+  const message = document.getElementById("connectionMessage");
+  message.textContent = "Checking for the Hisn app…";
+  const result = await send({ type: "forceSync" });
+  message.textContent = result.ok ? "App connected. Settings synced."
+    : "No connection. Open Hisn on your Mac and retry, or continue with your current browser protection.";
+  const state = await send({ type: "getState" });
+  render(state.ok === false ? undefined : state);
+  event.target.disabled = false;
+});
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === "local" && changes.state?.newValue) render(changes.state.newValue);
+});
+
+// The page opens saying "Checking status…" and stays there until the worker
+// answers. If it never does, say THAT — `render(undefined)` produces "Status
+// unavailable" — rather than letting the timeout look like a verdict.
+let answered = false;
+const giveUp = setTimeout(() => { if (!answered) render(undefined); }, REPLY_TIMEOUT_MS);
 chrome.runtime.sendMessage({ type: "getState" }, (state) => {
-  render(state || {});
+  answered = true;
+  clearTimeout(giveUp);
+  // lastError means the worker is gone; `state` is undefined in that case and
+  // must not be replaced with defaults.
+  render(chrome.runtime.lastError ? undefined : state);
 });
 checkIncognitoAccess();

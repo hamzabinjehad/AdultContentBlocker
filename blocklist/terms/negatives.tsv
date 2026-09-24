@@ -86,3 +86,59 @@ swimwear collection	3.0
 breast cancer	6.0
 breast screening	6.0
 breastfeeding	6.0
+
+# --- German: clinical, educational and veterinary --------------------------
+# Every entry names a page it keeps reachable. German compounds make this
+# especially load-bearing: `Nacktschnecke` is a slug, `Nacktmull` a naked
+# mole-rat, and `Sexualkunde` is what the subject is called in school.
+sexualkunde	7.0
+sexualerziehung	7.0
+sexuelle gesundheit	6.0
+sexuelle aufklärung	6.0
+geschlechtsverkehr	6.0
+geschlechtskrankheit	7.0
+geschlechtsorgane	6.0
+sexuell übertragbar	7.0
+sexueller missbrauch	6.0
+sexuelle belästigung	6.0
+sexuelle orientierung	5.0
+frauenarzt	6.0
+gynäkologie	6.0
+urologie	6.0
+brustkrebs	7.0
+brustuntersuchung	6.0
+stillen	4.0
+schwangerschaft	4.0
+verhütung	5.0
+nacktschnecke	7.0
+nacktmull	7.0
+nacktsamer	6.0
+aktmalerei	6.0
+aktfotografie	5.0
+aktzeichnen	6.0
+kunstgeschichte	4.0
+bundeszentrale	5.0
+gesundheitsamt	5.0
+# `geil` is youth slang for "great"; `Schwanz` an animal's tail; `blasen`
+# bubbles; `spritzen` an injection; `reifen` tyres. These cancel the low
+# weights those words carry in terms.de.tsv.
+voll geil	4.0
+echt geil	4.0
+schwanz des hundes	5.0
+schwanz der katze	5.0
+seifenblasen	4.0
+impfung spritzen	5.0
+spritze setzen	5.0
+winterreifen	5.0
+sommerreifen	5.0
+reifendruck	5.0
+# Clinical and legal phrases in the imported language tiers. Found by the
+# evaluation corpus (extension/eval): a French page on erectile dysfunction
+# and a Spanish news story about a child-abuse-material law were both blocked
+# at the default sensitivity.
+troubles de l erection	6.0
+dysfonction erectile	6.0
+trouble erectile	6.0
+pornografia infantil	8.0
+abuso infantil	5.0
+codigo penal	4.0

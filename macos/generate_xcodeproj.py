@@ -64,6 +64,7 @@ APP_SOURCES = SHARED + [
     "Hisn/ListUpdater.swift",
     "Hisn/LockManager.swift",
     "Hisn/NativeMessagingInstaller.swift",
+    "Hisn/ProtectionStatus.swift",
 ]
 FILTER_SOURCES = SHARED + ["HisnFilter/FilterDataProvider.swift",
                            "HisnFilter/main.swift"]
@@ -71,7 +72,9 @@ BRIDGE_SOURCES = SHARED + ["HisnBridge/main.swift"]
 TEST_SOURCES = ["HisnTests/BlocklistStoreTests.swift",
                 "HisnTests/KeywordLayerTests.swift",
                 "HisnTests/SelfReleaseTests.swift",
-                "HisnTests/InspectionTests.swift"]
+                "HisnTests/InspectionTests.swift",
+                "HisnTests/PolicyContractTests.swift",
+                "HisnTests/ProtectionStatusTests.swift"]
 
 # The signed seed list, bundled into the extension so a machine that has never
 # completed a list update still enforces something. Verified on the same path as
@@ -84,7 +87,8 @@ FILTER_RESOURCES = ["../seed/manifest.json", "../seed/manifest.json.sig",
 # `test_terms.py` does — a copy would drift and the drift is exactly what these
 # tests exist to catch.
 TEST_RESOURCES = ["../blocklist/terms/normalize_cases.json",
-                  "../blocklist/terms/host_cases.json"]
+                  "../blocklist/terms/host_cases.json",
+                  "../blocklist/terms/policy_cases.json"]
 
 ALL_FILES = sorted(set(APP_SOURCES + FILTER_SOURCES + BRIDGE_SOURCES + TEST_SOURCES) | {
     "Hisn/Info.plist", "Hisn/Hisn.entitlements",

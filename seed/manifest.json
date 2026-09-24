@@ -1,31 +1,41 @@
 {
   "artifacts": {
     "dnr_block_rules.json": {
-      "bytes": 5409833,
-      "sha256": "4eb3eca472c4aae7e3940b15bed41272a9e03c23bb8a24b6c423801db16e711e"
+      "bytes": 3838585,
+      "sha256": "2b6add21758e629281ead6eb08e3ffd6b7fd8dcf9ec888f14ce72db06e7518e0"
+    },
+    "dnr_keyword_rules.json": {
+      "bytes": 68609,
+      "sha256": "7109de4804bbe5250cfa51ce6e1c091d79153d798bbf67576c459cb2ace78873"
     },
     "domains.index": {
       "bytes": 8192,
       "sha256": "7d2c7ac4888bfd75cd5f56e8d61f69595121183afc81556c876732fd3782c62f"
     },
     "domains.packed": {
-      "bytes": 18802132,
-      "sha256": "9676887767e563155c1d1e6fab0eac409b1ebbb0f0bd617dc0f037a4c48af110"
+      "bytes": 134050661,
+      "sha256": "441d949c8118c5ca9b4f41d520c0d6d059c3380b1f56b7e454fa00434ecca160"
     },
     "domains.txt": {
-      "bytes": 18802263,
-      "sha256": "dc65f68c0bcdf444b5262ba8cdb82cea94a84a324ff690cb0c081c07b595cb09"
+      "bytes": 134050793,
+      "sha256": "f302b289faca2142e9a4c6519205efea37a110a8760c90143c93db94a80af6de"
     },
     "domains_core.txt": {
-      "bytes": 2381121,
-      "sha256": "171aaa843fa74cd7636199d953b53ed0e7e641aa4e4c9562e260f48da88b8822"
+      "bytes": 1684035,
+      "sha256": "436eb5a372100ed707b561da97ae94a35f6e560e0c3ed1ab40c0a139ed86b08e"
+    },
+    "terms.json": {
+      "bytes": 288254,
+      "sha256": "000df06f6b364efadc9b0f858011c38ebaa53e98df5382e172ec8f72b7b4229a"
     }
   },
-  "built_at": "2026-08-28T18:41:43+00:00",
-  "core_domain_count": 148356,
-  "dnr_rule_count": 298,
-  "domain_count": 982260,
-  "never_block_removed": 1,
+  "built_at": "2026-09-13T19:56:11+00:00",
+  "core_domain_count": 107839,
+  "dnr_keyword_rule_count": 110,
+  "dnr_rule_count": 216,
+  "domain_count": 5193091,
+  "host_term_count": 110,
+  "never_block_removed": 4,
   "schema": 1,
   "sources": [
     {
@@ -39,20 +49,51 @@
       "ok": true
     },
     {
-      "domains": 114590,
+      "domains": 73906,
       "id": "hagezi-nsfw",
       "ok": true
     },
     {
-      "domains": 53907,
+      "domains": 464556,
+      "id": "oisd-nsfw",
+      "ok": true
+    },
+    {
+      "domains": 53908,
       "id": "sinfonietta-porn",
       "ok": true
     },
     {
-      "domains": 64249,
+      "domains": 64265,
       "id": "stevenblack-porn",
+      "ok": true
+    },
+    {
+      "domains": 4597565,
+      "id": "ut1-adult",
+      "ok": true
+    },
+    {
+      "domains": 149,
+      "id": "ut1-mixed-adult",
+      "ok": true
+    },
+    {
+      "domains": 132320,
+      "id": "ut1-strong-redirector",
       "ok": true
     }
   ],
+  "term_count": 5831,
+  "term_langs": {
+    "ar": 4100,
+    "ar-latn": 1447,
+    "de": 100,
+    "en": 145,
+    "es": 16,
+    "fr": 10,
+    "it": 9,
+    "pt": 4
+  },
   "version": 4
 }

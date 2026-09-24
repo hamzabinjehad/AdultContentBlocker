@@ -29,3 +29,8 @@ macos/build/
 
 # Packed browser-extension artifacts (built from extension/, not source).
 *.crx
+
+# Chrome writes its indexed-ruleset cache into the extension directory when it
+# is loaded unpacked. Not source, not shippable — `_`-prefixed names are
+# reserved and the Web Store rejects a package carrying one.
+extension/_metadata/

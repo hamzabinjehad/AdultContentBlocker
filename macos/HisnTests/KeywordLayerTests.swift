@@ -1,5 +1,4 @@
 import XCTest
-import CryptoKit
 @testable import Hisn
 
 /// The Swift third of a three-language contract.
@@ -270,29 +269,22 @@ final class HostKeywordTests: XCTestCase {
         }
     }
 
-    /// A store loaded from the committed `seed/terms.json`, which is the
-    /// artifact the filter ships with.
+    /// A store loaded from the committed `seed/terms.json` on the path the
+    /// filter really takes: the bundled manifest's signature is checked with
+    /// the production key, and the expected hash comes from that manifest.
     ///
-    /// The hash is computed here rather than read from a manifest because
-    /// `seed/manifest.json` predates this artifact and cannot be re-signed
-    /// without the private key — see `seed/README.md`. That is exactly why
-    /// `FilterDataProvider` currently refuses to enable the keyword layer from
-    /// the seed: no manifest entry, no hash, no load. These tests exercise the
-    /// MATCHING rule; `testRefusesTermsWithAWrongHash` covers the gate.
+    /// This used to compute the hash from the file itself, because the seed
+    /// manifest predated `terms.json` and had no entry for it — which is the
+    /// same reason the filter left the keyword layer OFF on every shipped
+    /// build. Reading the hash from the signed manifest makes this suite fail
+    /// in that state instead of documenting it. `blocklist/seed.py sync`
+    /// re-cuts the bundle; `BundledSeedTests.testSeedManifestCoversTheKeywordLayer`
+    /// names the failure.
     private func seedLoadedStore() throws -> BlocklistStore {
-        let bundle = Bundle(for: HostKeywordTests.self)
-        let url = try XCTUnwrap(bundle.url(forResource: "terms",
-                                           withExtension: "json"),
-                                "seed/terms.json is not bundled — check "
-                                + "FILTER_RESOURCES in generate_xcodeproj.py")
-        let data = try Data(contentsOf: url)
         let store = BlocklistStore()
-        try store.loadHostTerms(termsData: data, expectedSHA256: sha256Hex(data))
+        let (expected, data) = try BundledSeedTests.bundledTerms(store: store)
+        try store.loadHostTerms(termsData: data, expectedSHA256: expected)
         return store
-    }
-
-    private func sha256Hex(_ data: Data) -> String {
-        SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
     }
 
     /// Prevents an unverified term list ever being installed.

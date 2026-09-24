@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>Hisn Settings</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Hisn Settings</title>
 <style>
 :root{--bg:#f7f7f5;--fg:#1a1a18;--muted:#6b6b66;--line:#e3e3df;--accent:#2f6f4f;--warn:#8a5a2b}
 @media(prefers-color-scheme:dark){:root{--bg:#161614;--fg:#f0efec;--muted:#9a9a94;--line:#33322e;--accent:#7fb79a;--warn:#d2a464}}
 *{box-sizing:border-box}
 body{margin:0;padding:40px 24px;background:var(--bg);color:var(--fg);
      font:15px/1.6 -apple-system,BlinkMacSystemFont,system-ui,sans-serif}
-main{max-width:560px;margin:0 auto}
+main{max-width:680px;margin:0 auto}
 h1{font-size:20px;margin:0 0 6px}
 p.sub{color:var(--muted);margin:0 0 20px;font-size:14px}
 .mode{padding:12px 14px;border-radius:9px;font-size:13.5px;margin:0 0 24px;
@@ -32,6 +32,10 @@ label.row input{margin-top:4px}
 button{margin-top:12px;padding:9px 18px;border:none;border-radius:8px;
        background:var(--accent);color:#fff;font-weight:600;font-size:14px;cursor:pointer}
 button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+select{font:inherit;color:var(--fg);background:var(--bg);padding:8px;border:1px solid var(--line);border-radius:8px}
+.mode p{margin:6px 0}.mode button{background:transparent;color:var(--fg);border:1px solid var(--line)}
+@media(prefers-color-scheme:dark){button{color:#161614}}
 .msg{margin-top:12px;font-size:13px;color:var(--muted);min-height:1.4em}
 .reported-group{margin:0 0 14px}
 .reported-group:last-of-type{margin-bottom:0}
@@ -41,36 +45,58 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .chip{display:inline-flex;align-items:center;gap:5px;font-size:13px;
       padding:3px 5px 3px 11px;border:1px solid var(--line);border-radius:20px;
       background:var(--bg);unicode-bidi:isolate}
-.chip button{margin:0;padding:0;width:18px;height:18px;line-height:1;
+.chip button{margin:0;padding:0;width:28px;height:28px;line-height:1;
       border-radius:50%;background:transparent;color:var(--muted);
       font-size:16px;font-weight:400;border:none;cursor:pointer}
 .chip button:hover{color:var(--fg);background:var(--line)}
 .chip .apply{width:auto;height:auto;padding:2px 9px;font-size:11.5px;font-weight:600;
       border:1px solid var(--accent);color:var(--accent);border-radius:20px}
 .chip .apply:hover{background:var(--accent);color:#fff}
-</style></head>
-<body><main>
-<h1>Hisn Settings</h1>
-<p class="sub">Changes that tighten protection apply immediately. Loosening ones wait until any lock ends.</p>
+</style><link rel="stylesheet" href="ui.css"></head>
+<body class="settings"><div class="settings-shell">
+<aside class="sidebar">
+<div class="brand"><span class="brand-mark" aria-hidden="true">H</span> Hisn</div>
+<nav aria-label="Settings sections"><a href="#mode">Overview</a><a href="#modeSettings">Blocking mode</a><a href="#siteSettings">Your sites</a><a href="#contentSettings">Content checking</a><a href="#reportSettings">Corrections</a></nav>
+<p class="privacy-note">Made for a calmer web.<br>Content checks stay on your device.</p>
+</aside>
+<main>
+<div class="eyebrow">Your browser · Your protection</div>
+<h1>Make room for what matters.</h1>
+<p class="sub">Choose what stays out, keep the sites you need, and see exactly how Hisn protects this browser.</p>
 
-<div class="mode" id="mode">…</div>
+<section class="mode" id="mode" aria-label="App connection">
+<strong id="modeTitle">Checking connection…</strong>
+<p id="modeDetail">Waiting for the extension.</p>
+<button type="button" id="checkConnection">Check app connection</button>
+<p id="connectionMessage" role="status"></p>
+</section>
 
-<fieldset><legend>Sites you always want blocked</legend>
+<div class="settings-grid">
+<fieldset class="wide" id="modeSettings"><legend>Blocking mode</legend>
+<label for="blockingMode">Protection in this browser</label>
+<select id="blockingMode"><option value="blocklist">Standard — block known sites and check content</option><option value="strict">Strict — only browse allowed sites</option></select>
+<p class="hint" id="lockHint"></p>
+<p class="hint">Before choosing Strict, save the sites you need below. Allowed pages may still load supporting resources from other sites.</p>
+<button id="saveMode">Apply mode</button>
+<div class="msg" id="msgMode" role="status"></div>
+</fieldset>
+
+<fieldset id="siteSettings"><legend>Blocked sites</legend>
 <p class="hint">One domain per line. Subdomains are included automatically, so
 example.com also covers cdn.example.com.</p>
-<textarea id="custom" placeholder="one domain per line&#10;example.com"></textarea>
+<textarea id="custom" aria-label="Sites to block" spellcheck="false" placeholder="one domain per line&#10;example.com"></textarea>
 <button id="saveCustom">Save block list</button>
-<div class="msg" id="msgCustom"></div>
+<div class="msg" id="msgCustom" role="status"></div>
 </fieldset>
 
-<fieldset><legend>Strict mode allowlist</legend>
-<p class="hint">In strict mode nothing outside this list opens at all.</p>
-<textarea id="allow" placeholder="one domain per line&#10;github.com"></textarea>
+<fieldset><legend>Always allowed</legend>
+<p class="hint">Overrides the published domain and address lists. Page-text checks still apply. In Strict mode, these are the sites you can browse. More specific rules win; a block wins a tie.</p>
+<textarea id="allow" aria-label="Allowed sites" spellcheck="false" placeholder="one domain per line&#10;github.com"></textarea>
 <button id="saveAllow">Save allowlist</button>
-<div class="msg" id="msgAllow"></div>
+<div class="msg" id="msgAllow" role="status"></div>
 </fieldset>
 
-<fieldset><legend>Content checking</legend>
+<fieldset id="contentSettings"><legend>Content checking</legend>
 <p class="hint">On top of the domain and address lists, which are always on.</p>
 <label class="row">
   <input type="checkbox" id="inspectText">
@@ -78,17 +104,24 @@ example.com also covers cdn.example.com.</p>
   explicit content on an ordinary site.</span>
 </label>
 <div class="slider">
-  <span style="font-size:13px">How strict</span>
+  <label for="textSensitivity" style="font-size:13px">Sensitivity</label>
   <input type="range" id="textSensitivity" min="0" max="100" step="5">
   <output id="sensitivityValue">50</output>
 </div>
 <p class="hint">Higher catches more, and blocks more pages that turn out to be
-innocent. Medical and reference sites are exempt from this check at any setting.</p>
+innocent. Selected medical and reference domains are exempt from this check.</p>
 <button id="saveChecks">Save</button>
-<div class="msg" id="msgChecks"></div>
+<div class="msg" id="msgChecks" role="status"></div>
 </fieldset>
 
-<fieldset><legend>Marked as wrong</legend>
+<fieldset><legend>Your content words</legend>
+<p class="hint">Up to 200 words or phrases, one per line, with 4–100 characters each. These add to page-text scoring; common words can also block ordinary pages. Page-text checking must be active.</p>
+<textarea id="customTerms" aria-label="Custom content words" placeholder="gambling&#10;betting odds"></textarea>
+<button id="saveTerms">Save words</button>
+<div class="msg" id="msgTerms" role="status"></div>
+</fieldset>
+
+<fieldset class="wide" id="reportSettings"><legend>Your corrections</legend>
 <p class="hint">What you reported from a block page as wrongly caught. Removing
 one turns its blocking back on — that always works, even during a lock.</p>
 <div class="reported-group">
@@ -99,12 +132,14 @@ one turns its blocking back on — that always works, even during a lock.</p>
   <div class="reported-label">Sites the content check skips</div>
   <div class="chips" id="textAllow"></div>
 </div>
-<div class="msg" id="msgReported"></div>
+<div class="msg" id="msgReported" role="status"></div>
 </fieldset>
 
-<fieldset id="disputedFs" hidden><legend>Waiting until your lock ends</legend>
+<fieldset class="wide" id="disputedFs" hidden><legend>Waiting until your lock ends</legend>
 <p class="hint" id="disputedHint"></p>
 <div class="chips" id="disputed"></div>
-<div class="msg" id="msgDisputed"></div>
+<div class="msg" id="msgDisputed" role="status"></div>
 </fieldset>
-</main><script src="options.js"></script></body></html>
+</div>
+<p class="privacy-note">Browser-only mode works without the app. Connect the macOS app for shared settings and timed locks. Changes that weaken an active lock remain unavailable.</p>
+</main></div><script type="module" src="options.js"></script></body></html>

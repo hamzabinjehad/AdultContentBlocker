@@ -13,6 +13,7 @@ on the device. So the invariant is asserted directly.
 """
 
 import json
+import re
 import sys
 import unittest
 from pathlib import Path
@@ -233,6 +234,54 @@ class TestRealArtifacts(unittest.TestCase):
     def test_manifest_covers_every_artifact(self):
         for name in self.manifest["artifacts"]:
             self.assertTrue((self.dist / name).exists(), f"{name} missing")
+
+
+class TestClientConfig(unittest.TestCase):
+    """The two clients' update configuration, pinned to each other and to the
+    build.
+
+    Both clients download from a base URL that is hard-coded in their own
+    language, and the publish workflow pushes to THIS repository's `lists`
+    branch. Nothing else compares the three. When they disagree, updates fail
+    silently on every install — "keeping current list", forever — which is
+    exactly the failure the threat model rates worse than being switched off.
+    """
+
+    repo = Path(__file__).parent.parent
+
+    def _js_base(self):
+        src = (self.repo / "extension" / "background.js").read_text(encoding="utf-8")
+        m = re.search(r'const LIST_BASE = "([^"]+)"', src)
+        self.assertIsNotNone(m, "LIST_BASE not found in background.js")
+        return m.group(1)
+
+    def _swift_base(self):
+        src = (self.repo / "macos" / "Hisn" / "ListUpdater.swift").read_text(encoding="utf-8")
+        m = re.search(r'URL\(string:\s*"([^"]+)"\)', src)
+        self.assertIsNotNone(m, "base URL not found in ListUpdater.swift")
+        return m.group(1)
+
+    def test_both_clients_download_from_the_same_place(self):
+        self.assertEqual(self._js_base(), self._swift_base(),
+                         "the extension and the app would install different lists")
+
+    def test_update_base_is_a_lists_branch(self):
+        base = self._js_base()
+        self.assertRegex(base, r"^https://raw\.githubusercontent\.com/[^/]+/[^/]+/lists$",
+                         "clients must read the `lists` branch the publish workflow writes")
+
+    def test_generation_artifacts_are_what_the_build_produces(self):
+        """Every artifact a client asks for as part of a generation must be one
+        build.py writes and lists in the manifest, or updates fail on
+        `missing:<name>` at every install."""
+        build = (self.repo / "blocklist" / "build.py").read_text(encoding="utf-8")
+        produced = set(re.findall(r'"([a-z_]+\.(?:json|packed|txt|index))"', build))
+        js = (self.repo / "extension" / "lib" / "generation.js").read_text(encoding="utf-8")
+        js_wanted = set(re.findall(r'"([a-z_]+\.json)"', js.split("GENERATION_ARTIFACTS")[1].split("]")[0]))
+        swift = (self.repo / "macos" / "Hisn" / "ListUpdater.swift").read_text(encoding="utf-8")
+        swift_wanted = set(re.findall(r'"([a-z_.]+)"', swift.split("generationFiles")[1].split("]")[0]))
+        for name in js_wanted | swift_wanted - {"manifest.json", "manifest.json.sig"}:
+            self.assertIn(name, produced, f"{name} is requested by a client but not built")
 
 
 if __name__ == "__main__":

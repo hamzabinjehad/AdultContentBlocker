@@ -122,6 +122,37 @@ final class BlocklistLoadTests: XCTestCase {
                       "the last line of domains.packed was dropped")
     }
 
+    /// Prevents a rollback that waits for a restart.
+    ///
+    /// `version` starts at 0 in every process, so rollback protection used to
+    /// be forgotten the moment the filter was relaunched: a validly signed OLD
+    /// list — older than the one it had been enforcing — was accepted on the
+    /// next launch. The filter now persists the highest installed version and
+    /// hands it back as `versionFloor`; the store must honour it exactly as it
+    /// honours a version it saw itself.
+    func testVersionFloorSurvivesWhatTheProcessForgot() throws {
+        let domains = Data("example.com\n".utf8)
+        store.versionFloor = 9                       // what the last run installed
+        let (old, oldSig) = try signedManifest(key: key, version: 8, domainsData: domains)
+        XCTAssertThrowsError(
+            try store.load(manifestData: old, signatureHex: oldSig, domainsData: domains)
+        ) { error in
+            guard case BlocklistStore.LoadError.rollback(offered: 8, held: 9) = error else {
+                return XCTFail("expected rollback(8 < 9), got \(error)")
+            }
+        }
+        XCTAssertEqual(store.domainCount, 0, "the old list must not be installed")
+
+        let (same, sameSig) = try signedManifest(key: key, version: 9, domainsData: domains)
+        XCTAssertNoThrow(try store.load(manifestData: same, signatureHex: sameSig,
+                                        domainsData: domains),
+                         "the floor itself is acceptable — it is what was installed")
+
+        // The floor only ever rises. A lower value cannot lower it.
+        store.versionFloor = 3
+        XCTAssertEqual(store.versionFloor, 9)
+    }
+
     func testRejectsAnInvalidSignature() throws {
         let domains = Data("example.com\n".utf8)
         let (manifest, _) = try signedManifest(key: key, version: 1,
@@ -670,6 +701,56 @@ final class BundledSeedTests: XCTestCase {
         let store = try loadSeed()
         XCTAssertGreaterThan(store.domainCount, 100_000,
                              "the seed did not load a usable number of domains")
+    }
+
+    /// The expected hash of the bundled `terms.json` from the SIGNED manifest,
+    /// plus the file's bytes — everything `FilterDataProvider.loadKeywordLayer`
+    /// needs, obtained the way it obtains them. Shared with `KeywordLayerTests`
+    /// so every test that loads the seed's keyword layer goes through the
+    /// signature check.
+    static func bundledTerms(store: BlocklistStore,
+                             file: StaticString = #filePath,
+                             line: UInt = #line) throws -> (sha256: String, data: Data) {
+        let bundle = Bundle(for: BundledSeedTests.self)
+        let manifest = try XCTUnwrap(bundle.url(forResource: "manifest",
+                                                withExtension: "json"),
+                                     file: file, line: line)
+        let sig = try XCTUnwrap(bundle.url(forResource: "manifest.json",
+                                           withExtension: "sig"),
+                                file: file, line: line)
+        let terms = try XCTUnwrap(bundle.url(forResource: "terms",
+                                             withExtension: "json"),
+                                  "seed/terms.json is not bundled — check "
+                                  + "FILTER_RESOURCES in generate_xcodeproj.py",
+                                  file: file, line: line)
+        let verified = try store.verifiedManifest(
+            manifestData: try Data(contentsOf: manifest),
+            signatureHex: try String(contentsOf: sig, encoding: .utf8))
+        let expected = try XCTUnwrap(
+            verified.artifacts["terms.json"]?.sha256,
+            "seed/manifest.json does not cover terms.json, so the filter leaves "
+            + "the keyword layer OFF. Re-cut the seed: "
+            + "python3 blocklist/seed.py sync --build --sign-key <key>",
+            file: file, line: line)
+        return (expected, try Data(contentsOf: terms))
+    }
+
+    /// The keyword layer ships enabled, or this fails.
+    ///
+    /// For a long time it did not: the seed manifest was signed before
+    /// `terms.json` existed, `loadKeywordLayer` correctly refused to load a
+    /// file the manifest did not describe, and nothing anywhere said so. This
+    /// is the Swift half of `blocklist/test_seed.py`'s gate — it asserts that
+    /// the bundle the filter actually loads describes the file it actually
+    /// bundles, and that the bytes match.
+    func testSeedManifestCoversTheKeywordLayer() throws {
+        let store = BlocklistStore()
+        let (expected, data) = try Self.bundledTerms(store: store)
+        XCTAssertNoThrow(try store.loadHostTerms(termsData: data,
+                                                 expectedSHA256: expected),
+                         "bundled terms.json does not match its signed manifest")
+        XCTAssertTrue(store.isBlocked(host: "arab-sex-tube.com"),
+                      "the keyword layer loaded from the seed matches nothing")
     }
 
     func testSeedBlocksKnownAdultDomains() throws {

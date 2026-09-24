@@ -4,6 +4,17 @@ on:
   schedule:
     - cron: "17 3 * * *"        # daily, 03:17 UTC
   workflow_dispatch:
+    inputs:
+      # Re-cut the bundled seed from this run's build and commit it to the
+      # branch the workflow was dispatched on. This is how a term edit gets a
+      # signed seed without the private key ever leaving CI: edit
+      # blocklist/terms/, dispatch this on your branch with the box ticked,
+      # and pull. See blocklist/seed.py for what the seed is and why it must
+      # be re-signed at all.
+      refresh_seed:
+        description: "Re-cut and commit the signed seed bundle from this build"
+        type: boolean
+        default: false
   push:
     paths:
       - "blocklist/**"
@@ -17,7 +28,16 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # The whole suite — Python, seed gate, extension, macOS — before a single
+  # byte is published. The list build is a supply-chain step for every client,
+  # and a broken repository should not be able to ship one.
+  test:
+    uses: ./.github/workflows/ci.yml
+    with:
+      skip_seed_gate: ${{ inputs.refresh_seed == true }}
+
   build:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,13 +53,21 @@ jobs:
       # increasing. Clients reject any manifest older than the one they hold,
       # so a reset-to-1 would brick every installed copy until the counter
       # climbed back past it.
+      #
+      # When nothing has been published yet, the counter starts from the SEED
+      # manifest, not from 1: a fresh install holds the seed's version, and a
+      # first publish numbered below it would be rejected by every client as a
+      # rollback until the daily builds climbed past it.
       - name: Fetch previous manifest
-        continue-on-error: true
         run: |
           mkdir -p dist
-          curl -fsSL -o dist/manifest.json \
-            "https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/lists/manifest.json" \
-            || echo "no previous manifest; starting at version 1"
+          if curl -fsSL -o dist/manifest.json \
+              "https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/lists/manifest.json"; then
+            echo "previous published version: $(python3 -c "import json;print(json.load(open('dist/manifest.json'))['version'])")"
+          else
+            cp seed/manifest.json dist/manifest.json
+            echo "no published list yet; continuing from seed version $(python3 -c "import json;print(json.load(open('dist/manifest.json'))['version'])")"
+          fi
 
       - name: Write signing key
         env:
@@ -105,6 +133,31 @@ jobs:
       - name: Remove signing key
         if: always()
         run: rm -f keys/blocklist_ed25519.pem
+
+      # --- refresh_seed -------------------------------------------------
+      # Cut the seed from the build we are about to publish, so the bundled
+      # list and the published list are the same signed manifest. Then run
+      # the gate that was deferred in `test` against the result, and only
+      # then commit. The push uses GITHUB_TOKEN, which does not start another
+      # workflow run; the next push or pull request on the branch will.
+      - name: Re-cut the seed bundle
+        if: ${{ inputs.refresh_seed == true }}
+        run: |
+          python3 blocklist/seed.py sync --dist dist
+          ./test.sh seed python
+      - name: Commit the seed bundle
+        if: ${{ inputs.refresh_seed == true }}
+        run: |
+          git config user.name  "hisn-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add seed extension/seed extension/rules
+          if git diff --cached --quiet; then
+            echo "seed already matches this build; nothing to commit"
+          else
+            VERSION=$(python3 -c "import json;print(json.load(open('seed/manifest.json'))['version'])")
+            git commit -m "Re-cut the signed seed bundle from blocklist v${VERSION}"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
 
       # Published to an orphan `lists` branch so the artifacts never bloat the
       # main branch history — a ~19MB file changing daily would be brutal.

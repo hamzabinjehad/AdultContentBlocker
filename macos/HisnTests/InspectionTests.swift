@@ -256,43 +256,43 @@ final class UserBlocksTests: XCTestCase {
 @MainActor
 final class EditorSummaryTests: XCTestCase {
 
-    // ── domains (SiteListsSheet) ────────────────────────────────────────────
+    // ── domains (SiteListsSection) ────────────────────────────────────────────
 
     func testEmptyDomainsSummaryIsBlankAndClean() {
-        let s = SiteListsSheet.summarize("")
+        let s = SiteListsSection.summarize("")
         XCTAssertEqual(s.text, "")
         XCTAssertFalse(s.hasProblem)
     }
 
     func testValidDomainsCountAndPluralise() {
-        XCTAssertEqual(SiteListsSheet.summarize("reddit.com").text, "1 domain")
-        XCTAssertEqual(SiteListsSheet.summarize("reddit.com\nx.com").text, "2 domains")
+        XCTAssertEqual(SiteListsSection.summarize("reddit.com").text, "1 domain")
+        XCTAssertEqual(SiteListsSection.summarize("reddit.com\nx.com").text, "2 domains")
     }
 
     func testDomainsNormaliseBeforeCounting() {
         // A URL and its bare domain are one entry, not two.
-        let s = SiteListsSheet.summarize("https://www.reddit.com/r/x\nreddit.com")
+        let s = SiteListsSection.summarize("https://www.reddit.com/r/x\nreddit.com")
         XCTAssertEqual(s.text, "1 domain")
         XCTAssertFalse(s.hasProblem)
     }
 
     func testBadDomainLineIsFlaggedBeforeSave() {
-        let s = SiteListsSheet.summarize("reddit.com\nnot a domain")
+        let s = SiteListsSection.summarize("reddit.com\nnot a domain")
         XCTAssertTrue(s.hasProblem)
         XCTAssertTrue(s.text.contains("1 valid"))
         XCTAssertTrue(s.text.contains("not a domain"))
     }
 
-    // ── words (UserBlocksSheet) ─────────────────────────────────────────────
+    // ── words (UserBlocksSection) ─────────────────────────────────────────────
 
     func testValidWordsCountAndPluralise() {
-        XCTAssertEqual(UserBlocksSheet.summarizeWords("gambling").text, "1 word")
-        XCTAssertEqual(UserBlocksSheet.summarizeWords("gambling\nbetting").text,
+        XCTAssertEqual(UserBlocksSection.summarizeWords("gambling").text, "1 word")
+        XCTAssertEqual(UserBlocksSection.summarizeWords("gambling\nbetting").text,
                        "2 words")
     }
 
     func testShortWordFlaggedWithTheMinimum() {
-        let s = UserBlocksSheet.summarizeWords("gambling\nxx")
+        let s = UserBlocksSection.summarizeWords("gambling\nxx")
         XCTAssertTrue(s.hasProblem)
         XCTAssertTrue(s.text.contains("1 valid"))
         XCTAssertTrue(s.text.contains("too short"))
@@ -304,62 +304,8 @@ final class EditorSummaryTests: XCTestCase {
     func testOverTheCapFlaggedBeforeSave() {
         let many = (0..<(UserBlocks.maximumTerms + 5))
             .map { "word\($0)" }.joined(separator: "\n")
-        let s = UserBlocksSheet.summarizeWords(many)
+        let s = UserBlocksSection.summarizeWords(many)
         XCTAssertTrue(s.hasProblem)
         XCTAssertTrue(s.text.contains("over the \(UserBlocks.maximumTerms)-word limit"))
-    }
-}
-
-// MARK: - Enforcement snapshot (drives header tone and the Start warning)
-
-/// `Enforcement` is the single source both the status header and the setup
-/// screen read to answer "would a lock actually block anything?". Pinned here
-/// because the honest-status promise turns on it: a wrong answer either alarms a
-/// correctly-set-up user or reassures one whose lock enforces nothing.
-final class EnforcementTests: XCTestCase {
-
-    private var namespace: String!
-    private var d: UserDefaults!
-
-    override func setUp() {
-        super.setUp()
-        namespace = "app.hisn.tests.\(UUID().uuidString)"
-        LockStore.appGroup = namespace
-        d = UserDefaults(suiteName: namespace)
-    }
-    override func tearDown() {
-        UserDefaults().removePersistentDomain(forName: namespace)
-        super.tearDown()
-    }
-
-    func testNothingEnforcingOnAFreshMachine() {
-        // No filter, no list, extension never seen.
-        XCTAssertEqual(Enforcement.enforcingCount(filterEnabled: false), 0)
-        let layers = Enforcement.layers(filterEnabled: false)
-        XCTAssertFalse(layers[0].ok)
-        XCTAssertEqual(layers[0].detail, "not running")
-        XCTAssertEqual(layers[1].detail, "never connected")
-    }
-
-    func testFilterCountsOnlyWithAList() {
-        // Enabled but with no list is NOT enforcing — the "looks on, blocks
-        // nothing" state the header exists to expose.
-        XCTAssertEqual(Enforcement.enforcingCount(filterEnabled: true), 0)
-        XCTAssertEqual(Enforcement.layers(filterEnabled: true)[0].detail,
-                       "running, no list")
-        d.set(150_000, forKey: "filterDomainCount")
-        XCTAssertEqual(Enforcement.enforcingCount(filterEnabled: true), 1)
-        XCTAssertTrue(Enforcement.layers(filterEnabled: true)[0].ok)
-    }
-
-    func testExtensionLivenessIsTimeBounded() {
-        d.set(Date(), forKey: "extensionLastSeen")
-        XCTAssertTrue(Enforcement.layers(filterEnabled: false)[1].ok)
-
-        // A stale heartbeat is "not responding", not "connected".
-        d.set(Date().addingTimeInterval(-600), forKey: "extensionLastSeen")
-        let ext = Enforcement.layers(filterEnabled: false)[1]
-        XCTAssertFalse(ext.ok)
-        XCTAssertEqual(ext.detail, "not responding")
     }
 }

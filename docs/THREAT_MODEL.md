@@ -124,6 +124,17 @@ reports the domain count the filter actually holds rather than the fact that it
 is running. "Filter on, list empty" has to be visibly different from "protected",
 because it is the state in which the person stops being careful.
 
+**A bundled file the signed manifest never mentions.** The seed's keyword
+layer shipped in exactly this state for a while: `terms.json` was regenerated
+and copied into the bundle, the manifest had been signed before it existed,
+and the filter — correctly — refused to load a file it could not verify. So
+the one layer covering domains registered since the last list build was off
+on every install, and every status light was green. Defences: every artifact
+this repo ships is placed by `blocklist/seed.py sync` from one signed build,
+`seed.py verify` is a test and a CI gate that fails when any shipped file is
+absent from the manifest or differs from it, and `BundledSeedTests` asserts
+from inside the app that the bundle it loads describes the keyword layer.
+
 **A rollback.** An old manifest is still validly signed. Anyone who can serve
 one can revert the list to before a domain was added. Defence: monotonic
 version, and clients reject any version below the one they hold.

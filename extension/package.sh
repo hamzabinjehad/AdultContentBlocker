@@ -54,7 +54,11 @@ mkdir -p "$BUILD"
 # the safe direction — a forgotten allowlist entry ships a broken extension,
 # a forgotten prune ships a harmless extra file.
 cp -R "$EXT_DIR"/. "$BUILD"/
-rm -rf "$BUILD/test" "$BUILD/keys" "$BUILD/package.sh"
+rm -rf "$BUILD/test" "$BUILD/keys" "$BUILD/package.sh" "$BUILD/check_package.py"
+# `_metadata/` is Chrome's own indexed-ruleset cache, written into the
+# directory whenever the extension is loaded unpacked. Names starting with
+# `_` are reserved by Chrome and the store rejects a package that carries one.
+rm -rf "$BUILD/_metadata"
 find "$BUILD" \( -name "*.pem" -o -name ".DS_Store" \) -delete
 
 # Store-clean the manifest: drop `key` and every `_comment_*`.

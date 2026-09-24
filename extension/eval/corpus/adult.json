@@ -1,0 +1,23 @@
+{
+  "_comment": "Pages the scorer MUST block. Synthetic and deliberately terse — built from vocabulary the list already carries, so they measure the scorer, not the corpus author. `type` says what shape of page it is; `dilute` marks cases the runner pads with benign text to test dilution. This is a STARTER set: real coverage numbers need real labelled pages per dialect, which nobody should commit to a repository.",
+  "cases": [
+    { "id": "en-tube-1", "lang": "en", "type": "tube", "label": "adult",
+      "zones": { "title": "Free adult videos — watch now", "meta": "adult movies, adult video, big tits, blowjob", "body": "Watch free adult videos in HD. Thousands of adult movies added daily. Categories: anal sex, big tits, blowjob, amateur." } },
+    { "id": "en-short-1", "lang": "en", "type": "short", "label": "adult",
+      "zones": { "title": "Blowjob compilation", "body": "blowjob compilation part 3 — anal sex, big tits" } },
+    { "id": "ar-tube-1", "lang": "ar", "type": "tube", "label": "adult", "dilute": true,
+      "zones": { "title": "افلام اباحية اون لاين", "meta": "اباحي, اباحي بنات, اباحي hd", "body": "شاهد افلام اباحي hd مجانا. اباحي بنات, اباحي اردني, اباحي اماراتي. تحديث يومي." } },
+    { "id": "ar-feed-1", "lang": "ar", "type": "feed", "label": "adult", "dilute": true,
+      "zones": { "title": "الرئيسية", "body": "منشور جديد: اباحي بنات جديد. منشور جديد: اباحي اون لاين hd. منشور جديد: افلام اباحي اماراتي." } },
+    { "id": "ar-latn-1", "lang": "ar-latn", "type": "tube", "label": "adult", "dilute": true,
+      "zones": { "title": "3aherat w 2a7a", "body": "aflam 3aara 3aarat 3aerat hd, 2a7a, 3aherat online" } },
+    { "id": "de-tube-1", "lang": "de", "type": "tube", "label": "adult",
+      "zones": { "title": "Amateursex Videos kostenlos", "body": "Amateursex, Analsex und Erotikfilm kostenlos ansehen. Ficken in HD, täglich neue Videos." } },
+    { "id": "es-tube-1", "lang": "es", "type": "tube", "label": "adult",
+      "zones": { "title": "Pornografia gratis", "body": "Videos de pornografia gratis: incesto, masturbacion, desnudo, puta. Nuevos cada dia." } },
+    { "id": "it-tube-1", "lang": "it", "type": "tube", "label": "adult",
+      "zones": { "title": "Video puttana e figa", "body": "cazzo, figa, masturbazione, puttana — video gratis ogni giorno" } },
+    { "id": "misleading-meta-1", "lang": "en", "type": "misleading", "label": "adult",
+      "zones": { "title": "Photography tips for beginners", "meta": "Photography tips", "body": "Watch free adult videos in HD. Thousands of adult movies added daily: anal sex, big tits, blowjob, blowjob, anal sex. Adult video, adult videos." } }
+  ]
+}
