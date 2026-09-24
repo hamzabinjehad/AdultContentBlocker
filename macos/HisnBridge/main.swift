@@ -60,6 +60,9 @@ func writeMessage(_ object: [String: Any]) {
 
 // MARK: - Handlers
 
+/// Resolved once: the browser that launched this process does not change.
+let launchingBrowser = ExtensionPresence.launchingBrowser()
+
 /// The extension only ever *reads* state here.
 ///
 /// There is deliberately no message that lets the browser shorten a lock,
@@ -78,7 +81,11 @@ func handle(_ message: [String: Any]) -> [String: Any] {
         // loaded" — and those look identical from the app's side while meaning
         // opposite things. The Overview reports it, because an extension that
         // never connected is a whole enforcement layer that is quietly absent.
-        defaults?.set(Date(), forKey: "extensionLastSeen")
+        //
+        // Recorded per browser as well, for `BrowserGuard`: during a lock the
+        // app closes a browser whose extension has stopped checking in, and
+        // "checking in from somewhere" cannot tell it which browser that is.
+        ExtensionPresence.record(browser: launchingBrowser, in: defaults)
 
         let state = LockStore.read()
         // The EFFECTIVE deadline, so a matured self-release ends the lock in

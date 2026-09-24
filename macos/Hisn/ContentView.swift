@@ -165,8 +165,18 @@ private struct OverviewPage: View {
                    pendingRelease: lock.pendingSelfRelease)
     }
 
+    @ObservedObject private var guardian = BrowserGuard.shared
+
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
+            ForEach(guardian.alerts) { alert in
+                Label("\(alert.name) is about to close. "
+                      + BrowserGuard.message(name: alert.name, reason: alert.reason),
+                      systemImage: "exclamationmark.shield.fill")
+                    .font(.callout)
+                    .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             protectionCard
             lockCard
 
@@ -697,6 +707,8 @@ private struct RulesPage: View {
             SiteListsSection(isLocked: isLocked)
             Divider()
             UserBlocksSection(isLocked: isLocked)
+            Divider()
+            BrowsersSection(isLocked: isLocked)
         }
     }
 }
@@ -1050,6 +1062,76 @@ struct UserBlocksSection: View {
 /// misled: keyword matching runs in the system filter and therefore covers
 /// every browser and app, while page-text checking exists only inside the
 /// Chrome extension.
+/// Which apps that open web pages may stay open during a lock.
+///
+/// The guard decides "browser" from what an app declares, so an app that
+/// registers for web links without being a browser shows up here too — that
+/// is the price of catching tomorrow's Chromium fork without a list update,
+/// and the reason this section exists. Allowing waits for the lock to end;
+/// withdrawing an allowance is always accepted.
+struct BrowsersSection: View {
+    let isLocked: Bool
+
+    @ObservedObject private var guardian = BrowserGuard.shared
+    @State private var candidates: [BrowserGuard.Candidate] = []
+    @State private var error: String?
+
+    var body: some View {
+        PageSection(title: "Browsers during a lock",
+                subtitle: "While a lock runs, Hisn closes any browser it is not "
+                    + "running inside: a Chromium browser whose Hisn extension has "
+                    + "stopped checking in, and any other browser. Safari is covered "
+                    + "by Screen Time and is left alone.") {
+            if candidates.isEmpty {
+                Text("No browsers found.").font(.callout).foregroundStyle(.secondary)
+            }
+            ForEach(candidates) { c in
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(c.name).font(.body.weight(.medium))
+                        Text(describe(c.coverage))
+                            .font(.callout).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer()
+                    if c.coverage == .uncovered || c.coverage == .allowedByUser {
+                        Toggle("Allow during a lock", isOn: Binding(
+                            get: { c.coverage == .allowedByUser },
+                            set: { allow in
+                                do { try guardian.setAllowed(c.bundleID, allow) }
+                                catch { self.error = error.localizedDescription }
+                                reload()
+                            }))
+                            .toggleStyle(.switch)
+                            .controlSize(.small)
+                            .disabled(isLocked && c.coverage == .uncovered)
+                    }
+                }
+            }
+            if let error {
+                Text(error).font(.caption).foregroundStyle(.red)
+            }
+        }
+        .onAppear(perform: reload)
+    }
+
+    private func reload() { candidates = guardian.candidates() }
+
+    private func describe(_ coverage: BrowserGuardPolicy.Coverage) -> String {
+        switch coverage {
+        case .exempt:
+            return "Left open — covered by Screen Time and the network layers."
+        case .needsExtension:
+            return "Stays open while its Hisn extension checks in; closed if the "
+                + "extension is switched off."
+        case .uncovered:
+            return "No Hisn protection inside — closed during a lock."
+        case .allowedByUser:
+            return "You allowed it. It stays open during a lock with no page checking."
+        }
+    }
+}
+
 private struct SettingsPage: View {
     let isLocked: Bool
 

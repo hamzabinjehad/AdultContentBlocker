@@ -65,17 +65,22 @@ APP_SOURCES = SHARED + [
     "Hisn/LockManager.swift",
     "Hisn/NativeMessagingInstaller.swift",
     "Hisn/ProtectionStatus.swift",
+    # During a lock, closes browsers Hisn is not running inside.
+    "Hisn/BrowserGuard.swift",
+    "Hisn/ExtensionPresence.swift",
 ]
 FILTER_SOURCES = SHARED + ["HisnFilter/FilterDataProvider.swift",
                            "HisnFilter/main.swift"]
-BRIDGE_SOURCES = SHARED + ["HisnBridge/main.swift"]
+# The bridge records which browser's extension checked in, for the guard.
+BRIDGE_SOURCES = SHARED + ["HisnBridge/main.swift", "Hisn/ExtensionPresence.swift"]
 TEST_SOURCES = ["HisnTests/BlocklistStoreTests.swift",
                 "HisnTests/KeywordLayerTests.swift",
                 "HisnTests/SelfReleaseTests.swift",
                 "HisnTests/InspectionTests.swift",
                 "HisnTests/PolicyContractTests.swift",
                 "HisnTests/ProtectionStatusTests.swift",
-                "HisnTests/TestNamespace.swift"]
+                "HisnTests/TestNamespace.swift",
+                "HisnTests/BrowserGuardTests.swift"]
 
 # The signed seed list, bundled into the extension so a machine that has never
 # completed a list update still enforces something. Verified on the same path as

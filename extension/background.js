@@ -737,10 +737,55 @@ async function guardedUpdate(rawPatch) {
 // Wiring
 // --------------------------------------------------------------------------
 
+/** The two recurring jobs, and how often each runs. */
+const ALARMS = { heartbeat: 1, listUpdate: 360 };
+
+/**
+ * Make sure both alarms exist. Runs on EVERY worker start, not only on install.
+ *
+ * They used to be created in `onInstalled` alone. Chrome documents that alarms
+ * "may be cleared upon browser restart", and they do not come back when an
+ * extension is disabled and re-enabled — neither of which fires
+ * `onInstalled`. After either, the heartbeat simply stopped: no more polls of
+ * the app, so no lock updates, no fail-closed detection, and — now that the
+ * app closes a browser whose extension stops checking in during a lock — a
+ * browser shut for an extension that was on the whole time.
+ */
+async function ensureAlarms() {
+  for (const [name, periodInMinutes] of Object.entries(ALARMS)) {
+    const existing = await chrome.alarms.get(name).catch(() => null);
+    if (!existing || existing.periodInMinutes !== periodInMinutes) {
+      await chrome.alarms.create(name, { periodInMinutes });
+    }
+  }
+}
+
+/**
+ * Once per worker instance: restore the alarms and, if the app has not heard
+ * from us for a while, check in now rather than at the next alarm. This is
+ * the path a re-enabled extension takes — it fires no lifecycle event at all
+ * — and checking in immediately is what tells the app's browser guard, within
+ * seconds, that the extension is back.
+ *
+ * Throttled on `lastHeartbeat` because a worker is restarted for nearly every
+ * event after thirty idle seconds, and each poll launches the bridge process.
+ */
+const BOOT_POLL_AFTER_MS = 30 * 1000;
+const booted = (async () => {
+  try {
+    await ensureAlarms();
+    const state = await getState();
+    if (Date.now() - (state.lastHeartbeat || 0) > BOOT_POLL_AFTER_MS) {
+      await transaction(pollNative);
+    }
+  } catch (err) {
+    console.warn("[hisn] worker start-up check failed:", err?.message ?? err);
+  }
+})();
+
 chrome.runtime.onInstalled.addListener(async () => {
   await transaction(async () => applyRules(await getState()));
-  await chrome.alarms.create("heartbeat", { periodInMinutes: 1 });
-  await chrome.alarms.create("listUpdate", { periodInMinutes: 360 });
+  await ensureAlarms();
   await transaction(pollNative);
   await transaction(updateList);
 });
@@ -791,4 +836,4 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   return true; // async response
 });
 
-export { applyRules, guardedUpdate, DEFAULT_STATE, resolveDisputed };
+export { applyRules, guardedUpdate, DEFAULT_STATE, resolveDisputed, ensureAlarms, booted, ALARMS };

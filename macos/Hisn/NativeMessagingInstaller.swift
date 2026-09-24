@@ -99,6 +99,9 @@ public enum NativeMessagingInstaller {
         /// `Local State`. The host manifest goes in its `NativeMessagingHosts/`
         /// subfolder, exactly as Chrome's own docs place it.
         let userSupportDir: String
+        /// The app's bundle identifier — what `BrowserGuard` sees running and
+        /// what the bridge records when this browser's extension checks in.
+        let bundleID: String
 
         /// A Chromium fork: the system-wide host directory is
         /// `/Library/Application Support/<productDir>/NativeMessagingHosts`,
@@ -106,11 +109,13 @@ public enum NativeMessagingInstaller {
         /// non-Google, non-Microsoft build. Deriving it here, rather than
         /// retyping it, means the system and user paths for a fork cannot
         /// disagree about which product directory a browser uses.
-        static func fork(_ name: String, _ productDir: String) -> Browser {
+        static func fork(_ name: String, _ productDir: String,
+                         bundleID: String) -> Browser {
             Browser(
                 name: name,
                 systemDir: "/Library/Application Support/\(productDir)/NativeMessagingHosts",
-                userSupportDir: productDir)
+                userSupportDir: productDir,
+                bundleID: bundleID)
         }
     }
 
@@ -129,16 +134,18 @@ public enum NativeMessagingInstaller {
     static let browsers = [
         Browser(name: "Chrome",
                systemDir: "/Library/Google/Chrome/NativeMessagingHosts",
-               userSupportDir: "Google/Chrome"),
+               userSupportDir: "Google/Chrome",
+               bundleID: "com.google.Chrome"),
         Browser(name: "Edge",
                systemDir: "/Library/Microsoft/Edge/NativeMessagingHosts",
-               userSupportDir: "Microsoft Edge"),
-        Browser.fork("Brave", "BraveSoftware/Brave-Browser"),
-        Browser.fork("Vivaldi", "Vivaldi"),
-        Browser.fork("Opera", "com.operasoftware.Opera"),
-        Browser.fork("Arc", "Arc/User Data"),
-        Browser.fork("Chromium", "Chromium"),
-        Browser.fork("Helium", "net.imput.helium"),
+               userSupportDir: "Microsoft Edge",
+               bundleID: "com.microsoft.edgemac"),
+        Browser.fork("Brave", "BraveSoftware/Brave-Browser", bundleID: "com.brave.Browser"),
+        Browser.fork("Vivaldi", "Vivaldi", bundleID: "com.vivaldi.Vivaldi"),
+        Browser.fork("Opera", "com.operasoftware.Opera", bundleID: "com.operasoftware.Opera"),
+        Browser.fork("Arc", "Arc/User Data", bundleID: "company.thebrowser.Browser"),
+        Browser.fork("Chromium", "Chromium", bundleID: "org.chromium.Chromium"),
+        Browser.fork("Helium", "net.imput.helium", bundleID: "net.imput.helium"),
     ]
 
     /// Write (or repair) the user-scope host manifest for every browser that

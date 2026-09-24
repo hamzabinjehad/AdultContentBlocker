@@ -21,13 +21,32 @@ globalThis.chrome = {
     onMessage: { addListener(fn) { listener = fn; } },
     sendNativeMessage: async () => { if (nativeReply) return nativeReply; throw new Error("no native host"); },
   },
-  alarms: { onAlarm: { addListener() {} } },
+  alarms: {
+    onAlarm: { addListener() {} },
+    get: async (name) => alarms.get(name),
+    create: async (name, info) => { alarms.set(name, { name, ...info }); },
+  },
 };
+const alarms = new Map();
 globalThis.console = { info() {}, warn() {}, error() {} };
-const { DEFAULT_STATE } = await import("../background.js");
+let nativeCalls = 0;
+const realSend = globalThis.chrome.runtime.sendNativeMessage;
+globalThis.chrome.runtime.sendNativeMessage = async (...a) => { nativeCalls++; return realSend(...a); };
+const { DEFAULT_STATE, booted, ensureAlarms, ALARMS } = await import("../background.js");
 const message = (msg) => new Promise((resolve) => listener(msg, {}, resolve));
 let checks = 0;
 function check(ok, label) { checks++; if (!ok) throw new Error(label); }
+await booted;
+check(alarms.get("heartbeat")?.periodInMinutes === ALARMS.heartbeat
+      && alarms.get("listUpdate")?.periodInMinutes === ALARMS.listUpdate,
+      "a worker start restores both alarms without an install event");
+check(nativeCalls === 1, "a worker start with a stale heartbeat checks in at once");
+alarms.clear();
+await ensureAlarms();
+check(alarms.size === 2, "alarms cleared by a browser restart come back");
+alarms.set("heartbeat", { name: "heartbeat", periodInMinutes: 60 });
+await ensureAlarms();
+check(alarms.get("heartbeat").periodInMinutes === 1, "a wrong period is corrected");
 state = { ...DEFAULT_STATE };
 check(!(await message({ type: "forceSync" })).ok, "missing native app is tolerated");
 check(!state.failClosed && !state.appPresent, "fresh browser-only install does not lock down");

@@ -31,6 +31,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NativeMessagingInstaller.installIfNeeded()
+        BrowserGuard.shared.start()
         Task { @MainActor in
             await FilterController.shared.reassertIfNeeded()
             await ListUpdater.shared.updateIfStale()
