@@ -561,12 +561,12 @@ final class SiteListGuardTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        namespace = "app.hisn.tests.\(UUID().uuidString)"
+        namespace = TestNamespace.make()
         LockStore.appGroup = namespace
     }
 
     override func tearDown() {
-        UserDefaults().removePersistentDomain(forName: namespace)
+        TestNamespace.dispose(namespace)
         super.tearDown()
     }
 
@@ -795,7 +795,7 @@ final class LockStoreTests: XCTestCase {
     /// it then passes once and fails on every run after that.
     override func setUp() {
         super.setUp()
-        namespace = "app.hisn.tests.\(UUID().uuidString)"
+        namespace = TestNamespace.make()
         scratch = FileManager.default.temporaryDirectory
             .appendingPathComponent(namespace, isDirectory: true)
         try? FileManager.default.createDirectory(at: scratch,
@@ -806,7 +806,7 @@ final class LockStoreTests: XCTestCase {
     }
 
     override func tearDown() {
-        UserDefaults().removePersistentDomain(forName: namespace)
+        TestNamespace.dispose(namespace)
         SecItemDelete([
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: namespace as Any,

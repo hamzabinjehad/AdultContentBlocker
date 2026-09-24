@@ -94,12 +94,12 @@ final class ProtectionStatusTests: XCTestCase {
     // MARK: Evidence is read from the shared container
 
     func testCurrentEvidenceReadsTheContainer() {
-        let namespace = "app.hisn.tests.\(UUID().uuidString)"
+        let namespace = TestNamespace.make()
         let saved = LockStore.appGroup
         LockStore.appGroup = namespace
         defer {
             LockStore.appGroup = saved
-            UserDefaults().removePersistentDomain(forName: namespace)
+            TestNamespace.dispose(namespace)
         }
         let d = UserDefaults(suiteName: namespace)!
 

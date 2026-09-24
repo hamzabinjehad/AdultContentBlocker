@@ -179,6 +179,12 @@
 			path = SelfReleaseTests.swift;
 			sourceTree = "<group>";
 		};
+		851D93C8FC728A88C285B13F /* TestNamespace.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = TestNamespace.swift;
+			sourceTree = "<group>";
+		};
 		F1F4679AE1DB96D841F82719 /* manifest.json */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = text.json;
@@ -302,6 +308,7 @@
 				C15C5BA8E7F3C7A5B3CC9BFB,
 				96BE623FB252DAE97AF70C17,
 				4792FDE5CE580FC1212B3EBD,
+				851D93C8FC728A88C285B13F,
 			);
 			path = HisnTests;
 			sourceTree = "<group>";
@@ -1085,6 +1092,10 @@
 			isa = PBXBuildFile;
 			fileRef = 96BE623FB252DAE97AF70C17;
 		};
+		AE4AE2037B37E4053641D8E9 /* TestNamespace.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 851D93C8FC728A88C285B13F;
+		};
 		A29CD87A3F623C88ED8997D1 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1095,6 +1106,7 @@
 				3407C1010A2C1472162620AB,
 				0F3A22A9F1E013F828E2374D,
 				8FFF0FCD30890FE011507660,
+				AE4AE2037B37E4053641D8E9,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

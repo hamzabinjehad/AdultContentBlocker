@@ -14,12 +14,12 @@ final class InspectionTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        namespace = "app.hisn.tests.\(UUID().uuidString)"
+        namespace = TestNamespace.make()
         LockStore.appGroup = namespace
     }
 
     override func tearDown() {
-        UserDefaults().removePersistentDomain(forName: namespace)
+        TestNamespace.dispose(namespace)
         super.tearDown()
     }
 
@@ -163,12 +163,12 @@ final class UserBlocksTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        namespace = "app.hisn.tests.\(UUID().uuidString)"
+        namespace = TestNamespace.make()
         LockStore.appGroup = namespace
     }
 
     override func tearDown() {
-        UserDefaults().removePersistentDomain(forName: namespace)
+        TestNamespace.dispose(namespace)
         super.tearDown()
     }
 

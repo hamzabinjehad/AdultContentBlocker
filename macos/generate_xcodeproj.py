@@ -74,7 +74,8 @@ TEST_SOURCES = ["HisnTests/BlocklistStoreTests.swift",
                 "HisnTests/SelfReleaseTests.swift",
                 "HisnTests/InspectionTests.swift",
                 "HisnTests/PolicyContractTests.swift",
-                "HisnTests/ProtectionStatusTests.swift"]
+                "HisnTests/ProtectionStatusTests.swift",
+                "HisnTests/TestNamespace.swift"]
 
 # The signed seed list, bundled into the extension so a machine that has never
 # completed a list update still enforces something. Verified on the same path as

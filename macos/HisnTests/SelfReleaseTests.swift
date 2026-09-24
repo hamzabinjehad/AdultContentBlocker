@@ -29,7 +29,7 @@ final class SelfReleaseTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        namespace = "app.hisn.tests.\(UUID().uuidString)"
+        namespace = TestNamespace.make()
         scratch = FileManager.default.temporaryDirectory
             .appendingPathComponent(namespace, isDirectory: true)
         try? FileManager.default.createDirectory(at: scratch,
@@ -40,7 +40,7 @@ final class SelfReleaseTests: XCTestCase {
     }
 
     override func tearDown() {
-        UserDefaults().removePersistentDomain(forName: namespace)
+        TestNamespace.dispose(namespace)
         SecItemDelete([
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: namespace as Any,
