@@ -24,7 +24,7 @@ import { settingsAccess, restrictionsActive } from "./lib/settings.js";
 import { planGeneration, downloadedRuleIds, GENERATION_ARTIFACTS } from "./lib/generation.js";
 
 const NATIVE_HOST = "app.hisn.bridge";
-const LIST_BASE = "https://raw.githubusercontent.com/hisn-app/blocklist/lists";
+const LIST_BASE = "https://raw.githubusercontent.com/hamzabinjehad/AdultContentBlocker/lists";
 
 const RULESET_BLOCKLIST = "blocklist";
 const RULESET_KEYWORDS = "keywords";

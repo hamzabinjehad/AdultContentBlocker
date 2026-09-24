@@ -38,7 +38,7 @@ from pathlib import Path
 
 from terms import compile_terms, lang_counts, serialize_terms
 
-USER_AGENT = "hisn-blocklist-builder/1.0 (+https://github.com/hisn-app)"
+USER_AGENT = "hisn-blocklist-builder/1.0 (+https://github.com/hamzabinjehad/AdultContentBlocker)"
 FETCH_TIMEOUT = 120
 
 # A syntactically valid DNS name we are willing to put in a blocklist.

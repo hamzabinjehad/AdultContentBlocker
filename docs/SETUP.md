@@ -76,17 +76,21 @@ it without supervised MDM. The full path is its own runbook:
 **`docs/CHROME_ENFORCEMENT.md`** — package, publish to the Web Store, wire the
 store-assigned id into the app and the profile, install the profile.
 
-## Step 5b — point the clients at your list
+## Step 5b — publish the list the clients download
 
-Both clients download from a base URL hard-coded in their source —
+Both clients download signed updates from this repository's `lists` branch —
 `LIST_BASE` in `extension/background.js` and `base` in
-`macos/Hisn/ListUpdater.swift` — and the publish workflow pushes to **this
-repository's** `lists` branch. As shipped, both point at
-`hisn-app/blocklist`, which is not this repository: no client will ever
-install an update until they are changed to
-`https://raw.githubusercontent.com/<owner>/<repo>/lists` for a public repo (a
-private one returns 404 to `raw.githubusercontent.com`). `test_build.py`
-pins the two to each other, not to your remote, so this is on you.
+`macos/Hisn/ListUpdater.swift`, pinned to each other and to this repository by
+`test_build.py`. Two things must be true before any install receives an update:
+
+1. **The repository is public.** `raw.githubusercontent.com` answers 404 for a
+   private repository, and the clients then keep their bundled seed forever.
+2. **The `BLOCKLIST_SIGNING_KEY` secret holds the PEM** whose public half is
+   pinned in `blocklist/public_key.hex`. Then run *Build and publish blocklist*
+   once from the Actions tab; after that it runs daily.
+
+Check it took: `curl -sI https://raw.githubusercontent.com/<owner>/<repo>/lists/manifest.json`
+answers `200`.
 
 ## Check it took
 

@@ -28,7 +28,7 @@ public actor ListUpdater {
     public static let shared = ListUpdater()
 
     private let base = URL(string:
-        "https://raw.githubusercontent.com/hisn-app/blocklist/lists")!
+        "https://raw.githubusercontent.com/hamzabinjehad/AdultContentBlocker/lists")!
     private let minimumInterval: TimeInterval = 6 * 3600
 
     /// What the shared container holds after a successful update, in the

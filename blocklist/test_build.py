@@ -13,7 +13,9 @@ on the device. So the invariant is asserted directly.
 """
 
 import json
+import os
 import re
+import subprocess
 import sys
 import unittest
 from pathlib import Path
@@ -269,6 +271,23 @@ class TestClientConfig(unittest.TestCase):
         base = self._js_base()
         self.assertRegex(base, r"^https://raw\.githubusercontent\.com/[^/]+/[^/]+/lists$",
                          "clients must read the `lists` branch the publish workflow writes")
+
+    def test_update_base_is_this_repository(self):
+        """The publish workflow pushes to `${GITHUB_REPOSITORY}`'s `lists`
+        branch, so the clients must read from the repository they are built
+        from. The two clients agreeing with each other was pinned long before
+        this was — and both agreed, for months, on a repository that did not
+        exist, so every update on every install ended in a 404."""
+        slug = os.environ.get("GITHUB_REPOSITORY", "")
+        if not slug:
+            url = subprocess.run(["git", "-C", str(self.repo), "remote", "get-url", "origin"],
+                                 capture_output=True, text=True).stdout.strip()
+            m = re.search(r"github\.com[:/]([^/]+/[^/]+?)(?:\.git)?$", url)
+            self.assertIsNotNone(m, f"cannot tell which GitHub repository this is from {url!r}")
+            slug = m.group(1)
+        self.assertEqual(self._js_base().lower(),
+                         f"https://raw.githubusercontent.com/{slug}/lists".lower(),
+                         "clients would fetch lists from a repository the workflow never publishes to")
 
     def test_generation_artifacts_are_what_the_build_produces(self):
         """Every artifact a client asks for as part of a generation must be one
