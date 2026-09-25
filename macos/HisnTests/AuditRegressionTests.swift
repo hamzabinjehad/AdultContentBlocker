@@ -169,6 +169,14 @@ final class AuditRegressionTests: XCTestCase {
         XCTAssertEqual(s.layers[0].action, .retryFilterCheck)
     }
 
+    // The suite itself: a class that forgets to pick a namespace, or runs after
+    // one that did, must still never reach the installed app's lock stores.
+    func testTheTestHostNeverDefaultsToTheInstalledAppsStores() {
+        XCTAssertTrue(LockStore.appGroup.hasPrefix(TestNamespace.prefix), LockStore.appGroup)
+        XCTAssertNotEqual(LockStore.keychainService, "app.hisn.lock")
+        XCTAssertFalse(LockStore.systemPath.hasPrefix("/Library/"), LockStore.systemPath)
+    }
+
     // 6 — a browser is recognised by its engine, not only by its Info.plist.
     func testBrowserEnginesAreRecognisedButElectronIsNot() throws {
         let root = FileManager.default.temporaryDirectory

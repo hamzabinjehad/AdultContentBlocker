@@ -35,8 +35,18 @@ public enum LockStore {
     // `write` refuses to shorten a deadline, the suite then passes once and
     // fails every run after that. Nothing in the app reassigns them.
 
+    /// Inside an XCTest host all three start somewhere throwaway. Suites point
+    /// them at their own namespace in setUp, but none restored them in
+    /// tearDown, so the next class ran against a domain already disposed of —
+    /// and a class that ran before any of them would have written the
+    /// installed app's real store. The defaults below make forgetting safe.
+    private static let hostingTests =
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+            || NSClassFromString("XCTestCase") != nil
+    private static let testRun = UUID().uuidString
+
     /// Shared with the network extension, which needs the deadline too.
-    public static var appGroup = "group.app.hisn"
+    public static var appGroup = hostingTests ? "app.hisn.tests.\(testRun)" : "group.app.hisn"
 
     /// A third mirror under `/Library`, meant to be out of a standard user's
     /// reach. Honestly: it is written by THIS process, as the user, so it can
@@ -46,9 +56,11 @@ public enum LockStore {
     /// (the filter, which runs as root, owning the authoritative copy). Until
     /// then this mirror protects against accidents and casual deletion, not
     /// against a standard user who knows the path.
-    public static var systemPath = "/Library/Application Support/Hisn/lock.plist"
+    public static var systemPath = hostingTests
+        ? NSTemporaryDirectory() + "hisn-tests-\(testRun)/lock.plist"
+        : "/Library/Application Support/Hisn/lock.plist"
 
-    public static var keychainService = "app.hisn.lock"
+    public static var keychainService = hostingTests ? "app.hisn.tests.\(testRun)" : "app.hisn.lock"
 
     private static let keychainAccount = "deadline"
 
