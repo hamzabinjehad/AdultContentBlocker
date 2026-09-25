@@ -143,16 +143,32 @@ if [ "$PROFILE" -eq 1 ]; then
     IDS=()
     while read -r id; do IDS+=(--extension-id "$id"); done < <(
         grep -oE '"[a-p]{32}"' "$REPO/macos/Hisn/NativeMessagingInstaller.swift" | tr -d '"')
+    if [ "${#IDS[@]}" -eq 0 ]; then   # and bash 3.2 cannot expand an empty array under set -u
+        echo "error: no extension ids found in NativeMessagingInstaller.swift" >&2
+        exit 1
+    fi
     sudo "$REPO/macos/install_native_host.sh" "${IDS[@]}"
 
     step "Hardening profile"
-    OUT="$REPO/dist/hisn-hardening.mobileconfig"
-    mkdir -p "$REPO/dist"
+    # Built in a folder only this account can read, and deleted once System
+    # Settings has taken its copy: the file holds the removal password in plain
+    # text, and one left behind in the repo's dist/ is the password on disk.
+    PROFILE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/hisn-profile.XXXXXX")"
+    chmod 700 "$PROFILE_DIR"
+    trap 'rm -rf "$PROFILE_DIR"' EXIT
+    OUT="$PROFILE_DIR/hisn-hardening.mobileconfig"
     python3 "$REPO/profile/make_profile.py" --out "$OUT" --print-password ${PROFILE_ARGS[@]+"${PROFILE_ARGS[@]}"}
     echo
     echo "Give the removal password above to your accountability partner, not yourself."
     echo "Opening the profile — install it in System Settings › General › Device Management."
     open "$OUT"
+    if [ -t 0 ]; then
+        read -r -p "Press Return once System Settings shows the profile (the file is then deleted)… " _ || true
+    else
+        sleep 15
+    fi
+    rm -rf "$PROFILE_DIR"
+    trap - EXIT
 fi
 
 # ---- 6. what is actually enforced ------------------------------------------------

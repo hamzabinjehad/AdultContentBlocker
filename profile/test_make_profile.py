@@ -18,7 +18,9 @@ it is wrong the symptom is something *else* failing silently somewhere else.
 from __future__ import annotations
 
 import argparse
+import os
 import plistlib
+import tempfile
 import sys
 import unittest
 from pathlib import Path
@@ -282,6 +284,36 @@ class TestRemoval(unittest.TestCase):
         a, b = make_profile.gen_password(), make_profile.gen_password()
         self.assertNotEqual(a, b)
         self.assertGreaterEqual(len(a), 20)
+
+
+class TestFirefox(unittest.TestCase):
+
+    def test_policies_are_switched_on(self):
+        """Firefox on macOS ignores every other key in its domain unless this
+        one is set — the payload was delivered and did nothing."""
+        firefox = payload(build(), "org.mozilla.firefox")
+        self.assertIs(firefox["EnterprisePoliciesEnabled"], True)
+        self.assertEqual(firefox["DNSOverHTTPS"], {"Enabled": False, "Locked": True})
+
+
+class TestPasswordOnDisk(unittest.TestCase):
+    """The .mobileconfig holds the removal password in plain text."""
+
+    def test_written_for_its_owner_only(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = Path(d) / "sub" / "p.mobileconfig"
+            make_profile.write_private(out, b"secret")
+            self.assertEqual(out.read_bytes(), b"secret")
+            self.assertEqual(out.stat().st_mode & 0o777, 0o600)
+
+    def test_an_existing_readable_file_is_tightened(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = Path(d) / "p.mobileconfig"
+            out.write_bytes(b"old")
+            os.chmod(out, 0o644)
+            make_profile.write_private(out, b"new")
+            self.assertEqual(out.stat().st_mode & 0o777, 0o600)
+            self.assertEqual(out.read_bytes(), b"new")
 
 
 class TestSerialisation(unittest.TestCase):

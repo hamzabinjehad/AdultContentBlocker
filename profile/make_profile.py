@@ -27,6 +27,7 @@ hold the removal password. See docs/THREAT_MODEL.md.
 from __future__ import annotations
 
 import argparse
+import os
 import plistlib
 import secrets
 import string
@@ -350,6 +351,9 @@ def p_firefox(lock_devtools: bool = True, block_incognito: bool = True) -> dict:
     return payload(
         "org.mozilla.firefox", "firefox", "Firefox Policy",
         "Locks Firefox DNS-over-HTTPS and private browsing.",
+        # Without this key Firefox on macOS reads none of the others: the
+        # policies below were delivered, listed in System Settings, and ignored.
+        EnterprisePoliciesEnabled=True,
         DNSOverHTTPS={"Enabled": False, "Locked": True},
         DisablePrivateBrowsing=block_incognito,
         DisableDeveloperTools=lock_devtools,
@@ -361,6 +365,21 @@ def p_firefox(lock_devtools: bool = True, block_incognito: bool = True) -> dict:
 # --------------------------------------------------------------------------- #
 # Assembly
 # --------------------------------------------------------------------------- #
+
+def write_private(path: Path, data: bytes) -> None:
+    """
+    Write the profile readable by its owner only.
+
+    The file carries the removal password in plain text, and was written 0644
+    into the repo's dist/ — any account on the Mac, the one the lock is for
+    included, could read the password off the disk and remove the profile.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "wb") as f:
+        os.fchmod(f.fileno(), 0o600)   # an existing file keeps its old mode otherwise
+        f.write(data)
+
 
 def gen_password(length: int = 40) -> str:
     alphabet = string.ascii_letters + string.digits
@@ -495,8 +514,7 @@ def main() -> int:
     profile, removal_password = build(args)
 
     out = Path(args.out)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_bytes(plistlib.dumps(profile, fmt=plistlib.FMT_XML))
+    write_private(out, plistlib.dumps(profile, fmt=plistlib.FMT_XML))
 
     print(f"wrote {out}  ({out.stat().st_size:,} bytes, "
           f"{len(profile['PayloadContent'])} payloads)", file=sys.stderr)

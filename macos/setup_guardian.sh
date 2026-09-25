@@ -87,10 +87,15 @@ has_token() { sysadminctl -secureTokenStatus "$1" 2>&1 | grep -q ENABLED; }
 
 # Admins that can actually unlock a FileVault disk. Demoting the last of these
 # is the one move that bricks the machine, so it is counted explicitly.
-token_admins() {
+# `grep -x` with an optional group, not `^(a|b|)$`: macOS's grep rejects the
+# empty alternative ("empty (sub)expression"), which made this list nobody,
+# so --check showed no admins and --demote-me always refused.
+admins() {
     dscl . -read /Groups/admin GroupMembership 2>/dev/null \
-        | tr ' ' '\n' | grep -vE '^(GroupMembership:|root|)$' \
-        | while read -r u; do has_token "$u" && echo "$u"; done
+        | tr ' ' '\n' | { grep -vxE '(GroupMembership:|root)?' || true; }
+}
+token_admins() {
+    admins | while read -r u; do if has_token "$u"; then echo "$u"; fi; done
 }
 
 # --------------------------------------------------------------------------- #
@@ -107,9 +112,7 @@ if [ "$ACTION" = "check" ]; then
     echo "FileVault:         $(fdesetup status 2>/dev/null | head -1)"
     echo
     echo "Admins on this Mac:"
-    dscl . -read /Groups/admin GroupMembership 2>/dev/null \
-        | sed 's/GroupMembership: //' | tr ' ' '\n' | grep -vE '^(root|)$' \
-        | while read -r u; do
+    admins | while read -r u; do
             echo "  - $u  (secure token: $(has_token "$u" && echo yes || echo no))"
           done
     echo
@@ -217,7 +220,9 @@ if [ "$ACTION" = "demote" ]; then
     # The last-admin guard: after demotion, at least one OTHER token-holding
     # admin must remain. Without this, a single-person mistake takes the whole
     # machine's administrability with it.
-    remaining=$(token_admins | grep -vx "$ME" | wc -l | tr -d ' ')
+    # `|| true`: with no other admin grep exits 1, and under pipefail that
+    # ended the script right here without a word.
+    remaining=$({ token_admins | grep -vx "$ME" || true; } | wc -l | tr -d ' ')
     if [ "$remaining" -lt 1 ]; then
         echo "error: demoting '$ME' would leave no other secure-token admin." >&2
         echo "       That is the bricked-disk case. Refusing." >&2
@@ -231,9 +236,21 @@ if [ "$ACTION" = "demote" ]; then
     echo
     echo "Proof required first: have you logged in as '$GUARDIAN_USER' and back?"
     if [ "$DRY" -eq 1 ]; then
-        echo "(dry run) would run:  dseditgroup -o edit -d $ME -t user admin"
+        echo "(dry run) would ask the second person for '$GUARDIAN_USER''s password,"
+        echo "          then run:  dseditgroup -o edit -d $ME -t user admin"
         exit 0
     fi
+    # The header promised this and nothing did it: an admin whose password
+    # nobody actually knows is no admin at all. The second person types it.
+    echo
+    echo "The SECOND PERSON types the password of '$GUARDIAN_USER' now:"
+    if ! dscl . -authonly "$GUARDIAN_USER"; then
+        echo "error: that password did not authenticate '$GUARDIAN_USER'." >&2
+        echo "       Refusing to demote you until someone provably holds admin." >&2
+        exit 1
+    fi
+    echo "OK: '$GUARDIAN_USER' authenticates."
+    echo
     printf "Type EXACTLY 'demote me' to proceed: "
     read -r confirm
     [ "$confirm" = "demote me" ] || { echo "Aborted."; exit 1; }
