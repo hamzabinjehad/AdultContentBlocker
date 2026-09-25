@@ -30,6 +30,7 @@ from build import (                                    # noqa: E402
     parse_hosts,
     parse_plain,
     write_dnr_rules,
+    write_keyword_rules,
 )
 
 
@@ -236,6 +237,40 @@ class TestRealArtifacts(unittest.TestCase):
     def test_manifest_covers_every_artifact(self):
         for name in self.manifest["artifacts"]:
             self.assertTrue((self.dist / name).exists(), f"{name} missing")
+
+
+class TestKeywordRules(unittest.TestCase):
+
+    def _regex(self, term="sex"):
+        import tempfile
+        with tempfile.NamedTemporaryFile(suffix=".json") as fh:
+            write_keyword_rules(Path(fh.name), [{"t": term, "kind": "token"}], [], [], 1)
+            rule = json.loads(Path(fh.name).read_text())[0]
+        return re.compile(rule["condition"]["regexFilter"], re.IGNORECASE)
+
+    def test_no_unicode_classes(self):
+        """\\p{L} and friends compile past DNR's per-regex memory limit, and
+        Chrome silently drops the rule — every token keyword rule was dead."""
+        import tempfile
+        with tempfile.NamedTemporaryFile(suffix=".json") as fh:
+            write_keyword_rules(Path(fh.name), [{"t": "sex", "kind": "token"}], [], [], 1)
+            rx = json.loads(Path(fh.name).read_text())[0]["condition"]["regexFilter"]
+        self.assertNotIn("\\p{", rx)
+        self.assertLess(len(rx), 80)
+
+    def test_percent_escape_is_a_boundary(self):
+        """Chrome matches the raw URL: `?q=hot%20sex` puts the escape's digit
+        right before the term, and the plain boundary never matched it."""
+        rx = self._regex()
+        self.assertTrue(rx.search("https://www.google.com/search?q=hot%20sex"))
+        self.assertTrue(rx.search("https://example.com/search?q=sex"))
+        self.assertTrue(rx.search("https://example.com/sex/videos"))
+
+    def test_boundary_still_protects_ordinary_words(self):
+        rx = self._regex()
+        for url in ["https://www.essex.gov.uk/", "https://example.com/sextant",
+                    "https://example.com/?q=unisex%20shoes"]:
+            self.assertIsNone(rx.search(url), url)
 
 
 class TestClientConfig(unittest.TestCase):

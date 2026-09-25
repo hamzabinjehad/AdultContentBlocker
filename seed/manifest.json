@@ -5,8 +5,8 @@
       "sha256": "ff6fc19e4d3804ae21f4a1fe51d6c8d695986591fd13cd8fff06315921a8706f"
     },
     "dnr_keyword_rules.json": {
-      "bytes": 68609,
-      "sha256": "88fd602ab5ed6ee8be3d4304fbd73ad4b3696d392b057d063ca75be63ff33e89"
+      "bytes": 68666,
+      "sha256": "debb8f690f0d9dabb39c6b4f56e074dfeb6d2c65c805c88eb4dee97b8e634e9b"
     },
     "domains.index": {
       "bytes": 8192,
@@ -18,18 +18,18 @@
     },
     "domains.txt": {
       "bytes": 134238744,
-      "sha256": "5ab85e4a2e2870611fc69ddc42c635570df3468afc06a9d7c3b82208bfaa4462"
+      "sha256": "c13adf38528719a1c2d6cb4e0ce5d7cf07e01e71abcd8e6211fd5a430ee4025f"
     },
     "domains_core.txt": {
       "bytes": 1851814,
-      "sha256": "88d72615197d7b2e0af7f34e264e3855d94c9c8dac33b4ace2e80847463e51ba"
+      "sha256": "f3c5e89aa62f35913b71178183955f1c111b3c5f851b6069a025445fdf69947d"
     },
     "terms.json": {
       "bytes": 288254,
       "sha256": "000df06f6b364efadc9b0f858011c38ebaa53e98df5382e172ec8f72b7b4229a"
     }
   },
-  "built_at": "2026-09-25T14:07:56+00:00",
+  "built_at": "2026-09-25T14:20:46+00:00",
   "core_domain_count": 117243,
   "dnr_keyword_rule_count": 110,
   "dnr_rule_count": 236,

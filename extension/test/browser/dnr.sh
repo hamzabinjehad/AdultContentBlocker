@@ -11,7 +11,10 @@
 #     strict SafeSearch parameter — exactly once each, so the redirect rules
 #     do not loop;
 #   * YouTube requests carry `YouTube-Restrict: Strict`;
-#   * a domain on the bundled blocklist never arrives at all.
+#   * a domain on the bundled blocklist never arrives at all;
+#   * URL keyword rules fire — the token ones too, which Chrome had silently
+#     dropped (their \p{L} boundary compiled past DNR's regex memory limit)
+#     for as long as they had existed — including after a `%20`.
 #
 # Needs a Chromium build that still honours --load-extension (Helium,
 # Chromium; branded Chrome 137+ ignores it) and openssl.
@@ -56,6 +59,11 @@ PAGE = b"""<!doctype html><meta charset=utf-8><body>
 <iframe src="https://duckduckgo.com/?q=hisn"></iframe>
 <iframe src="https://www.youtube.com/results?search_query=hisn"></iframe>
 <iframe src="https://$BLOCKED/"></iframe>
+<iframe src="https://kw.hisn.test/search?q=hot%20sex"></iframe>
+<iframe src="https://ok.hisn.test/search?q=unisex%20shoes"></iframe>
+<iframe src="https://kw2.hisn.test/search?q=sex"></iframe>
+<iframe src="https://kw3.hisn.test/sex/videos"></iframe>
+<iframe src="https://kw4.hisn.test/free-porn-videos"></iframe>
 <p id=done>loaded</p></body>"""
 class H(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
@@ -112,6 +120,12 @@ expect "Bing arrives with adlt=strict"                '^www\.bing\.com	/search\?
 expect "DuckDuckGo arrives with kp=1"                 '^duckduckgo\.com	/\?.*kp=1'
 expect "YouTube carries YouTube-Restrict: Strict"     '^www\.youtube\.com	.*	Strict$'
 refuse "the listed domain ($BLOCKED) never arrives"   "^$BLOCKED"
+refuse "a keyword after %20 is caught (?q=hot%20sex)"  '^kw\.hisn\.test'
+expect "…and an ordinary word is not (unisex%20shoes)" '^ok\.hisn\.test'
+refuse "a token keyword rule fires (?q=sex)"            '^kw2\.hisn\.test'
+refuse "a token keyword rule fires in a path (/sex/)"    '^kw3\.hisn\.test'
+refuse "a substring keyword rule fires (/free-porn-…)"   '^kw4\.hisn\.test'
+
 n="$(grep -cE '^www\.google\.com	/search' "$LOG" || true)"
 [ "$n" = "1" ] && echo "  ok   no redirect loop (one Google request)" \
                || { echo "  FAIL expected one Google request, saw $n"; fail=1; }

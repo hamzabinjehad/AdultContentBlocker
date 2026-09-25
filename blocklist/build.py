@@ -336,11 +336,18 @@ def write_keyword_rules(path: Path, terms: list[dict], never: list[str],
             if regex_used >= MAX_REGEX_RULES:
                 continue
             regex_used += 1
-            # (?:^|[^\w]) would be wrong for Arabic — \w is ASCII-oriented in
-            # RE2's default mode. Spell the boundary out as "not a letter or
-            # digit in any script".
-            b = r"(?:[^\p{L}\p{N}]|^)"
-            condition = {"regexFilter": f"{b}{re.escape(term)}(?:[^\\p{{L}}\\p{{N}}]|$)",
+            # The boundary: start, a character that is not an ASCII letter or
+            # digit, or a percent-escape. ASCII, because Chrome matches the URL
+            # as serialised — punycode host, everything else percent-encoded —
+            # so no other letter ever reaches this regex. And NOT \p{L}/\p{N}:
+            # those Unicode classes compile past DNR's per-regex memory limit,
+            # and Chrome silently dropped every rule written with them — none
+            # of these keyword rules had ever matched (test/browser/dnr.sh).
+            # The escape alternative: Chrome does not decode a query string,
+            # so `?q=hot%20sex` puts the digit `0` right before the term.
+            left = r"(?:^|[^a-z0-9]|%[0-9a-f]{2})"
+            right = r"(?:[^a-z0-9]|$)"
+            condition = {"regexFilter": f"{left}{re.escape(term)}{right}",
                          "isUrlFilterCaseSensitive": False}
 
         condition["resourceTypes"] = ["main_frame", "sub_frame"]
