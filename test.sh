@@ -56,6 +56,10 @@ suite_browser() {
     extension/test/browser/run.sh
     echo "── extension: list signature verification (WebCrypto Ed25519)"
     extension/test/browser/run.sh verify.html
+    echo "── extension: the settings page, English and Arabic"
+    extension/test/browser/run.sh settings.html
+    echo "── extension: the block page, English and Arabic"
+    extension/test/browser/run.sh blocked.html
     echo "── extension: network rules in a real browser (SafeSearch, blocklist)"
     extension/test/browser/dnr.sh
     echo "── extension: the scanner against evasive pages in a real browser"

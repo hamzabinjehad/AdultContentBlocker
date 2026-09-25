@@ -1,0 +1,69 @@
+<!doctype html><meta charset="utf-8"><title>Hisn block page tests</title>
+<!--
+  The block page, rendered for real: the reason-specific text, the lock timer,
+  the matched words to dispute, and the Arabic page. The page's own script is
+  inlined with `location.search` pinned to the case under test, because a
+  srcdoc frame (needed to put a fake `chrome` in front of it) has no query.
+-->
+<pre id="summary" data-result="pending">Running…</pre>
+<div id="frames"></div>
+<script type="module">
+const results = [];
+let failed = false;
+const check = (ok, label) => { results.push(`${ok ? "ok  " : "FAIL"} ${label}`); if (!ok) failed = true; };
+const pause = (ms = 150) => new Promise((r) => setTimeout(r, ms));
+try {
+  const page = await (await fetch("../../blocked.html")).text();
+  const script = await (await fetch("../../blocked.js")).text();
+  async function frame({ reason, lang, lockHours = 0, failClosed = false }) {
+    const state = { lockUntil: lockHours ? Date.now() + lockHours * 3600e3 : 0, failClosed };
+    const mock = `<script>window.sent = [];
+      window.chrome = {
+        storage: { local: { get: async () => (${JSON.stringify(lang)} ? { uiLanguage: ${JSON.stringify(lang)} } : {}) },
+                   session: { get: async () => ({ lastTextBlock: { host: "example.test", terms: ["alpha", "beta"], at: Date.now() } }) } },
+        runtime: { openOptionsPage() {}, lastError: null,
+          sendMessage(msg, cb) { sent.push(msg); cb(msg.type === "getState" ? ${JSON.stringify(state)}
+                                 : msg.type === "reportWrongWord" ? { ok: true, term: msg.term } : { ok: true }); } },
+        tabs: { getCurrent(cb) { cb({}); } } };<\/script>`;
+    const inlined = script.replaceAll("location.search", JSON.stringify(reason ? `?reason=${reason}` : ""));
+    const f = document.createElement("iframe");
+    f.srcdoc = page
+      .replace("<head>", `<head><base href="${new URL("../../blocked.html", location.href).href}">${mock}`)
+      .replace('<script type="module" src="blocked.js"><\/script>', `<script type="module">${inlined}<\/script>`);
+    document.getElementById("frames").append(f);
+    await new Promise((r) => (f.onload = r));
+    await pause();
+    return f.contentDocument;
+  }
+
+  let d = await frame({ reason: "terms", lockHours: 30 });
+  check(d.getElementById("title").textContent === "Blocked by content check", "the reason decides the title");
+  check(!d.getElementById("timer").hidden && d.getElementById("timer").textContent.startsWith("Lock ends in"),
+        "a running lock shows its countdown");
+  check(d.querySelector("#timer strong")?.textContent === "1d 6h 0m" || /^1d 5h 59m$/.test(d.querySelector("#timer strong")?.textContent),
+        `the countdown is right (${d.querySelector("#timer strong")?.textContent})`);
+  const chips = [...d.querySelectorAll("#matched .w")];
+  check(chips.map((c) => c.textContent).join() === "alpha,beta", "the matched words are offered for dispute");
+  chips[0].click(); await pause();
+  check(d.defaultView.sent.some((m) => m.type === "reportWrongWord" && m.term === "alpha")
+        && d.getElementById("reportStatus").textContent.includes("alpha"), "disputing a word reports it and says so");
+
+  d = await frame({ reason: "strict" });
+  check(d.getElementById("title").textContent === "Not on your allowed list", "strict reason");
+  check(d.getElementById("timer").hidden, "no lock, no countdown");
+  check(d.getElementById("reportRow").hidden, "only a content-check block offers a report");
+
+  d = await frame({ reason: "custom", failClosed: true });
+  check(d.getElementById("note").textContent.includes("not responding"), "the fail-closed note shows");
+
+  d = await frame({ reason: "terms", lang: "ar", lockHours: 2 });
+  check(d.documentElement.dir === "rtl", "Arabic block page is right-to-left");
+  check(d.getElementById("title").textContent === "حُجبت بسبب فحص المحتوى", "Arabic reason title");
+  check(d.getElementById("timer").textContent.startsWith("ينتهي القفل بعد"), "Arabic countdown");
+  check(d.getElementById("leavePage").textContent === "افتح تبويبًا جديدًا", "Arabic static text");
+} catch (error) {
+  check(false, `threw: ${error.stack || error}`);
+}
+document.getElementById("summary").dataset.result = failed ? "fail" : "pass";
+document.getElementById("summary").textContent = results.join("\n");
+</script>

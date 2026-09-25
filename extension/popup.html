@@ -34,7 +34,11 @@
   .notice { margin-top:10px; padding:10px; border-radius:8px; font-size:12.5px;
             background:color-mix(in srgb, var(--warn) 14%, transparent);
             color:var(--warn); border:1px solid color-mix(in srgb, var(--warn) 30%, transparent); }
-  .notice ol { margin:6px 0 0; padding-left:18px; }
+  .notice ol { margin:6px 0 0; padding-inline-start:18px; }
+  .lang-switch { margin-inline-start:auto; margin-inline-end:8px; padding:2px 8px; cursor:pointer;
+                 font:inherit; font-size:11.5px; color:var(--muted); background:transparent;
+                 border:1px solid var(--line); border-radius:999px; }
+  .lang-switch:hover { color:var(--accent); border-color:var(--accent); }
   .notice li { margin:2px 0; }
   .notice button { margin-top:9px; width:100%; padding:7px 10px; cursor:pointer;
                    font:inherit; font-weight:600; font-size:12.5px;
@@ -56,12 +60,12 @@
 </style><link rel="stylesheet" href="ui.css">
 </head>
 <body class="popup">
-  <header><div class="brand"><span class="brand-mark" aria-hidden="true">H</span> Hisn</div><span class="connection-badge" id="connectionBadge">Checking…</span></header>
+  <header><div class="brand"><span class="brand-mark" aria-hidden="true">H</span> Hisn</div><button type="button" class="lang-switch" id="langSwitch" lang="ar">العربية</button><span class="connection-badge" id="connectionBadge" data-i18n="popup.checking">Checking…</span></header>
 
   <section class="block" aria-live="polite">
     <div class="head">
       <span class="dot unknown" id="pDot" aria-hidden="true"></span>
-      <h2 id="pHead">Checking status…</h2>
+      <h2 id="pHead" data-i18n="popup.checkingStatus">Checking status…</h2>
     </div>
     <p class="detail" id="pDetail"></p>
   </section>
@@ -75,16 +79,16 @@
   <div id="incognito" class="notice" hidden></div>
 
   <details>
-    <summary>Details</summary>
+    <summary data-i18n="popup.details">Details</summary>
     <dl id="details"></dl>
   </details>
 
-  <nav class="actions" aria-label="Shortcuts">
-    <button type="button" id="openSettings">Manage protection →</button>
-    <button type="button" id="checkConnection">Check connection</button>
+  <nav class="actions" aria-label="Shortcuts" data-i18n-aria-label="popup.shortcuts">
+    <button type="button" id="openSettings" data-i18n="popup.manage">Manage protection →</button>
+    <button type="button" id="checkConnection" data-i18n="popup.checkConnection">Check connection</button>
   </nav>
   <p class="detail" id="connectionMessage" role="status"></p>
-  <p class="privacy-note">Content checks stay on your device.</p>
+  <p class="privacy-note" data-i18n="privacy.onDevice">Content checks stay on your device.</p>
 <script type="module" src="popup.js"></script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Blocked</title>
+<title data-i18n="blocked.docTitle">Blocked</title>
 <style>
   :root {
     --bg: #f7f7f5;
@@ -89,14 +89,14 @@
     <p class="matched" id="matched" hidden></p>
     <div class="timer" id="timer" hidden></div>
     <p class="note" id="note"></p>
-    <nav class="actions" aria-label="Next steps"><button type="button" id="leavePage">Go to a new tab</button><button type="button" class="secondary" id="openSettings">Review settings</button></nav>
+    <nav class="actions" aria-label="Next steps" data-i18n-aria-label="blocked.nextSteps"><button type="button" id="leavePage" data-i18n="blocked.newTab">Go to a new tab</button><button type="button" class="secondary" id="openSettings" data-i18n="blocked.reviewSettings">Review settings</button></nav>
     <div class="report" id="reportRow" hidden>
-      <p class="report-hint" id="reportHint">Incorrect block? Selecting a word removes it from future text checks on every site. During a lock, your correction waits for review.</p>
-      <button type="button" id="reportSite">Report this site as incorrectly blocked</button>
+      <p class="report-hint" id="reportHint" data-i18n="blocked.reportHint">Incorrect block? Selecting a word removes it from future text checks on every site. During a lock, your correction waits for review.</p>
+      <button type="button" id="reportSite" data-i18n="blocked.reportSite">Report this site as incorrectly blocked</button>
       <p class="report-status" id="reportStatus" role="status" hidden></p>
     </div>
   </main>
 
-<script src="blocked.js"></script>
+<script type="module" src="blocked.js"></script>
 </body>
 </html>

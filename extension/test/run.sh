@@ -24,6 +24,19 @@ if [ ! -x "$JSC" ]; then
 fi
 
 fail=0
+
+# Every script the extension ships must at least PARSE. blocked.js was once
+# committed missing its last `});` — a SyntaxError no unit suite noticed,
+# because none imports it — and for as long as that lasted the block page
+# ran no script at all: no reason, no timer, no report buttons.
+echo "── syntax: every script the extension ships"
+for f in ../background.js ../popup.js ../options.js ../blocked.js ../lib/*.js ../lib/locale/*.js; do
+  # checkModuleSyntax takes SOURCE, not a path — readFile it first.
+  "$JSC" -e "checkModuleSyntax(readFile('$f'))" >/dev/null || { echo "  syntax error: $f" >&2; fail=1; }
+done
+"$JSC" -e "checkSyntax('../content/scan.js')" >/dev/null || { echo "  syntax error: content/scan.js" >&2; fail=1; }
+[ "$fail" -eq 0 ] && echo "  all scripts parse"
+
 for t in *.test.js; do
   [ -e "$t" ] || continue
   echo "── $t"

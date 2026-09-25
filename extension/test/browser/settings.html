@@ -9,7 +9,7 @@ function check(ok, label) { results.push(`${ok ? "ok" : "FAIL"} ${label}`); if (
 const pause = () => new Promise((resolve) => setTimeout(resolve, 100));
 try {
   const source = await (await fetch("../../options.html")).text();
-  async function frame(managed) {
+  async function frame(managed, uiLanguage) {
     const f = document.createElement("iframe");
     const fixture = {
       appPresent: managed, mode: "blocklist", lockUntil: 0, lastHeartbeat: Date.now(),
@@ -20,7 +20,9 @@ try {
       window.fixture = ${JSON.stringify(fixture)};
       window.writes = 0;
       window.changeHandlers = [];
-      window.chrome = { storage: { onChanged: { addListener(fn) { changeHandlers.push(fn); } } },
+      window.chrome = { storage: { onChanged: { addListener(fn) { changeHandlers.push(fn); } },
+          local: { get: async () => (${JSON.stringify(uiLanguage ?? null)} ? { uiLanguage: ${JSON.stringify(uiLanguage ?? null)} } : {}),
+                   set: async () => {} } },
         runtime: { sendMessage(msg, cb) {
           if (msg.type === 'getState') return cb(structuredClone(fixture));
           if (msg.type === 'forceSync') return cb({ok:false});
@@ -72,6 +74,18 @@ try {
   solo.style.width = "390px";
   await pause();
   check(s.documentElement.scrollWidth <= w.innerWidth, "narrow settings page has no horizontal overflow");
+  // Arabic: the whole page mirrors, the words are Arabic, domains stay LTR,
+  // and nothing overflows sideways on a phone-width window.
+  const arFrame = await frame(false, "ar");
+  const a2 = arFrame.contentDocument;
+  check(a2.documentElement.dir === "rtl" && a2.documentElement.lang === "ar", "Arabic page is right-to-left");
+  check(a2.getElementById("modeTitle").textContent === "حماية المتصفح فقط", "Arabic status text");
+  check(a2.querySelector("h1").textContent.includes("لما يهمّك"), "Arabic static text");
+  check(a2.getElementById("custom").dir === "ltr", "domain fields stay left-to-right");
+  check(a2.getElementById("uiLanguage").value === "ar", "the language picker shows the choice");
+  arFrame.style.width = "390px";
+  await pause();
+  check(a2.documentElement.scrollWidth <= arFrame.contentWindow.innerWidth, "narrow Arabic page has no horizontal overflow");
   document.getElementById("summary").dataset.result = "pass";
 } catch (error) {
   results.push(`FAIL ${error.stack}`);

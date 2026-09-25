@@ -14,11 +14,16 @@
  */
 
 import { isLocked, effectiveStrict, HEARTBEAT_GRACE_MS } from "./policy.js";
+import { t, locale as uiLocale } from "./i18n.js";
 
-export const MODE_NAME = { strict: "Strict", blocklist: "Standard" };
+/** "Strict" / "صارم" — read at call time, so it follows the page's language. */
+export const MODE_NAME = {
+  get strict() { return t("mode.strict"); },
+  get blocklist() { return t("mode.standard"); },
+};
 
-/** "20 Sept 2026, 14:00" in the user's locale. Injectable for the tests. */
-export function formatWhen(ms, locale = undefined) {
+/** "20 Sept 2026, 14:00" in the page's language. Injectable for the tests. */
+export function formatWhen(ms, locale = uiLocale()) {
   return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium", timeStyle: "short",
   }).format(new Date(ms));
@@ -42,13 +47,12 @@ export function describeStatus(state, opts = {}) {
     return {
       protection: {
         level: "unknown",
-        headline: "Status unavailable",
-        detail: "The extension did not answer. Close and reopen this window; "
-          + "or use Check app connection in Settings to retry.",
+        headline: t("status.unavailable"),
+        detail: t("status.unavailable.detail"),
       },
-      lock: { locked: false, headline: "Lock status unknown", detail: "" },
+      lock: { locked: false, headline: t("status.lockUnknown"), detail: "" },
       notices: [],
-      details: opts.version ? [["Extension version", opts.version]] : [],
+      details: opts.version ? [[t("details.extVersion"), opts.version]] : [],
     };
   }
 
@@ -65,36 +69,29 @@ export function describeStatus(state, opts = {}) {
   if (!state.appPresent) {
     protection = {
       level: "active",
-      headline: "Protection active",
-      detail: "In this browser only. No Hisn app connection detected. "
-        + "Manage blocking in Settings; the app is optional for browser filtering.",
+      headline: t("status.active"),
+      detail: t("status.browserOnly.detail"),
     };
   } else if (appFresh) {
     protection = {
       level: "active",
-      headline: "Protection active",
-      detail: "This browser and the Hisn app are connected.",
+      headline: t("status.active"),
+      detail: t("status.connected.detail"),
     };
   } else if (state.failClosed) {
     protection = {
       level: "active",
-      headline: "Protection active",
-      detail: "Tightened to strict mode automatically: the Hisn app stopped "
-        + "responding during a lock.",
+      headline: t("status.active"),
+      detail: t("status.failClosed.detail"),
     };
-    notices.push({
-      kind: "warn",
-      text: "Open the Hisn app to restore your normal settings. Strict mode "
-        + "stays on until it answers.",
-    });
+    notices.push({ kind: "warn", text: t("status.failClosed.notice") });
   } else {
     protection = {
       level: "partial",
-      headline: "Partially active",
-      detail: "This browser is blocking, but the Hisn app is not responding, so "
-        + "your lists and settings may be out of date.",
+      headline: t("status.partial"),
+      detail: t("status.partial.detail"),
     };
-    notices.push({ kind: "warn", text: "Open the Hisn app to reconnect." });
+    notices.push({ kind: "warn", text: t("status.reconnect") });
   }
 
   // ── lock ────────────────────────────────────────────────────────────────
@@ -103,17 +100,14 @@ export function describeStatus(state, opts = {}) {
     const mode = MODE_NAME[effectiveStrict(state) ? "strict" : "blocklist"];
     lock = {
       locked: true,
-      headline: `Locked until ${when(state.lockUntil)}`,
-      detail: `${mode} mode. Changes that weaken protection wait until the lock ends.`,
+      headline: t("status.lockedUntil", when(state.lockUntil)),
+      detail: t("status.lockedDetail", mode),
     };
   } else {
     lock = {
       locked: false,
-      headline: "No active lock",
-      detail: state.appPresent
-        ? "Blocking stays on. Start a lock from the Hisn app to make it "
-          + "last for a set time. Resistance to removal depends on your Mac setup."
-        : "Locks need the Hisn app.",
+      headline: t("status.noLock"),
+      detail: state.appPresent ? t("status.noLock.app") : t("status.noLock.browser"),
     };
   }
 
@@ -123,16 +117,17 @@ export function describeStatus(state, opts = {}) {
   // blocks nothing" state the threat model rates worse than being switched off.
   const rules = state.rulesApplied || 0;
   const details = [
-    ["Block list", rules ? `v${state.listVersion} · ${rules} rules` : "bundled list only"],
-    ["Blocking mode", effectiveStrict(state) ? "Strict" : "Standard"],
-    ["Page-text check", state.inspectText === false && !locked && !state.failClosed
-      ? "off"
-      : `on · sensitivity ${state.textSensitivity ?? 50}`],
-    ["Hisn app", !state.appPresent ? "not connected"
-      : appFresh ? "connected"
-      : `last heard ${when(state.lastHeartbeat || 0)}`],
+    [t("details.blockList"), rules ? t("details.blockListValue", state.listVersion, rules)
+                                     : t("details.bundledOnly")],
+    [t("details.mode"), effectiveStrict(state) ? t("mode.strict") : t("mode.standard")],
+    [t("details.pageText"), state.inspectText === false && !locked && !state.failClosed
+      ? t("details.off")
+      : t("details.onSensitivity", state.textSensitivity ?? 50)],
+    [t("details.app"), !state.appPresent ? t("details.notConnected")
+      : appFresh ? t("details.connected")
+      : t("details.lastHeard", when(state.lastHeartbeat || 0))],
   ];
-  if (opts.version) details.push(["Extension version", opts.version]);
+  if (opts.version) details.push([t("details.extVersion"), opts.version]);
 
   return { protection, lock, notices, details };
 }

@@ -15,17 +15,22 @@
 import { describeStatus } from "./lib/status.js";
 import { send } from "./lib/messages.js";
 import { connectionStatus } from "./lib/settings.js";
+import { initLanguage, t, language, setLanguage, savePreference, translatePage } from "./lib/i18n.js";
+
+await initLanguage();
+let lastState;
 
 /** How long to wait for the worker before saying we could not reach it. */
 const REPLY_TIMEOUT_MS = 3000;
 
 function render(state) {
+  lastState = state;
   const version = chrome.runtime.getManifest?.().version;
   const s = describeStatus(state, { version });
   const connection = connectionStatus(state);
-  document.getElementById("connectionBadge").textContent = !state ? "Unavailable"
-    : !connection.managed ? "Browser only"
-    : connection.title === "Managed by the Hisn app" ? "App connected" : "App offline";
+  document.getElementById("connectionBadge").textContent = !state ? t("badge.unavailable")
+    : !connection.managed ? t("badge.browserOnly")
+    : connection.fresh ? t("badge.connected") : t("badge.offline");
 
   document.getElementById("pDot").className = `dot ${s.protection.level}`;
   document.getElementById("pHead").textContent = s.protection.headline;
@@ -80,17 +85,19 @@ function checkIncognitoAccess() {
     // toggle. Numbered steps plus a button that opens this extension's details
     // page, where "Allow in Incognito" lives.
     el.hidden = false;
-    el.innerHTML =
-      "<strong>Not active in private windows yet.</strong>"
-      + "<ol>"
-      + "<li>Open this extension's details page (button below).</li>"
-      + "<li>Turn on <strong>Allow in Incognito</strong> (or “Allow in "
-      + "Private”).</li>"
-      + "</ol>";
+    const title = document.createElement("strong");
+    title.textContent = t("incog.title");
+    const steps = document.createElement("ol");
+    for (const key of ["incog.step1", "incog.step2"]) {
+      const li = document.createElement("li");
+      li.textContent = t(key);
+      steps.appendChild(li);
+    }
+    el.replaceChildren(title, steps);
 
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.textContent = "Open extension settings";
+    btn.textContent = t("incog.button");
     btn.addEventListener("click", openDetailsPage);
     el.appendChild(btn);
   });
@@ -123,10 +130,9 @@ document.getElementById("openSettings").addEventListener("click", () => {
 document.getElementById("checkConnection").addEventListener("click", async (event) => {
   event.target.disabled = true;
   const message = document.getElementById("connectionMessage");
-  message.textContent = "Checking for the Hisn app…";
+  message.textContent = t("conn.checking");
   const result = await send({ type: "forceSync" });
-  message.textContent = result.ok ? "App connected. Settings synced."
-    : "No connection. Open Hisn on your Mac and retry, or continue with your current browser protection.";
+  message.textContent = result.ok ? t("conn.synced") : t("conn.none");
   const state = await send({ type: "getState" });
   render(state.ok === false ? undefined : state);
   event.target.disabled = false;
@@ -148,3 +154,20 @@ chrome.runtime.sendMessage({ type: "getState" }, (state) => {
   render(chrome.runtime.lastError ? undefined : state);
 });
 checkIncognitoAccess();
+
+// The language switch: the other language's own name, one tap.
+const langSwitch = document.getElementById("langSwitch");
+function labelSwitch() {
+  langSwitch.textContent = t("lang.switchTo");
+  langSwitch.lang = language() === "ar" ? "en" : "ar";
+}
+labelSwitch();
+langSwitch.addEventListener("click", async () => {
+  const next = language() === "ar" ? "en" : "ar";
+  setLanguage(next);
+  await savePreference(next).catch(() => {});
+  translatePage(document);
+  labelSwitch();
+  if (lastState !== undefined) render(lastState);
+  checkIncognitoAccess();
+});

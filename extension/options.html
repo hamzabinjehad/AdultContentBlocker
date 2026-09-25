@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Hisn Settings</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title data-i18n="opt.docTitle">Hisn Settings</title>
 <style>
 :root{--bg:#f7f7f5;--fg:#1a1a18;--muted:#6b6b66;--line:#e3e3df;--accent:#2f6f4f;--warn:#8a5a2b}
 @media(prefers-color-scheme:dark){:root{--bg:#161614;--fg:#f0efec;--muted:#9a9a94;--line:#33322e;--accent:#7fb79a;--warn:#d2a464}}
@@ -28,7 +28,7 @@ label.row input{margin-top:4px}
 .slider{display:flex;align-items:center;gap:12px;margin:14px 0 4px}
 .slider input{flex:1}
 .slider output{font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted);
-               min-width:2.2em;text-align:right}
+               min-width:2.2em;text-align:end}
 button{margin-top:12px;padding:9px 18px;border:none;border-radius:8px;
        background:var(--accent);color:#fff;font-weight:600;font-size:14px;cursor:pointer}
 button:disabled{opacity:.45;cursor:not-allowed}
@@ -56,90 +56,88 @@ select{font:inherit;color:var(--fg);background:var(--bg);padding:8px;border:1px 
 <body class="settings"><div class="settings-shell">
 <aside class="sidebar">
 <div class="brand"><span class="brand-mark" aria-hidden="true">H</span> Hisn</div>
-<nav aria-label="Settings sections"><a href="#mode">Overview</a><a href="#modeSettings">Blocking mode</a><a href="#siteSettings">Your sites</a><a href="#contentSettings">Content checking</a><a href="#reportSettings">Corrections</a></nav>
-<p class="privacy-note">Made for a calmer web.<br>Content checks stay on your device.</p>
+<nav aria-label="Settings sections" data-i18n-aria-label="opt.navLabel"><a href="#mode" data-i18n="opt.nav.overview">Overview</a><a href="#modeSettings" data-i18n="opt.nav.mode">Blocking mode</a><a href="#siteSettings" data-i18n="opt.nav.sites">Your sites</a><a href="#contentSettings" data-i18n="opt.nav.content">Content checking</a><a href="#reportSettings" data-i18n="opt.nav.corrections">Corrections</a></nav>
+<label class="lang-pick"><span data-i18n="lang.label">Language</span>
+<select id="uiLanguage"><option value="auto" data-i18n="lang.auto">Automatic</option><option value="ar" lang="ar">العربية</option><option value="en" lang="en">English</option></select></label>
+<p class="privacy-note"><span data-i18n="opt.tagline">Made for a calmer web.</span><br><span data-i18n="privacy.onDevice">Content checks stay on your device.</span></p>
 </aside>
 <main>
-<div class="eyebrow">Your browser · Your protection</div>
-<h1>Make room for what matters.</h1>
-<p class="sub">Choose what stays out, keep the sites you need, and see exactly how Hisn protects this browser.</p>
+<div class="eyebrow" data-i18n="opt.eyebrow">Your browser · Your protection</div>
+<h1 data-i18n="opt.h1">Make room for what matters.</h1>
+<p class="sub" data-i18n="opt.sub">Choose what stays out, keep the sites you need, and see exactly how Hisn protects this browser.</p>
 
-<section class="mode" id="mode" aria-label="App connection">
-<strong id="modeTitle">Checking connection…</strong>
-<p id="modeDetail">Waiting for the extension.</p>
-<button type="button" id="checkConnection">Check app connection</button>
+<section class="mode" id="mode" aria-label="App connection" data-i18n-aria-label="opt.appConnection">
+<strong id="modeTitle" data-i18n="connection.checking">Checking connection…</strong>
+<p id="modeDetail" data-i18n="connection.waitingExtension">Waiting for the extension.</p>
+<button type="button" id="checkConnection" data-i18n="opt.checkApp">Check app connection</button>
 <p id="connectionMessage" role="status"></p>
 </section>
 
 <div class="settings-grid">
-<fieldset class="wide" id="modeSettings"><legend>Blocking mode</legend>
-<label for="blockingMode">Protection in this browser</label>
-<select id="blockingMode"><option value="blocklist">Standard — block known sites and check content</option><option value="strict">Strict — only browse allowed sites</option></select>
+<fieldset class="wide" id="modeSettings"><legend data-i18n="opt.mode.legend">Blocking mode</legend>
+<label for="blockingMode" data-i18n="opt.mode.label">Protection in this browser</label>
+<select id="blockingMode"><option value="blocklist" data-i18n="opt.mode.standard">Standard — block known sites and check content</option><option value="strict" data-i18n="opt.mode.strict">Strict — only browse allowed sites</option></select>
 <p class="hint" id="lockHint"></p>
-<p class="hint">Before choosing Strict, save the sites you need below. Allowed pages may still load supporting resources from other sites.</p>
-<button id="saveMode">Apply mode</button>
+<p class="hint" data-i18n="opt.mode.hint">Before choosing Strict, save the sites you need below. Allowed pages may still load supporting resources from other sites.</p>
+<button id="saveMode" data-i18n="opt.mode.apply">Apply mode</button>
 <div class="msg" id="msgMode" role="status"></div>
 </fieldset>
 
-<fieldset id="siteSettings"><legend>Blocked sites</legend>
-<p class="hint">One domain per line. Subdomains are included automatically, so
-example.com also covers cdn.example.com.</p>
-<textarea id="custom" aria-label="Sites to block" spellcheck="false" placeholder="one domain per line&#10;example.com"></textarea>
-<button id="saveCustom">Save block list</button>
+<fieldset id="siteSettings"><legend data-i18n="opt.blocked.legend">Blocked sites</legend>
+<p class="hint" data-i18n="opt.blocked.hint">One domain per line. Subdomains are included automatically, so example.com also covers cdn.example.com.</p>
+<textarea id="custom" aria-label="Sites to block" data-i18n-aria-label="opt.blocked.aria" data-i18n-placeholder="opt.blocked.placeholder" spellcheck="false" dir="ltr" placeholder="one domain per line&#10;example.com"></textarea>
+<button id="saveCustom" data-i18n="opt.blocked.save">Save block list</button>
 <div class="msg" id="msgCustom" role="status"></div>
 </fieldset>
 
-<fieldset><legend>Always allowed</legend>
-<p class="hint">Overrides the published domain and address lists. Page-text checks still apply. In Strict mode, these are the sites you can browse. More specific rules win; a block wins a tie.</p>
-<textarea id="allow" aria-label="Allowed sites" spellcheck="false" placeholder="one domain per line&#10;github.com"></textarea>
-<button id="saveAllow">Save allowlist</button>
+<fieldset><legend data-i18n="opt.allow.legend">Always allowed</legend>
+<p class="hint" data-i18n="opt.allow.hint">Overrides the published domain and address lists. Page-text checks still apply. In Strict mode, these are the sites you can browse. More specific rules win; a block wins a tie.</p>
+<textarea id="allow" aria-label="Allowed sites" data-i18n-aria-label="opt.allow.aria" data-i18n-placeholder="opt.allow.placeholder" spellcheck="false" dir="ltr" placeholder="one domain per line&#10;github.com"></textarea>
+<button id="saveAllow" data-i18n="opt.allow.save">Save allowlist</button>
 <div class="msg" id="msgAllow" role="status"></div>
 </fieldset>
 
-<fieldset id="contentSettings"><legend>Content checking</legend>
-<p class="hint">On top of the domain and address lists, which are always on.</p>
+<fieldset id="contentSettings"><legend data-i18n="opt.content.legend">Content checking</legend>
+<p class="hint" data-i18n="opt.content.hint">On top of the domain and address lists, which are always on.</p>
 <label class="row">
   <input type="checkbox" id="inspectText">
-  <span>Check the words on a page — reads the page itself, so it catches
-  explicit content on an ordinary site.</span>
+  <span data-i18n="opt.content.inspect">Check the words on a page — reads the page itself, so it catches explicit content on an ordinary site.</span>
 </label>
 <div class="slider">
-  <label for="textSensitivity" style="font-size:13px">Sensitivity</label>
+  <label for="textSensitivity" style="font-size:13px" data-i18n="opt.content.sensitivity">Sensitivity</label>
   <input type="range" id="textSensitivity" min="0" max="100" step="5">
   <output id="sensitivityValue">50</output>
 </div>
-<p class="hint">Higher catches more, and blocks more pages that turn out to be
-innocent. Selected medical and reference domains are exempt from this check.</p>
-<button id="saveChecks">Save</button>
+<p class="hint" data-i18n="opt.content.sensHint">Higher catches more, and blocks more pages that turn out to be innocent. Selected medical and reference domains are exempt from this check.</p>
+<button id="saveChecks" data-i18n="opt.save">Save</button>
 <div class="msg" id="msgChecks" role="status"></div>
 </fieldset>
 
-<fieldset><legend>Your content words</legend>
-<p class="hint">Up to 200 words or phrases, one per line, with 4–100 characters each. These add to page-text scoring; common words can also block ordinary pages. Page-text checking must be active.</p>
-<textarea id="customTerms" aria-label="Custom content words" placeholder="gambling&#10;betting odds"></textarea>
-<button id="saveTerms">Save words</button>
+<fieldset><legend data-i18n="opt.terms.legend">Your content words</legend>
+<p class="hint" data-i18n="opt.terms.hint">Up to 200 words or phrases, one per line, with 4–100 characters each. These add to page-text scoring; common words can also block ordinary pages. Page-text checking must be active.</p>
+<textarea id="customTerms" aria-label="Custom content words" data-i18n-aria-label="opt.terms.aria" data-i18n-placeholder="opt.terms.placeholder" placeholder="gambling&#10;betting odds"></textarea>
+<button id="saveTerms" data-i18n="opt.terms.save">Save words</button>
 <div class="msg" id="msgTerms" role="status"></div>
 </fieldset>
 
-<fieldset class="wide" id="reportSettings"><legend>Your corrections</legend>
-<p class="hint">What you reported from a block page as wrongly caught. Removing
-one turns its blocking back on — that always works, even during a lock.</p>
+<fieldset class="wide" id="reportSettings"><legend data-i18n="opt.corr.legend">Your corrections</legend>
+<p class="hint" data-i18n="opt.corr.hint">What you reported from a block page as wrongly caught. Removing one turns its blocking back on — that always works, even during a lock.</p>
 <div class="reported-group">
-  <div class="reported-label">Words that no longer count as adult content</div>
+  <div class="reported-label" data-i18n="opt.corr.words">Words that no longer count as adult content</div>
   <div class="chips" id="ignoreTerms"></div>
 </div>
 <div class="reported-group">
-  <div class="reported-label">Sites the content check skips</div>
+  <div class="reported-label" data-i18n="opt.corr.sites">Sites the content check skips</div>
   <div class="chips" id="textAllow"></div>
 </div>
 <div class="msg" id="msgReported" role="status"></div>
 </fieldset>
 
-<fieldset class="wide" id="disputedFs" hidden><legend>Waiting until your lock ends</legend>
+<fieldset class="wide" id="disputedFs" hidden><legend data-i18n="opt.disputed.legend">Waiting until your lock ends</legend>
 <p class="hint" id="disputedHint"></p>
 <div class="chips" id="disputed"></div>
 <div class="msg" id="msgDisputed" role="status"></div>
 </fieldset>
 </div>
-<p class="privacy-note">Browser-only mode works without the app. Connect the macOS app for shared settings and timed locks. Changes that weaken an active lock remain unavailable.</p>
+<p class="privacy-note" data-i18n="opt.footer">Browser-only mode works without the app. Connect the macOS app for shared settings and timed locks. Changes that weaken an active lock remain unavailable.</p>
 </main></div><script type="module" src="options.js"></script></body></html>

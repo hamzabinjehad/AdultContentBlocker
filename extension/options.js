@@ -24,6 +24,9 @@
 
 import { send } from "./lib/messages.js";
 import { connectionStatus, parseDomains, settingsError, restrictionsActive } from "./lib/settings.js";
+import { initLanguage, t, setLanguage, resolveLanguage, savePreference, translatePage } from "./lib/i18n.js";
+
+const { preference: languagePreference } = await initLanguage();
 const $ = (id) => document.getElementById(id);
 let current = null;
 const fields = ["custom", "allow", "customTerms", "blockingMode", "inspectText", "textSensitivity"];
@@ -49,7 +52,7 @@ function isDirty(section) {
 function updateDrafts() {
   for (const section of sections) {
     const dirty = isDirty(section);
-    section.note.textContent = dirty ? "Unsaved changes" : "";
+    section.note.textContent = dirty ? t("opt.unsaved") : "";
     section.reset.hidden = !dirty;
   }
 }
@@ -62,7 +65,8 @@ for (const section of sections) {
   const reset = document.createElement("button");
   reset.type = "button";
   reset.className = "secondary";
-  reset.textContent = "Discard edits";
+  reset.dataset.i18n = "opt.discard";
+  reset.textContent = t("opt.discard");
   reset.hidden = true;
   reset.onclick = () => {
     for (const [id, key] of Object.entries(section.controls)) {
@@ -70,7 +74,7 @@ for (const section of sections) {
       else $(id).value = savedValue(id, key);
     }
     $("sensitivityValue").textContent = $("textSensitivity").value;
-    $(section.message).textContent = "Edits discarded. Saved settings are unchanged.";
+    $(section.message).textContent = t("opt.discarded");
     updateDrafts();
   };
   actions.append(reset);
@@ -108,8 +112,8 @@ function renderReported(state) {
       const x = document.createElement("button");
       x.type = "button";
       x.textContent = "×";                  // ×
-      x.title = "Start blocking this again";
-      x.setAttribute("aria-label", `Remove ${item}`);
+      x.title = t("opt.unblockTitle");
+      x.setAttribute("aria-label", t("opt.removeAria", item));
       x.onclick = async () => {
         const next = (state[key] || []).filter((v) => v !== item);
         const r = await send({ type: "update", patch: { [key]: next } });
@@ -118,7 +122,7 @@ function renderReported(state) {
           renderReported(state);
           $("msgReported").textContent = "";
         } else {
-          $("msgReported").textContent = `Could not remove: ${r.reason}`;
+          $("msgReported").textContent = t("opt.couldNotRemove", r.reason);
         }
       };
       chip.append(label, x);
@@ -141,10 +145,7 @@ function renderDisputed(state) {
 
   const locked = restrictionsActive(state);
   fs.hidden = false;
-  $("disputedHint").textContent = locked
-    ? "Reports you made while the lock is running. They cannot loosen a lock, "
-      + "so they wait here until it ends."
-    : "Your lock has ended. Apply a report to make it take effect, or dismiss it.";
+  $("disputedHint").textContent = locked ? t("opt.disputed.locked") : t("opt.disputed.ended");
 
   const box = $("disputed");
   box.textContent = "";
@@ -161,15 +162,15 @@ function renderDisputed(state) {
       const apply = document.createElement("button");
       apply.type = "button";
       apply.className = "apply";
-      apply.textContent = "Apply";
+      apply.textContent = t("opt.apply");
       apply.onclick = () => resolveDisputed(state, entry, true);
       chip.appendChild(apply);
     }
     const x = document.createElement("button");
     x.type = "button";
     x.textContent = "×";                    // ×
-    x.title = "Dismiss";
-    x.setAttribute("aria-label", `Dismiss ${value}`);
+    x.title = t("opt.dismiss");
+    x.setAttribute("aria-label", t("opt.dismissAria", value));
     x.onclick = () => resolveDisputed(state, entry, false);
     chip.appendChild(x);
 
@@ -184,11 +185,11 @@ async function resolveDisputed(state, entry, apply) {
     Object.assign(state, r.state);              // worker returns the new state
     renderDisputed(state);
     renderReported(state);                      // an applied item now appears above
-    $("msgDisputed").textContent = r.applied ? "Applied." : "";
+    $("msgDisputed").textContent = r.applied ? t("opt.applied") : "";
   } else {
     $("msgDisputed").textContent = r.reason === "locked"
-      ? "That cannot take effect until the lock ends."
-      : `Could not do that: ${r.reason}`;
+      ? t("opt.cannotUntilEnd")
+      : t("opt.couldNotDo", r.reason);
   }
 }
 
@@ -207,10 +208,9 @@ function showState(state, fill = false) {
   $("mode").className = `mode ${connection.managed ? "managed" : "standalone"}`;
   $("modeTitle").textContent = connection.title;
   $("modeDetail").textContent = connection.detail;
-  $("lockHint").textContent = restrictionsActive(state)
-    ? "An active lock or connection safeguard prevents changes that weaken protection."
-    : connection.managed ? "Timed locks and blocking settings are managed in the app."
-    : "No app is required for filtering. Browser-only settings remain editable; timed locks require the app.";
+  $("lockHint").textContent = restrictionsActive(state) ? t("opt.lockHint.active")
+    : connection.managed ? t("opt.lockHint.managed")
+    : t("opt.lockHint.browser");
   for (const id of [...fields, ...saves]) $(id).disabled = connection.managed;
   if (fill) fillFields(state);
   renderReported(state);
@@ -231,7 +231,7 @@ function fillFields(state) {
 async function save(patch, messageID, buttonID) {
   $(buttonID).disabled = true;
   $(messageID).className = "msg";
-  $(messageID).textContent = "Saving…";
+  $(messageID).textContent = t("opt.saving");
   const r = await send({ type: "update", patch });
   if (r.ok) {
     // Update only the saved fields: another section may contain unsaved edits.
@@ -239,7 +239,7 @@ async function save(patch, messageID, buttonID) {
     if (patch.customBlocks) $("custom").value = r.state.customBlocks.join("\n");
     if (patch.allowlist) $("allow").value = r.state.allowlist.join("\n");
     if (patch.customTerms) $("customTerms").value = r.state.customTerms.join("\n");
-    $(messageID).textContent = "Saved and applied in this browser.";
+    $(messageID).textContent = t("opt.saved");
     $(messageID).className = "msg success";
     updateDrafts();
   } else {
@@ -258,7 +258,7 @@ for (const [input, key, msg, button] of [
     const result = parseDomains($(input).value);
     if (result.invalid.length) {
       $(msg).className = "msg error";
-      $(msg).textContent = `Not saved. Fix domain entries on lines ${result.invalid.join(", ")}. Use a domain or a full web address.`;
+      $(msg).textContent = t("opt.badLines", result.invalid.join(", "));
       return;
     }
     save({ [key]: result.domains }, msg, button);
@@ -267,7 +267,7 @@ for (const [input, key, msg, button] of [
 $("saveMode").onclick = () => {
   const mode = $("blockingMode").value;
   if (mode === "strict" && current?.mode !== "strict"
-      && !window.confirm("Switch to Strict mode? Sites outside your saved allowed list will close or be blocked. Save the sites you need in Always allowed first. You can change this mode here while no app lock is active.")) return;
+      && !window.confirm(t("opt.strictConfirm"))) return;
   save({ mode }, "msgMode", "saveMode");
 };
 $("saveTerms").onclick = () => save({ customTerms:
@@ -280,10 +280,9 @@ $("saveChecks").onclick = () => save({
 }, "msgChecks", "saveChecks");
 $("checkConnection").onclick = async () => {
   $("checkConnection").disabled = true;
-  $("connectionMessage").textContent = "Checking for the Hisn app…";
+  $("connectionMessage").textContent = t("conn.checking");
   const r = await send({ type: "forceSync" });
-  $("connectionMessage").textContent = r.ok ? "Connected. App settings are in use."
-    : "Could not connect. Open Hisn on your Mac and try again. Browser filtering continues with its current settings.";
+  $("connectionMessage").textContent = r.ok ? t("opt.connected") : t("opt.notConnected");
   const state = await send({ type: "getState" });
   if (state && state.ok !== false) showState(state, !!state.appPresent);
   $("checkConnection").disabled = false;
@@ -297,4 +296,16 @@ chrome.storage.onChanged.addListener((changes, area) => {
   }
 });
 for (const id of [...fields, ...saves]) $(id).disabled = true;
+
+// Language: Automatic follows the browser; a choice here is remembered for
+// every Hisn page. Switching re-renders in place — drafts in the fields stay.
+$("uiLanguage").value = languagePreference === "ar" || languagePreference === "en"
+  ? languagePreference : "auto";
+$("uiLanguage").onchange = async () => {
+  const preference = $("uiLanguage").value;
+  await savePreference(preference).catch(() => {});
+  setLanguage(resolveLanguage(preference, chrome.i18n?.getUILanguage?.() ?? navigator.language));
+  translatePage(document);
+  if (current) showState(current);
+};
 init();

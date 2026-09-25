@@ -7,27 +7,11 @@
  * decision, and shows how long is left, is what keeps a lock intact.
  */
 
-const REASONS = {
-  strict: {
-    title: "Not on your allowed list",
-    subtitle:
-      "Strict mode is on, so only sites you approved when you started this " +
-      "session will open.",
-  },
-  custom: {
-    title: "You blocked this site",
-    subtitle: "You added this one to your own block list.",
-  },
-  terms: {
-    title: "Blocked by content check",
-    subtitle:
-      "This page's words matched what you asked Hisn to keep out.",
-  },
-  default: {
-    title: "This page is blocked",
-    subtitle: "This page matches your protection settings.",
-  },
-};
+import { initLanguage, t } from "./lib/i18n.js";
+
+await initLanguage();
+
+const REASONS = new Set(["strict", "custom", "terms"]);
 
 function formatRemaining(ms) {
   if (ms <= 0) return null;
@@ -36,18 +20,18 @@ function formatRemaining(ms) {
   const h = Math.floor((total % 86400) / 3600);
   const m = Math.floor((total % 3600) / 60);
   const s = total % 60;
-  if (d > 0) return `${d}d ${h}h ${m}m`;
-  if (h > 0) return `${h}h ${m}m`;
-  if (m > 0) return `${m}m ${s}s`;
-  return `${s}s`;
+  if (d > 0) return t("dur.dhm", d, h, m);
+  if (h > 0) return t("dur.hm", h, m);
+  if (m > 0) return t("dur.ms", m, s);
+  return t("dur.s", s);
 }
 
 function render(state) {
   const params = new URLSearchParams(location.search);
-  const reason = REASONS[params.get("reason")] || REASONS.default;
+  const reason = REASONS.has(params.get("reason")) ? params.get("reason") : "default";
 
-  document.getElementById("title").textContent = reason.title;
-  document.getElementById("subtitle").textContent = reason.subtitle;
+  document.getElementById("title").textContent = t(`blocked.${reason}.title`);
+  document.getElementById("subtitle").textContent = t(`blocked.${reason}.subtitle`);
 
   const timerEl = document.getElementById("timer");
   const noteEl = document.getElementById("note");
@@ -59,15 +43,18 @@ function render(state) {
       return;
     }
     timerEl.hidden = false;
-    timerEl.innerHTML = `Lock ends in <strong>${remaining}</strong>`;
+    // Built from nodes, not innerHTML: the phrase is translated, and a
+    // translation is text, never markup.
+    const [before, after = ""] = t("blocked.lockEndsIn", "\u0000").split("\u0000");
+    const strong = document.createElement("strong");
+    strong.textContent = remaining;
+    timerEl.replaceChildren(before, strong, after);
   };
   tick();
   setInterval(tick, 1000);
 
   if (state.failClosed) {
-    noteEl.textContent =
-      "The Hisn app is not responding, so protection tightened automatically. " +
-      "Reopen the app to restore normal filtering.";
+    noteEl.textContent = t("blocked.failClosed");
   }
 }
 
@@ -83,9 +70,7 @@ function showStatus(el, kind, text) {
   el.hidden = false;
 }
 
-const LOCKED_NOTE =
-  "Saved for review after your lock ends. Open extension Settings to apply " +
-  "or dismiss the report then. Protection has not changed.";
+const LOCKED_NOTE = t("blocked.lockedNote");
 
 /**
  * Only for a content-check block: show the words that triggered it and let the
@@ -117,7 +102,7 @@ async function setupContentReport() {
   const terms = fresh && Array.isArray(last.terms) ? last.terms : [];
 
   if (terms.length) {
-    matchedEl.textContent = "Matched: ";
+    matchedEl.textContent = t("blocked.matched");
     for (const term of terms) {
       const chip = document.createElement("button");
       chip.type = "button";
@@ -129,14 +114,13 @@ async function setupContentReport() {
           res = res || {};
           if (res.ok) {
             chip.classList.add("done");
-            showStatus(statusEl, "ok",
-              `Got it — “${res.term}” will no longer count as adult content.`);
+            showStatus(statusEl, "ok", t("blocked.wordOk", res.term));
           } else if (res.reason === "locked") {
             chip.disabled = false;
             showStatus(statusEl, "locked", LOCKED_NOTE);
           } else {
             chip.disabled = false;
-            showStatus(statusEl, "err", "Could not file that just now.");
+            showStatus(statusEl, "err", t("blocked.fileErr"));
           }
         });
       });
@@ -153,25 +137,21 @@ async function setupContentReport() {
     chrome.runtime.sendMessage({ type: "reportWrongBlock", host }, (res) => {
       res = res || {};
       if (res.ok) {
-        showStatus(statusEl, "ok",
-          `Thanks — Hisn will not block ${res.host} by its content again. ` +
-          `The site's blocklist status is unchanged.`);
+        showStatus(statusEl, "ok", t("blocked.siteOk", res.host));
         if (res.host) {
           const a = document.createElement("a");
           a.href = "https://" + res.host + "/";
-          a.textContent = "Open " + res.host;
+          a.textContent = t("blocked.open", res.host);
           statusEl.appendChild(document.createElement("br"));
           statusEl.appendChild(a);
         }
       } else if (res.reason === "locked") {
         showStatus(statusEl, "locked", LOCKED_NOTE);
       } else if (res.reason === "no-host") {
-        showStatus(statusEl, "err",
-          "This page was open too long to identify the site automatically — " +
-          "add it to your content allowlist in the app or options instead.");
+        showStatus(statusEl, "err", t("blocked.noHost"));
         siteBtn.disabled = false;
       } else {
-        showStatus(statusEl, "err", "Could not file that just now.");
+        showStatus(statusEl, "err", t("blocked.fileErr"));
         siteBtn.disabled = false;
       }
     });
@@ -190,10 +170,11 @@ document.getElementById("leavePage").addEventListener("click", () => {
   // destination that might itself be outside the user's allowed sites.
   chrome.tabs.getCurrent((tab) => {
     if (chrome.runtime.lastError || !tab?.id) {
-      document.getElementById("note").textContent = "Use your browser’s New Tab button to continue.";
+      document.getElementById("note").textContent = t("blocked.useNewTab");
       return;
     }
     chrome.tabs.update(tab.id, { url: "chrome://newtab/" }, () => {
-      if (chrome.runtime.lastError) document.getElementById("note").textContent = "Use your browser’s New Tab button to continue.";
+      if (chrome.runtime.lastError) document.getElementById("note").textContent = t("blocked.useNewTab");
     });
   });
+});

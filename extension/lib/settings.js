@@ -1,4 +1,5 @@
 import { canonicalHost, isLocked, HEARTBEAT_GRACE_MS } from "./policy.js";
+import { t } from "./i18n.js";
 
 // The app owns these fields after its first successful connection. A missing
 // heartbeat never silently transfers authority back to the browser.
@@ -17,17 +18,18 @@ export function settingsAccess(state, patch) {
 }
 
 export function connectionStatus(state, now = Date.now()) {
-  if (!state) return { title: "Checking connection…", detail: "Waiting for the extension.", managed: true };
+  if (!state) return { title: t("connection.checking"), detail: t("connection.waitingExtension"),
+                       managed: true, fresh: false };
   if (!state.appPresent) return {
-    title: "Browser-only protection", managed: false,
-    detail: "No app connection detected. These settings work in this browser without the Hisn app. If the app connects, it will manage your blocking settings.",
+    title: t("connection.browserOnly"), managed: false, fresh: false,
+    detail: t("connection.browserOnly.detail"),
   };
+  // `fresh` is the fact; the words are for the reader. The popup used to
+  // compare the TITLE text to decide its badge, which a translation breaks.
   const fresh = now - (state.lastHeartbeat || 0) < HEARTBEAT_GRACE_MS;
   return {
-    title: fresh ? "Managed by the Hisn app" : "Waiting for the Hisn app", managed: true,
-    detail: fresh
-      ? "Edit blocking settings in the Hisn app. They sync automatically; incorrect-block reports stay in this browser."
-      : "Your last app settings are still in use. Open Hisn on your Mac, then check the connection. Settings remain app-managed while disconnected.",
+    title: fresh ? t("connection.managed") : t("connection.waitingApp"), managed: true, fresh,
+    detail: fresh ? t("connection.managed.detail") : t("connection.waiting.detail"),
   };
 }
 
@@ -43,12 +45,12 @@ export function parseDomains(text) {
 }
 
 export function settingsError(result) {
-  if (result?.field === "customTerms") return "Not saved. Use at most 200 words or phrases, with 4–100 characters each (excluding spaces for the minimum).";
-  if (result?.reason === "app-managed") return "The app now manages these settings. Edit them in Hisn on your Mac.";
-  if (result?.reason === "app-required") return "Timed locks are managed by the Hisn app.";
-  if (result?.reason === "locked") return "This change would weaken an active lock. It has not been saved.";
-  if (result?.reason === "unavailable") return "The extension did not respond. Your edits are still here; try again.";
-  return "Could not save these settings. Check your entries and try again.";
+  if (result?.field === "customTerms") return t("err.customTerms");
+  if (result?.reason === "app-managed") return t("err.appManaged");
+  if (result?.reason === "app-required") return t("err.appRequired");
+  if (result?.reason === "locked") return t("err.locked");
+  if (result?.reason === "unavailable") return t("err.unavailable");
+  return t("err.generic");
 }
 
 export function restrictionsActive(state) {
