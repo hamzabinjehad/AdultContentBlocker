@@ -54,6 +54,8 @@ suite_extension() {
 suite_browser() {
     echo "── extension: scanner harness in a real browser"
     extension/test/browser/run.sh
+    echo "── extension: network rules in a real browser (SafeSearch, blocklist)"
+    extension/test/browser/dnr.sh
 }
 
 suite_macos() {

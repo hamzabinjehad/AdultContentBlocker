@@ -36,6 +36,11 @@
         "path": "rules/dnr_keyword_rules.json"
       },
       {
+        "id": "safesearch",
+        "enabled": true,
+        "path": "rules/safesearch.json"
+      },
+      {
         "id": "lockdown",
         "enabled": false,
         "path": "rules/lockdown.json"

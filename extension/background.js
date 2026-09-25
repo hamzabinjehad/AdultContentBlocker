@@ -29,6 +29,13 @@ const LIST_BASE = "https://raw.githubusercontent.com/hamzabinjehad/AdultContentB
 const RULESET_BLOCKLIST = "blocklist";
 const RULESET_KEYWORDS = "keywords";
 const RULESET_LOCKDOWN = "lockdown";
+// Forces SafeSearch on the search engines and restricted mode on YouTube.
+// Priority 1 on purpose: a custom block or strict mode (also at 1, where a
+// block beats a redirect) still wins, so SafeSearch can never be a way to
+// reach a search engine someone blocked. The cost is that an allowlisted
+// search engine is not rewritten; the profile's ForceGoogleSafeSearch /
+// ForceYouTubeRestrict policies cover that case where they are installed.
+const RULESET_SAFESEARCH = "safesearch";
 
 // Rule ids, priorities and the grace period live in lib/policy.js with the
 // rules themselves, so the tests evaluate exactly what Chrome is given.
@@ -147,7 +154,7 @@ async function applyRules(state) {
   // yet, and "no app" means they installed only the browser half. Neither is a
   // request to stop filtering.
   await chrome.declarativeNetRequest.updateEnabledRulesets({
-    enableRulesetIds: [RULESET_BLOCKLIST, RULESET_KEYWORDS],
+    enableRulesetIds: [RULESET_BLOCKLIST, RULESET_KEYWORDS, RULESET_SAFESEARCH],
     disableRulesetIds: [],
   });
 
@@ -802,7 +809,38 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === "listUpdate") await transaction(updateList);
 });
 
+/**
+ * Who may send what.
+ *
+ * Every message used to be honoured from any sender. The content script runs
+ * inside every web page, in that page's renderer process — the least trusted
+ * place this extension has code — and it only ever needs `scoreText`. A
+ * compromised renderer could otherwise post `update`, `reportWrongWord` or
+ * `resolveDisputed` straight to the worker and borrow the extension's own
+ * authority. Everything but `scoreText` must come from one of this
+ * extension's own pages (popup, options, block page), and `scoreText` from a
+ * frame in a tab.
+ */
+const PAGE_MESSAGES = new Set(["getState", "update", "forceSync", "reportWrongBlock",
+                               "reportWrongWord", "resolveDisputed"]);
+
+function fromExtensionPage(sender) {
+  return sender?.id === chrome.runtime.id
+    && typeof sender.url === "string"
+    && sender.url.startsWith(chrome.runtime.getURL(""));
+}
+
+function senderAllowed(type, sender) {
+  if (PAGE_MESSAGES.has(type)) return fromExtensionPage(sender);
+  if (type === "scoreText") return sender?.id === chrome.runtime.id && !!sender.tab;
+  return false;
+}
+
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  if (!senderAllowed(msg?.type, _sender)) {
+    sendResponse({ ok: false, reason: "forbidden-sender" });
+    return false;
+  }
   (async () => {
     switch (msg?.type) {
       case "getState":
@@ -836,4 +874,5 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   return true; // async response
 });
 
-export { applyRules, guardedUpdate, DEFAULT_STATE, resolveDisputed, ensureAlarms, booted, ALARMS };
+export { applyRules, guardedUpdate, DEFAULT_STATE, resolveDisputed, ensureAlarms, booted, ALARMS,
+         senderAllowed };

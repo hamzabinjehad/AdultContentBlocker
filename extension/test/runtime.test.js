@@ -20,6 +20,8 @@ globalThis.chrome = {
     onInstalled: { addListener() {} }, onStartup: { addListener() {} },
     onMessage: { addListener(fn) { listener = fn; } },
     sendNativeMessage: async () => { if (nativeReply) return nativeReply; throw new Error("no native host"); },
+    id: "hisnextid",
+    getURL: (path) => `chrome-extension://hisnextid/${path}`,
   },
   alarms: {
     onAlarm: { addListener() {} },
@@ -33,7 +35,9 @@ let nativeCalls = 0;
 const realSend = globalThis.chrome.runtime.sendNativeMessage;
 globalThis.chrome.runtime.sendNativeMessage = async (...a) => { nativeCalls++; return realSend(...a); };
 const { DEFAULT_STATE, booted, ensureAlarms, ALARMS } = await import("../background.js");
-const message = (msg) => new Promise((resolve) => listener(msg, {}, resolve));
+const OPTIONS = { id: "hisnextid", url: "chrome-extension://hisnextid/options.html" };
+const PAGE = { id: "hisnextid", url: "https://evil.example/", tab: { id: 3 }, frameId: 0 };
+const message = (msg, sender = OPTIONS) => new Promise((resolve) => listener(msg, sender, resolve));
 let checks = 0;
 function check(ok, label) { checks++; if (!ok) throw new Error(label); }
 await booted;
@@ -52,7 +56,8 @@ check(!(await message({ type: "forceSync" })).ok, "missing native app is tolerat
 check(!state.failClosed && !state.appPresent, "fresh browser-only install does not lock down");
 let r = await message({ type: "update", patch: { customBlocks: ["example.com"], customTerms: ["GAMBLING"] } });
 check(r.ok && state.customTerms[0] === "gambling", "standalone saves normalized terms through real worker");
-check(enabled.includes("blocklist") && enabled.includes("keywords"), "baseline rule sets enabled without app");
+check(enabled.includes("blocklist") && enabled.includes("keywords") && enabled.includes("safesearch"),
+      "baseline rule sets, SafeSearch included, enabled without app");
 check(dynamic.some((r) => r.condition.requestDomains?.includes("example.com")), "standalone rules installed");
 r = await message({ type: "update", patch: { mode: "strict", allowlist: ["safe.example"] } });
 check(r.ok && dynamic.some((r) => r.condition.urlFilter === "*"), "standalone strict mode is operational");
@@ -69,4 +74,13 @@ await message({ type: "forceSync" });
 check(state.failClosed, "app loss during lock fails closed");
 state.lockUntil = 0;
 check(!(await message({ type: "update", patch: { textAllow: ["other.example"] } })).ok, "fail-closed still guards corrections");
+// Who may send what: a web page's content script only ever scores text.
+for (const type of ["update", "resolveDisputed", "reportWrongWord", "reportWrongBlock", "getState", "forceSync"]) {
+  r = await message({ type, patch: { customBlocks: [] } }, PAGE);
+  check(!r.ok && r.reason === "forbidden-sender", `a content script cannot send ${type}`);
+}
+r = await message({ type: "update", patch: {} }, { id: "otherext", url: "chrome-extension://otherext/x.html" });
+check(r.reason === "forbidden-sender", "another extension cannot send update");
+r = await message({ type: "scoreText", zones: {} }, OPTIONS);
+check(r.reason === "forbidden-sender", "scoreText comes from a tab, not an extension page");
 print(`${checks}/${checks} production worker checks passed`);
