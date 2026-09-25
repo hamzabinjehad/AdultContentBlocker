@@ -101,6 +101,19 @@ the shared container at all:
   them written back; forging an allowance into them is dropped by the merge;
   a lock recorded before the authority existed is handed over on first sync.
 
+* **The app never loosens on its own word.** Its mirrors are the user's
+  files and their clock a key in the user's defaults, so switching the
+  filter off, letting the app quit and standing the browser guard down all
+  ask `EffectiveLock` (mirrors OR authority), and switching the filter off
+  also needs the filter's own answer that no lock runs. The merge judges
+  each copy by its own clock (`PolicyView.locked`), so a forged app clock
+  cannot make the authority's lock look over. (All from the 2026-09-25
+  audit; `AuditRegressionTests` has one test per finding.)
+* **Guard evidence.** The browser guard's allowed apps live in the record
+  too (add only while unlocked), and each extension check-in reaches the
+  filter from the bridge over the code-signed channel; while the filter
+  answers, a `defaults write` of either in the app's copy changes nothing.
+
 What this changes in the table above: **Lock (all three mirrors), hand lists,
 words, apps and inspection settings** become tamper-resistant against a
 standard user *whenever the filter is installed* — the mirrors are now a cache.
