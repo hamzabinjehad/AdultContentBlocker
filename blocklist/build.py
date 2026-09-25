@@ -253,7 +253,7 @@ def write_dnr_rules(path: Path, domains: list[str], mode: str, limit: int) -> in
         for i in range(0, len(domains), chunk):
             rules.append({
                 "id": rid,
-                "priority": 1,
+                "priority": 3,          # the ladder: extension/lib/policy.js
                 "action": {
                     "type": "redirect",
                     "redirect": {"extensionPath": "/blocked.html"},
@@ -269,7 +269,7 @@ def write_dnr_rules(path: Path, domains: list[str], mode: str, limit: int) -> in
         for i in range(0, len(domains), chunk):
             rules.append({
                 "id": rid_base + (i // chunk),
-                "priority": 1,
+                "priority": 3,          # the ladder: extension/lib/policy.js
                 "action": {"type": "block"},
                 "condition": {
                     "requestDomains": domains[i:i + chunk],
@@ -355,7 +355,7 @@ def write_keyword_rules(path: Path, terms: list[dict], never: list[str],
 
         rules.append({
             "id": rid,
-            "priority": 2,          # above the domain rules
+            "priority": 4,          # above the domain rules (policy.js ladder)
             "action": {"type": "redirect",
                        "redirect": {"extensionPath": "/blocked.html?reason=terms"}},
             "condition": condition,

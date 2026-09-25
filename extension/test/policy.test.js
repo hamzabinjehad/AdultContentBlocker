@@ -18,6 +18,7 @@ import {
   decide, policyRules, isLocked, effectiveStrict, shouldFailClosed, tabsToBlock,
   validatePatch, bridgePatch, canonicalHost,
   HEARTBEAT_GRACE_MS, RULE_DOWNLOADED_BASE, PRIORITY_LIST, PRIORITY_HAND,
+  PRIORITY_CATCHALL, PRIORITY_PLUMBING, PRIORITY_KEYWORDS, RESOURCE_TYPES,
 } from "../lib/policy.js";
 
 let failures = 0, checks = 0;
@@ -76,10 +77,15 @@ for (const c of fixture.cases.filter((c) => c.mode === "strict")) {
     const b = block.find((r) => r.condition.requestDomains[0].split(".").length === depth);
     if (b) check(b.priority === a.priority + 1, `block at depth ${depth} sits one above the allow`);
   }
-  check(rules.every((r) => r.priority >= PRIORITY_LIST),
-        "nothing sits below the published list's priority");
-  check(rules.some((r) => r.condition.urlFilter === "*" && r.priority === PRIORITY_LIST),
-        "strict mode carries the catch-all at list priority, so any allow beats it");
+  check(rules.filter((r) => r.condition.requestDomains).every((r) => r.priority > PRIORITY_KEYWORDS),
+        "every hand-list rule outranks everything published");
+  check(rules.filter((r) => r.condition.urlFilter === "*").every((r) => r.priority === PRIORITY_CATCHALL),
+        "strict mode's catch-all is the floor, so any allow beats it");
+  const carveOut = rules.find((r) => r.condition.initiatorDomains);
+  check(carveOut.priority === PRIORITY_PLUMBING && PRIORITY_PLUMBING < PRIORITY_LIST,
+        "the plumbing carve-out sits BELOW the published list: a listed domain stays blocked");
+  check(PRIORITY_CATCHALL < PRIORITY_PLUMBING && PRIORITY_LIST < PRIORITY_KEYWORDS
+        && PRIORITY_KEYWORDS < PRIORITY_HAND, "the ladder is in order");
 
   // Rule 6: the catch-all covers every resource type, split into documents
   // (block page) and everything else (dropped); the plumbing carve-out names
@@ -226,6 +232,20 @@ for (const c of fixture.cases.filter((c) => c.mode === "strict")) {
      "a malformed field is left alone, unknown fields are ignored, good fields are canonical");
   eq(bridgePatch({ lockUntil: 0 }), {},
      "a field the bridge does not mention is not touched (upgrade safety)");
+}
+
+// The static rules shipped in the package sit on the ladder too — they are
+// what a fresh install enforces before any download.
+{
+  const staticBlock = JSON.parse(readFile("../rules/dnr_block_rules.json"));
+  const staticKeywords = JSON.parse(readFile("../rules/dnr_keyword_rules.json"));
+  check(staticBlock.every((r) => r.priority === PRIORITY_LIST),
+        "static domain rules sit at PRIORITY_LIST");
+  check(staticKeywords.every((r) => r.priority === PRIORITY_KEYWORDS),
+        "static keyword rules sit at PRIORITY_KEYWORDS");
+  const covered = new Set(staticBlock.flatMap((r) => r.condition.resourceTypes));
+  eq([...covered].sort(), [...RESOURCE_TYPES.list].sort(),
+     "decide() models the resource types the static list really covers");
 }
 
 print(`  ${checks - failures}/${checks} checks passed`);

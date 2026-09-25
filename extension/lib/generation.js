@@ -21,7 +21,7 @@
  * kinds can be reasoned about separately; `applyRules` never touches either.
  */
 
-import { RULE_DOWNLOADED_BASE } from "./policy.js";
+import { RULE_DOWNLOADED_BASE, PRIORITY_LIST, PRIORITY_KEYWORDS } from "./policy.js";
 
 export const RULE_DOWNLOADED_KEYWORDS_BASE = 20000;
 
@@ -103,16 +103,19 @@ export function planGeneration(manifest, artifacts) {
 
   return {
     ok: true,
-    blockRules: remap(block.value, RULE_DOWNLOADED_BASE),
-    keywordRules: remap(keyword.value, RULE_DOWNLOADED_KEYWORDS_BASE),
+    blockRules: remap(block.value, RULE_DOWNLOADED_BASE, PRIORITY_LIST),
+    keywordRules: remap(keyword.value, RULE_DOWNLOADED_KEYWORDS_BASE, PRIORITY_KEYWORDS),
     terms: t,
   };
 }
 
 /** The ids in an artifact start at 1 and would collide with the policy rules,
- *  so they are reassigned on the way in rather than trusted. */
-function remap(rules, base) {
-  return rules.map((rule, i) => ({ ...rule, id: base + i }));
+ *  so they are reassigned on the way in rather than trusted — and so are the
+ *  priorities, which decide how the list ranks against strict mode's carve-out
+ *  (lib/policy.js, the ladder). A generation built before the ladder carried 1
+ *  and 2; taking them as given would reopen that hole until the next build. */
+function remap(rules, base, priority) {
+  return rules.map((rule, i) => ({ ...rule, id: base + i, priority }));
 }
 
 /** Every dynamic rule id the downloaded generation owns — what to remove

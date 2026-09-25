@@ -429,6 +429,29 @@
       "allowlist": [],
       "customBlocks": [],
       "listed": false
+    },
+    {
+      "host": "porn.example",
+      "mode": "strict",
+      "allowlist": [
+        "news.example"
+      ],
+      "customBlocks": [],
+      "listed": true,
+      "resourceType": "image",
+      "initiator": "news.example",
+      "expect": "block",
+      "why": "strict mode: an allowed page may load its plumbing from anywhere EXCEPT a listed domain — the carve-out ranks below the published list"
+    },
+    {
+      "host": "porn.example",
+      "mode": "blocklist",
+      "allowlist": [],
+      "customBlocks": [],
+      "listed": true,
+      "resourceType": "image",
+      "expect": "block",
+      "why": "the published list blocks a listed domain's images and fetches, not only its pages"
     }
   ]
 }

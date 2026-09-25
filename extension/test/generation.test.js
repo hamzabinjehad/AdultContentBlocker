@@ -9,7 +9,7 @@
  */
 import { planGeneration, downloadedRuleIds, RULE_DOWNLOADED_KEYWORDS_BASE, GENERATION_ARTIFACTS }
   from "../lib/generation.js";
-import { RULE_DOWNLOADED_BASE } from "../lib/policy.js";
+import { RULE_DOWNLOADED_BASE, PRIORITY_LIST, PRIORITY_KEYWORDS } from "../lib/policy.js";
 
 let failures = 0, checks = 0;
 function check(ok, label) {
@@ -48,6 +48,9 @@ const artifacts = () => new Map([
         "domain rules are remapped into the downloaded band");
   check(plan.keywordRules.length === 110 && plan.keywordRules[0].id === RULE_DOWNLOADED_KEYWORDS_BASE,
         "keyword rules are remapped into their own band");
+  check(plan.blockRules.every((r) => r.priority === PRIORITY_LIST)
+        && plan.keywordRules.every((r) => r.priority === PRIORITY_KEYWORDS),
+        "downloaded rules are put on the ladder whatever priority the artifact carried");
   check(plan.keywordRules.every((r) => r.id > plan.blockRules[217].id),
         "the bands do not overlap");
   check(plan.terms.terms.length === seedTerms.terms.length, "the vocabulary comes through intact");

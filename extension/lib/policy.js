@@ -75,8 +75,26 @@ export const RULE_CUSTOM_BLOCK_BASE = 300;     // + label count, documents
 export const RULE_CUSTOM_BLOCK_EMBEDDED_BASE = 400;   // + label count, the rest
 export const RULE_DOWNLOADED_BASE = 10000;
 
-/** Priority of the published list's rules (static rulesets and downloaded). */
-export const PRIORITY_LIST = 1;
+/**
+ * The priority ladder, lowest first. Chrome applies the highest-priority
+ * matching rule, and an allow beats a block only at EQUAL priority.
+ *
+ *   1  strict catch-all        — the floor: everything unlisted is refused
+ *   2  strict plumbing allow   — an allowlisted page may load its scripts,
+ *                                images and fetches from anywhere…
+ *   3  published domain list   — …but never from a listed domain. The list sat
+ *                                at 1 with the catch-all, so the carve-out
+ *                                (then at 1000) outranked it: in strict mode an
+ *                                allowed page could pull images and fetched
+ *                                video from listed adult domains that
+ *                                blocklist mode refused. Tightening loosened.
+ *   4  published URL keywords
+ *   1000+ the hand lists (see the header) — above everything published.
+ */
+export const PRIORITY_CATCHALL = 1;
+export const PRIORITY_PLUMBING = 2;
+export const PRIORITY_LIST = 3;
+export const PRIORITY_KEYWORDS = 4;
 /** Base priority of the hand lists; see the header. */
 export const PRIORITY_HAND = 1000;
 const MAX_LABELS = 32;
@@ -89,8 +107,12 @@ const PLUMBING_TYPES = ["script", "stylesheet", "font", "image", "xmlhttprequest
 const CONTENT_TYPES = ["sub_frame", "media", "object", "websocket", "webtransport", "webbundle"];
 const EMBEDDED_TYPES = [...new Set([...PLUMBING_TYPES, ...CONTENT_TYPES, "csp_report"])];
 const ALL_RESOURCE_TYPES = [...new Set([...DOCUMENT_TYPES, ...EMBEDDED_TYPES])];
+/** What the published domain list covers (build.py writes exactly these). */
+const LIST_RESOURCE_TYPES = [...DOCUMENT_TYPES, "script", "image", "media", "xmlhttprequest",
+                             "stylesheet", "font", "object", "websocket", "other"];
 export const RESOURCE_TYPES = Object.freeze({
   documents: DOCUMENT_TYPES, plumbing: PLUMBING_TYPES, content: CONTENT_TYPES, all: ALL_RESOURCE_TYPES,
+  list: LIST_RESOURCE_TYPES,
 });
 
 // --------------------------------------------------------------------------
@@ -199,7 +221,7 @@ export function policyRules(state) {
     // extension URL to a <video> or a fetch, which helps nobody.
     rules.push({
       id: RULE_STRICT_BLOCK_ALL,
-      priority: PRIORITY_LIST,
+      priority: PRIORITY_CATCHALL,
       action: {
         type: "redirect",
         redirect: { extensionPath: "/blocked.html?reason=strict" },
@@ -208,20 +230,20 @@ export function policyRules(state) {
     });
     rules.push({
       id: RULE_STRICT_BLOCK_EMBEDDED,
-      priority: PRIORITY_LIST,
+      priority: PRIORITY_CATCHALL,
       action: { type: "block" },
       condition: { urlFilter: "*", resourceTypes: EMBEDDED_TYPES },
     });
     // The plumbing carve-out: a request INITIATED by an allowlisted page, of
     // a type a page needs to render, may go anywhere. Content types are not
     // in the list, so a frame, a video or a socket still needs its own
-    // destination allowlisted. Sits below the depth-encoded rules, which is
-    // fine — a custom block on the destination (rule 1) outranks it.
+    // destination allowlisted. Below the published list (see the ladder), so
+    // a listed destination stays blocked, and below every custom block.
     const initiators = [...groupByDepth(state.allowlist).values()].flat();
     if (initiators.length) {
       rules.push({
         id: RULE_STRICT_PLUMBING,
-        priority: PRIORITY_HAND,
+        priority: PRIORITY_PLUMBING,
         action: { type: "allow" },
         condition: { initiatorDomains: initiators, resourceTypes: PLUMBING_TYPES },
       });
@@ -283,8 +305,9 @@ function ruleMatches(rule, host, resourceType, initiator) {
  *
  * A reference evaluator with Chrome's precedence: the highest-priority
  * matching rule wins, and among equals an `allow` beats a block or redirect.
- * `listed` stands in for the published rulesets — one block rule at
- * PRIORITY_LIST that matches the host. Returns "allow" or "block".
+ * `listed` stands in for the published rulesets — the domain list blocks a
+ * listed host for documents and every embedded type alike, at PRIORITY_LIST.
+ * Returns "allow" or "block".
  *
  * Not on the request path — Chrome evaluates the real rules — but it is what
  * the shared fixture is asserted against, so it must model the rules honestly.
@@ -299,7 +322,7 @@ export function decide(state, hostname,
       id: RULE_DOWNLOADED_BASE,
       priority: PRIORITY_LIST,
       action: { type: "block" },
-      condition: { urlFilter: "*", resourceTypes: DOCUMENT_TYPES },
+      condition: { urlFilter: "*", resourceTypes: LIST_RESOURCE_TYPES },
     });
   }
   let best = null;

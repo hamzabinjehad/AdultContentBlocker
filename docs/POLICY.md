@@ -84,6 +84,10 @@ DNR has priorities, not specificity. Each hand list is grouped by label count
 and each group is one rule at `1000 + 2 × labels`, blocks one higher than
 allows. A request matches every group whose entry covers it; the highest
 priority among them is the most specific entry, and a tie between an allow and
-a block at the same depth goes to the block. The published rulesets sit at
-priority 1–2, so any allowance outranks them, and the strict catch-all sits at
-1 so any allowance carves through it.
+a block at the same depth goes to the block. Below the hand lists, the ladder
+is: strict catch-all 1, strict plumbing carve-out 2, published domain list 3,
+published URL keywords 4. So any allowance outranks the published rules and
+carves through strict mode, while the plumbing carve-out — an allowed page's
+scripts, images and fetches — can never reach a listed domain. (It sat above
+the list until 2026-09-25, which let an allowed page in strict mode load
+images and fetched video from listed domains that blocklist mode refused.)
