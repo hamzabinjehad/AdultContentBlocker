@@ -117,7 +117,7 @@ public final class FilterController: ObservableObject {
     /// Re-arm silently and record it, so the state the user sees always matches
     /// the state that is actually enforced.
     public func reassertIfNeeded() async {
-        guard LockStore.isLocked() else { return }
+        guard LockStore.isLocked(), FilterLink.shared.isConfigured else { return }
         await refresh()
         guard !isEnabled else { return }
 

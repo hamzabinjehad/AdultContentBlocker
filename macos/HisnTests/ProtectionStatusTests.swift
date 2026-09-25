@@ -91,6 +91,51 @@ final class ProtectionStatusTests: XCTestCase {
         XCTAssertTrue(stale.detail.hasPrefix("Not responding"))
     }
 
+    // MARK: Without the paid filter
+
+    func testHostsFileAndExtensionAreProtectionWithoutTheFilter() {
+        let s = ProtectionStatus(ProtectionEvidence(
+            filter: .off, extensionLastSeen: now.addingTimeInterval(-30), now: now,
+            hostsEntries: 358_239, filterCanRun: false))
+        XCTAssertEqual(s.level, .active)
+        XCTAssertEqual(s.layers.map(\.name),
+                       ["System filter", "Hosts-file blocklist", "Browser extension"])
+        // The filter row says why, and offers no button that can only fail.
+        XCTAssertEqual(s.layers[0].state, .missing)
+        XCTAssertNil(s.layers[0].action)
+        XCTAssertTrue(s.layers[0].detail.contains("Apple Developer Program"))
+        XCTAssertTrue(s.summary.contains("hosts-file"))
+    }
+
+    func testAHandfulOfHostsLinesIsNotABlocklist() {
+        let s = ProtectionStatus(ProtectionEvidence(
+            filter: .off, extensionLastSeen: now.addingTimeInterval(-30), now: now,
+            hostsEntries: 12, filterCanRun: false))
+        XCTAssertEqual(s.level, .partial)
+        XCTAssertEqual(s.layers[1].state, .missing)
+    }
+
+    func testHostsWithoutTheExtensionIsPartial() {
+        let s = ProtectionStatus(ProtectionEvidence(
+            filter: .off, extensionLastSeen: nil, now: now,
+            hostsEntries: 200_000, filterCanRun: false))
+        XCTAssertEqual(s.level, .partial)
+    }
+
+    func testRunningFilterDoesNotNeedTheHostsFile() {
+        let s = ProtectionStatus(ProtectionEvidence(
+            filter: .on(domainCount: 900_000), extensionLastSeen: now.addingTimeInterval(-30),
+            now: now, hostsEntries: 0))
+        XCTAssertEqual(s.level, .active)
+    }
+
+    func testHostsCounting() {
+        let text = "127.0.0.1 localhost\n0.0.0.0 a.example\n0.0.0.0\tb.example\n"
+            + "# 0.0.0.0 commented.example\n  0.0.0.0 indented.example\n0.0.0.0.evil\n"
+        XCTAssertEqual(HostsFile.count(in: Data(text.utf8)), 2)
+        XCTAssertEqual(HostsFile.count(in: Data("0.0.0.0 first.example".utf8)), 1)
+    }
+
     // MARK: Evidence is read from the shared container
 
     func testCurrentEvidenceReadsTheContainer() {

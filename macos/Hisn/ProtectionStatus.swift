@@ -38,15 +38,29 @@ public struct ProtectionEvidence: Equatable {
     /// When the browser extension last polled the bridge, or nil if never.
     public var extensionLastSeen: Date?
     public var now: Date
+    /// Blocking entries in /etc/hosts, or nil when not measured (then the
+    /// row is left out rather than guessed).
+    public var hostsEntries: Int?
+    /// Whether this build could run the system filter at all. An unsigned
+    /// build — no paid Apple team — cannot, and its filter row says so
+    /// instead of offering a button that can only fail.
+    public var filterCanRun: Bool
+
+    /// Fewer than this and the hosts file is not a blocklist, it is a few
+    /// hand-written lines.
+    public static let hostsMinimum = 1000
 
     /// The extension polls once a minute; a gap this long means it stopped,
     /// not that we caught it between beats.
     public static let extensionStaleAfter: TimeInterval = 5 * 60
 
-    public init(filter: FilterEvidence, extensionLastSeen: Date?, now: Date = Date()) {
+    public init(filter: FilterEvidence, extensionLastSeen: Date?, now: Date = Date(),
+                hostsEntries: Int? = nil, filterCanRun: Bool = true) {
         self.filter = filter
         self.extensionLastSeen = extensionLastSeen
         self.now = now
+        self.hostsEntries = hostsEntries
+        self.filterCanRun = filterCanRun
     }
 
     /// Read fresh from the shared container — the only honest source, since
@@ -72,7 +86,47 @@ public struct ProtectionEvidence: Equatable {
         }
         return ProtectionEvidence(
             filter: filterEvidence,
-            extensionLastSeen: d?.object(forKey: "extensionLastSeen") as? Date)
+            extensionLastSeen: d?.object(forKey: "extensionLastSeen") as? Date,
+            hostsEntries: HostsFile.blockingEntries(),
+            filterCanRun: FilterLink.shared.isConfigured)
+    }
+}
+
+/// The hosts-file layer (`macos/block_dns.sh`), measured, not assumed.
+public enum HostsFile {
+    private static var cache: (mtime: Date, count: Int)?
+
+    /// Lines that sink a name to 0.0.0.0. Re-counted only when the file
+    /// changes: the Overview asks every second, and the file holds several
+    /// hundred thousand lines.
+    public static func blockingEntries(path: String = "/etc/hosts") -> Int? {
+        guard let mtime = (try? FileManager.default.attributesOfItem(atPath: path))?[.modificationDate]
+                as? Date else { return nil }
+        if let cache, cache.mtime == mtime { return cache.count }
+        guard let data = FileManager.default.contents(atPath: path) else { return nil }
+        let count = count(in: data)
+        cache = (mtime, count)
+        return count
+    }
+
+    static func count(in data: Data) -> Int {
+        let needle = Array("0.0.0.0".utf8)
+        var n = 0
+        data.withUnsafeBytes { (raw: UnsafeRawBufferPointer) in
+            let b = raw.bindMemory(to: UInt8.self)
+            var lineStart = true
+            var i = 0
+            while i < b.count {
+                if lineStart, i + needle.count < b.count,
+                   b[i] == needle[0], Array(b[i..<i + needle.count]) == needle,
+                   b[i + needle.count] == 0x20 || b[i + needle.count] == 0x09 {
+                    n += 1
+                }
+                lineStart = b[i] == 0x0A
+                i += 1
+            }
+        }
+        return n
     }
 }
 
@@ -135,19 +189,29 @@ public struct ProtectionStatus: Equatable {
     public var isEnforcingAnything: Bool { layers.contains(where: \.ok) }
 
     public init(_ evidence: ProtectionEvidence) {
-        let filter = Self.filterLayer(evidence.filter)
+        let filter = Self.filterLayer(evidence.filter, canRun: evidence.filterCanRun)
         let ext = Self.extensionLayer(lastSeen: evidence.extensionLastSeen, now: evidence.now)
-        layers = [filter, ext]
+        let hosts = evidence.hostsEntries.map(Self.hostsLayer)
+        layers = [filter] + (hosts.map { [$0] } ?? []) + [ext]
 
+        // Two jobs, and protection is active when both are done: something
+        // blocks domains for every app (the filter, or failing it the hosts
+        // file), and the extension reads pages. The hosts file is not a
+        // second requirement next to a running filter — it is the fallback
+        // for a Mac without one — so its absence then is not a gap.
+        let networkOK = filter.ok || (hosts?.ok ?? false)
         let okCount = layers.filter(\.ok).count
         if layers.contains(where: { $0.state == .checking }) {
             level = .checking
             headline = "Checking status"
             summary = "Reading the system filter’s state…"
-        } else if okCount == layers.count {
+        } else if networkOK && ext.ok {
             level = .active
             headline = "Protection active"
-            summary = "The system filter and the browser extension are both running."
+            summary = filter.ok
+                ? "The system filter and the browser extension are both running."
+                : "The hosts-file blocklist and the browser extension are both running. "
+                  + "The system filter would add every app and VPN-proof blocking."
         } else if okCount > 0 {
             level = .partial
             headline = "Partially active"
@@ -165,7 +229,23 @@ public struct ProtectionStatus: Equatable {
         }
     }
 
-    private static func filterLayer(_ f: FilterEvidence) -> Layer {
+    private static func hostsLayer(_ entries: Int) -> Layer {
+        entries >= ProtectionEvidence.hostsMinimum
+            ? Layer(name: "Hosts-file blocklist",
+                    detail: "\(entries.formatted()) domains blocked for every app",
+                    state: .ok, action: nil)
+            : Layer(name: "Hosts-file blocklist",
+                    detail: "Not installed — run macos/install.sh --hosts",
+                    state: .missing, action: nil)
+    }
+
+    private static func filterLayer(_ f: FilterEvidence, canRun: Bool) -> Layer {
+        if !canRun, f == .off || f == .unknown || { if case .unavailable = f { return true }; return false }() {
+            return Layer(name: "System filter",
+                         detail: "Needs a build signed with the Apple Developer Program "
+                             + "(Setup step 9)",
+                         state: .missing, action: nil)
+        }
         switch f {
         case .unknown:
             return Layer(name: "System filter", detail: "Checking…",

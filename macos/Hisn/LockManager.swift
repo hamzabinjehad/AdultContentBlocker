@@ -194,6 +194,11 @@ public final class LockManager: ObservableObject {
         // fails to start, the lock is still recorded and every later launch
         // will try again — the reverse order would let a failed start leave the
         // user unlocked with a lock they believe is running.
+        //
+        // A build with no team signature cannot run the filter at all, so it
+        // is not asked to: the lock stands on the hosts file, the extension
+        // and the browser guard, and the Overview says the filter is missing.
+        guard FilterLink.shared.isConfigured else { return }
         do {
             try await FilterController.shared.enable()
         } catch {
