@@ -192,14 +192,23 @@ class TestDNRRules(unittest.TestCase):
             self.assertTrue(r["condition"]["requestDomains"])
             self.assertTrue(r["condition"]["resourceTypes"])
 
-    def test_limit_is_respected(self):
+    def test_over_the_limit_fails_instead_of_trimming(self):
+        """A trimmed list looked like a whole one to every later check."""
         import tempfile
         domains = [f"d{i}.example" for i in range(5000)]
+        with tempfile.NamedTemporaryFile(suffix=".json") as fh:
+            with self.assertRaises(SystemExit) as caught:
+                write_dnr_rules(Path(fh.name), domains, "block", limit=1500)
+        self.assertIn("5,000", str(caught.exception))
+
+    def test_at_the_limit_every_domain_is_covered(self):
+        import tempfile
+        domains = [f"d{i}.example" for i in range(1500)]
         with tempfile.NamedTemporaryFile(suffix=".json") as fh:
             write_dnr_rules(Path(fh.name), domains, "block", limit=1500)
             rules = json.loads(Path(fh.name).read_text())
         covered = {d for r in rules for d in r["condition"]["requestDomains"]}
-        self.assertLessEqual(len(covered), 1500)
+        self.assertEqual(covered, set(domains))
 
 
 class TestRealArtifacts(unittest.TestCase):

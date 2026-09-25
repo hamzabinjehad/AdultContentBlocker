@@ -149,9 +149,14 @@ Both clients download signed updates from this repository's `lists` branch —
 
 1. **The repository is public.** `raw.githubusercontent.com` answers 404 for a
    private repository, and the clients then keep their bundled seed forever.
-2. **The `BLOCKLIST_SIGNING_KEY` secret holds the PEM** whose public half is
-   pinned in `blocklist/public_key.hex`. Then run *Build and publish blocklist*
-   once from the Actions tab; after that it runs daily.
+2. **The signing key lives in an environment, not a repository secret.**
+   Settings › Environments › *New environment* `list-signing`; under
+   *Deployment branches and tags* choose *Selected branches* and add `main`;
+   then *Add environment secret* `BLOCKLIST_SIGNING_KEY` with the PEM whose
+   public half is pinned in `blocklist/public_key.hex`. If an older
+   repository-level secret of that name exists, delete it — it would still be
+   readable from any branch. Then run *Build and publish blocklist* once from
+   the Actions tab, on `main`; after that it runs daily.
 
 Check it took: `curl -sI https://raw.githubusercontent.com/<owner>/<repo>/lists/manifest.json`
 answers `200`.

@@ -5,12 +5,13 @@ on:
     - cron: "17 3 * * *"        # daily, 03:17 UTC
   workflow_dispatch:
     inputs:
-      # Re-cut the bundled seed from this run's build and commit it to the
-      # branch the workflow was dispatched on. This is how a term edit gets a
-      # signed seed without the private key ever leaving CI: edit
-      # blocklist/terms/, dispatch this on your branch with the box ticked,
-      # and pull. See blocklist/seed.py for what the seed is and why it must
-      # be re-signed at all.
+      # Re-cut the bundled seed from this run's build and commit it to main.
+      # This is how a term edit gets a signed seed without the private key
+      # ever leaving CI: edit blocklist/terms/, push to main, dispatch this
+      # with the box ticked, and pull. Dispatched on any other branch the run
+      # gets no key (the list-signing environment admits main only) and fails.
+      # See blocklist/seed.py for what the seed is and why it must be
+      # re-signed at all.
       refresh_seed:
         description: "Re-cut and commit the signed seed bundle from this build"
         type: boolean
@@ -46,10 +47,16 @@ jobs:
   build:
     needs: test
     runs-on: ubuntu-latest
+    # The signing key lives in this environment, not in the repository's
+    # secrets, and the environment admits the main branch only (Settings ›
+    # Environments › list-signing › Deployment branches). A workflow edited on
+    # any other branch — even one that removes the `if: main` below — cannot
+    # read the key, so it cannot sign a list. See SETUP.md.
+    environment: list-signing
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
 

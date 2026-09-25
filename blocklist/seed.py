@@ -70,6 +70,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+from build import dnr_rules, serialize_dnr  # noqa: E402
 from terms import compile_terms, serialize_terms  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
@@ -97,6 +98,10 @@ HEX64 = re.compile(r"\b[0-9a-f]{64}\b")
 # What `BlocklistStore.load` refuses, mirrored so a seed the app would reject
 # is caught here rather than on first launch.
 MIN_DOMAIN_COUNT = 100_000
+
+# The core tier is what the filter starts from and all the browser carries. A
+# normal build has ~117,000; a seed far below that lost its core sources.
+MIN_CORE_COUNT = 50_000
 
 
 def sha256_file(path: Path) -> str:
@@ -208,6 +213,26 @@ def verify(repo: Path = REPO) -> list[str]:
             problems.append("seed/terms.json differs from what blocklist/terms/ "
                             "compiles to — the sources changed and the seed "
                             "was not re-cut")
+
+    # The browser's static rules must be exactly what the core tier builds
+    # to: the hash check above only proves each file came from SOME signed
+    # build, not that the two shipped together are the same build's.
+    core_path = repo / "seed/domains_core.txt"
+    rules_path = repo / "extension/rules/dnr_block_rules.json"
+    if core_path.exists() and rules_path.exists():
+        core = [line for line in core_path.read_text(encoding="utf-8").splitlines()
+                if line and not line.startswith("#")]
+        if len(core) < MIN_CORE_COUNT:
+            problems.append(f"seed/domains_core.txt: {len(core):,} domains is below "
+                            f"the {MIN_CORE_COUNT:,} core floor")
+        claimed = manifest.get("core_domain_count")
+        if claimed is not None and claimed != len(core):
+            problems.append(f"seed/domains_core.txt: {len(core):,} domains, the signed "
+                            f"manifest says {claimed:,}")
+        rules = dnr_rules(core, "block", limit=max(len(core), 1))
+        if serialize_dnr(rules).encode("utf-8") != rules_path.read_bytes():
+            problems.append("extension/rules/dnr_block_rules.json is not what "
+                            "seed/domains_core.txt builds to — re-cut the seed")
 
     return problems
 

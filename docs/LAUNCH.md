@@ -26,7 +26,8 @@ stops a release" list is empty.
 
 ## 3. The list
 
-* The repository public, `BLOCKLIST_SIGNING_KEY` set, the daily workflow green
+* The repository public, `BLOCKLIST_SIGNING_KEY` set in the main-only
+  `list-signing` environment, the daily workflow green
   (`docs/SETUP.md` › *Publishing the list*).
 * **Licences.** Three of the nine sources — the three UT1 lists — are "free for
   non-commercial use". Selling Hisn with them in the list needs the university's

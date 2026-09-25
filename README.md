@@ -84,10 +84,13 @@ extension ships; the full list goes to the network filter, which has no rule
 budget. `terms.json`, the keyword layer, is compiled from `blocklist/terms/`
 in the same build and covered by the same signature.
 
-For CI, put the PEM in the `BLOCKLIST_SIGNING_KEY` secret. The workflow runs
-the whole test suite first, then refuses to publish a build under 200,000
-domains or with a collapsed keyword layer — a list that quietly shrinks is the
-worst failure this system has, because it looks like it is working.
+For CI, put the PEM in the `BLOCKLIST_SIGNING_KEY` secret of the `list-signing`
+environment, which admits `main` only (docs/SETUP.md). The workflow runs the
+whole test suite first, then `blocklist/publish_guard.py` compares the build
+with the list it would replace and refuses one that lost a core source, fell
+below 80% of the previous counts, or has a file near GitHub's size limit — a
+list that quietly shrinks is the worst failure this system has, because it
+looks like it is working.
 
 ### Seed bundle
 

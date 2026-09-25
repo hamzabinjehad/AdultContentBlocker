@@ -66,14 +66,21 @@ class FakeRepo:
         self.write_build(version=4)
 
     def write_build(self, version: int, drop: set[str] = frozenset(),
-                    domain_count: int = 900_000) -> None:
-        """A signed build with every artifact `seed.py` ships."""
+                    domain_count: int = 900_000, core: list[str] | None = None,
+                    rules_from: list[str] | None = None,
+                    core_claimed: int | None = None) -> None:
+        """A signed build with every artifact `seed.py` ships. `rules_from`
+        builds the browser rules from a different core than the one shipped."""
         terms = compile_terms(self.root / "blocklist" / "terms")
         terms["version"] = version
+        if core is None:
+            core = ["pornhub.com"] + [f"d{i}.example" for i in range(seed.MIN_CORE_COUNT)]
+        rules_core = core if rules_from is None else rules_from
         files = {
-            "domains_core.txt": f"# Hisn blocklist version={version}\npornhub.com\n",
+            "domains_core.txt": f"# Hisn blocklist version={version}\n" + "\n".join(core) + "\n",
             "terms.json": serialize_terms(terms),
-            "dnr_block_rules.json": "[]",
+            "dnr_block_rules.json": seed.serialize_dnr(
+                seed.dnr_rules(rules_core, "block", limit=max(len(rules_core), 1))),
             "dnr_keyword_rules.json": "[]",
             "domains.txt": "pornhub.com\n",
         }
@@ -84,6 +91,7 @@ class FakeRepo:
                 artifacts[name] = {"sha256": seed.sha256_file(self.dist / name),
                                    "bytes": len(text.encode())}
         manifest = {"schema": 1, "version": version, "domain_count": domain_count,
+                    "core_domain_count": len(core) if core_claimed is None else core_claimed,
                     "artifacts": artifacts}
         self.sign(json.dumps(manifest, indent=2, sort_keys=True).encode())
 
@@ -176,6 +184,29 @@ class TestSeedTool(unittest.TestCase):
         seed.sync(self.repo.root, self.repo.dist, log=lambda *_: None)
         problems = seed.verify(self.repo.root)
         self.assertTrue(any("floor" in p for p in problems), problems)
+
+
+    def test_browser_rules_from_another_core_are_reported(self):
+        """Each file hashing to SOME signed build is not the same as the two
+        shipping together: the browser's rules must be this core's."""
+        core = ["pornhub.com"] + [f"d{i}.example" for i in range(seed.MIN_CORE_COUNT)]
+        self.repo.write_build(version=4, core=core, rules_from=core[:-1000])
+        seed.sync(self.repo.root, self.repo.dist, log=lambda *_: None)
+        problems = seed.verify(self.repo.root)
+        self.assertTrue(any("is not what seed/domains_core.txt builds to" in p
+                            for p in problems), problems)
+
+    def test_a_core_tier_below_its_floor_is_reported(self):
+        self.repo.write_build(version=4, core=[f"d{i}.example" for i in range(1000)])
+        seed.sync(self.repo.root, self.repo.dist, log=lambda *_: None)
+        problems = seed.verify(self.repo.root)
+        self.assertTrue(any("core floor" in p for p in problems), problems)
+
+    def test_a_core_count_the_manifest_disagrees_with_is_reported(self):
+        self.repo.write_build(version=4, core_claimed=123)
+        seed.sync(self.repo.root, self.repo.dist, log=lambda *_: None)
+        problems = seed.verify(self.repo.root)
+        self.assertTrue(any("the signed manifest says 123" in p for p in problems), problems)
 
 
 class TestCommittedSeed(unittest.TestCase):

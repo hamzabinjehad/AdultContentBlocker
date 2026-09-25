@@ -236,6 +236,17 @@ def write_domains(path: Path, domains: list[str], header: str) -> None:
 
 
 def write_dnr_rules(path: Path, domains: list[str], mode: str, limit: int) -> int:
+    rules = dnr_rules(domains, mode, limit)
+    path.write_text(serialize_dnr(rules), encoding="utf-8")
+    return len(rules)
+
+
+def serialize_dnr(rules: list[dict]) -> str:
+    """The one byte form of a ruleset — seed.py verify compares against it."""
+    return json.dumps(rules, separators=(",", ":"))
+
+
+def dnr_rules(domains: list[str], mode: str, limit: int) -> list[dict]:
     """
     Emit Chrome declarativeNetRequest static rules.
 
@@ -245,10 +256,16 @@ def write_dnr_rules(path: Path, domains: list[str], mode: str, limit: int) -> in
     """
     rules = []
     if mode == "block":
-        # Chunk domains across rules; each rule holds up to `chunk` domains.
-        # Truncate to `limit` FIRST: slicing `domains[i:i+chunk]` off the full
-        # list lets the final chunk overshoot the limit by up to chunk-1.
-        domains = domains[:limit]
+        # Refuse, never trim. This used to cut the list to `limit` without a
+        # word: a core tier that grew past it lost its tail from every browser
+        # while the build, the manifest and the publish guard all looked fine.
+        # A core tier that large means a source changed; a person decides
+        # whether to raise --dnr-limit or narrow the tier.
+        if len(domains) > limit:
+            raise SystemExit(
+                f"FATAL: {len(domains):,} core domains exceed the browser rule "
+                f"budget (--dnr-limit {limit:,}). Nothing is dropped silently: "
+                f"raise the limit or narrow the core tier.")
         chunk = 1000
         rid = 1
         for i in range(0, len(domains), chunk):
@@ -280,8 +297,7 @@ def write_dnr_rules(path: Path, domains: list[str], mode: str, limit: int) -> in
                     ],
                 },
             })
-    path.write_text(json.dumps(rules, separators=(",", ":")), encoding="utf-8")
-    return len(rules)
+    return rules
 
 
 # Chrome guarantees 30,000 static rules but only ~1,000 `regexFilter` rules,
