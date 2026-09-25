@@ -73,7 +73,16 @@ nm_system_dir() {
     esac
 }
 
-browser_installed() {   # product-dir -> present under this user's App Support?
+browser_installed() {   # product-dir policy-domain -> is the browser installed?
+    # By its app bundle, via Spotlight. A data folder alone is not enough: an
+    # uninstalled browser leaves one behind, and reporting it OPEN sends the
+    # person chasing a browser they no longer have. Edge's app id differs from
+    # its policy domain. Only when Spotlight indexing is off does the data
+    # folder decide.
+    local id="$2"
+    [ "$id" = "com.microsoft.Edge" ] && id="com.microsoft.edgemac"
+    [ -n "$(mdfind "kMDItemCFBundleIdentifier == '$id'" 2>/dev/null | head -1)" ] && return 0
+    mdutil -s / 2>/dev/null | grep -q "Indexing enabled" && return 1
     [ -d "$HOME/Library/Application Support/$1" ]
 }
 
@@ -113,16 +122,41 @@ fi
 # One pass over the family: for each browser that is actually installed, is
 # incognito disabled, is DoH locked off, and does a native-messaging host exist?
 # Aggregated so the output stays short but still names the browser that is open.
-incog_open=""; doh_open=""; link_missing=""; browsers_present=0
+incog_open=""; doh_open=""; guest_open=""; safe_open=""; link_missing=""; ext_off=""; browsers_present=0
 while IFS='|' read -r name domain product; do
     [ -n "$name" ] || continue
-    browser_installed "$product" || continue
+    browser_installed "$product" "$domain" || continue
     browsers_present=1
 
     [ "$(managed_pref "$domain" IncognitoModeAvailability || echo "")" = "1" ] \
         || incog_open="$incog_open $name"
     [ "$(managed_pref "$domain" DnsOverHttpsMode || echo "")" = "off" ] \
         || doh_open="$doh_open $name"
+    # A guest window or a fresh profile runs without the extension.
+    { [ "$(managed_pref "$domain" BrowserGuestModeEnabled || echo "")" = "0" ] \
+      && [ "$(managed_pref "$domain" BrowserAddPersonEnabled || echo "")" = "0" ]; } \
+        || guest_open="$guest_open $name"
+    [ "$(managed_pref "$domain" ForceGoogleSafeSearch || echo "")" = "1" ] \
+        || safe_open="$safe_open $name"
+
+    # Is the Hisn extension installed AND switched on in this browser? Read
+    # from the browser's own profile state — the one-click "disable" on the
+    # extensions page leaves every file above in place.
+    ext_state=$(python3 - "$HOME/Library/Application Support/$product" <<'PY' 2>/dev/null || echo "unknown"
+import json, sys, pathlib
+ids = {"hfhaffbmoeepcdolgejeidkgaoapcjig"}
+root = pathlib.Path(sys.argv[1]); seen = on = 0
+for prefs in list(root.glob("Default/*Preferences")) + list(root.glob("Profile */*Preferences")):
+    try: settings = json.loads(prefs.read_text()).get("extensions", {}).get("settings", {})
+    except Exception: continue
+    for i in ids & settings.keys():
+        seen += 1
+        e = settings[i]
+        on += not e.get("disable_reasons") and e.get("state", 1) != 0
+print("absent" if not seen else "on" if on else "off")
+PY
+)
+    [ "$ext_state" = "on" ] || ext_off="$ext_off $name($ext_state)"
 
     sysman="$(nm_system_dir "$name" "$product")/app.hisn.bridge.json"
     userman="$HOME/Library/Application Support/$product/NativeMessagingHosts/app.hisn.bridge.json"
@@ -146,6 +180,24 @@ else
         open "browser DoH" "not locked on:$doh_open — a DoH toggle bypasses the hosts file"
     fi
 
+    if [ -z "$guest_open" ]; then
+        ok "guest / new profiles" "disabled on every installed browser"
+    else
+        open "guest / new profiles" "available on:$guest_open — a guest window runs no extension"
+    fi
+
+    if [ -z "$safe_open" ]; then
+        ok "SafeSearch policy" "forced on every installed browser"
+    else
+        warn "SafeSearch policy" "not forced on:$safe_open — the extension still rewrites searches"
+    fi
+
+    if [ -z "$ext_off" ]; then
+        ok "Hisn extension" "installed and switched on in every installed browser"
+    else
+        open "Hisn extension" "not running in:$ext_off — no page-text checking there"
+    fi
+
     # A missing link is fail-closed during an active lock (the extension reads
     # silence as tampering and goes strict), so it is a partial, not a bypass —
     # but it means custom allow/block lists never reach that browser, and with
@@ -155,6 +207,15 @@ else
     else
         warn "extension link" "no host on:$link_missing — extension there cannot reach the app (run install_native_host.sh or launch the app)"
     fi
+fi
+
+# Screen Time's own adult-website filter: Apple's lock, which this tool is
+# meant to sit under (docs/POSITIONING.md). Informational — the rows above
+# are what Hisn itself adds.
+if [ "$(managed_pref com.apple.familycontrols.contentfilter restrictWeb || echo "")" = "1" ]; then
+    ok "Screen Time filter" "Limit Adult Websites is on"
+else
+    warn "Screen Time filter" "Limit Adult Websites is off — turn it on under Screen Time › Content & Privacy"
 fi
 
 relay=$(managed_pref com.apple.applicationaccess allowCloudPrivateRelay || echo "")

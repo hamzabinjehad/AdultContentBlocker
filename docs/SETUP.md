@@ -62,7 +62,9 @@ python3 profile/make_profile.py --resolver cloudflare \
 The **second person** installs it: System Settings → General → Device
 Management. Save the printed removal password with them, never the user. Gets
 you: DoH locked off across eleven Chromium browsers, iCloud Private Relay off,
-per-browser proxy pinned across twelve Chromium browsers (Helium included), and
+per-browser proxy pinned across the Chromium family (Helium included), guest
+windows and new browser profiles disabled (both run without the extension),
+Google SafeSearch and YouTube strict mode forced by policy, and
 **private/incognito browsing disabled** — the enforceable way to close the
 incognito bypass (`--allow-incognito` opts out; see `CHROME_ENFORCEMENT.md`).
 Do not add `--extension-id` until step 5 is actually published.

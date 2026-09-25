@@ -198,6 +198,16 @@ CHROMIUM_POLICY = {
     # and a profile that makes the project undebuggable is one they will simply
     # not install — leaving every other control in this file unapplied too.
     "URLAllowlist": ["chrome://settings/help"],
+    # A guest window runs no extensions, and a new profile has none installed
+    # until the store force-installs one. Either is a fresh browser with the
+    # page-text layer switched off, one menu away.
+    "BrowserGuestModeEnabled": False,
+    "BrowserAddPersonEnabled": False,
+    # SafeSearch at the policy level: covers an allowlisted search engine,
+    # which the extension's rewrite rules deliberately leave alone, and keeps
+    # working if the extension is ever off. 2 = YouTube strict restricted mode.
+    "ForceGoogleSafeSearch": True,
+    "ForceYouTubeRestrict": 2,
 }
 
 CHROMIUM_DEVTOOLS_LOCK = {"DeveloperToolsAvailability": 2}   # 2 = disallowed
@@ -240,6 +250,10 @@ def chromium_extension_policy(extension_id: str, update_url: str) -> dict:
 def p_chrome(extension_id: str, update_url: str,
              lock_devtools: bool = True, block_incognito: bool = True) -> dict:
     policy = dict(CHROMIUM_POLICY)
+    # Google's own adult-site classifier for top-level navigations. It calls a
+    # Google service, so it is set for Chrome alone — the forks strip or
+    # replace Google services and would either ignore it or fail it.
+    policy["SafeSitesFilterBehavior"] = 1
     if lock_devtools:
         policy.update(CHROMIUM_DEVTOOLS_LOCK)
     if block_incognito:
@@ -271,6 +285,14 @@ CHROMIUM_FAMILY = [
     ("com.google.Chrome.beta", "chrome-beta", "Chrome Beta"),
     ("com.google.Chrome.dev", "chrome-dev", "Chrome Dev"),
     ("com.google.Chrome.canary", "chrome-canary", "Chrome Canary"),
+    # The newer Chromium browsers. Each ships its own DoH client and reads the
+    # same policy keys under its own bundle id.
+    ("com.operasoftware.OperaGX", "opera-gx", "Opera GX"),
+    ("org.chromium.Thorium", "thorium", "Thorium"),
+    ("ru.yandex.desktop.yandex-browser", "yandex", "Yandex Browser"),
+    ("ai.perplexity.comet", "comet", "Comet"),
+    ("company.thebrowser.dia", "dia", "Dia"),
+    ("com.openai.atlas", "atlas", "ChatGPT Atlas"),
 ]
 
 
@@ -303,6 +325,7 @@ def p_chromium_family(extension_id: str = "", update_url: str = "",
 def p_edge(extension_id: str, update_url: str,
            lock_devtools: bool = True, block_incognito: bool = True) -> dict:
     policy = dict(CHROMIUM_POLICY)
+    policy["ForceBingSafeSearch"] = 2     # Edge's own policy: strict
     if lock_devtools:
         policy.update(CHROMIUM_DEVTOOLS_LOCK)
     if block_incognito:

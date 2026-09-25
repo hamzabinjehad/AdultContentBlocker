@@ -163,6 +163,37 @@ class TestNetworkHardening(unittest.TestCase):
                         "about:config is where a Firefox user re-enables DoH")
 
 
+class TestBrowserEscapes(unittest.TestCase):
+    """The ways out of the extension that live inside the browser itself."""
+
+    CHROMIUM = ["com.google.Chrome", "com.microsoft.Edge", "net.imput.helium",
+                "com.brave.Browser", "org.chromium.Chromium"]
+
+    def test_no_guest_windows_or_new_profiles(self):
+        profile = build()
+        for bundle_id in self.CHROMIUM:
+            p = payload(profile, bundle_id)
+            self.assertFalse(p["BrowserGuestModeEnabled"], bundle_id)
+            self.assertFalse(p["BrowserAddPersonEnabled"], bundle_id)
+
+    def test_safesearch_is_forced_by_policy(self):
+        profile = build()
+        for bundle_id in self.CHROMIUM:
+            p = payload(profile, bundle_id)
+            self.assertTrue(p["ForceGoogleSafeSearch"], bundle_id)
+            self.assertEqual(p["ForceYouTubeRestrict"], 2, bundle_id)
+        self.assertEqual(payload(profile, "com.google.Chrome")["SafeSitesFilterBehavior"], 1)
+        self.assertEqual(payload(profile, "com.microsoft.Edge")["ForceBingSafeSearch"], 2)
+        self.assertNotIn("SafeSitesFilterBehavior", payload(profile, "net.imput.helium"),
+                         "a Google-service policy has no place in a de-Googled fork")
+
+    def test_allow_flags_do_not_reopen_these(self):
+        profile = build(allow_devtools=True, allow_incognito=True)
+        p = payload(profile, "net.imput.helium")
+        self.assertFalse(p["BrowserGuestModeEnabled"])
+        self.assertTrue(p["ForceGoogleSafeSearch"])
+
+
 class TestChromiumFamily(unittest.TestCase):
     """
     Naming only Chrome and Edge left the obvious escape open.
