@@ -84,6 +84,14 @@ from pathlib import Path
 # and are the cheapest possible way to write a term that looks identical to a
 # human and matches nothing at all.
 _INVISIBLE = dict.fromkeys(map(ord, "​‌‍‎‏؜﻿"))
+# Also every other default-ignorable format character that can split a word
+# the reader still sees whole — soft hyphen, word joiner, bidi embeddings and
+# isolates, variation selectors, fillers. Same list as normalize.js and
+# TextNormalizer.swift; normalize_cases.json holds all three to it.
+_INVISIBLE.update(dict.fromkeys([
+    0x00AD, 0x034F, 0x180E, *range(0x2060, 0x2065), *range(0x202A, 0x202F),
+    *range(0x2066, 0x2070), 0x115F, 0x1160, 0x3164, 0xFFA0, *range(0xFE00, 0xFE10),
+]))
 
 # Tatweel (kashida) — pure decoration, stretches a word without changing it.
 _TATWEEL = dict.fromkeys([0x0640])

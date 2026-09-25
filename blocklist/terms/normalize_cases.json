@@ -14,35 +14,140 @@
     "Add a case whenever you touch any of the three implementations."
   ],
   "cases": [
-    { "in": "PORN", "out": "porn", "why": "ASCII case folding" },
-    { "in": "  Porn  ", "out": "porn", "why": "surrounding whitespace" },
-    { "in": "Café", "out": "cafe", "why": "Latin combining marks are dropped" },
-
-    { "in": "إباحية", "out": "اباحيه",
-      "why": "hamza-on-alef folds to bare alef; taa marbuta folds to haa" },
-    { "in": "اباحية", "out": "اباحيه", "why": "the same word, written without hamza" },
-    { "in": "أإآٱ", "out": "اااا", "why": "every alef form folds together" },
-    { "in": "مُؤَخِّرَة", "out": "موخره",
-      "why": "tashkeel stripped, waw-hamza to waw, taa marbuta to haa" },
-    { "in": "ســـكـــس", "out": "سكس", "why": "tatweel is decoration only" },
-    { "in": "سكس‏", "out": "سكس",
-      "why": "an invisible bidi mark must not defeat a term" },
-    { "in": "سكس‌‍", "out": "سكس", "why": "zero-width joiner and non-joiner" },
-    { "in": "ﺳﻜﺲ", "out": "سكس",
-      "why": "NFKC collapses the Arabic presentation forms that pasted text carries" },
-    { "in": "علي", "out": "علي", "why": "yaa is already the folded form" },
-    { "in": "علىي", "out": "عليي", "why": "alef maqsura folds to yaa" },
-    { "in": "مثيرة", "out": "مثيره", "why": "taa marbuta" },
-    { "in": "٠١٢٣٤٥٦٧٨٩", "out": "0123456789", "why": "Arabic-Indic digits" },
-    { "in": "۰۱۲۳", "out": "0123", "why": "extended Arabic-Indic digits" },
-
-    { "in": "3ahira", "out": "3ahira",
-      "why": "Franco-Arabic digits are LETTERS and must survive normalisation" },
-    { "in": "A7A", "out": "a7a", "why": "Franco-Arabic lowercases like any Latin text" },
-    { "in": "sks-arab", "out": "sks-arab",
-      "why": "separators survive normalisation; the tokenizer removes them" },
-
-    { "in": "", "out": "", "why": "empty input is not an error" },
-    { "in": "   ", "out": "", "why": "whitespace-only collapses to empty" }
+    {
+      "in": "PORN",
+      "out": "porn",
+      "why": "ASCII case folding"
+    },
+    {
+      "in": "  Porn  ",
+      "out": "porn",
+      "why": "surrounding whitespace"
+    },
+    {
+      "in": "Café",
+      "out": "cafe",
+      "why": "Latin combining marks are dropped"
+    },
+    {
+      "in": "إباحية",
+      "out": "اباحيه",
+      "why": "hamza-on-alef folds to bare alef; taa marbuta folds to haa"
+    },
+    {
+      "in": "اباحية",
+      "out": "اباحيه",
+      "why": "the same word, written without hamza"
+    },
+    {
+      "in": "أإآٱ",
+      "out": "اااا",
+      "why": "every alef form folds together"
+    },
+    {
+      "in": "مُؤَخِّرَة",
+      "out": "موخره",
+      "why": "tashkeel stripped, waw-hamza to waw, taa marbuta to haa"
+    },
+    {
+      "in": "ســـكـــس",
+      "out": "سكس",
+      "why": "tatweel is decoration only"
+    },
+    {
+      "in": "سكس‏",
+      "out": "سكس",
+      "why": "an invisible bidi mark must not defeat a term"
+    },
+    {
+      "in": "سكس‌‍",
+      "out": "سكس",
+      "why": "zero-width joiner and non-joiner"
+    },
+    {
+      "in": "ﺳﻜﺲ",
+      "out": "سكس",
+      "why": "NFKC collapses the Arabic presentation forms that pasted text carries"
+    },
+    {
+      "in": "علي",
+      "out": "علي",
+      "why": "yaa is already the folded form"
+    },
+    {
+      "in": "علىي",
+      "out": "عليي",
+      "why": "alef maqsura folds to yaa"
+    },
+    {
+      "in": "مثيرة",
+      "out": "مثيره",
+      "why": "taa marbuta"
+    },
+    {
+      "in": "٠١٢٣٤٥٦٧٨٩",
+      "out": "0123456789",
+      "why": "Arabic-Indic digits"
+    },
+    {
+      "in": "۰۱۲۳",
+      "out": "0123",
+      "why": "extended Arabic-Indic digits"
+    },
+    {
+      "in": "3ahira",
+      "out": "3ahira",
+      "why": "Franco-Arabic digits are LETTERS and must survive normalisation"
+    },
+    {
+      "in": "A7A",
+      "out": "a7a",
+      "why": "Franco-Arabic lowercases like any Latin text"
+    },
+    {
+      "in": "sks-arab",
+      "out": "sks-arab",
+      "why": "separators survive normalisation; the tokenizer removes them"
+    },
+    {
+      "in": "",
+      "out": "",
+      "why": "empty input is not an error"
+    },
+    {
+      "in": "   ",
+      "out": "",
+      "why": "whitespace-only collapses to empty"
+    },
+    {
+      "in": "p­o­r­n",
+      "out": "porn",
+      "why": "soft hyphens between letters (&shy;) are invisible and must not split a word"
+    },
+    {
+      "in": "po⁠rn",
+      "out": "porn",
+      "why": "word joiner"
+    },
+    {
+      "in": "‮porn‬",
+      "out": "porn",
+      "why": "bidi override and pop"
+    },
+    {
+      "in": "se⁦x⁩",
+      "out": "sex",
+      "why": "bidi isolates"
+    },
+    {
+      "in": "sex️",
+      "out": "sex",
+      "why": "variation selector"
+    },
+    {
+      "in": "س­كس",
+      "out": "سكس",
+      "why": "a soft hyphen inside an Arabic word"
+    }
   ]
 }

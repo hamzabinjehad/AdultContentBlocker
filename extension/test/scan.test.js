@@ -315,5 +315,61 @@ await (async () => {
   check(sc.stats.stale === 1, `the stale verdict was counted (${JSON.stringify(sc.stats)})`);
 })();
 
+// ── an error reply is not a verdict ─────────────────────────────────────────
+await (async () => {
+  const doc = fakeDoc({ title: "x", body: "xxxpornxxx" });
+  // First the worker answers with an error object, then with a real verdict.
+  const h = harness({ doc, verdicts: (z, n) => n === 1 ? { ok: false, reason: "forbidden-sender" }
+                                                       : { block: true } });
+  h.scanner.start();
+  await h.clock.advance(10);
+  check(h.log.navigated.length === 0 && h.scanner.stats.failures === 1,
+        "THE regression: {ok:false} is a failure to retry, not a page judged clean");
+  await h.clock.advance(S.RETRY_BASE_MS + 10);
+  check(h.log.navigated.length === 1, "and the retry gets the real verdict");
+})();
+
+// ── a page that re-routes every time it is asked is still blocked ──────────
+await (async () => {
+  const doc = fakeDoc({ title: "app", body: "xxxpornxxx" });
+  const loc = { href: "https://example.test/r0", pathname: "/r0", search: "" };
+  const clock = fakeClock(); const log = { sent: [], navigated: [] };
+  let n = 0;
+  const sc = S.createScanner({
+    doc, win: { addEventListener() {} }, loc, isTop: true, timers: clock.timers, now: clock.now,
+    // Every answer arrives after the page has changed its URL again.
+    send: async () => { n++; loc.href = `https://example.test/r${n}`; loc.pathname = `/r${n}`;
+                        return { block: true }; },
+    navigate: (u) => log.navigated.push(u), hide() {}, blockPageURL: () => "b",
+    observe: () => () => {},
+  });
+  sc.start();
+  await clock.advance(50);
+  check(log.navigated.length === 1 && n <= S.MAX_RETRIES,
+        `THE regression: a URL that changes on every verdict no longer dodges it (${n} asks)`);
+})();
+
+// ── a blocked top frame hides before it navigates ──────────────────────────
+await (async () => {
+  const doc = fakeDoc({ title: "x", body: "xxxpornxxx" });
+  const h = harness({ doc, verdicts: () => ({ block: true }) });
+  h.scanner.start();
+  await h.clock.advance(10);
+  check(h.log.hidden === 1 && h.log.navigated.length === 1,
+        "the top frame is hidden too, so a cancelled navigation leaves nothing readable");
+})();
+
+// ── past MAX_TEXT, the head and the tail are both read ─────────────────────
+await (async () => {
+  const filler = "an ordinary sentence about gardening. ".repeat(Math.ceil(S.MAX_TEXT / 30));
+  const doc = fakeDoc({ title: "feed", body: filler + " xxxpornxxx at the very end" });
+  const h = harness({ doc, verdicts: dirtyIf("xxxpornxxx") });
+  h.scanner.start();
+  await h.clock.advance(10);
+  check(h.log.navigated.length === 1,
+        "THE regression: text appended past the first 200k characters is still read");
+  check(h.log.sent[0].body.length <= S.MAX_TEXT + 1, "and the text sent stays bounded");
+})();
+
 print(`  ${checks - failures}/${checks} checks passed`);
 if (failures) throw new Error(`${failures} scanner checks failed`);

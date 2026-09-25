@@ -56,6 +56,8 @@ suite_browser() {
     extension/test/browser/run.sh
     echo "── extension: network rules in a real browser (SafeSearch, blocklist)"
     extension/test/browser/dnr.sh
+    echo "── extension: the scanner against evasive pages in a real browser"
+    extension/test/browser/scan_live.sh
 }
 
 suite_macos() {

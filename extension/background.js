@@ -16,7 +16,7 @@ import { acceptList } from "./lib/verify.js";
 import { buildIndex, scorePage, isExempt, hostInList, withoutTerms }
   from "./lib/score.js";
 import { normalize } from "./lib/normalize.js";
-import { isLocked, effectiveStrict, shouldFailClosed, policyRules, tabsToBlock,
+import { isLocked, effectiveStrict, shouldFailClosed, policyRules, tabsToBlock, canonicalHost,
          validatePatch, bridgePatch, RULE_DOWNLOADED_BASE, HEARTBEAT_GRACE_MS }
   from "./lib/policy.js";
 import { createLock } from "./lib/serial.js";
@@ -188,14 +188,32 @@ async function enforceOpenTabs(state) {
     console.warn("[hisn] could not enumerate tabs:", err?.message ?? err);
     return;
   }
+  const byId = new Map(tabs.map((t) => [t.id, t]));
   for (const { id, reason } of tabsToBlock(tabs, state)) {
     try {
-      await chrome.tabs.update(id, {
-        url: chrome.runtime.getURL(`blocked.html?reason=${reason}`),
-      });
+      await replaceTab(byId.get(id), chrome.runtime.getURL(`blocked.html?reason=${reason}`));
     } catch (err) {
       console.warn("[hisn] could not close tab %d:", id, err?.message ?? err);
     }
+  }
+}
+
+/**
+ * Put the block page where `tab` was, as a NEW tab, and close the old one.
+ *
+ * Navigating the tab in place (`tabs.update`) left the refused page one Back
+ * away in that tab's history, and the back-forward cache restores it without
+ * a network request — which no blocking rule ever sees. A fresh tab has no
+ * history to go back to. Same window, position, pinning and group.
+ */
+async function replaceTab(tab, url) {
+  if (!tab) return;
+  const created = await chrome.tabs.create({
+    windowId: tab.windowId, index: tab.index, url, active: tab.active, pinned: tab.pinned,
+  });
+  await chrome.tabs.remove(tab.id);
+  if (typeof tab.groupId === "number" && tab.groupId >= 0 && chrome.tabs.group) {
+    await chrome.tabs.group({ groupId: tab.groupId, tabIds: created.id }).catch(() => {});
   }
 }
 
@@ -293,6 +311,20 @@ async function syncTextScanning(state) {
     persistAcrossSessions: true,
   }]);
   console.info("[hisn] page-text scanning registered");
+  // Registration covers pages loaded from now on. Tabs already open — a lock
+  // started while checking was off, pages opened while the extension was
+  // switched off — would otherwise go unscanned for as long as they stay open.
+  await injectScannerIntoOpenTabs();
+}
+
+/** Run the scanner in every open web page now. It starts once per frame
+ *  however often it is injected (see the bootstrap in content/scan.js). */
+async function injectScannerIntoOpenTabs() {
+  let tabs = [];
+  try { tabs = await chrome.tabs.query({ url: ["http://*/*", "https://*/*"] }); } catch { return; }
+  await Promise.all(tabs.map((t) => chrome.scripting.executeScript({
+    target: { tabId: t.id, allFrames: true }, files: ["content/scan.js"],
+  }).catch(() => { /* a tab that closed, or a page we may not script */ })));
 }
 
 /**
@@ -334,8 +366,28 @@ async function scoreText(zones, sender) {
   // slot overwritten each block, and never persisted, sent, or put in a URL.
   if (result.block) {
     await rememberBlock(host, result.hits);
+    if (sender?.tab?.id !== undefined && sender.frameId === 0) ensureBlocked(sender.tab.id);
   }
   return { block: result.block };
+}
+
+/**
+ * The page's own `location.replace` is how a blocked top frame normally leaves
+ * — no history entry, nothing to go Back to. But a page can cancel its own
+ * navigation (the Navigation API's `navigate` event), so a moment later the
+ * worker checks, and if the tab is still not on the block page it replaces
+ * the tab itself, which no page can refuse.
+ */
+function ensureBlocked(tabId) {
+  const blockedPage = chrome.runtime.getURL("blocked.html");
+  setTimeout(async () => {
+    try {
+      const tab = await chrome.tabs.get(tabId);
+      if (!String(tab.url || tab.pendingUrl || "").startsWith(blockedPage)) {
+        await replaceTab(tab, chrome.runtime.getURL("blocked.html?reason=terms"));
+      }
+    } catch { /* the tab is gone — which is also fine */ }
+  }, 1500);
 }
 
 /** The top matched terms and their host, for the block page to show — held in
@@ -365,7 +417,10 @@ async function rememberBlock(host, hits) {
  * is told plainly that it will not lift before then.
  */
 async function reportWrongBlock(host) {
-  const clean = String(host || "").toLowerCase().replace(/\.$/, "");
+  // Canonical, exactly as the options page's lists are: stored raw, a `www.`
+  // or an IP here later made every removal from the list fail (or, unlocked,
+  // silently widened `www.x.com` to `x.com`).
+  const clean = canonicalHost(host);
   if (!clean) return { ok: false, reason: "no-host" };
   const state = await getState();
 
@@ -855,6 +910,10 @@ const booted = (async () => {
 
 chrome.runtime.onInstalled.addListener(async () => {
   await transaction(async () => applyRules(await getState()));
+  // After an update every content script in an open tab is orphaned — it can
+  // no longer reach this worker — so give each page a live one.
+  const s = await getState();
+  if (s.inspectText || s.failClosed || isLocked(s)) await injectScannerIntoOpenTabs();
   await ensureAlarms();
   await transaction(pollNative);
   await updateList();
