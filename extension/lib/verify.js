@@ -28,33 +28,35 @@ function bytesToHex(bytes) {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-let cachedKey = null;
+const keyCache = new Map();
 
-async function importPublicKey() {
-  if (cachedKey) return cachedKey;
-  cachedKey = await crypto.subtle.importKey(
-    "raw",
-    hexToBytes(PUBLIC_KEY_HEX),
-    { name: "Ed25519" },
-    false,
-    ["verify"],
-  );
-  return cachedKey;
+async function importPublicKey(hex = PUBLIC_KEY_HEX) {
+  if (!keyCache.has(hex)) {
+    keyCache.set(hex, await crypto.subtle.importKey(
+      "raw", hexToBytes(hex), { name: "Ed25519" }, false, ["verify"]));
+  }
+  return keyCache.get(hex);
 }
 
 /**
  * Verify a detached signature over the exact manifest bytes.
  * @param {ArrayBuffer|Uint8Array} manifestBytes raw bytes as served
  * @param {string} signatureHex detached Ed25519 signature, hex
+ * @param {string} publicKeyHex  a seam for tests (test/browser/verify.html),
+ *   exactly as BlocklistStore(publicKeyHex:) is in Swift; the worker never
+ *   passes it, so production always verifies against the pinned key.
+ *
+ * Every failure is `false` — a malformed signature included, which used to
+ * throw out of `acceptList` instead of refusing the list.
  */
-export async function verifyManifest(manifestBytes, signatureHex) {
-  const key = await importPublicKey();
-  return crypto.subtle.verify(
-    { name: "Ed25519" },
-    key,
-    hexToBytes(signatureHex),
-    manifestBytes,
-  );
+export async function verifyManifest(manifestBytes, signatureHex, publicKeyHex = PUBLIC_KEY_HEX) {
+  try {
+    const key = await importPublicKey(publicKeyHex);
+    return await crypto.subtle.verify({ name: "Ed25519" }, key,
+                                      hexToBytes(signatureHex), manifestBytes);
+  } catch {
+    return false;
+  }
 }
 
 /** SHA-256 of an artifact, hex — must equal the hash recorded in the manifest. */
@@ -78,8 +80,9 @@ export async function acceptList({
   signatureHex,
   artifacts,
   heldVersion,
+  publicKeyHex = PUBLIC_KEY_HEX,
 }) {
-  if (!(await verifyManifest(manifestBytes, signatureHex))) {
+  if (!(await verifyManifest(manifestBytes, signatureHex, publicKeyHex))) {
     return { ok: false, reason: "signature-invalid" };
   }
 

@@ -7,7 +7,11 @@ globalThis.chrome = {
   } },
   declarativeNetRequest: {
     getDynamicRules: async () => dynamic,
-    updateDynamicRules: async ({ addRules }) => { dynamic = addRules; },
+    // Chrome's semantics: remove the named ids, then add. Replacing the whole
+    // set here (as this mock once did) could never catch a lost downloaded rule.
+    updateDynamicRules: async ({ removeRuleIds = [], addRules = [] }) => {
+      dynamic = dynamic.filter((r) => !removeRuleIds.includes(r.id)).concat(addRules);
+    },
     updateEnabledRulesets: async ({ enableRulesetIds }) => { enabled = enableRulesetIds; },
   },
   scripting: {
@@ -84,6 +88,17 @@ await message({ type: "forceSync" });
 check(state.failClosed, "app loss during lock fails closed");
 state.lockUntil = 0;
 check(!(await message({ type: "update", patch: { textAllow: ["other.example"] } })).ok, "fail-closed still guards corrections");
+// Settings changes rebuild only the policy rules; a downloaded generation's
+// rules (ids at or above RULE_DOWNLOADED_BASE) survive every one of them.
+dynamic.push({ id: 10000, priority: 3, action: { type: "block" },
+               condition: { requestDomains: ["listed.example"], resourceTypes: ["main_frame"] } });
+await message({ type: "update", patch: { textSensitivity: 60 } });
+nativeReply = { lockUntil: Date.now() + 3600000, mode: "strict", allowlist: [], customBlocks: [] };
+await message({ type: "forceSync" });
+nativeReply = null;
+check(dynamic.some((r) => r.id === 10000), "downloaded rules survive settings and lock changes");
+check(dynamic.some((r) => r.condition.urlFilter === "*"), "and the lock's strict rules are in place beside them");
+
 // A bridge that never answers is silence, not a heartbeat that holds every
 // other transaction behind it forever.
 nativeReply = "hang";

@@ -1,0 +1,76 @@
+<!doctype html><meta charset="utf-8"><title>Hisn list verification tests</title>
+<!--
+  lib/verify.js is the extension's whole trust decision for a downloaded list,
+  and it needs WebCrypto's Ed25519, which the jsc runner does not have — so it
+  is tested here, in a real browser. A throwaway key signs each fixture and is
+  passed through the test seam; the last case checks the pinned production key
+  refuses what the throwaway key signed.
+-->
+<pre id="summary" data-result="pending">Running…</pre>
+<script type="module">
+import { acceptList, verifyManifest, sha256Hex } from "../../lib/verify.js";
+
+const results = [];
+const check = (ok, label) => { results.push(`${ok ? "ok  " : "FAIL"} ${label}`); if (!ok) failed = true; };
+let failed = false;
+const enc = (s) => new TextEncoder().encode(s);
+const hex = (buf) => Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, "0")).join("");
+
+try {
+  const pair = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
+  const pub = hex(await crypto.subtle.exportKey("raw", pair.publicKey));
+  const sign = async (bytes) => hex(await crypto.subtle.sign({ name: "Ed25519" }, pair.privateKey, bytes));
+
+  const artifact = enc("example.com\nexample.net\n");
+  const manifest = (over = {}) => enc(JSON.stringify({
+    version: 7, core_domain_count: 150000,
+    artifacts: { "domains.txt": { sha256: "" } }, ...over,
+  }));
+  const good = enc(JSON.stringify({ version: 7, core_domain_count: 150000,
+    artifacts: { "domains.txt": { sha256: await sha256Hex(artifact) } } }));
+  const sig = await sign(good);
+  const args = (o = {}) => ({ manifestBytes: good, signatureHex: sig, heldVersion: 5,
+                              artifacts: new Map([["domains.txt", artifact]]),
+                              publicKeyHex: pub, ...o });
+
+  let r = await acceptList(args());
+  check(r.ok && r.manifest.version === 7, "a correctly signed, newer list with matching artifacts is accepted");
+
+  r = await acceptList(args({ signatureHex: sig.replace(/^../, sig.startsWith("00") ? "01" : "00") }));
+  check(!r.ok && r.reason === "signature-invalid", "a flipped signature byte is refused");
+
+  const tampered = good.slice(); tampered[tampered.length - 2] ^= 1;
+  r = await acceptList(args({ manifestBytes: tampered }));
+  check(!r.ok && r.reason === "signature-invalid", "a manifest changed after signing is refused");
+
+  r = await acceptList(args({ signatureHex: "not hex at all" }));
+  check(!r.ok && r.reason === "signature-invalid", "a malformed signature is a refusal, not an exception");
+
+  r = await acceptList(args({ heldVersion: 8 }));
+  check(!r.ok && r.reason === "rollback-rejected", "an older signed list is refused (rollback)");
+
+  r = await acceptList(args({ heldVersion: 7 }));
+  check(r.ok, "the same version is accepted (a re-install of what is held)");
+
+  const small = manifest({ core_domain_count: 12 });
+  r = await acceptList(args({ manifestBytes: small, signatureHex: await sign(small) }));
+  check(!r.ok && r.reason === "list-suspiciously-small", "a signed but near-empty list is refused");
+
+  r = await acceptList(args({ artifacts: new Map([["domains.txt", enc("swapped\n")]]) }));
+  check(!r.ok && r.reason === "artifact-hash-mismatch:domains.txt", "a swapped artifact is refused");
+
+  r = await acceptList(args({ artifacts: new Map([["extra.json", enc("{}")]]) }));
+  check(!r.ok && r.reason === "artifact-not-in-manifest:extra.json", "an artifact the manifest does not cover is refused");
+
+  const noVersion = manifest({ version: "7" });
+  r = await acceptList(args({ manifestBytes: noVersion, signatureHex: await sign(noVersion) }));
+  check(!r.ok && r.reason === "manifest-no-version", "a manifest without a numeric version is refused");
+
+  check(!(await verifyManifest(good, sig)),
+        "the pinned production key refuses what any other key signed");
+} catch (error) {
+  check(false, `threw: ${error.stack || error}`);
+}
+document.getElementById("summary").dataset.result = failed ? "fail" : "pass";
+document.getElementById("summary").textContent = results.join("\n");
+</script>

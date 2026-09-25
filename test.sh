@@ -54,6 +54,8 @@ suite_extension() {
 suite_browser() {
     echo "── extension: scanner harness in a real browser"
     extension/test/browser/run.sh
+    echo "── extension: list signature verification (WebCrypto Ed25519)"
+    extension/test/browser/run.sh verify.html
     echo "── extension: network rules in a real browser (SafeSearch, blocklist)"
     extension/test/browser/dnr.sh
     echo "── extension: the scanner against evasive pages in a real browser"

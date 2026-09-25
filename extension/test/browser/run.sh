@@ -60,8 +60,13 @@ kill -TERM "$BROWSER_PID" 2>/dev/null || true
 wait "$BROWSER_PID" 2>/dev/null || true
 
 # The summary block, unescaped enough to read.
-sed -n 's/.*<pre id="summary" data-result="[a-z]*">//p' "$OUT" | sed 's/<\/pre>.*//' \
-    | sed 's/&lt;/</g; s/&gt;/>/g; s/&amp;/\&/g' | sed 's/^/  /'
+# Every line of the summary, not just the first: the results are one per line.
+python3 - "$OUT" <<'PY'
+import html, re, sys
+m = re.search(r'<pre id="summary" data-result="[a-z]*">(.*?)</pre>', open(sys.argv[1]).read(), re.S)
+for line in (m.group(1) if m else "").splitlines():
+    print("  " + html.unescape(line))
+PY
 
 if grep -q 'data-result="pass"' "$OUT"; then
     echo "browser harness: PASS"
