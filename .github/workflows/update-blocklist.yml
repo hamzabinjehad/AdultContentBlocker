@@ -16,6 +16,9 @@ on:
         type: boolean
         default: false
   push:
+    # main only: a push to any other branch used to rebuild AND publish, so an
+    # unreviewed term edit on a feature branch went straight to every client.
+    branches: [main]
     paths:
       - "blocklist/**"
       - ".github/workflows/update-blocklist.yml"
@@ -161,7 +164,10 @@ jobs:
 
       # Published to an orphan `lists` branch so the artifacts never bloat the
       # main branch history — a ~19MB file changing daily would be brutal.
+      # Whatever triggered the run, only main publishes. A dispatch on a
+      # feature branch (refresh_seed) re-cuts that branch's seed and stops here.
       - name: Publish to lists branch
+        if: ${{ github.ref == 'refs/heads/main' }}
         run: |
           git config user.name  "hisn-bot"
           git config user.email "bot@users.noreply.github.com"
