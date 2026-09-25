@@ -70,12 +70,20 @@ public enum LockStore {
         /// must not be lost, and `nil` is the safe reading of "no request".
         public var selfReleaseAt: Date?
 
+        /// Drawn when the lock starts and kept for its life. It is half of the
+        /// code an accountability partner signs (`PartnerService.challenge`),
+        /// so an approval cannot be prepared before this lock existed or
+        /// carried to the next one. Optional for the same reason as
+        /// `selfReleaseAt`: a lock written before it existed must still load.
+        public var releaseNonce: String?
+
         public init(deadline: Date, mode: String, startedAt: Date,
-                    selfReleaseAt: Date? = nil) {
+                    selfReleaseAt: Date? = nil, releaseNonce: String? = nil) {
             self.deadline = deadline
             self.mode = mode
             self.startedAt = startedAt
             self.selfReleaseAt = selfReleaseAt
+            self.releaseNonce = releaseNonce
         }
 
         public static let unlocked = LockState(deadline: .distantPast,
@@ -187,6 +195,11 @@ public enum LockStore {
         if current.mode == "strict", proposed.mode != "strict" {
             return "would switch a running strict lock out of strict mode"
         }
+        // The nonce names the lock a partner approval is for. Swapping it
+        // would let an approval obtained for some other lock end this one.
+        if let nonce = current.releaseNonce, proposed.releaseNonce != nonce {
+            return "would change which lock a partner approval applies to"
+        }
         return nil
     }
 
@@ -211,7 +224,7 @@ public enum LockStore {
     ///   function cannot be called from a code path that skipped verification.
     @discardableResult
     public static func clearWithPartnerApproval(_ approval: PartnerApproval) -> Bool {
-        NSLog("[Hisn] lock ended early under approval %@", approval.id)
+        NSLog("[Hisn] lock ended early under a partner approval of %@", approval.challenge)
         wipeAllStores()
         return true
     }

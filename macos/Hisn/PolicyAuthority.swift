@@ -44,6 +44,8 @@ public struct PolicyRecord: Codable, Equatable {
     public var listVersionFloor: Int = 0
     /// When the system tore the filter down while a lock ran, if it did.
     public var stoppedDuringLock: Date?
+    /// The accountability partner's public key (`PartnerService`), or nil.
+    public var partnerKey: String?
     /// Incremented on every accepted change; picks the newer of the two
     /// on-disk copies.
     public var revision: Int = 0
@@ -60,6 +62,10 @@ public enum PolicyRequest: Codable, Equatable {
     case setLists(customBlocks: [String], allowlist: [String])
     case setUserBlocks(terms: [String], apps: [String])
     case setInspection(Inspection.Settings)
+    /// Set, replace or remove the partner's public key.
+    case setPartnerKey(String?)
+    /// End the running lock on the partner's signed approval.
+    case partnerRelease(approval: String)
 }
 
 /// What the filter is actually doing, reported by the filter itself.
@@ -186,6 +192,29 @@ public enum PolicyAuthority {
                 return .failure(.init(refusal.localizedDescription))
             }
             r.inspection = settings
+
+        case let .setPartnerKey(key):
+            let canonical = key.flatMap(PartnerService.canonicalKey)
+            if key != nil, canonical == nil {
+                return .failure(.init(PartnerService.PartnerError.badKey.localizedDescription))
+            }
+            if let refusal = PartnerService.keyRefusal(current: r.partnerKey, proposed: canonical,
+                                                       locked: locked) {
+                return .failure(.init(refusal.localizedDescription))
+            }
+            r.partnerKey = canonical
+
+        case let .partnerRelease(approval):
+            guard locked, let lock = r.lock else {
+                return .failure(.init(PartnerService.PartnerError.noLock.localizedDescription))
+            }
+            do {
+                _ = try PartnerService.approve(approval, for: lock, key: r.partnerKey)
+            } catch {
+                return .failure(.init(error.localizedDescription))
+            }
+            r.lock = nil
+            r.releaseFirstSeen = nil
         }
         r.revision += 1
         return .success(r)

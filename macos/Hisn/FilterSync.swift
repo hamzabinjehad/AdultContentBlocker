@@ -99,6 +99,21 @@ public final class FilterSync: ObservableObject {
         if merged.inspection != local.inspection {
             try? Inspection.save(merged.inspection, locked: locked)
         }
+
+        // The partner key. Unlocked, the app's copy is the one being edited.
+        // Locked, the authority's is the one that counts — a key swapped into
+        // the app's defaults mid-lock would let the person approve their own
+        // release — so it is written back over the mirror.
+        let localKey = PartnerService.currentKey()
+        let authorityKey = latest.record.partnerKey
+        if localKey != authorityKey {
+            if !locked, let reply = await FilterLink.shared.submit(.setPartnerKey(localKey)) {
+                latest = reply.status
+            } else if locked, let authorityKey {
+                UserDefaults(suiteName: LockStore.appGroup)?
+                    .set(authorityKey, forKey: PartnerService.keyDefaultsKey)
+            }
+        }
         status = latest
     }
 

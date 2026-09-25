@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:">
+<meta name="referrer" content="no-referrer">
+<title>Hisn Partner</title>
+<!--
+  Hisn Partner — the accountability partner's half of an early release.
+
+  The partner opens this page on THEIR OWN phone or computer. It makes an
+  Ed25519 key pair with the browser's WebCrypto and keeps the private half in
+  this browser's storage; only the public half (HISN-PK-…) is ever shown for
+  sending. To approve ending a lock, the partner pastes the release code the
+  person sends them and gets back an approval (HISN-OK-…) to send in return.
+
+  Nothing here talks to any server: there is no network code in this file, and
+  the CSP above forbids it. Verified against macos/Hisn/PartnerService.swift:
+  same challenge format, base64url without padding, same fingerprint.
+-->
+<style>
+  :root { --bg:#f7f7f5; --card:#fff; --ink:#1d1d1f; --muted:#6e6e73; --line:#e3e3e0;
+          --accent:#1f6f5c; --warn:#a15c00; --bad:#b3261e; color-scheme: light dark; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#161617; --card:#1f1f21; --ink:#f2f2f2; --muted:#a1a1a6; --line:#343436;
+            --accent:#4cc2a0; --warn:#f0a44a; --bad:#ff6b61; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+         font: 16px/1.55 -apple-system, "SF Arabic", "Geeza Pro", system-ui, sans-serif; }
+  main { max-width: 640px; margin: 0 auto; padding: 24px 16px 64px; }
+  header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  h1 { font-size: 1.5rem; margin: 0; }
+  h2 { font-size: 1.1rem; margin: 0 0 8px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px;
+          padding:18px; margin-top:16px; }
+  p { margin: 6px 0; } .muted { color: var(--muted); font-size: .92rem; }
+  button { font: inherit; border-radius: 10px; border: 1px solid var(--line);
+           background: var(--card); color: var(--ink); padding: 9px 14px; cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button:disabled { opacity: .5; cursor: default; }
+  textarea, input { width: 100%; font: 14px/1.4 ui-monospace, Menlo, monospace; padding: 10px;
+                    border-radius: 10px; border: 1px solid var(--line); background: var(--bg);
+                    color: var(--ink); direction: ltr; text-align: left; }
+  .code { font: 14px/1.4 ui-monospace, Menlo, monospace; direction: ltr; text-align: left;
+          word-break: break-all; background: var(--bg); border:1px solid var(--line);
+          border-radius: 10px; padding: 10px; user-select: all; }
+  .row { display:flex; gap:8px; flex-wrap: wrap; margin-top: 10px; }
+  .ok { color: var(--accent); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  .hidden { display: none; }
+  details summary { cursor: pointer; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1 data-i18n="title">شريك حصن</h1>
+    <button id="lang" type="button">English</button>
+  </header>
+  <p class="muted" data-i18n="intro">أنت شريك المحاسبة لشخص يستخدم «حصن». يمكنك إنهاء قفله مبكرًا بالموافقة — ولا يستطيع هو ذلك من دونك. لا تغادر هذه الصفحة جهازك: لا خادم ولا حساب.</p>
+
+  <section class="card" id="setup">
+    <h2 data-i18n="keyTitle">مفتاحك</h2>
+    <div id="nokey">
+      <p data-i18n="nokey">لم يُنشأ مفتاح على هذا الجهاز بعد. أنشئه مرة واحدة، أثناء الإعداد مع الشخص.</p>
+      <div class="row"><button class="primary" id="make" type="button" data-i18n="make">إنشاء مفتاح</button></div>
+    </div>
+    <div id="haskey" class="hidden">
+      <p data-i18n="send">أرسل هذا الرمز للشخص ليُدخله في حصن ← الإعدادات ← شريك المحاسبة:</p>
+      <div class="code" id="pub"></div>
+      <div class="row"><button id="copyPub" type="button" data-i18n="copy">نسخ</button></div>
+      <p class="muted"><span data-i18n="fp">البصمة (يجب أن تطابق ما يظهر في حصن):</span> <b id="fp" dir="ltr"></b></p>
+    </div>
+  </section>
+
+  <section class="card" id="approve">
+    <h2 data-i18n="approveTitle">الموافقة على إنهاء قفل</h2>
+    <p class="muted" data-i18n="approveHelp">الصق رمز الإنهاء الذي أرسله لك (يبدأ بـ hisn-release-v1). وافق فقط إن كنت مقتنعًا بالسبب — الانتظار ٤٨ ساعة متاح له دائمًا من دونك.</p>
+    <input id="challenge" autocomplete="off" spellcheck="false" placeholder="hisn-release-v1.…">
+    <p id="about" class="muted"></p>
+    <div class="row"><button class="primary" id="sign" type="button" disabled data-i18n="sign">أوافق — أنشئ الموافقة</button></div>
+    <div id="out" class="hidden">
+      <p data-i18n="sendBack">أرسل هذا إليه ليُلصقه في حصن:</p>
+      <div class="code" id="approval"></div>
+      <div class="row"><button id="copyApproval" type="button" data-i18n="copy">نسخ</button></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <details>
+      <summary data-i18n="backupTitle">نسخ احتياطي أو نقل المفتاح</summary>
+      <p class="muted" data-i18n="backupHelp">المفتاح محفوظ في هذا المتصفح فقط. إن مسحت بيانات المتصفح ضاع، وعندها لا يمكن الإنهاء المبكر إلا بالانتظار. احفظ النسخة في مكان خاص بك — من يملكها يستطيع الموافقة باسمك، فلا تعطها للشخص أبدًا.</p>
+      <div class="row">
+        <button id="export" type="button" data-i18n="export">عرض النسخة الاحتياطية</button>
+        <button id="import" type="button" data-i18n="import">استيراد نسخة</button>
+        <button id="forget" type="button" data-i18n="forget">حذف المفتاح من هذا الجهاز</button>
+      </div>
+      <textarea id="backup" rows="4" class="hidden" spellcheck="false"></textarea>
+      <div class="row hidden" id="importRow"><button id="doImport" type="button" data-i18n="doImport">استيراد</button></div>
+    </details>
+  </section>
+  <p id="status" class="muted"></p>
+</main>
+<script>
+"use strict";
+const STORE = "hisn-partner-key-v1";
+const PREFIX = "hisn-release-v1";
+const T = {
+  ar: {}, // filled from the page's own Arabic text
+  en: {
+    title: "Hisn Partner",
+    intro: "You are the accountability partner for someone who uses Hisn. You can end their lock early by approving it — and they cannot do it without you. Nothing on this page leaves your device: no server, no account.",
+    keyTitle: "Your key", nokey: "No key has been made on this device yet. Make it once, during setup with the person.",
+    make: "Make a key", send: "Send this code to the person to enter in Hisn → Settings → Accountability partner:",
+    copy: "Copy", fp: "Fingerprint (must match what Hisn shows):",
+    approveTitle: "Approve ending a lock",
+    approveHelp: "Paste the release code they sent you (it starts with hisn-release-v1). Approve only if you are convinced — the 48-hour wait is always open to them without you.",
+    sign: "I agree — make the approval", sendBack: "Send this back for them to paste into Hisn:",
+    backupTitle: "Back up or move the key",
+    backupHelp: "The key lives in this browser only. Clearing browser data loses it, and then only the wait can end a lock early. Keep the backup somewhere private — whoever holds it can approve in your name, so never give it to the person.",
+    export: "Show backup", import: "Import a backup", forget: "Delete the key from this device", doImport: "Import",
+  },
+};
+document.querySelectorAll("[data-i18n]").forEach((el) => { T.ar[el.dataset.i18n] = el.textContent; });
+const MSG = {
+  ar: { started: (d) => `هذا الرمز لقفل بدأ في ${d}.`, future: "تنبيه: هذا الرمز لقفل لم يبدأ بعد. لا توافق عليه.",
+        old: "تنبيه: هذا القفل بدأ منذ أكثر من سنة — تأكد أنه الرمز الصحيح.", bad: "هذا ليس رمز إنهاء من حصن.",
+        nokey: "أنشئ مفتاحك أولًا.", copied: "نُسخ.", unsupported: "هذا المتصفح لا يدعم التوقيع المطلوب (Ed25519). استخدم Safari أو Chrome حديثًا.",
+        forgetAsk: "حذف المفتاح نهائيًا من هذا الجهاز؟ لن تستطيع الموافقة بعدها إلا باستيراد نسخة احتياطية.",
+        imported: "تم الاستيراد.", badBackup: "هذه ليست نسخة احتياطية صالحة." },
+  en: { started: (d) => `This code is for a lock that started ${d}.`, future: "Warning: this code is for a lock that has not started yet. Do not approve it.",
+        old: "Warning: this lock started more than a year ago — make sure it is the right code.", bad: "That is not a Hisn release code.",
+        nokey: "Make your key first.", copied: "Copied.", unsupported: "This browser cannot make the signature Hisn needs (Ed25519). Use a current Safari or Chrome.",
+        forgetAsk: "Delete the key from this device for good? You could then approve only by importing a backup.",
+        imported: "Imported.", badBackup: "That is not a valid backup." },
+};
+let lang = (localStorage.getItem("hisn-partner-lang") || (navigator.language || "ar")).startsWith("ar") ? "ar" : "en";
+const $ = (id) => document.getElementById(id);
+const say = (text, cls = "muted") => { $("status").className = cls; $("status").textContent = text; };
+
+function applyLang() {
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+  document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = T[lang][el.dataset.i18n]; });
+  $("lang").textContent = lang === "ar" ? "English" : "العربية";
+  describeChallenge();
+}
+$("lang").onclick = () => { lang = lang === "ar" ? "en" : "ar"; localStorage.setItem("hisn-partner-lang", lang); applyLang(); };
+
+const b64url = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes)))
+  .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
+async function fingerprint(raw) {
+  const h = new Uint8Array(await crypto.subtle.digest("SHA-256", raw)).slice(0, 6);
+  const hex = [...h].map((b) => b.toString(16).padStart(2, "0")).join("").toUpperCase();
+  return hex.match(/.{4}/g).join("-");
+}
+
+async function loadKey() {
+  const stored = localStorage.getItem(STORE);
+  if (!stored) return null;
+  const jwk = JSON.parse(stored);
+  const priv = await crypto.subtle.importKey("jwk", jwk, { name: "Ed25519" }, true, ["sign"]);
+  const pubJwk = { kty: jwk.kty, crv: jwk.crv, x: jwk.x };
+  const pub = await crypto.subtle.importKey("jwk", pubJwk, { name: "Ed25519" }, true, ["verify"]);
+  return { priv, raw: await crypto.subtle.exportKey("raw", pub) };
+}
+
+async function render() {
+  let key = null;
+  try { key = await loadKey(); } catch { key = null; }
+  $("nokey").classList.toggle("hidden", !!key);
+  $("haskey").classList.toggle("hidden", !key);
+  if (key) {
+    $("pub").textContent = "HISN-PK-" + b64url(key.raw);
+    $("fp").textContent = await fingerprint(key.raw);
+  }
+  describeChallenge();
+  return key;
+}
+
+$("make").onclick = async () => {
+  try {
+    const pair = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
+    localStorage.setItem(STORE, JSON.stringify(await crypto.subtle.exportKey("jwk", pair.privateKey)));
+    await render();
+  } catch { say(MSG[lang].unsupported, "bad"); }
+};
+
+function parseChallenge(text) {
+  const m = /^hisn-release-v1\.(\d{9,11})\.([A-Za-z0-9_-]{8,})$/.exec(text.trim());
+  return m ? { started: new Date(Number(m[1]) * 1000), text: text.trim() } : null;
+}
+
+function describeChallenge() {
+  const raw = $("challenge").value;
+  const about = $("about");
+  $("out").classList.add("hidden");
+  if (!raw.trim()) { about.textContent = ""; $("sign").disabled = true; return; }
+  const c = parseChallenge(raw);
+  if (!c) { about.className = "bad"; about.textContent = MSG[lang].bad; $("sign").disabled = true; return; }
+  const when = c.started.toLocaleString(lang === "ar" ? "ar" : undefined, { dateStyle: "full", timeStyle: "short" });
+  const future = c.started.getTime() > Date.now() + 5 * 60 * 1000;
+  const old = Date.now() - c.started.getTime() > 366 * 86400 * 1000;
+  about.className = future ? "bad" : old ? "warn" : "muted";
+  about.textContent = MSG[lang].started(when) + (future ? " " + MSG[lang].future : old ? " " + MSG[lang].old : "");
+  $("sign").disabled = future;
+}
+$("challenge").addEventListener("input", describeChallenge);
+
+$("sign").onclick = async () => {
+  const c = parseChallenge($("challenge").value);
+  const key = await loadKey().catch(() => null);
+  if (!key) { say(MSG[lang].nokey, "bad"); return; }
+  if (!c) return;
+  const sig = await crypto.subtle.sign({ name: "Ed25519" }, key.priv, new TextEncoder().encode(c.text));
+  $("approval").textContent = "HISN-OK-" + b64url(sig);
+  $("out").classList.remove("hidden");
+};
+
+async function copy(id) {
+  try { await navigator.clipboard.writeText($(id).textContent); say(MSG[lang].copied, "ok"); }
+  catch { getSelection().selectAllChildren($(id)); }
+}
+$("copyPub").onclick = () => copy("pub");
+$("copyApproval").onclick = () => copy("approval");
+
+$("export").onclick = () => {
+  const stored = localStorage.getItem(STORE);
+  if (!stored) { say(MSG[lang].nokey, "bad"); return; }
+  $("backup").value = "HISN-BACKUP-" + btoa(stored);
+  $("backup").classList.remove("hidden");
+  $("importRow").classList.add("hidden");
+};
+$("import").onclick = () => {
+  $("backup").value = "";
+  $("backup").classList.remove("hidden");
+  $("importRow").classList.remove("hidden");
+};
+$("doImport").onclick = async () => {
+  try {
+    const text = $("backup").value.trim().replace(/^HISN-BACKUP-/, "");
+    const jwk = JSON.parse(atob(text));
+    if (jwk.crv !== "Ed25519" || !jwk.d || !jwk.x) throw new Error("shape");
+    await crypto.subtle.importKey("jwk", jwk, { name: "Ed25519" }, true, ["sign"]);
+    localStorage.setItem(STORE, JSON.stringify(jwk));
+    $("backup").value = "";
+    $("backup").classList.add("hidden");
+    $("importRow").classList.add("hidden");
+    await render();
+    say(MSG[lang].imported, "ok");
+  } catch { say(MSG[lang].badBackup, "bad"); }
+};
+$("forget").onclick = async () => {
+  if (!confirm(MSG[lang].forgetAsk)) return;
+  localStorage.removeItem(STORE);
+  await render();
+};
+
+applyLang();
+render();
+</script>
+</body>
+</html>

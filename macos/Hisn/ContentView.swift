@@ -599,6 +599,11 @@ private struct LockPage: View {
                 }
             }
 
+            PageSection(title: "Your partner can end it now",
+                    subtitle: "Immediate, and never without them.") {
+                PartnerReleaseCard(lock: lock)
+            }
+
             if lock.pendingSelfRelease == nil {
                 // The way out. Without this button the request could not be
                 // created at all, and the panel above — which only ever offered
@@ -1139,6 +1144,131 @@ struct BrowsersSection: View {
     }
 }
 
+/// The accountability partner's key: set up together, before a lock.
+///
+/// The partner makes a key pair on their own device with the Hisn Partner page
+/// (`partner/index.html`) and reads out, or sends, the public half. Hisn keeps
+/// only that half — nothing here can approve anything by itself.
+struct PartnerSection: View {
+    let isLocked: Bool
+
+    @State private var keyText = ""
+    @State private var current = PartnerService.currentKey()
+    @State private var message: String?
+    @State private var isError = false
+
+    var body: some View {
+        PageSection(title: "Accountability partner",
+                subtitle: "Someone you trust who can end a lock early by approving "
+                    + "it — immediately, but never without them. They open the Hisn "
+                    + "Partner page on their own phone or computer, create a key "
+                    + "there, and send you the code it shows under “Your key”.") {
+            if let current {
+                HStack(alignment: .firstTextBaseline) {
+                    Label("Partner key set · \(PartnerService.fingerprint(current))",
+                          systemImage: "person.badge.shield.checkmark")
+                    Spacer()
+                    Button("Remove") { save(nil) }
+                        .help("Removing the key removes the immediate exit. It is "
+                              + "always allowed; setting a new one waits for no lock.")
+                }
+                Text("Check with your partner that their page shows the same "
+                     + "fingerprint.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            if !isLocked || current == nil {
+                HStack {
+                    TextField("HISN-PK-…", text: $keyText)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.body.monospaced())
+                    Button(current == nil ? "Save key" : "Replace key") { save(keyText) }
+                        .disabled(keyText.trimmingCharacters(in: .whitespaces).isEmpty || isLocked)
+                }
+                if isLocked {
+                    Text("A lock is running, so a partner key can only be added once it ends.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            if let message {
+                Text(message).font(.caption)
+                    .foregroundStyle(isError ? Color.red : Color.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private func save(_ key: String?) {
+        do {
+            try PartnerService.saveKey(key, locked: isLocked)
+            FilterSync.soon()
+            current = PartnerService.currentKey()
+            keyText = ""
+            isError = false
+            message = key == nil ? "Partner key removed." : "Partner key saved."
+        } catch {
+            isError = true
+            message = error.localizedDescription
+        }
+    }
+}
+
+/// The partner route out of a running lock: send the code, paste the approval.
+struct PartnerReleaseCard: View {
+    @ObservedObject var lock: LockManager
+
+    @State private var approval = ""
+    @State private var error: String?
+    @State private var busy = false
+
+    var body: some View {
+        if PartnerService.currentKey() == nil {
+            Text("No accountability partner is set up, so the only way out is the "
+                 + "request below. You can add a partner in Settings after this lock.")
+                .font(.callout).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        } else if let code = lock.partnerChallenge {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("1. Send this code to your partner:").font(.callout)
+                HStack {
+                    Text(code).font(.callout.monospaced()).textSelection(.enabled)
+                    Spacer()
+                    Button("Copy") {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(code, forType: .string)
+                    }.controlSize(.small)
+                }
+                Text("2. If they agree, their Hisn Partner page gives them an "
+                     + "approval to send back. Paste it here:").font(.callout)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack {
+                    TextField("HISN-OK-…", text: $approval)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.callout.monospaced())
+                    Button("End the lock") { release() }
+                        .disabled(approval.trimmingCharacters(in: .whitespaces).isEmpty || busy)
+                }
+                if let error {
+                    Text(error).font(.caption).foregroundStyle(.red)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
+    private func release() {
+        busy = true
+        Task {
+            defer { busy = false }
+            do {
+                try await lock.releaseWithPartnerApproval(approval)
+                error = nil
+            } catch {
+                self.error = error.localizedDescription
+            }
+        }
+    }
+}
+
 private struct SettingsPage: View {
     let isLocked: Bool
 
@@ -1201,6 +1331,10 @@ private struct SettingsPage: View {
                 SaveRow(message: message, isError: isError,
                         canSave: settings != saved, save: save, revert: load)
             }
+
+            Divider()
+
+            PartnerSection(isLocked: isLocked)
 
             Divider()
 

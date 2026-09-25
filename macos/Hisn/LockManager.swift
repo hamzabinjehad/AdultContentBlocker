@@ -183,7 +183,8 @@ public final class LockManager: ObservableObject {
         let newState = LockStore.LockState(
             deadline: deadline,
             mode: strict || keepStrict ? "strict" : "blocklist",
-            startedAt: isLocked ? state.startedAt : LockStore.trustedNow())
+            startedAt: isLocked ? state.startedAt : LockStore.trustedNow(),
+            releaseNonce: isLocked ? state.releaseNonce : PartnerService.newNonce())
 
         guard LockStore.write(newState) else { throw LockError.wouldShorten }
         state = newState
@@ -277,22 +278,36 @@ public final class LockManager: ObservableObject {
         return LockStore.effectiveDeadline(state)
     }
 
+    /// The code to send an accountability partner, or nil when no lock runs.
+    public var partnerChallenge: String? {
+        isLocked ? PartnerService.challenge(for: state) : nil
+    }
+
     /// End a lock now, on an accountability partner's authority.
     ///
-    /// `token` must be a server-issued, single-use approval. It is verified
-    /// server-side on purpose: a locally-checkable code is a code that can be
-    /// extracted from the binary.
-    public func releaseWithPartnerApproval(token: String) async throws {
-        guard isLocked else { throw LockError.notLocked }
+    /// `approval` is the partner's signature over `partnerChallenge`, checked
+    /// against the partner key set up before the lock began. When the filter's
+    /// authority is present it checks the same signature itself and must
+    /// agree, or the lock stands — the mirrors are cleared only after that.
+    public func releaseWithPartnerApproval(_ approval: String) async throws {
+        guard isLocked else { throw PartnerService.PartnerError.noLock }
+        let granted = try PartnerService.approve(approval, for: state,
+                                                 key: PartnerService.currentKey())
 
-        // Verification happens server-side and must succeed before anything is
-        // touched locally. `LockStore.write` deliberately refuses to shorten a
-        // deadline, so the only way past it is the approval-carrying path.
-        let approval = try await PartnerService.shared.verifyRelease(
-            token: token, lockStartedAt: state.startedAt)
-
-        LockStore.clearWithPartnerApproval(approval)
+        if FilterLink.shared.isConfigured {
+            if let reply = await FilterLink.shared.submit(.partnerRelease(approval: approval)) {
+                guard reply.accepted else {
+                    throw LockError.filterUnavailable(reply.refusal ?? "the filter refused the approval")
+                }
+            } else if FilterSync.shared.status != nil {
+                // The filter has answered before and holds this lock too; ending
+                // only the mirrors would be undone at the next sync.
+                throw LockError.filterUnavailable("the filter did not answer — try again in a minute")
+            }
+        }
+        LockStore.clearWithPartnerApproval(granted)
         state = .unlocked
+        FilterSync.soon()
         try? await FilterController.shared.disable()
     }
 }

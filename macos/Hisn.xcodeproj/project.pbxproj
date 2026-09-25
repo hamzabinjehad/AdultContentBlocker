@@ -203,6 +203,12 @@
 			path = KeywordLayerTests.swift;
 			sourceTree = "<group>";
 		};
+		93F61A60BC5B807E6CE6E78F /* PartnerTests.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = PartnerTests.swift;
+			sourceTree = "<group>";
+		};
 		51108B83C7EFBA266DC5773F /* PolicyAuthorityTests.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -372,6 +378,7 @@
 				D6D64E38C469B55C566EB0A8,
 				5CEF7A7205FB28ED41D63CB3,
 				28A03C0E33E9129984BFCEA4,
+				93F61A60BC5B807E6CE6E78F,
 				51108B83C7EFBA266DC5773F,
 				C15C5BA8E7F3C7A5B3CC9BFB,
 				96BE623FB252DAE97AF70C17,
@@ -1257,6 +1264,10 @@
 			isa = PBXBuildFile;
 			fileRef = 51108B83C7EFBA266DC5773F;
 		};
+		759EE7B9C81BF94505B490AB /* PartnerTests.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 93F61A60BC5B807E6CE6E78F;
+		};
 		A29CD87A3F623C88ED8997D1 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1270,6 +1281,7 @@
 				AE4AE2037B37E4053641D8E9,
 				A0EE478F25EAC4478E00DBBD,
 				CD889FF56DC5DDE1F5DC8E50,
+				759EE7B9C81BF94505B490AB,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

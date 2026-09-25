@@ -24,6 +24,14 @@
         "/private/tmp/claude-501/-Users-x-Documents-GitHub-AdultContentBlocker/68045f5f-7f08-426b-9376-816ae19cffdd/scratchpad/popup-preview/serve.py"
       ],
       "port": 8732
+    },
+    {
+      "name": "partner-page",
+      "runtimeExecutable": "/usr/bin/python3",
+      "runtimeArgs": [
+        "/private/tmp/claude-501/-Users-x-Documents-GitHub-AdultContentBlocker/60cda8f8-e179-407a-927f-3c82490517db/scratchpad/partner/serve.py"
+      ],
+      "port": 8733
     }
   ]
 }
