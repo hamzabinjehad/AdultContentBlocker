@@ -289,6 +289,23 @@ class TestClientConfig(unittest.TestCase):
                          f"https://raw.githubusercontent.com/{slug}/lists".lower(),
                          "clients would fetch lists from a repository the workflow never publishes to")
 
+    def test_native_host_admits_the_unpacked_extension(self):
+        """The unpacked extension's id is derived from the manifest `key`; the
+        app writes it into the native-messaging manifest's allowed_origins.
+        If the two disagree nothing errors anywhere — Chrome just never
+        delivers the heartbeat, and the extension fails closed for no visible
+        reason. (Moved from the Swift suite, whose test host cannot read the
+        source tree in ~/Documents without a privacy prompt.)"""
+        import base64
+        import hashlib
+        manifest = json.loads((self.repo / "extension" / "manifest.json").read_text())
+        digest = hashlib.sha256(base64.b64decode(manifest["key"])).hexdigest()[:32]
+        ext_id = "".join("abcdefghijklmnop"[int(c, 16)] for c in digest)
+        swift = (self.repo / "macos" / "Hisn" / "NativeMessagingInstaller.swift").read_text()
+        ids = re.findall(r'"([a-p]{32})"', swift.split("extensionIDs")[1].split("]")[0])
+        self.assertIn(ext_id, ids, "extension/manifest.json's key no longer derives an id "
+                      "the app admits — native messaging would silently stop")
+
     def test_generation_artifacts_are_what_the_build_produces(self):
         """Every artifact a client asks for as part of a generation must be one
         build.py writes and lists in the manifest, or updates fail on

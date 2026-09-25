@@ -175,13 +175,19 @@ public final class LockManager: ObservableObject {
             throw LockError.wouldShorten
         }
 
+        // Starting over a running lock extends it, and keeps whichever mode is
+        // stricter: asking for "standard" while a strict lock runs must not be
+        // a way out of strict (LockStore.refusal rejects it; this keeps the
+        // request from failing for a reason the person did not intend).
+        let keepStrict = isLocked && state.mode == "strict"
         let newState = LockStore.LockState(
             deadline: deadline,
-            mode: strict ? "strict" : "blocklist",
-            startedAt: LockStore.trustedNow())
+            mode: strict || keepStrict ? "strict" : "blocklist",
+            startedAt: isLocked ? state.startedAt : LockStore.trustedNow())
 
         guard LockStore.write(newState) else { throw LockError.wouldShorten }
         state = newState
+        FilterSync.soon()
 
         // Start the filter *after* the deadline is committed. If the filter
         // fails to start, the lock is still recorded and every later launch
@@ -201,6 +207,7 @@ public final class LockManager: ObservableObject {
         next.deadline = state.deadline.addingTimeInterval(seconds)
         guard LockStore.write(next) else { throw LockError.wouldShorten }
         state = next
+        FilterSync.soon()
     }
 
     /// Tighten a running blocklist lock into strict mode. Always permitted.
@@ -210,6 +217,7 @@ public final class LockManager: ObservableObject {
         next.mode = "strict"
         guard LockStore.write(next) else { throw LockError.wouldShorten }
         state = next
+        FilterSync.soon()
     }
 
     // MARK: - Ending
@@ -243,6 +251,7 @@ public final class LockManager: ObservableObject {
         next.selfReleaseAt = at
         guard LockStore.write(next) else { throw LockError.wouldShorten }
         state = next
+        FilterSync.soon()
         return at
     }
 
@@ -253,6 +262,7 @@ public final class LockManager: ObservableObject {
         next.selfReleaseAt = nil
         LockStore.write(next)
         state = LockStore.read()
+        FilterSync.soon()
     }
 
     /// The pending release date as the user should see it: the moment the lock

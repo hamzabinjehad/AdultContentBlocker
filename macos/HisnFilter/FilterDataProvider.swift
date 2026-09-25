@@ -52,15 +52,45 @@ final class FilterDataProvider: NEFilterDataProvider {
     /// Same locking rationale as `strictModeActive` above.
     private let blockedApps = OSAllocatedUnfairLock(initialState: Set<String>())
 
+    /// The root-owned authority for the lock, the hand lists and the rollback
+    /// floor — see `PolicyAuthority` for why the app's defaults cannot be it.
+    private var policy: PolicyService?
+    private var xpc: FilterXPCService?
+    private let startedAt = Date()
+
+    /// The periodic tick and a generation installed from the app both swap
+    /// the list and `installedDownloadedVersion`; one serial queue keeps them
+    /// from interleaving.
+    private let work = DispatchQueue(label: "app.hisn.filter.work", qos: .utility)
+
+    /// What only this filter may change: the policy record and the installed
+    /// list generation. Its sandbox container, under root's home — out of a
+    /// standard user's reach entirely.
+    static var ownDirectory: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Hisn", isDirectory: true)
+    }
+    static var ownListDirectory: URL {
+        ownDirectory.appendingPathComponent("list", isDirectory: true)
+    }
+
     // MARK: - Lifecycle
 
     override func startFilter(completionHandler: @escaping (Error?) -> Void) {
         NSLog("[Hisn] filter starting")
 
+        let policy = PolicyService(store: PolicyStore(directory: Self.ownDirectory),
+                                   health: { [weak self] in self?.health() ?? FilterHealth() })
+        // An accepted change takes effect now, not at the next 30-second tick:
+        // a lock started in the app is enforced before the app says "Locked".
+        policy.onChange = { [weak self] _ in self?.refreshLockState() }
+        self.policy = policy
+
         // Rollback protection across restarts: the highest version this
         // filter ever installed is the floor for what it will accept now. A
         // new process would otherwise start at 0 and take any signed old list.
-        store.versionFloor = Self.defaults?.integer(forKey: Self.listVersionKey) ?? 0
+        store.versionFloor = max(Self.defaults?.integer(forKey: Self.listVersionKey) ?? 0,
+                                 policy.current().listVersionFloor)
 
         loadListFromDisk()
         loadKeywordLayer()
@@ -72,7 +102,7 @@ final class FilterDataProvider: NEFilterDataProvider {
         // caching for the life of the process. The same tick publishes a
         // heartbeat: the app's "filter enabled" used to mean only that the
         // preference was saved, and this is what turns it into evidence.
-        let timer = DispatchSource.makeTimerSource(queue: .global(qos: .utility))
+        let timer = DispatchSource.makeTimerSource(queue: work)
         timer.schedule(deadline: .now() + 30, repeating: 30)
         timer.setEventHandler { [weak self] in
             self?.refreshLockState()
@@ -81,6 +111,14 @@ final class FilterDataProvider: NEFilterDataProvider {
         }
         timer.resume()
         refreshTimer = timer
+
+        let xpc = FilterXPCService(policy: policy) { [weak self] manifest, sig, domains, terms in
+            self?.installGeneration(manifest: manifest, signature: sig,
+                                    domains: domains, terms: terms)
+                ?? GenerationReply(installed: false, version: 0, error: "filter stopping")
+        }
+        xpc.start()
+        self.xpc = xpc
 
         completionHandler(nil)
     }
@@ -107,6 +145,16 @@ final class FilterDataProvider: NEFilterDataProvider {
         d.set(store.version, forKey: Self.listVersionKey)
     }
 
+    /// The same facts for the app, over XPC — evidence from the process that
+    /// holds them, which the root-scoped defaults above cannot deliver.
+    private func health() -> FilterHealth {
+        FilterHealth(domainCount: store.domainCount,
+                     hostTermCount: store.hostTermCount,
+                     keywordSource: keywordSource,
+                     listVersion: store.version,
+                     startedAt: startedAt)
+    }
+
     override func stopFilter(with reason: NEProviderStopReason,
                              completionHandler: @escaping () -> Void) {
         NSLog("[Hisn] filter stopping, reason: %ld", reason.rawValue)
@@ -116,10 +164,9 @@ final class FilterDataProvider: NEFilterDataProvider {
         // We cannot refuse to stop — the system decides that. What we can do is
         // leave a record, so the app notices on next launch that the filter was
         // torn down during an active lock and can re-arm and report it.
-        if LockStore.isLocked() {
-            UserDefaults(suiteName: LockStore.appGroup)?
-                .set(Date(), forKey: "filterStoppedDuringLock")
-        }
+        policy?.noteStoppedDuringLock()
+        xpc?.stop()
+        xpc = nil
         completionHandler()
     }
 
@@ -160,25 +207,29 @@ final class FilterDataProvider: NEFilterDataProvider {
 
     // MARK: - State
 
+    /// Re-read what the authority holds. It used to read `LockStore` and the
+    /// hand lists from app-group defaults — which, in a root process, are
+    /// root's own, empty ones: the filter never saw a lock or a hand-typed
+    /// domain. The app now hands every change to `PolicyService` over XPC.
     private func refreshLockState() {
-        let state = LockStore.read()
-        // The EFFECTIVE deadline, via the one function the app and the bridge
-        // also use — see `LockStore.strictModeActive`.
-        let strict = LockStore.strictModeActive(state)
+        guard let record = policy?.current() else { return }
+        // The EFFECTIVE deadline — a matured self-release ends strict mode
+        // here at the same moment it ends everywhere else.
+        let strict = PolicyAuthority.strictActive(record, now: record.highWaterMark)
         strictModeActive.withLock { $0 = strict }
 
         // Both hand-maintained lists, re-read on the same tick. The custom
         // blocks used to be read by the browser extension and ignored here,
         // which meant a domain the person added by hand was blocked in Chrome
         // and reachable from every other app on the machine.
-        store.setAllowlist(SiteLists.allowlist())
-        store.setCustomBlocks(SiteLists.customBlocks())
+        store.setAllowlist(record.allowlist)
+        store.setCustomBlocks(record.customBlocks)
 
         // Apps the person blocked by hand. Cached in the same way and for the
         // same reason as `strictModeActive`: `handleNewFlow` is on the
         // connection path for every socket the machine opens, and reading
-        // defaults there would put a preference lookup in front of every one.
-        blockedApps.withLock { $0 = Set(UserBlocks.apps()) }
+        // anything there would put a lookup in front of every one.
+        blockedApps.withLock { $0 = Set(record.blockedApps) }
     }
 
     /// The signing identifier of the app that opened this flow.
@@ -296,9 +347,7 @@ final class FilterDataProvider: NEFilterDataProvider {
         // the bundle only when the container has no verifiable terms. A
         // container written by an older app carries no terms.json; that is
         // the bundled case, not a failure.
-        if let container = FileManager.default
-            .containerURL(forSecurityApplicationGroupIdentifier: LockStore.appGroup) {
-            let dir = container.appendingPathComponent("list", isDirectory: true)
+        if let dir = Self.generationDirectory() {
             if loadKeywordLayer(manifest: dir.appendingPathComponent("manifest.json"),
                                 signature: dir.appendingPathComponent("manifest.json.sig"),
                                 terms: dir.appendingPathComponent("terms.json"),
@@ -382,10 +431,8 @@ final class FilterDataProvider: NEFilterDataProvider {
     /// The `version` field of the downloaded manifest, without decoding the
     /// rest or touching the domain artifact.
     private func downloadedManifestVersion() -> Int? {
-        guard let container = FileManager.default
-            .containerURL(forSecurityApplicationGroupIdentifier: LockStore.appGroup)
-        else { return nil }
-        let url = container.appendingPathComponent("list/manifest.json")
+        guard let dir = Self.generationDirectory() else { return nil }
+        let url = dir.appendingPathComponent("manifest.json")
         guard let data = try? Data(contentsOf: url) else { return nil }
         struct VersionOnly: Decodable { let version: Int }
         return (try? JSONDecoder().decode(VersionOnly.self, from: data))?.version
@@ -412,14 +459,10 @@ final class FilterDataProvider: NEFilterDataProvider {
     }
 
     private func loadDownloadedList() -> Bool {
-        guard let container = FileManager.default
-            .containerURL(forSecurityApplicationGroupIdentifier: LockStore.appGroup)
-        else {
-            NSLog("[Hisn] no app group container")
+        guard let dir = Self.generationDirectory() else {
+            NSLog("[Hisn] no downloaded generation yet")
             return false
         }
-
-        let dir = container.appendingPathComponent("list", isDirectory: true)
         do {
             let manifest = try Data(contentsOf: dir.appendingPathComponent("manifest.json"))
             let sig = try String(contentsOf: dir.appendingPathComponent("manifest.json.sig"),
@@ -459,6 +502,91 @@ final class FilterDataProvider: NEFilterDataProvider {
         } catch {
             NSLog("[Hisn] REFUSING unverified seed: %@", "\(error)")
             return false
+        }
+    }
+
+    // MARK: - Generations from the app
+
+    /// Where the installed generation lives: this filter's own directory,
+    /// which `installGeneration` writes, or — for an install from before the
+    /// app handed lists over XPC — the app-group container's `list/`.
+    static func generationDirectory() -> URL? {
+        let fm = FileManager.default
+        if fm.fileExists(atPath: ownListDirectory.appendingPathComponent("manifest.json").path) {
+            return ownListDirectory
+        }
+        guard let container = fm.containerURL(
+            forSecurityApplicationGroupIdentifier: LockStore.appGroup) else { return nil }
+        let legacy = container.appendingPathComponent("list", isDirectory: true)
+        return fm.fileExists(atPath: legacy.appendingPathComponent("manifest.json").path)
+            ? legacy : nil
+    }
+
+    /// Install a generation the app downloaded. Verified again here — the app
+    /// is not trusted with this filter's list any more than the network is:
+    /// signature, rollback floor, size floor and both hashes, all before a
+    /// byte is written. Then swapped into this filter's own directory whole,
+    /// loaded, and the floor raised in the authority's record.
+    func installGeneration(manifest: Data, signature: Data, domains: Data,
+                           terms: Data) -> GenerationReply {
+        work.sync {
+            installGenerationNow(manifest: manifest, signature: signature,
+                                 domains: domains, terms: terms)
+        }
+    }
+
+    private func installGenerationNow(manifest: Data, signature: Data, domains: Data,
+                                      terms: Data) -> GenerationReply {
+        let sig = String(decoding: signature, as: UTF8.self)
+        do {
+            let m = try store.verifiedManifest(manifestData: manifest, signatureHex: sig)
+            let held = max(store.version, store.versionFloor)
+            guard m.version >= held else {
+                throw BlocklistStore.LoadError.rollback(offered: m.version, held: held)
+            }
+            if m.version == installedDownloadedVersion, installedDownloadedVersion > 0 {
+                return GenerationReply(installed: true, version: m.version, error: nil)
+            }
+            guard m.domain_count > 100_000 else {
+                throw BlocklistStore.LoadError.tooSmall(m.domain_count)
+            }
+            for (name, bytes) in [("domains.packed", domains), ("terms.json", terms)] {
+                guard let want = m.artifacts[name]?.sha256 else {
+                    throw BlocklistStore.LoadError.malformed("\(name) missing from manifest")
+                }
+                guard BlocklistStore.sha256Hex(bytes) == want else {
+                    throw BlocklistStore.LoadError.hashMismatch(name)
+                }
+            }
+
+            let fm = FileManager.default
+            let live = Self.ownListDirectory
+            let staging = Self.ownDirectory.appendingPathComponent("list.staging", isDirectory: true)
+            try? fm.removeItem(at: staging)
+            try fm.createDirectory(at: staging, withIntermediateDirectories: true)
+            try manifest.write(to: staging.appendingPathComponent("manifest.json"))
+            try signature.write(to: staging.appendingPathComponent("manifest.json.sig"))
+            try domains.write(to: staging.appendingPathComponent("domains.packed"))
+            try terms.write(to: staging.appendingPathComponent("terms.json"))
+            if fm.fileExists(atPath: live.path) {
+                _ = try fm.replaceItemAt(live, withItemAt: staging)
+            } else {
+                try fm.moveItem(at: staging, to: live)
+            }
+
+            guard loadDownloadedList() else {
+                throw BlocklistStore.LoadError.malformed("installed generation did not load")
+            }
+            installedDownloadedVersion = m.version
+            loadKeywordLayer()
+            policy?.raiseListFloor(to: m.version)
+            publishHealth()
+            NSLog("[Hisn] installed generation v%d from the app: %d domains", m.version,
+                  store.domainCount)
+            return GenerationReply(installed: true, version: m.version, error: nil)
+        } catch {
+            NSLog("[Hisn] refused generation from the app: %@", "\(error)")
+            return GenerationReply(installed: false, version: store.version, error: "\(error)")
         }
     }
 }

@@ -365,41 +365,8 @@ final class NativeMessagingInstallerTests: XCTestCase {
         XCTAssertEqual(manifest["allowed_origins"] as? [String],
                        ["chrome-extension://hfhaffbmoeepcdolgejeidkgaoapcjig/"])
     }
-
-    /// THE load-bearing test in this file. The extension's Chrome ID is derived
-    /// from `extension/manifest.json`'s `"key"`; this Swift constant is typed
-    /// in by hand from that same derivation. If the two ever disagree, nothing
-    /// on either side raises an error — Chrome just refuses to deliver the
-    /// native message, and `background.js` logs "native host unreachable"
-    /// forever. Recomputes the ID from the manifest's actual key rather than
-    /// comparing two hand-typed strings, which would only ever catch a typo in
-    /// one specific place and miss every other way this can drift.
-    func testExtensionIDMatchesTheManifestKey() throws {
-        let thisFile = URL(fileURLWithPath: #filePath)
-        let repoRoot = thisFile
-            .deletingLastPathComponent()   // HisnTests
-            .deletingLastPathComponent()   // macos
-            .deletingLastPathComponent()   // repo root
-        let manifestPath = repoRoot.appendingPathComponent("extension/manifest.json")
-
-        let data = try Data(contentsOf: manifestPath)
-        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-        guard let keyBase64 = json?["key"] as? String,
-              let der = Data(base64Encoded: keyBase64) else {
-            return XCTFail("extension/manifest.json has no usable \"key\"")
-        }
-
-        let digest = SHA256.hash(data: der)
-        let mapping = Array("abcdefghijklmnop")
-        let id = String(digest.prefix(16).flatMap {
-            [mapping[Int($0 >> 4)], mapping[Int($0 & 0xF)]]
-        })
-
-        XCTAssertTrue(NativeMessagingInstaller.extensionIDs.contains(id),
-            "extension/manifest.json's key no longer derives the pinned local "
-            + "extension ID, or that ID was dropped from allowed_origins — "
-            + "native messaging for the unpacked extension will silently stop")
-    }
+    // The extension id ↔ manifest key cross-check lives in blocklist/test_build.py
+    // (TestClientConfig), which can read both files without a privacy prompt.
 
     /// THE regression test for the actual bug: an earlier `generate_xcodeproj.py`
     /// embedded `HisnBridge` with a copy-files destination that built cleanly
@@ -426,11 +393,8 @@ final class NativeMessagingInstallerTests: XCTestCase {
     /// to (or in place of) the admin-owned one, undoing the one property
     /// `install_native_host.sh` exists for.
     func testSystemPathsMatchTheShellInstaller() throws {
-        let thisFile = URL(fileURLWithPath: #filePath)
-        let scriptPath = thisFile
-            .deletingLastPathComponent()          // HisnTests
-            .deletingLastPathComponent()          // macos
-            .appendingPathComponent("install_native_host.sh")
+        let scriptPath = try XCTUnwrap(Bundle(for: NativeMessagingInstallerTests.self)
+            .url(forResource: "install_native_host", withExtension: "sh"))
         let script = try String(contentsOf: scriptPath, encoding: .utf8)
 
         for browser in NativeMessagingInstaller.browsers {

@@ -72,7 +72,10 @@ struct ContentView: View {
             .navigationTitle((page ?? .overview).title)
         }
         .frame(minWidth: 720, minHeight: 500)
-        .task { await filter.reassertIfNeeded() }
+        .task {
+            guard !AppDelegate.isHostingTests else { return }
+            await filter.reassertIfNeeded()
+        }
     }
 }
 
@@ -157,7 +160,8 @@ private struct OverviewPage: View {
     /// extension heartbeat and the filter's domain count are never more than a
     /// second stale here without any extra plumbing.
     private var protection: ProtectionStatus {
-        ProtectionStatus(ProtectionEvidence.current(filter: filter.availability))
+        ProtectionStatus(ProtectionEvidence.current(filter: filter.availability,
+                                                      authority: FilterSync.shared.status))
     }
 
     private var lockStatus: LockStatus {
@@ -423,7 +427,8 @@ private struct LockPage: View {
     /// Would a lock started now block anything? Read from the same status the
     /// Overview shows, so the two can never disagree.
     private var enforcingAnything: Bool {
-        ProtectionStatus(ProtectionEvidence.current(filter: filter.availability))
+        ProtectionStatus(ProtectionEvidence.current(filter: filter.availability,
+                                                      authority: FilterSync.shared.status))
             .isEnforcingAnything
     }
 
@@ -816,6 +821,7 @@ struct SiteListsSection: View {
             try SiteLists.save(customBlocks: blocks.domains,
                                allowlist: allows.domains,
                                locked: isLocked)
+            FilterSync.soon()
         } catch {
             isError = true
             message = error.localizedDescription
@@ -1018,6 +1024,7 @@ struct UserBlocksSection: View {
         let parsed = UserBlocks.parseTerms(wordsText)
         do {
             try UserBlocks.save(terms: parsed.terms, apps: apps, locked: isLocked)
+            FilterSync.soon()
         } catch {
             isError = true
             message = error.localizedDescription
@@ -1211,6 +1218,7 @@ private struct SettingsPage: View {
     private func save() {
         do {
             try Inspection.save(settings, locked: isLocked)
+            FilterSync.soon()
             saved = settings
             isError = false
             message = "Saved."

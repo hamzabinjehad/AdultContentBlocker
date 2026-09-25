@@ -35,6 +35,18 @@
 			path = FilterController.swift;
 			sourceTree = "<group>";
 		};
+		A568FFA9D31BF93387C7D5E1 /* FilterSync.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = FilterSync.swift;
+			sourceTree = "<group>";
+		};
+		C3AFAA71CCFB961E2BEFD521 /* FilterXPC.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = FilterXPC.swift;
+			sourceTree = "<group>";
+		};
 		72164236627E5336E7EFBABC /* Hisn.entitlements */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = text.plist.entitlements;
@@ -89,6 +101,12 @@
 			path = PartnerService.swift;
 			sourceTree = "<group>";
 		};
+		0E75CDFA3B3510AD8AFAB3D9 /* PolicyAuthority.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = PolicyAuthority.swift;
+			sourceTree = "<group>";
+		};
 		53D7D153B4628D493F051EA9 /* ProtectionStatus.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -137,6 +155,12 @@
 			path = FilterDataProvider.swift;
 			sourceTree = "<group>";
 		};
+		39A1CFBC537727BFAA39F27D /* FilterXPCService.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = FilterXPCService.swift;
+			sourceTree = "<group>";
+		};
 		72141B20B04B65029C41CE8F /* HisnFilter.entitlements */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = text.plist.entitlements;
@@ -177,6 +201,12 @@
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = KeywordLayerTests.swift;
+			sourceTree = "<group>";
+		};
+		51108B83C7EFBA266DC5773F /* PolicyAuthorityTests.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = PolicyAuthorityTests.swift;
 			sourceTree = "<group>";
 		};
 		C15C5BA8E7F3C7A5B3CC9BFB /* PolicyContractTests.swift */ = {
@@ -245,6 +275,18 @@
 			path = policy_cases.json;
 			sourceTree = "<group>";
 		};
+		F201B88D7E6942D1D787B11A /* policy.js */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.javascript;
+			path = policy.js;
+			sourceTree = "<group>";
+		};
+		AEC54005431D3890EF820953 /* install_native_host.sh */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = text.script.sh;
+			path = install_native_host.sh;
+			sourceTree = "<group>";
+		};
 		5BA8BA274EB5BFB1180F80B1 /* Hisn.app */ = {
 			isa = PBXFileReference;
 			explicitFileType = wrapper.application;
@@ -281,6 +323,8 @@
 				A1954A7D9F26A7718A4AAAD4,
 				638C07E6A6C63DB2FEDE498C,
 				CE441D8FDF481728F9B3694F,
+				A568FFA9D31BF93387C7D5E1,
+				C3AFAA71CCFB961E2BEFD521,
 				72164236627E5336E7EFBABC,
 				07AFF5599709FBC667EAC9DC,
 				75885CCB6C132FED593384D7,
@@ -290,6 +334,7 @@
 				10B6D354DDF0586B5B0D7A22,
 				0EE6D2898CA933202ECEECFB,
 				0DDFAADBE7361D65F79BE5B5,
+				0E75CDFA3B3510AD8AFAB3D9,
 				53D7D153B4628D493F051EA9,
 				EF9ED031BF18513FD91E71E0,
 				9A85D28497AE287B0A4C4E8C,
@@ -303,6 +348,7 @@
 			isa = PBXGroup;
 			children = (
 				483809EFEA23DC4C65C7B5CE,
+				39A1CFBC537727BFAA39F27D,
 				72141B20B04B65029C41CE8F,
 				1E0C1B80DE2B39A0260CE8A1,
 				A0DF15BD71B1EEE6A6C45915,
@@ -326,6 +372,7 @@
 				D6D64E38C469B55C566EB0A8,
 				5CEF7A7205FB28ED41D63CB3,
 				28A03C0E33E9129984BFCEA4,
+				51108B83C7EFBA266DC5773F,
 				C15C5BA8E7F3C7A5B3CC9BFB,
 				96BE623FB252DAE97AF70C17,
 				4792FDE5CE580FC1212B3EBD,
@@ -346,6 +393,15 @@
 			path = "../seed";
 			sourceTree = "<group>";
 		};
+		2876B7A244FA1681B694B457 /* fixtures () */ = {
+			isa = PBXGroup;
+			children = (
+				AEC54005431D3890EF820953,
+			);
+			name = "fixtures ()";
+			path = .;
+			sourceTree = "<group>";
+		};
 		39562D9BA805AEA26FA18343 /* fixtures */ = {
 			isa = PBXGroup;
 			children = (
@@ -355,6 +411,15 @@
 			);
 			name = fixtures;
 			path = "../blocklist/terms";
+			sourceTree = "<group>";
+		};
+		5F55A99DA6F60BF2D3DFB5D6 /* fixtures (lib) */ = {
+			isa = PBXGroup;
+			children = (
+				F201B88D7E6942D1D787B11A,
+			);
+			name = "fixtures (lib)";
+			path = "../extension/lib";
 			sourceTree = "<group>";
 		};
 		43931CF8D8FF624E4C75AE32 /* Products */ = {
@@ -376,7 +441,9 @@
 				CFCAD78C75934B02F892B6CA,
 				17AF22E3634A3628D8708404,
 				938213E66EA8A4079FC417A5,
+				2876B7A244FA1681B694B457,
 				39562D9BA805AEA26FA18343,
+				5F55A99DA6F60BF2D3DFB5D6,
 				43931CF8D8FF624E4C75AE32,
 			);
 			sourceTree = "<group>";
@@ -499,9 +566,21 @@
 			isa = PBXBuildFile;
 			fileRef = 10FB64131D78ACC9D6EEB33B;
 		};
+		4A1C50255A94FA2207BEB5A3 /* PolicyAuthority.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 0E75CDFA3B3510AD8AFAB3D9;
+		};
+		C69E91D963B25A4C533DA34C /* FilterXPC.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = C3AFAA71CCFB961E2BEFD521;
+		};
 		99490269661966C5C223E7E7 /* FilterDataProvider.swift in Sources */ = {
 			isa = PBXBuildFile;
 			fileRef = 483809EFEA23DC4C65C7B5CE;
+		};
+		2F075E5D1AB4A22979967206 /* FilterXPCService.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 39A1CFBC537727BFAA39F27D;
 		};
 		0589130EFE01265E5D48A0F4 /* main.swift in Sources */ = {
 			isa = PBXBuildFile;
@@ -519,7 +598,10 @@
 				0415FC03929A7C5B52675A6C,
 				BE0AC1A3D7A7250B5F00B18C,
 				E79DE6F3D0E8531DAD5995CD,
+				4A1C50255A94FA2207BEB5A3,
+				C69E91D963B25A4C533DA34C,
 				99490269661966C5C223E7E7,
+				2F075E5D1AB4A22979967206,
 				0589130EFE01265E5D48A0F4,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -663,6 +745,14 @@
 			isa = PBXBuildFile;
 			fileRef = 10FB64131D78ACC9D6EEB33B;
 		};
+		40D9545CEB47CC5E65458E00 /* PolicyAuthority.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 0E75CDFA3B3510AD8AFAB3D9;
+		};
+		7B65CEA6DAD9F8CEC19E6967 /* FilterXPC.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = C3AFAA71CCFB961E2BEFD521;
+		};
 		C005460B15C7112981DEA59F /* main.swift in Sources */ = {
 			isa = PBXBuildFile;
 			fileRef = C3C58103FBA89CB0F57E6381;
@@ -683,6 +773,8 @@
 				E85147F869EABC52A463F760,
 				A39E02BE71E93A420B7CACA0,
 				7269C2778E283F388A7B24C7,
+				40D9545CEB47CC5E65458E00,
+				7B65CEA6DAD9F8CEC19E6967,
 				C005460B15C7112981DEA59F,
 				F076F3BB3C4EB53DE71C78BE,
 			);
@@ -879,6 +971,14 @@
 			isa = PBXBuildFile;
 			fileRef = 10FB64131D78ACC9D6EEB33B;
 		};
+		6E5CEDC9D23876D950B1252E /* PolicyAuthority.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 0E75CDFA3B3510AD8AFAB3D9;
+		};
+		F9F8D0F1731E2E8BEC4D6DC2 /* FilterXPC.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = C3AFAA71CCFB961E2BEFD521;
+		};
 		A6FB482C49EF9319FAE69EAD /* ContentView.swift in Sources */ = {
 			isa = PBXBuildFile;
 			fileRef = A1954A7D9F26A7718A4AAAD4;
@@ -915,6 +1015,10 @@
 			isa = PBXBuildFile;
 			fileRef = 638C07E6A6C63DB2FEDE498C;
 		};
+		FB98AF85AF11949BC05C682C /* FilterSync.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = A568FFA9D31BF93387C7D5E1;
+		};
 		079A944B3E87101645898B0C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -927,6 +1031,8 @@
 				08E8DAC64A9393D25CBD048A,
 				00873CB605EF1D24CB98E830,
 				D03D2C850ACDB190BF41F131,
+				6E5CEDC9D23876D950B1252E,
+				F9F8D0F1731E2E8BEC4D6DC2,
 				A6FB482C49EF9319FAE69EAD,
 				61CAEB8F0184033FD53D9C6D,
 				BBEC95CEB0C5C5CAFDED43AB,
@@ -936,6 +1042,7 @@
 				BF5115646CB0123EDCB52F30,
 				B08D22A0F88654A0E18637F4,
 				BE03B7C06F8E1782A5EF2AD4,
+				FB98AF85AF11949BC05C682C,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1078,6 +1185,14 @@
 			isa = PBXBuildFile;
 			fileRef = 9F323B3D6F105E58985C5DC5;
 		};
+		A6914ADD0F67CCAAEEC7093E /* policy.js in Resources */ = {
+			isa = PBXBuildFile;
+			fileRef = F201B88D7E6942D1D787B11A;
+		};
+		922192B76DA730F6388C2563 /* install_native_host.sh in Resources */ = {
+			isa = PBXBuildFile;
+			fileRef = AEC54005431D3890EF820953;
+		};
 		86BDA4A092F382143898023B /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1089,6 +1204,8 @@
 				7A634295144EF98C0FF8A753,
 				FF22EB67FFBDBB45BBB8B509,
 				59CAF865A4B68A1BDFDF8AA4,
+				A6914ADD0F67CCAAEEC7093E,
+				922192B76DA730F6388C2563,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1136,6 +1253,10 @@
 			isa = PBXBuildFile;
 			fileRef = D6D64E38C469B55C566EB0A8;
 		};
+		CD889FF56DC5DDE1F5DC8E50 /* PolicyAuthorityTests.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 51108B83C7EFBA266DC5773F;
+		};
 		A29CD87A3F623C88ED8997D1 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1148,6 +1269,7 @@
 				8FFF0FCD30890FE011507660,
 				AE4AE2037B37E4053641D8E9,
 				A0EE478F25EAC4478E00DBBD,
+				CD889FF56DC5DDE1F5DC8E50,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

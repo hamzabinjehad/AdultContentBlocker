@@ -55,7 +55,10 @@ SHARED = ["Hisn/BlocklistStore.swift", "Hisn/LockStore.swift",
           "Hisn/Inspection.swift",
           # Hand-typed words and blocked apps: the app authors them, the
           # filter enforces both, the bridge reports the words.
-          "Hisn/UserBlocks.swift"]
+          "Hisn/UserBlocks.swift",
+          # The filter's root-owned authority, and the XPC channel the app
+          # and the bridge reach it through.
+          "Hisn/PolicyAuthority.swift", "Hisn/FilterXPC.swift"]
 
 APP_SOURCES = SHARED + [
     "Hisn/ContentView.swift",
@@ -68,8 +71,11 @@ APP_SOURCES = SHARED + [
     # During a lock, closes browsers Hisn is not running inside.
     "Hisn/BrowserGuard.swift",
     "Hisn/ExtensionPresence.swift",
+    # Reconciles the app's mirrors with the filter's root-owned authority.
+    "Hisn/FilterSync.swift",
 ]
 FILTER_SOURCES = SHARED + ["HisnFilter/FilterDataProvider.swift",
+                           "HisnFilter/FilterXPCService.swift",
                            "HisnFilter/main.swift"]
 # The bridge records which browser's extension checked in, for the guard.
 BRIDGE_SOURCES = SHARED + ["HisnBridge/main.swift", "Hisn/ExtensionPresence.swift"]
@@ -80,7 +86,8 @@ TEST_SOURCES = ["HisnTests/BlocklistStoreTests.swift",
                 "HisnTests/PolicyContractTests.swift",
                 "HisnTests/ProtectionStatusTests.swift",
                 "HisnTests/TestNamespace.swift",
-                "HisnTests/BrowserGuardTests.swift"]
+                "HisnTests/BrowserGuardTests.swift",
+                "HisnTests/PolicyAuthorityTests.swift"]
 
 # The signed seed list, bundled into the extension so a machine that has never
 # completed a list update still enforces something. Verified on the same path as
@@ -94,7 +101,15 @@ FILTER_RESOURCES = ["../seed/manifest.json", "../seed/manifest.json.sig",
 # tests exist to catch.
 TEST_RESOURCES = ["../blocklist/terms/normalize_cases.json",
                   "../blocklist/terms/host_cases.json",
-                  "../blocklist/terms/policy_cases.json"]
+                  "../blocklist/terms/policy_cases.json",
+                  # Read for its BRIDGE_FIELDS: the keys the extension takes
+                  # from the bridge. Bundled rather than read from the source
+                  # tree, which sits in ~/Documents — a TCC-protected folder
+                  # the test host would stop and prompt to read.
+                  "../extension/lib/policy.js",
+                  # The shell installer's paths must match the app's —
+                  # cross-checked from the test bundle for the same reason.
+                  "install_native_host.sh"]
 
 ALL_FILES = sorted(set(APP_SOURCES + FILTER_SOURCES + BRIDGE_SOURCES + TEST_SOURCES) | {
     "Hisn/Info.plist", "Hisn/Hisn.entitlements",
@@ -188,6 +203,8 @@ def main() -> int:
             ".json": "text.json",
             ".sig": "text",
             ".txt": "text",
+            ".js": "sourcecode.javascript",
+            ".sh": "text.script.sh",
         }[Path(path).suffix]
         ref = oid("fileref", path)
         file_refs[path] = ref
@@ -231,9 +248,14 @@ def main() -> int:
     dir_groups.append(group(oid("group", "seed"),
                             [file_refs[f] for f in FILTER_RESOURCES],
                             "seed", "../seed"))
-    dir_groups.append(group(oid("group", "fixtures"),
-                            [file_refs[f] for f in TEST_RESOURCES],
-                            "fixtures", "../blocklist/terms"))
+    # One group per source folder of the fixtures, since a group has one path.
+    for folder in sorted({str(Path(f).parent) for f in TEST_RESOURCES}):
+        name = "fixtures" if folder == "../blocklist/terms" else f"fixtures ({Path(folder).name})"
+        dir_groups.append(group(oid("group", "fixtures", folder) if folder != "../blocklist/terms"
+                                else oid("group", "fixtures"),
+                                [file_refs[f] for f in TEST_RESOURCES
+                                 if str(Path(f).parent) == folder],
+                                name, folder))
 
     products_group = group(oid("group", "Products"),
                            [ref for ref, _, _ in products.values()], "Products")

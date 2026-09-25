@@ -29,9 +29,21 @@ struct HisnApp: App {
 /// step.
 final class AppDelegate: NSObject, NSApplicationDelegate {
 
+    /// True when this process is the host for the unit tests. None of the
+    /// launch work below may run then: it rewrote the browsers' real
+    /// native-messaging manifests to point at the throwaway test build, and
+    /// started a browser guard that judged this Mac's browsers against the
+    /// short locks the tests write.
+    static var isHostingTests: Bool {
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+            || NSClassFromString("XCTestCase") != nil
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
+        guard !Self.isHostingTests else { return }
         NativeMessagingInstaller.installIfNeeded()
         BrowserGuard.shared.start()
+        FilterSync.shared.start()
         Task { @MainActor in
             await FilterController.shared.reassertIfNeeded()
             await ListUpdater.shared.updateIfStale()

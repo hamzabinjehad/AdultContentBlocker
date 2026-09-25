@@ -169,6 +169,18 @@ public enum UserBlocks {
 
     // MARK: - Writing
 
+    /// What a change would loosen, or nil — shared with `PolicyAuthority`.
+    public static func loosening(fromTerms: [String], fromApps: [String],
+                                 toTerms: [String], toApps: [String]) -> BlockError? {
+        let removedTerms = Set(fromTerms).subtracting(toTerms).sorted()
+        let unblockedApps = Set(fromApps).subtracting(toApps).sorted()
+        guard removedTerms.isEmpty, unblockedApps.isEmpty else {
+            return .wouldLoosenWhileLocked(removedTerms: removedTerms,
+                                           unblockedApps: unblockedApps)
+        }
+        return nil
+    }
+
     /// Persist both lists, refusing anything that loosens while a lock runs.
     ///
     /// Same asymmetry as everywhere else in this product: add a word, block an
@@ -183,29 +195,12 @@ public enum UserBlocks {
             throw BlockError.termTooShort(short)
         }
 
-        if locked {
-            let removedTerms = Set(terms()).subtracting(newTerms).sorted()
-            let unblockedApps = Set(apps()).subtracting(newApps).sorted()
-            guard removedTerms.isEmpty, unblockedApps.isEmpty else {
-                throw BlockError.wouldLoosenWhileLocked(
-                    removedTerms: removedTerms,
-                    unblockedApps: unblockedApps)
-            }
+        if locked, let refusal = loosening(fromTerms: terms(), fromApps: apps(),
+                                           toTerms: newTerms, toApps: newApps) {
+            throw refusal
         }
 
         defaults?.set(newTerms, forKey: termsKey)
         defaults?.set(newApps, forKey: appsKey)
-    }
-
-    /// What the bridge hands the browser extension on every heartbeat.
-    ///
-    /// Read-only, like the rest of the payload: there is deliberately no message
-    /// that lets the browser add or remove any of this, because an extension is
-    /// far too easy to talk to from a devtools console to be given that
-    /// authority. Apps are not included — the browser cannot enforce them, and
-    /// sending a list of the person's apps into a process that does not need it
-    /// is exactly the kind of unnecessary exposure this codebase avoids.
-    public static func bridgePayload() -> [String: Any] {
-        ["customTerms": terms()]
     }
 }

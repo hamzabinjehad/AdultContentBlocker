@@ -128,26 +128,39 @@ final class InspectionTests: XCTestCase {
 
     // MARK: - The bridge contract
 
-    /// Prevents a field added to `Inspection` but forgotten in the bridge
-    /// payload, which `pollNative` would then leave at the extension's own
-    /// default forever — with nothing anywhere to signal the gap.
+    /// Prevents a field the extension reads from being dropped from the
+    /// bridge's reply, which `pollNative` would then leave at the extension's
+    /// own default forever — with nothing anywhere to signal the gap.
     ///
-    /// The key NAMES are the contract: they must match `DEFAULT_STATE` in
-    /// background.js exactly, and a rename on one side is invisible on the
-    /// other until someone notices the setting no longer does anything.
-    func testBridgeReplyCarriesEveryField() {
-        store(Inspection.Settings(text: false, textSensitivity: 35,
-                                  hostKeywords: true))
-        let payload = Inspection.bridgePayload()
+    /// The key NAMES are the contract, so they are read from the extension's
+    /// own `BRIDGE_FIELDS` rather than retyped here: a rename on one side
+    /// fails this test instead of silently switching a setting off.
+    func testBridgeReplyCarriesEveryFieldTheExtensionReads() throws {
+        let view = PolicyView(lock: nil, effectiveDeadline: nil, allowlist: ["a.example"],
+                              customBlocks: ["b.example"], customTerms: ["gambling"],
+                              blockedApps: ["com.example.app"],
+                              inspection: Inspection.Settings(text: false, textSensitivity: 35,
+                                                              hostKeywords: true))
+        let reply = view.bridgeReply(now: Date(), listVersion: 7)
+        XCTAssertEqual(reply["inspectText"] as? Bool, false)
+        XCTAssertEqual(reply["textSensitivity"] as? Int, 35)
+        XCTAssertEqual(reply["customTerms"] as? [String], ["gambling"])
+        XCTAssertEqual(reply["mode"] as? String, "off")
+        XCTAssertEqual(reply["lockUntil"] as? Double, 0)
+        XCTAssertNil(reply["blockedApps"],
+                     "the browser cannot enforce apps and must not receive them")
 
-        XCTAssertEqual(payload["inspectText"] as? Bool, false)
-        XCTAssertEqual(payload["textSensitivity"] as? Int, 35)
-        XCTAssertEqual(payload["hostKeywords"] as? Bool, true)
-        XCTAssertEqual(payload.count, 3,
-                       "a field was added to Inspection.Settings without being "
-                       + "added to bridgePayload — the extension will never "
-                       + "see it. Update background.js's DEFAULT_STATE and "
-                       + "pollNative's key list at the same time.")
+        let policyJS = try XCTUnwrap(Bundle(for: InspectionTests.self)
+            .url(forResource: "policy", withExtension: "js"))
+        let js = try String(contentsOf: policyJS, encoding: .utf8)
+        let block = try XCTUnwrap(js.range(of: #"BRIDGE_FIELDS = Object\.freeze\(\[([^\]]*)\]"#,
+                                           options: .regularExpression))
+        let names = js[block].split(separator: "\"").enumerated()
+            .filter { $0.offset % 2 == 1 }.map { String($0.element) }
+        XCTAssertFalse(names.isEmpty)
+        for name in names {
+            XCTAssertNotNil(reply[name], "the extension reads `\(name)` but the bridge never sends it")
+        }
     }
 }
 
@@ -233,17 +246,6 @@ final class UserBlocksTests: XCTestCase {
         XCTAssertEqual(UserBlocks.normalizeTerm("إباحية"),
                        UserBlocks.normalizeTerm("اباحيه"))
         XCTAssertEqual(UserBlocks.parseTerms("  GAMBLING  ").terms, ["gambling"])
-    }
-
-    /// Apps are enforced by the filter only. Sending the list of someone's
-    /// installed apps to the browser would be exposure bought for nothing.
-    func testAppsAreNotSentToTheBrowser() throws {
-        try UserBlocks.save(terms: ["gambling"], apps: ["com.example.a"],
-                            locked: false)
-        let payload = UserBlocks.bridgePayload()
-        XCTAssertEqual(payload["customTerms"] as? [String], ["gambling"])
-        XCTAssertNil(payload["blockedApps"],
-                     "the browser cannot enforce apps and must not receive them")
     }
 }
 

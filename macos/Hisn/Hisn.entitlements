@@ -2,19 +2,29 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>com.apple.developer.networking.networkextension</key>
-    <array>
-        <string>content-filter-provider</string>
-    </array>
-    <key>com.apple.developer.system-extension.install</key>
-    <true/>
-    <key>com.apple.security.app-sandbox</key>
-    <true/>
-    <key>com.apple.security.network.client</key>
-    <true/>
-    <key>com.apple.security.application-groups</key>
-    <array>
-        <string>group.app.hisn</string>
-    </array>
+	<key>com.apple.developer.networking.networkextension</key>
+	<array>
+		<string>content-filter-provider</string>
+	</array>
+	<key>com.apple.developer.system-extension.install</key>
+	<true/>
+	<!--
+	  Not sandboxed, deliberately. Hisn ships outside the App Store (Developer
+	  ID), where the sandbox is optional, and three of its jobs cannot be done
+	  from inside one:
+	    * BrowserGuard closes other apps during a lock;
+	    * NativeMessagingInstaller writes into each browser's own
+	      ~/Library/Application Support folder (a sandboxed app's "home" is
+	      its container, so the manifests landed where no browser looks);
+	    * LockStore's third mirror lives under /Library/Application Support.
+	  The filter — the process that sees traffic — stays sandboxed.
+	-->
+	<key>com.apple.security.app-sandbox</key>
+	<false/>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>$(TeamIdentifierPrefix)app.hisn</string>
+		<string>group.app.hisn</string>
+	</array>
 </dict>
 </plist>

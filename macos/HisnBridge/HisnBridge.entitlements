@@ -3,21 +3,16 @@
 <plist version="1.0">
 <dict>
 	<!--
-	  The bridge only reads the lock state, so the app group is the whole of
-	  what it needs.
-
-	  It is sandboxed on purpose, and not only for containment: a sandboxed
-	  process addresses an app group as "group.app.hisn", while an unsandboxed
-	  one has to spell the same group "TEAMID.group.app.hisn". The app is
-	  sandboxed, so making the bridge sandboxed too is what keeps both processes
-	  naming one container. Unsandbox this and it silently reads a different,
-	  empty container — the browser extension then sees no lock and, per its own
-	  fail-closed rule, tightens to strict.
+	  Unsandboxed like the app, and for the same reason the bridge was once
+	  sandboxed: the two must resolve the app group the same way, so they
+	  must be configured the same way. It reads the lock state and asks the
+	  filter's PolicyService over XPC; it writes only its check-in stamps.
 	-->
 	<key>com.apple.security.app-sandbox</key>
-	<true/>
+	<false/>
 	<key>com.apple.security.application-groups</key>
 	<array>
+		<string>$(TeamIdentifierPrefix)app.hisn</string>
 		<string>group.app.hisn</string>
 	</array>
 </dict>

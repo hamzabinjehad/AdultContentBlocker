@@ -52,14 +52,23 @@ public struct ProtectionEvidence: Equatable {
     /// Read fresh from the shared container — the only honest source, since
     /// the filter and the bridge are separate processes and the app reporting
     /// on itself would be no evidence at all.
-    public static func current(filter: FilterController.Availability) -> ProtectionEvidence {
+    ///
+    /// `authority` is the filter's own answer over XPC, when it gave one: the
+    /// domain count it reports is the count held in the filter's memory. The
+    /// defaults key is the fallback, and on a real install it is root's, not
+    /// ours — see `PolicyAuthority` — so without an answer the count reads 0
+    /// and the row says so rather than guessing.
+    public static func current(filter: FilterController.Availability,
+                               authority: PolicyStatus? = nil) -> ProtectionEvidence {
         let d = UserDefaults(suiteName: LockStore.appGroup)
         let filterEvidence: FilterEvidence
         switch filter {
         case .unknown:            filterEvidence = .unknown
         case .unavailable(let m): filterEvidence = .unavailable(m)
         case .off:                filterEvidence = .off
-        case .on:                 filterEvidence = .on(domainCount: d?.integer(forKey: "filterDomainCount") ?? 0)
+        case .on:
+            filterEvidence = .on(domainCount: authority?.health.domainCount
+                                 ?? d?.integer(forKey: "filterDomainCount") ?? 0)
         }
         return ProtectionEvidence(
             filter: filterEvidence,

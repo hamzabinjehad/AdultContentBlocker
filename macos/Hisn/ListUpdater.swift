@@ -112,6 +112,17 @@ public actor ListUpdater {
             try writeToContainer(manifest: manifest, signature: sig,
                                  domains: domains, terms: terms)
 
+            // And to the filter, which cannot read this user's container (it
+            // runs as root) and re-verifies everything before using it. No
+            // filter is the normal state without the paid entitlements.
+            if FilterLink.shared.isConfigured,
+               let reply = FilterLink.shared.installGeneration(
+                   manifest: manifest, signature: sig, domains: domains, terms: terms),
+               !reply.installed {
+                NSLog("[Hisn] the filter refused generation v%d: %@", store.version,
+                      reply.error ?? "no reason given")
+            }
+
             defaults?.set(Date(), forKey: "lastListCheck")
             defaults?.set(Date(), forKey: "lastListUpdate")
             defaults?.set(store.version, forKey: "listVersion")

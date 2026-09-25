@@ -125,6 +125,20 @@ public enum SiteLists {
 
     // MARK: - Writing
 
+    /// What a change from one pair of lists to another would loosen, or nil.
+    /// Checked by membership, never by count (see the type comment). Shared
+    /// with the filter's `PolicyAuthority`, which applies the same rule to the
+    /// root-owned copy, so the two can never disagree about what "looser" is.
+    public static func loosening(fromBlocks: [String], fromAllows: [String],
+                                 toBlocks: [String], toAllows: [String]) -> ListError? {
+        let unblocked = Set(fromBlocks).subtracting(toBlocks).sorted()
+        let allowed = Set(toAllows).subtracting(fromAllows).sorted()
+        guard unblocked.isEmpty, allowed.isEmpty else {
+            return .wouldLoosenWhileLocked(unblocked: unblocked, allowed: allowed)
+        }
+        return nil
+    }
+
     /// Persist both lists, refusing any change that loosens protection while a
     /// lock is running.
     ///
@@ -139,13 +153,10 @@ public enum SiteLists {
     public static func save(customBlocks newBlocks: [String],
                             allowlist newAllows: [String],
                             locked: Bool) throws {
-        if locked {
-            let unblocked = Set(customBlocks()).subtracting(newBlocks).sorted()
-            let allowed = Set(newAllows).subtracting(allowlist()).sorted()
-            guard unblocked.isEmpty, allowed.isEmpty else {
-                throw ListError.wouldLoosenWhileLocked(unblocked: unblocked,
-                                                       allowed: allowed)
-            }
+        if locked, let refusal = loosening(fromBlocks: customBlocks(),
+                                           fromAllows: allowlist(),
+                                           toBlocks: newBlocks, toAllows: newAllows) {
+            throw refusal
         }
         defaults?.set(newBlocks, forKey: customBlocksKey)
         defaults?.set(newAllows, forKey: allowlistKey)

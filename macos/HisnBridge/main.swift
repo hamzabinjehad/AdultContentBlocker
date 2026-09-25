@@ -87,32 +87,21 @@ func handle(_ message: [String: Any]) -> [String: Any] {
         // "checking in from somewhere" cannot tell it which browser that is.
         ExtensionPresence.record(browser: launchingBrowser, in: defaults)
 
-        let state = LockStore.read()
-        // The EFFECTIVE deadline, so a matured self-release ends the lock in
-        // the browser at the same moment it ends everywhere else. Comparing
-        // against `state.deadline` here would leave the extension enforcing a
-        // lock the app had already released.
-        let locked = LockStore.trustedNow() < LockStore.effectiveDeadline(state)
-        var reply: [String: Any] = [
-            "lockUntil": locked
-                ? LockStore.effectiveDeadline(state).timeIntervalSince1970 * 1000
-                : 0,
-            "mode": locked ? state.mode : "off",
-            "allowlist": SiteLists.allowlist(),
-            "customBlocks": SiteLists.customBlocks(),
-            "listVersion": defaults?.integer(forKey: "listVersion") ?? 0,
-        ]
-        // Inspection settings ride the same heartbeat. Still read-only: there
-        // is deliberately no message that lets the browser change any of these,
-        // because an extension is far too easy to talk to from a devtools
-        // console to be given that authority.
-        reply.merge(Inspection.bridgePayload()) { current, _ in current }
-        // Hand-typed words ride the same heartbeat. Apps deliberately do
-        // not: the browser cannot enforce them, and shipping a list of
-        // someone's installed apps into a process that has no use for it
-        // is exposure bought for nothing.
-        reply.merge(UserBlocks.bridgePayload()) { current, _ in current }
-        return reply
+        // The stricter of the app's own mirrors and the filter's root-owned
+        // authority, when there is one (`PolicyMerge`). The mirrors are the
+        // user's files: alone, a `defaults write` edits what the browser is
+        // told. The authority alone would unlock the browser if the filter
+        // lost its record. Together, neither can loosen the other.
+        //
+        // A short timeout: no filter is the normal state without the paid
+        // entitlements, and a heartbeat must never hang on it.
+        let now = LockStore.trustedNow()
+        let local = PolicyView.local(now: now)
+        let view = FilterLink.shared.status(timeout: 0.5)
+            .map { PolicyMerge.stricter(editor: local, other: PolicyView(status: $0), now: now) }
+            ?? local
+        return view.bridgeReply(now: now,
+                                listVersion: defaults?.integer(forKey: "listVersion") ?? 0)
 
     case "ping":
         return ["ok": true, "at": Date().timeIntervalSince1970 * 1000]

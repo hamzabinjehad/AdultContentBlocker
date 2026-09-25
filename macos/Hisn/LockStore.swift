@@ -142,22 +142,9 @@ public enum LockStore {
     /// prevent, so it is rejected here rather than trusted to callers.
     @discardableResult
     public static func write(_ state: LockState) -> Bool {
-        let current = readWithoutHealing()
-        if let current, state.deadline < current.deadline {
-            NSLog("[Hisn] refused to shorten lock: %@ < %@",
-                  "\(state.deadline)", "\(current.deadline)")
-            return false
-        }
-
-        // A pending release may be cancelled (set to nil — that TIGHTENS, and
-        // is always allowed) or pushed later. It may never be pulled earlier.
-        // "Requestable at any time, cannot be accelerated, can be cancelled" is
-        // the entire mechanism, and this is where it is enforced rather than
-        // trusted to callers.
-        if let current, let existing = current.selfReleaseAt,
-           let proposed = state.selfReleaseAt, proposed < existing {
-            NSLog("[Hisn] refused to accelerate release: %@ < %@",
-                  "\(proposed)", "\(existing)")
+        if let why = refusal(current: readWithoutHealing(), proposed: state,
+                             now: trustedNow()) {
+            NSLog("[Hisn] refused lock write: %@", why)
             return false
         }
 
@@ -168,6 +155,39 @@ public enum LockStore {
 
         if !ok { NSLog("[Hisn] CRITICAL: every lock store failed to write") }
         return ok
+    }
+
+    /// Why `proposed` may not replace `current`, or nil if it may.
+    ///
+    /// The one rule set every writer of a lock applies — these mirrors, and
+    /// the filter's root-owned `PolicyAuthority` — so the two cannot drift:
+    ///
+    ///  * the deadline never moves earlier;
+    ///  * a pending release may be cancelled (nil — that TIGHTENS) or pushed
+    ///    later, never pulled earlier: "requestable at any time, cannot be
+    ///    accelerated, can be cancelled" is the entire mechanism;
+    ///  * a running strict lock stays strict. Only the Lock page's controls
+    ///    kept this before — `LockManager.start` with a later deadline and
+    ///    `strict: false` rewrote a strict lock as a blocklist one, which in
+    ///    strict mode's terms is the step from "only my allowlist" to "most of
+    ///    the web".
+    ///
+    /// A lock that has fully run out (`now` past its effective deadline) is
+    /// no constraint at all, so anything may replace it.
+    public static func refusal(current: LockState?, proposed: LockState,
+                               now: Date) -> String? {
+        guard let current, now < current.deadline else { return nil }
+        if proposed.deadline < current.deadline {
+            return "would shorten the lock (\(proposed.deadline) < \(current.deadline))"
+        }
+        if let existing = current.selfReleaseAt, let asked = proposed.selfReleaseAt,
+           asked < existing {
+            return "would bring a requested release forward (\(asked) < \(existing))"
+        }
+        if current.mode == "strict", proposed.mode != "strict" {
+            return "would switch a running strict lock out of strict mode"
+        }
+        return nil
     }
 
     /// Clear the lock. Only legal once the deadline has genuinely passed.
@@ -246,7 +266,16 @@ public enum LockStore {
     /// it, so tampering with that store fails closed too.
     public static func effectiveDeadline(_ state: LockState) -> Date {
         guard let requested = state.selfReleaseAt else { return state.deadline }
-        let matured = firstSeen(requested).addingTimeInterval(selfReleaseDelay)
+        return effectiveDeadline(state, releaseFirstSeen: firstSeen(requested))
+    }
+
+    /// The same answer given the moment the release was first observed, for a
+    /// caller that keeps that record itself — the filter's `PolicyAuthority`,
+    /// whose record is root-owned rather than in the user's defaults.
+    public static func effectiveDeadline(_ state: LockState,
+                                         releaseFirstSeen: Date) -> Date {
+        guard let requested = state.selfReleaseAt else { return state.deadline }
+        let matured = releaseFirstSeen.addingTimeInterval(selfReleaseDelay)
         // Never later than the deadline: a release request may only bring the
         // end forward, and a lock that has run its course is over regardless.
         return min(state.deadline, max(requested, matured))

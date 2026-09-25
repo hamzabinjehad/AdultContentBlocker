@@ -63,61 +63,58 @@ delete the app. `setup_guardian.sh` exists so that the daily user is not one.
 Everything, including turning SIP off and erasing the disk. Closed by nothing
 in software; only by the daily user not holding the recovery path alone.
 
-## Assumption to verify first
+## The root-owned authority (built 2026-09-25)
 
-Every "shared" store above assumes the filter (a **system** extension, which
-runs as root) and the app (the user) resolve `group.app.hisn` to the **same**
-container and the same defaults domain. On macOS, a root process's app-group
-container can resolve under `/private/var/root/Library/Group Containers/`
-rather than the user's. If that is what happens here, then in production:
+The filter is a system extension, and system extensions run as root, so its
+`group.app.hisn` defaults and container resolve under `/private/var/root` —
+not the user's. Everything above that says "app-group defaults" was therefore
+invisible to the filter on a real install: it enforced the bundled seed in
+blocklist mode, forever, and its health keys landed where the app never read
+them. That is how system extensions work, so the design no longer depends on
+the shared container at all:
 
-* the filter never sees a lock, a hand list, or a downloaded generation — it
-  enforces the bundled seed in blocklist mode, forever;
-* `filterDomainCount` and the new health keys are written where the app never
-  reads them, so the status header shows "no list" while the filter runs.
+* **Store.** `PolicyService` (`macos/Hisn/PolicyAuthority.swift`) keeps the
+  lock, the hand lists, the user's words and apps, the inspection settings,
+  the clock high-water mark and the list rollback floor in the filter's own
+  sandbox container under root's home, as two alternately-written copies so
+  one torn write cannot end a lock. A standard user can neither read nor
+  write it.
+* **Transport.** The filter listens on the Mach service named in its
+  Info.plist (`NEMachServiceName`, prefixed with the team app group); the app
+  and the bridge connect with `.privileged` (`FilterXPC.swift`). Every value
+  crosses as JSON.
+* **Authentication.** Both ends call `setCodeSigningRequirement` with
+  "Apple-issued, same team", taken from their own signature at run time. An
+  unsigned build trusts nobody.
+* **No general execution.** The command set is `status`, `submit` (one of
+  `proposeLock`, `setLists`, `setUserBlocks`, `setInspection`) and
+  `installGeneration` (re-verified in full by the filter before a byte is
+  written).
+* **Rules.** Exactly the mirrors' rules, from the same functions:
+  `LockStore.refusal`, `SiteLists.loosening`, `UserBlocks.loosening`,
+  `Inspection.loosening`. Extend-only deadline, strict stays strict, release
+  cannot be accelerated and waits from when the *authority* first saw it,
+  add-only blocks, remove-only allowances.
+* **Two copies, one answer.** `FilterSync` (app, every 20 s and after every
+  change) and the bridge (every heartbeat) act on `PolicyMerge.stricter` of the
+  app's mirrors and the authority's record. Deleting the mirrors mid-lock gets
+  them written back; forging an allowance into them is dropped by the merge;
+  a lock recorded before the authority existed is handed over on first sync.
 
-None of this is visible to unit tests. **Check it on a Mac with the filter
-activated, before anything else in this document is acted on:**
+What this changes in the table above: **Lock (all three mirrors), hand lists,
+words, apps and inspection settings** become tamper-resistant against a
+standard user *whenever the filter is installed* — the mirrors are now a cache.
+The browser extension's own storage and the filter health keys in defaults are
+unchanged, and still not trusted.
 
-```bash
-# after starting a lock in the app, as the daily user:
-defaults read group.app.hisn filterHeartbeatAt          # written by the filter, every 30 s
-sudo defaults read /private/var/root/Library/Group\ Containers/group.app.hisn/Library/Preferences/group.app.hisn filterHeartbeatAt
-```
+### Still to verify on hardware (needs the paid team)
 
-Whichever of the two answers, that is where the filter lives. If it is the
-second, the fix is architectural and is the next section.
-
-## The smallest privileged policy service
-
-If the assumption above fails — and even if it holds, to make the lock
-*duration* tamper-resistant — the filter is already the privileged process,
-and it should own the authoritative copy of policy:
-
-* **Store**: a root-owned directory `/Library/Application Support/Hisn/`
-  written **only by the filter** (uid 0), mode `755/644`. Contents: lock
-  state, the hand lists, the installed generation's version floor.
-* **Transport**: `NEFilterManager` gives the app an XPC channel to its own
-  system extension (`NEMachServiceName` in the extension's `Info.plist`, an
-  `NSXPCListener` in the provider). The app sends *requests*; the filter
-  *validates* them against the same rules `SiteLists.write` and `LockStore.write`
-  apply today (extend-only deadline, add-only blocks, remove-only allowances
-  while locked) and writes the result. The bridge reads the same file.
-* **Authentication**: the listener accepts connections only from a process
-  whose code signature is the app's (`SecCodeCheckValidity` against a
-  designated requirement with the team ID), so a `defaults write` or a rogue
-  binary cannot ask.
-* **No general execution**: the command set is exactly `setLock`,
-  `requestRelease`, `cancelRelease`, `setLists`, `getStatus`. No paths, no
-  shell, no file names cross the boundary.
-* **Migration**: the filter keeps reading the three mirrors and takes the MAX,
-  so an existing lock is honoured; new writes go to the root-owned store; the
-  mirrors become a cache.
-
-This is the one change that would turn "standard user can end a lock by
-deleting three things" into "standard user cannot end a lock". It is not in
-this pass because it needs the assumption above verified on real hardware
-first, and it changes the process boundary the whole app is built around.
+* The listener registers and the app connects (`FilterSync.status` non-nil;
+  the Overview's filter row shows the filter's own domain count).
+* `startFilter` finds its container writable and the record survives a
+  reboot (`sudo ls /private/var/root/Library/Containers/app.hisn.Hisn.HisnFilter/Data/Library/Application\ Support/Hisn/`).
+* A lock started in the app is enforced by the filter within a second
+  (`onChange`), and deleting the app's three mirrors does not end it.
 
 ## Interim hardening that needs no service
 

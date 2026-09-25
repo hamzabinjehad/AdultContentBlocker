@@ -22,7 +22,7 @@ public enum Inspection {
     public static let textSensitivityKey = "textSensitivity"
     public static let hostKeywordsKey = "hostKeywords"
 
-    public struct Settings: Equatable {
+    public struct Settings: Equatable, Codable {
         /// Score the rendered text of a page in the browser extension.
         public var text: Bool
         /// 0–100, higher is stricter. Named a *sensitivity* rather than a
@@ -88,6 +88,21 @@ public enum Inspection {
 
     // MARK: - Writing
 
+    /// What a change would loosen, or nil — shared with `PolicyAuthority`.
+    public static func loosening(from current: Settings, to next: Settings) -> SettingsError? {
+        var reasons: [String] = []
+        if current.text, !next.text {
+            reasons.append("turn off page-text checking")
+        }
+        if current.hostKeywords, !next.hostKeywords {
+            reasons.append("turn off keyword checking")
+        }
+        if next.textSensitivity < current.textSensitivity {
+            reasons.append("lower the sensitivity")
+        }
+        return reasons.isEmpty ? nil : .wouldLoosenWhileLocked(reasons)
+    }
+
     /// Persist settings, refusing any change that weakens checking while a lock
     /// is running.
     ///
@@ -95,39 +110,11 @@ public enum Inspection {
     /// you may turn a check ON and you may raise sensitivity at any time; the
     /// reverse waits for the lock to end.
     public static func save(_ next: Settings, locked: Bool) throws {
-        if locked {
-            let current = read()
-            var reasons: [String] = []
-            if current.text, !next.text {
-                reasons.append("turn off page-text checking")
-            }
-            if current.hostKeywords, !next.hostKeywords {
-                reasons.append("turn off keyword checking")
-            }
-            if next.textSensitivity < current.textSensitivity {
-                reasons.append("lower the sensitivity")
-            }
-            guard reasons.isEmpty else {
-                throw SettingsError.wouldLoosenWhileLocked(reasons)
-            }
+        if locked, let refusal = loosening(from: read(), to: next) {
+            throw refusal
         }
         defaults?.set(next.text, forKey: textKey)
         defaults?.set(next.hostKeywords, forKey: hostKeywordsKey)
         defaults?.set(clamp(next.textSensitivity), forKey: textSensitivityKey)
-    }
-
-    /// The settings as the bridge hands them to the browser extension.
-    ///
-    /// Keys match `DEFAULT_STATE` in background.js exactly. A field added here
-    /// and forgotten there leaves the extension on its own default forever,
-    /// with nothing to signal the gap — which is what
-    /// `testBridgeReplyCarriesEveryField` exists to catch.
-    public static func bridgePayload() -> [String: Any] {
-        let s = read()
-        return [
-            "inspectText": s.text,
-            "textSensitivity": s.textSensitivity,
-            "hostKeywords": s.hostKeywords,
-        ]
     }
 }

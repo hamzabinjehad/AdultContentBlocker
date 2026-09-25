@@ -60,11 +60,13 @@ is the contract that replaces that.
 | App quit / not running | Filter enforces from its own memory and the mirrors; updates and re-assertion pause | App relaunch |
 | Sleep/wake | Provider keeps running; the 30 s tick resumes; no state is lost | none needed |
 
-## Where this is not yet wired
+## Where the app gets these now
 
-The filter writes every key above (`FilterDataProvider.publishHealth`). The
-app's status model is being rebuilt in a parallel change (`ProtectionStatus`
-/ `ProtectionEvidence` in `ContentView.swift`); it currently reads
-`filterDomainCount` and `extensionLastSeen` and should adopt
-`filterHeartbeatAt`, `filterHostTermCount`, `filterKeywordSource`,
-`lastListUpdate` and `lastListError` per the contract above.
+The keys above are written by a root process, into root's defaults — the app
+cannot read them on a real install. The app therefore asks the filter itself:
+`FilterLink.status()` returns a `PolicyStatus` whose `health` carries the
+domain count, host-term count, keyword source, list version and the filter's
+start time, straight from the process that holds them (`FilterSync.status`,
+refreshed every 20 s). An answer at all is the heartbeat; no answer within a
+second is "not reachable". The defaults keys remain as a fallback for a
+development build and are never trusted over an XPC answer.

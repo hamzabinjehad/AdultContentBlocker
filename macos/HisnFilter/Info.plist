@@ -25,6 +25,13 @@
 	     starts and blocks nothing. -->
 	<key>NetworkExtension</key>
 	<dict>
+		<!-- The Mach service the app and the bridge reach PolicyService on
+		     (FilterXPC.swift). It must be prefixed with one of this
+		     extension's app groups, hence the team-prefixed group in
+		     HisnFilter.entitlements; the app reads the expanded name back out
+		     of this file rather than hard-coding the team. -->
+		<key>NEMachServiceName</key>
+		<string>$(TeamIdentifierPrefix)app.hisn.filter</string>
 		<key>NEProviderClasses</key>
 		<dict>
 			<key>com.apple.networkextension.filter-data</key>
