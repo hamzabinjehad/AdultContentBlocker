@@ -1,4 +1,6 @@
 import SwiftUI
+import AppKit
+import CoreServices
 
 @main
 struct HisnApp: App {
@@ -41,12 +43,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         guard !Self.isHostingTests else { return }
+        // One copy of this app bundle at a time: the LaunchAgent starts one at
+        // login, and a second from Finder would run a second guard. A build of
+        // Hisn from elsewhere (Xcode) is a different bundle and may coexist.
+        if let other = NSRunningApplication.runningApplications(
+                withBundleIdentifier: Bundle.main.bundleIdentifier ?? "")
+            .first(where: { $0.processIdentifier != getpid()
+                            && $0.bundleURL?.standardizedFileURL
+                               == Bundle.main.bundleURL.standardizedFileURL }) {
+            other.activate()
+            exit(0)
+        }
         NativeMessagingInstaller.installIfNeeded()
         BrowserGuard.shared.start()
         FilterSync.shared.start()
         Task { @MainActor in
             await FilterController.shared.reassertIfNeeded()
             await ListUpdater.shared.updateIfStale()
+        }
+        // Started at login by the LaunchAgent (`macos/install.sh`): run the
+        // guard and the updater without putting a window in front of anyone.
+        if CommandLine.arguments.contains("--background") {
+            DispatchQueue.main.async { NSApp.windows.forEach { $0.close() } }
         }
     }
 
@@ -55,5 +73,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// menu bar item vanish will assume otherwise — so keep it running.
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         !LockStore.isLocked()
+    }
+
+    /// During a lock this process is the browser guard, so Quit is refused.
+    /// A logout, restart or shutdown is always let through — refusing those
+    /// would hold the whole Mac hostage — and a force-quit cannot be refused
+    /// at all; the LaunchAgent's KeepAlive brings the app straight back.
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard !Self.isHostingTests, LockStore.isLocked(), !Self.systemIsEndingSession else {
+            return .terminateNow
+        }
+        let alert = NSAlert()
+        alert.messageText = "Hisn keeps running during a lock"
+        alert.informativeText = "While a lock runs, Hisn watches that every browser "
+            + "has its protection on. Close the window instead — Hisn stays in "
+            + "the background."
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
+        NSApp.windows.forEach { $0.close() }
+        return .terminateCancel
+    }
+
+    /// Whether this quit comes from the system ending the session.
+    static var systemIsEndingSession: Bool {
+        guard let event = NSAppleEventManager.shared().currentAppleEvent,
+              event.eventID == AEEventID(kAEQuitApplication),
+              let reason = event.attributeDescriptor(forKeyword: AEKeyword(kAEQuitReason))?
+                  .enumCodeValue
+        else { return false }
+        return [kAELogOut, kAEReallyLogOut, kAEShowRestartDialog, kAEShowShutdownDialog,
+                kAERestart, kAEShutDown].map { OSType($0) }.contains(reason)
     }
 }
