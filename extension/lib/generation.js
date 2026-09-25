@@ -88,6 +88,15 @@ export function planGeneration(manifest, artifacts) {
   if (t.terms.length < 200 || t.host_terms.length < 50) {
     return { ok: false, reason: `terms-implausible:${t.terms.length}/${t.host_terms.length}` };
   }
+  // Every entry must be usable by the scorer. A signed file whose entries
+  // lacked `t` made buildIndex throw on every page, and the page-text layer
+  // died silently for the life of that generation.
+  const badTerm = t.terms.find((e) => !e || typeof e.t !== "string" || !e.t
+                                      || !Number.isFinite(e.w));
+  if (badTerm !== undefined) return { ok: false, reason: "terms-entry-malformed" };
+  if (t.host_terms.some((e) => typeof e !== "string" && typeof e?.t !== "string")) {
+    return { ok: false, reason: "host-terms-entry-malformed" };
+  }
   if (typeof t.version === "number" && t.version !== manifest.version) {
     return { ok: false, reason: `terms-version:${t.version}/${manifest.version}` };
   }

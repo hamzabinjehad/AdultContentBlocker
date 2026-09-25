@@ -474,11 +474,23 @@ async function resolveDisputed(entry) {
  * lives in a profile directory the user can edit. The native app holds the
  * clock in a location the filter itself protects.
  */
+/** A bridge that never answers must not hold every other transaction behind
+ *  it — and must still count as silence, so fail-closed can engage. */
+const NATIVE_TIMEOUT_MS = 10 * 1000;
+
+function withTimeout(promise, ms, what) {
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(`${what} timed out`)), ms); }),
+  ]).finally(() => clearTimeout(timer));
+}
+
 async function pollNative() {
   try {
-    const reply = await chrome.runtime.sendNativeMessage(NATIVE_HOST, {
-      type: "getLockState",
-    });
+    const reply = await withTimeout(
+      chrome.runtime.sendNativeMessage(NATIVE_HOST, { type: "getLockState" }),
+      NATIVE_TIMEOUT_MS, "native host");
     if (!reply || !Number.isFinite(reply.lockUntil)) {
       throw new Error("malformed reply");
     }
@@ -529,7 +541,14 @@ async function handleNativeLoss() {
   // which is both wrong and the fastest way to get the extension removed.
   // That gate, the lock check, the grace period and the already-clamped check
   // are all in `shouldFailClosed`, where the tests can see them.
-  if (!shouldFailClosed(state)) return;
+  if (!shouldFailClosed(state)) {
+    // Nothing to change — but re-assert what is in force anyway. A failed
+    // heartbeat used to return here without touching the rules, so once
+    // fail-closed was on (or in a browser-only install) nothing ever
+    // re-applied the rulesets or strict mode again, whatever happened to them.
+    await applyRules(state);
+    return;
+  }
 
   console.error("[hisn] native app silent for %d minutes during an active lock "
                 + "— failing closed", HEARTBEAT_GRACE_MS / 60000);
@@ -541,8 +560,12 @@ async function handleNativeLoss() {
 // List updates
 // --------------------------------------------------------------------------
 
+/** A download that stalls (sleep, a captive portal, bad Wi-Fi) gives up
+ *  rather than hanging the worker. */
+const FETCH_TIMEOUT_MS = 60 * 1000;
+
 async function fetchBytes(url) {
-  const res = await fetch(url, { cache: "no-store" });
+  const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
   if (!res.ok) throw new Error(`${res.status} ${url}`);
   return new Uint8Array(await res.arrayBuffer());
 }
@@ -602,63 +625,103 @@ async function applyGeneration(plan) {
  * A failed update remains a non-event: the rules already installed stay
  * installed. A stale blocklist still blocks; an empty one does not.
  */
-async function updateList() {
+/** The version of the vocabulary this package shipped with. A fresh install
+ *  or a wiped storage holds listVersion 0, and without this floor any older
+ *  signed generation would be accepted over the newer bundled one. */
+let bundledVersion = null;
+async function bundledFloor() {
+  if (bundledVersion === null) {
+    try {
+      const res = await fetch(chrome.runtime.getURL("seed/terms.json"));
+      bundledVersion = Number((await res.json()).version) || 0;
+    } catch { bundledVersion = 0; }
+  }
+  return bundledVersion;
+}
+
+/** Whether the downloaded rules the state claims are actually installed —
+ *  counted from Chrome, not from our own record of having installed them. */
+async function downloadedRulesIntact(state) {
+  const installed = downloadedRuleIds(await chrome.declarativeNetRequest.getDynamicRules()).length;
+  return installed > 0 && installed === (state.rulesApplied || 0) + (state.keywordRulesApplied || 0);
+}
+
+/**
+ * Download and verify the next generation, with NO lock held.
+ *
+ * This used to run inside `transaction` from start to finish, multi-megabyte
+ * downloads included, with no timeout — and every heartbeat queued behind it.
+ * One stalled download stopped the extension checking in, and the browser
+ * guard then closed a browser whose extension was working. Only the install
+ * (`installGeneration`) needs the lock now.
+ */
+async function fetchGeneration() {
   const state = await getState();
+  const heldVersion = Math.max(state.listVersion || 0, await bundledFloor());
+  const [manifestBytes, sigBytes] = await Promise.all([
+    fetchBytes(`${LIST_BASE}/manifest.json`),
+    fetchBytes(`${LIST_BASE}/manifest.json.sig`),
+  ]);
+  const signatureHex = new TextDecoder().decode(sigBytes).trim();
+
+  const probe = await acceptList({ manifestBytes, signatureHex, artifacts: new Map(), heldVersion });
+  if (!probe.ok) {
+    console.error("[hisn] list rejected:", probe.reason);
+    return null;
+  }
+  if (probe.manifest.version === state.listVersion && await downloadedRulesIntact(state)) {
+    return null;
+  }
+
+  // The whole generation, fetched together. Every artifact is verified
+  // against the signed manifest before any is applied — verifying the
+  // manifest alone proves only that someone signed a description of files.
+  const artifacts = new Map();
+  await Promise.all(GENERATION_ARTIFACTS.map(async (name) => {
+    artifacts.set(name, await fetchBytes(`${LIST_BASE}/${name}`));
+  }));
+  const verified = await acceptList({ manifestBytes, signatureHex, artifacts, heldVersion });
+  if (!verified.ok) {
+    console.error("[hisn] generation rejected:", verified.reason);
+    return null;
+  }
+
+  // Shape and plausibility, after the hashes. A validly signed list that
+  // collapsed to a handful of rules or lost its vocabulary is a broken
+  // build, and keeping yesterday's is strictly safer than applying it.
+  const plan = planGeneration(verified.manifest, artifacts);
+  if (!plan.ok) {
+    console.error("[hisn] generation not installable:", plan.reason, "— keeping current");
+    return null;
+  }
+  return { plan, version: verified.manifest.version };
+}
+
+/** Install a verified generation — the only part that takes the lock. */
+async function installGeneration({ plan, version }) {
+  const state = await getState();
+  if (version < (state.listVersion || 0)) return;   // a newer one landed meanwhile
+  const applied = await applyGeneration(plan);
+  await setState({
+    listVersion: version,
+    rulesApplied: applied.rules,
+    keywordRulesApplied: applied.keywordRules,
+    lastListUpdate: Date.now(),
+  });
+  console.info("[hisn] generation v%d applied — %d domain rules, %d keyword rules, %d terms",
+    version, applied.rules, applied.keywordRules, plan.terms.terms.length);
+}
+
+/**
+ * Check for a newer blocklist, verify it, and actually apply it.
+ *
+ * A failed update remains a non-event: the rules already installed stay
+ * installed. A stale blocklist still blocks; an empty one does not.
+ */
+async function updateList() {
   try {
-    const [manifestBytes, sigBytes] = await Promise.all([
-      fetchBytes(`${LIST_BASE}/manifest.json`),
-      fetchBytes(`${LIST_BASE}/manifest.json.sig`),
-    ]);
-    const signatureHex = new TextDecoder().decode(sigBytes).trim();
-
-    const probe = await acceptList({
-      manifestBytes,
-      signatureHex,
-      artifacts: new Map(),
-      heldVersion: state.listVersion,
-    });
-    if (!probe.ok) {
-      console.error("[hisn] list rejected:", probe.reason);
-      return;
-    }
-    if (probe.manifest.version === state.listVersion && state.rulesApplied
-        && state.keywordRulesApplied) {
-      return;
-    }
-
-    // The whole generation, fetched together. Every artifact is verified
-    // against the signed manifest before any is applied — verifying the
-    // manifest alone proves only that someone signed a description of files.
-    const artifacts = new Map();
-    await Promise.all(GENERATION_ARTIFACTS.map(async (name) => {
-      artifacts.set(name, await fetchBytes(`${LIST_BASE}/${name}`));
-    }));
-    const verified = await acceptList({
-      manifestBytes, signatureHex, artifacts, heldVersion: state.listVersion,
-    });
-    if (!verified.ok) {
-      console.error("[hisn] generation rejected:", verified.reason);
-      return;
-    }
-
-    // Shape and plausibility, after the hashes. A validly signed list that
-    // collapsed to a handful of rules or lost its vocabulary is a broken
-    // build, and keeping yesterday's is strictly safer than applying it.
-    const plan = planGeneration(verified.manifest, artifacts);
-    if (!plan.ok) {
-      console.error("[hisn] generation not installable:", plan.reason, "— keeping current");
-      return;
-    }
-
-    const applied = await applyGeneration(plan);
-    await setState({
-      listVersion: verified.manifest.version,
-      rulesApplied: applied.rules,
-      keywordRulesApplied: applied.keywordRules,
-      lastListUpdate: Date.now(),
-    });
-    console.info("[hisn] generation v%d applied — %d domain rules, %d keyword rules, %d terms",
-      verified.manifest.version, applied.rules, applied.keywordRules, plan.terms.terms.length);
+    const next = await fetchGeneration();
+    if (next) await transaction(() => installGeneration(next));
   } catch (err) {
     console.warn("[hisn] list update failed, keeping current list:",
       err?.message ?? err);
@@ -794,7 +857,7 @@ chrome.runtime.onInstalled.addListener(async () => {
   await transaction(async () => applyRules(await getState()));
   await ensureAlarms();
   await transaction(pollNative);
-  await transaction(updateList);
+  await updateList();
 });
 
 chrome.runtime.onStartup.addListener(async () => {
@@ -806,7 +869,7 @@ chrome.runtime.onStartup.addListener(async () => {
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === "heartbeat") await transaction(pollNative);
-  if (alarm.name === "listUpdate") await transaction(updateList);
+  if (alarm.name === "listUpdate") await updateList();
 });
 
 /**

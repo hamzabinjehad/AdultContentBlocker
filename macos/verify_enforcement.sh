@@ -160,7 +160,13 @@ PY
 
     sysman="$(nm_system_dir "$name" "$product")/app.hisn.bridge.json"
     userman="$HOME/Library/Application Support/$product/NativeMessagingHosts/app.hisn.bridge.json"
-    { [ -f "$sysman" ] || [ -f "$userman" ]; } || link_missing="$link_missing $name"
+    # With the profile's NativeMessagingUserLevelHosts off, the browser ignores
+    # the user-level copy, so only the admin-owned one counts.
+    if [ "$(managed_pref "$domain" NativeMessagingUserLevelHosts || echo "")" = "0" ]; then
+        [ -f "$sysman" ] || link_missing="$link_missing $name(needs the admin-owned link)"
+    else
+        { [ -f "$sysman" ] || [ -f "$userman" ]; } || link_missing="$link_missing $name"
+    fi
 done <<EOF
 $CHROMIUM_BROWSERS
 EOF

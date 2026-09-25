@@ -201,6 +201,12 @@ CHROMIUM_POLICY = {
     # A guest window runs no extensions, and a new profile has none installed
     # until the store force-installs one. Either is a fresh browser with the
     # page-text layer switched off, one menu away.
+    # Only the admin-installed browser link (install_native_host.sh) is used.
+    # A user-level host manifest is the user's own file: point it at a script
+    # that answers "no lock, allow everything" and the extension believes it —
+    # the browser checks the user's folder first. With this off, answering as
+    # the app needs an administrator.
+    "NativeMessagingUserLevelHosts": False,
     "BrowserGuestModeEnabled": False,
     "BrowserAddPersonEnabled": False,
     # SafeSearch at the policy level: covers an allowlisted search engine,

@@ -19,7 +19,11 @@ globalThis.chrome = {
   runtime: {
     onInstalled: { addListener() {} }, onStartup: { addListener() {} },
     onMessage: { addListener(fn) { listener = fn; } },
-    sendNativeMessage: async () => { if (nativeReply) return nativeReply; throw new Error("no native host"); },
+    sendNativeMessage: async () => {
+      if (nativeReply === "hang") return new Promise(() => {});
+      if (nativeReply) return nativeReply;
+      throw new Error("no native host");
+    },
     id: "hisnextid",
     getURL: (path) => `chrome-extension://hisnextid/${path}`,
   },
@@ -31,6 +35,12 @@ globalThis.chrome = {
 };
 const alarms = new Map();
 globalThis.console = { info() {}, warn() {}, error() {} };
+// Timers under our control: jsc has no clearTimeout, and a real 10 s timer
+// would hold the run open. `fire(ms)` runs every pending timer of that length.
+const timers = [];
+globalThis.setTimeout = (fn, ms) => { timers.push({ fn, ms }); return timers.length; };
+globalThis.clearTimeout = () => {};
+const fire = (ms) => { for (const t of timers.splice(0)) if (t.ms === ms) t.fn(); };
 let nativeCalls = 0;
 const realSend = globalThis.chrome.runtime.sendNativeMessage;
 globalThis.chrome.runtime.sendNativeMessage = async (...a) => { nativeCalls++; return realSend(...a); };
@@ -74,6 +84,15 @@ await message({ type: "forceSync" });
 check(state.failClosed, "app loss during lock fails closed");
 state.lockUntil = 0;
 check(!(await message({ type: "update", patch: { textAllow: ["other.example"] } })).ok, "fail-closed still guards corrections");
+// A bridge that never answers is silence, not a heartbeat that holds every
+// other transaction behind it forever.
+nativeReply = "hang";
+const pending = message({ type: "forceSync" });
+await Promise.resolve();
+fire(10000);
+check(!(await pending).ok, "a hung native host times out and counts as unreachable");
+nativeReply = null;
+
 // Who may send what: a web page's content script only ever scores text.
 for (const type of ["update", "resolveDisputed", "reportWrongWord", "reportWrongBlock", "getState", "forceSync"]) {
   r = await message({ type, patch: { customBlocks: [] } }, PAGE);

@@ -86,8 +86,12 @@ macos/install.sh --profile                      # builds it and opens it
 macos/install.sh --profile -- --allow-devtools  # if you develop extensions yourself
 ```
 
-The **second person** installs it: System Settings → General → Device
-Management. Save the printed removal password with them, never the user. Gets
+`--profile` first installs the **admin-owned browser link**
+(`install_native_host.sh`, asks for the password): the profile switches off
+user-level links — a user-level manifest is the user's own file and can point
+at a script that answers "no lock" — so without the admin-owned one the
+extension would lose the app. The **second person** installs the profile:
+System Settings → General → Device Management. Save the printed removal password with them, never the user. Gets
 you: DoH locked off across the Chromium family (Helium included), iCloud
 Private Relay off, per-browser proxy pinned, guest windows and new browser
 profiles disabled (both run without the extension), Google SafeSearch and

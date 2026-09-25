@@ -187,6 +187,14 @@ class TestBrowserEscapes(unittest.TestCase):
         self.assertNotIn("SafeSitesFilterBehavior", payload(profile, "net.imput.helium"),
                          "a Google-service policy has no place in a de-Googled fork")
 
+    def test_only_the_admin_installed_browser_link_is_used(self):
+        """A user-level native-messaging manifest can point at any script,
+        which then speaks for the app — "no lock, allow everything"."""
+        profile = build()
+        for bundle_id in self.CHROMIUM:
+            self.assertIs(payload(profile, bundle_id)["NativeMessagingUserLevelHosts"], False,
+                          bundle_id)
+
     def test_allow_flags_do_not_reopen_these(self):
         profile = build(allow_devtools=True, allow_incognito=True)
         p = payload(profile, "net.imput.helium")

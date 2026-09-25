@@ -136,6 +136,15 @@ if [ "$HOSTS" -eq 1 ]; then
 fi
 
 if [ "$PROFILE" -eq 1 ]; then
+    # The profile turns off user-level browser links (a user could point one
+    # at their own script), so the admin-owned one must exist first or the
+    # extension loses the app. Every id the app admits is admitted here too.
+    step "Admin-owned browser link (asks for your password)"
+    IDS=()
+    while read -r id; do IDS+=(--extension-id "$id"); done < <(
+        grep -oE '"[a-p]{32}"' "$REPO/macos/Hisn/NativeMessagingInstaller.swift" | tr -d '"')
+    sudo "$REPO/macos/install_native_host.sh" "${IDS[@]}"
+
     step "Hardening profile"
     OUT="$REPO/dist/hisn-hardening.mobileconfig"
     mkdir -p "$REPO/dist"

@@ -20,23 +20,26 @@
 set -euo pipefail
 
 APP_PATH="/Applications/Hisn.app"
-EXTENSION_ID=""
+EXTENSION_IDS=()
 SCOPE="system"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --app-path)     APP_PATH="$2"; shift 2 ;;
-        --extension-id) EXTENSION_ID="$2"; shift 2 ;;
+        --extension-id) EXTENSION_IDS+=("$2"); shift 2 ;;   # repeatable: unpacked + store
         --user)         SCOPE="user"; shift ;;
         -h|--help)      sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *)              echo "unknown argument: $1" >&2; exit 2 ;;
     esac
 done
 
-if [[ -z "$EXTENSION_ID" ]]; then
-    echo "error: --extension-id is required (the Chrome Web Store id)" >&2
+if [[ ${#EXTENSION_IDS[@]} -eq 0 ]]; then
+    echo "error: --extension-id is required (the Chrome Web Store id; repeat for several)" >&2
     exit 2
 fi
+for id in "${EXTENSION_IDS[@]}"; do
+    [[ "$id" =~ ^[a-p]{32}$ ]] || { echo "error: not an extension id: $id" >&2; exit 2; }
+done
 
 BRIDGE="$APP_PATH/Contents/MacOS/HisnBridge"
 if [[ ! -x "$BRIDGE" ]]; then
@@ -80,8 +83,13 @@ else
 fi
 
 # `allowed_origins` is the whole access-control story for a native messaging
-# host: any extension listed here can talk to this process. It stays a single
-# specific id — a wildcard would let any installed extension read the lock state.
+# host: any extension listed here can talk to this process. Specific ids only —
+# a wildcard would let any installed extension read the lock state.
+ORIGINS=""
+for id in "${EXTENSION_IDS[@]}"; do
+    ORIGINS="$ORIGINS${ORIGINS:+,
+}    \"chrome-extension://$id/\""
+done
 MANIFEST=$(cat <<EOF
 {
   "name": "app.hisn.bridge",
@@ -89,7 +97,7 @@ MANIFEST=$(cat <<EOF
   "path": "$BRIDGE",
   "type": "stdio",
   "allowed_origins": [
-    "chrome-extension://$EXTENSION_ID/"
+$ORIGINS
   ]
 }
 EOF
