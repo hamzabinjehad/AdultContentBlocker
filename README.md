@@ -12,6 +12,9 @@ of them look wrong until you know which bypass they close.
 
 **To actually deploy it on a Mac, follow [`docs/SETUP.md`](docs/SETUP.md)** —
 the whole thing in dependency order, with what each step needs and who does it.
+`macos/install.sh` does the software half in one command. Then
+[`docs/DOGFOOD.md`](docs/DOGFOOD.md) is how to live with it and try to break it,
+and [`docs/LAUNCH.md`](docs/LAUNCH.md) is what stands between that and publishing.
 
 ---
 
@@ -23,6 +26,7 @@ profile/         .mobileconfig generator: DNS, DoH, Private Relay               
 extension/       Chrome/Edge MV3 extension                                       (JS)
 macos/           the app + content filter                                        (Swift)
 seed/            signed starter list + keyword layer, bundled into the filter
+partner/         the accountability partner's page: key, and signed approvals    (HTML)
 .github/         CI on every PR; daily signed rebuild and publish                 (Actions)
 ```
 
@@ -50,6 +54,7 @@ is the JavaScript suites plus a check of the packaged zip; `macos` is
 | Configuration profile | Encrypted DNS, Private Relay, browser DoH | A VPN; a local admin removing the profile |
 | **Content filter (system extension)** | **Everything above, including VPNs** | Recovery mode; an admin disabling it |
 | **Accountability partner** | **The admin, and the human at 2am** | A second device |
+| Browser guard (in the app) | Switching the extension off; another browser | Quitting the app as an admin |
 
 The load-bearing layers are the bottom two. The top two are convenience and
 defence in depth — they are not what makes this work.

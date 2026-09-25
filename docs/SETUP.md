@@ -13,14 +13,104 @@ Two facts decide everything below, so read them first:
 * **A blocklist is coverage; the account split is tamper-resistance.** They are
   independent. You need both, and $99 buys the first kind, not the second.
 
+Everything from step 1 to step 7 needs an administrator, so it is done
+**before** step 8 takes administrator rights away from the daily account.
+(The old order split the accounts first and then asked for admin rights the
+daily user no longer had.)
+
 ## Step 0 — the second person (no software)
 
 Decide who holds the secrets: the admin password, the profile removal password,
-the Screen Time passcode. It must be someone who is **not** the daily user — a
-secret you hold yourself is a stop button, not a lock. Without this person,
-stop here: nothing below becomes a lock, and building more is wasted effort.
+the Screen Time passcode, and the partner key that can end a lock early. It
+must be someone who is **not** the daily user — a secret you hold yourself is a
+stop button, not a lock. Without this person, stop here: nothing below becomes
+a lock, and building more is wasted effort.
 
-## Step 1 — the account split · `macos/setup_guardian.sh`
+## Step 1 — the app · `macos/install.sh`
+
+```bash
+macos/install.sh                      # no paid Apple account yet
+macos/install.sh --team ABCDE12345    # once you have one (step 9)
+```
+
+Builds Hisn, puts it in **`/Applications`** (a home-folder app deletes without
+a password, and the system extension only activates from `/Applications`),
+installs a LaunchAgent that starts it at login and brings it back if it is
+force-quit, registers the browser link for every Chromium browser, and runs
+the verifier. During a lock the app refuses an ordinary Quit: it is also the
+**browser guard**, which closes any browser Hisn is not running inside
+(`BrowserGuard.swift`) — review *Blocking Rules › Browsers during a lock*
+before your first lock, and allow any app there that opens web links without
+being a browser.
+
+## Step 2 — the browser extension
+
+The extension is the only layer that reads page **text** — it is what catches
+adult content on a new domain or inside a general site, and where the Arabic
+vocabulary lives. Until it is on the Chrome Web Store, load it unpacked:
+
+1. Open `helium://extensions` (or `chrome://extensions`), switch on
+   **Developer mode**, **Load unpacked**, and pick this repository's
+   `extension/` folder. It loads with the pinned id
+   `hfhaffbmoeepcdolgejeidkgaoapcjig`.
+2. The Hisn popup should say **App connected** within a minute.
+
+Unpacked, it can be switched off on that page — which is exactly what the
+browser guard answers during a lock. Making it un-removable needs the store
+and the profile: **`docs/CHROME_ENFORCEMENT.md`** is that runbook.
+
+## Step 3 — domain blocking · `macos/block_dns.sh`
+
+```bash
+macos/install.sh --hosts          # or: sudo macos/block_dns.sh --merge
+```
+
+Free. Blocks the core list for every app and browser, VPN or not — the OS
+resolver is below the browser. Bypassed only by browser DoH, which step 5
+closes.
+
+## Step 4 — the accountability partner's key · `partner/index.html`
+
+With both of you present: the partner opens `partner/index.html` on **their
+own** phone or computer (send them the file, or host it), taps *Make a key*,
+and reads you the code under *Your key*. Paste it into Hisn › Settings ›
+Accountability partner and check the fingerprints match. From then on the
+partner can end a lock early by signing the release code Hisn shows —
+immediately, and never without them. The private key never leaves their
+device; tell them to keep the backup the page offers somewhere private.
+
+## Step 5 — the hardening profile · `profile/make_profile.py`
+
+```bash
+macos/install.sh --profile                      # builds it and opens it
+macos/install.sh --profile -- --allow-devtools  # if you develop extensions yourself
+```
+
+The **second person** installs it: System Settings → General → Device
+Management. Save the printed removal password with them, never the user. Gets
+you: DoH locked off across the Chromium family (Helium included), iCloud
+Private Relay off, per-browser proxy pinned, guest windows and new browser
+profiles disabled (both run without the extension), Google SafeSearch and
+YouTube strict mode forced by policy, and **private/incognito browsing
+disabled** — the enforceable way to close the incognito bypass
+(`--allow-incognito` opts out; see `CHROME_ENFORCEMENT.md`). Do not add
+`--extension-id` until the extension is actually published.
+
+## Step 6 — Screen Time, held by the partner
+
+System Settings › Screen Time › Content & Privacy › **Limit Adult Websites**,
+and a Screen Time passcode the partner sets and keeps. This is Apple's lock,
+and Hisn sits under it (`docs/POSITIONING.md`): Safari is covered by it, and
+the guard leaves Safari open for that reason.
+
+## Step 7 — the phone, at the same time
+
+A locked Mac beside an unlocked phone is theatre. On the iPhone: Screen Time ›
+Content & Privacy Restrictions › Web Content › **Limit Adult Websites**, with
+the partner's passcode — or, better, Family Sharing with the partner as the
+organiser, so the passcode is theirs by construction.
+
+## Step 8 — the account split · `macos/setup_guardian.sh` — last
 
 ```bash
 macos/setup_guardian.sh --check                 # read-only readiness
@@ -29,56 +119,24 @@ sudo macos/setup_guardian.sh --create-admin      # the SECOND PERSON types the p
 sudo macos/setup_guardian.sh --demote-me         # you become a standard user
 ```
 
-Needs: the second person, present. Gets you: the user can no longer delete the
-app, disable the filter, or remove the profile. This is the load-bearing step.
-FileVault-safe — the guardian is given a secure token and you keep yours.
+Needs: the second person, present. Gets you: the daily user can no longer
+delete the app, disable the filter, or remove the profile. This is the
+load-bearing step, and it is last only because everything above needed the
+admin rights it removes. FileVault-safe — the guardian is given a secure token
+and you keep yours.
 
-## Step 2 — domain blocking · `macos/block_dns.sh`
+## Step 9 — the system filter · Apple's $99
 
-```bash
-sudo macos/block_dns.sh --merge      # adds only what your hosts file lacks
-```
+The socket-level filter sees every app's traffic and a VPN does not bypass it.
+It needs the paid Apple Developer Program: set your team, run
+`macos/install.sh --team <TEAMID>`, open Hisn and press *Turn on the system
+filter*, and approve it in System Settings › General › Login Items &
+Extensions (an administrator — after step 8, the partner). From then on the
+lock, the lists and the partner key live in the filter's root-owned store as
+well (`docs/TAMPER_MODEL.md`), and deleting the app's own files no longer ends
+a lock.
 
-Needs: admin (do it before step 1's demotion, or have the guardian run it).
-Free. Gets you: ~148k adult domains blocked for every app and browser, VPN or
-not — the OS resolver is below the browser. Bypassed only by browser DoH, which
-step 4 closes.
-
-## Step 3 — the app and filter · needs Apple's $99
-
-Build and put the app in **`/Applications`** (not `~/Applications` — a
-home-folder app is user-owned and deletes without admin). Activating the
-socket-level content filter needs the paid Apple Developer entitlements; without
-them the app runs but the filter stays off. With them: every browser, every app,
-VPN-proof, and — behind step 1 — not disableable by the user.
-
-## Step 4 — the hardening profile · `profile/make_profile.py`
-
-```bash
-python3 profile/make_profile.py --resolver cloudflare \
-    --out dist/hisn-hardening.mobileconfig --print-password
-```
-
-The **second person** installs it: System Settings → General → Device
-Management. Save the printed removal password with them, never the user. Gets
-you: DoH locked off across eleven Chromium browsers, iCloud Private Relay off,
-per-browser proxy pinned across the Chromium family (Helium included), guest
-windows and new browser profiles disabled (both run without the extension),
-Google SafeSearch and YouTube strict mode forced by policy, and
-**private/incognito browsing disabled** — the enforceable way to close the
-incognito bypass (`--allow-incognito` opts out; see `CHROME_ENFORCEMENT.md`).
-Do not add `--extension-id` until step 5 is actually published.
-
-## Step 5 — force the browser extension · Chrome only
-
-The extension is the only layer that reads page **text** — it is what catches
-adult content on a new domain or inside a general site, and where the 5,547
-Arabic terms live. Making it un-removable is Chrome/Edge only; Safari cannot do
-it without supervised MDM. The full path is its own runbook:
-**`docs/CHROME_ENFORCEMENT.md`** — package, publish to the Web Store, wire the
-store-assigned id into the app and the profile, install the profile.
-
-## Step 5b — publish the list the clients download
+## Publishing the list the clients download
 
 Both clients download signed updates from this repository's `lists` branch —
 `LIST_BASE` in `extension/background.js` and `base` in
@@ -100,15 +158,19 @@ answers `200`.
 macos/verify_enforcement.sh
 ```
 
-Read-only; reports each layer as enforced or open and exits non-zero if a
+Read-only; reports each layer as enforced or open — the account split, the
+hosts file, and for every installed browser whether the Hisn extension is
+**on**, incognito, DoH, guest windows, SafeSearch and the browser link, plus
+Screen Time, Private Relay and the system filter — and exits non-zero if a
 critical one is open. Have the second person run it after setup — the whole
 point of this product is that "looks protected" and "is protected" differ, and
-this is where you catch the difference.
+this is where you catch the difference. Then start a **one-hour lock** and try
+to get around it yourself; `docs/DOGFOOD.md` has the list.
 
 ## What is still open, honestly
 
 Even with all of the above: an admin removing the profile (closed only by
-step 1), Recovery mode (`THREAT_MODEL.md` row 13, open as long as the daily user
+step 8), Recovery mode (`THREAT_MODEL.md` row 13, open as long as the daily user
 holds a FileVault token they need to boot), and **another device** — a phone or
 second computer, closed by nothing on this Mac. The Mac is not the whole
 problem; the person is.

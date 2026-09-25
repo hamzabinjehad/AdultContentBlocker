@@ -66,9 +66,12 @@ final class PartnerTests: XCTestCase {
     }
 
     func testTamperedApprovalIsRefused() {
-        var approval = sign(PartnerService.challenge(for: lock()))
-        approval.removeLast()
-        approval.append(approval.last == "A" ? "B" : "A")
+        // A character in the middle: the last one of 86 carries only two
+        // significant bits, so changing it can decode to the very same bytes.
+        var chars = Array(sign(PartnerService.challenge(for: lock())))
+        let i = "HISN-OK-".count + 20
+        chars[i] = chars[i] == "A" ? "B" : "A"
+        let approval = String(chars)
         XCTAssertThrowsError(try PartnerService.approve(approval, for: lock(), key: publicKey))
     }
 
