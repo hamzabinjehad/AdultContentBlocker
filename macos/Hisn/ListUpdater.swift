@@ -116,7 +116,7 @@ public actor ListUpdater {
             // runs as root) and re-verifies everything before using it. No
             // filter is the normal state without the paid entitlements.
             if FilterLink.shared.isConfigured,
-               let reply = FilterLink.shared.installGeneration(
+               let reply = await FilterLink.shared.installGeneration(
                    manifest: manifest, signature: sig, domains: domains, terms: terms),
                !reply.installed {
                 NSLog("[Hisn] the filter refused generation v%d: %@", store.version,

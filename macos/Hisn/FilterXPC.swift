@@ -186,6 +186,17 @@ public final class FilterLink: @unchecked Sendable {
         }
     }
 
+    /// The install waits up to a minute on XPC; off the cooperative pool.
+    public func installGeneration(manifest: Data, signature: Data, domains: Data,
+                                  terms: Data) async -> GenerationReply? {
+        await withCheckedContinuation { c in
+            DispatchQueue.global(qos: .utility).async {
+                c.resume(returning: self.installGeneration(manifest: manifest, signature: signature,
+                                                           domains: domains, terms: terms))
+            }
+        }
+    }
+
     public func submit(_ request: PolicyRequest) async -> PolicyResponse? {
         await withCheckedContinuation { c in
             DispatchQueue.global(qos: .userInitiated).async {
