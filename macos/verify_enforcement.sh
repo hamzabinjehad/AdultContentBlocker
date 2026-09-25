@@ -122,6 +122,9 @@ fi
 # One pass over the family: for each browser that is actually installed, is
 # incognito disabled, is DoH locked off, and does a native-messaging host exist?
 # Aggregated so the output stays short but still names the browser that is open.
+# The ids the app admits, from the one list install.sh also reads.
+EXT_IDS="$(grep -oE '"[a-p]{32}"' "$(dirname "$0")/Hisn/NativeMessagingInstaller.swift" 2>/dev/null | tr -d '"' | tr '\n' ' ')"
+[ -n "$EXT_IDS" ] || EXT_IDS="hfhaffbmoeepcdolgejeidkgaoapcjig"
 incog_open=""; doh_open=""; guest_open=""; safe_open=""; link_missing=""; ext_off=""; browsers_present=0
 while IFS='|' read -r name domain product; do
     [ -n "$name" ] || continue
@@ -139,21 +142,29 @@ while IFS='|' read -r name domain product; do
     [ "$(managed_pref "$domain" ForceGoogleSafeSearch || echo "")" = "1" ] \
         || safe_open="$safe_open $name"
 
-    # Is the Hisn extension installed AND switched on in this browser? Read
-    # from the browser's own profile state — the one-click "disable" on the
-    # extensions page leaves every file above in place.
-    ext_state=$(python3 - "$HOME/Library/Application Support/$product" <<'PY' 2>/dev/null || echo "unknown"
+    # Is the Hisn extension installed AND switched on in EVERY profile of this
+    # browser? Read from the browser's own profile state — the one-click
+    # "disable" on the extensions page leaves every file above in place — and
+    # per profile, because a second profile without the extension is the
+    # whole browser without it: "on" once used to mean "on in any one".
+    ext_state=$(python3 - "$HOME/Library/Application Support/$product" "$EXT_IDS" <<'PY' 2>/dev/null || echo "unknown"
 import json, sys, pathlib
-ids = {"hfhaffbmoeepcdolgejeidkgaoapcjig"}
-root = pathlib.Path(sys.argv[1]); seen = on = 0
-for prefs in list(root.glob("Default/*Preferences")) + list(root.glob("Profile */*Preferences")):
-    try: settings = json.loads(prefs.read_text()).get("extensions", {}).get("settings", {})
-    except Exception: continue
-    for i in ids & settings.keys():
-        seen += 1
-        e = settings[i]
-        on += not e.get("disable_reasons") and e.get("state", 1) != 0
-print("absent" if not seen else "on" if on else "off")
+root, ids = pathlib.Path(sys.argv[1]), set(sys.argv[2].split())
+off = []
+for profile in sorted(list(root.glob("Default")) + list(root.glob("Profile *"))):
+    if not (profile / "Preferences").exists():
+        continue
+    settings, name = {}, profile.name
+    for f in ("Preferences", "Secure Preferences"):
+        try: d = json.loads((profile / f).read_text())
+        except Exception: continue
+        settings.update(d.get("extensions", {}).get("settings", {}))
+        name = d.get("profile", {}).get("name") or name
+    on = any(not settings[i].get("disable_reasons") and settings[i].get("state", 1) != 0
+             for i in ids & settings.keys())
+    if not on:
+        off.append(name.replace(" ", "_"))
+print("on" if not off else "off:" + ",".join(off))
 PY
 )
     [ "$ext_state" = "on" ] || ext_off="$ext_off $name($ext_state)"
@@ -199,7 +210,7 @@ else
     fi
 
     if [ -z "$ext_off" ]; then
-        ok "Hisn extension" "installed and switched on in every installed browser"
+        ok "Hisn extension" "installed and switched on in every profile of every installed browser"
     else
         open "Hisn extension" "not running in:$ext_off — no page-text checking there"
     fi

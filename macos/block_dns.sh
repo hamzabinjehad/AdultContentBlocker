@@ -193,18 +193,24 @@ if [ "$MODE" = "merge" ]; then
     [ "$DRY" -eq 1 ] && TARGET=/tmp/hosts.hisn-merge-preview
 
     NEW_ONLY=$(mktemp)
-    # Everything already blocked, apex form, ignoring our own previous block.
+    # Every host name already blocked, exactly as written, ignoring our own
+    # previous block. Exact on both sides: this once stripped `www.` from the
+    # existing entries, so a file blocking only www.example.com counted
+    # example.com as covered and the apex was never added. A line may name
+    # several hosts, and a sinkhole may be 127.0.0.1 or :: as well as 0.0.0.0.
     sed "/^${BEGIN_MARK}$/,/^${END_MARK}$/d" /etc/hosts \
-        | awk '$1 == "0.0.0.0" { d = $2; sub(/^www\./, "", d); print d }' \
+        | awk '$1 == "0.0.0.0" || $1 == "127.0.0.1" || $1 == "::" || $1 == "::1" {
+                   for (i = 2; i <= NF && $i !~ /^#/; i++) print tolower($i) }' \
         | sort -u > "$NEW_ONLY.have"
-    grep -v '^#' "$LIST" | grep -v '^$' | sort -u > "$NEW_ONLY.want"
+    grep -v '^#' "$LIST" | grep -v '^$' | awk '{ print $0; print "www." $0 }' \
+        | sort -u > "$NEW_ONLY.want"
     comm -13 "$NEW_ONLY.have" "$NEW_ONLY.want" > "$NEW_ONLY"
 
     ADD=$(wc -l < "$NEW_ONLY" | tr -d ' ')
     HAVE=$(wc -l < "$NEW_ONLY.have" | tr -d ' ')
-    echo "already blocked: $HAVE"
-    echo "this list:       $COUNT"
-    echo "new to add:      $ADD  (plus a www. line each)"
+    echo "already blocked: $HAVE host names"
+    echo "this list:       $COUNT domains (each with its www. name)"
+    echo "new to add:      $ADD host names"
     echo
 
     if [ "$DRY" -eq 0 ]; then
@@ -222,9 +228,9 @@ if [ "$MODE" = "merge" ]; then
 
     {
         echo "$BEGIN_MARK"
-        echo "# $ADD domains not already present, generated $(date -u +%FT%TZ)"
+        echo "# $ADD host names not already present, generated $(date -u +%FT%TZ)"
         echo "# Remove with: sudo macos/block_dns.sh --undo"
-        awk '{print "0.0.0.0 " $0 "\n0.0.0.0 www." $0}' "$NEW_ONLY"
+        awk '{print "0.0.0.0 " $0}' "$NEW_ONLY"
         echo "$END_MARK"
     } >> "$TARGET"
 
