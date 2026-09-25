@@ -13,48 +13,185 @@
     "endpoints and university departments reachable."
   ],
   "cases": [
-    { "host": "arab-sex-tube.com", "block": true,
-      "why": "the core case: a brand-new domain no list has yet, caught on a token" },
-    { "host": "sks-arab.net", "block": true,
-      "why": "Franco-Arabic token between separators" },
-    { "host": "www.pornhub.com", "block": true, "why": "unambiguous substring" },
-    { "host": "bestpornsite.io", "block": true,
-      "why": "substring matching is what catches a concatenated label with no separators" },
-    { "host": "xnxx-videos.co", "block": true, "why": "substring" },
-    { "host": "cdn.xvideos-media.net", "block": true,
-      "why": "a subdomain of an adult host still matches" },
-    { "host": "essex-porn.com", "block": true,
-      "why": "CRITICAL: an innocent token must not grant the rest of the host immunity" },
-    { "host": "sharmota123.com", "block": true,
-      "why": "a trailing digit run is hostname decoration, stripped before matching" },
-    { "host": "3ahira-arab.com", "block": true,
-      "why": "a LEADING digit is a Franco-Arabic letter and must survive" },
-
-    { "host": "essex.gov.uk", "block": false,
-      "why": "Essex County Council — the canonical Scunthorpe-problem failure" },
-    { "host": "sussex.ac.uk", "block": false, "why": "University of Sussex" },
-    { "host": "middlesex.edu", "block": false, "why": "Middlesex University" },
-    { "host": "scunthorpe.gov.uk", "block": false, "why": "the problem's namesake" },
-    { "host": "analytics.google.com", "block": false,
-      "why": "'anal' inside 'analytics' — would break measurement on every site" },
-    { "host": "analysis.example.org", "block": false, "why": "'anal' inside 'analysis'" },
-    { "host": "assets.example.com", "block": false,
-      "why": "'ass' inside 'assets' — would break the asset host of half the web" },
-    { "host": "classroom.google.com", "block": false, "why": "'ass' inside 'class'" },
-    { "host": "institute.edu", "block": false, "why": "'tit' inside 'institute'" },
-    { "host": "constitution.org", "block": false, "why": "'tit' inside 'constitution'" },
-    { "host": "docs.google.com", "block": false, "why": "'cum' inside 'document' paths" },
-    { "host": "tasks.office.com", "block": false,
-      "why": "CRITICAL: 'sks' inside 'tasks' — as a substring this single Franco-Arabic term would block a large fraction of the web" },
-    { "host": "risks.example.com", "block": false, "why": "'sks' inside 'risks'" },
-    { "host": "kosher-food.com", "block": false, "why": "'kos' inside 'kosher'" },
-    { "host": "therapist.com", "block": false, "why": "contains 'rapist' by accident" },
-    { "host": "apple.com", "block": false, "why": "the plainest possible negative" },
-    { "host": "github.com", "block": false, "why": "developer infrastructure" },
-    { "host": "who.int", "block": false, "why": "public health" },
-
-    { "host": "PORNHUB.COM", "block": true, "why": "matching is case-insensitive" },
-    { "host": "pornhub.com.", "block": true,
-      "why": "an absolute FQDN's trailing dot must not bypass the keyword layer, exactly as it must not bypass the domain list" }
+    {
+      "host": "arab-sex-tube.com",
+      "block": true,
+      "why": "the core case: a brand-new domain no list has yet, caught on a token"
+    },
+    {
+      "host": "sks-arab.net",
+      "block": true,
+      "why": "Franco-Arabic token between separators"
+    },
+    {
+      "host": "www.pornhub.com",
+      "block": true,
+      "why": "unambiguous substring"
+    },
+    {
+      "host": "bestpornsite.io",
+      "block": true,
+      "why": "substring matching is what catches a concatenated label with no separators"
+    },
+    {
+      "host": "xnxx-videos.co",
+      "block": true,
+      "why": "substring"
+    },
+    {
+      "host": "cdn.xvideos-media.net",
+      "block": true,
+      "why": "a subdomain of an adult host still matches"
+    },
+    {
+      "host": "essex-porn.com",
+      "block": true,
+      "why": "CRITICAL: an innocent token must not grant the rest of the host immunity"
+    },
+    {
+      "host": "sharmota123.com",
+      "block": true,
+      "why": "a trailing digit run is hostname decoration, stripped before matching"
+    },
+    {
+      "host": "3ahira-arab.com",
+      "block": true,
+      "why": "a LEADING digit is a Franco-Arabic letter and must survive"
+    },
+    {
+      "host": "essex.gov.uk",
+      "block": false,
+      "why": "Essex County Council — the canonical Scunthorpe-problem failure"
+    },
+    {
+      "host": "sussex.ac.uk",
+      "block": false,
+      "why": "University of Sussex"
+    },
+    {
+      "host": "middlesex.edu",
+      "block": false,
+      "why": "Middlesex University"
+    },
+    {
+      "host": "scunthorpe.gov.uk",
+      "block": false,
+      "why": "the problem's namesake"
+    },
+    {
+      "host": "analytics.google.com",
+      "block": false,
+      "why": "'anal' inside 'analytics' — would break measurement on every site"
+    },
+    {
+      "host": "analysis.example.org",
+      "block": false,
+      "why": "'anal' inside 'analysis'"
+    },
+    {
+      "host": "assets.example.com",
+      "block": false,
+      "why": "'ass' inside 'assets' — would break the asset host of half the web"
+    },
+    {
+      "host": "classroom.google.com",
+      "block": false,
+      "why": "'ass' inside 'class'"
+    },
+    {
+      "host": "institute.edu",
+      "block": false,
+      "why": "'tit' inside 'institute'"
+    },
+    {
+      "host": "constitution.org",
+      "block": false,
+      "why": "'tit' inside 'constitution'"
+    },
+    {
+      "host": "docs.google.com",
+      "block": false,
+      "why": "'cum' inside 'document' paths"
+    },
+    {
+      "host": "tasks.office.com",
+      "block": false,
+      "why": "CRITICAL: 'sks' inside 'tasks' — as a substring this single Franco-Arabic term would block a large fraction of the web"
+    },
+    {
+      "host": "risks.example.com",
+      "block": false,
+      "why": "'sks' inside 'risks'"
+    },
+    {
+      "host": "kosher-food.com",
+      "block": false,
+      "why": "'kos' inside 'kosher'"
+    },
+    {
+      "host": "therapist.com",
+      "block": false,
+      "why": "contains 'rapist' by accident"
+    },
+    {
+      "host": "apple.com",
+      "block": false,
+      "why": "the plainest possible negative"
+    },
+    {
+      "host": "github.com",
+      "block": false,
+      "why": "developer infrastructure"
+    },
+    {
+      "host": "who.int",
+      "block": false,
+      "why": "public health"
+    },
+    {
+      "host": "PORNHUB.COM",
+      "block": true,
+      "why": "matching is case-insensitive"
+    },
+    {
+      "host": "pornhub.com.",
+      "block": true,
+      "why": "an absolute FQDN's trailing dot must not bypass the keyword layer, exactly as it must not bypass the domain list"
+    },
+    {
+      "host": "jins.com",
+      "block": false,
+      "why": "JINS eyewear: a brand whose name is a romanised Arabic term (keyword_exempt_hosts)"
+    },
+    {
+      "host": "shop.koss.com",
+      "block": false,
+      "why": "Koss headphones, and its subdomains"
+    },
+    {
+      "host": "www.kos.gr",
+      "block": false,
+      "why": "the island of Kos"
+    },
+    {
+      "host": "jins-sex.example",
+      "block": true,
+      "why": "the exemption is for jins.com, not for every host with the token"
+    },
+    {
+      "host": "ci.milford.ct.us",
+      "block": false,
+      "why": "Milford, a town: the innocent token is removed before the `milf` substring test"
+    },
+    {
+      "host": "pornic.fr",
+      "block": false,
+      "why": "Pornic, a town in France"
+    },
+    {
+      "host": "milford-milfs.example",
+      "block": true,
+      "why": "an innocent token does not immunise the rest of the host"
+    }
   ]
 }

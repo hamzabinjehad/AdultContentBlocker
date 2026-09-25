@@ -77,6 +77,9 @@ public final class BlocklistStore {
     private var hostTokens: Set<String> = []
     private var hostSubstrings: [String] = []
     private var neverKeyword: Set<String> = []
+    /// Sites whose own name collides with a term (keyword_exempt_hosts.txt):
+    /// the keyword layer steps aside for them and their subdomains.
+    private var keywordExemptHosts: Set<String> = []
     private var _version: Int = 0
     private var _domainCount: Int = 0
 
@@ -104,6 +107,16 @@ public final class BlocklistStore {
         set { queue.sync(flags: .barrier) { _versionFloor = max(_versionFloor, newValue) } }
     }
     private var _versionFloor: Int = 0
+
+    /// The published domain list is raw DEFLATE (`domains.packed.deflate`,
+    /// see build.py): the plain file is over GitHub's 100 MiB limit.
+    public static func inflate(_ data: Data) throws -> Data {
+        do {
+            return try (data as NSData).decompressed(using: .zlib) as Data
+        } catch {
+            throw LoadError.malformed("domains.packed.deflate does not inflate")
+        }
+    }
 
     public static func sha256Hex(_ data: Data) -> String {
         SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
@@ -218,6 +231,15 @@ public final class BlocklistStore {
     private func hostMatchesTerm(_ host: String) -> Bool {
         guard !hostTokens.isEmpty || !hostSubstrings.isEmpty else { return false }
 
+        // A site named with a term — jins.com, koss.com — and its subdomains.
+        let labels = host.lowercased().trimmingCharacters(in: Self.hostTrimSet)
+            .split(separator: ".").map(String.init)
+        if labels.count >= 2, (0..<(labels.count - 1)).contains(where: {
+            keywordExemptHosts.contains(labels[$0...].joined(separator: "."))
+        }) {
+            return false
+        }
+
         let cleaned = TextNormalizer.normalize(
             Punycode.decodeHost(
                 host.trimmingCharacters(in: Self.hostTrimSet)))
@@ -243,7 +265,8 @@ public final class BlocklistStore {
     /// Install the keyword layer.
     public func setHostTerms(tokens: [String],
                              substrings: [String],
-                             neverKeyword: [String]) {
+                             neverKeyword: [String],
+                             exemptHosts: [String] = []) {
         let t = Set(tokens.map { TextNormalizer.normalize($0) }.filter { !$0.isEmpty })
         let sub = substrings.map { TextNormalizer.normalize($0) }.filter { !$0.isEmpty }
         let never = Set(neverKeyword.map { TextNormalizer.normalize($0) }
@@ -252,6 +275,7 @@ public final class BlocklistStore {
             self.hostTokens = t
             self.hostSubstrings = sub
             self.neverKeyword = never
+            self.keywordExemptHosts = Set(exemptHosts.map { $0.lowercased() })
         }
     }
 
@@ -270,6 +294,7 @@ public final class BlocklistStore {
             struct HostTerm: Decodable { let t: String; let kind: String }
             let host_terms: [HostTerm]
             let never_keyword: [String]
+            let keyword_exempt_hosts: [String]?
         }
         guard let payload = try? JSONDecoder().decode(Payload.self, from: termsData)
         else { throw LoadError.malformed("terms.json") }
@@ -277,7 +302,8 @@ public final class BlocklistStore {
         setHostTerms(
             tokens: payload.host_terms.filter { $0.kind == "token" }.map(\.t),
             substrings: payload.host_terms.filter { $0.kind == "substring" }.map(\.t),
-            neverKeyword: payload.never_keyword)
+            neverKeyword: payload.never_keyword,
+            exemptHosts: payload.keyword_exempt_hosts ?? [])
 
         NSLog("[Hisn] keyword layer installed: %d terms, %d guards",
               payload.host_terms.count, payload.never_keyword.count)

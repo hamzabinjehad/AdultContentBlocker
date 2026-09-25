@@ -34,7 +34,7 @@ public actor ListUpdater {
     /// What the shared container holds after a successful update, in the
     /// order they are written. `FilterDataProvider` reads exactly these.
     public static let generationFiles = ["manifest.json", "manifest.json.sig",
-                                         "domains.packed", "terms.json"]
+                                         "domains.packed.deflate", "terms.json"]
 
     public enum GenerationError: LocalizedError {
         case incomplete(String)
@@ -81,10 +81,10 @@ public actor ListUpdater {
         do {
             async let manifestBytes = data("manifest.json")
             async let sigBytes = data("manifest.json.sig")
-            async let domainBytes = data("domains.packed")
+            async let domainBytes = data("domains.packed.deflate")
             async let termBytes = data("terms.json")
 
-            let (manifest, sig, domains, terms) =
+            let (manifest, sig, deflated, terms) =
                 try await (manifestBytes, sigBytes, domainBytes, termBytes)
             let signature = String(decoding: sig, as: UTF8.self)
 
@@ -95,6 +95,16 @@ public actor ListUpdater {
             let store = BlocklistStore.shared
             let verified = try store.verifiedManifest(manifestData: manifest,
                                                       signatureHex: signature)
+            // The download is checked against the signed hash BEFORE it is
+            // inflated — nothing unverified is decompressed — and the result
+            // is checked again as `domains.packed` by `store.load` below.
+            guard let deflateSHA = verified.artifacts["domains.packed.deflate"]?.sha256 else {
+                throw GenerationError.incomplete("domains.packed.deflate")
+            }
+            guard BlocklistStore.sha256Hex(deflated) == deflateSHA else {
+                throw GenerationError.hashMismatch("domains.packed.deflate")
+            }
+            let domains = try BlocklistStore.inflate(deflated)
             guard let termsSHA = verified.artifacts["terms.json"]?.sha256 else {
                 throw GenerationError.incomplete("terms.json")
             }
@@ -117,7 +127,7 @@ public actor ListUpdater {
             // filter is the normal state without the paid entitlements.
             if FilterLink.shared.isConfigured,
                let reply = await FilterLink.shared.installGeneration(
-                   manifest: manifest, signature: sig, domains: domains, terms: terms),
+                   manifest: manifest, signature: sig, domains: deflated, terms: terms),
                !reply.installed {
                 NSLog("[Hisn] the filter refused generation v%d: %@", store.version,
                       reply.error ?? "no reason given")

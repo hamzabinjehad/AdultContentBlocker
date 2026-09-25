@@ -30,6 +30,10 @@ concurrency:
   group: blocklist-publish
   cancel-in-progress: false
 
+defaults:
+  run:
+    shell: bash      # bash -eo pipefail; the implicit default has no pipefail
+
 jobs:
   # The whole suite — Python, seed gate, extension, macOS — before a single
   # byte is published. The list build is a supply-chain step for every client,
@@ -61,16 +65,31 @@ jobs:
       # manifest, not from 1: a fresh install holds the seed's version, and a
       # first publish numbered below it would be rejected by every client as a
       # rollback until the daily builds climbed past it.
+      #
+      # Read from git, not raw.githubusercontent.com: a CDN-cached or failed
+      # fetch (429, 5xx, timeout) used to fall back to the SEED's version and
+      # publish v5 over a published v40 — which every installed client then
+      # rejected as a rollback, along with every build after it. The seed is
+      # the starting point only when the lists branch does not exist at all.
       - name: Fetch previous manifest
         run: |
-          mkdir -p dist
-          if curl -fsSL -o dist/manifest.json \
-              "https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/lists/manifest.json"; then
-            echo "previous published version: $(python3 -c "import json;print(json.load(open('dist/manifest.json'))['version'])")"
+          mkdir -p dist prev
+          set +e
+          git ls-remote --exit-code --heads origin lists > /dev/null
+          rc=$?
+          set -e
+          if [ "$rc" -eq 0 ]; then
+            git fetch --depth=1 origin lists
+            git show FETCH_HEAD:manifest.json > prev/manifest.json
+          elif [ "$rc" -eq 2 ]; then
+            echo "no lists branch yet; continuing from the seed"
+            cp seed/manifest.json prev/manifest.json
           else
-            cp seed/manifest.json dist/manifest.json
-            echo "no published list yet; continuing from seed version $(python3 -c "import json;print(json.load(open('dist/manifest.json'))['version'])")"
+            echo "::error::could not ask origin for the lists branch (exit $rc)"
+            exit 1
           fi
+          python3 -c "import json,sys; v=json.load(open('prev/manifest.json'))['version']; assert isinstance(v,int), v; print('previous version:', v)"
+          cp prev/manifest.json dist/manifest.json
 
       - name: Write signing key
         env:
@@ -96,6 +115,23 @@ jobs:
           python3 blocklist/keys.py verify \
             --dist dist \
             --pub blocklist/public_key.hex
+
+      # The lockout checks against THIS build — known adult domains blocked,
+      # critical infrastructure not — rather than only CI's separate one.
+      - name: Real-artifact checks on the signed build
+        run: |
+          cd blocklist && python3 test_build.py 2>&1 | tee "$RUNNER_TEMP/test_build.log"
+          if grep -q "skipped=" "$RUNNER_TEMP/test_build.log"; then
+            echo "::error::real-artifact checks skipped"; exit 1
+          fi
+
+      # Compared with the PREVIOUS published list, not with a floor a tenth of
+      # a normal build: version up, every core source present, nothing
+      # collapsed, nothing over GitHub's file-size limit.
+      - name: Publish guard
+        run: |
+          python3 blocklist/publish_guard.py --previous prev/manifest.json \
+            --new dist/manifest.json --sources blocklist/sources.json --dist dist
 
       # A build that collapses to a fraction of its usual size almost always
       # means an upstream source changed format or started returning an error
@@ -173,7 +209,12 @@ jobs:
           git config user.email "bot@users.noreply.github.com"
           VERSION=$(python3 -c "import json;print(json.load(open('dist/manifest.json'))['version'])")
           rm -rf /tmp/publish && mkdir -p /tmp/publish
-          cp dist/* /tmp/publish/
+          # Only what clients download. domains.txt and domains.packed are
+          # each ~128 MiB, over GitHub's 100 MiB limit: pushing them failed
+          # every run, so no install ever received an update.
+          for f in $(python3 -c "import sys; sys.path.insert(0,'blocklist'); import publish_guard as g; print(' '.join(g.PUBLISHED))"); do
+            cp "dist/$f" /tmp/publish/
+          done
           git checkout --orphan lists-tmp
           git rm -rf --cached . >/dev/null 2>&1 || true
           find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +

@@ -87,7 +87,7 @@
     }
   ],
   "_never_block_comment": "SAFETY RAIL, applied last, after every upstream source. A poisoned or sloppy upstream list that blocks apple.com would brick the machine AND lock the user out of asking for help. Two tiers, because they are NOT the same problem.",
-  "_never_block_suffix_comment": "Tier 1 — the domain and its entire subtree are protected. Only for infrastructure the OS itself depends on, where no subdomain will ever be adult content.",
+  "_never_block_suffix_comment": "Tier 1 — the domain and its entire subtree are protected. Only for infrastructure the OS itself depends on, where no subdomain will ever be adult content — and the exact hosts Hisn itself depends on: the update channel (raw.githubusercontent.com), the extension store and its update service, and the DoH resolvers the profile points at. One upstream list naming the update host would otherwise make every install block its own fix.",
   "never_block_suffix": [
     "apple.com",
     "icloud.com",
@@ -107,7 +107,18 @@
     "verisign.com",
     "ntp.org",
     "pool.ntp.org",
-    "hisn.app"
+    "hisn.app",
+    "raw.githubusercontent.com",
+    "objects.githubusercontent.com",
+    "clients2.google.com",
+    "clients2.googleusercontent.com",
+    "update.googleapis.com",
+    "chromewebstore.googleapis.com",
+    "chrome.google.com",
+    "accounts.google.com",
+    "family.cloudflare-dns.com",
+    "doh.cleanbrowsing.org",
+    "family.adguard-dns.com"
   ],
   "_never_block_apex_comment": "Tier 2 — ONLY the apex (and www.) is protected; subdomains stay blockable. This is the tier for shared CDNs and shared hosting. Blocking all of cloudfront.net would break half the web, but d1a7uvtoy0lh7u.cloudfront.net serving a porn CDN must stay blocked. Tier 1 would silently unblock every adult site hosted on a big CDN — a large, invisible hole.",
   "never_block_apex": [

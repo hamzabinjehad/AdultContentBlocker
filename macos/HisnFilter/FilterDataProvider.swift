@@ -553,6 +553,13 @@ final class FilterDataProvider: NEFilterDataProvider {
             guard m.domain_count > 100_000 else {
                 throw BlocklistStore.LoadError.tooSmall(m.domain_count)
             }
+            // The app sends the list as published — deflated — and it is
+            // checked against the signed hash before it is inflated here.
+            var domains = domains
+            if let packedSHA = m.artifacts["domains.packed.deflate"]?.sha256,
+               BlocklistStore.sha256Hex(domains) == packedSHA {
+                domains = try BlocklistStore.inflate(domains)
+            }
             for (name, bytes) in [("domains.packed", domains), ("terms.json", terms)] {
                 guard let want = m.artifacts[name]?.sha256 else {
                     throw BlocklistStore.LoadError.malformed("\(name) missing from manifest")

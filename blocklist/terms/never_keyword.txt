@@ -122,3 +122,9 @@ cockermouth
 lightwater
 arsenal
 shitake
+
+# --- starts with "milf" / "porn" (substring terms) ---------------------------
+# A town name, not the term: ci.milford.ct.us, milford-haven.example, pornic.fr.
+# Each also becomes a "not followed by" guard on the browser's URL rule (build.py).
+milford
+pornic

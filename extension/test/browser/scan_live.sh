@@ -74,10 +74,25 @@ class H(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
     def log_message(self, *a): pass
-srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), H)
-ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-ctx.load_cert_chain(f"{work}/cert.pem", f"{work}/key.pem")
-srv.socket = ctx.wrap_socket(srv.socket, server_side=True)
+CTX = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+CTX.load_cert_chain(f"{work}/cert.pem", f"{work}/key.pem")
+class TLSServer(http.server.ThreadingHTTPServer):
+    # A deep backlog, and each TLS handshake in its connection's own thread
+    # rather than inside accept(): with socketserver's queue of 5 and the
+    # handshakes serialised, a dozen frames connecting at once overflowed
+    # the queue and macOS reset whichever connection came last.
+    request_queue_size = 128
+    daemon_threads = True
+    def get_request(self):
+        sock, addr = self.socket.accept()
+        return CTX.wrap_socket(sock, server_side=True, do_handshake_on_connect=False), addr
+    def finish_request(self, request, client_address):
+        try:
+            request.do_handshake()
+        except (ssl.SSLError, OSError):
+            return
+        super().finish_request(request, client_address)
+srv = TLSServer(("127.0.0.1", 0), H)
 print(srv.server_address[1], flush=True)
 srv.serve_forever()
 PY

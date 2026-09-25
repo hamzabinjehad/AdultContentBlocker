@@ -51,7 +51,8 @@ def matcher(payload: dict):
     tokens = {r["t"] for r in payload["host_terms"] if r["kind"] == "token"}
     substrings = {r["t"] for r in payload["host_terms"] if r["kind"] == "substring"}
     never = set(payload["never_keyword"])
-    return lambda host: host_matches(host, tokens, substrings, never)
+    exempt = set(payload.get("keyword_exempt_hosts", []))
+    return lambda host: host_matches(host, tokens, substrings, never, exempt)
 
 
 # --------------------------------------------------------------------------- #

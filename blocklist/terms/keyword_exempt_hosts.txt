@@ -1,0 +1,17 @@
+# Sites whose own NAME collides with a hostname keyword term.
+#
+# The host keyword layer blocks a whole site when a label of its name is a
+# term — which is how it catches an adult domain registered today. A few of
+# the romanised Arabic terms are also ordinary brand and place names, and for
+# exactly those sites (and their subdomains) the KEYWORD layer steps aside.
+# The domain blocklist, the page-text check and strict mode still apply.
+#
+# Every entry needs a case in host_cases.json naming it. Keep it to real,
+# established sites; never add an adult domain to get it through — the domain
+# list would still block it, and this file would then be lying.
+
+# kos / koss / jins — romanised Arabic slang, and:
+jins.com
+jins-global.com
+koss.com
+kos.gr

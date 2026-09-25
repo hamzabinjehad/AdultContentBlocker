@@ -5,35 +5,39 @@
       "sha256": "ff6fc19e4d3804ae21f4a1fe51d6c8d695986591fd13cd8fff06315921a8706f"
     },
     "dnr_keyword_rules.json": {
-      "bytes": 68666,
-      "sha256": "debb8f690f0d9dabb39c6b4f56e074dfeb6d2c65c805c88eb4dee97b8e634e9b"
+      "bytes": 75892,
+      "sha256": "64169547ca864472ec4b757ac439fa5f08118d72c8723b5579f414f26b9f43e4"
     },
     "domains.index": {
       "bytes": 8192,
       "sha256": "7d2c7ac4888bfd75cd5f56e8d61f69595121183afc81556c876732fd3782c62f"
     },
     "domains.packed": {
-      "bytes": 134238612,
-      "sha256": "995a5de6da41d4969228d8323f222633627caf178f56b7eb6666333d74e38514"
+      "bytes": 134239009,
+      "sha256": "ea6fb5de33a460c77f63c18770789cd0d809b4a2a14dc25a2438f6b5ea985836"
+    },
+    "domains.packed.deflate": {
+      "bytes": 20935626,
+      "sha256": "6a11b6014950f055abacb539a1bfbe2b61b795777c1e20cfde6807ddb77011f2"
     },
     "domains.txt": {
-      "bytes": 134238744,
-      "sha256": "c13adf38528719a1c2d6cb4e0ce5d7cf07e01e71abcd8e6211fd5a430ee4025f"
+      "bytes": 134239141,
+      "sha256": "22abb431d1c3139274cfeb77a338b0ecf243d28847a97a42aeff92e46440349d"
     },
     "domains_core.txt": {
       "bytes": 1851814,
-      "sha256": "f3c5e89aa62f35913b71178183955f1c111b3c5f851b6069a025445fdf69947d"
+      "sha256": "259feacf5208b352fceb9a26257038ddf7091c27a25188ded640dded9c7c0c98"
     },
     "terms.json": {
-      "bytes": 288254,
-      "sha256": "000df06f6b364efadc9b0f858011c38ebaa53e98df5382e172ec8f72b7b4229a"
+      "bytes": 288347,
+      "sha256": "addd7d0dc2e51a29fee29a43342b68aa35c8d9a81ab37354f64034dde1715e16"
     }
   },
-  "built_at": "2026-09-25T14:20:46+00:00",
+  "built_at": "2026-09-25T19:03:08+00:00",
   "core_domain_count": 117243,
   "dnr_keyword_rule_count": 110,
   "dnr_rule_count": 236,
-  "domain_count": 5204923,
+  "domain_count": 5204961,
   "host_term_count": 110,
   "never_block_removed": 4,
   "schema": 1,
@@ -54,7 +58,7 @@
       "ok": true
     },
     {
-      "domains": 469314,
+      "domains": 469344,
       "id": "oisd-nsfw",
       "ok": true
     },

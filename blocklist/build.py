@@ -34,6 +34,7 @@ import os
 import re
 import sys
 import urllib.request
+import zlib
 from pathlib import Path
 
 from terms import compile_terms, lang_counts, serialize_terms
@@ -290,6 +291,30 @@ def write_dnr_rules(path: Path, domains: list[str], mode: str, limit: int) -> in
 MAX_REGEX_RULES = 500
 
 
+def _not_followed_by(suffixes: list[str]) -> str:
+    """RE2 has no lookahead. Match the end, or any continuation that does not
+    spell out one of `suffixes` — built from a trie of them, so `milf` with the
+    guard `ord` becomes milf(?:$|[^o]|o(?:$|[^r]|r(?:$|[^d])))."""
+    trie: dict = {}
+    for suf in suffixes:
+        node = trie
+        for ch in suf:
+            node = node.setdefault(ch, {})
+        node["$end"] = True
+
+    def build(node: dict) -> str:
+        chars = sorted(k for k in node if k != "$end")
+        parts = ["$", "[^" + "".join(chars) + "]"]
+        for ch in chars:
+            child = node[ch]
+            if child.get("$end"):
+                continue            # the whole innocent word: no match here
+            parts.append(re.escape(ch) + build(child))
+        return "(?:" + "|".join(parts) + ")"
+
+    return build(trie)
+
+
 def write_keyword_rules(path: Path, terms: list[dict], never: list[str],
                         exempt: list[str], start_id: int) -> int:
     """
@@ -325,29 +350,45 @@ def write_keyword_rules(path: Path, terms: list[dict], never: list[str],
         term = entry["t"]
         if term in never_set:
             continue
-        # A regex metacharacter in a term would silently change its meaning, and
-        # a term list is not a place to allow that.
-        if not re.fullmatch(r"[a-z0-9؀-ۿ]+", term):
+        # ASCII letters and digits only. A regex metacharacter would silently
+        # change a term's meaning; and Chrome sees a URL serialised — punycode
+        # host, everything else percent-encoded — so an Arabic-script term can
+        # never match, and as a urlFilter one non-ASCII rule makes Chrome
+        # reject a whole downloaded update.
+        if not re.fullmatch(r"[a-z0-9]+", term):
             continue
 
         if entry.get("kind") == "substring":
-            condition = {"urlFilter": term}
+            # Long, unambiguous terms: anywhere in the URL, so `?q=porn` is
+            # caught on a search engine that must itself stay reachable. Where
+            # an innocent word STARTS with the term (never_keyword.txt: milford,
+            # pornic) the rule says "not followed by the rest of it" — RE2 has no
+            # lookahead, so that is spelled out as a small alternation.
+            guards = sorted(w[len(term):] for w in never_set
+                            if w.startswith(term) and len(w) > len(term)
+                            and re.fullmatch(r"[a-z0-9]+", w))
+            if guards and regex_used < MAX_REGEX_RULES:
+                regex_used += 1
+                condition = {"regexFilter": re.escape(term) + _not_followed_by(guards),
+                             "isUrlFilterCaseSensitive": False}
+            else:
+                condition = {"urlFilter": term}
         else:
             if regex_used >= MAX_REGEX_RULES:
                 continue
             regex_used += 1
-            # The boundary: start, a character that is not an ASCII letter or
-            # digit, or a percent-escape. ASCII, because Chrome matches the URL
-            # as serialised — punycode host, everything else percent-encoded —
-            # so no other letter ever reaches this regex. And NOT \p{L}/\p{N}:
-            # those Unicode classes compile past DNR's per-regex memory limit,
-            # and Chrome silently dropped every rule written with them — none
-            # of these keyword rules had ever matched (test/browser/dnr.sh).
-            # The escape alternative: Chrome does not decode a query string,
-            # so `?q=hot%20sex` puts the digit `0` right before the term.
-            left = r"(?:^|[^a-z0-9]|%[0-9a-f]{2})"
-            right = r"(?:[^a-z0-9]|$)"
-            condition = {"regexFilter": f"{left}{re.escape(term)}{right}",
+            # Short, ambiguous terms: in the HOSTNAME only, as a whole label
+            # token (optionally followed by digits) — the same rule the Mac
+            # filter applies. They used to match anywhere in the URL, which
+            # blocked a Google search for "adult adhd", "summa cum laude",
+            # /genres/young-adult, /ford/escort and every form with ?sex=female.
+            # Searches are the page-text layer's and SafeSearch's job.
+            # ASCII classes only: \p{L}/\p{N} compile past DNR's per-regex
+            # memory limit and Chrome silently drops the rule
+            # (test/browser/dnr.sh).
+            condition = {"regexFilter": (r"^[a-z][a-z0-9+.-]*://(?:[^/?#]*[._-])?"
+                                         + re.escape(term)
+                                         + r"[0-9]*(?:[._:-][^/?#]*)?(?:[/?#]|$)"),
                          "isUrlFilterCaseSensitive": False}
 
         condition["resourceTypes"] = ["main_frame", "sub_frame"]
@@ -425,6 +466,13 @@ def main() -> int:
                               "error": str(exc)})
                 continue
             parsed = clean(PARSERS[src["format"]](text))
+            if not parsed:
+                # An error page, a login wall or a changed format that parses
+                # to nothing is a failure, not a source that happens to be empty.
+                print(f"  !! {src['id']}: FAILED (parsed to 0 domains)", file=sys.stderr)
+                stats.append({"id": src["id"], "ok": False, "domains": 0,
+                              "error": "parsed to 0 domains"})
+                continue
             raw[src["id"]] = parsed
             stats.append({"id": src["id"], "ok": True, "domains": len(parsed)})
             print(f"  ok {src['id']}: {len(parsed):,}", file=sys.stderr)
@@ -443,6 +491,14 @@ def main() -> int:
         return 1
 
     tier_of = {s["id"]: s.get("tier", "extended") for s in active}
+
+    # The core tier is what the browser ships and the filter falls back to;
+    # every source of it must be in the build, whatever the rest did.
+    failed_core = sorted(s["id"] for s in stats if not s["ok"] and tier_of.get(s["id"]) == "core")
+    if failed_core:
+        print(f"FATAL: core source(s) failed: {', '.join(failed_core)}. "
+              "Refusing to publish without them.", file=sys.stderr)
+        return 1
 
     merged: set[str] = set()
     core: set[str] = set()
@@ -482,10 +538,14 @@ def main() -> int:
     if args.version is not None:
         version = args.version
     elif prev_manifest.exists():
+        # A previous manifest that will not parse is a FAILURE, never "start
+        # again at 1": every installed client holds a higher version and would
+        # refuse this build, and every build after it, as a rollback.
         try:
             version = int(json.loads(prev_manifest.read_text())["version"]) + 1
-        except Exception:                                   # noqa: BLE001
-            version = 1
+        except Exception as e:                              # noqa: BLE001
+            raise SystemExit(f"FATAL: previous manifest {prev_manifest} unreadable ({e}); "
+                             "refusing to guess a version")
     else:
         version = 1
 
@@ -501,6 +561,13 @@ def main() -> int:
 
     # Newline-free packed form for the network extension: fast to mmap + split.
     (out / "domains.packed").write_text("\n".join(domains), encoding="utf-8")
+    # ...and the form that is actually PUBLISHED: raw DEFLATE (RFC 1951, what
+    # Apple's NSData .zlib decompresses). The full list is ~128 MiB and GitHub
+    # refuses any pushed file over 100 MiB, so publishing the packed file as is
+    # failed on every run and no install ever received an update. ~19 MiB.
+    packer = zlib.compressobj(9, zlib.DEFLATED, -15)
+    (out / "domains.packed.deflate").write_bytes(
+        packer.compress((out / "domains.packed").read_bytes()) + packer.flush())
 
     # The browser extension gets the CORE tier only. Chrome guarantees just
     # 30,000 static rules across all enabled rulesets, and a 19MB ruleset is
@@ -540,13 +607,15 @@ def main() -> int:
         out / "dnr_keyword_rules.json",
         terms_payload["host_terms"],
         terms_payload["never_keyword"],
-        terms_payload["exempt_domains"],
+        sorted(set(terms_payload["exempt_domains"])
+               | set(terms_payload.get("keyword_exempt_hosts", []))),
         start_id=n_rules + 1)
     print(f"Keyword rules: {n_keyword_rules} "
           f"(ids {n_rules + 1}–{n_rules + n_keyword_rules})", file=sys.stderr)
 
     artifacts = {}
     for name in ("domains.txt", "domains_core.txt", "domains.packed",
+                 "domains.packed.deflate",
                  "dnr_block_rules.json", "dnr_keyword_rules.json",
                  "domains.index", "terms.json"):
         p = out / name

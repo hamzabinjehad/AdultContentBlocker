@@ -241,12 +241,45 @@ class TestRealArtifacts(unittest.TestCase):
 
 class TestKeywordRules(unittest.TestCase):
 
-    def _regex(self, term="sex"):
+    def _rule(self, term="sex", kind="token", never=()):
         import tempfile
         with tempfile.NamedTemporaryFile(suffix=".json") as fh:
-            write_keyword_rules(Path(fh.name), [{"t": term, "kind": "token"}], [], [], 1)
-            rule = json.loads(Path(fh.name).read_text())[0]
-        return re.compile(rule["condition"]["regexFilter"], re.IGNORECASE)
+            write_keyword_rules(Path(fh.name), [{"t": term, "kind": kind}], list(never), [], 1)
+            rules = json.loads(Path(fh.name).read_text())
+        return rules[0]["condition"] if rules else None
+
+    def _regex(self, term="sex", kind="token", never=()):
+        return re.compile(self._rule(term, kind, never)["regexFilter"], re.IGNORECASE)
+
+    def test_token_terms_match_the_hostname_only(self):
+        """A short, ambiguous term blocks a SITE named with it, not every URL
+        that mentions it: `adult adhd`, `summa cum laude`, `?sex=female`."""
+        rx = self._regex()
+        for url in ["https://sex.example.com/", "https://hot-sex.example/", "https://sex-4u.example/x",
+                    "http://www.sex.example:8080/", "https://sex123.example/"]:
+            self.assertTrue(rx.search(url), url)
+        for url in ["https://www.google.com/search?q=hot%20sex", "https://example.com/sex/videos",
+                    "https://forms.example/?sex=female", "https://www.essex.gov.uk/",
+                    "https://example.com/sextant", "https://sextant.example/"]:
+            self.assertIsNone(rx.search(url), url)
+        adult = self._regex("adult")
+        self.assertIsNone(adult.search("https://www.google.com/search?q=adult%20adhd"))
+        self.assertIsNone(adult.search("https://books.example/genres/young-adult"))
+
+    def test_substring_terms_still_match_anywhere(self):
+        self.assertEqual(self._rule("porn", "substring")["urlFilter"], "porn")
+
+    def test_innocent_continuations_are_guarded(self):
+        """milf is not Milford; porn is not Pornic."""
+        rx = self._regex("milf", "substring", never=["milford"])
+        self.assertTrue(rx.search("https://example.com/?q=milf"))
+        self.assertTrue(rx.search("https://milfs.example/"))
+        self.assertIsNone(rx.search("https://ci.milford.ct.us/"))
+        self.assertIsNone(rx.search("https://www.milfordsound.org/"))
+        self.assertTrue(rx.search("https://milford-milf.example/"), "only the innocent word is excused")
+
+    def test_non_ascii_terms_never_reach_chrome(self):
+        self.assertIsNone(self._rule("سكس", "substring"))
 
     def test_no_unicode_classes(self):
         """\\p{L} and friends compile past DNR's per-regex memory limit, and
@@ -256,21 +289,52 @@ class TestKeywordRules(unittest.TestCase):
             write_keyword_rules(Path(fh.name), [{"t": "sex", "kind": "token"}], [], [], 1)
             rx = json.loads(Path(fh.name).read_text())[0]["condition"]["regexFilter"]
         self.assertNotIn("\\p{", rx)
-        self.assertLess(len(rx), 80)
+        self.assertLess(len(rx), 120)
 
-    def test_percent_escape_is_a_boundary(self):
-        """Chrome matches the raw URL: `?q=hot%20sex` puts the escape's digit
-        right before the term, and the plain boundary never matched it."""
-        rx = self._regex()
-        self.assertTrue(rx.search("https://www.google.com/search?q=hot%20sex"))
-        self.assertTrue(rx.search("https://example.com/search?q=sex"))
-        self.assertTrue(rx.search("https://example.com/sex/videos"))
+    def setUp(self):
+        from publish_guard import problems
+        self.problems = problems
+        self.prev = {"version": 40, "domain_count": 5_200_000, "core_domain_count": 117_000,
+                     "dnr_rule_count": 236,
+                     "sources": [{"id": "core-a", "ok": True, "domains": 64_000},
+                                 {"id": "ut1", "ok": True, "domains": 4_600_000}]}
 
-    def test_boundary_still_protects_ordinary_words(self):
-        rx = self._regex()
-        for url in ["https://www.essex.gov.uk/", "https://example.com/sextant",
-                    "https://example.com/?q=unisex%20shoes"]:
-            self.assertIsNone(rx.search(url), url)
+    def new(self, **over):
+        n = json.loads(json.dumps(self.prev))
+        n["version"] = 41
+        n.update(over)
+        return n
+
+    def test_a_normal_next_build_passes(self):
+        self.assertEqual(self.problems(self.prev, self.new(), {"core-a"}), [])
+
+    def test_version_must_increase(self):
+        self.assertTrue(self.problems(self.prev, self.new(version=40), {"core-a"}))
+        self.assertTrue(self.problems(self.prev, self.new(version=5), {"core-a"}),
+                        "a counter reset to the seed would freeze every client")
+
+    def test_losing_the_big_source_is_refused(self):
+        n = self.new(domain_count=600_000,
+                     sources=[{"id": "core-a", "ok": True, "domains": 64_000},
+                              {"id": "ut1", "ok": False, "domains": 0}])
+        self.assertTrue(any("domain_count" in p for p in self.problems(self.prev, n, {"core-a"})))
+
+    def test_a_core_source_that_returned_nothing_is_refused(self):
+        n = self.new(sources=[{"id": "core-a", "ok": True, "domains": 0},
+                              {"id": "ut1", "ok": True, "domains": 4_600_000}])
+        self.assertTrue(any("core source" in p for p in self.problems(self.prev, n, {"core-a"})))
+
+    def test_a_collapsing_source_is_refused(self):
+        n = self.new(sources=[{"id": "core-a", "ok": True, "domains": 64_000},
+                              {"id": "ut1", "ok": True, "domains": 1_000_000}])
+        self.assertTrue(any("ut1" in p for p in self.problems(self.prev, n, {"core-a"})))
+
+    def test_an_empty_browser_ruleset_is_refused(self):
+        self.assertTrue(self.problems(self.prev, self.new(dnr_rule_count=0), {"core-a"}))
+
+    def test_oversized_files_are_refused(self):
+        self.assertTrue(self.problems(self.prev, self.new(), {"core-a"},
+                                      {"domains.packed.deflate": 150 * 2**20}))
 
 
 class TestClientConfig(unittest.TestCase):
@@ -324,6 +388,13 @@ class TestClientConfig(unittest.TestCase):
                          f"https://raw.githubusercontent.com/{slug}/lists".lower(),
                          "clients would fetch lists from a repository the workflow never publishes to")
 
+    def test_the_update_host_can_never_be_blocked(self):
+        """If one upstream list names the update host, every install blocks the
+        very download that would fix it."""
+        host = re.match(r"https://([^/]+)/", self._js_base()).group(1)
+        cfg = json.loads((self.repo / "blocklist" / "sources.json").read_text())
+        self.assertIn(host, cfg["never_block_suffix"])
+
     def test_native_host_admits_the_unpacked_extension(self):
         """The unpacked extension's id is derived from the manifest `key`; the
         app writes it into the native-messaging manifest's allowed_origins.
@@ -346,7 +417,7 @@ class TestClientConfig(unittest.TestCase):
         build.py writes and lists in the manifest, or updates fail on
         `missing:<name>` at every install."""
         build = (self.repo / "blocklist" / "build.py").read_text(encoding="utf-8")
-        produced = set(re.findall(r'"([a-z_]+\.(?:json|packed|txt|index))"', build))
+        produced = set(re.findall(r'"([a-z_]+\.(?:json|packed|txt|index)(?:\.deflate)?)"', build))
         js = (self.repo / "extension" / "lib" / "generation.js").read_text(encoding="utf-8")
         js_wanted = set(re.findall(r'"([a-z_]+\.json)"', js.split("GENERATION_ARTIFACTS")[1].split("]")[0]))
         swift = (self.repo / "macos" / "Hisn" / "ListUpdater.swift").read_text(encoding="utf-8")

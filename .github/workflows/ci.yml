@@ -21,6 +21,13 @@ on:
 permissions:
   contents: read
 
+# `shell: bash` is `bash -eo pipefail` on the runners; the implicit default is
+# plain `bash -e`, under which `python3 test_build.py | tee log` took tee's
+# exit status and the lockout checks could never fail a run.
+defaults:
+  run:
+    shell: bash
+
 jobs:
   python:
     name: Python, seed bundle, and a real list build

@@ -236,6 +236,7 @@ def host_matches(
     token_terms: set[str],
     substring_terms: set[str],
     never_keyword: set[str],
+    exempt_hosts: set[str] = frozenset(),
 ) -> bool:
     """
     The reference client implementation, ported to Swift and JS.
@@ -244,6 +245,12 @@ def host_matches(
     the other two suites assert — the pattern `test_collapse_lookup_invariant`
     established for the domain list.
     """
+    # A site whose own name collides with a term (keyword_exempt_hosts.txt).
+    # Checked on the raw host, the domain and every parent of it.
+    labels = host.strip().strip(".").lower().split(".")
+    if any(".".join(labels[i:]) in exempt_hosts for i in range(len(labels) - 1)):
+        return False
+
     normalized = normalize(decode_punycode(host.strip().strip(".")))
     tokens = host_tokens(host)
 
@@ -369,6 +376,7 @@ def compile_terms(src: Path) -> dict:
         "host_terms": sorted(host_terms, key=lambda r: r["t"]),
         "never_keyword": never_keyword,
         "exempt_domains": read_list(src / "exempt_domains.txt"),
+        "keyword_exempt_hosts": read_list(src / "keyword_exempt_hosts.txt"),
     }
     validate(payload)
     return payload
