@@ -101,7 +101,17 @@ public final class FilterController: ObservableObject {
 
     /// Turn the filter off. Refused outright while a lock is running.
     public func disable() async throws {
-        guard !LockStore.isLocked() else { throw FilterError.lockedCannotDisable }
+        // Not on the app's own word. Its mirrors are the user's files and their
+        // clock a key in the user's defaults: with the clock forged to 2099 the
+        // app decided the lock was over and switched the filter off itself —
+        // and the filter's authority, which knew better, went down with it.
+        guard !EffectiveLock.isLocked else { throw FilterError.lockedCannotDisable }
+        if FilterLink.shared.isConfigured, isEnabled {
+            guard let status = await FilterLink.shared.status() else {
+                throw FilterError.configurationFailed("the filter did not confirm the lock is over")
+            }
+            guard !status.isLocked else { throw FilterError.lockedCannotDisable }
+        }
 
         let manager = NEFilterManager.shared()
         try await manager.loadFromPreferences()
@@ -117,7 +127,7 @@ public final class FilterController: ObservableObject {
     /// Re-arm silently and record it, so the state the user sees always matches
     /// the state that is actually enforced.
     public func reassertIfNeeded() async {
-        guard LockStore.isLocked(), FilterLink.shared.isConfigured else { return }
+        guard EffectiveLock.isLocked, FilterLink.shared.isConfigured else { return }
         await refresh()
         guard !isEnabled else { return }
 

@@ -46,11 +46,41 @@ public struct PolicyRecord: Codable, Equatable {
     public var stoppedDuringLock: Date?
     /// The accountability partner's public key (`PartnerService`), or nil.
     public var partnerKey: String?
+    /// Apps the browser guard leaves open during a lock. Kept here too, so a
+    /// `defaults write` of the app's copy mid-lock cannot exempt Tor Browser.
+    public var guardAllowed: [String] = []
     /// Incremented on every accepted change; picks the newer of the two
     /// on-disk copies.
     public var revision: Int = 0
 
     public init() {}
+
+    private enum CodingKeys: String, CodingKey {
+        case lock, releaseFirstSeen, allowlist, customBlocks, customTerms, blockedApps,
+             inspection, highWaterMark, listVersionFloor, stoppedDuringLock, partnerKey,
+             guardAllowed, revision
+    }
+
+    /// Every field optional on the way in. Synthesised decoding throws
+    /// `keyNotFound` for a field an older build never wrote — and then NEITHER
+    /// on-disk copy decodes, and the running lock, the rollback floor and the
+    /// partner key are gone the first time a filter update adds a field.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        lock = try c.decodeIfPresent(LockStore.LockState.self, forKey: .lock)
+        releaseFirstSeen = try c.decodeIfPresent(Date.self, forKey: .releaseFirstSeen)
+        allowlist = try c.decodeIfPresent([String].self, forKey: .allowlist) ?? []
+        customBlocks = try c.decodeIfPresent([String].self, forKey: .customBlocks) ?? []
+        customTerms = try c.decodeIfPresent([String].self, forKey: .customTerms) ?? []
+        blockedApps = try c.decodeIfPresent([String].self, forKey: .blockedApps) ?? []
+        inspection = try c.decodeIfPresent(Inspection.Settings.self, forKey: .inspection) ?? .default
+        highWaterMark = try c.decodeIfPresent(Date.self, forKey: .highWaterMark) ?? .distantPast
+        listVersionFloor = try c.decodeIfPresent(Int.self, forKey: .listVersionFloor) ?? 0
+        stoppedDuringLock = try c.decodeIfPresent(Date.self, forKey: .stoppedDuringLock)
+        partnerKey = try c.decodeIfPresent(String.self, forKey: .partnerKey)
+        guardAllowed = try c.decodeIfPresent([String].self, forKey: .guardAllowed) ?? []
+        revision = try c.decodeIfPresent(Int.self, forKey: .revision) ?? 0
+    }
 }
 
 /// One change the app asks the authority to make.
@@ -66,6 +96,11 @@ public enum PolicyRequest: Codable, Equatable {
     case setPartnerKey(String?)
     /// End the running lock on the partner's signed approval.
     case partnerRelease(approval: String)
+    /// The apps the browser guard leaves open. Add only while unlocked.
+    case setGuardAllowed([String])
+    /// The bridge: this browser's extension just checked in. Held in memory
+    /// only, never written down — it is evidence of liveness, not policy.
+    case checkIn(browser: String)
 }
 
 /// What the filter is actually doing, reported by the filter itself.
@@ -97,6 +132,11 @@ public struct PolicyStatus: Codable, Equatable {
     /// The authority's trusted time when it answered.
     public var now: Date
     public var health: FilterHealth
+    /// When each browser's extension last checked in through the bridge —
+    /// over the code-signed channel, so unlike the app's defaults it cannot
+    /// be forged to keep the browser guard quiet. Optional so an older
+    /// filter's reply still decodes.
+    public var checkIns: [String: Date]?
 
     public var isLocked: Bool { effectiveDeadline.map { now < $0 } ?? false }
 }
@@ -150,11 +190,15 @@ public enum PolicyAuthority {
     /// (the record is then unchanged).
     public static func apply(_ request: PolicyRequest, to record: PolicyRecord,
                              wall: Date) -> Result<PolicyRecord, PolicyRefusal> {
+        if case .checkIn = request { return .success(record) }   // not policy; see PolicyService
         var r = settle(record, wall: wall)
         let now = r.highWaterMark
         let locked = isLocked(r, now: now)
 
         switch request {
+        case .checkIn:
+            return .success(record)
+
         case let .proposeLock(proposed):
             guard proposed.deadline > now else {
                 return .failure(.init("That lock would already be over."))
@@ -215,18 +259,25 @@ public enum PolicyAuthority {
             }
             r.lock = nil
             r.releaseFirstSeen = nil
+
+        case let .setGuardAllowed(apps):
+            if locked, !Set(apps).subtracting(r.guardAllowed).isEmpty {
+                return .failure(.init("A lock is running, so apps can only be allowed again once it ends."))
+            }
+            r.guardAllowed = apps
         }
         r.revision += 1
         return .success(r)
     }
 
-    public static func status(_ record: PolicyRecord, health: FilterHealth) -> PolicyStatus {
+    public static func status(_ record: PolicyRecord, health: FilterHealth,
+                              checkIns: [String: Date]? = nil) -> PolicyStatus {
         let now = record.highWaterMark
         return PolicyStatus(record: record,
                             effectiveDeadline: isLocked(record, now: now)
                                 ? effectiveDeadline(record) : nil,
                             strictActive: strictActive(record, now: now),
-                            now: now, health: health)
+                            now: now, health: health, checkIns: checkIns)
     }
 }
 
@@ -256,12 +307,30 @@ public final class PolicyStore {
     }
 
     /// The newest copy that decodes, or an empty record if neither does.
+    ///
+    /// Copies that exist but will not decode are moved aside rather than left
+    /// for the next save to overwrite: they are the only record of a lock
+    /// that something went wrong with, and worth a person's look.
     public func load() -> PolicyRecord {
-        slots.compactMap { url -> PolicyRecord? in
-            guard let data = try? Data(contentsOf: url) else { return nil }
-            return try? JSONDecoder().decode(PolicyRecord.self, from: data)
+        var decoded: [PolicyRecord] = []
+        var unreadable: [URL] = []
+        for url in slots {
+            guard let data = try? Data(contentsOf: url) else { continue }
+            if let r = try? JSONDecoder().decode(PolicyRecord.self, from: data) {
+                decoded.append(r)
+            } else {
+                unreadable.append(url)
+            }
         }
-        .max(by: { $0.revision < $1.revision }) ?? PolicyRecord()
+        if decoded.isEmpty {
+            for url in unreadable {
+                let aside = url.appendingPathExtension("unreadable-\(Int(Date().timeIntervalSince1970))")
+                try? FileManager.default.moveItem(at: url, to: aside)
+                NSLog("[Hisn] CRITICAL: policy record %@ did not decode; kept as %@",
+                      url.lastPathComponent, aside.lastPathComponent)
+            }
+        }
+        return decoded.max(by: { $0.revision < $1.revision }) ?? PolicyRecord()
     }
 
     public func save(_ record: PolicyRecord) throws {
@@ -284,6 +353,7 @@ public final class PolicyService: @unchecked Sendable {
     private let health: () -> FilterHealth
     private let lock = OSAllocatedUnfairLock()
     private var record: PolicyRecord
+    private var checkIns: [String: Date] = [:]
     /// Called after every accepted change, with the new record, so the filter
     /// can re-read its enforcement state at once rather than on its next tick.
     public var onChange: ((PolicyRecord) -> Void)?
@@ -319,10 +389,18 @@ public final class PolicyService: @unchecked Sendable {
     }
 
     public func status() -> PolicyStatus {
-        PolicyAuthority.status(current(), health: health())
+        PolicyAuthority.status(current(), health: health(),
+                               checkIns: lock.withLockUnchecked { checkIns })
     }
 
     public func handle(_ request: PolicyRequest) -> PolicyResponse {
+        if case let .checkIn(browser) = request {
+            lock.withLockUnchecked {
+                if checkIns.count > 64 { checkIns.removeAll() }
+                checkIns[browser] = clock()
+            }
+            return PolicyResponse(accepted: true, refusal: nil, status: status())
+        }
         let result: Result<PolicyRecord, PolicyRefusal> = lock.withLockUnchecked {
             let outcome = PolicyAuthority.apply(request, to: record, wall: clock())
             if case let .success(next) = outcome {
@@ -331,7 +409,7 @@ public final class PolicyService: @unchecked Sendable {
             }
             return outcome
         }
-        let status = PolicyAuthority.status(current(), health: health())
+        let status = self.status()
         switch result {
         case let .success(next):
             onChange?(next)
@@ -391,50 +469,67 @@ public struct PolicyView: Equatable {
     /// The running lock, or nil when none is running.
     public var lock: LockStore.LockState?
     public var effectiveDeadline: Date?
+    /// Whether this copy says a lock is running — judged by THIS copy's own
+    /// clock when the view was made. The merge used to re-judge both copies
+    /// with the app's clock, whose high-water mark is a key in the user's
+    /// defaults: forging it to 2099 made the authority's running lock look
+    /// over, and the merge let the browser unlock.
+    public var locked: Bool
     public var allowlist: [String]
     public var customBlocks: [String]
     public var customTerms: [String]
     public var blockedApps: [String]
     public var inspection: Inspection.Settings
+    /// Apps the browser guard lets stay open during a lock.
+    public var guardAllowed: [String]
 
-    public init(lock: LockStore.LockState?, effectiveDeadline: Date?,
+    public init(lock: LockStore.LockState?, effectiveDeadline: Date?, locked: Bool? = nil,
                 allowlist: [String], customBlocks: [String], customTerms: [String],
-                blockedApps: [String], inspection: Inspection.Settings) {
+                blockedApps: [String], inspection: Inspection.Settings,
+                guardAllowed: [String] = []) {
         self.lock = lock
         self.effectiveDeadline = effectiveDeadline
+        self.locked = locked ?? (lock != nil && effectiveDeadline != nil)
         self.allowlist = allowlist
         self.customBlocks = customBlocks
         self.customTerms = customTerms
         self.blockedApps = blockedApps
         self.inspection = inspection
+        self.guardAllowed = guardAllowed
     }
 
+    /// Whether the lock this view describes is still running at `now` — for
+    /// the browser, which compares `lockUntil` with its own clock anyway.
     public func isLocked(at now: Date) -> Bool {
-        effectiveDeadline.map { now < $0 } ?? false
+        locked && (effectiveDeadline.map { now < $0 } ?? false)
     }
 
     /// What this user's own stores say.
-    public static func local(now: Date = LockStore.trustedNow()) -> PolicyView {
+    public static func local(now: Date = LockStore.trustedNow(),
+                             guardAllowed: [String] = []) -> PolicyView {
         let state = LockStore.read()
         let end = LockStore.effectiveDeadline(state)
         let running = now < end
         return PolicyView(lock: running ? state : nil,
                           effectiveDeadline: running ? end : nil,
+                          locked: running,
                           allowlist: SiteLists.allowlist(),
                           customBlocks: SiteLists.customBlocks(),
                           customTerms: UserBlocks.terms(),
                           blockedApps: UserBlocks.apps(),
-                          inspection: Inspection.read())
+                          inspection: Inspection.read(),
+                          guardAllowed: guardAllowed)
     }
 
-    /// What the filter's authority says.
+    /// What the filter's authority says, judged by the authority's own clock.
     public init(status: PolicyStatus) {
         let r = status.record
         self.init(lock: status.isLocked ? r.lock : nil,
                   effectiveDeadline: status.isLocked ? status.effectiveDeadline : nil,
+                  locked: status.isLocked,
                   allowlist: r.allowlist, customBlocks: r.customBlocks,
                   customTerms: r.customTerms, blockedApps: r.blockedApps,
-                  inspection: r.inspection)
+                  inspection: r.inspection, guardAllowed: r.guardAllowed)
     }
 }
 
@@ -442,39 +537,75 @@ public enum PolicyMerge {
 
     /// The stricter reading of two views of the same policy.
     ///
-    /// While either says a lock is running, every field takes its stricter
-    /// value: the later end, strict over standard, the union of blocks and
-    /// words and apps, the intersection of allowances, every check that
-    /// either has on. So neither copy can loosen what the other holds —
-    /// forging the user's defaults buys nothing while the authority says
-    /// otherwise, and a filter that lost its record cannot unlock the browser
-    /// while the app's mirrors still hold the lock.
+    /// While either says a lock is running, the fields come from the copies
+    /// that say so, and where both do, each takes its stricter value: the
+    /// later deadline, strict over standard, the union of blocks, words and
+    /// apps, the intersection of allowances, every check either has on. So
+    /// neither copy can loosen what the other holds — forging the user's
+    /// defaults buys nothing while the authority says otherwise, and a filter
+    /// that lost its record cannot unlock the browser while the mirrors hold
+    /// the lock.
     ///
-    /// With no lock anywhere, `editor` — the app's own copy, which the person
-    /// edits — is the answer, and the authority is brought into line with it.
-    public static func stricter(editor: PolicyView, other: PolicyView,
-                                now: Date) -> PolicyView {
-        guard editor.isLocked(at: now) || other.isLocked(at: now) else { return editor }
+    /// Only LOCKED copies are combined. An authority that has not heard of
+    /// the lock yet (a first lock, one from before the filter existed) holds
+    /// whatever it held unlocked — often nothing — and intersecting with that
+    /// wiped the allowlist, which a strict lock then could not get back.
+    ///
+    /// The early-release request travels with the app's copy (`editor`),
+    /// requests and cancellations alike: the authority starts its own 48-hour
+    /// wait when it first sees one, so passing it on shortens nothing. Picking
+    /// the lock with the later EFFECTIVE end instead — as this once did —
+    /// chose the authority's release-less copy over every request, and the
+    /// sync then cancelled it.
+    ///
+    /// With no lock anywhere, `editor` is the answer, and the authority is
+    /// brought into line with it.
+    public static func stricter(editor: PolicyView, other: PolicyView) -> PolicyView {
+        let locked = [editor, other].filter(\.locked)
+        guard !locked.isEmpty else { return editor }
 
-        let locks = [editor, other].filter { $0.isLocked(at: now) }
-        let longest = locks.max { ($0.effectiveDeadline ?? .distantPast)
-                                   < ($1.effectiveDeadline ?? .distantPast) }!
-        var lock = longest.lock
-        if locks.contains(where: { $0.lock?.mode == "strict" }) { lock?.mode = "strict" }
+        // The later deadline; the app's copy on a tie.
+        var base = locked[0]
+        for v in locked.dropFirst()
+        where (v.lock?.deadline ?? .distantPast) > (base.lock?.deadline ?? .distantPast) {
+            base = v
+        }
+        var lock = base.lock
+        if locked.contains(where: { $0.lock?.mode == "strict" }) { lock?.mode = "strict" }
+        // The authority names the lock (start time and nonce) whenever it holds
+        // one, so the copies converge on ONE lock — the one a partner approval
+        // is checked against — even after the mirrors were replaced by another.
+        if other.locked, let theirs = other.lock {
+            lock?.startedAt = theirs.startedAt
+            lock?.releaseNonce = theirs.releaseNonce
+            lock?.selfReleaseAt = theirs.selfReleaseAt
+        }
+        if editor.locked, let mine = editor.lock, mine.releaseNonce == lock?.releaseNonce,
+           mine.startedAt == lock?.startedAt {
+            lock?.selfReleaseAt = mine.selfReleaseAt
+        }
 
-        let allows = Set(editor.allowlist).intersection(other.allowlist)
-        let e = editor.inspection, o = other.inspection
+        let first = locked[0]
+        let both = locked.count == 2
+        let o = both ? locked[1] : first
+        let allows = Set(first.allowlist).intersection(o.allowlist)
+        let guardOK = Set(first.guardAllowed).intersection(o.guardAllowed)
+        let e = first.inspection, i = o.inspection
         return PolicyView(
             lock: lock,
-            effectiveDeadline: longest.effectiveDeadline,
-            allowlist: editor.allowlist.filter(allows.contains),
-            customBlocks: union(editor.customBlocks, other.customBlocks),
-            customTerms: union(editor.customTerms, other.customTerms),
-            blockedApps: union(editor.blockedApps, other.blockedApps),
+            // The later of the running copies' effective ends: a release the
+            // authority has not seen yet cannot end the lock early anywhere.
+            effectiveDeadline: locked.compactMap(\.effectiveDeadline).max(),
+            locked: true,
+            allowlist: first.allowlist.filter(allows.contains),
+            customBlocks: union(first.customBlocks, o.customBlocks),
+            customTerms: union(first.customTerms, o.customTerms),
+            blockedApps: union(first.blockedApps, o.blockedApps),
             inspection: Inspection.Settings(
-                text: e.text || o.text,
-                textSensitivity: max(e.textSensitivity, o.textSensitivity),
-                hostKeywords: e.hostKeywords || o.hostKeywords))
+                text: e.text || i.text,
+                textSensitivity: max(e.textSensitivity, i.textSensitivity),
+                hostKeywords: e.hostKeywords || i.hostKeywords),
+            guardAllowed: first.guardAllowed.filter(guardOK.contains))
     }
 
     /// Order-preserving union: `a`'s entries first, then `b`'s new ones.
@@ -493,11 +624,12 @@ extension PolicyView {
     /// and a list of someone's apps is exposure bought for nothing.
     ///
     /// `lockUntil` is the EFFECTIVE deadline, so a matured self-release ends
-    /// the lock in the browser at the same moment it ends everywhere else.
-    public func bridgeReply(now: Date, listVersion: Int) -> [String: Any] {
-        let locked = isLocked(at: now)
-        return [
-            "lockUntil": locked ? (effectiveDeadline ?? now).timeIntervalSince1970 * 1000
+    /// the lock in the browser at the same moment it ends everywhere else. It
+    /// is sent whenever a copy says a lock runs; the browser compares it with
+    /// its own clock, which a forged key in the app's defaults cannot move.
+    public func bridgeReply(listVersion: Int) -> [String: Any] {
+        [
+            "lockUntil": locked ? (effectiveDeadline ?? .distantPast).timeIntervalSince1970 * 1000
                                 : Double(0),
             "mode": locked ? (lock?.mode ?? "blocklist") : "off",
             "allowlist": allowlist,

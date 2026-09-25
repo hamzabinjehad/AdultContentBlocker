@@ -29,6 +29,11 @@ public enum FilterEvidence: Equatable {
     /// Zero is the "looks on, blocks nothing" state the threat model rates
     /// worse than being switched off.
     case on(domainCount: Int)
+    /// Switched on in System Settings, but the filter process does not answer
+    /// over XPC — stopped, crashed, or not yet approved. Distinct from `.on`:
+    /// the domain count that would otherwise be shown comes from a defaults
+    /// key the user can write, and said "Running" for a dead filter.
+    case silent
 }
 
 /// Every fact the status is computed from, gathered in one place so the view
@@ -81,8 +86,13 @@ public struct ProtectionEvidence: Equatable {
         case .unavailable(let m): filterEvidence = .unavailable(m)
         case .off:                filterEvidence = .off
         case .on:
-            filterEvidence = .on(domainCount: authority?.health.domainCount
-                                 ?? d?.integer(forKey: "filterDomainCount") ?? 0)
+            if let authority {
+                filterEvidence = .on(domainCount: authority.health.domainCount)
+            } else if FilterLink.shared.isConfigured {
+                filterEvidence = .silent
+            } else {
+                filterEvidence = .on(domainCount: d?.integer(forKey: "filterDomainCount") ?? 0)
+            }
         }
         return ProtectionEvidence(
             filter: filterEvidence,
@@ -257,6 +267,10 @@ public struct ProtectionStatus: Equatable {
         case .off:
             return Layer(name: "System filter", detail: "Not running",
                          state: .missing, action: .enableFilter)
+        case .silent:
+            return Layer(name: "System filter",
+                         detail: "Switched on, but not answering — open Hisn again, or restart the Mac",
+                         state: .problem, action: .retryFilterCheck)
         case .on(let count) where count == 0:
             return Layer(name: "System filter",
                          detail: "Running, but it has no block list yet",

@@ -127,10 +127,16 @@ public final class FilterLink: @unchecked Sendable {
                 c.remoteObjectInterface = FilterXPC.interface()
                 if #available(macOS 13.0, *) { c.setCodeSigningRequirement(requirement) }
                 c.invalidationHandler = { [weak self] in
-                    self?.queue.async { self?.connection = nil }
+                    self?.queue.async { if self?.connection === c { self?.connection = nil } }
                 }
+                // The filter restarted. Invalidate this connection before
+                // dropping it — dropping alone leaked one per restart — and the
+                // next call makes a fresh one.
                 c.interruptionHandler = { [weak self] in
-                    self?.queue.async { self?.connection = nil }
+                    self?.queue.async {
+                        if self?.connection === c { self?.connection = nil }
+                        c.invalidate()
+                    }
                 }
                 c.resume()
                 connection = c

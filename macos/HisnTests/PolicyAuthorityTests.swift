@@ -293,15 +293,13 @@ final class PolicyMergeTests: XCTestCase {
 
     func testUnlockedEverywhereTheEditorWins() {
         let editor = view(allows: ["new.example"])
-        let merged = PolicyMerge.stricter(editor: editor, other: view(allows: ["old.example"]),
-                                          now: now)
+        let merged = PolicyMerge.stricter(editor: editor, other: view(allows: ["old.example"]))
         XCTAssertEqual(merged, editor)
     }
 
     func testDeletedMirrorsCannotEndTheAuthoritysLock() {
         // The user wiped the app's stores; the authority still holds the lock.
-        let merged = PolicyMerge.stricter(editor: view(), other: view(lockDays: 5, mode: "strict"),
-                                          now: now)
+        let merged = PolicyMerge.stricter(editor: view(), other: view(lockDays: 5, mode: "strict"))
         XCTAssertTrue(merged.isLocked(at: now))
         XCTAssertEqual(merged.lock?.mode, "strict")
     }
@@ -311,7 +309,7 @@ final class PolicyMergeTests: XCTestCase {
                          terms: ["one1"], sensitivity: 40, text: false)
         let authority = view(lockDays: 5, mode: "strict", allows: ["a.example"],
                              blocks: ["y.example"], terms: ["two2"], sensitivity: 70)
-        let m = PolicyMerge.stricter(editor: local, other: authority, now: now)
+        let m = PolicyMerge.stricter(editor: local, other: authority)
         XCTAssertEqual(m.effectiveDeadline, now.addingTimeInterval(5 * 86_400))
         XCTAssertEqual(m.lock?.mode, "strict")
         XCTAssertEqual(m.allowlist, ["a.example"])
@@ -324,14 +322,13 @@ final class PolicyMergeTests: XCTestCase {
     func testForgedMirrorAllowanceIsDroppedWhileLocked() {
         let forged = view(lockDays: 5, allows: ["ok.example", "escape.example"])
         let authority = view(lockDays: 5, allows: ["ok.example"])
-        XCTAssertEqual(PolicyMerge.stricter(editor: forged, other: authority, now: now).allowlist,
+        XCTAssertEqual(PolicyMerge.stricter(editor: forged, other: authority).allowlist,
                        ["ok.example"])
     }
 
     func testBridgeReplyReportsTheMergedLock() {
-        let m = PolicyMerge.stricter(editor: view(), other: view(lockDays: 2, mode: "strict"),
-                                     now: now)
-        let reply = m.bridgeReply(now: now, listVersion: 3)
+        let m = PolicyMerge.stricter(editor: view(), other: view(lockDays: 2, mode: "strict"))
+        let reply = m.bridgeReply(listVersion: 3)
         XCTAssertEqual(reply["mode"] as? String, "strict")
         XCTAssertEqual(reply["lockUntil"] as? Double,
                        now.addingTimeInterval(2 * 86_400).timeIntervalSince1970 * 1000)

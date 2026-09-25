@@ -43,6 +43,18 @@ public enum Inspection {
         }
 
         public static let `default` = Settings()
+
+        private enum CodingKeys: String, CodingKey { case text, textSensitivity, hostKeywords }
+
+        /// Missing fields take their defaults: this is stored inside the
+        /// filter's policy record, which must still decode after a build adds
+        /// a setting.
+        public init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            self.init(text: try c.decodeIfPresent(Bool.self, forKey: .text) ?? true,
+                      textSensitivity: try c.decodeIfPresent(Int.self, forKey: .textSensitivity) ?? 50,
+                      hostKeywords: try c.decodeIfPresent(Bool.self, forKey: .hostKeywords) ?? true)
+        }
     }
 
     public enum SettingsError: LocalizedError {

@@ -150,8 +150,23 @@ public enum LockStore {
     /// prevent, so it is rejected here rather than trusted to callers.
     @discardableResult
     public static func write(_ state: LockState) -> Bool {
+        write(state, adoptingAuthority: false)
+    }
+
+    /// `FilterSync`'s write: the filter's root-owned lock replaces the mirrors'
+    /// even when it names a different lock (another nonce and start time) —
+    /// after the mirrors were deleted and a short lock started in their place,
+    /// the ordinary rules refused the authority's lock forever, and the two
+    /// copies never agreed again. Shortening, bringing a release forward and
+    /// leaving strict are refused here exactly as everywhere else.
+    @discardableResult
+    public static func adopt(_ state: LockState) -> Bool {
+        write(state, adoptingAuthority: true)
+    }
+
+    private static func write(_ state: LockState, adoptingAuthority: Bool) -> Bool {
         if let why = refusal(current: readWithoutHealing(), proposed: state,
-                             now: trustedNow()) {
+                             now: trustedNow(), adoptingAuthority: adoptingAuthority) {
             NSLog("[Hisn] refused lock write: %@", why)
             return false
         }
@@ -183,7 +198,7 @@ public enum LockStore {
     /// A lock that has fully run out (`now` past its effective deadline) is
     /// no constraint at all, so anything may replace it.
     public static func refusal(current: LockState?, proposed: LockState,
-                               now: Date) -> String? {
+                               now: Date, adoptingAuthority: Bool = false) -> String? {
         guard let current, now < current.deadline else { return nil }
         if proposed.deadline < current.deadline {
             return "would shorten the lock (\(proposed.deadline) < \(current.deadline))"
@@ -195,10 +210,17 @@ public enum LockStore {
         if current.mode == "strict", proposed.mode != "strict" {
             return "would switch a running strict lock out of strict mode"
         }
-        // The nonce names the lock a partner approval is for. Swapping it
-        // would let an approval obtained for some other lock end this one.
-        if let nonce = current.releaseNonce, proposed.releaseNonce != nonce {
-            return "would change which lock a partner approval applies to"
+        // The nonce and the start time name the lock a partner approval is
+        // for. Changing either — or giving a lock from before nonces existed
+        // one of an earlier, approved lock — would let an old approval end
+        // this one.
+        if !adoptingAuthority {
+            if proposed.releaseNonce != current.releaseNonce {
+                return "would change which lock a partner approval applies to"
+            }
+            if proposed.startedAt != current.startedAt {
+                return "would change when the running lock started"
+            }
         }
         return nil
     }

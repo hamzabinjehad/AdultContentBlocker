@@ -296,6 +296,7 @@ private struct OverviewPage: View {
             switch action {
             case .retryFilterCheck:
                 await filter.refresh()
+                await FilterSync.shared.sync()
 
             case .enableFilter:
                 notice = "If macOS asks, allow the filter under System Settings › "

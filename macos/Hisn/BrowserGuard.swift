@@ -147,6 +147,29 @@ public enum BrowserGuardPolicy {
         return now >= closeAt ? .close(reason) : .warn(reason, closeAt: closeAt)
     }
 
+    /// Whether an app bundle carries a browser engine: Gecko (`XUL`), or a
+    /// Chromium framework with renderer helpers that is NOT Electron —
+    /// Electron apps (Slack, VS Code, Claude) share the layout and are not
+    /// browsers. A renamed Chromium fork with its URL schemes stripped is
+    /// still caught here.
+    public static func bundlesBrowserEngine(at app: URL) -> Bool {
+        let fm = FileManager.default
+        if fm.fileExists(atPath: app.appendingPathComponent("Contents/MacOS/XUL").path) {
+            return true
+        }
+        let frameworks = app.appendingPathComponent("Contents/Frameworks")
+        guard let names = try? fm.contentsOfDirectory(atPath: frameworks.path) else { return false }
+        for name in names where name.hasSuffix(" Framework.framework") && !name.hasPrefix("Electron") {
+            let helpers = frameworks.appendingPathComponent(name)
+                .appendingPathComponent("Versions/Current/Helpers")
+            if let inside = try? fm.contentsOfDirectory(atPath: helpers.path),
+               inside.contains(where: { $0.hasSuffix("Helper (Renderer).app") }) {
+                return true
+            }
+        }
+        return false
+    }
+
     /// Whether an app declares the web URL schemes — the test for "browser".
     public static func declaresWebSchemes(infoPlist: [String: Any]) -> Bool {
         guard let types = infoPlist["CFBundleURLTypes"] as? [[String: Any]] else { return false }
@@ -226,6 +249,21 @@ public final class BrowserGuard: ObservableObject {
         Set(defaults?.stringArray(forKey: Self.allowedKey) ?? [])
     }
 
+    /// What is actually allowed right now: while the filter's authority holds
+    /// a lock, only apps BOTH copies allow — a `defaults write` of the app's
+    /// list mid-lock cannot exempt anything.
+    var effectiveAllowed: Set<String> {
+        guard let status = FilterSync.shared.status, status.isLocked else { return allowed }
+        return allowed.intersection(status.record.guardAllowed)
+    }
+
+    /// FilterSync's write of the merged list. Not a person's edit, so no lock
+    /// check: the merge only ever narrows it while locked.
+    func replaceAllowed(_ apps: Set<String>) {
+        defaults?.set(apps.sorted(), forKey: Self.allowedKey)
+        objectWillChange.send()
+    }
+
     public enum AllowError: LocalizedError {
         case locked
         public var errorDescription: String? {
@@ -238,13 +276,14 @@ public final class BrowserGuard: ObservableObject {
     public func setAllowed(_ bundleID: String, _ allow: Bool) throws {
         var set = allowed
         if allow {
-            guard !LockStore.isLocked() else { throw AllowError.locked }
+            guard !EffectiveLock.isLocked else { throw AllowError.locked }
             set.insert(bundleID)
         } else {
             set.remove(bundleID)
         }
         defaults?.set(set.sorted(), forKey: Self.allowedKey)
         objectWillChange.send()
+        FilterSync.soon()
     }
 
     /// Every app on this Mac that can open web pages, with how the guard
@@ -277,15 +316,31 @@ public final class BrowserGuard: ObservableObject {
         if linked.contains(id) || BrowserGuardPolicy.knownBrowsers.contains(id)
             || BrowserGuardPolicy.exempt.contains(id) { return true }
         guard let bundleURL else { return false }
-        if let hit = schemeCache[bundleURL.path] { return hit }
+        // Keyed by path AND modification date: a browser copied over a path
+        // already judged "not a browser" must be judged again.
+        let mtime = (try? bundleURL.resourceValues(forKeys: [.contentModificationDateKey]))?
+            .contentModificationDate?.timeIntervalSince1970 ?? 0
+        let key = "\(bundleURL.path)@\(mtime)"
+        if let hit = schemeCache[key] { return hit }
         let info = Bundle(url: bundleURL)?.infoDictionary ?? [:]
+        // Declaring the web schemes is how a browser asks to be the default;
+        // a copy with that stripped out still carries its engine.
         let result = BrowserGuardPolicy.declaresWebSchemes(infoPlist: info)
-        schemeCache[bundleURL.path] = result
+            || BrowserGuardPolicy.bundlesBrowserEngine(at: bundleURL)
+        schemeCache[key] = result
         return result
     }
 
+    private var lastTick = Date()
+
     func tick() {
-        guard LockStore.isLocked() else {
+        // A long gap between ticks is a sleep the wake notification has not
+        // been delivered for yet; judging now would warn about every browser.
+        let wall = Date()
+        if wall.timeIntervalSince(lastTick) > 15 { awakeSince = wall }
+        lastTick = wall
+
+        guard EffectiveLock.isLocked else {
             if !alerts.isEmpty || !violations.isEmpty {
                 alerts = []
                 violations.removeAll()
@@ -296,14 +351,22 @@ public final class BrowserGuard: ObservableObject {
         }
         let now = Date()
         let linked = Set(NativeMessagingInstaller.browsers.map(\.bundleID))
-        let allowed = allowed
+        let allowed = effectiveAllowed
         let own = Bundle.main.bundleIdentifier
+        // Check-ins from the filter when it answers (the bridge reports them
+        // over the code-signed channel); the app's defaults — which a loop of
+        // `defaults write` could keep fresh — only when it does not.
+        let authorityCheckIns = FilterSync.shared.status?.checkIns
         var next: [Alert] = []
         var running = Set<pid_t>()
 
+        // Regular AND accessory apps: a browser relaunched as an agent
+        // (LSUIElement) still shows web pages. An app with no bundle id is
+        // judged by its path.
         for app in NSWorkspace.shared.runningApplications
-        where app.activationPolicy == .regular && !app.isTerminated {
-            guard let id = app.bundleIdentifier, id != own,
+        where app.activationPolicy != .prohibited && !app.isTerminated {
+            let id = app.bundleIdentifier ?? app.bundleURL?.path ?? app.executableURL?.path ?? ""
+            guard !id.isEmpty, id != own,
                   isBrowser(id: id, bundleURL: app.bundleURL, linked: linked)
             else { continue }
             let pid = app.processIdentifier
@@ -315,7 +378,11 @@ public final class BrowserGuard: ObservableObject {
                 now.timeIntervalSince($0) < BrowserGuardPolicy.repeatWindow } ?? false
             let verdict = BrowserGuardPolicy.verdict(
                 coverage: coverage,
-                lastSeen: ExtensionPresence.lastSeen(browser: id, in: defaults),
+                // The filter's record when it has one for this browser (a
+                // forged local stamp cannot outlive it going stale); the app's
+                // own only for a browser the filter has never heard from.
+                lastSeen: authorityCheckIns?[id]
+                    ?? ExtensionPresence.lastSeen(browser: id, in: defaults),
                 now: now, graceStart: graceStart,
                 firstViolation: violations[pid],
                 recentlyClosed: repeatOffender)

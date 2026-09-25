@@ -83,7 +83,10 @@ final class FilterDataProvider: NEFilterDataProvider {
                                    health: { [weak self] in self?.health() ?? FilterHealth() })
         // An accepted change takes effect now, not at the next 30-second tick:
         // a lock started in the app is enforced before the app says "Locked".
-        policy.onChange = { [weak self] _ in self?.refreshLockState() }
+        // On the work queue, like the 30-second tick: run from the XPC queue it
+        // could interleave with a tick holding an older snapshot, and whichever
+        // landed last won — a just-started strict lock unenforced for 30 s.
+        policy.onChange = { [weak self] _ in self?.work.async { self?.refreshLockState() } }
         self.policy = policy
 
         // Rollback protection across restarts: the highest version this

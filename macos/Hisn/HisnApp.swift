@@ -64,7 +64,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Started at login by the LaunchAgent (`macos/install.sh`): run the
         // guard and the updater without putting a window in front of anyone.
         if CommandLine.arguments.contains("--background") {
-            DispatchQueue.main.async { NSApp.windows.forEach { $0.close() } }
+            // Not the guard's countdown panel, which may already be up.
+            DispatchQueue.main.async {
+                NSApp.windows.filter { !($0 is NSPanel) }.forEach { $0.close() }
+            }
         }
     }
 
@@ -72,7 +75,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// on disk, not in this process, but a user who quits the app and sees the
     /// menu bar item vanish will assume otherwise — so keep it running.
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-        !LockStore.isLocked()
+        !EffectiveLock.isLocked
     }
 
     /// During a lock this process is the browser guard, so Quit is refused.
@@ -80,7 +83,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// would hold the whole Mac hostage — and a force-quit cannot be refused
     /// at all; the LaunchAgent's KeepAlive brings the app straight back.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        guard !Self.isHostingTests, LockStore.isLocked(), !Self.systemIsEndingSession else {
+        guard !Self.isHostingTests, EffectiveLock.isLocked, !Self.systemIsEndingSession else {
             return .terminateNow
         }
         let alert = NSAlert()
@@ -90,7 +93,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             + "the background."
         alert.addButton(withTitle: "OK")
         alert.runModal()
-        NSApp.windows.forEach { $0.close() }
+        NSApp.windows.filter { !($0 is NSPanel) }.forEach { $0.close() }
         return .terminateCancel
     }
 

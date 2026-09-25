@@ -137,14 +137,28 @@ public final class LockManager: ObservableObject {
         // lock. Comparing against `state.deadline` here is what made the whole
         // release mechanism inert: the date was recorded and then never
         // consulted by anything.
-        if now >= LockStore.effectiveDeadline(state), state.mode != "off" {
+        // Never on the mirrors' say-so alone: while the filter's authority
+        // still holds a lock, the mirrors ending (a forged clock, deleted
+        // files) is healed by the next sync, not acted on.
+        if now >= LockStore.effectiveDeadline(state), state.mode != "off",
+           !FilterSync.shared.authorityLocked {
             Task { await expire() }
+        }
+        // The authority holds a lock the mirrors have lost: adopt it now
+        // rather than at the next 20-second sync.
+        if FilterSync.shared.authorityLocked, now >= state.deadline {
+            FilterSync.soon()
         }
     }
 
     // MARK: - Derived
 
-    public var isLocked: Bool { now < state.deadline }
+    public var isLocked: Bool { now < state.deadline || FilterSync.shared.authorityLocked }
+
+    /// Whether the app's own copy holds the running lock — what extend,
+    /// tighten and release act on. False for the moment between the mirrors
+    /// being lost and the sync writing the authority's lock back.
+    private var mirrorsHoldLock: Bool { now < state.deadline }
 
     public var remaining: TimeInterval { max(0, state.deadline.timeIntervalSince(now)) }
 
@@ -171,7 +185,7 @@ public final class LockManager: ObservableObject {
         }
         let deadline = LockStore.trustedNow().addingTimeInterval(seconds)
 
-        if isLocked && deadline < state.deadline {
+        if mirrorsHoldLock && deadline < state.deadline {
             throw LockError.wouldShorten
         }
 
@@ -179,12 +193,18 @@ public final class LockManager: ObservableObject {
         // stricter: asking for "standard" while a strict lock runs must not be
         // a way out of strict (LockStore.refusal rejects it; this keeps the
         // request from failing for a reason the person did not intend).
-        let keepStrict = isLocked && state.mode == "strict"
+        if FilterSync.shared.authorityLocked, !mirrorsHoldLock {
+            // Extend the lock the filter holds, not a fresh one beside it.
+            await FilterSync.shared.sync()
+            state = LockStore.read()
+        }
+        let running = mirrorsHoldLock
+        let keepStrict = running && state.mode == "strict"
         let newState = LockStore.LockState(
             deadline: deadline,
             mode: strict || keepStrict ? "strict" : "blocklist",
-            startedAt: isLocked ? state.startedAt : LockStore.trustedNow(),
-            releaseNonce: isLocked ? state.releaseNonce : PartnerService.newNonce())
+            startedAt: running ? state.startedAt : LockStore.trustedNow(),
+            releaseNonce: running ? state.releaseNonce : PartnerService.newNonce())
 
         guard LockStore.write(newState) else { throw LockError.wouldShorten }
         state = newState
@@ -208,7 +228,7 @@ public final class LockManager: ObservableObject {
 
     /// Add time to a running lock. Always permitted.
     public func extend(by seconds: TimeInterval) throws {
-        guard isLocked else { throw LockError.notLocked }
+        guard mirrorsHoldLock else { FilterSync.soon(); throw LockError.notLocked }
         var next = state
         next.deadline = state.deadline.addingTimeInterval(seconds)
         guard LockStore.write(next) else { throw LockError.wouldShorten }
@@ -218,7 +238,7 @@ public final class LockManager: ObservableObject {
 
     /// Tighten a running blocklist lock into strict mode. Always permitted.
     public func tightenToStrict() throws {
-        guard isLocked else { throw LockError.notLocked }
+        guard mirrorsHoldLock else { FilterSync.soon(); throw LockError.notLocked }
         var next = state
         next.mode = "strict"
         guard LockStore.write(next) else { throw LockError.wouldShorten }
@@ -248,7 +268,7 @@ public final class LockManager: ObservableObject {
     /// documented way out of a lock inoperable.
     @discardableResult
     public func requestSelfRelease() throws -> Date {
-        guard isLocked else { throw LockError.notLocked }
+        guard mirrorsHoldLock else { FilterSync.soon(); throw LockError.notLocked }
         if let existing = state.selfReleaseAt { return existing }
 
         let at = min(LockStore.trustedNow().addingTimeInterval(Self.selfReleaseDelay),
@@ -299,15 +319,17 @@ public final class LockManager: ObservableObject {
         let granted = try PartnerService.approve(approval, for: state,
                                                  key: PartnerService.currentKey())
 
-        if FilterLink.shared.isConfigured {
-            if let reply = await FilterLink.shared.submit(.partnerRelease(approval: approval)) {
-                guard reply.accepted else {
-                    throw LockError.filterUnavailable(reply.refusal ?? "the filter refused the approval")
-                }
-            } else if FilterSync.shared.status != nil {
-                // The filter has answered before and holds this lock too; ending
-                // only the mirrors would be undone at the next sync.
+        // Whenever the filter is running it must agree, and "no answer" is a
+        // refusal. The local check above uses the app's copy of the partner
+        // key — a file the person can overwrite with their own key — so on its
+        // own it proves nothing once there is a filter to ask.
+        if FilterLink.shared.isConfigured,
+           FilterController.shared.isEnabled || FilterSync.shared.status != nil {
+            guard let reply = await FilterLink.shared.submit(.partnerRelease(approval: approval)) else {
                 throw LockError.filterUnavailable("the filter did not answer — try again in a minute")
+            }
+            guard reply.accepted else {
+                throw LockError.filterUnavailable(reply.refusal ?? "the filter refused the approval")
             }
         }
         LockStore.clearWithPartnerApproval(granted)
