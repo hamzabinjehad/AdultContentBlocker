@@ -77,7 +77,7 @@ resolver is below the browser. Bypassed only by browser DoH, which step 5
 closes.
 
 It also forces **SafeSearch everywhere**: Google (all 187 of its domains),
-YouTube (Restricted Mode, strict), Bing and DuckDuckGo are pointed at their own
+YouTube (Restricted Mode, strict), Bing, DuckDuckGo and Yandex are pointed at their own
 SafeSearch addresses (`macos/safesearch_hosts.txt`) — so Safari, Firefox and
 any app that opens a search get it too, not just the browsers with the
 extension. The addresses are looked up when the script runs; if one of those

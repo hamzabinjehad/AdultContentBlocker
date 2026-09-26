@@ -1107,16 +1107,6 @@
         }
       }
     },
-    "Forced for Google, YouTube, Bing and DuckDuckGo in every browser and app." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "مفروض على Google وYouTube وBing وDuckDuckGo في كل متصفح وتطبيق."
-          }
-        }
-      }
-    },
     "From" : {
       "localizations" : {
         "ar" : {
@@ -2965,6 +2955,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "كلماتك وتطبيقاتك"
+          }
+        }
+      }
+    },
+    "Forced for Google, YouTube, Bing, DuckDuckGo and Yandex in every browser and app." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مفروض على Google وYouTube وBing وDuckDuckGo وYandex في كل متصفح وتطبيق."
           }
         }
       }

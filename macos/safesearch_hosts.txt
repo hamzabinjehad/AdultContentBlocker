@@ -15,6 +15,7 @@
 #   YouTube  support.google.com/youtube/answer/6214622 — Strict Restricted Mode
 #   Bing     strict.bing.com for www.bing.com
 #   DuckDuckGo  safe.duckduckgo.com for duckduckgo.com
+#   Yandex   familysearch.yandex.ru — Yandex's family search — for its main names
 
 @forcesafesearch.google.com
 www.google.ad
@@ -218,3 +219,13 @@ www.bing.com
 @safe.duckduckgo.com
 duckduckgo.com
 www.duckduckgo.com
+
+@familysearch.yandex.ru
+yandex.com
+www.yandex.com
+yandex.ru
+www.yandex.ru
+ya.ru
+www.ya.ru
+yandex.com.tr
+www.yandex.com.tr

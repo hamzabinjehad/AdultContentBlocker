@@ -176,7 +176,7 @@ public struct SetupChecklist: Equatable {
                               state: .todo, action: .command("macos/install.sh --hosts")))
         } else {
             steps.append(Step(id: .safeSearch, title: String(localized: "SafeSearch everywhere"),
-                              detail: String(localized: "Forced for Google, YouTube, Bing and DuckDuckGo in every browser and app."),
+                              detail: String(localized: "Forced for Google, YouTube, Bing, DuckDuckGo and Yandex in every browser and app."),
                               state: .done, action: nil))
         }
 
@@ -310,6 +310,7 @@ extension SetupEvidence {
         ("YouTube", "www.youtube.com", "restrict.youtube.com"),
         ("Bing", "www.bing.com", "strict.bing.com"),
         ("DuckDuckGo", "duckduckgo.com", "safe.duckduckgo.com"),
+        ("Yandex", "yandex.com", "familysearch.yandex.ru"),
     ]
 
     /// Compares /etc/hosts with DNS. The SafeSearch hosts are not in the

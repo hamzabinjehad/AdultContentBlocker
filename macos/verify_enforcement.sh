@@ -157,6 +157,7 @@ if [ -f "$(dirname "$0")/safesearch_hosts.txt" ]; then
                 case "$ss_target" in
                     *google.com) engine=Google ;; *youtube.com) engine=YouTube ;;
                     *bing.com) engine=Bing ;; *duckduckgo.com) engine=DuckDuckGo ;;
+                    *yandex.ru) engine=Yandex ;;
                     *) engine="$ss_target" ;;
                 esac
                 have=$(awk -v n="$line" '$1 !~ /^#/ && $2 == n { print $1; exit }' /etc/hosts)
@@ -172,7 +173,7 @@ if [ -f "$(dirname "$0")/safesearch_hosts.txt" ]; then
     elif [ -n "$ss_missing" ]; then
         warn "SafeSearch (DNS)" "not forced for:$ss_missing outside the extension — run install.sh --hosts"
     else
-        ok "SafeSearch (DNS)" "forced for Google, YouTube, Bing and DuckDuckGo in every browser and app"
+        ok "SafeSearch (DNS)" "forced for Google, YouTube, Bing, DuckDuckGo and Yandex in every browser and app"
     fi
 fi
 

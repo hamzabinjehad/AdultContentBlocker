@@ -5,7 +5,7 @@ import XCTest
 /// Mac worth pinning: which browser profiles run the extension.
 final class SetupChecklistTests: XCTestCase {
 
-    private static let noSafeSearch = SafeSearchDNS(missing: ["Google", "YouTube", "Bing", "DuckDuckGo"])
+    private static let noSafeSearch = SafeSearchDNS(missing: ["Google", "YouTube", "Bing", "DuckDuckGo", "Yandex"])
 
     private func evidence(admin: Bool? = true, hosts: Int? = nil, bypassesBlocked: Bool = true,
                           safe: SafeSearchDNS = noSafeSearch, partner: Bool = false,
@@ -123,7 +123,7 @@ final class SetupChecklistTests: XCTestCase {
     private let dns: (String) -> Set<String>? = { host in
         ["forcesafesearch.google.com": ["216.239.38.120"], "restrict.youtube.com": ["216.239.38.120"],
          "strict.bing.com": ["150.171.27.16", "150.171.28.16"],
-         "safe.duckduckgo.com": ["40.114.177.246"]][host]
+         "safe.duckduckgo.com": ["40.114.177.246"], "familysearch.yandex.ru": ["213.180.193.56"]][host]
     }
 
     func testEveryEngineMappedIsForced() {
@@ -134,6 +134,7 @@ final class SetupChecklistTests: XCTestCase {
             216.239.38.120\twww.youtube.com
             150.171.28.16 www.bing.com
             40.114.177.246 duckduckgo.com www.duckduckgo.com
+            213.180.193.56 yandex.com www.yandex.com
             """
         XCTAssertEqual(SetupEvidence.safeSearchDNS(hosts: hosts, resolve: dns), SafeSearchDNS())
     }
@@ -146,14 +147,14 @@ final class SetupChecklistTests: XCTestCase {
             # 40.114.177.246 duckduckgo.com
             """
         let r = SetupEvidence.safeSearchDNS(hosts: hosts, resolve: dns)
-        XCTAssertEqual(r.missing, ["YouTube", "DuckDuckGo"], "a sinkhole or a comment is no SafeSearch")
+        XCTAssertEqual(r.missing, ["YouTube", "DuckDuckGo", "Yandex"], "a sinkhole or a comment is no SafeSearch")
         XCTAssertEqual(r.stale, ["Bing"], "Bing's old address")
     }
 
     func testOfflineAPresentLineCountsAsForced() {
         let r = SetupEvidence.safeSearchDNS(hosts: "150.171.28.16 www.bing.com", resolve: { _ in nil })
         XCTAssertEqual(r.stale, [])
-        XCTAssertEqual(r.missing, ["Google", "YouTube", "DuckDuckGo"])
+        XCTAssertEqual(r.missing, ["Google", "YouTube", "DuckDuckGo", "Yandex"])
     }
 
     /// The browser link runs the bridge inside the bundle: a bundle the user
