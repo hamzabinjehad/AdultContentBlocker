@@ -149,6 +149,10 @@
     "redcross.org"
   ],
   "_extra_block_comment": "Domains we always block regardless of upstream coverage. Add manually-reported gaps here.",
-  "extra_block": [],
+  "extra_block": [
+    "nsfw.com",
+    "paheal.net",
+    "thothub.tv"
+  ],
   "_tier_comment": "core = high-confidence, curated, low false-positive. Ships in the browser extension's static ruleset, which has a hard rule budget. extended = broad long-tail coverage. Used by the network/DNS layer only, where there is no rule-count ceiling."
 }

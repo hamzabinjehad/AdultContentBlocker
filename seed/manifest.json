@@ -1,44 +1,44 @@
 {
   "artifacts": {
     "dnr_block_rules.json": {
-      "bytes": 4215419,
-      "sha256": "ff6fc19e4d3804ae21f4a1fe51d6c8d695986591fd13cd8fff06315921a8706f"
+      "bytes": 4215467,
+      "sha256": "dbb7afc64f1442dc229c86a5ca5bc8baab8433e415ae5afec549161832cb4643"
     },
     "dnr_keyword_rules.json": {
-      "bytes": 75892,
-      "sha256": "64169547ca864472ec4b757ac439fa5f08118d72c8723b5579f414f26b9f43e4"
+      "bytes": 79908,
+      "sha256": "0879fa3951426034cab58f65f561f74fa304d456633ace49063588588c8921b3"
     },
     "domains.index": {
       "bytes": 8192,
       "sha256": "7d2c7ac4888bfd75cd5f56e8d61f69595121183afc81556c876732fd3782c62f"
     },
     "domains.packed": {
-      "bytes": 134239009,
-      "sha256": "ea6fb5de33a460c77f63c18770789cd0d809b4a2a14dc25a2438f6b5ea985836"
+      "bytes": 134245821,
+      "sha256": "756a2307ce4dc53ae60fea3d1e1c7b6d94efc75078c7f7e7256541ebbc9ffc2d"
     },
     "domains.packed.deflate": {
-      "bytes": 20935626,
-      "sha256": "6a11b6014950f055abacb539a1bfbe2b61b795777c1e20cfde6807ddb77011f2"
+      "bytes": 20938333,
+      "sha256": "68775aa10c155b08dea4ceb30333b6b87bd4cdd1e21e4e4afafc90e0aba4eede"
     },
     "domains.txt": {
-      "bytes": 134239141,
-      "sha256": "22abb431d1c3139274cfeb77a338b0ecf243d28847a97a42aeff92e46440349d"
+      "bytes": 134245953,
+      "sha256": "c21ef5ff4a53da1d4dc992a68b5930e67fa72dc64d6615b731318afc736fc752"
     },
     "domains_core.txt": {
-      "bytes": 1851814,
-      "sha256": "259feacf5208b352fceb9a26257038ddf7091c27a25188ded640dded9c7c0c98"
+      "bytes": 1851834,
+      "sha256": "0845c488d067e48538b3149281fdda17a25ec779b4300a7d9fb135612cdca6d1"
     },
     "terms.json": {
-      "bytes": 288347,
-      "sha256": "addd7d0dc2e51a29fee29a43342b68aa35c8d9a81ab37354f64034dde1715e16"
+      "bytes": 288545,
+      "sha256": "c7caf064946841384502136787b97f4996577d9835319f06fda9c076af6f7859"
     }
   },
-  "built_at": "2026-09-25T19:03:08+00:00",
-  "core_domain_count": 117243,
-  "dnr_keyword_rule_count": 110,
+  "built_at": "2026-09-26T05:56:55+00:00",
+  "core_domain_count": 117245,
+  "dnr_keyword_rule_count": 116,
   "dnr_rule_count": 236,
-  "domain_count": 5204961,
-  "host_term_count": 110,
+  "domain_count": 5205364,
+  "host_term_count": 116,
   "never_block_removed": 4,
   "schema": 1,
   "sources": [
@@ -58,7 +58,7 @@
       "ok": true
     },
     {
-      "domains": 469344,
+      "domains": 469748,
       "id": "oisd-nsfw",
       "ok": true
     },

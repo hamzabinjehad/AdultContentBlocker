@@ -169,3 +169,15 @@ fadi7a	token
 shahwa	token
 ma7arem	token
 manyak	token
+
+# Side doors: the sites people move to when the big ones are blocked. Brand
+# names with no innocent reading are substrings, so a mirror on a new domain
+# (fansly-free.net, thothub-new.org) is caught; `coomer` is also a surname
+# (coomerlaw.com) and `nsfw` starts the names of moderation libraries
+# (nsfwjs.com), so both must be a whole label.
+gonewild	substring
+fansly	substring
+fapello	substring
+thothub	substring
+coomer	token
+nsfw	token

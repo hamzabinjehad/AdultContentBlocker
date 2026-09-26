@@ -2,7 +2,7 @@
   "_comment": [
     "The cross-language hostname-matching contract.",
     "",
-    "Asserted by test_terms.py (Python), extension/test/host.test.js (JS) and",
+    "Asserted by test_terms.py (Python), extension/test/browser/dnr.sh (Chrome's own rules, in a real browser) and",
     "BlocklistStoreTests.swift (Swift). Three implementations of one rule; a",
     "divergence means a domain is blocked on the Mac and reachable in Chrome,",
     "or the reverse, with nothing to signal it.",
@@ -192,6 +192,36 @@
       "host": "milford-milfs.example",
       "block": true,
       "why": "an innocent token does not immunise the rest of the host"
+    },
+    {
+      "host": "fansly-free.net",
+      "block": true,
+      "why": "a side-door brand on a mirror domain, caught as a substring"
+    },
+    {
+      "host": "thothubnew.org",
+      "block": true,
+      "why": "substring: a mirror with no separator"
+    },
+    {
+      "host": "coomer.su",
+      "block": true,
+      "why": "token: the site itself"
+    },
+    {
+      "host": "coomerlaw.com",
+      "block": false,
+      "why": "Coomer is a surname: a token only, so a law firm stays reachable"
+    },
+    {
+      "host": "nsfw-detector.dev",
+      "block": true,
+      "why": "token nsfw as a label — accepted: moderation tools rarely need a lock-time exception"
+    },
+    {
+      "host": "nsfwjs.com",
+      "block": false,
+      "why": "token only: nsfwjs is not the label nsfw"
     }
   ]
 }
