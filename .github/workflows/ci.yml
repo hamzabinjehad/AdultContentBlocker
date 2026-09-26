@@ -31,7 +31,7 @@ defaults:
 jobs:
   python:
     name: Python, seed bundle, and a real list build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
@@ -84,7 +84,7 @@ jobs:
     # Chromium, python3 and openssl; Linux is where headless Chrome is built
     # to run. The extension loads unpacked, which branded Chrome stopped
     # allowing in 137; Chrome for Testing still does.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       # Pinned: one version, from Google's bucket only, checked against the md5

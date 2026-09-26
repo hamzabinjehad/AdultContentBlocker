@@ -46,7 +46,7 @@ jobs:
 
   build:
     needs: test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # The signing key lives in this environment, not in the repository's
     # secrets, and the environment admits the main branch only (Settings ›
     # Environments › list-signing › Deployment branches). A workflow edited on

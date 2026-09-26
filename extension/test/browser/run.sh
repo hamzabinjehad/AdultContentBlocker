@@ -62,7 +62,13 @@ if [ -n "${SCREENSHOT:-}" ]; then SCREENSHOT_ARGS+=("--screenshot=$SCREENSHOT");
 BROWSER_PID=$!
 # Some Chromium variants keep background services alive after dumping the DOM.
 # Bound our isolated test process, and use its completed DOM as the verdict.
-for ((attempt=0; attempt<300; attempt++)); do
+# 30 seconds is ample where virtual time fast-forwards (about one, on a Mac);
+# on the Linux CI runner the first run dumped nothing within 30, so there it
+# waits two minutes — and every verdict says how long it took.
+WAIT_TENTHS=300
+[ "$(uname)" = "Linux" ] && WAIT_TENTHS=1200
+STARTED=$SECONDS
+for ((attempt=0; attempt<WAIT_TENTHS; attempt++)); do
     kill -0 "$BROWSER_PID" 2>/dev/null || break
     if grep -q '</html>' "$OUT" && { [ -z "${SCREENSHOT:-}" ] || [ -s "$SCREENSHOT" ]; }; then break; fi
     sleep 0.1
@@ -80,14 +86,14 @@ for line in (m.group(1) if m else "").splitlines():
 PY
 
 if grep -q 'data-result="pass"' "$OUT"; then
-    echo "browser harness: PASS"
+    echo "browser harness: PASS ($((SECONDS - STARTED))s)"
     exit 0
 fi
 if grep -q 'data-result="fail"' "$OUT"; then
     echo "browser harness: FAIL" >&2
     exit 1
 fi
-echo "browser harness: no verdict — the page did not finish (is the virtual time budget enough?)" >&2
+echo "browser harness: no verdict after $((SECONDS - STARTED))s — the page did not finish (is the virtual time budget enough?)" >&2
 # What the browser said, so a machine where it never started (CI) is not a
 # silent "no verdict".
 echo "  browser: $CHROME_BIN" >&2
