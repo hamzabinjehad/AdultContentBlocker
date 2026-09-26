@@ -41,9 +41,22 @@ export function locale() {
 }
 
 /** `auto`: Arabic when the browser's UI is Arabic. */
-export function resolveLanguage(preference, uiLanguage = "") {
+/**
+ * Which table: a choice made in these pages first; on Automatic, the Hisn
+ * app's language when the app has sent one — so an app switched to Arabic
+ * brings its extension along — and otherwise the browser's.
+ */
+export function resolveLanguage(preference, uiLanguage = "", appLanguage = "") {
   if (TABLES[preference]) return preference;
+  if (TABLES[appLanguage]) return appLanguage;
   return String(uiLanguage).toLowerCase().startsWith("ar") ? "ar" : "en";
+}
+
+/** The Mac app's language as the worker last heard it, or "". */
+export async function appLanguage() {
+  try {
+    return (await chrome.storage.local.get("appLanguage")).appLanguage ?? "";
+  } catch { return ""; }
 }
 
 /** Read the preference, set the language, and translate the static page. */
@@ -53,7 +66,7 @@ export async function initLanguage(doc = globalThis.document) {
     preference = (await chrome.storage.local.get("uiLanguage")).uiLanguage ?? "auto";
   } catch { /* storage unavailable: follow the browser */ }
   const ui = globalThis.chrome?.i18n?.getUILanguage?.() ?? globalThis.navigator?.language ?? "en";
-  setLanguage(resolveLanguage(preference, ui));
+  setLanguage(resolveLanguage(preference, ui, await appLanguage()));
   if (doc) translatePage(doc);
   return { language: current, preference };
 }

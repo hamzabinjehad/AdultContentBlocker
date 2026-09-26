@@ -24,7 +24,7 @@
 
 import { send } from "./lib/messages.js";
 import { connectionStatus, parseDomains, settingsError, restrictionsActive } from "./lib/settings.js";
-import { initLanguage, t, setLanguage, resolveLanguage, savePreference, translatePage } from "./lib/i18n.js";
+import { initLanguage, t, setLanguage, resolveLanguage, savePreference, translatePage, appLanguage } from "./lib/i18n.js";
 
 const { preference: languagePreference } = await initLanguage();
 const $ = (id) => document.getElementById(id);
@@ -304,7 +304,8 @@ $("uiLanguage").value = languagePreference === "ar" || languagePreference === "e
 $("uiLanguage").onchange = async () => {
   const preference = $("uiLanguage").value;
   await savePreference(preference).catch(() => {});
-  setLanguage(resolveLanguage(preference, chrome.i18n?.getUILanguage?.() ?? navigator.language));
+  setLanguage(resolveLanguage(preference, chrome.i18n?.getUILanguage?.() ?? navigator.language,
+                              await appLanguage()));
   translatePage(document);
   if (current) showState(current);
 };

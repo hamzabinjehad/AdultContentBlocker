@@ -105,7 +105,13 @@ func handle(_ message: [String: Any]) -> [String: Any] {
         let view = FilterLink.shared.status(timeout: 0.5)
             .map { PolicyMerge.stricter(editor: local, other: PolicyView(status: $0)) }
             ?? local
-        return view.bridgeReply(listVersion: defaults?.integer(forKey: "listVersion") ?? 0)
+        var reply = view.bridgeReply(listVersion: defaults?.integer(forKey: "listVersion") ?? 0)
+        // The app's language, for the extension's pages on Automatic. Not
+        // policy: nothing here can loosen or tighten a thing.
+        if let language = defaults?.string(forKey: "appLanguage"), ["ar", "en"].contains(language) {
+            reply["appLanguage"] = language
+        }
+        return reply
 
     case "ping":
         return ["ok": true, "at": Date().timeIntervalSince1970 * 1000]

@@ -64,6 +64,14 @@ enum AppLanguage: String, CaseIterable, Identifiable {
         }
     }
 
+    /// Tell the browser extension which language the app shows, through the
+    /// shared defaults the bridge reads: its pages set to Automatic follow
+    /// it, so an app switched to Arabic brings the extension along.
+    static func publish() {
+        UserDefaults(suiteName: LockStore.appGroup)?
+            .set(running.hasPrefix("ar") ? "ar" : "en", forKey: "appLanguage")
+    }
+
     static func choose(_ language: AppLanguage) {
         let d = UserDefaults.standard
         switch language {

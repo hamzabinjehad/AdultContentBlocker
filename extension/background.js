@@ -575,6 +575,12 @@ async function pollNative() {
       appPresent: true,
     };
     const state = await setState(patch);
+    // The Mac app's language, which pages set to Automatic follow
+    // (lib/i18n.js). Beside the protection state, not in it: it is a
+    // preference, like the person's own choice of language.
+    if (reply.appLanguage === "ar" || reply.appLanguage === "en") {
+      chrome.storage.local.set({ appLanguage: reply.appLanguage }).catch(() => {});
+    }
     await applyRules(state);
     return true;
   } catch (err) {

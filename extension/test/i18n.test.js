@@ -48,6 +48,12 @@ setLanguage("fr");
 check(t("status.active") === en["status.active"], "an unsupported language falls back to English");
 check(resolveLanguage("auto", "ar-SA") === "ar" && resolveLanguage("auto", "en-GB") === "en"
       && resolveLanguage("en", "ar") === "en", "automatic follows the browser; a choice overrides it");
+check(resolveLanguage("auto", "en-US", "ar") === "ar" && resolveLanguage("auto", "ar-SA", "en") === "en",
+      "on Automatic, the Mac app's language comes before the browser's");
+check(resolveLanguage("en", "en-US", "ar") === "en" && resolveLanguage("ar", "en-US", "en") === "ar",
+      "a choice made in the extension still wins over the app");
+check(resolveLanguage("auto", "en-GB", "fr") === "en" && resolveLanguage("auto", "ar", "") === "ar",
+      "an app language the pages do not have, or none, falls back to the browser");
 setLanguage("en");
 
 print(`  ${checks - failures}/${checks} checks passed`);

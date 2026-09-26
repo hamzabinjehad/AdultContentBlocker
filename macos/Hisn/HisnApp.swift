@@ -70,6 +70,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             exit(0)
         }
         NativeMessagingInstaller.installIfNeeded()
+        AppLanguage.publish()
         BrowserGuard.shared.start()
         FilterSync.shared.start()
         Task { @MainActor in
