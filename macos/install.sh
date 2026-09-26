@@ -46,12 +46,17 @@ done
 
 APP="/Applications/Hisn.app"
 LABEL="app.hisn.agent"
-AGENT="$HOME/Library/LaunchAgents/$LABEL.plist"
+# In /Library, owned by root: one in ~/Library/LaunchAgents is the daily
+# user's own file, which they could delete after the account split — and the
+# app would never start again. This one survives, and reloads at every login.
+AGENT="/Library/LaunchAgents/$LABEL.plist"
+USER_AGENT="$HOME/Library/LaunchAgents/$LABEL.plist"   # where earlier installs put it
 DOMAIN="gui/$(id -u)"
 
 if [ "$REMOVE_AGENT" -eq 1 ]; then
     launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null || true
-    rm -f "$AGENT"
+    sudo rm -f "$AGENT"
+    rm -f "$USER_AGENT"
     echo "LaunchAgent removed. Hisn will no longer start at login or come back when quit."
     exit 0
 fi
@@ -101,15 +106,19 @@ echo "installed $(defaults read "$APP/Contents/Info" CFBundleShortVersionString 
 
 # ---- 3. keep it running ------------------------------------------------------
 step "LaunchAgent: start at login, come back if force-quit"
-mkdir -p "$(dirname "$AGENT")"
-cat > "$AGENT" <<PLIST
+rm -f "$USER_AGENT"
+AGENT_TMP="$(mktemp "${TMPDIR:-/tmp}/hisn-agent.XXXXXX")"
+# /Library/LaunchAgents loads for every account that logs in — the partner's
+# administrator account too — so the agent names whose session it is for, and
+# the app quits quietly anywhere else (--for-user).
+cat > "$AGENT_TMP" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
     <key>Label</key><string>$LABEL</string>
     <key>ProgramArguments</key>
-    <array><string>$APP/Contents/MacOS/Hisn</string><string>--background</string></array>
+    <array><string>$APP/Contents/MacOS/Hisn</string><string>--background</string><string>--for-user</string><string>$(id -un)</string></array>
     <key>RunAtLoad</key><true/>
     <!-- Relaunch after a crash or a force-quit (a non-zero exit), not after
          an ordinary Quit — which Hisn refuses during a lock anyway. -->
@@ -120,9 +129,11 @@ cat > "$AGENT" <<PLIST
 </dict>
 </plist>
 PLIST
-plutil -lint "$AGENT" >/dev/null
+plutil -lint "$AGENT_TMP" >/dev/null
+sudo install -o root -g wheel -m 644 "$AGENT_TMP" "$AGENT"
+rm -f "$AGENT_TMP"
 launchctl bootstrap "$DOMAIN" "$AGENT"
-echo "loaded $LABEL"
+echo "loaded $LABEL (from $AGENT, owned by root)"
 
 # ---- 4. first launch ----------------------------------------------------------
 step "Registering the browser link"

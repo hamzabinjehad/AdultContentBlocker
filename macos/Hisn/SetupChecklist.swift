@@ -377,14 +377,19 @@ extension SetupEvidence {
 
     /// Whether the installed bundle and its bridge belong to root and the
     /// bridge cannot be written by this user.
-    static func appFilesProtected(bundle: String = "/Applications/Hisn.app") -> Bool? {
+    /// And the login agent root's too, in /Library/LaunchAgents: one in the
+    /// user's own Library is theirs to delete.
+    static func appFilesProtected(bundle: String = "/Applications/Hisn.app",
+                                  agent: String = "/Library/LaunchAgents/app.hisn.agent.plist") -> Bool? {
         let fm = FileManager.default
         let bridge = bundle + "/Contents/MacOS/HisnBridge"
         guard let b = try? fm.attributesOfItem(atPath: bundle),
               let x = try? fm.attributesOfItem(atPath: bridge) else { return nil }
+        let agentOwner = (try? fm.attributesOfItem(atPath: agent))?[.ownerAccountName] as? String
         return b[.ownerAccountName] as? String == "root"
             && x[.ownerAccountName] as? String == "root"
             && !fm.isWritableFile(atPath: bridge)
+            && agentOwner == "root"
     }
 
     /// Where a configuration profile puts a browser's policy. The bundle id,

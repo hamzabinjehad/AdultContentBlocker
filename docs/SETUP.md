@@ -34,9 +34,10 @@ macos/install.sh                      # no paid Apple account yet
 macos/install.sh --team ABCDE12345    # once you have one (step 9)
 ```
 
-Builds Hisn, puts it in **`/Applications`** (a home-folder app deletes without
-a password, and the system extension only activates from `/Applications`),
-installs a LaunchAgent that starts it at login and brings it back if it is
+Builds Hisn, puts it in **`/Applications`** owned by root (a home-folder app,
+or one its user owns, can be changed or deleted without a password, and the
+system extension only activates from `/Applications`), installs a LaunchAgent
+in `/Library/LaunchAgents` that starts it at login and brings it back if it is
 force-quit, registers the browser link for every Chromium browser, and runs
 the verifier. During a lock the app refuses an ordinary Quit: it is also the
 **browser guard**, which closes any browser Hisn is not running inside

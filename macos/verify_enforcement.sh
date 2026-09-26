@@ -124,6 +124,14 @@ if [ -e "$bridge" ]; then
 else
     warn "app files" "Hisn is not in /Applications"
 fi
+agent="/Library/LaunchAgents/app.hisn.agent.plist"
+if [ -f "$agent" ] && [ "$(stat -f %Su "$agent")" = "root" ]; then
+    ok "login agent" "in /Library, owned by root — brings Hisn back at every login"
+elif [ -f "$HOME/Library/LaunchAgents/app.hisn.agent.plist" ]; then
+    open "login agent" "in your own Library — a standard user can delete it; run install.sh"
+else
+    warn "login agent" "none — Hisn does not start at login; run install.sh"
+fi
 
 # ---- domain layer: hosts / DNS ---------------------------------------------
 hosts_count=$(grep -c '^0\.0\.0\.0' /etc/hosts 2>/dev/null || echo 0)

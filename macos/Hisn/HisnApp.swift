@@ -49,6 +49,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         guard !Self.isHostingTests else { return }
+        // The login agent lives in /Library/LaunchAgents, which loads in every
+        // account — the partner's administrator account too. It names the
+        // account it protects; anywhere else, leave quietly. A successful
+        // exit, so KeepAlive does not bring it back.
+        let args = CommandLine.arguments
+        if let i = args.firstIndex(of: "--for-user"), i + 1 < args.count,
+           args[i + 1] != NSUserName() {
+            exit(0)
+        }
         // One copy of this app bundle at a time: the LaunchAgent starts one at
         // login, and a second from Finder would run a second guard. A build of
         // Hisn from elsewhere (Xcode) is a different bundle and may coexist.
