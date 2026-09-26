@@ -5,11 +5,14 @@ import XCTest
 /// Mac worth pinning: which browser profiles run the extension.
 final class SetupChecklistTests: XCTestCase {
 
-    private func evidence(admin: Bool? = true, hosts: Int? = nil, partner: Bool = false,
+    private static let noSafeSearch = SafeSearchDNS(missing: ["Google", "YouTube", "Bing", "DuckDuckGo"])
+
+    private func evidence(admin: Bool? = true, hosts: Int? = nil,
+                          safe: SafeSearchDNS = noSafeSearch, partner: Bool = false,
                           browsers: [BrowserSetup] = [BrowserSetup(name: "Helium")],
                           relayOff: Bool = false, screenTime: Bool = false,
                           filter: Bool = false) -> SetupEvidence {
-        SetupEvidence(isAdmin: admin, hostsEntries: hosts, partnerKeySet: partner,
+        SetupEvidence(isAdmin: admin, hostsEntries: hosts, safeSearch: safe, partnerKeySet: partner,
                       browsers: browsers, privateRelayOff: relayOff,
                       screenTimeAdultFilter: screenTime, systemFilterRunning: filter)
     }
@@ -24,7 +27,8 @@ final class SetupChecklistTests: XCTestCase {
     func testTheStepsComeInSetupOrderWithTheAccountSplitLast() {
         let c = SetupChecklist(evidence())
         XCTAssertEqual(c.steps.map(\.id),
-                       [.browsers, .domains, .partner, .profile, .screenTime, .accounts, .systemFilter])
+                       [.browsers, .domains, .safeSearch, .partner, .profile, .screenTime, .accounts,
+                        .systemFilter])
     }
 
     func testAFreshMacHasEverythingLeftAndSaysWhatToDo() {
@@ -33,6 +37,7 @@ final class SetupChecklistTests: XCTestCase {
         XCTAssertFalse(c.isComplete)
         XCTAssertEqual(step(c, .browsers).action, .browserHelp)
         XCTAssertEqual(step(c, .domains).action, .command("macos/install.sh --hosts"))
+        XCTAssertEqual(step(c, .safeSearch).action, .command("macos/install.sh --hosts"))
         XCTAssertEqual(step(c, .partner).action, .partnerSettings)
         XCTAssertEqual(step(c, .profile).action, .command("macos/install.sh --profile"))
         XCTAssertEqual(step(c, .screenTime).action, .screenTimeSettings)
@@ -41,12 +46,12 @@ final class SetupChecklistTests: XCTestCase {
     }
 
     func testEverythingDoneIsCompleteWithoutThePaidFilter() {
-        let c = SetupChecklist(evidence(admin: false, hosts: 358_239, partner: true,
+        let c = SetupChecklist(evidence(admin: false, hosts: 358_239, safe: SafeSearchDNS(), partner: true,
                                         browsers: [lockedHelium], relayOff: true, screenTime: true))
         XCTAssertTrue(c.isComplete, c.steps.filter { $0.state == .todo }.map(\.title).joined(separator: ", "))
         XCTAssertEqual(step(c, .systemFilter).state, .optional,
                        "the $99 filter is worth having, not required to finish setup")
-        XCTAssertEqual(c.required.count, 6)
+        XCTAssertEqual(c.required.count, 7)
     }
 
     func testTheSystemFilterAloneCoversDomains() {
@@ -78,6 +83,53 @@ final class SetupChecklistTests: XCTestCase {
     func testAnUnreadableAdminGroupIsNotCountedAsDone() {
         XCTAssertEqual(step(SetupChecklist(evidence(admin: nil)), .accounts).state, .todo)
         XCTAssertEqual(step(SetupChecklist(evidence(admin: false)), .accounts).state, .done)
+    }
+
+    /// A moved address breaks the engine, which is worse than not forcing it:
+    /// the step says which one, and how to fix it.
+    func testAStaleSafeSearchAddressIsNamed() {
+        let s = step(SetupChecklist(evidence(safe: SafeSearchDNS(stale: ["Bing"]))), .safeSearch)
+        XCTAssertEqual(s.state, .todo)
+        XCTAssertTrue(s.detail.contains("Bing"), s.detail)
+        XCTAssertTrue(s.detail.contains("stops loading"), s.detail)
+    }
+
+    // MARK: - SafeSearch in /etc/hosts
+
+    private let dns: (String) -> Set<String>? = { host in
+        ["forcesafesearch.google.com": ["216.239.38.120"], "restrict.youtube.com": ["216.239.38.120"],
+         "strict.bing.com": ["150.171.27.16", "150.171.28.16"],
+         "safe.duckduckgo.com": ["40.114.177.246"]][host]
+    }
+
+    func testEveryEngineMappedIsForced() {
+        let hosts = """
+            127.0.0.1 localhost
+            # >>> hisn safesearch begin >>>
+            216.239.38.120 www.google.com
+            216.239.38.120\twww.youtube.com
+            150.171.28.16 www.bing.com
+            40.114.177.246 duckduckgo.com www.duckduckgo.com
+            """
+        XCTAssertEqual(SetupEvidence.safeSearchDNS(hosts: hosts, resolve: dns), SafeSearchDNS())
+    }
+
+    func testMissingBlockedAndMovedEnginesAreToldApart() {
+        let hosts = """
+            216.239.38.120 www.google.com
+            0.0.0.0 www.youtube.com
+            204.79.197.220 www.bing.com
+            # 40.114.177.246 duckduckgo.com
+            """
+        let r = SetupEvidence.safeSearchDNS(hosts: hosts, resolve: dns)
+        XCTAssertEqual(r.missing, ["YouTube", "DuckDuckGo"], "a sinkhole or a comment is no SafeSearch")
+        XCTAssertEqual(r.stale, ["Bing"], "Bing's old address")
+    }
+
+    func testOfflineAPresentLineCountsAsForced() {
+        let r = SetupEvidence.safeSearchDNS(hosts: "150.171.28.16 www.bing.com", resolve: { _ in nil })
+        XCTAssertEqual(r.stale, [])
+        XCTAssertEqual(r.missing, ["Google", "YouTube", "DuckDuckGo"])
     }
 
     func testEdgeKeepsItsPolicyUnderItsOwnDomain() {

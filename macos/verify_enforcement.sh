@@ -118,6 +118,41 @@ else
     open "domain blocklist" "only $hosts_count hosts entries — run block_dns.sh"
 fi
 
+# ---- SafeSearch for every browser and app (block_dns.sh) --------------------
+# Each engine's first name in safesearch_hosts.txt must point at the address
+# its SafeSearch host resolves to now. Missing: SafeSearch is forced only where
+# the extension or a browser policy runs. Stale: the engine moved and the name
+# now leads nowhere — it stops loading until install.sh --hosts runs again.
+ss_missing=""; ss_stale=""
+if [ -f "$(dirname "$0")/safesearch_hosts.txt" ]; then
+    ss_target=""
+    while IFS= read -r line || [ -n "$line" ]; do
+        case "$line" in
+            ''|'#'*) ;;
+            @*) ss_target="${line#@}" ;;
+            *)  [ -n "$ss_target" ] || continue
+                case "$ss_target" in
+                    *google.com) engine=Google ;; *youtube.com) engine=YouTube ;;
+                    *bing.com) engine=Bing ;; *duckduckgo.com) engine=DuckDuckGo ;;
+                    *) engine="$ss_target" ;;
+                esac
+                have=$(awk -v n="$line" '$1 !~ /^#/ && $2 == n { print $1; exit }' /etc/hosts)
+                want=$(dig +short +time=3 +tries=1 A "$ss_target" 2>/dev/null | grep -E '^[0-9.]+$' || true)
+                if [ -z "$have" ]; then ss_missing="$ss_missing $engine"
+                elif [ -n "$want" ] && ! printf '%s\n' "$want" | grep -qxF "$have"; then ss_stale="$ss_stale $engine"
+                fi
+                ss_target="" ;;   # one name per engine tells the story
+        esac
+    done < "$(dirname "$0")/safesearch_hosts.txt"
+    if [ -n "$ss_stale" ]; then
+        warn "SafeSearch (DNS)" "address changed for:$ss_stale — it stops loading; run install.sh --hosts"
+    elif [ -n "$ss_missing" ]; then
+        warn "SafeSearch (DNS)" "not forced for:$ss_missing outside the extension — run install.sh --hosts"
+    else
+        ok "SafeSearch (DNS)" "forced for Google, YouTube, Bing and DuckDuckGo in every browser and app"
+    fi
+fi
+
 # ---- profile-dependent browser controls, per installed browser -------------
 # One pass over the family: for each browser that is actually installed, is
 # incognito disabled, is DoH locked off, and does a native-messaging host exist?

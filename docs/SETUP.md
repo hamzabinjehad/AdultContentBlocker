@@ -75,6 +75,14 @@ Free. Blocks the core list for every app and browser, VPN or not — the OS
 resolver is below the browser. Bypassed only by browser DoH, which step 5
 closes.
 
+It also forces **SafeSearch everywhere**: Google (all 187 of its domains),
+YouTube (Restricted Mode, strict), Bing and DuckDuckGo are pointed at their own
+SafeSearch addresses (`macos/safesearch_hosts.txt`) — so Safari, Firefox and
+any app that opens a search get it too, not just the browsers with the
+extension. The addresses are looked up when the script runs; if one of those
+engines ever stops loading, its address moved: run the command again. The
+Setup page and `verify_enforcement.sh` both say when that has happened.
+
 ## Step 4 — the accountability partner's key · `partner/index.html`
 
 With both of you present: the partner opens `partner/index.html` on **their

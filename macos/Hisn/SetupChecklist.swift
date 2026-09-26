@@ -34,11 +34,28 @@ public struct BrowserSetup: Equatable {
     }
 }
 
+/// Whether /etc/hosts points each search engine at its own SafeSearch
+/// address (`block_dns.sh`, `safesearch_hosts.txt`).
+public struct SafeSearchDNS: Equatable {
+    /// Engines with no such line: SafeSearch holds only where the extension
+    /// or a browser policy runs.
+    public var missing: [String]
+    /// Engines whose line points at an address their SafeSearch host no
+    /// longer resolves to: that engine now fails to load.
+    public var stale: [String]
+
+    public init(missing: [String] = [], stale: [String] = []) {
+        self.missing = missing
+        self.stale = stale
+    }
+}
+
 public struct SetupEvidence: Equatable {
     /// nil when the group could not be read — then the step says so rather
     /// than guessing either way.
     public var isAdmin: Bool?
     public var hostsEntries: Int?
+    public var safeSearch: SafeSearchDNS
     public var partnerKeySet: Bool
     /// Installed Chromium browsers only: an absent browser is not a hole.
     public var browsers: [BrowserSetup]
@@ -46,11 +63,12 @@ public struct SetupEvidence: Equatable {
     public var screenTimeAdultFilter: Bool
     public var systemFilterRunning: Bool
 
-    public init(isAdmin: Bool?, hostsEntries: Int?, partnerKeySet: Bool,
-                browsers: [BrowserSetup], privateRelayOff: Bool,
+    public init(isAdmin: Bool?, hostsEntries: Int?, safeSearch: SafeSearchDNS = SafeSearchDNS(),
+                partnerKeySet: Bool, browsers: [BrowserSetup], privateRelayOff: Bool,
                 screenTimeAdultFilter: Bool, systemFilterRunning: Bool) {
         self.isAdmin = isAdmin
         self.hostsEntries = hostsEntries
+        self.safeSearch = safeSearch
         self.partnerKeySet = partnerKeySet
         self.browsers = browsers
         self.privateRelayOff = privateRelayOff
@@ -80,7 +98,9 @@ public struct SetupChecklist: Equatable {
     }
 
     public struct Step: Identifiable, Equatable {
-        public enum ID: String { case browsers, domains, partner, profile, screenTime, accounts, systemFilter }
+        public enum ID: String {
+            case browsers, domains, safeSearch, partner, profile, screenTime, accounts, systemFilter
+        }
         public let id: ID
         public let title: String
         public let detail: String
@@ -128,6 +148,22 @@ public struct SetupChecklist: Equatable {
             steps.append(Step(id: .domains, title: String(localized: "Domain blocking for every app"),
                               detail: String(localized: "Nothing blocks domains outside the browser yet. Run this in the Hisn folder; it asks for the Mac’s password."),
                               state: .todo, action: .command("macos/install.sh --hosts")))
+        }
+
+        // 2b. SafeSearch outside the browser: Safari, Firefox and every app
+        //     that opens a search, through the hosts file.
+        if !e.safeSearch.stale.isEmpty {
+            steps.append(Step(id: .safeSearch, title: String(localized: "SafeSearch everywhere"),
+                              detail: String(localized: "The address changed for \(e.safeSearch.stale.formatted(.list(type: .and))), so it stops loading until you run this again in the Hisn folder."),
+                              state: .todo, action: .command("macos/install.sh --hosts")))
+        } else if !e.safeSearch.missing.isEmpty {
+            steps.append(Step(id: .safeSearch, title: String(localized: "SafeSearch everywhere"),
+                              detail: String(localized: "Not forced outside the extension for \(e.safeSearch.missing.formatted(.list(type: .and))). Run this in the Hisn folder."),
+                              state: .todo, action: .command("macos/install.sh --hosts")))
+        } else {
+            steps.append(Step(id: .safeSearch, title: String(localized: "SafeSearch everywhere"),
+                              detail: String(localized: "Forced for Google, YouTube, Bing and DuckDuckGo in every browser and app."),
+                              state: .done, action: nil))
         }
 
         // 3. The partner's key, before the first lock.
@@ -224,11 +260,69 @@ extension SetupEvidence {
         return SetupEvidence(
             isAdmin: isAdministrator(NSUserName()),
             hostsEntries: HostsFile.blockingEntries(),
+            safeSearch: safeSearchDNS(),
             partnerKeySet: PartnerService.currentKey() != nil,
             browsers: browsers,
             privateRelayOff: forced("allowCloudPrivateRelay", "com.apple.applicationaccess") as? Bool == false,
             screenTimeAdultFilter: forced("restrictWeb", "com.apple.familycontrols.contentfilter") as? Bool == true,
             systemFilterRunning: systemFilterRunning)
+    }
+
+    /// One name per engine, and the host whose address it should carry —
+    /// the first entry of each group in `macos/safesearch_hosts.txt`.
+    static let safeSearchEngines: [(engine: String, name: String, target: String)] = [
+        ("Google", "www.google.com", "forcesafesearch.google.com"),
+        ("YouTube", "www.youtube.com", "restrict.youtube.com"),
+        ("Bing", "www.bing.com", "strict.bing.com"),
+        ("DuckDuckGo", "duckduckgo.com", "safe.duckduckgo.com"),
+    ]
+
+    /// Compares /etc/hosts with DNS. The SafeSearch hosts are not in the
+    /// hosts file, so the system resolver answers them from DNS. Offline, an
+    /// address cannot be judged stale, so a present line counts as forced.
+    static func safeSearchDNS(hosts: String? = try? String(contentsOfFile: "/etc/hosts", encoding: .utf8),
+                              resolve: (String) -> Set<String>? = resolveIPv4) -> SafeSearchDNS {
+        var mapped: [String: String] = [:]
+        for line in (hosts ?? "").split(separator: "\n") {
+            let f = line.split(whereSeparator: { $0 == " " || $0 == "\t" })
+            guard f.count >= 2, !f[0].hasPrefix("#") else { continue }
+            for name in f.dropFirst() where !name.hasPrefix("#") {
+                if mapped[String(name)] == nil { mapped[String(name)] = String(f[0]) }
+            }
+        }
+        var result = SafeSearchDNS()
+        for e in safeSearchEngines {
+            guard let have = mapped[e.name], have != "0.0.0.0" else {
+                result.missing.append(e.engine)
+                continue
+            }
+            if let want = resolve(e.target), !want.isEmpty, !want.contains(have) {
+                result.stale.append(e.engine)
+            }
+        }
+        return result
+    }
+
+    static func resolveIPv4(_ host: String) -> Set<String>? {
+        var hints = addrinfo(ai_flags: 0, ai_family: AF_INET, ai_socktype: SOCK_STREAM,
+                             ai_protocol: 0, ai_addrlen: 0, ai_canonname: nil,
+                             ai_addr: nil, ai_next: nil)
+        var list: UnsafeMutablePointer<addrinfo>?
+        guard getaddrinfo(host, nil, &hints, &list) == 0 else { return nil }
+        defer { freeaddrinfo(list) }
+        var out = Set<String>()
+        var p = list
+        while let ai = p {
+            if let sa = ai.pointee.ai_addr, ai.pointee.ai_family == AF_INET {
+                var addr = sa.withMemoryRebound(to: sockaddr_in.self, capacity: 1) { $0.pointee.sin_addr }
+                var buf = [CChar](repeating: 0, count: Int(INET_ADDRSTRLEN))
+                if inet_ntop(AF_INET, &addr, &buf, socklen_t(INET_ADDRSTRLEN)) != nil {
+                    out.insert(String(cString: buf))
+                }
+            }
+            p = ai.pointee.ai_next
+        }
+        return out
     }
 
     /// Where a configuration profile puts a browser's policy. The bundle id,

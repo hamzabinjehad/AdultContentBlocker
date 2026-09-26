@@ -187,16 +187,16 @@
     },
     "%lld of %lld steps done." : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld of %2$lld steps done."
-          }
-        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "أُنجزت %1$lld من %2$lld خطوات."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld of %2$lld steps done."
           }
         }
       }
@@ -1041,6 +1041,16 @@
         }
       }
     },
+    "Forced for Google, YouTube, Bing and DuckDuckGo in every browser and app." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مفروض على Google وYouTube وBing وDuckDuckGo في كل متصفح وتطبيق."
+          }
+        }
+      }
+    },
     "gambling\nbetting odds" : {
       "localizations" : {
         "ar" : {
@@ -1557,6 +1567,16 @@
         }
       }
     },
+    "Not forced outside the extension for %@. Run this in the Hisn folder." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "غير مفروض خارج الإضافة على %@. شغّل هذا في مجلد حصن."
+          }
+        }
+      }
+    },
     "Not installed — run macos/install.sh --hosts" : {
       "localizations" : {
         "ar" : {
@@ -2049,6 +2069,16 @@
         }
       }
     },
+    "SafeSearch everywhere" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "البحث الآمن في كل مكان"
+          }
+        }
+      }
+    },
     "Same as the Mac" : {
       "localizations" : {
         "ar" : {
@@ -2141,16 +2171,16 @@
     },
     "Setup: %lld of %lld steps done." : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Setup: %1$lld of %2$lld steps done."
-          }
-        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "الإعداد: أُنجزت %1$lld من %2$lld خطوات."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Setup: %1$lld of %2$lld steps done."
           }
         }
       }
@@ -2327,6 +2357,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "هذا ليس مفتاح شريك. يجب أن يكون الرمز الذي تعرضه صفحة «شريك حصن» لدى شريكك تحت «مفتاحك»."
+          }
+        }
+      }
+    },
+    "The address changed for %@, so it stops loading until you run this again in the Hisn folder." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تغيّر العنوان لدى %@، فلن يُفتح حتى تشغّل هذا مجددًا في مجلد حصن."
           }
         }
       }
