@@ -7,12 +7,13 @@ final class SetupChecklistTests: XCTestCase {
 
     private static let noSafeSearch = SafeSearchDNS(missing: ["Google", "YouTube", "Bing", "DuckDuckGo"])
 
-    private func evidence(admin: Bool? = true, hosts: Int? = nil,
+    private func evidence(admin: Bool? = true, hosts: Int? = nil, bypassesBlocked: Bool = true,
                           safe: SafeSearchDNS = noSafeSearch, partner: Bool = false,
                           browsers: [BrowserSetup] = [BrowserSetup(name: "Helium")],
                           relayOff: Bool = false, screenTime: Bool = false,
                           filter: Bool = false) -> SetupEvidence {
-        SetupEvidence(isAdmin: admin, hostsEntries: hosts, safeSearch: safe, partnerKeySet: partner,
+        SetupEvidence(isAdmin: admin, hostsEntries: hosts, dnsBypassesBlocked: bypassesBlocked,
+                      safeSearch: safe, partnerKeySet: partner,
                       browsers: browsers, privateRelayOff: relayOff,
                       screenTimeAdultFilter: screenTime, systemFilterRunning: filter)
     }
@@ -58,6 +59,27 @@ final class SetupChecklistTests: XCTestCase {
         let c = SetupChecklist(evidence(hosts: 0, filter: true))
         XCTAssertEqual(step(c, .domains).state, .done)
         XCTAssertEqual(step(c, .systemFilter).state, .done)
+    }
+
+    /// A hosts file that encrypted DNS walks around is not finished.
+    func testAHostsFileWithOpenBypassesIsNotDone() {
+        let open = step(SetupChecklist(evidence(hosts: 330_940, bypassesBlocked: false)), .domains)
+        XCTAssertEqual(open.state, .todo)
+        XCTAssertTrue(open.detail.contains("Private Relay"), open.detail)
+        XCTAssertEqual(step(SetupChecklist(evidence(hosts: 330_940, bypassesBlocked: false, filter: true)),
+                            .domains).state, .done, "the system filter does not go through DNS")
+    }
+
+    func testTheBypassSampleIsReadFromTheHostsFile() {
+        let blocked = """
+            0.0.0.0 mask.icloud.com mask-h2.icloud.com
+            0.0.0.0 mozilla.cloudflare-dns.com # Firefox
+            0.0.0.0 dns.google
+            """
+        XCTAssertTrue(SetupEvidence.dnsBypassesBlocked(hosts: blocked))
+        XCTAssertFalse(SetupEvidence.dnsBypassesBlocked(hosts: "0.0.0.0 mask.icloud.com"))
+        XCTAssertFalse(SetupEvidence.dnsBypassesBlocked(
+            hosts: "# 0.0.0.0 mask.icloud.com\n0.0.0.0 mozilla.cloudflare-dns.com\n0.0.0.0 dns.google"))
     }
 
     func testAFewHandWrittenHostsLinesAreNotABlocklist() {

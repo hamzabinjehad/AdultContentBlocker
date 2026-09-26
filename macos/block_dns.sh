@@ -6,11 +6,14 @@
 #     sudo macos/block_dns.sh --hosts       # no dependencies, under-blocks
 #     sudo macos/block_dns.sh --undo        # remove whichever was applied
 #     macos/block_dns.sh --hosts --dry-run  # write to $TMPDIR, touch nothing
-#     ... --no-safesearch                   # leave the search engines alone
+#     ... --no-extras                       # only the blocklist: no SafeSearch,
+#                                           # no DNS-bypass block
 #
 # Hosts and merge modes also force SafeSearch for every browser and app, by
 # pointing Google, YouTube, Bing and DuckDuckGo at their own SafeSearch
-# addresses (macos/safesearch_hosts.txt) in a block of their own.
+# addresses (macos/safesearch_hosts.txt), and block the names DNS would use to
+# route around this file — iCloud Private Relay and the public DNS-over-HTTPS
+# servers (macos/bypass_hosts.txt). Each in a block of its own.
 #
 # WHICH ONE, AND WHY IT IS NOT A TOSS-UP
 # --------------------------------------
@@ -51,6 +54,9 @@ SAFE_BEGIN="# >>> hisn safesearch begin >>>"
 SAFE_END="# <<< hisn safesearch end <<<"
 SAFE_LIST="$REPO/macos/safesearch_hosts.txt"
 SAFESEARCH=1
+BYPASS_BEGIN="# >>> hisn dns bypass begin >>>"
+BYPASS_END="# <<< hisn dns bypass end <<<"
+BYPASS_LIST="$REPO/macos/bypass_hosts.txt"
 DNSMASQ_CONF="/opt/homebrew/etc/dnsmasq.d/hisn-blocklist.conf"
 [ -d /opt/homebrew ] || DNSMASQ_CONF="/usr/local/etc/dnsmasq.d/hisn-blocklist.conf"
 
@@ -61,7 +67,7 @@ while [[ $# -gt 0 ]]; do
         --dnsmasq)  MODE="dnsmasq"; shift ;;
         --undo)     UNDO=1; shift ;;
         --dry-run)  DRY=1; shift ;;
-        --no-safesearch) SAFESEARCH=0; shift ;;
+        --no-safesearch|--no-extras) SAFESEARCH=0; shift ;;
         --list)     LIST="$2"; shift 2 ;;
         -h|--help)  sed -n '2,40p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *)          echo "unknown argument: $1" >&2; exit 2 ;;
@@ -77,48 +83,66 @@ need_root() {
 }
 
 # The IPv4 address DNS gives for a name — never /etc/hosts, which may hold an
-# older answer written by the previous run of this script.
+# older answer written by the previous run of this script. The Mac's own
+# resolver first, then two public ones: one slow answer should not leave an
+# engine unforced.
 resolve_v4() {
-    dig +short +time=3 +tries=2 A "$1" 2>/dev/null | grep -E '^[0-9]+(\.[0-9]+){3}$' | head -1
+    local server ip
+    for server in "" "@1.1.1.1" "@8.8.8.8"; do
+        ip=$(dig +short +time=3 +tries=2 A "$1" $server 2>/dev/null \
+             | grep -E '^[0-9]+(\.[0-9]+){3}$' | head -1)
+        [ -n "$ip" ] && { echo "$ip"; return 0; }
+    done
+    return 0
 }
 
-# Point each search engine's names at its own SafeSearch address, between the
-# SafeSearch markers of $1, replacing any earlier copy. The addresses are
-# resolved now rather than written into the repo: Bing's has changed before,
-# and a stale one takes the engine down. A target that does not resolve is
-# skipped whole and said so — a wrong address would break, not protect.
-write_safesearch() {
-    local target="$1" block current="" ip="" names=0 skipped=""
-    [ "$SAFESEARCH" -eq 1 ] || return 0
-    if [ ! -f "$SAFE_LIST" ]; then
-        echo "note: $SAFE_LIST is missing — SafeSearch not forced"
-        return 0
-    fi
+# Write the names of list $1 between markers $2 and $3 of file $4, replacing
+# any earlier copy. Names follow an `@target` line: an address is used as it
+# is (`@0.0.0.0`), a host name is resolved now rather than written into the
+# repo — Bing's SafeSearch address has changed before, and a stale one takes
+# the engine down. A target that does not resolve is skipped whole and said so:
+# a wrong address would break, not protect. Prints the number of names.
+write_group_block() {
+    local list="$1" begin="$2" end="$3" target="$4" block current="" ip="" names=0
     block="$(mktemp)"
     while IFS= read -r line || [ -n "$line" ]; do
         case "$line" in
             ''|'#'*) ;;
             @*) current="${line#@}"
-                ip="$(resolve_v4 "$current")"
-                [ -n "$ip" ] || skipped="$skipped $current" ;;
+                if [[ "$current" =~ ^[0-9]+(\.[0-9]+){3}$ ]]; then ip="$current"
+                else ip="$(resolve_v4 "$current")"
+                     [ -n "$ip" ] || echo "warning: could not resolve $current — its names are left as they are" >&2
+                fi ;;
             *)  if [ -n "$ip" ]; then echo "$ip $line" >> "$block"; names=$((names + 1)); fi ;;
         esac
-    done < "$SAFE_LIST"
-    sed -i '' "/^${SAFE_BEGIN}$/,/^${SAFE_END}$/d" "$target"
+    done < "$list"
+    sed -i '' "/^${begin}$/,/^${end}$/d" "$target"
     if [ "$names" -gt 0 ]; then
         {
-            echo "$SAFE_BEGIN"
-            echo "# Search engines' own SafeSearch addresses, resolved $(date -u +%FT%TZ)"
-            echo "# from macos/safesearch_hosts.txt. If a search engine stops loading, its"
-            echo "# address moved: run macos/install.sh --hosts again."
+            echo "$begin"
+            echo "# From macos/$(basename "$list"), written $(date -u +%FT%TZ) by block_dns.sh."
+            echo "# Rewritten by macos/install.sh --hosts (run it again if a search engine"
+            echo "# stops loading: its address moved). Removed by block_dns.sh --undo."
             cat "$block"
-            echo "$SAFE_END"
+            echo "$end"
         } >> "$target"
     fi
     rm -f "$block"
-    echo "SafeSearch forced for $names search-engine names (every browser and app)"
-    if [ -n "$skipped" ]; then
-        echo "warning: could not resolve$skipped — those engines are left as they are"
+    echo "$names"
+}
+
+# SafeSearch for every browser and app, and the DNS routes around this file
+# closed — see the header.
+write_extras() {
+    local target="$1" n
+    [ "$SAFESEARCH" -eq 1 ] || return 0
+    if [ -f "$SAFE_LIST" ]; then
+        n=$(write_group_block "$SAFE_LIST" "$SAFE_BEGIN" "$SAFE_END" "$target")
+        echo "SafeSearch forced for $n search-engine names (every browser and app)"
+    fi
+    if [ -f "$BYPASS_LIST" ]; then
+        n=$(write_group_block "$BYPASS_LIST" "$BYPASS_BEGIN" "$BYPASS_END" "$target")
+        echo "blocked $n names that route DNS around this file (Private Relay, public DoH)"
     fi
 }
 
@@ -150,6 +174,11 @@ if [ "$UNDO" -eq 1 ]; then
     if grep -qF "$SAFE_BEGIN" /etc/hosts 2>/dev/null; then
         sed -i '' "/^${SAFE_BEGIN}$/,/^${SAFE_END}$/d" /etc/hosts
         echo "removed the SafeSearch addresses from /etc/hosts"
+        did_something=1
+    fi
+    if grep -qF "$BYPASS_BEGIN" /etc/hosts 2>/dev/null; then
+        sed -i '' "/^${BYPASS_BEGIN}$/,/^${BYPASS_END}$/d" /etc/hosts
+        echo "removed the DNS-bypass block from /etc/hosts"
         did_something=1
     fi
 
@@ -298,7 +327,7 @@ if [ "$MODE" = "merge" ]; then
 
     rm -f "$NEW_ONLY" "$NEW_ONLY.have" "$NEW_ONLY.want"
     echo "wrote the merged block to $TARGET"
-    write_safesearch "$TARGET"
+    write_extras "$TARGET"
     [ "$DRY" -eq 1 ] && { echo "(dry run — /etc/hosts untouched)"; exit 0; }
     flush_dns
     echo
@@ -344,7 +373,7 @@ fi
 } >> "$TARGET"
 
 echo "wrote the block to $TARGET"
-write_safesearch "$TARGET"
+write_extras "$TARGET"
 [ "$DRY" -eq 1 ] && { echo "(dry run — /etc/hosts untouched)"; exit 0; }
 flush_dns
 echo

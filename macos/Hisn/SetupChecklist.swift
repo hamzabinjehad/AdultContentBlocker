@@ -55,6 +55,9 @@ public struct SetupEvidence: Equatable {
     /// than guessing either way.
     public var isAdmin: Bool?
     public var hostsEntries: Int?
+    /// Private Relay and the public DoH servers blocked in /etc/hosts
+    /// (`bypass_hosts.txt`): without that, encrypted DNS walks around it.
+    public var dnsBypassesBlocked: Bool
     public var safeSearch: SafeSearchDNS
     public var partnerKeySet: Bool
     /// Installed Chromium browsers only: an absent browser is not a hole.
@@ -63,11 +66,13 @@ public struct SetupEvidence: Equatable {
     public var screenTimeAdultFilter: Bool
     public var systemFilterRunning: Bool
 
-    public init(isAdmin: Bool?, hostsEntries: Int?, safeSearch: SafeSearchDNS = SafeSearchDNS(),
+    public init(isAdmin: Bool?, hostsEntries: Int?, dnsBypassesBlocked: Bool = true,
+                safeSearch: SafeSearchDNS = SafeSearchDNS(),
                 partnerKeySet: Bool, browsers: [BrowserSetup], privateRelayOff: Bool,
                 screenTimeAdultFilter: Bool, systemFilterRunning: Bool) {
         self.isAdmin = isAdmin
         self.hostsEntries = hostsEntries
+        self.dnsBypassesBlocked = dnsBypassesBlocked
         self.safeSearch = safeSearch
         self.partnerKeySet = partnerKeySet
         self.browsers = browsers
@@ -138,7 +143,11 @@ public struct SetupChecklist: Equatable {
 
         // 2. Domains for every app: the hosts file, or the system filter.
         let hostsOK = (e.hostsEntries ?? 0) >= ProtectionEvidence.hostsMinimum
-        if hostsOK || e.systemFilterRunning {
+        if hostsOK && !e.dnsBypassesBlocked && !e.systemFilterRunning {
+            steps.append(Step(id: .domains, title: String(localized: "Domain blocking for every app"),
+                              detail: String(localized: "The hosts file blocks domains, but encrypted DNS and iCloud Private Relay can still go around it. Run this again in the Hisn folder."),
+                              state: .todo, action: .command("macos/install.sh --hosts")))
+        } else if hostsOK || e.systemFilterRunning {
             steps.append(Step(id: .domains, title: String(localized: "Domain blocking for every app"),
                               detail: hostsOK
                                 ? String(localized: "\((e.hostsEntries ?? 0).formatted()) domains in the hosts file.")
@@ -257,10 +266,12 @@ extension SetupEvidence {
                     && forced("BrowserAddPersonEnabled", domain) as? Bool == false,
                 dnsLocked: forced("DnsOverHttpsMode", domain) as? String == "off")
         }
+        let hosts = try? String(contentsOfFile: "/etc/hosts", encoding: .utf8)
         return SetupEvidence(
             isAdmin: isAdministrator(NSUserName()),
             hostsEntries: HostsFile.blockingEntries(),
-            safeSearch: safeSearchDNS(),
+            dnsBypassesBlocked: dnsBypassesBlocked(hosts: hosts),
+            safeSearch: safeSearchDNS(hosts: hosts),
             partnerKeySet: PartnerService.currentKey() != nil,
             browsers: browsers,
             privateRelayOff: forced("allowCloudPrivateRelay", "com.apple.applicationaccess") as? Bool == false,
@@ -280,16 +291,9 @@ extension SetupEvidence {
     /// Compares /etc/hosts with DNS. The SafeSearch hosts are not in the
     /// hosts file, so the system resolver answers them from DNS. Offline, an
     /// address cannot be judged stale, so a present line counts as forced.
-    static func safeSearchDNS(hosts: String? = try? String(contentsOfFile: "/etc/hosts", encoding: .utf8),
+    static func safeSearchDNS(hosts: String?,
                               resolve: (String) -> Set<String>? = resolveIPv4) -> SafeSearchDNS {
-        var mapped: [String: String] = [:]
-        for line in (hosts ?? "").split(separator: "\n") {
-            let f = line.split(whereSeparator: { $0 == " " || $0 == "\t" })
-            guard f.count >= 2, !f[0].hasPrefix("#") else { continue }
-            for name in f.dropFirst() where !name.hasPrefix("#") {
-                if mapped[String(name)] == nil { mapped[String(name)] = String(f[0]) }
-            }
-        }
+        let mapped = hostsMapping(hosts)
         var result = SafeSearchDNS()
         for e in safeSearchEngines {
             guard let have = mapped[e.name], have != "0.0.0.0" else {
@@ -301,6 +305,28 @@ extension SetupEvidence {
             }
         }
         return result
+    }
+
+    /// Name → address, first line wins — as the resolver reads the file.
+    static func hostsMapping(_ hosts: String?) -> [String: String] {
+        var mapped: [String: String] = [:]
+        for line in (hosts ?? "").split(separator: "\n") {
+            let f = line.split(whereSeparator: { $0 == " " || $0 == "\t" })
+            guard f.count >= 2, !f[0].hasPrefix("#") else { continue }
+            for name in f.dropFirst() {
+                if name.hasPrefix("#") { break }
+                if mapped[String(name)] == nil { mapped[String(name)] = String(f[0]) }
+            }
+        }
+        return mapped
+    }
+
+    /// A sample of `bypass_hosts.txt`, as verify_enforcement.sh reads it:
+    /// Private Relay's name, Firefox's default DoH server, Google's.
+    static func dnsBypassesBlocked(hosts: String?) -> Bool {
+        let mapped = hostsMapping(hosts)
+        return ["mask.icloud.com", "mozilla.cloudflare-dns.com", "dns.google"]
+            .allSatisfy { mapped[$0] == "0.0.0.0" }
     }
 
     static func resolveIPv4(_ host: String) -> Set<String>? {

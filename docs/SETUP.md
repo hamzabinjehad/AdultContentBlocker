@@ -83,6 +83,11 @@ extension. The addresses are looked up when the script runs; if one of those
 engines ever stops loading, its address moved: run the command again. The
 Setup page and `verify_enforcement.sh` both say when that has happened.
 
+And it blocks the names DNS would use to go **around** the hosts file
+(`macos/bypass_hosts.txt`): iCloud Private Relay's, and the public DNS-over-HTTPS
+servers that do not filter — Firefox's default among them. The profile in step
+5 closes the same routes by policy; this layer works before it is installed.
+
 ## Step 4 — the accountability partner's key · `partner/index.html`
 
 With both of you present: the partner opens `partner/index.html` on **their

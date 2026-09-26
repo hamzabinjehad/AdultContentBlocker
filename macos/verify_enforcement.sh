@@ -153,6 +153,21 @@ if [ -f "$(dirname "$0")/safesearch_hosts.txt" ]; then
     fi
 fi
 
+# ---- DNS routes around the hosts file (block_dns.sh, bypass_hosts.txt) -----
+# A sample of the names: Private Relay's, Firefox's default DoH server, and
+# Google's. The profile closes the same routes by policy; this is the layer
+# that works without it.
+bp_open=""
+for n in mask.icloud.com mozilla.cloudflare-dns.com dns.google; do
+    [ "$(awk -v n="$n" '$1 !~ /^#/ && $2 == n { print $1; exit }' /etc/hosts)" = "0.0.0.0" ] \
+        || bp_open="$bp_open $n"
+done
+if [ -z "$bp_open" ]; then
+    ok "DNS bypasses" "Private Relay and public DoH servers blocked in /etc/hosts"
+else
+    warn "DNS bypasses" "not blocked:$bp_open — encrypted DNS can go around the hosts file; run install.sh --hosts"
+fi
+
 # ---- profile-dependent browser controls, per installed browser -------------
 # One pass over the family: for each browser that is actually installed, is
 # incognito disabled, is DoH locked off, and does a native-messaging host exist?

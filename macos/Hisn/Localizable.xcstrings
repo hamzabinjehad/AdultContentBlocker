@@ -2427,6 +2427,16 @@
         }
       }
     },
+    "The hosts file blocks domains, but encrypted DNS and iCloud Private Relay can still go around it. Run this again in the Hisn folder." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ملف hosts يحجب النطاقات، لكن DNS المشفّر وiCloud Private Relay ما زالا يستطيعان الالتفاف عليه. شغّل هذا مجددًا في مجلد حصن."
+          }
+        }
+      }
+    },
     "The hosts-file blocklist and the browser extension are both running. The system filter would add every app and VPN-proof blocking." : {
       "localizations" : {
         "ar" : {

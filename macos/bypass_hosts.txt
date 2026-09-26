@@ -1,0 +1,45 @@
+# Names whose use on this Mac would be to route DNS around the hosts file.
+#
+# Written by macos/block_dns.sh (hosts and merge modes) in a block of its own.
+# The hardening profile turns these off by policy; this is the second layer,
+# and the only one before the profile is installed.
+#
+# They stay out of the published blocklist on purpose: build.py never blocks
+# icloud.com or cloudflare-dns.com for anyone, and should not. Here they are
+# blocked only on a Mac whose owner chose install.sh --hosts.
+@0.0.0.0
+
+# iCloud Private Relay. Apple: a network that blocks these names turns Private
+# Relay off for itself — DNS then goes through this file like everything else.
+mask.icloud.com
+mask-h2.icloud.com
+
+# Public DNS-over-HTTPS servers that do not filter. A browser looks its DoH
+# server's name up through the system first; blocked, it falls back to the
+# system's DNS. Firefox's default is the first; Chrome and Edge upgrade to the
+# DoH server of the plain DNS they find, or of a server someone typed in.
+# NOT here: the filtering resolvers the profile uses — family.cloudflare-dns.com,
+# doh.cleanbrowsing.org, family.adguard-dns.com.
+mozilla.cloudflare-dns.com
+chrome.cloudflare-dns.com
+cloudflare-dns.com
+one.one.one.one
+1dot1dot1dot1.cloudflare-dns.com
+dns.google
+dns.google.com
+dns64.dns.google
+dns.quad9.net
+dns9.quad9.net
+dns10.quad9.net
+dns11.quad9.net
+doh.opendns.com
+dns.nextdns.io
+dns.adguard-dns.com
+unfiltered.adguard-dns.com
+dns.mullvad.net
+doh.mullvad.net
+dns.controld.com
+freedns.controld.com
+doh.dns.sb
+dns.sb
+doh.libredns.gr
