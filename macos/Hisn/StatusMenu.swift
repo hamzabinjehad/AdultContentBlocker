@@ -6,7 +6,19 @@ import SwiftUI
 @MainActor
 final class AppNavigation: ObservableObject {
     static let shared = AppNavigation()
-    @Published var page: ContentView.Page? = .overview
+    @Published var page: ContentView.Page? = AppNavigation.firstPage()
+
+    private static let seenSetupKey = "hisn.openedOnSetup"
+
+    /// The very first window opens on Setup: someone who has just installed
+    /// Hisn needs the list of what is left, not a status saying most of it is
+    /// missing. Every later window opens on the Overview.
+    private static func firstPage() -> ContentView.Page {
+        let d = UserDefaults.standard
+        guard !AppDelegate.isHostingTests, !d.bool(forKey: seenSetupKey) else { return .overview }
+        d.set(true, forKey: seenSetupKey)
+        return .setup
+    }
 }
 
 /// The main window, as distinct from the guard's countdown panel and the
