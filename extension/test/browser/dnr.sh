@@ -12,6 +12,9 @@
 #     do not loop;
 #   * YouTube requests carry `YouTube-Restrict: Strict`;
 #   * a domain on the bundled blocklist never arrives at all;
+#   * every case of blocklist/terms/host_cases.json — the contract the Python
+#     compiler and the Swift filter are held to — gets the same verdict from
+#     Chrome's own rules: blocked hosts never arrive, the rest do;
 #   * URL keyword rules fire — token terms on the hostname only (a search for
 #     "adult adhd" or a `?sex=female` form is left alone), substring terms
 #     anywhere, with innocent continuations guarded (Milford is not milf).
@@ -25,6 +28,7 @@
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 EXT="$(cd "$HERE/../.." && pwd)"
+CASES="$(cd "$EXT/.." && pwd)/blocklist/terms/host_cases.json"
 
 find_chromium() {
     if [ -n "${CHROME:-}" ] && [ -x "$CHROME" ]; then echo "$CHROME"; return; fi
@@ -59,8 +63,11 @@ openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj "/CN=hisn-test" \
 BLOCKED="$(python3 -c "import json;r=json.load(open('$EXT/rules/dnr_block_rules.json'));print(r[0]['condition']['requestDomains'][0])")"
 
 cat > "$WORK/server.py" <<PY
-import http.server, ssl, sys
+import http.server, json, ssl, sys
 LOG = open("$WORK/requests.log", "a", buffering=1)
+# One frame per case of the shared host contract.
+CASE_FRAMES = "".join('<iframe src="https://%s/?hisn-case"></iframe>\n' % c["host"]
+                      for c in json.load(open("$CASES"))["cases"]).encode()
 PAGE = b"""<!doctype html><meta charset=utf-8><body>
 <iframe src="https://www.google.com/search?q=hisn"></iframe>
 <iframe src="https://www.bing.com/search?q=hisn"></iframe>
@@ -73,7 +80,7 @@ PAGE = b"""<!doctype html><meta charset=utf-8><body>
 <iframe src="https://kw4.hisn.test/free-porn-videos"></iframe>
 <iframe src="https://www.milford.hisn.test/"></iframe>
 <iframe src="https://milfs.hisn.test/"></iframe>
-<p id=done>loaded</p></body>"""
+<p id=done>loaded</p></body>""".replace(b"<p id=done>", CASE_FRAMES + b"<p id=done>")
 class H(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         host = self.headers.get("Host", "")
@@ -124,11 +131,34 @@ PORT="$(head -1 "$WORK/port")"
     --host-resolver-rules="MAP * 127.0.0.1:$PORT" --ignore-certificate-errors \
     "https://harness.hisn.test/" > "$WORK/browser.log" 2>&1 &
 BROWSER_PID=$!
+# The host cases, judged from what reached the server. A host is compared
+# lowercased and without a trailing dot, as a browser sends it.
+cat > "$WORK/cases.py" <<'PY'
+import json, sys
+cases = json.load(open(sys.argv[1]))["cases"]
+seen = set()
+for line in open(sys.argv[2]):
+    host, path = line.split("\t")[:2]
+    if path.startswith("/?hisn-case"):
+        seen.add(host.lower().rstrip("."))
+norm = lambda h: h.lower().rstrip(".")
+if sys.argv[3] == "--waiting":   # exit 0 once every case that should arrive has
+    sys.exit(0 if all(norm(c["host"]) in seen for c in cases if not c["block"]) else 1)
+bad = 0
+for c in cases:
+    arrived = norm(c["host"]) in seen
+    if arrived == c["block"]:
+        bad += 1
+        print(f"  FAIL host case {c['host']}: expected {'blocked' if c['block'] else 'allowed'} — {c['why']}")
+print(f"  {'ok  ' if not bad else 'FAIL'} host contract: {len(cases) - bad}/{len(cases)} cases as host_cases.json says")
+sys.exit(1 if bad else 0)
+PY
 arrived() {  # every frame that is expected to reach the server has
     for h in 'www\.google\.com' 'www\.bing\.com' 'duckduckgo\.com' 'www\.youtube\.com' \
              'kw\.hisn\.test' 'kw2\.hisn\.test' 'www\.milford\.hisn\.test'; do
         grep -q "^$h	" "$WORK/requests.log" 2>/dev/null || return 1
     done
+    python3 "$WORK/cases.py" "$CASES" "$WORK/requests.log" --waiting
 }
 for _ in $(seq 200); do arrived && break; sleep 0.1; done
 sleep 1   # let any stray request (a loop, the blocked frame) land
@@ -156,6 +186,8 @@ expect "…nor a form field (?sex=female)"                   '^kw2\.hisn\.test'
 refuse "a substring keyword fires anywhere (/free-porn-…)" '^kw4\.hisn\.test'
 expect "Milford is not milf (guarded continuation)"        '^www\.milford\.hisn\.test'
 refuse "…while milfs still is"                              '^milfs\.hisn\.test'
+
+python3 "$WORK/cases.py" "$CASES" "$LOG" --judge || fail=1
 
 n="$(grep -cE '^www\.google\.com	/search' "$LOG" || true)"
 [ "$n" = "1" ] && echo "  ok   no redirect loop (one Google request)" \
