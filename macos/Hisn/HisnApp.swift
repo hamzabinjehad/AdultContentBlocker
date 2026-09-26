@@ -87,11 +87,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Quitting must not look like a way out. The lock lives in the filter and
-    /// on disk, not in this process, but a user who quits the app and sees the
-    /// menu bar item vanish will assume otherwise — so keep it running.
+    /// Closing the window never quits. It used to, whenever no lock ran — and
+    /// started at login with its window closed, the app then exited at once,
+    /// so the daily lock had no process to start it and the menu bar icon was
+    /// gone. Hisn is a menu bar app now: it runs until Quit (which a lock
+    /// refuses), and the window comes back from the menu bar or the Dock.
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-        !EffectiveLock.isLocked
+        false
     }
 
     /// During a lock this process is the browser guard, so Quit is refused.

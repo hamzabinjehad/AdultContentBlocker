@@ -80,6 +80,9 @@ grep -q "\*\* BUILD SUCCEEDED \*\*" "$BUILD.log" || { echo "build failed — see
 BUILT="$BUILD/Build/Products/Release/Hisn.app"
 
 # ---- 2. install -------------------------------------------------------------
+# The password first, before anything is stopped: an install interrupted at
+# the prompt used to leave the app quit and its agent unloaded.
+sudo -v || { echo "the install needs an administrator's password" >&2; exit 1; }
 step "Installing to $APP, owned by the system (asks for your password)"
 launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null || true
 if pgrep -xq Hisn; then
@@ -90,6 +93,8 @@ if pgrep -xq Hisn; then
 fi
 STAGE="$(mktemp -d /Applications/.hisn-install.XXXXXX 2>/dev/null)" \
     || { echo "cannot write to /Applications — run this as an administrator" >&2; exit 1; }
+# A half-finished copy must not stay behind in /Applications.
+trap 'sudo rm -rf "$STAGE" 2>/dev/null || rm -rf "$STAGE"' EXIT
 ditto "$BUILT" "$STAGE/Hisn.app"
 # Owned by root, writable by no one else. Copied as the person running this,
 # the bundle stayed theirs after the account split — and the admin-owned
@@ -102,6 +107,7 @@ sudo chmod -R go-w "$STAGE/Hisn.app"
 sudo rm -rf "$APP"
 sudo mv "$STAGE/Hisn.app" "$APP"
 rmdir "$STAGE"
+trap - EXIT
 echo "installed $(defaults read "$APP/Contents/Info" CFBundleShortVersionString 2>/dev/null || echo "") at $APP"
 
 # ---- 3. keep it running ------------------------------------------------------
