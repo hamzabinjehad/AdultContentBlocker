@@ -593,8 +593,12 @@ private struct LockPage: View {
     }
 
     var body: some View {
-        Group {
-            if lock.isLocked { activeLock } else { setup }
+        VStack(alignment: .leading, spacing: 30) {
+            Group {
+                if lock.isLocked { activeLock } else { setup }
+            }
+            Divider()
+            ScheduleSection()
         }
         .alert("Something went wrong", isPresented: .constant(error != nil)) {
             Button("OK") { error = nil }
@@ -850,6 +854,94 @@ private struct LockPage: View {
     private func requestRelease() {
         do { _ = try lock.requestSelfRelease() }
         catch { self.error = error.localizedDescription }
+    }
+}
+
+// MARK: - Daily lock
+
+/// The schedule: a lock that starts itself each day (`LockSchedule`). Shown
+/// in both states — tightening it is always allowed, and a lock running now
+/// is exactly when someone wants to make sure tomorrow night is covered too.
+private struct ScheduleSection: View {
+    @State private var draft = ScheduleStore.current()
+    @State private var saved = ScheduleStore.current()
+    @State private var pending = ScheduleStore.pending()
+    @State private var message: String?
+
+    var body: some View {
+        PageSection(title: "Every day",
+                subtitle: """
+                    A lock that starts itself at the same time each day and ends with the \
+                    window. Making it stronger takes effect now; making it weaker waits \
+                    24 hours, so switching it off at the last minute is no way out.
+                    """) {
+            Toggle("Lock every day", isOn: $draft.enabled)
+            HStack(spacing: 18) {
+                DatePicker("From", selection: time(\.start), displayedComponents: .hourAndMinute)
+                DatePicker("Until", selection: time(\.end), displayedComponents: .hourAndMinute)
+                Spacer()
+            }
+            .disabled(!draft.enabled)
+            Toggle("Strict mode", isOn: $draft.strict)
+                .disabled(!draft.enabled)
+
+            // Saving inside an open window starts the lock at once — said
+            // before Save, not discovered after it.
+            if draft.enabled, draft != saved,
+               let window = draft.window(containing: LockStore.trustedNow()) {
+                Label(String(localized: "The window is open now: saving starts a lock until \(window.end.formatted(date: .omitted, time: .shortened))."),
+                      systemImage: "exclamationmark.triangle.fill")
+                    .font(.callout).foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if let pending {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(String(localized: "A weaker schedule takes effect \(pending.at.formatted(date: .abbreviated, time: .shortened))."))
+                        .font(.callout).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer()
+                    Button("Cancel it") {
+                        ScheduleStore.cancelPending()
+                        reload()
+                    }
+                    .controlSize(.small)
+                }
+            }
+
+            SaveRow(message: message, isError: false, canSave: draft != saved,
+                    save: save, revert: { reload() })
+        }
+        .onAppear { reload() }
+    }
+
+    /// A time of day in minutes, as the Date a DatePicker wants.
+    private func time(_ key: WritableKeyPath<LockSchedule, Int>) -> Binding<Date> {
+        Binding(
+            get: {
+                Calendar.current.startOfDay(for: Date())
+                    .addingTimeInterval(TimeInterval(draft[keyPath: key] * 60))
+            },
+            set: { date in
+                let c = Calendar.current.dateComponents([.hour, .minute], from: date)
+                draft[keyPath: key] = (c.hour ?? 0) * 60 + (c.minute ?? 0)
+            })
+    }
+
+    private func save() {
+        switch ScheduleStore.request(draft) {
+        case .applied:
+            reload(message: String(localized: "Saved."))
+        case let .waiting(until):
+            reload(message: String(localized: "This makes the schedule weaker, so it takes effect \(until.formatted(date: .abbreviated, time: .shortened))."))
+        }
+    }
+
+    private func reload(message: String? = nil) {
+        saved = ScheduleStore.current()
+        draft = saved
+        pending = ScheduleStore.pending()
+        self.message = message
     }
 }
 

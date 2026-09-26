@@ -42,6 +42,10 @@ Never a URL of something you were trying to reach.
   prove it works end to end. Use the 48-hour self-release once, and cancel it.
 * Travel or a different network at least once (hotel Wi-Fi, a phone hotspot,
   a VPN): the hosts file and the extension must not care.
+* The daily lock (*Lock › Every day*), for the hours that are hardest — e.g.
+  22:00–07:00. Check that it starts by itself with the app in the background,
+  that a longer lock is left alone, and that switching it off waits 24 hours
+  (and says until when) rather than taking effect that evening.
 
 ## Month 3 — the paid layer and the phone
 

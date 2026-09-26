@@ -142,6 +142,8 @@ public final class LockManager: ObservableObject {
     }
 
     private var ticker: AnyCancellable?
+    /// A scheduled start is on its way; the next ticks must not start another.
+    private var startingScheduled = false
 
     private init() {
         state = LockStore.read()
@@ -154,6 +156,19 @@ public final class LockManager: ObservableObject {
         now = LockStore.trustedNow()
         let fresh = LockStore.read()
         if fresh != state { state = fresh }
+        // The daily lock: a weaker schedule whose day has passed takes over,
+        // then a window that is open starts — or lengthens — a lock to its end.
+        ScheduleStore.applyDue(now: now)
+        let schedule = ScheduleStore.current()
+        if !startingScheduled,
+           let window = schedule.lockNeeded(at: now, lockedUntil: mirrorsHoldLock ? state.deadline : nil) {
+            startingScheduled = true
+            Task {
+                defer { startingScheduled = false }
+                try? await start(seconds: window.end.timeIntervalSince(LockStore.trustedNow()),
+                                 strict: schedule.strict)
+            }
+        }
         // The EFFECTIVE deadline, so a matured self-release actually ends the
         // lock. Comparing against `state.deadline` here is what made the whole
         // release mechanism inert: the date was recorded and then never

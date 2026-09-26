@@ -95,6 +95,12 @@
 			path = LockManager.swift;
 			sourceTree = "<group>";
 		};
+		A79D559B5E6A0C557544711E /* LockSchedule.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = LockSchedule.swift;
+			sourceTree = "<group>";
+		};
 		10B6D354DDF0586B5B0D7A22 /* LockStore.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -239,6 +245,12 @@
 			path = LocalizationTests.swift;
 			sourceTree = "<group>";
 		};
+		7A388BAA57DF64855C0A223E /* LockScheduleTests.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = LockScheduleTests.swift;
+			sourceTree = "<group>";
+		};
 		93F61A60BC5B807E6CE6E78F /* PartnerTests.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -381,6 +393,7 @@
 				1F89B5A1A0E8503E6DE665E9,
 				A482D83B66E8C74486144AD2,
 				00DEA34098A0930C4F010EB9,
+				A79D559B5E6A0C557544711E,
 				10B6D354DDF0586B5B0D7A22,
 				0EE6D2898CA933202ECEECFB,
 				0DDFAADBE7361D65F79BE5B5,
@@ -426,6 +439,7 @@
 				5CEF7A7205FB28ED41D63CB3,
 				28A03C0E33E9129984BFCEA4,
 				8C0173C1C38F1936EC103F00,
+				7A388BAA57DF64855C0A223E,
 				93F61A60BC5B807E6CE6E78F,
 				51108B83C7EFBA266DC5773F,
 				C15C5BA8E7F3C7A5B3CC9BFB,
@@ -1092,6 +1106,10 @@
 			isa = PBXBuildFile;
 			fileRef = 51FD9D9EEE75399A2987D61E;
 		};
+		F3CFEAB96B0EB2308922F407 /* LockSchedule.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = A79D559B5E6A0C557544711E;
+		};
 		079A944B3E87101645898B0C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1119,6 +1137,7 @@
 				B4EE4DB38517A27FB88356A0,
 				9E812DD15CCA585BCFC2E32F,
 				718274BF2627B7501E55E03D,
+				F3CFEAB96B0EB2308922F407,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1349,6 +1368,10 @@
 			isa = PBXBuildFile;
 			fileRef = 883D07C40E91F1F9B4B56A52;
 		};
+		CA326A27BE0AA00513073B3E /* LockScheduleTests.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 7A388BAA57DF64855C0A223E;
+		};
 		A29CD87A3F623C88ED8997D1 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1366,6 +1389,7 @@
 				608855FBFE591CFA57FC9F03,
 				5C00E8EDDD34459D1728E0F5,
 				9BC6E69A99DBE1477BB872B9,
+				CA326A27BE0AA00513073B3E,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

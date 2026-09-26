@@ -79,6 +79,8 @@ APP_SOURCES = SHARED + [
     "Hisn/SetupChecklist.swift",
     # The menu bar icon and menu.
     "Hisn/StatusMenu.swift",
+    # The daily lock.
+    "Hisn/LockSchedule.swift",
 ]
 
 # Every string the app shows, in English and Arabic. A String Catalog: Xcode
@@ -102,7 +104,8 @@ TEST_SOURCES = ["HisnTests/BlocklistStoreTests.swift",
                 "HisnTests/PartnerTests.swift",
                 "HisnTests/AuditRegressionTests.swift",
                 "HisnTests/LocalizationTests.swift",
-                "HisnTests/SetupChecklistTests.swift"]
+                "HisnTests/SetupChecklistTests.swift",
+                "HisnTests/LockScheduleTests.swift"]
 
 # The signed seed list, bundled into the extension so a machine that has never
 # completed a list update still enforces something. Verified on the same path as

@@ -459,12 +459,32 @@
         }
       }
     },
+    "A lock that starts itself at the same time each day and ends with the window. Making it stronger takes effect now; making it weaker waits 24 hours, so switching it off at the last minute is no way out." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قفل يبدأ من تلقاء نفسه في الوقت نفسه كل يوم وينتهي بانتهاء الفترة. جعله أقوى يسري فورًا، وجعله أضعف ينتظر 24 ساعة، فإيقافه في اللحظة الأخيرة ليس طريقًا للخروج."
+          }
+        }
+      }
+    },
     "A release request takes %@ to arrive and cannot be hurried. Your accountability partner can approve one immediately." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "يستغرق طلب الإنهاء %@ حتى يسري، ولا يمكن تعجيله. يستطيع شريك المحاسبة الموافقة عليه فورًا."
+          }
+        }
+      }
+    },
+    "A weaker schedule takes effect %@." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يسري الجدول الأضعف في %@."
           }
         }
       }
@@ -711,6 +731,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "المتصفحات أثناء القفل"
+          }
+        }
+      }
+    },
+    "Cancel it" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ألغِه"
           }
         }
       }
@@ -1041,12 +1071,32 @@
         }
       }
     },
+    "Every day" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كل يوم"
+          }
+        }
+      }
+    },
     "Forced for Google, YouTube, Bing and DuckDuckGo in every browser and app." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "مفروض على Google وYouTube وBing وDuckDuckGo في كل متصفح وتطبيق."
+          }
+        }
+      }
+    },
+    "From" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "من"
           }
         }
       }
@@ -1343,6 +1393,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "القفل"
+          }
+        }
+      }
+    },
+    "Lock every day" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اقفل كل يوم"
           }
         }
       }
@@ -2537,6 +2597,16 @@
         }
       }
     },
+    "The window is open now: saving starts a lock until %@." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الفترة مفتوحة الآن: الحفظ يبدأ قفلًا حتى %@."
+          }
+        }
+      }
+    },
     "These run on top of the site lists, and catch pages the lists have never seen." : {
       "localizations" : {
         "ar" : {
@@ -2553,6 +2623,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "لا يمكنك التراجع عن هذا وحدك"
+          }
+        }
+      }
+    },
+    "This makes the schedule weaker, so it takes effect %@." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذا يجعل الجدول أضعف، لذلك يسري في %@."
           }
         }
       }
@@ -2649,6 +2729,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "يُفتح القفل في %@. يمكنك إلغاء هذا، لكن لا يمكنك تعجيله."
+          }
+        }
+      }
+    },
+    "Until" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حتى"
           }
         }
       }
