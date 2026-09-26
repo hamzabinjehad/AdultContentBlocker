@@ -222,12 +222,17 @@ private struct OverviewPage: View {
             Button("OK") { error = nil }
         } message: { Text(error ?? "") }
         .sheet(isPresented: $showBrowserHelp) { BrowserSetupHelp() }
-        .task {
-            let running = protection.layers.first?.ok ?? false
-            setup = await Task.detached {
-                SetupChecklist(SetupEvidence.current(systemFilterRunning: running))
-            }.value
+        .task { await readSetup() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            Task { await readSetup() }
         }
+    }
+
+    private func readSetup() async {
+        let running = protection.layers.first?.ok ?? false
+        setup = await Task.detached {
+            SetupChecklist(SetupEvidence.current(systemFilterRunning: running))
+        }.value
     }
 
     private var protectionCard: some View {
@@ -468,6 +473,11 @@ private struct SetupPage: View {
             }
         }
         .task { await refresh() }
+        // Most steps happen outside the app — a command in Terminal, a
+        // profile in System Settings — so read the Mac again on the way back.
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            Task { await refresh() }
+        }
         .sheet(isPresented: $showBrowserHelp) { BrowserSetupHelp() }
     }
 
