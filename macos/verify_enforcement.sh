@@ -191,6 +191,16 @@ else
     warn "DNS bypasses" "not blocked:$bp_open — encrypted DNS can go around the hosts file; run install.sh --hosts"
 fi
 
+# ---- the big sites' subdomains (block_dns.sh, popular_domains.txt) ---------
+top=$(grep -v '^#' "$(dirname "$0")/popular_domains.txt" 2>/dev/null | grep -v '^$' | head -1)
+if [ -n "$top" ]; then
+    if [ "$(awk -v n="de.$top" '$1 !~ /^#/ && $2 == n { print $1; exit }' /etc/hosts)" = "0.0.0.0" ]; then
+        ok "popular subdomains" "country and mobile subdomains of the most-visited sites blocked"
+    else
+        warn "popular subdomains" "de.$top and the like resolve outside the extension — run install.sh --hosts"
+    fi
+fi
+
 # ---- profile-dependent browser controls, per installed browser -------------
 # One pass over the family: for each browser that is actually installed, is
 # incognito disabled, is DoH locked off, and does a native-messaging host exist?

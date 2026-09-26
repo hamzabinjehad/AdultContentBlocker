@@ -13,7 +13,8 @@
 # pointing Google, YouTube, Bing and DuckDuckGo at their own SafeSearch
 # addresses (macos/safesearch_hosts.txt), and block the names DNS would use to
 # route around this file — iCloud Private Relay and the public DNS-over-HTTPS
-# servers (macos/bypass_hosts.txt). Each in a block of its own.
+# servers (macos/bypass_hosts.txt) — and the country and mobile subdomains of
+# the most-visited sites (macos/popular_domains.txt). Each in a block of its own.
 #
 # WHICH ONE, AND WHY IT IS NOT A TOSS-UP
 # --------------------------------------
@@ -57,6 +58,11 @@ SAFESEARCH=1
 BYPASS_BEGIN="# >>> hisn dns bypass begin >>>"
 BYPASS_END="# <<< hisn dns bypass end <<<"
 BYPASS_LIST="$REPO/macos/bypass_hosts.txt"
+SUB_BEGIN="# >>> hisn subdomains begin >>>"
+SUB_END="# <<< hisn subdomains end <<<"
+POPULAR_LIST="$REPO/macos/popular_domains.txt"
+# The subdomains the big sites serve their country and mobile versions on.
+SUB_PREFIXES="m mobile de fr es it pt ru rt jp ja nl pl tr ar cn zh ko cs cz sv fi no da el hu ro id th vi he br"
 DNSMASQ_CONF="/opt/homebrew/etc/dnsmasq.d/hisn-blocklist.conf"
 [ -d /opt/homebrew ] || DNSMASQ_CONF="/usr/local/etc/dnsmasq.d/hisn-blocklist.conf"
 
@@ -131,6 +137,28 @@ write_group_block() {
     echo "$names"
 }
 
+# /etc/hosts has no wildcard: the core list blocks example.com and
+# www.example.com, and nothing under them. For the most-visited sites
+# (popular_domains.txt), block the country and mobile subdomains too — the
+# extension and the system filter already block every subdomain; this is for
+# browsers and apps with neither.
+write_subdomains() {
+    local target="$1" sites
+    [ -f "$POPULAR_LIST" ] || return 0
+    sed -i '' "/^${SUB_BEGIN}$/,/^${SUB_END}$/d" "$target"
+    sites=$(grep -v '^#' "$POPULAR_LIST" | grep -vc '^$' || true)
+    {
+        echo "$SUB_BEGIN"
+        echo "# Country and mobile subdomains of the $sites most-visited sites in"
+        echo "# macos/popular_domains.txt, written $(date -u +%FT%TZ). Removed by --undo."
+        grep -v '^#' "$POPULAR_LIST" | grep -v '^$' \
+            | awk -v p="$SUB_PREFIXES" 'BEGIN { n = split(p, a, " ") }
+                                       { for (i = 1; i <= n; i++) print "0.0.0.0 " a[i] "." $0 }'
+        echo "$SUB_END"
+    } >> "$target"
+    echo "blocked the country and mobile subdomains of $sites most-visited sites"
+}
+
 # SafeSearch for every browser and app, and the DNS routes around this file
 # closed — see the header.
 write_extras() {
@@ -144,6 +172,7 @@ write_extras() {
         n=$(write_group_block "$BYPASS_LIST" "$BYPASS_BEGIN" "$BYPASS_END" "$target")
         echo "blocked $n names that route DNS around this file (Private Relay, public DoH)"
     fi
+    write_subdomains "$target"
 }
 
 flush_dns() {
@@ -174,6 +203,11 @@ if [ "$UNDO" -eq 1 ]; then
     if grep -qF "$SAFE_BEGIN" /etc/hosts 2>/dev/null; then
         sed -i '' "/^${SAFE_BEGIN}$/,/^${SAFE_END}$/d" /etc/hosts
         echo "removed the SafeSearch addresses from /etc/hosts"
+        did_something=1
+    fi
+    if grep -qF "$SUB_BEGIN" /etc/hosts 2>/dev/null; then
+        sed -i '' "/^${SUB_BEGIN}$/,/^${SUB_END}$/d" /etc/hosts
+        echo "removed the popular sites' subdomains from /etc/hosts"
         did_something=1
     fi
     if grep -qF "$BYPASS_BEGIN" /etc/hosts 2>/dev/null; then

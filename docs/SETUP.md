@@ -89,6 +89,12 @@ And it blocks the names DNS would use to go **around** the hosts file
 servers that do not filter — Firefox's default among them. The profile in step
 5 closes the same routes by policy; this layer works before it is installed.
 
+The hosts file has no wildcards, so it blocks `example.com` and
+`www.example.com` only. For the 1,000 most-visited adult sites
+(`macos/popular_domains.txt`) it also blocks the country and mobile subdomains
+they serve (`de.`, `fr.`, `m.`, …) — the extension and the system filter block
+every subdomain; this covers the browsers and apps with neither.
+
 ## Step 4 — the accountability partner's key · `partner/index.html`
 
 With both of you present: the partner opens `partner/index.html` on **their
