@@ -1,0 +1,2386 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "“%@” is too short to block safely. Words need at least %lld letters — shorter ones match parts of ordinary words and block pages you need." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%1$@” is too short to block safely. Words need at least %2$lld letters — shorter ones match parts of ordinary words and block pages you need."
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "«%1$@» أقصر من أن تُحجب بأمان. يجب ألا تقل الكلمة عن %2$lld أحرف — فالأقصر منها تطابق أجزاءً من كلمات عادية وتحجب صفحات تحتاجها."
+          }
+        }
+      }
+    },
+    "%@ · until %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · until %2$@"
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · حتى %2$@"
+          }
+        }
+      }
+    },
+    "%@ (%@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ (%2$@)"
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ (%2$@)"
+          }
+        }
+      }
+    },
+    "%@ and %lld more" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ and %2$lld more"
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ و%2$lld غيرها"
+          }
+        }
+      }
+    },
+    "%@ closes in %lld s" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ closes in %2$lld s"
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يُغلَق %1$@ خلال %2$lld ث"
+          }
+        }
+      }
+    },
+    "%@ domains blocked for every app" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ نطاق محجوب لكل التطبيقات"
+          }
+        }
+      }
+    },
+    "%@ has no Hisn protection inside it, so it cannot stay open during a lock. Use Safari or a browser with the Hisn extension." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا توجد حماية حصن داخل %@، لذلك لا يمكن أن يبقى مفتوحًا أثناء القفل. استخدم Safari أو متصفحًا فيه إضافة حصن."
+          }
+        }
+      }
+    },
+    "%@ is about to close." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سيُغلَق %@ بعد قليل."
+          }
+        }
+      }
+    },
+    "%lld domains" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld domain"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld domains"
+                }
+              }
+            }
+          }
+        },
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld نطاق"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "نطاق واحد"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "نطاقان"
+                }
+              },
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld نطاقات"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld نطاقًا"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld نطاق"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld valid" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "صالحة: %lld"
+          }
+        }
+      }
+    },
+    "%lld valid · %lld skipped (not a domain)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld valid · %2$lld skipped (not a domain)"
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "صالحة: %1$lld · ستُتجاهل (ليست نطاقات): %2$lld"
+          }
+        }
+      }
+    },
+    "%lld words" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld word"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld words"
+                }
+              }
+            }
+          }
+        },
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld كلمة"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "كلمة واحدة"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "كلمتان"
+                }
+              },
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld كلمات"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld كلمة"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld كلمة"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "1. Send this code to your partner:" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1. أرسل هذا الرمز إلى شريكك:"
+          }
+        }
+      }
+    },
+    "2. If they agree, their Hisn Partner page gives them an approval to send back. Paste it here:" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2. إن وافق، تعطيه صفحة «شريك حصن» موافقةً يرسلها إليك. الصقها هنا:"
+          }
+        }
+      }
+    },
+    "A lock has to be between %@ and %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A lock has to be between %1$@ and %2$@."
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يجب أن تكون مدة القفل بين %1$@ و%2$@."
+          }
+        }
+      }
+    },
+    "A lock is already running until %@." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يوجد قفل يعمل بالفعل حتى %@."
+          }
+        }
+      }
+    },
+    "A lock is running, so a partner key can only be added once it ends." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يوجد قفل يعمل، لذلك لا يمكن إضافة مفتاح الشريك إلا بعد انتهائه."
+          }
+        }
+      }
+    },
+    "A lock is running, so the partner key cannot be changed until it ends. (Removing it is still allowed.)" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يوجد قفل يعمل، لذلك لا يمكن تغيير مفتاح الشريك حتى ينتهي. (إزالته ما زالت مسموحة.)"
+          }
+        }
+      }
+    },
+    "A lock is running, so these changes wait until it ends: %@. Making checking stricter still works." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يوجد قفل يعمل، لذلك تنتظر هذه التغييرات حتى ينتهي: %@. جعل الفحص أشد ما زال ممكنًا."
+          }
+        }
+      }
+    },
+    "A lock is running, so you cannot allow %@ until it ends." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يوجد قفل يعمل، لذلك لا يمكنك السماح بـ %@ حتى ينتهي."
+          }
+        }
+      }
+    },
+    "A lock is running, so you cannot stop blocking %@ or allow %@ until it ends." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A lock is running, so you cannot stop blocking %1$@ or allow %2$@ until it ends."
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يوجد قفل يعمل، لذلك لا يمكنك إيقاف حجب %1$@ ولا السماح بـ %2$@ حتى ينتهي."
+          }
+        }
+      }
+    },
+    "A lock is running, so you cannot stop blocking %@ or unblock %@ until it ends." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A lock is running, so you cannot stop blocking %1$@ or unblock %2$@ until it ends."
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يوجد قفل يعمل، لذلك لا يمكنك إيقاف حجب %1$@ ولا رفع الحجب عن %2$@ حتى ينتهي."
+          }
+        }
+      }
+    },
+    "A lock is running, so you cannot stop blocking %@ until it ends." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يوجد قفل يعمل، لذلك لا يمكنك إيقاف حجب %@ حتى ينتهي."
+          }
+        }
+      }
+    },
+    "A lock is running, so you cannot unblock %@ until it ends." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يوجد قفل يعمل، لذلك لا يمكنك رفع الحجب عن %@ حتى ينتهي."
+          }
+        }
+      }
+    },
+    "A lock is running. Apps can be allowed again once it ends." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يوجد قفل يعمل. يمكن السماح بالتطبيقات من جديد بعد انتهائه."
+          }
+        }
+      }
+    },
+    "A lock is running. You can add blocks and remove allowances; the reverse waits until it ends." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يوجد قفل يعمل. يمكنك إضافة مواقع للحجب وإزالة المواقع المسموحة؛ أما العكس فينتظر حتى ينتهي."
+          }
+        }
+      }
+    },
+    "A lock is running. You can turn checks on and raise sensitivity; the reverse waits until it ends." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يوجد قفل يعمل. يمكنك تشغيل الفحوص ورفع الحساسية؛ أما العكس فينتظر حتى ينتهي."
+          }
+        }
+      }
+    },
+    "A release request takes %@ to arrive and cannot be hurried. Your accountability partner can approve one immediately." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يستغرق طلب الإنهاء %@ حتى يسري، ولا يمكن تعجيله. يستطيع شريك المحاسبة الموافقة عليه فورًا."
+          }
+        }
+      }
+    },
+    "Accountability partner" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شريك المحاسبة"
+          }
+        }
+      }
+    },
+    "Add a week" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أضف أسبوعًا"
+          }
+        }
+      }
+    },
+    "Add app…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أضف تطبيقًا…"
+          }
+        }
+      }
+    },
+    "Adding blocks and removing allowances still work." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إضافة مواقع للحجب وإزالة المواقع المسموحة ما زالتا ممكنتين."
+          }
+        }
+      }
+    },
+    "Adding more still works." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إضافة المزيد ما زالت ممكنة."
+          }
+        }
+      }
+    },
+    "Allow during a lock" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اسمح به أثناء القفل"
+          }
+        }
+      }
+    },
+    "Already on the list." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "موجود في القائمة بالفعل."
+          }
+        }
+      }
+    },
+    "Always allowed" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مسموح دائمًا"
+          }
+        }
+      }
+    },
+    "Always available. Making the lock weaker is not." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متاح دائمًا. أما إضعاف القفل فلا."
+          }
+        }
+      }
+    },
+    "Always block these" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "احجب هذه دائمًا"
+          }
+        }
+      }
+    },
+    "App version" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إصدار التطبيق"
+          }
+        }
+      }
+    },
+    "Apps" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التطبيقات"
+          }
+        }
+      }
+    },
+    "Between %@ and %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Between %1$@ and %2$@."
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بين %1$@ و%2$@."
+          }
+        }
+      }
+    },
+    "Block" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "احجب"
+          }
+        }
+      }
+    },
+    "Block list version" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إصدار قائمة الحجب"
+          }
+        }
+      }
+    },
+    "Blocked on top of the built-in lists." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تُحجب إضافةً إلى القوائم المدمجة."
+          }
+        }
+      }
+    },
+    "Blocking Rules" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قواعد الحجب"
+          }
+        }
+      }
+    },
+    "Blocking still runs; a lock makes it unremovable for a set time." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الحجب يعمل؛ والقفل يجعله غير قابل للإزالة لمدة محددة."
+          }
+        }
+      }
+    },
+    "Blocks everything except sites you allow. A block list can never cover every site; this can." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يحجب كل شيء عدا المواقع التي تسمح بها. لا يمكن لقائمة حجب أن تغطي كل المواقع؛ وهذا يستطيع."
+          }
+        }
+      }
+    },
+    "Blocks the app's internet access. It still opens, and still works offline — stopping a launch needs Screen Time, which no app can do for you." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يقطع وصول التطبيق إلى الإنترنت. سيبقى يفتح ويعمل دون اتصال — منع تشغيله يحتاج «مدة استخدام الجهاز»، ولا يستطيع أي تطبيق فعل ذلك عنك."
+          }
+        }
+      }
+    },
+    "Browser extension" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إضافة المتصفح"
+          }
+        }
+      }
+    },
+    "Browser last connected" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "آخر اتصال للمتصفح"
+          }
+        }
+      }
+    },
+    "Browsers during a lock" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المتصفحات أثناء القفل"
+          }
+        }
+      }
+    },
+    "Cancel the request" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ألغِ الطلب"
+          }
+        }
+      }
+    },
+    "Cannot remove while a lock is running" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يمكن الإزالة أثناء القفل"
+          }
+        }
+      }
+    },
+    "Catches a site registered today, before any list has it. Works in every app on this Mac." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يلتقط موقعًا سُجّل اليوم قبل أن تضمّه أي قائمة. يعمل في كل التطبيقات على هذا الماك."
+          }
+        }
+      }
+    },
+    "Check again" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تحقق مجددًا"
+          }
+        }
+      }
+    },
+    "Check the words on a page" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افحص كلمات الصفحة"
+          }
+        }
+      }
+    },
+    "Check with your partner that their page shows the same fingerprint." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تأكد مع شريكك أن صفحته تعرض البصمة نفسها."
+          }
+        }
+      }
+    },
+    "Checking status" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جارٍ التحقق من الحالة"
+          }
+        }
+      }
+    },
+    "Checking…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جارٍ التحقق…"
+          }
+        }
+      }
+    },
+    "Come back here — the Browser extension row reads Connected once it has." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عد إلى هنا — سيظهر «متصل» في سطر إضافة المتصفح حين يتم ذلك."
+          }
+        }
+      }
+    },
+    "Connect a browser" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اربط متصفحًا"
+          }
+        }
+      }
+    },
+    "Connected" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متصل"
+          }
+        }
+      }
+    },
+    "Content checking" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فحص المحتوى"
+          }
+        }
+      }
+    },
+    "Copy" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "انسخ"
+          }
+        }
+      }
+    },
+    "Could not read an identifier for %@." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّرت قراءة معرّف %@."
+          }
+        }
+      }
+    },
+    "Could not read its state: %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّرت قراءة حالته: %@"
+          }
+        }
+      }
+    },
+    "Custom" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مخصص"
+          }
+        }
+      }
+    },
+    "days" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أيام"
+          }
+        }
+      }
+    },
+    "Details" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التفاصيل"
+          }
+        }
+      }
+    },
+    "Domains in the filter" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "النطاقات في المرشّح"
+          }
+        }
+      }
+    },
+    "Done" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تم"
+          }
+        }
+      }
+    },
+    "Download the block list" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نزّل قائمة الحجب"
+          }
+        }
+      }
+    },
+    "early release arrives %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإنهاء المبكر يسري في %@"
+          }
+        }
+      }
+    },
+    "Early release requested" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "طُلب الإنهاء المبكر"
+          }
+        }
+      }
+    },
+    "End the lock" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أنهِ القفل"
+          }
+        }
+      }
+    },
+    "Ending early" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإنهاء المبكر"
+          }
+        }
+      }
+    },
+    "Ends %@." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ينتهي في %@."
+          }
+        }
+      }
+    },
+    "Enter a length between %@ and %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter a length between %1$@ and %2$@."
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أدخل مدة بين %1$@ و%2$@."
+          }
+        }
+      }
+    },
+    "gambling\nbetting odds" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قمار\nمراهنات"
+          }
+        }
+      }
+    },
+    "Higher catches more, and blocks more pages that turn out to be innocent. Medical and reference sites are exempt from this check at any setting." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "القيمة الأعلى تلتقط أكثر، وتحجب كذلك صفحات بريئة أكثر. المواقع الطبية والمرجعية مستثناة من هذا الفحص في كل المستويات."
+          }
+        }
+      }
+    },
+    "Hisn" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حصن"
+          }
+        }
+      }
+    },
+    "Hisn keeps running during a lock" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يبقى حصن يعمل أثناء القفل"
+          }
+        }
+      }
+    },
+    "Hisn switches language the next time it starts — after this lock, or when you next log in." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يغيّر حصن لغته في المرة القادمة التي يبدأ فيها — بعد انتهاء هذا القفل، أو عند تسجيل دخولك القادم."
+          }
+        }
+      }
+    },
+    "Hisn switches language when it restarts." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يغيّر حصن لغته عند إعادة تشغيله."
+          }
+        }
+      }
+    },
+    "Hisn will close %@ in %lld seconds" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hisn will close %1$@ in %2$lld seconds"
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سيُغلق حصن %1$@ خلال %2$lld ثانية"
+          }
+        }
+      }
+    },
+    "HISN-OK-…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HISN-OK-…"
+          }
+        }
+      }
+    },
+    "HISN-PK-…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HISN-PK-…"
+          }
+        }
+      }
+    },
+    "Hosts-file blocklist" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قائمة الحجب في ملف hosts"
+          }
+        }
+      }
+    },
+    "hours" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ساعات"
+          }
+        }
+      }
+    },
+    "How long" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المدة"
+          }
+        }
+      }
+    },
+    "How long?" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كم المدة؟"
+          }
+        }
+      }
+    },
+    "How strict" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "درجة الصرامة"
+          }
+        }
+      }
+    },
+    "How to connect a browser" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كيف تربط متصفحًا"
+          }
+        }
+      }
+    },
+    "If macOS asks, allow the filter under System Settings › General › Login Items & Extensions." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إن طلب النظام ذلك، اسمح بالمرشّح من إعدادات النظام › عام › عناصر تسجيل الدخول والامتدادات."
+          }
+        }
+      }
+    },
+    "Immediate, and never without them." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فورًا، ولا يتم أبدًا دونه."
+          }
+        }
+      }
+    },
+    "Install the Hisn Protection extension in the browser, or ask whoever set up this Mac to install it for you." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ثبّت إضافة Hisn Protection في المتصفح، أو اطلب ممن جهّز هذا الماك أن يثبّتها لك."
+          }
+        }
+      }
+    },
+    "Language" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اللغة"
+          }
+        }
+      }
+    },
+    "Last list check" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "آخر تحقق من القائمة"
+          }
+        }
+      }
+    },
+    "Left open — covered by Screen Time and the network layers." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يبقى مفتوحًا — تغطيه «مدة استخدام الجهاز» وطبقات الشبكة."
+          }
+        }
+      }
+    },
+    "Length" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المدة"
+          }
+        }
+      }
+    },
+    "Lines that were not usable words: %lld." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أسطر لم تكن كلمات صالحة: %lld."
+          }
+        }
+      }
+    },
+    "Lock" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "القفل"
+          }
+        }
+      }
+    },
+    "Locked until %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مقفل حتى %@"
+          }
+        }
+      }
+    },
+    "lower the sensitivity" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خفض الحساسية"
+          }
+        }
+      }
+    },
+    "Make it stronger" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اجعله أقوى"
+          }
+        }
+      }
+    },
+    "Manage lock" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أدِر القفل"
+          }
+        }
+      }
+    },
+    "Match keywords in addresses" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "طابق الكلمات في العناوين"
+          }
+        }
+      }
+    },
+    "minutes" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دقائق"
+          }
+        }
+      }
+    },
+    "Mode" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الوضع"
+          }
+        }
+      }
+    },
+    "Needs a build signed with the Apple Developer Program (Setup step 9)" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يحتاج نسخة موقّعة ببرنامج مطوّري Apple (الخطوة 9 من الإعداد)"
+          }
+        }
+      }
+    },
+    "never" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أبدًا"
+          }
+        }
+      }
+    },
+    "Never mind" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تراجع"
+          }
+        }
+      }
+    },
+    "No accountability partner is set up, so the only way out is the request below. You can add a partner in Settings after this lock." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يُعدّ شريك محاسبة، لذلك الطريق الوحيد للخروج هو الطلب أدناه. يمكنك إضافة شريك من الإعدادات بعد هذا القفل."
+          }
+        }
+      }
+    },
+    "No accountability partner is set up. Add your partner’s key in Settings while no lock is running." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يُعدّ شريك محاسبة. أضف مفتاح شريكك من الإعدادات حين لا يكون هناك قفل يعمل."
+          }
+        }
+      }
+    },
+    "No active lock" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يوجد قفل نشط"
+          }
+        }
+      }
+    },
+    "No apps blocked." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا توجد تطبيقات محجوبة."
+          }
+        }
+      }
+    },
+    "No browsers found." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يُعثر على متصفحات."
+          }
+        }
+      }
+    },
+    "No Hisn protection inside — closed during a lock." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا توجد حماية حصن داخله — يُغلق أثناء القفل."
+          }
+        }
+      }
+    },
+    "No lock is currently running." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يوجد قفل يعمل حاليًا."
+          }
+        }
+      }
+    },
+    "No lock is running." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يوجد قفل يعمل."
+          }
+        }
+      }
+    },
+    "Not installed — run macos/install.sh --hosts" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "غير مثبّتة — شغّل macos/install.sh --hosts"
+          }
+        }
+      }
+    },
+    "Not locked" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "غير مقفل"
+          }
+        }
+      }
+    },
+    "Not responding — last heard from %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يستجيب — آخر اتصال في %@"
+          }
+        }
+      }
+    },
+    "Not running" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يعمل"
+          }
+        }
+      }
+    },
+    "Not set up" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "غير مُعدّة"
+          }
+        }
+      }
+    },
+    "Not yet" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ليس الآن"
+          }
+        }
+      }
+    },
+    "Nothing is blocking right now. Fix the steps below." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا شيء يحجب الآن. أصلح الخطوات أدناه."
+          }
+        }
+      }
+    },
+    "Nothing is blocking yet. Finish the steps below." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا شيء يحجب بعد. أكمل الخطوات أدناه."
+          }
+        }
+      }
+    },
+    "Nothing is set up to enforce a lock yet — it would run but block nothing. Finish setup on the Overview page first." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا شيء مُعدّ لفرض القفل بعد — سيعمل لكنه لن يحجب شيئًا. أكمل الإعداد في صفحة «نظرة عامة» أولًا."
+          }
+        }
+      }
+    },
+    "Nothing is set up to enforce it yet, so it will run but block nothing until you finish setup." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا شيء مُعدّ لفرضه بعد، لذلك سيعمل لكنه لن يحجب شيئًا حتى تكمل الإعداد."
+          }
+        }
+      }
+    },
+    "OK" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حسنًا"
+          }
+        }
+      }
+    },
+    "On top of the published list." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إضافةً إلى القائمة المنشورة."
+          }
+        }
+      }
+    },
+    "Once started, you cannot shorten or cancel this. Early release takes 48 hours, or an approval from your accountability partner." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بعد البدء لا يمكنك تقصيره أو إلغاؤه. الإنهاء المبكر يستغرق 48 ساعة، أو موافقة من شريك المحاسبة."
+          }
+        }
+      }
+    },
+    "One domain per line — a full URL is fine, it becomes just the domain. Subdomains are included automatically, so example.com also covers cdn.example.com." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نطاق واحد في كل سطر — يمكنك لصق رابط كامل وسيؤخذ النطاق منه. النطاقات الفرعية مشمولة تلقائيًا، فـ example.com يشمل cdn.example.com أيضًا."
+          }
+        }
+      }
+    },
+    "One per line. A page is blocked when these appear often enough in it — so a common word blocks ordinary pages too. Minimum %lld letters." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "واحدة في كل سطر. تُحجب الصفحة حين تتكرر فيها هذه الكلمات بما يكفي — لذا فالكلمة الشائعة تحجب صفحات عادية أيضًا. الحد الأدنى %lld أحرف."
+          }
+        }
+      }
+    },
+    "Open any web page. The extension contacts this app within a minute." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افتح أي صفحة ويب. ستتصل الإضافة بهذا التطبيق خلال دقيقة."
+          }
+        }
+      }
+    },
+    "over the limit of %lld words" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تجاوز حد %lld كلمة"
+          }
+        }
+      }
+    },
+    "Overview" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نظرة عامة"
+          }
+        }
+      }
+    },
+    "Partially active" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مفعّلة جزئيًا"
+          }
+        }
+      }
+    },
+    "Partner key removed." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أُزيل مفتاح الشريك."
+          }
+        }
+      }
+    },
+    "Partner key saved." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حُفظ مفتاح الشريك."
+          }
+        }
+      }
+    },
+    "Partner key set · %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مفتاح الشريك مُعدّ · %@"
+          }
+        }
+      }
+    },
+    "Protection active" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الحماية مفعّلة"
+          }
+        }
+      }
+    },
+    "Protection: %@. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Protection: %1$@. %2$@"
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الحماية: %1$@. %2$@"
+          }
+        }
+      }
+    },
+    "Reachable even if the published list names it. In strict mode nothing else is reachable." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يمكن الوصول إليها حتى لو ذكرتها القائمة المنشورة. في الوضع الصارم لا يمكن الوصول إلى غيرها."
+          }
+        }
+      }
+    },
+    "Reading the system filter’s state…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جارٍ قراءة حالة مرشّح النظام…"
+          }
+        }
+      }
+    },
+    "Reads the page itself, so it catches explicit content on an ordinary site. Chrome and Edge only." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يقرأ الصفحة نفسها، فيلتقط المحتوى الصريح حتى في موقع عادي. في Chrome وEdge فقط."
+          }
+        }
+      }
+    },
+    "Reconnect the browser" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أعد ربط المتصفح"
+          }
+        }
+      }
+    },
+    "Remove" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أزِل"
+          }
+        }
+      }
+    },
+    "Remove %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أزِل %@"
+          }
+        }
+      }
+    },
+    "Removing the key removes the immediate exit. It is always allowed; setting a new one waits for no lock." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إزالة المفتاح تُلغي المخرج الفوري، وهي مسموحة دائمًا؛ أما وضع مفتاح جديد فينتظر ألا يكون هناك قفل."
+          }
+        }
+      }
+    },
+    "Replace key" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استبدل المفتاح"
+          }
+        }
+      }
+    },
+    "Request early release?" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أتطلب الإنهاء المبكر؟"
+          }
+        }
+      }
+    },
+    "Request early release…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اطلب الإنهاء المبكر…"
+          }
+        }
+      }
+    },
+    "Request it" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اطلبه"
+          }
+        }
+      }
+    },
+    "Restart now" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أعد التشغيل الآن"
+          }
+        }
+      }
+    },
+    "Revert" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تراجع عن التعديلات"
+          }
+        }
+      }
+    },
+    "Running" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يعمل"
+          }
+        }
+      }
+    },
+    "Running, but it has no block list yet" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يعمل، لكن لا توجد لديه قائمة حجب بعد"
+          }
+        }
+      }
+    },
+    "Running: %@. Needs attention: %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Running: %1$@. Needs attention: %2$@."
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يعمل: %1$@. يحتاج انتباهًا: %2$@."
+          }
+        }
+      }
+    },
+    "Safari and Firefox are covered by the system filter only; the extension does not run there." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يغطي مرشّح النظام وحده Safari وFirefox؛ الإضافة لا تعمل فيهما."
+          }
+        }
+      }
+    },
+    "Same as the Mac" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لغة الماك"
+          }
+        }
+      }
+    },
+    "Save" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "احفظ"
+          }
+        }
+      }
+    },
+    "Save key" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "احفظ المفتاح"
+          }
+        }
+      }
+    },
+    "Saved." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حُفظ."
+          }
+        }
+      }
+    },
+    "Saved. Left out because they are not domains: %lld." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حُفظ. أسطر تُركت لأنها ليست نطاقات: %lld."
+          }
+        }
+      }
+    },
+    "Settings" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإعدادات"
+          }
+        }
+      }
+    },
+    "Setup needed" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يحتاج إعدادًا"
+          }
+        }
+      }
+    },
+    "Someone you trust who can end a lock early by approving it — immediately, but never without them. They open the Hisn Partner page on their own phone or computer, create a key there, and send you the code it shows under “Your key”." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شخص تثق به يستطيع إنهاء القفل مبكرًا بموافقته — فورًا، لكن ليس دونه أبدًا. يفتح صفحة «شريك حصن» على هاتفه أو حاسوبه، وينشئ مفتاحًا هناك، ثم يرسل إليك الرمز الظاهر تحت «مفتاحك»."
+          }
+        }
+      }
+    },
+    "Something went wrong" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حدث خطأ"
+          }
+        }
+      }
+    },
+    "Standard mode" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الوضع العادي"
+          }
+        }
+      }
+    },
+    "Start a lock of %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ابدأ قفلًا لمدة %@"
+          }
+        }
+      }
+    },
+    "Start a lock of %@?" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أتبدأ قفلًا لمدة %@؟"
+          }
+        }
+      }
+    },
+    "Start a lock…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ابدأ قفلًا…"
+          }
+        }
+      }
+    },
+    "Start lock" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ابدأ القفل"
+          }
+        }
+      }
+    },
+    "Start the lock" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ابدأ القفل"
+          }
+        }
+      }
+    },
+    "Stays open while its Hisn extension checks in; closed if the extension is switched off." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يبقى مفتوحًا ما دامت إضافة حصن فيه تتصل بالتطبيق؛ ويُغلق إن عُطّلت الإضافة."
+          }
+        }
+      }
+    },
+    "Strict mode" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الوضع الصارم"
+          }
+        }
+      }
+    },
+    "Switch to strict" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "انتقل إلى الوضع الصارم"
+          }
+        }
+      }
+    },
+    "Switched on, but not answering — open Hisn again, or restart the Mac" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مفعّل لكنه لا يستجيب — افتح حصن مجددًا، أو أعد تشغيل الماك"
+          }
+        }
+      }
+    },
+    "System filter" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مرشّح النظام"
+          }
+        }
+      }
+    },
+    "That approval does not match this lock and your partner’s key. Ask your partner to sign the release code shown here." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذه الموافقة لا تطابق هذا القفل ومفتاح شريكك. اطلب من شريكك توقيع رمز الإنهاء الظاهر هنا."
+          }
+        }
+      }
+    },
+    "That is %lld words; the limit is %lld. Past that nobody remembers what is on the list, and a surprising block looks like a broken app." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That is %1$lld words; the limit is %2$lld. Past that nobody remembers what is on the list, and a surprising block looks like a broken app."
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذه %1$lld كلمة، والحد الأقصى %2$lld. بعد ذلك لا يتذكر أحد ما في القائمة، ويبدو الحجب المفاجئ كأنه عطل في التطبيق."
+          }
+        }
+      }
+    },
+    "That is not a partner key. It should be the code your partner’s Hisn Partner page shows under “Your key”." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذا ليس مفتاح شريك. يجب أن يكون الرمز الذي تعرضه صفحة «شريك حصن» لدى شريكك تحت «مفتاحك»."
+          }
+        }
+      }
+    },
+    "The content filter could not start: %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّر تشغيل مرشّح المحتوى: %@"
+          }
+        }
+      }
+    },
+    "The filter cannot be turned off while a lock is running." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يمكن إيقاف المرشّح أثناء القفل."
+          }
+        }
+      }
+    },
+    "The filter configuration could not be saved: %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّر حفظ إعدادات المرشّح: %@"
+          }
+        }
+      }
+    },
+    "The filter picks up a new list within a few seconds. If this row does not change, the download failed — check the internet connection and try again." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يأخذ المرشّح القائمة الجديدة خلال ثوانٍ. إن لم يتغير هذا السطر فقد فشل التنزيل — تحقق من الاتصال بالإنترنت وحاول مجددًا."
+          }
+        }
+      }
+    },
+    "The Hisn extension stopped checking in from %@. Turn it back on in %@’s extensions page, or %@ will close." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Hisn extension stopped checking in from %1$@. Turn it back on in %2$@’s extensions page, or %3$@ will close."
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "توقفت إضافة حصن عن الاتصال من %1$@. أعد تفعيلها من صفحة الإضافات في %2$@، وإلا سيُغلَق %3$@."
+          }
+        }
+      }
+    },
+    "The hosts-file blocklist and the browser extension are both running. The system filter would add every app and VPN-proof blocking." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قائمة الحجب في ملف hosts وإضافة المتصفح تعملان كلتاهما. مرشّح النظام سيضيف حجبًا يشمل كل التطبيقات ولا تتجاوزه شبكات VPN."
+          }
+        }
+      }
+    },
+    "The link to the browser was re-registered. Open the browser and make sure the Hisn extension is turned on; this row updates within a minute." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أُعيد تسجيل الربط مع المتصفح. افتح المتصفح وتأكد أن إضافة حصن مفعّلة؛ سيتحدث هذا السطر خلال دقيقة."
+          }
+        }
+      }
+    },
+    "The lock would end %@. You can cancel the request at any time, but you cannot make it arrive sooner." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سينتهي القفل في %@. يمكنك إلغاء الطلب في أي وقت، لكن لا يمكنك تعجيله."
+          }
+        }
+      }
+    },
+    "The system extension could not be activated: %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّر تفعيل امتداد النظام: %@"
+          }
+        }
+      }
+    },
+    "The system filter and the browser extension are both running." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مرشّح النظام وإضافة المتصفح يعملان كلاهما."
+          }
+        }
+      }
+    },
+    "The system filter covers every app on this Mac. The browser extension adds page-text checking inside Chrome, Edge and other Chromium browsers. This app has already registered itself with those browsers; what remains is the extension." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مرشّح النظام يغطي كل التطبيقات على هذا الماك، وإضافة المتصفح تضيف فحص نص الصفحة داخل Chrome وEdge ومتصفحات Chromium الأخرى. سجّل هذا التطبيق نفسه لدى تلك المتصفحات بالفعل؛ ما بقي هو الإضافة."
+          }
+        }
+      }
+    },
+    "These run on top of the site lists, and catch pages the lists have never seen." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعمل هذه إضافةً إلى قوائم المواقع، وتلتقط صفحات لم تمرّ بها القوائم قط."
+          }
+        }
+      }
+    },
+    "This cannot be undone by you alone" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يمكنك التراجع عن هذا وحدك"
+          }
+        }
+      }
+    },
+    "This would shorten an active lock, which is not allowed." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذا سيقصّر قفلًا نشطًا، وهذا غير مسموح."
+          }
+        }
+      }
+    },
+    "Too short to use: %@." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أقصر من أن تُستخدم: %@."
+          }
+        }
+      }
+    },
+    "too short: %lld (minimum %lld letters)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "too short: %1$lld (minimum %2$lld letters)"
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قصيرة: %1$lld (الحد الأدنى %2$lld أحرف)"
+          }
+        }
+      }
+    },
+    "turn off keyword checking" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إيقاف فحص الكلمات في العناوين"
+          }
+        }
+      }
+    },
+    "turn off page-text checking" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إيقاف فحص نص الصفحة"
+          }
+        }
+      }
+    },
+    "Turn on the system filter" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شغّل مرشّح النظام"
+          }
+        }
+      }
+    },
+    "Unit" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الوحدة"
+          }
+        }
+      }
+    },
+    "Unlocks %@. You can cancel this, but you cannot speed it up." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يُفتح القفل في %@. يمكنك إلغاء هذا، لكن لا يمكنك تعجيله."
+          }
+        }
+      }
+    },
+    "unusable: %lld" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "غير صالحة: %lld"
+          }
+        }
+      }
+    },
+    "weeks" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أسابيع"
+          }
+        }
+      }
+    },
+    "While a lock runs, Hisn closes any browser it is not running inside: a Chromium browser whose Hisn extension has stopped checking in, and any other browser. Safari is covered by Screen Time and is left alone." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أثناء القفل يُغلق حصن أي متصفح لا يعمل داخله: متصفح Chromium توقفت فيه إضافة حصن عن الاتصال، وأي متصفح آخر. أما Safari فتغطيه «مدة استخدام الجهاز» ويُترك مفتوحًا."
+          }
+        }
+      }
+    },
+    "While a lock runs, Hisn watches that every browser has its protection on. Close the window instead — Hisn stays in the background." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أثناء القفل يراقب حصن أن الحماية مفعّلة في كل متصفح. أغلق النافذة بدلًا من ذلك — يبقى حصن يعمل في الخلفية."
+          }
+        }
+      }
+    },
+    "Words" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الكلمات"
+          }
+        }
+      }
+    },
+    "You allowed it. It stays open during a lock with no page checking." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سمحت به. يبقى مفتوحًا أثناء القفل دون فحص للصفحات."
+          }
+        }
+      }
+    },
+    "You will not be able to turn this off until %@." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لن تتمكن من إيقاف هذا حتى %@."
+          }
+        }
+      }
+    },
+    "Your lock is running, but nothing is enforcing it yet. It will block nothing until the steps above are done." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قفلك يعمل، لكن لا شيء يفرضه بعد. لن يحجب شيئًا حتى تكتمل الخطوات أعلاه."
+          }
+        }
+      }
+    },
+    "Your partner can end it now" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يستطيع شريكك إنهاءه الآن"
+          }
+        }
+      }
+    },
+    "Your release request completes at %@." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يكتمل طلب الإنهاء في %@."
+          }
+        }
+      }
+    },
+    "Your sites" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مواقعك"
+          }
+        }
+      }
+    },
+    "Your words and apps" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كلماتك وتطبيقاتك"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

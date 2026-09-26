@@ -50,11 +50,11 @@ public final class FilterController: ObservableObject {
         public var errorDescription: String? {
             switch self {
             case .lockedCannotDisable:
-                return "The filter cannot be turned off while a lock is running."
+                return String(localized: "The filter cannot be turned off while a lock is running.")
             case let .activationFailed(d):
-                return "The system extension could not be activated: \(d)"
+                return String(localized: "The system extension could not be activated: \(d)")
             case let .configurationFailed(d):
-                return "The filter configuration could not be saved: \(d)"
+                return String(localized: "The filter configuration could not be saved: \(d)")
             }
         }
     }

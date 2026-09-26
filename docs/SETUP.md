@@ -43,6 +43,11 @@ the verifier. During a lock the app refuses an ordinary Quit: it is also the
 before your first lock, and allow any app there that opens web links without
 being a browser.
 
+**In Arabic:** *Settings › Language › العربية*, then **Restart now** — the
+window mirrors right-to-left and numbers stay in Latin digits, as in the
+extension. During a lock the app cannot quit, so the switch waits for the next
+launch. The extension has its own switch, in its popup.
+
 ## Step 2 — the browser extension
 
 The extension is the only layer that reads page **text** — it is what catches

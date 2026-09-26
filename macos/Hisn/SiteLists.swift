@@ -21,26 +21,28 @@ public enum SiteLists {
         public var errorDescription: String? {
             switch self {
             case let .wouldLoosenWhileLocked(unblocked, allowed):
-                var parts: [String] = []
-                if !unblocked.isEmpty {
-                    parts.append("stop blocking \(list(unblocked))")
+                // Whole sentences per case: fragments joined by "or" only
+                // read right in English.
+                let refusal: String
+                switch (unblocked.isEmpty, allowed.isEmpty) {
+                case (false, false):
+                    refusal = String(localized: "A lock is running, so you cannot stop blocking \(SiteLists.shortList(unblocked)) or allow \(SiteLists.shortList(allowed)) until it ends.")
+                case (false, true):
+                    refusal = String(localized: "A lock is running, so you cannot stop blocking \(SiteLists.shortList(unblocked)) until it ends.")
+                default:
+                    refusal = String(localized: "A lock is running, so you cannot allow \(SiteLists.shortList(allowed)) until it ends.")
                 }
-                if !allowed.isEmpty {
-                    parts.append("allow \(list(allowed))")
-                }
-                return "A lock is running, so you cannot "
-                    + parts.joined(separator: " or ")
-                    + " until it ends. Adding blocks and removing allowances "
-                    + "still work."
+                return refusal + " " + String(localized: "Adding blocks and removing allowances still work.")
             }
         }
+    }
 
-        private func list(_ domains: [String]) -> String {
-            let shown = domains.prefix(3).joined(separator: ", ")
-            return domains.count > 3
-                ? "\(shown) and \(domains.count - 3) more"
-                : shown
-        }
+    /// At most three names, then a count: a refusal listing forty domains is
+    /// not read.
+    public static func shortList(_ items: [String]) -> String {
+        guard items.count > 3 else { return items.formatted(.list(type: .and)) }
+        let shown = items.prefix(3).formatted(.list(type: .and, width: .narrow))
+        return String(localized: "\(shown) and \(items.count - 3) more")
     }
 
     private static var defaults: UserDefaults? {

@@ -87,11 +87,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return .terminateNow
         }
         let alert = NSAlert()
-        alert.messageText = "Hisn keeps running during a lock"
-        alert.informativeText = "While a lock runs, Hisn watches that every browser "
-            + "has its protection on. Close the window instead — Hisn stays in "
-            + "the background."
-        alert.addButton(withTitle: "OK")
+        alert.messageText = String(localized: "Hisn keeps running during a lock")
+        alert.informativeText = String(localized: """
+            While a lock runs, Hisn watches that every browser \
+            has its protection on. Close the window instead — Hisn stays in \
+            the background.
+            """)
+        alert.addButton(withTitle: String(localized: "OK"))
         alert.runModal()
         NSApp.windows.filter { !($0 is NSPanel) }.forEach { $0.close() }
         return .terminateCancel

@@ -23,7 +23,7 @@ struct ContentView: View {
 
         var id: String { rawValue }
 
-        var title: String {
+        var title: LocalizedStringKey {
             switch self {
             case .overview: return "Overview"
             case .rules:    return "Blocking Rules"
@@ -84,8 +84,8 @@ struct ContentView: View {
 /// A titled block with breathing room. The pages are built from these so
 /// spacing, titles and subtitles stay identical across them.
 private struct PageSection<Content: View>: View {
-    let title: String
-    var subtitle: String? = nil
+    let title: LocalizedStringKey
+    var subtitle: LocalizedStringKey? = nil
     @ViewBuilder let content: Content
 
     var body: some View {
@@ -174,7 +174,7 @@ private struct OverviewPage: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
             ForEach(guardian.alerts) { alert in
-                Label("\(alert.name) is about to close. "
+                Label(String(localized: "\(alert.name) is about to close.") + " "
                       + BrowserGuard.message(name: alert.name, reason: alert.reason),
                       systemImage: "exclamationmark.shield.fill")
                     .font(.callout)
@@ -188,8 +188,10 @@ private struct OverviewPage: View {
             // recorded, and nothing enforces it. Neither card alone says so.
             if lock.isLocked && !protection.isEnforcingAnything
                 && protection.level != .checking {
-                Label("Your lock is running, but nothing is enforcing it yet. "
-                      + "It will block nothing until the steps above are done.",
+                Label("""
+                      Your lock is running, but nothing is enforcing it yet. \
+                      It will block nothing until the steps above are done.
+                      """,
                       systemImage: "exclamationmark.triangle.fill")
                     .font(.callout)
                     .foregroundStyle(.orange)
@@ -299,17 +301,21 @@ private struct OverviewPage: View {
                 await FilterSync.shared.sync()
 
             case .enableFilter:
-                notice = "If macOS asks, allow the filter under System Settings › "
-                    + "General › Login Items & Extensions."
+                notice = String(localized: """
+                    If macOS asks, allow the filter under System Settings › \
+                    General › Login Items & Extensions.
+                    """)
                 do { try await filter.enable() }
                 catch { self.error = error.localizedDescription }
 
             case .updateList:
                 await ListUpdater.shared.update()
                 await filter.refresh()
-                notice = "The filter picks up a new list within a few seconds. "
-                    + "If this row does not change, the download failed — check "
-                    + "the internet connection and try again."
+                notice = String(localized: """
+                    The filter picks up a new list within a few seconds. \
+                    If this row does not change, the download failed — check \
+                    the internet connection and try again.
+                    """)
 
             case .installExtension:
                 showBrowserHelp = true
@@ -318,9 +324,11 @@ private struct OverviewPage: View {
                 // Re-register the native-messaging link, then the only other
                 // thing that stops a heartbeat is the browser itself.
                 NativeMessagingInstaller.installIfNeeded()
-                notice = "The link to the browser was re-registered. Open the "
-                    + "browser and make sure the Hisn extension is turned on; "
-                    + "this row updates within a minute."
+                notice = String(localized: """
+                    The link to the browser was re-registered. Open the \
+                    browser and make sure the Hisn extension is turned on; \
+                    this row updates within a minute.
+                    """)
             }
         }
     }
@@ -353,22 +361,23 @@ private struct BrowserSetupHelp: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Connect a browser").font(.title3.weight(.semibold))
-            Text("The system filter covers every app on this Mac. The browser "
-                 + "extension adds page-text checking inside Chrome, Edge and "
-                 + "other Chromium browsers. This app has already registered "
-                 + "itself with those browsers; what remains is the extension.")
+            Text("""
+                 The system filter covers every app on this Mac. The browser \
+                 extension adds page-text checking inside Chrome, Edge and \
+                 other Chromium browsers. This app has already registered \
+                 itself with those browsers; what remains is the extension.
+                 """)
                 .font(.callout).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             VStack(alignment: .leading, spacing: 8) {
-                step(1, "Install the Hisn Protection extension in the browser, "
-                        + "or ask whoever set up this Mac to install it for you.")
-                step(2, "Open any web page. The extension contacts this app "
-                        + "within a minute.")
-                step(3, "Come back here — the Browser extension row reads "
-                        + "Connected once it has.")
+                step(1, """
+                        Install the Hisn Protection extension in the browser, \
+                        or ask whoever set up this Mac to install it for you.
+                        """)
+                step(2, "Open any web page. The extension contacts this app within a minute.")
+                step(3, "Come back here — the Browser extension row reads Connected once it has.")
             }
-            Text("Safari and Firefox are covered by the system filter only; "
-                 + "the extension does not run there.")
+            Text("Safari and Firefox are covered by the system filter only; the extension does not run there.")
                 .font(.caption).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             HStack { Spacer(); Button("Done") { dismiss() }.keyboardShortcut(.defaultAction) }
@@ -377,9 +386,9 @@ private struct BrowserSetupHelp: View {
         .frame(width: 440)
     }
 
-    private func step(_ n: Int, _ text: String) -> some View {
+    private func step(_ n: Int, _ text: LocalizedStringKey) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
-            Text("\(n).").font(.callout.weight(.semibold)).monospacedDigit()
+            Text(verbatim: "\(n).").font(.callout.weight(.semibold)).monospacedDigit()
             Text(text).font(.callout).fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -415,6 +424,14 @@ private struct LockPage: View {
         case weeks = "weeks"
 
         var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .minutes: return String(localized: "minutes")
+            case .hours:   return String(localized: "hours")
+            case .days:    return String(localized: "days")
+            case .weeks:   return String(localized: "weeks")
+            }
+        }
         var seconds: TimeInterval {
             switch self {
             case .minutes: return 60
@@ -460,7 +477,7 @@ private struct LockPage: View {
             PageSection(title: "How long?") {
                 Picker("Length", selection: $duration) {
                     ForEach(LockManager.Duration.allCases) { d in
-                        Text(d.rawValue).tag(d)
+                        Text(d.title).tag(d)
                     }
                 }
                 .pickerStyle(.segmented)
@@ -472,7 +489,7 @@ private struct LockPage: View {
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 80)
                         Picker("Unit", selection: $customUnit) {
-                            ForEach(CustomUnit.allCases) { Text($0.rawValue).tag($0) }
+                            ForEach(CustomUnit.allCases) { Text($0.title).tag($0) }
                         }
                         .labelsHidden()
                         .frame(width: 100)
@@ -491,8 +508,7 @@ private struct LockPage: View {
                 Toggle(isOn: $strict) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Strict mode")
-                        Text("Blocks everything except sites you allow. "
-                             + "A block list can never cover every site; this can.")
+                        Text("Blocks everything except sites you allow. A block list can never cover every site; this can.")
                             .font(.callout)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -507,9 +523,11 @@ private struct LockPage: View {
                     Label("This cannot be undone by you alone",
                           systemImage: "lock.fill")
                         .font(.body.weight(.medium))
-                    Text("Once started, you cannot shorten or cancel this. "
-                         + "Early release takes 48 hours, or an approval from "
-                         + "your accountability partner.")
+                    Text("""
+                         Once started, you cannot shorten or cancel this. \
+                         Early release takes 48 hours, or an approval from \
+                         your accountability partner.
+                         """)
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -522,8 +540,10 @@ private struct LockPage: View {
             // confirmation dialog repeats it, so it cannot be clicked past by
             // reflex.
             if !enforcingAnything {
-                Label("Nothing is set up to enforce a lock yet — it would run "
-                      + "but block nothing. Finish setup on the Overview page first.",
+                Label("""
+                      Nothing is set up to enforce a lock yet — it would run \
+                      but block nothing. Finish setup on the Overview page first.
+                      """,
                       systemImage: "exclamationmark.triangle.fill")
                     .font(.callout)
                     .foregroundStyle(.orange)
@@ -540,7 +560,7 @@ private struct LockPage: View {
             .buttonStyle(.borderedProminent)
             .disabled(selectedSeconds == nil)
             .confirmationDialog(
-                startButtonTitle + "?",
+                confirmTitle,
                 isPresented: $showConfirm, titleVisibility: .visible
             ) {
                 Button("Start the lock", role: .destructive) { start() }
@@ -563,8 +583,10 @@ private struct LockPage: View {
                     Text(lock.remainingDescription)
                         .font(.system(size: 34, weight: .semibold, design: .rounded))
                         .monospacedDigit()
-                    Text("\(LockStatus.modeName(lock.state.mode)) mode · until "
-                         + lock.state.deadline.formatted(date: .long, time: .shortened))
+                    Text(String(localized: """
+                         \(LockStatus.modeLabel(lock.state.mode)) · until \
+                         \(lock.state.deadline.formatted(date: .long, time: .shortened))
+                         """))
                         .font(.callout).foregroundStyle(.secondary)
                 }
             }
@@ -574,8 +596,7 @@ private struct LockPage: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Early release requested")
                             .font(.body.weight(.medium))
-                        Text("Unlocks \(pending.formatted()). "
-                             + "You can cancel this, but you cannot speed it up.")
+                        Text("Unlocks \(pending.formatted()). You can cancel this, but you cannot speed it up.")
                             .font(.callout).foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                         Button("Cancel the request") { lock.cancelSelfRelease() }
@@ -616,10 +637,11 @@ private struct LockPage: View {
                 // dangerous when someone genuinely needs the web. What keeps it
                 // honest is that the exit is slow and cannot be hurried.
                 PageSection(title: "Ending early",
-                        subtitle: "A release request takes "
-                            + LockManager.describe(LockManager.selfReleaseDelay)
-                            + " to arrive and cannot be hurried. Your accountability "
-                            + "partner can approve one immediately.") {
+                        subtitle: """
+                            A release request takes \(LockManager.describe(LockManager.selfReleaseDelay)) \
+                            to arrive and cannot be hurried. Your accountability \
+                            partner can approve one immediately.
+                            """) {
                     Button("Request early release…") { showReleaseConfirm = true }
                         .confirmationDialog(
                             "Request early release?",
@@ -628,11 +650,11 @@ private struct LockPage: View {
                             Button("Request it") { requestRelease() }
                             Button("Never mind", role: .cancel) {}
                         } message: {
-                            Text("The lock would end "
-                                 + Date().addingTimeInterval(LockManager.selfReleaseDelay)
-                                     .formatted()
-                                 + ". You can cancel the request at any time, but you "
-                                 + "cannot make it arrive sooner.")
+                            Text("""
+                                 The lock would end \(Date().addingTimeInterval(LockManager.selfReleaseDelay).formatted()). \
+                                 You can cancel the request at any time, but you \
+                                 cannot make it arrive sooner.
+                                 """)
                         }
                 }
             }
@@ -640,8 +662,13 @@ private struct LockPage: View {
     }
 
     private var startButtonTitle: String {
-        guard let seconds = selectedSeconds else { return "Start lock" }
-        return "Start \(LockManager.describe(seconds)) lock"
+        guard let seconds = selectedSeconds else { return String(localized: "Start lock") }
+        return String(localized: "Start a lock of \(LockManager.describe(seconds))")
+    }
+
+    private var confirmTitle: String {
+        guard let seconds = selectedSeconds else { return String(localized: "Start lock") }
+        return String(localized: "Start a lock of \(LockManager.describe(seconds))?")
     }
 
     /// Only once something has been typed. An empty field is a person who has
@@ -652,16 +679,16 @@ private struct LockPage: View {
     }
 
     private var lengthHint: String {
+        let shortest = LockManager.describe(LockManager.minimumLock)
+        let longest = LockManager.describe(LockManager.maximumLock)
         if isCustomInvalid {
-            return "Enter a length between "
-                + "\(LockManager.describe(LockManager.minimumLock)) and "
-                + "\(LockManager.describe(LockManager.maximumLock))."
+            return String(localized: "Enter a length between \(shortest) and \(longest).")
         }
         guard let seconds = selectedSeconds else {
-            return "Between \(LockManager.describe(LockManager.minimumLock)) and "
-                + "\(LockManager.describe(LockManager.maximumLock))."
+            return String(localized: "Between \(shortest) and \(longest).")
         }
-        return "Ends \(Date().addingTimeInterval(seconds).formatted(date: .abbreviated, time: .shortened))."
+        let end = Date().addingTimeInterval(seconds).formatted(date: .abbreviated, time: .shortened)
+        return String(localized: "Ends \(end).")
     }
 
     /// The confirmation-dialog body: the wall-clock deadline, and — when
@@ -670,11 +697,13 @@ private struct LockPage: View {
     /// Start button.
     private var confirmMessage: String {
         guard let seconds = selectedSeconds else { return "" }
-        var msg = "You will not be able to turn this off until "
-            + Date().addingTimeInterval(seconds).formatted() + "."
+        let end = Date().addingTimeInterval(seconds).formatted()
+        var msg = String(localized: "You will not be able to turn this off until \(end).")
         if !enforcingAnything {
-            msg += "\n\nNothing is set up to enforce it yet, so it will run but "
-                + "block nothing until you finish setup."
+            msg += "\n\n" + String(localized: """
+                Nothing is set up to enforce it yet, so it will run but \
+                block nothing until you finish setup.
+                """)
         }
         return msg
     }
@@ -708,8 +737,10 @@ private struct RulesPage: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 30) {
             if isLocked {
-                Label("A lock is running. You can add blocks and remove "
-                      + "allowances; the reverse waits until it ends.",
+                Label("""
+                      A lock is running. You can add blocks and remove \
+                      allowances; the reverse waits until it ends.
+                      """,
                       systemImage: "lock.fill")
                     .font(.callout)
                     .foregroundStyle(.secondary)
@@ -746,17 +777,18 @@ struct SiteListsSection: View {
 
     var body: some View {
         PageSection(title: "Your sites",
-                subtitle: "One domain per line — a full URL is fine, it becomes just "
-                    + "the domain. Subdomains are included automatically, so "
-                    + "example.com also covers cdn.example.com.") {
+                subtitle: """
+                    One domain per line — a full URL is fine, it becomes just \
+                    the domain. Subdomains are included automatically, so \
+                    example.com also covers cdn.example.com.
+                    """) {
             editor("Always block these",
                    subtitle: "On top of the published list.",
                    text: $blockText,
                    placeholder: "reddit.com")
 
             editor("Always allowed",
-                   subtitle: "Reachable even if the published list names it. "
-                       + "In strict mode nothing else is reachable.",
+                   subtitle: "Reachable even if the published list names it. In strict mode nothing else is reachable.",
                    text: $allowText,
                    placeholder: "github.com")
 
@@ -774,7 +806,7 @@ struct SiteListsSection: View {
         message = nil
     }
 
-    private func editor(_ title: String, subtitle: String,
+    private func editor(_ title: LocalizedStringKey, subtitle: LocalizedStringKey,
                         text: Binding<String>, placeholder: String) -> some View {
         // Counted as you type, from the same parser Save uses, so the number
         // here and the outcome on Save can never disagree. A dropped line is
@@ -786,7 +818,7 @@ struct SiteListsSection: View {
             Text(subtitle).font(.caption).foregroundStyle(.secondary)
             ZStack(alignment: .topLeading) {
                 if text.wrappedValue.isEmpty {
-                    Text(placeholder)
+                    Text(verbatim: placeholder)
                         .font(.system(.body, design: .monospaced))
                         .foregroundStyle(.tertiary)
                         .padding(.horizontal, 5)
@@ -814,10 +846,9 @@ struct SiteListsSection: View {
         let r = SiteLists.parse(text)
         let n = r.domains.count
         if r.ignored == 0 {
-            return (n == 0 ? "" : "\(n) domain\(n == 1 ? "" : "s")", false)
+            return (n == 0 ? "" : String(localized: "\(n) domains"), false)
         }
-        return ("\(n) valid · \(r.ignored) line\(r.ignored == 1 ? "" : "s") "
-                + "not a domain, will be skipped", true)
+        return (String(localized: "\(n) valid · \(r.ignored) skipped (not a domain)"), true)
     }
 
     private func save() {
@@ -844,12 +875,10 @@ struct SiteListsSection: View {
         if ignored == 0 {
             blockText = savedBlockText
             allowText = savedAllowText
-            message = "Saved."
+            message = String(localized: "Saved.")
         } else {
             // Leave the rejected lines in the editor so they can be fixed.
-            message = "Saved \(blocks.domains.count + allows.domains.count) domains. "
-                + (ignored == 1 ? "1 line was" : "\(ignored) lines were")
-                + " not a domain and had to be left out."
+            message = String(localized: "Saved. Left out because they are not domains: \(ignored).")
         }
     }
 }
@@ -878,9 +907,11 @@ struct UserBlocksSection: View {
             // --- words ---------------------------------------------------
             VStack(alignment: .leading, spacing: 3) {
                 Text("Words").font(.body.weight(.medium))
-                Text("One per line. A page is blocked when these appear often "
-                     + "enough in it — so a common word blocks ordinary pages "
-                     + "too. Minimum \(UserBlocks.minimumTermLength) letters.")
+                Text("""
+                     One per line. A page is blocked when these appear often \
+                     enough in it — so a common word blocks ordinary pages \
+                     too. Minimum \(UserBlocks.minimumTermLength) letters.
+                     """)
                     .font(.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 ZStack(alignment: .topLeading) {
@@ -920,9 +951,11 @@ struct UserBlocksSection: View {
                 // Said plainly rather than discovered later. Someone who blocks
                 // a note-taking app and finds it still opens will conclude the
                 // feature is broken, when it is working exactly as designed.
-                Text("Blocks the app's internet access. It still opens, and "
-                     + "still works offline — stopping a launch needs Screen "
-                     + "Time, which no app can do for you.")
+                Text("""
+                     Blocks the app's internet access. It still opens, and \
+                     still works offline — stopping a launch needs Screen \
+                     Time, which no app can do for you.
+                     """)
                     .font(.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
@@ -934,8 +967,8 @@ struct UserBlocksSection: View {
                     VStack(alignment: .leading, spacing: 2) {
                         ForEach(apps, id: \.self) { id in
                             HStack(spacing: 6) {
-                                Text(displayName(for: id)).font(.callout)
-                                Text(id).font(.caption).foregroundStyle(.tertiary)
+                                Text(verbatim: displayName(for: id)).font(.callout)
+                                Text(verbatim: id).font(.caption).foregroundStyle(.tertiary)
                                 Spacer()
                                 Button {
                                     apps.removeAll { $0 == id }
@@ -980,18 +1013,20 @@ struct UserBlocksSection: View {
         let r = UserBlocks.parseTerms(text)
         var problems: [String] = []
         if !r.tooShort.isEmpty {
-            problems.append("\(r.tooShort.count) too short "
-                + "(min \(UserBlocks.minimumTermLength) letters)")
+            problems.append(String(localized: """
+                too short: \(r.tooShort.count) (minimum \(UserBlocks.minimumTermLength) letters)
+                """))
         }
-        if r.ignored > 0 { problems.append("\(r.ignored) unusable") }
+        if r.ignored > 0 { problems.append(String(localized: "unusable: \(r.ignored)")) }
         if r.terms.count > UserBlocks.maximumTerms {
-            problems.append("over the \(UserBlocks.maximumTerms)-word limit")
+            problems.append(String(localized: "over the limit of \(UserBlocks.maximumTerms) words"))
         }
         if problems.isEmpty {
             let n = r.terms.count
-            return (n == 0 ? "" : "\(n) word\(n == 1 ? "" : "s")", false)
+            return (n == 0 ? "" : String(localized: "\(n) words"), false)
         }
-        return ("\(r.terms.count) valid · " + problems.joined(separator: ", "), true)
+        return (String(localized: "\(r.terms.count) valid") + " · "
+                + problems.formatted(.list(type: .and)), true)
     }
 
     private func displayName(for bundleID: String) -> String {
@@ -1008,7 +1043,7 @@ struct UserBlocksSection: View {
         panel.allowedContentTypes = [.application]
         panel.allowsMultipleSelection = true
         panel.directoryURL = URL(fileURLWithPath: "/Applications")
-        panel.prompt = "Block"
+        panel.prompt = String(localized: "Block")
         guard panel.runModal() == .OK else { return }
 
         var added = 0, failed: [String] = []
@@ -1022,8 +1057,8 @@ struct UserBlocksSection: View {
         apps.sort()
         isError = !failed.isEmpty
         message = failed.isEmpty
-            ? (added == 0 ? "Already on the list." : nil)
-            : "Could not read an identifier for \(failed.joined(separator: ", "))."
+            ? (added == 0 ? String(localized: "Already on the list.") : nil)
+            : String(localized: "Could not read an identifier for \(failed.formatted(.list(type: .and))).")
     }
 
     private func save() {
@@ -1042,20 +1077,19 @@ struct UserBlocksSection: View {
         // expected to be blocked opens normally.
         var notes: [String] = []
         if !parsed.tooShort.isEmpty {
-            notes.append("too short to use: \(parsed.tooShort.joined(separator: ", "))")
+            notes.append(String(localized: "Too short to use: \(parsed.tooShort.formatted(.list(type: .and))).")) 
         }
         if parsed.ignored > 0 {
-            notes.append("\(parsed.ignored) line(s) were not usable words")
+            notes.append(String(localized: "Lines that were not usable words: \(parsed.ignored)."))
         }
         savedWordsText = parsed.terms.joined(separator: "\n")
         savedApps = apps
         isError = false
         if notes.isEmpty {
             wordsText = savedWordsText
-            message = "Saved."
+            message = String(localized: "Saved.")
         } else {
-            message = "Saved \(parsed.terms.count) words and \(apps.count) apps. "
-                + notes.joined(separator: "; ") + "."
+            message = ([String(localized: "Saved.")] + notes).joined(separator: " ")
         }
     }
 }
@@ -1091,17 +1125,19 @@ struct BrowsersSection: View {
 
     var body: some View {
         PageSection(title: "Browsers during a lock",
-                subtitle: "While a lock runs, Hisn closes any browser it is not "
-                    + "running inside: a Chromium browser whose Hisn extension has "
-                    + "stopped checking in, and any other browser. Safari is covered "
-                    + "by Screen Time and is left alone.") {
+                subtitle: """
+                    While a lock runs, Hisn closes any browser it is not \
+                    running inside: a Chromium browser whose Hisn extension has \
+                    stopped checking in, and any other browser. Safari is covered \
+                    by Screen Time and is left alone.
+                    """) {
             if candidates.isEmpty {
                 Text("No browsers found.").font(.callout).foregroundStyle(.secondary)
             }
             ForEach(candidates) { c in
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(c.name).font(.body.weight(.medium))
+                        Text(verbatim: c.name).font(.body.weight(.medium))
                         Text(describe(c.coverage))
                             .font(.callout).foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -1133,14 +1169,16 @@ struct BrowsersSection: View {
     private func describe(_ coverage: BrowserGuardPolicy.Coverage) -> String {
         switch coverage {
         case .exempt:
-            return "Left open — covered by Screen Time and the network layers."
+            return String(localized: "Left open — covered by Screen Time and the network layers.")
         case .needsExtension:
-            return "Stays open while its Hisn extension checks in; closed if the "
-                + "extension is switched off."
+            return String(localized: """
+                Stays open while its Hisn extension checks in; closed if the \
+                extension is switched off.
+                """)
         case .uncovered:
-            return "No Hisn protection inside — closed during a lock."
+            return String(localized: "No Hisn protection inside — closed during a lock.")
         case .allowedByUser:
-            return "You allowed it. It stays open during a lock with no page checking."
+            return String(localized: "You allowed it. It stays open during a lock with no page checking.")
         }
     }
 }
@@ -1160,21 +1198,24 @@ struct PartnerSection: View {
 
     var body: some View {
         PageSection(title: "Accountability partner",
-                subtitle: "Someone you trust who can end a lock early by approving "
-                    + "it — immediately, but never without them. They open the Hisn "
-                    + "Partner page on their own phone or computer, create a key "
-                    + "there, and send you the code it shows under “Your key”.") {
+                subtitle: """
+                    Someone you trust who can end a lock early by approving \
+                    it — immediately, but never without them. They open the Hisn \
+                    Partner page on their own phone or computer, create a key \
+                    there, and send you the code it shows under “Your key”.
+                    """) {
             if let current {
                 HStack(alignment: .firstTextBaseline) {
                     Label("Partner key set · \(PartnerService.fingerprint(current))",
                           systemImage: "person.badge.shield.checkmark")
                     Spacer()
                     Button("Remove") { save(nil) }
-                        .help("Removing the key removes the immediate exit. It is "
-                              + "always allowed; setting a new one waits for no lock.")
+                        .help("""
+                              Removing the key removes the immediate exit. It is \
+                              always allowed; setting a new one waits for no lock.
+                              """)
                 }
-                Text("Check with your partner that their page shows the same "
-                     + "fingerprint.")
+                Text("Check with your partner that their page shows the same fingerprint.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             if !isLocked || current == nil {
@@ -1205,7 +1246,8 @@ struct PartnerSection: View {
             current = PartnerService.currentKey()
             keyText = ""
             isError = false
-            message = key == nil ? "Partner key removed." : "Partner key saved."
+            message = key == nil ? String(localized: "Partner key removed.")
+                                 : String(localized: "Partner key saved.")
         } catch {
             isError = true
             message = error.localizedDescription
@@ -1223,23 +1265,27 @@ struct PartnerReleaseCard: View {
 
     var body: some View {
         if PartnerService.currentKey() == nil {
-            Text("No accountability partner is set up, so the only way out is the "
-                 + "request below. You can add a partner in Settings after this lock.")
+            Text("""
+                 No accountability partner is set up, so the only way out is the \
+                 request below. You can add a partner in Settings after this lock.
+                 """)
                 .font(.callout).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         } else if let code = lock.partnerChallenge {
             VStack(alignment: .leading, spacing: 8) {
                 Text("1. Send this code to your partner:").font(.callout)
                 HStack {
-                    Text(code).font(.callout.monospaced()).textSelection(.enabled)
+                    Text(verbatim: code).font(.callout.monospaced()).textSelection(.enabled)
                     Spacer()
                     Button("Copy") {
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(code, forType: .string)
                     }.controlSize(.small)
                 }
-                Text("2. If they agree, their Hisn Partner page gives them an "
-                     + "approval to send back. Paste it here:").font(.callout)
+                Text("""
+                     2. If they agree, their Hisn Partner page gives them an \
+                     approval to send back. Paste it here:
+                     """).font(.callout)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack {
                     TextField("HISN-OK-…", text: $approval)
@@ -1282,15 +1328,12 @@ private struct SettingsPage: View {
         VStack(alignment: .leading, spacing: 30) {
             PageSection(title: "Content checking",
                     subtitle: isLocked
-                        ? "A lock is running. You can turn checks on and raise "
-                          + "sensitivity; the reverse waits until it ends."
-                        : "These run on top of the site lists, and catch pages "
-                          + "the lists have never seen.") {
+                        ? "A lock is running. You can turn checks on and raise sensitivity; the reverse waits until it ends."
+                        : "These run on top of the site lists, and catch pages the lists have never seen.") {
                 Toggle(isOn: $settings.hostKeywords) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Match keywords in addresses")
-                        Text("Catches a site registered today, before any list has "
-                             + "it. Works in every app on this Mac.")
+                        Text("Catches a site registered today, before any list has it. Works in every app on this Mac.")
                             .font(.callout).foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -1299,8 +1342,7 @@ private struct SettingsPage: View {
                 Toggle(isOn: $settings.text) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Check the words on a page")
-                        Text("Reads the page itself, so it catches explicit content "
-                             + "on an ordinary site. Chrome and Edge only.")
+                        Text("Reads the page itself, so it catches explicit content on an ordinary site. Chrome and Edge only.")
                             .font(.callout).foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -1310,7 +1352,7 @@ private struct SettingsPage: View {
                     HStack {
                         Text("How strict").font(.body)
                         Spacer()
-                        Text("\(settings.textSensitivity)")
+                        Text(verbatim: "\(settings.textSensitivity)")
                             .font(.callout).monospacedDigit()
                             .foregroundStyle(.secondary)
                     }
@@ -1322,9 +1364,11 @@ private struct SettingsPage: View {
                     }
                     .labelsHidden()
                     .disabled(!settings.text)
-                    Text("Higher catches more, and blocks more pages that turn out "
-                         + "to be innocent. Medical and reference sites are exempt "
-                         + "from this check at any setting.")
+                    Text("""
+                         Higher catches more, and blocks more pages that turn out \
+                         to be innocent. Medical and reference sites are exempt \
+                         from this check at any setting.
+                         """)
                         .font(.caption).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -1336,6 +1380,10 @@ private struct SettingsPage: View {
             Divider()
 
             PartnerSection(isLocked: isLocked)
+
+            Divider()
+
+            LanguageSection()
 
             Divider()
 
@@ -1356,10 +1404,45 @@ private struct SettingsPage: View {
             FilterSync.soon()
             saved = settings
             isError = false
-            message = "Saved."
+            message = String(localized: "Saved.")
         } catch {
             isError = true
             message = error.localizedDescription
+        }
+    }
+}
+
+/// The app's language. The extension has its own switch in its popup; the
+/// two are set separately because each lives in a different program.
+private struct LanguageSection: View {
+    @ObservedObject private var lock = LockManager.shared
+    @State private var choice = AppLanguage.chosen
+
+    var body: some View {
+        PageSection(title: "Language") {
+            Picker("Language", selection: $choice) {
+                ForEach(AppLanguage.allCases) { Text(verbatim: $0.label).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .onChange(of: choice) { AppLanguage.choose($0) }
+
+            if AppLanguage.needsRestart(for: choice) {
+                if lock.isLocked {
+                    // Quit is refused during a lock, so no restart is offered.
+                    Text("Hisn switches language the next time it starts — after this lock, or when you next log in.")
+                        .font(.caption).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    HStack {
+                        Text("Hisn switches language when it restarts.")
+                            .font(.caption).foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Restart now") { AppLanguage.restart() }
+                            .controlSize(.small)
+                    }
+                }
+            }
         }
     }
 }
@@ -1378,10 +1461,10 @@ private struct DetailsSection: View {
                     value: defaults.map { $0.integer(forKey: "filterDomainCount").formatted() } ?? "—")
                 row("Last list check",
                     value: (defaults?.object(forKey: "lastListCheck") as? Date)?
-                        .formatted(date: .abbreviated, time: .shortened) ?? "never")
+                        .formatted(date: .abbreviated, time: .shortened) ?? String(localized: "never"))
                 row("Browser last connected",
                     value: (defaults?.object(forKey: "extensionLastSeen") as? Date)?
-                        .formatted(date: .abbreviated, time: .shortened) ?? "never")
+                        .formatted(date: .abbreviated, time: .shortened) ?? String(localized: "never"))
                 row("App version",
                     value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—")
             }
@@ -1389,10 +1472,10 @@ private struct DetailsSection: View {
         }
     }
 
-    private func row(_ label: String, value: String) -> some View {
+    private func row(_ label: LocalizedStringKey, value: String) -> some View {
         GridRow {
             Text(label).foregroundStyle(.secondary)
-            Text(value).monospacedDigit().textSelection(.enabled)
+            Text(verbatim: value).monospacedDigit().textSelection(.enabled)
         }
         .accessibilityElement(children: .combine)
     }

@@ -22,7 +22,7 @@ stops a release" list is empty.
 | Chrome Web Store | $5 once. `extension/package.sh` → upload. Listing in Arabic and English. Privacy practices: **no data collected**; justify `<all_urls>` (page-text checking), `nativeMessaging` (the lock state from the Mac app), `scripting`. Start as **Unlisted** for a closed beta. |
 | Store id | The store assigns its own id. Add it to `NativeMessagingInstaller.extensionIDs`, rebuild the app, and pass `--extension-id` to the profile (`docs/CHROME_ENFORCEMENT.md`). Until then the unpacked id keeps working beside it. |
 | Edge Add-ons | Free, same package. Edge's own policy domain is already in the profile. |
-| Localisation | The pages are English-only. Move strings into `_locales/{ar,en}/messages.json` (`chrome.i18n`) and set `dir="rtl"` for Arabic — the audience this product exists for reads Arabic first. |
+| Localisation | Done: every page is English and Arabic (`lib/i18n.js`, right-to-left, a switch in the popup). The store listing needs both languages too. |
 
 ## 3. The list
 
@@ -70,7 +70,7 @@ stops a release" list is empty.
 - [ ] Hardware checks in TAMPER_MODEL done, results written into that file
 - [ ] Developer ID build, notarized, stapled, installed on a clean Mac from the .pkg
 - [ ] Extension on the store (unlisted), store id wired into app and profile
-- [ ] Arabic UI in the app and the extension
+- [x] Arabic UI in the app and the extension (app: *Settings › Language*, every string checked by `macos/check_localization.py`)
 - [ ] Non-commercial list sources resolved
 - [ ] Privacy policy and support page live
 - [ ] `./test.sh` and `./test.sh browser` green in CI on the release commit

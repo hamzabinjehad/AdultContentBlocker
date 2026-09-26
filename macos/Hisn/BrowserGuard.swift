@@ -267,7 +267,7 @@ public final class BrowserGuard: ObservableObject {
     public enum AllowError: LocalizedError {
         case locked
         public var errorDescription: String? {
-            "A lock is running. Apps can be allowed again once it ends."
+            String(localized: "A lock is running. Apps can be allowed again once it ends.")
         }
     }
 
@@ -427,12 +427,16 @@ public final class BrowserGuard: ObservableObject {
     public static func message(name: String, reason: BrowserGuardPolicy.Reason) -> String {
         switch reason {
         case .extensionSilent:
-            return "The Hisn extension stopped checking in from \(name). Turn it "
-                + "back on in \(name)’s extensions page, or \(name) will close."
+            return String(localized: """
+                The Hisn extension stopped checking in from \(name). Turn it \
+                back on in \(name)’s extensions page, or \(name) will close.
+                """)
         case .uncovered:
-            return "\(name) has no Hisn protection inside it, so it cannot stay "
-                + "open during a lock. Use Safari or a browser with the Hisn "
-                + "extension."
+            return String(localized: """
+                \(name) has no Hisn protection inside it, so it cannot stay \
+                open during a lock. Use Safari or a browser with the Hisn \
+                extension.
+                """)
         }
     }
 
@@ -441,7 +445,7 @@ public final class BrowserGuard: ObservableObject {
         center.requestAuthorization(options: [.alert, .sound]) { granted, _ in
             guard granted else { return }
             let content = UNMutableNotificationContent()
-            content.title = "Hisn will close \(name) in \(Int(seconds.rounded())) seconds"
+            content.title = String(localized: "Hisn will close \(name) in \(Int(seconds.rounded())) seconds")
             content.body = Self.message(name: name, reason: reason)
             content.sound = .default
             center.add(UNNotificationRequest(identifier: "guard.\(name)",
@@ -460,7 +464,7 @@ public final class BrowserGuard: ObservableObject {
             let p = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 380, height: 150),
                             styleMask: [.titled, .nonactivatingPanel, .utilityWindow],
                             backing: .buffered, defer: false)
-            p.title = "Hisn"
+            p.title = String(localized: "Hisn")
             p.level = .floating
             p.isFloatingPanel = true
             p.hidesOnDeactivate = false
@@ -485,8 +489,10 @@ struct GuardAlertView: View {
             VStack(alignment: .leading, spacing: 10) {
                 ForEach(guardian.alerts) { alert in
                     VStack(alignment: .leading, spacing: 4) {
-                        Label("\(alert.name) closes in "
-                              + "\(max(0, Int(alert.closeAt.timeIntervalSince(context.date).rounded()))) s",
+                        Label(String(localized: """
+                              \(alert.name) closes in \
+                              \(max(0, Int(alert.closeAt.timeIntervalSince(context.date).rounded()))) s
+                              """),
                               systemImage: "exclamationmark.shield.fill")
                             .font(.headline)
                             .foregroundStyle(.orange)

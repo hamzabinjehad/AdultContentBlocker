@@ -93,12 +93,25 @@ suite_macos() {
     echo "── macos: xcodebuild test"
     # No team is needed to compile or test; CODE_SIGNING_ALLOWED=NO makes that
     # explicit so a runner without a certificate does not fail on signing.
+    # -testLanguage en: the test host is the app, and the app may have been
+    # switched to Arabic on this Mac; the assertions read English.
     ( cd macos && xcodebuild -scheme Hisn -configuration Debug test \
-        -destination 'platform=macOS' \
+        -destination 'platform=macOS' -testLanguage en -testRegion US \
         CODE_SIGNING_ALLOWED=NO \
         ${XCODEBUILD_FLAGS:-} 2>&1 | tee "$SCRATCH/xcodebuild-test.log" \
         | grep -E "^/.*error:|Executed [0-9]+ tests|\*\* TEST" || true
       grep -q "\*\* TEST SUCCEEDED \*\*" "$SCRATCH/xcodebuild-test.log" )
+    echo "── macos: every string has Arabic"
+    # The export reads what the compiled code uses, not the catalog, so a new
+    # string without a translation fails here rather than appearing in
+    # English inside an Arabic window.
+    rm -rf "$SCRATCH/hisn-loc"
+    ( cd macos && xcodebuild -exportLocalizations -scheme Hisn \
+        -localizationPath "$SCRATCH/hisn-loc" -exportLanguage ar \
+        CODE_SIGNING_ALLOWED=NO ${XCODEBUILD_FLAGS:-} > "$SCRATCH/xcodebuild-loc.log" 2>&1 ) \
+        || { tail -20 "$SCRATCH/xcodebuild-loc.log"; return 1; }
+    python3 macos/check_localization.py \
+        --xliff "$SCRATCH/hisn-loc/ar.xcloc/Localized Contents/ar.xliff"
 }
 
 if [ $# -eq 0 ]; then

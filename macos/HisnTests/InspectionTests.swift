@@ -308,6 +308,6 @@ final class EditorSummaryTests: XCTestCase {
             .map { "word\($0)" }.joined(separator: "\n")
         let s = UserBlocksSection.summarizeWords(many)
         XCTAssertTrue(s.hasProblem)
-        XCTAssertTrue(s.text.contains("over the \(UserBlocks.maximumTerms)-word limit"))
+        XCTAssertTrue(s.text.contains("over the limit of \(UserBlocks.maximumTerms) words"), s.text)
     }
 }

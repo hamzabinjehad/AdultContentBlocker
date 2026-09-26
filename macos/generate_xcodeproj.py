@@ -73,7 +73,14 @@ APP_SOURCES = SHARED + [
     "Hisn/ExtensionPresence.swift",
     # Reconciles the app's mirrors with the filter's root-owned authority.
     "Hisn/FilterSync.swift",
+    # The app's own language setting (English / Arabic).
+    "Hisn/AppLanguage.swift",
 ]
+
+# Every string the app shows, in English and Arabic. A String Catalog: Xcode
+# compiles it into en.lproj / ar.lproj at build time, plural forms included.
+# `macos/check_localization.py` fails the tests when a string has no Arabic.
+APP_RESOURCES = ["Hisn/Localizable.xcstrings"]
 FILTER_SOURCES = SHARED + ["HisnFilter/FilterDataProvider.swift",
                            "HisnFilter/FilterXPCService.swift",
                            "HisnFilter/main.swift"]
@@ -89,7 +96,8 @@ TEST_SOURCES = ["HisnTests/BlocklistStoreTests.swift",
                 "HisnTests/BrowserGuardTests.swift",
                 "HisnTests/PolicyAuthorityTests.swift",
                 "HisnTests/PartnerTests.swift",
-                "HisnTests/AuditRegressionTests.swift"]
+                "HisnTests/AuditRegressionTests.swift",
+                "HisnTests/LocalizationTests.swift"]
 
 # The signed seed list, bundled into the extension so a machine that has never
 # completed a list update still enforces something. Verified on the same path as
@@ -117,7 +125,7 @@ ALL_FILES = sorted(set(APP_SOURCES + FILTER_SOURCES + BRIDGE_SOURCES + TEST_SOUR
     "Hisn/Info.plist", "Hisn/Hisn.entitlements",
     "HisnFilter/Info.plist", "HisnFilter/HisnFilter.entitlements",
     "HisnBridge/HisnBridge.entitlements",
-}) + FILTER_RESOURCES + TEST_RESOURCES
+} | set(APP_RESOURCES)) + FILTER_RESOURCES + TEST_RESOURCES
 
 
 def oid(*parts: str) -> str:
@@ -207,6 +215,7 @@ def main() -> int:
             ".txt": "text",
             ".js": "sourcecode.javascript",
             ".sh": "text.script.sh",
+            ".xcstrings": "text.json.xcstrings",
         }[Path(path).suffix]
         ref = oid("fileref", path)
         file_refs[path] = ref
@@ -463,7 +472,7 @@ def main() -> int:
     embed_bridge = phase_copy("Embed Bridge", "Contents/MacOS", 1, [BRIDGE])
 
     native_target(APP, "com.apple.product-type.application", APP_SOURCES,
-                  app_settings, [phase_resources(APP), embed_sysext, embed_bridge],
+                  app_settings, [phase_resources(APP, APP_RESOURCES), embed_sysext, embed_bridge],
                   [dependency(APP, FILTER), dependency(APP, BRIDGE)])
     # The tests get the seed too, so they can assert that the artifacts actually
     # committed to this repo verify against the key actually shipped in the app.
@@ -484,7 +493,7 @@ def main() -> int:
         "compatibilityVersion": q("Xcode 14.0"),
         "developmentRegion": "en",
         "hasScannedForEncodings": "0",
-        "knownRegions": "(\n\t\t\t\ten,\n\t\t\t\tBase,\n\t\t\t)",
+        "knownRegions": "(\n\t\t\t\ten,\n\t\t\t\tar,\n\t\t\t\tBase,\n\t\t\t)",
         "mainGroup": main_group,
         "productRefGroup": products_group,
         "projectDirPath": '""',

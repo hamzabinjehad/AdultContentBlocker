@@ -55,19 +55,27 @@ public enum PartnerService {
         public var errorDescription: String? {
             switch self {
             case .notConfigured:
-                return "No accountability partner is set up. Add your partner’s key "
-                    + "in Settings while no lock is running."
+                return String(localized: """
+                    No accountability partner is set up. Add your partner’s key \
+                    in Settings while no lock is running.
+                    """)
             case .badKey:
-                return "That is not a partner key. It should be the code your "
-                    + "partner’s Hisn Partner page shows under “Your key”."
+                return String(localized: """
+                    That is not a partner key. It should be the code your \
+                    partner’s Hisn Partner page shows under “Your key”.
+                    """)
             case .badApproval:
-                return "That approval does not match this lock and your partner’s "
-                    + "key. Ask your partner to sign the release code shown here."
+                return String(localized: """
+                    That approval does not match this lock and your partner’s \
+                    key. Ask your partner to sign the release code shown here.
+                    """)
             case .locked:
-                return "A lock is running, so the partner key cannot be changed "
-                    + "until it ends. (Removing it is still allowed.)"
+                return String(localized: """
+                    A lock is running, so the partner key cannot be changed \
+                    until it ends. (Removing it is still allowed.)
+                    """)
             case .noLock:
-                return "No lock is running."
+                return String(localized: "No lock is running.")
             }
         }
     }

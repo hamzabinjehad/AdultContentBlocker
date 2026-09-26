@@ -45,8 +45,8 @@ final class ProtectionStatusTests: XCTestCase {
         XCTAssertEqual(s.headline, "Partially active")
         XCTAssertTrue(s.isEnforcingAnything)
         // The summary names what is missing, in words, not a count.
-        XCTAssertTrue(s.summary.contains("browser extension"))
-        XCTAssertTrue(s.summary.contains("not set up"))
+        XCTAssertTrue(s.summary.localizedCaseInsensitiveContains("browser extension"), s.summary)
+        XCTAssertTrue(s.summary.localizedCaseInsensitiveContains("not set up"), s.summary)
     }
 
     // MARK: A missing answer is never a positive status

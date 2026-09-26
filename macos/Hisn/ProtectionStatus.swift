@@ -153,11 +153,11 @@ public enum StatusAction: Equatable {
 
     public var title: String {
         switch self {
-        case .retryFilterCheck:   return "Check again"
-        case .enableFilter:       return "Turn on the system filter"
-        case .updateList:         return "Download the block list"
-        case .installExtension:   return "How to connect a browser"
-        case .reconnectExtension: return "Reconnect the browser"
+        case .retryFilterCheck:   return String(localized: "Check again")
+        case .enableFilter:       return String(localized: "Turn on the system filter")
+        case .updateList:         return String(localized: "Download the block list")
+        case .installExtension:   return String(localized: "How to connect a browser")
+        case .reconnectExtension: return String(localized: "Reconnect the browser")
         }
     }
 }
@@ -213,86 +213,91 @@ public struct ProtectionStatus: Equatable {
         let okCount = layers.filter(\.ok).count
         if layers.contains(where: { $0.state == .checking }) {
             level = .checking
-            headline = "Checking status"
-            summary = "Reading the system filter’s state…"
+            headline = String(localized: "Checking status")
+            summary = String(localized: "Reading the system filter’s state…")
         } else if networkOK && ext.ok {
             level = .active
-            headline = "Protection active"
+            headline = String(localized: "Protection active")
             summary = filter.ok
-                ? "The system filter and the browser extension are both running."
-                : "The hosts-file blocklist and the browser extension are both running. "
-                  + "The system filter would add every app and VPN-proof blocking."
+                ? String(localized: "The system filter and the browser extension are both running.")
+                : String(localized: """
+                    The hosts-file blocklist and the browser extension are both running. \
+                    The system filter would add every app and VPN-proof blocking.
+                    """)
         } else if okCount > 0 {
             level = .partial
-            headline = "Partially active"
-            let working = layers.filter(\.ok).map(\.name).joined(separator: " and ")
+            headline = String(localized: "Partially active")
+            // Lists, not a sentence glued from lowercased names: that read
+            // well in exactly one language.
+            let working = layers.filter(\.ok).map(\.name).formatted(.list(type: .and))
             let broken = layers.filter { !$0.ok }
-                .map { "\($0.name.lowercased()) — \($0.detail.lowercased())" }
-                .joined(separator: "; ")
-            summary = "The \(working.lowercased()) is running. The \(broken)."
+                .map { String(localized: "\($0.name) (\($0.detail))") }
+                .formatted(.list(type: .and))
+            summary = String(localized: "Running: \(working). Needs attention: \(broken).")
         } else {
             level = .setupNeeded
-            headline = "Setup needed"
+            headline = String(localized: "Setup needed")
             summary = layers.contains(where: { $0.state == .problem })
-                ? "Nothing is blocking right now. Fix the steps below."
-                : "Nothing is blocking yet. Finish the steps below."
+                ? String(localized: "Nothing is blocking right now. Fix the steps below.")
+                : String(localized: "Nothing is blocking yet. Finish the steps below.")
         }
     }
 
     private static func hostsLayer(_ entries: Int) -> Layer {
         entries >= ProtectionEvidence.hostsMinimum
-            ? Layer(name: "Hosts-file blocklist",
-                    detail: "\(entries.formatted()) domains blocked for every app",
+            ? Layer(name: String(localized: "Hosts-file blocklist"),
+                    detail: String(localized: "\(entries.formatted()) domains blocked for every app"),
                     state: .ok, action: nil)
-            : Layer(name: "Hosts-file blocklist",
-                    detail: "Not installed — run macos/install.sh --hosts",
+            : Layer(name: String(localized: "Hosts-file blocklist"),
+                    detail: String(localized: "Not installed — run macos/install.sh --hosts"),
                     state: .missing, action: nil)
     }
 
     private static func filterLayer(_ f: FilterEvidence, canRun: Bool) -> Layer {
+        let name = String(localized: "System filter")
         if !canRun, f == .off || f == .unknown || { if case .unavailable = f { return true }; return false }() {
-            return Layer(name: "System filter",
-                         detail: "Needs a build signed with the Apple Developer Program "
-                             + "(Setup step 9)",
+            return Layer(name: name,
+                         detail: String(localized: "Needs a build signed with the Apple Developer Program (Setup step 9)"),
                          state: .missing, action: nil)
         }
         switch f {
         case .unknown:
-            return Layer(name: "System filter", detail: "Checking…",
+            return Layer(name: name, detail: String(localized: "Checking…"),
                          state: .checking, action: nil)
         case .unavailable(let message):
-            return Layer(name: "System filter",
-                         detail: "Could not read its state: \(message)",
+            return Layer(name: name,
+                         detail: String(localized: "Could not read its state: \(message)"),
                          state: .problem, action: .retryFilterCheck)
         case .off:
-            return Layer(name: "System filter", detail: "Not running",
+            return Layer(name: name, detail: String(localized: "Not running"),
                          state: .missing, action: .enableFilter)
         case .silent:
-            return Layer(name: "System filter",
-                         detail: "Switched on, but not answering — open Hisn again, or restart the Mac",
+            return Layer(name: name,
+                         detail: String(localized: "Switched on, but not answering — open Hisn again, or restart the Mac"),
                          state: .problem, action: .retryFilterCheck)
         case .on(let count) where count == 0:
-            return Layer(name: "System filter",
-                         detail: "Running, but it has no block list yet",
+            return Layer(name: name,
+                         detail: String(localized: "Running, but it has no block list yet"),
                          state: .problem, action: .updateList)
         case .on:
-            return Layer(name: "System filter", detail: "Running",
+            return Layer(name: name, detail: String(localized: "Running"),
                          state: .ok, action: nil)
         }
     }
 
     private static func extensionLayer(lastSeen: Date?, now: Date) -> Layer {
+        let name = String(localized: "Browser extension")
         guard let lastSeen else {
-            return Layer(name: "Browser extension", detail: "Not set up",
+            return Layer(name: name, detail: String(localized: "Not set up"),
                          state: .missing, action: .installExtension)
         }
         if now.timeIntervalSince(lastSeen) < ProtectionEvidence.extensionStaleAfter {
-            return Layer(name: "Browser extension", detail: "Connected",
+            return Layer(name: name, detail: String(localized: "Connected"),
                          state: .ok, action: nil)
         }
         let when = lastSeen.formatted(date: .abbreviated, time: .shortened)
-        return Layer(name: "Browser extension",
-                     detail: "Not responding — last heard from \(when)",
+        return Layer(name: name,
+                     detail: String(localized: "Not responding — last heard from \(when)"),
                      state: .problem, action: .reconnectExtension)
     }
 }
@@ -307,25 +312,27 @@ public struct LockStatus: Equatable {
     public let headline: String
     public let detail: String?
 
-    /// "Standard" and "Strict" are the user-facing names; the store's
-    /// `"blocklist"` is an implementation word.
-    public static func modeName(_ mode: String) -> String {
-        mode == "strict" ? "Strict" : "Standard"
+    /// "Standard mode" and "Strict mode" are the user-facing names; the
+    /// store's `"blocklist"` is an implementation word. Whole phrases, not a
+    /// name plus "mode": Arabic puts the noun first («الوضع الصارم»).
+    public static func modeLabel(_ mode: String) -> String {
+        mode == "strict" ? String(localized: "Strict mode") : String(localized: "Standard mode")
     }
 
     public init(state: LockStore.LockState, now: Date, pendingRelease: Date?) {
         guard now < state.deadline else {
             isLocked = false
-            headline = "No active lock"
-            detail = "Blocking still runs; a lock makes it unremovable for a set time."
+            headline = String(localized: "No active lock")
+            detail = String(localized: "Blocking still runs; a lock makes it unremovable for a set time.")
             return
         }
         isLocked = true
-        headline = "Locked until \(state.deadline.formatted(date: .long, time: .shortened))"
-        var parts = ["\(Self.modeName(state.mode)) mode"]
+        let until = state.deadline.formatted(date: .long, time: .shortened)
+        headline = String(localized: "Locked until \(until)")
+        var parts = [Self.modeLabel(state.mode)]
         if let pendingRelease {
-            parts.append("early release arrives "
-                         + pendingRelease.formatted(date: .abbreviated, time: .shortened))
+            let when = pendingRelease.formatted(date: .abbreviated, time: .shortened)
+            parts.append(String(localized: "early release arrives \(when)"))
         }
         detail = parts.joined(separator: " · ")
     }

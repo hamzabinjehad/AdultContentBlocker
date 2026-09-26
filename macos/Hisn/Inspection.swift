@@ -63,9 +63,10 @@ public enum Inspection {
         public var errorDescription: String? {
             switch self {
             case let .wouldLoosenWhileLocked(reasons):
-                return "A lock is running, so you cannot "
-                    + reasons.joined(separator: " or ")
-                    + " until it ends. Making checking stricter still works."
+                return String(localized: """
+                    A lock is running, so these changes wait until it ends: \
+                    \(reasons.formatted(.list(type: .and))). Making checking stricter still works.
+                    """)
             }
         }
     }
@@ -104,13 +105,13 @@ public enum Inspection {
     public static func loosening(from current: Settings, to next: Settings) -> SettingsError? {
         var reasons: [String] = []
         if current.text, !next.text {
-            reasons.append("turn off page-text checking")
+            reasons.append(String(localized: "turn off page-text checking"))
         }
         if current.hostKeywords, !next.hostKeywords {
-            reasons.append("turn off keyword checking")
+            reasons.append(String(localized: "turn off keyword checking"))
         }
         if next.textSensitivity < current.textSensitivity {
-            reasons.append("lower the sensitivity")
+            reasons.append(String(localized: "lower the sensitivity"))
         }
         return reasons.isEmpty ? nil : .wouldLoosenWhileLocked(reasons)
     }

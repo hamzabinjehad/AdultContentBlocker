@@ -51,27 +51,29 @@ public enum UserBlocks {
         public var errorDescription: String? {
             switch self {
             case let .wouldLoosenWhileLocked(terms, apps):
-                var parts: [String] = []
-                if !terms.isEmpty { parts.append("stop blocking \(list(terms))") }
-                if !apps.isEmpty { parts.append("unblock \(list(apps))") }
-                return "A lock is running, so you cannot "
-                    + parts.joined(separator: " or ")
-                    + " until it ends. Adding more still works."
+                let refusal: String
+                switch (terms.isEmpty, apps.isEmpty) {
+                case (false, false):
+                    refusal = String(localized: "A lock is running, so you cannot stop blocking \(SiteLists.shortList(terms)) or unblock \(SiteLists.shortList(apps)) until it ends.")
+                case (false, true):
+                    refusal = String(localized: "A lock is running, so you cannot stop blocking \(SiteLists.shortList(terms)) until it ends.")
+                default:
+                    refusal = String(localized: "A lock is running, so you cannot unblock \(SiteLists.shortList(apps)) until it ends.")
+                }
+                return refusal + " " + String(localized: "Adding more still works.")
             case let .termTooShort(word):
-                return "“\(word)” is too short to block safely. Words need at "
-                    + "least \(minimumTermLength) letters — shorter ones match "
-                    + "parts of ordinary words and block pages you need."
+                return String(localized: """
+                    “\(word)” is too short to block safely. Words need at \
+                    least \(minimumTermLength) letters — shorter ones match \
+                    parts of ordinary words and block pages you need.
+                    """)
             case let .tooManyTerms(count):
-                return "That is \(count) words; the limit is \(maximumTerms). "
-                    + "Past that nobody remembers what is on the list, and a "
-                    + "surprising block looks like a broken app."
+                return String(localized: """
+                    That is \(count) words; the limit is \(maximumTerms). \
+                    Past that nobody remembers what is on the list, and a \
+                    surprising block looks like a broken app.
+                    """)
             }
-        }
-
-        private func list(_ items: [String]) -> String {
-            let shown = items.prefix(3).joined(separator: ", ")
-            return items.count > 3
-                ? "\(shown) and \(items.count - 3) more" : shown
         }
     }
 

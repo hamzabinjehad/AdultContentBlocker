@@ -46,6 +46,27 @@ public final class LockManager: ObservableObject {
 
         public var id: String { rawValue }
 
+        /// The name on the picker, in the person's language: "90 days", not
+        /// "2 months, 29 days", so each preset counts in its own unit.
+        public var title: String {
+            let f = DateComponentsFormatter()
+            f.unitsStyle = .full
+            switch self {
+            case .week, .month, .quarter: f.allowedUnits = [.day]
+            case .year:                   f.allowedUnits = [.year]
+            case .custom:                 return String(localized: "Custom")
+            }
+            var parts = DateComponents()
+            switch self {
+            case .week:    parts.day = 7
+            case .month:   parts.day = 30
+            case .quarter: parts.day = 90
+            case .year:    parts.year = 1
+            case .custom:  break
+            }
+            return f.string(from: parts) ?? rawValue
+        }
+
         /// The preset length. `nil` for `.custom`, which takes its length from
         /// what the person types instead.
         public var seconds: TimeInterval? {
@@ -103,19 +124,19 @@ public final class LockManager: ObservableObject {
         public var errorDescription: String? {
             switch self {
             case .durationOutOfRange:
-                return "A lock has to be between "
-                    + "\(LockManager.describe(LockManager.minimumLock)) and "
-                    + "\(LockManager.describe(LockManager.maximumLock))."
+                let shortest = LockManager.describe(LockManager.minimumLock)
+                let longest = LockManager.describe(LockManager.maximumLock)
+                return String(localized: "A lock has to be between \(shortest) and \(longest).")
             case let .alreadyLocked(until):
-                return "A lock is already running until \(until.formatted())."
+                return String(localized: "A lock is already running until \(until.formatted()).")
             case .wouldShorten:
-                return "This would shorten an active lock, which is not allowed."
+                return String(localized: "This would shorten an active lock, which is not allowed.")
             case .notLocked:
-                return "No lock is currently running."
+                return String(localized: "No lock is currently running.")
             case let .releaseNotDue(at):
-                return "Your release request completes at \(at.formatted())."
+                return String(localized: "Your release request completes at \(at.formatted()).")
             case let .filterUnavailable(reason):
-                return "The content filter could not start: \(reason)"
+                return String(localized: "The content filter could not start: \(reason)")
             }
         }
     }
@@ -163,12 +184,15 @@ public final class LockManager: ObservableObject {
     public var remaining: TimeInterval { max(0, state.deadline.timeIntervalSince(now)) }
 
     public var remainingDescription: String {
-        guard isLocked else { return "Not locked" }
-        let t = Int(remaining)
-        let d = t / 86400, h = (t % 86400) / 3600, m = (t % 3600) / 60
-        if d > 0 { return "\(d)d \(h)h" }
-        if h > 0 { return "\(h)h \(m)m" }
-        return "\(m)m \(t % 60)s"
+        guard isLocked else { return String(localized: "Not locked") }
+        // The two largest units, abbreviated in the person's language
+        // ("3d 4h", «3 ي 4 س»).
+        let f = DateComponentsFormatter()
+        f.unitsStyle = .abbreviated
+        f.allowedUnits = remaining >= 3600 ? [.day, .hour, .minute] : [.minute, .second]
+        f.maximumUnitCount = 2
+        f.zeroFormattingBehavior = .dropLeading
+        return f.string(from: max(0, remaining.rounded(.down))) ?? ""
     }
 
     // MARK: - Starting

@@ -5,6 +5,12 @@
 	};
 	objectVersion = 56;
 	objects = {
+		E87D9CAD77EB91AAB54C8987 /* AppLanguage.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = AppLanguage.swift;
+			sourceTree = "<group>";
+		};
 		6B0A4D54BFD2F08FF0BF42BB /* BlocklistStore.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -75,6 +81,12 @@
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = ListUpdater.swift;
+			sourceTree = "<group>";
+		};
+		A482D83B66E8C74486144AD2 /* Localizable.xcstrings */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = text.json.xcstrings;
+			path = Localizable.xcstrings;
 			sourceTree = "<group>";
 		};
 		00DEA34098A0930C4F010EB9 /* LockManager.swift */ = {
@@ -209,6 +221,12 @@
 			path = KeywordLayerTests.swift;
 			sourceTree = "<group>";
 		};
+		8C0173C1C38F1936EC103F00 /* LocalizationTests.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = LocalizationTests.swift;
+			sourceTree = "<group>";
+		};
 		93F61A60BC5B807E6CE6E78F /* PartnerTests.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -330,6 +348,7 @@
 		E5B5BA2D0DC56930613A8351 /* Hisn */ = {
 			isa = PBXGroup;
 			children = (
+				E87D9CAD77EB91AAB54C8987,
 				6B0A4D54BFD2F08FF0BF42BB,
 				46ADD645068CFF80B5C9D940,
 				A1954A7D9F26A7718A4AAAD4,
@@ -342,6 +361,7 @@
 				75885CCB6C132FED593384D7,
 				C12513FD06B08E25C6673833,
 				1F89B5A1A0E8503E6DE665E9,
+				A482D83B66E8C74486144AD2,
 				00DEA34098A0930C4F010EB9,
 				10B6D354DDF0586B5B0D7A22,
 				0EE6D2898CA933202ECEECFB,
@@ -385,6 +405,7 @@
 				D6D64E38C469B55C566EB0A8,
 				5CEF7A7205FB28ED41D63CB3,
 				28A03C0E33E9129984BFCEA4,
+				8C0173C1C38F1936EC103F00,
 				93F61A60BC5B807E6CE6E78F,
 				51108B83C7EFBA266DC5773F,
 				C15C5BA8E7F3C7A5B3CC9BFB,
@@ -922,10 +943,15 @@
 			name = "Embed Bridge";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		BDF8914226C025CC49ED6309 /* Localizable.xcstrings in Resources */ = {
+			isa = PBXBuildFile;
+			fileRef = A482D83B66E8C74486144AD2;
+		};
 		7E4B2B42202196B8DEDF4BBA /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BDF8914226C025CC49ED6309,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1033,6 +1059,10 @@
 			isa = PBXBuildFile;
 			fileRef = A568FFA9D31BF93387C7D5E1;
 		};
+		B4EE4DB38517A27FB88356A0 /* AppLanguage.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = E87D9CAD77EB91AAB54C8987;
+		};
 		079A944B3E87101645898B0C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1057,6 +1087,7 @@
 				B08D22A0F88654A0E18637F4,
 				BE03B7C06F8E1782A5EF2AD4,
 				FB98AF85AF11949BC05C682C,
+				B4EE4DB38517A27FB88356A0,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1279,6 +1310,10 @@
 			isa = PBXBuildFile;
 			fileRef = 89BDAC009D56611F485D64DB;
 		};
+		5C00E8EDDD34459D1728E0F5 /* LocalizationTests.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 8C0173C1C38F1936EC103F00;
+		};
 		A29CD87A3F623C88ED8997D1 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1294,6 +1329,7 @@
 				CD889FF56DC5DDE1F5DC8E50,
 				759EE7B9C81BF94505B490AB,
 				608855FBFE591CFA57FC9F03,
+				5C00E8EDDD34459D1728E0F5,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1407,6 +1443,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				ar,
 				Base,
 			);
 			mainGroup = 361FF3508AF23F4E0CB329EA;
