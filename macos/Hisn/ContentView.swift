@@ -296,6 +296,12 @@ private struct OverviewPage: View {
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
+                    if !lockStatus.isLocked, let next = ScheduleStore.current().nextWindow(after: lock.now) {
+                        Label(String(localized: "Daily lock at \(next.start.formatted(date: .omitted, time: .shortened)), until \(next.end.formatted(date: .omitted, time: .shortened))."),
+                              systemImage: "calendar.badge.clock")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 Spacer()
                 Button(lockStatus.isLocked ? "Manage lock" : "Start a lock…") {

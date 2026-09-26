@@ -935,6 +935,32 @@
         }
       }
     },
+    "Daily lock at %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "القفل اليومي عند %@"
+          }
+        }
+      }
+    },
+    "Daily lock at %@, until %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Daily lock at %1$@, until %2$@."
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "القفل اليومي عند %1$@ حتى %2$@."
+          }
+        }
+      }
+    },
     "days" : {
       "localizations" : {
         "ar" : {

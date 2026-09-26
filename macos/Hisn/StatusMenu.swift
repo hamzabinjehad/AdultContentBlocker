@@ -73,6 +73,9 @@ struct StatusMenu: View {
             Text(String(localized: "Locked · \(lock.remainingDescription) left"))
         } else {
             Text("No active lock")
+            if let next = ScheduleStore.current().nextWindow(after: lock.now) {
+                Text(String(localized: "Daily lock at \(next.start.formatted(date: .omitted, time: .shortened))"))
+            }
         }
         Divider()
         Button("Open Hisn") { MainWindow.show(.overview, open: openWindow) }
@@ -80,7 +83,10 @@ struct StatusMenu: View {
             Button("Start a lock…") { MainWindow.show(.lock, open: openWindow) }
         }
         Button("Setup") { MainWindow.show(.setup, open: openWindow) }
-        if !EffectiveLock.isLocked {
+        // LockManager's answer, not EffectiveLock's: the same facts (mirrors
+        // or authority), already read by its tick, where EffectiveLock would
+        // read all three mirrors, the Keychain included, on every refresh.
+        if !lock.isLocked {
             Divider()
             Button("Quit Hisn") { NSApp.terminate(nil) }
         }

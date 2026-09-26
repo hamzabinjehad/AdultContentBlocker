@@ -37,6 +37,13 @@ final class LockScheduleTests: XCTestCase {
         XCTAssertNil(work.window(containing: at(8, 59), calendar: calendar))
     }
 
+    func testTheNextWindowIsTonightOrTomorrowNight() {
+        XCTAssertEqual(night.nextWindow(after: at(12), calendar: calendar)?.start, at(22))
+        XCTAssertEqual(night.nextWindow(after: at(23), calendar: calendar)?.start, at(22, day: 27),
+                       "inside tonight's window, the next one is tomorrow's")
+        XCTAssertEqual(night.nextWindow(after: at(6), calendar: calendar)?.start, at(22))
+    }
+
     func testAnOffScheduleHasNoWindow() {
         var off = night
         off.enabled = false

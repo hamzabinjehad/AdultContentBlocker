@@ -50,6 +50,21 @@ public struct LockSchedule: Codable, Equatable {
         return nil
     }
 
+    /// The next window to begin after `now` (today's, if it has not begun,
+    /// else tomorrow's). Nil when the schedule is off.
+    public func nextWindow(after now: Date, calendar: Calendar = .current) -> DateInterval? {
+        guard enabled, start != end else { return nil }
+        let today = calendar.startOfDay(for: now)
+        for dayOffset in [0, 1] {
+            guard let day = calendar.date(byAdding: .day, value: dayOffset, to: today),
+                  let begins = calendar.date(byAdding: .minute, value: start, to: day),
+                  begins > now
+            else { continue }
+            return DateInterval(start: begins, duration: TimeInterval(lengthMinutes * 60))
+        }
+        return nil
+    }
+
     /// The window to lock now: the one containing `now`, when the lock that
     /// is running (if any) ends before it does. Nil when nothing needs doing.
     public func lockNeeded(at now: Date, lockedUntil: Date?,
