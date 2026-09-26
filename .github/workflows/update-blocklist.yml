@@ -51,8 +51,11 @@ jobs:
     # secrets, and the environment admits the main branch only (Settings ›
     # Environments › list-signing › Deployment branches). A workflow edited on
     # any other branch — even one that removes the `if: main` below — cannot
-    # read the key, so it cannot sign a list. See SETUP.md.
-    environment: list-signing
+    # read the key, so it cannot sign a list. See SETUP.md. The link is the
+    # list the clients download, shown on the environment's page.
+    environment:
+      name: list-signing
+      url: https://raw.githubusercontent.com/${{ github.repository }}/lists/manifest.json
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 

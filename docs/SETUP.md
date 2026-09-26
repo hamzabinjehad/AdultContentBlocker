@@ -177,7 +177,9 @@ Both clients download signed updates from this repository's `lists` branch —
    private repository, and the clients then keep their bundled seed forever.
 2. **The signing key lives in an environment, not a repository secret.**
    Settings › Environments › *New environment* `list-signing`; under
-   *Deployment branches and tags* choose *Selected branches* and add `main`;
+   *Deployment branches and tags* choose *Selected branches and tags* and add
+   `main` (not *Protected branches*: unless `main` has a protection rule, that
+   choice refuses `main` itself and the build never gets the key);
    then *Add environment secret* `BLOCKLIST_SIGNING_KEY` with the PEM whose
    public half is pinned in `blocklist/public_key.hex`. If an older
    repository-level secret of that name exists, delete it — it would still be
