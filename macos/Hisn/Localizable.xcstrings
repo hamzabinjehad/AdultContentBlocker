@@ -1151,6 +1151,16 @@
         }
       }
     },
+    "Hisn is not installed in Applications. Install it from the Hisn folder." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حصن غير مثبّت في مجلد التطبيقات. ثبّته من مجلد حصن."
+          }
+        }
+      }
+    },
     "Hisn keeps running during a lock" : {
       "localizations" : {
         "ar" : {
@@ -1213,6 +1223,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "HISN-PK-…"
+          }
+        }
+      }
+    },
+    "Hisn’s own files" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ملفات حصن نفسه"
           }
         }
       }
@@ -1873,6 +1893,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "نظرة عامة"
+          }
+        }
+      }
+    },
+    "Owned by the system: no one without the administrator password can change them." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يملكها النظام: لا يستطيع تغييرها أحد دون كلمة مرور المدير."
           }
         }
       }
@@ -2839,6 +2869,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "لن تتمكن من إيقاف هذا حتى %@."
+          }
+        }
+      }
+    },
+    "Your account owns them, so even after the account split you could replace the program the browsers talk to. Install Hisn again from the Hisn folder; it asks for the Mac’s password." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حسابك يملكها، فحتى بعد فصل الحسابات تستطيع استبدال البرنامج الذي تتحدث إليه المتصفحات. ثبّت حصن مجددًا من مجلد حصن؛ سيطلب كلمة مرور الماك."
           }
         }
       }

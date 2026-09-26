@@ -75,7 +75,7 @@ grep -q "\*\* BUILD SUCCEEDED \*\*" "$BUILD.log" || { echo "build failed — see
 BUILT="$BUILD/Build/Products/Release/Hisn.app"
 
 # ---- 2. install -------------------------------------------------------------
-step "Installing to $APP"
+step "Installing to $APP, owned by the system (asks for your password)"
 launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null || true
 if pgrep -xq Hisn; then
     # A running lock refuses an ordinary Quit, by design. Replacing the app
@@ -86,8 +86,16 @@ fi
 STAGE="$(mktemp -d /Applications/.hisn-install.XXXXXX 2>/dev/null)" \
     || { echo "cannot write to /Applications — run this as an administrator" >&2; exit 1; }
 ditto "$BUILT" "$STAGE/Hisn.app"
-rm -rf "$APP"
-mv "$STAGE/Hisn.app" "$APP"
+# Owned by root, writable by no one else. Copied as the person running this,
+# the bundle stayed theirs after the account split — and the admin-owned
+# browser link in /Library runs Contents/MacOS/HisnBridge, so a standard user
+# could still replace that one file with a program answering "no lock". The
+# same goes for every other file in the bundle. Updating Hisn now needs an
+# administrator, like everything else the lock stands on.
+sudo chown -R root:wheel "$STAGE/Hisn.app"
+sudo chmod -R go-w "$STAGE/Hisn.app"
+sudo rm -rf "$APP"
+sudo mv "$STAGE/Hisn.app" "$APP"
 rmdir "$STAGE"
 echo "installed $(defaults read "$APP/Contents/Info" CFBundleShortVersionString 2>/dev/null || echo "") at $APP"
 

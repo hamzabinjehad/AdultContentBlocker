@@ -11,11 +11,12 @@ final class SetupChecklistTests: XCTestCase {
                           safe: SafeSearchDNS = noSafeSearch, partner: Bool = false,
                           browsers: [BrowserSetup] = [BrowserSetup(name: "Helium")],
                           relayOff: Bool = false, screenTime: Bool = false,
-                          filter: Bool = false) -> SetupEvidence {
+                          filter: Bool = false, appFiles: Bool? = false) -> SetupEvidence {
         SetupEvidence(isAdmin: admin, hostsEntries: hosts, dnsBypassesBlocked: bypassesBlocked,
                       safeSearch: safe, partnerKeySet: partner,
                       browsers: browsers, privateRelayOff: relayOff,
-                      screenTimeAdultFilter: screenTime, systemFilterRunning: filter)
+                      screenTimeAdultFilter: screenTime, systemFilterRunning: filter,
+                      appFilesProtected: appFiles)
     }
 
     private let lockedHelium = BrowserSetup(name: "Helium", incognitoLocked: true,
@@ -28,8 +29,8 @@ final class SetupChecklistTests: XCTestCase {
     func testTheStepsComeInSetupOrderWithTheAccountSplitLast() {
         let c = SetupChecklist(evidence())
         XCTAssertEqual(c.steps.map(\.id),
-                       [.browsers, .domains, .safeSearch, .partner, .profile, .screenTime, .accounts,
-                        .systemFilter])
+                       [.browsers, .domains, .safeSearch, .partner, .profile, .screenTime, .appFiles,
+                        .accounts, .systemFilter])
     }
 
     func testAFreshMacHasEverythingLeftAndSaysWhatToDo() {
@@ -48,11 +49,12 @@ final class SetupChecklistTests: XCTestCase {
 
     func testEverythingDoneIsCompleteWithoutThePaidFilter() {
         let c = SetupChecklist(evidence(admin: false, hosts: 358_239, safe: SafeSearchDNS(), partner: true,
-                                        browsers: [lockedHelium], relayOff: true, screenTime: true))
+                                        browsers: [lockedHelium], relayOff: true, screenTime: true,
+                                        appFiles: true))
         XCTAssertTrue(c.isComplete, c.steps.filter { $0.state == .todo }.map(\.title).joined(separator: ", "))
         XCTAssertEqual(step(c, .systemFilter).state, .optional,
                        "the $99 filter is worth having, not required to finish setup")
-        XCTAssertEqual(c.required.count, 7)
+        XCTAssertEqual(c.required.count, 8)
     }
 
     func testTheSystemFilterAloneCoversDomains() {
@@ -152,6 +154,28 @@ final class SetupChecklistTests: XCTestCase {
         let r = SetupEvidence.safeSearchDNS(hosts: "150.171.28.16 www.bing.com", resolve: { _ in nil })
         XCTAssertEqual(r.stale, [])
         XCTAssertEqual(r.missing, ["Google", "YouTube", "DuckDuckGo"])
+    }
+
+    /// The browser link runs the bridge inside the bundle: a bundle the user
+    /// owns is a program they can swap, split or no split.
+    func testAppFilesTheUserOwnsAreNotDone() {
+        XCTAssertEqual(step(SetupChecklist(evidence(appFiles: false)), .appFiles).action,
+                       .command("macos/install.sh"))
+        XCTAssertEqual(step(SetupChecklist(evidence(appFiles: nil)), .appFiles).state, .todo)
+        XCTAssertEqual(step(SetupChecklist(evidence(appFiles: true)), .appFiles).state, .done)
+    }
+
+    func testAppFilesOwnedByTheUserAreReadAsUnprotected() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("hisn-bundle-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let bundle = root.appendingPathComponent("Hisn.app")
+        try FileManager.default.createDirectory(at: bundle.appendingPathComponent("Contents/MacOS"),
+                                                withIntermediateDirectories: true)
+        XCTAssertNil(SetupEvidence.appFilesProtected(bundle: bundle.path), "no bridge: not installed")
+        FileManager.default.createFile(atPath: bundle.appendingPathComponent("Contents/MacOS/HisnBridge").path,
+                                       contents: Data("#!/bin/sh".utf8))
+        XCTAssertEqual(SetupEvidence.appFilesProtected(bundle: bundle.path), false)
     }
 
     func testEdgeKeepsItsPolicyUnderItsOwnDomain() {

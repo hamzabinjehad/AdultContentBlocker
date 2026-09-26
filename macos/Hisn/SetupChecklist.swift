@@ -65,11 +65,15 @@ public struct SetupEvidence: Equatable {
     public var privateRelayOff: Bool
     public var screenTimeAdultFilter: Bool
     public var systemFilterRunning: Bool
+    /// /Applications/Hisn.app and its bridge owned by root, the bridge not
+    /// writable by this user. nil when Hisn is not in /Applications.
+    public var appFilesProtected: Bool?
 
     public init(isAdmin: Bool?, hostsEntries: Int?, dnsBypassesBlocked: Bool = true,
                 safeSearch: SafeSearchDNS = SafeSearchDNS(),
                 partnerKeySet: Bool, browsers: [BrowserSetup], privateRelayOff: Bool,
-                screenTimeAdultFilter: Bool, systemFilterRunning: Bool) {
+                screenTimeAdultFilter: Bool, systemFilterRunning: Bool,
+                appFilesProtected: Bool? = true) {
         self.isAdmin = isAdmin
         self.hostsEntries = hostsEntries
         self.dnsBypassesBlocked = dnsBypassesBlocked
@@ -79,6 +83,7 @@ public struct SetupEvidence: Equatable {
         self.privateRelayOff = privateRelayOff
         self.screenTimeAdultFilter = screenTimeAdultFilter
         self.systemFilterRunning = systemFilterRunning
+        self.appFilesProtected = appFilesProtected
     }
 }
 
@@ -104,7 +109,7 @@ public struct SetupChecklist: Equatable {
 
     public struct Step: Identifiable, Equatable {
         public enum ID: String {
-            case browsers, domains, safeSearch, partner, profile, screenTime, accounts, systemFilter
+            case browsers, domains, safeSearch, partner, profile, screenTime, appFiles, accounts, systemFilter
         }
         public let id: ID
         public let title: String
@@ -214,7 +219,25 @@ public struct SetupChecklist: Equatable {
                           state: e.screenTimeAdultFilter ? .done : .todo,
                           action: e.screenTimeAdultFilter ? nil : .screenTimeSettings))
 
-        // 6. Last: the account split. Everything above can be undone by an
+        // 6. Hisn's own files, owned by root — before the split, which is
+        //    when owning them starts to matter: the admin-owned browser link
+        //    runs the bridge inside the bundle.
+        switch e.appFilesProtected {
+        case .some(true):
+            steps.append(Step(id: .appFiles, title: String(localized: "Hisn’s own files"),
+                              detail: String(localized: "Owned by the system: no one without the administrator password can change them."),
+                              state: .done, action: nil))
+        case .some(false):
+            steps.append(Step(id: .appFiles, title: String(localized: "Hisn’s own files"),
+                              detail: String(localized: "Your account owns them, so even after the account split you could replace the program the browsers talk to. Install Hisn again from the Hisn folder; it asks for the Mac’s password."),
+                              state: .todo, action: .command("macos/install.sh")))
+        case .none:
+            steps.append(Step(id: .appFiles, title: String(localized: "Hisn’s own files"),
+                              detail: String(localized: "Hisn is not installed in Applications. Install it from the Hisn folder."),
+                              state: .todo, action: .command("macos/install.sh")))
+        }
+
+        // 7. Last: the account split. Everything above can be undone by an
         //    administrator, so this is the step that makes the rest hold.
         switch e.isAdmin {
         case .some(false):
@@ -276,7 +299,8 @@ extension SetupEvidence {
             browsers: browsers,
             privateRelayOff: forced("allowCloudPrivateRelay", "com.apple.applicationaccess") as? Bool == false,
             screenTimeAdultFilter: forced("restrictWeb", "com.apple.familycontrols.contentfilter") as? Bool == true,
-            systemFilterRunning: systemFilterRunning)
+            systemFilterRunning: systemFilterRunning,
+            appFilesProtected: appFilesProtected())
     }
 
     /// One name per engine, and the host whose address it should carry —
@@ -349,6 +373,18 @@ extension SetupEvidence {
             p = ai.pointee.ai_next
         }
         return out
+    }
+
+    /// Whether the installed bundle and its bridge belong to root and the
+    /// bridge cannot be written by this user.
+    static func appFilesProtected(bundle: String = "/Applications/Hisn.app") -> Bool? {
+        let fm = FileManager.default
+        let bridge = bundle + "/Contents/MacOS/HisnBridge"
+        guard let b = try? fm.attributesOfItem(atPath: bundle),
+              let x = try? fm.attributesOfItem(atPath: bridge) else { return nil }
+        return b[.ownerAccountName] as? String == "root"
+            && x[.ownerAccountName] as? String == "root"
+            && !fm.isWritableFile(atPath: bridge)
     }
 
     /// Where a configuration profile puts a browser's policy. The bundle id,

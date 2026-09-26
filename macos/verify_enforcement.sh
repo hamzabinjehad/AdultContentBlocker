@@ -110,6 +110,21 @@ else
     ok "account split" "'$ME' is a standard user"
 fi
 
+# ---- the app's own files ------------------------------------------------------
+# The admin-owned browser link runs the bridge inside the app bundle: a bundle
+# the daily user owns is a program they can swap for one that says "no lock".
+bridge="/Applications/Hisn.app/Contents/MacOS/HisnBridge"
+if [ -e "$bridge" ]; then
+    owner=$(stat -f %Su "$bridge"); bundle_owner=$(stat -f %Su /Applications/Hisn.app)
+    if [ "$owner" = "root" ] && [ "$bundle_owner" = "root" ] && [ ! -w "$bridge" ]; then
+        ok "app files" "owned by root — the browser link's program cannot be swapped"
+    else
+        open "app files" "owned by $owner — a standard user could replace the browser link's program; run install.sh"
+    fi
+else
+    warn "app files" "Hisn is not in /Applications"
+fi
+
 # ---- domain layer: hosts / DNS ---------------------------------------------
 hosts_count=$(grep -c '^0\.0\.0\.0' /etc/hosts 2>/dev/null || echo 0)
 if [ "$hosts_count" -ge 1000 ]; then

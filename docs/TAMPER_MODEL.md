@@ -38,6 +38,7 @@ this pass — see "Assumption to verify first".
 | Network filter preference | `NEFilterManager` (system) | root | nothing; disabling is in System Settings and prompts for admin | the app re-asserts on launch |
 | System extension activation | `sysextd`, SIP-protected | root | nothing | `systemextensionsctl` needs admin, and full removal needs SIP off |
 | Bundled seed | inside the app bundle, code-signed | root (in `/Applications`) | nothing as standard user | modifying it breaks the app's signature; the filter also verifies the manifest signature |
+| The app bundle itself, incl. `Contents/MacOS/HisnBridge` | `/Applications/Hisn.app` | **root** since `install.sh` chowns it (2026-09-26) | nothing as standard user | before that it stayed owned by whoever ran `install.sh`, and the admin-owned browser link in `/Library` runs that bridge: after the account split the daily user could still swap it for a program answering "no lock". `verify_enforcement.sh` ("app files") and the Setup page check the ownership |
 
 ## What follows
 
