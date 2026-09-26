@@ -43,7 +43,11 @@ trap 'rm -rf "$PROFILE" "$OUT"' EXIT
 
 SCREENSHOT_ARGS=("--window-size=1280,1050")
 if [ -n "${SCREENSHOT:-}" ]; then SCREENSHOT_ARGS+=("--screenshot=$SCREENSHOT"); fi
+# --use-mock-keychain / --password-store=basic: on a Mac nobody is sitting at
+# (a CI runner), Chrome otherwise asks the Keychain for its storage key and
+# can wait on a prompt no one will answer.
 "$CHROME_BIN" --headless=new --disable-gpu --no-first-run --no-default-browser-check \
+    --use-mock-keychain --password-store=basic \
     --user-data-dir="$PROFILE" \
     --allow-file-access-from-files \
     --virtual-time-budget=40000 \

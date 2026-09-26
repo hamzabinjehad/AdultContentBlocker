@@ -108,7 +108,11 @@ PORT="$(head -1 "$WORK/port")"
 
 # With an extension loaded, headless Chromium does not exit after --dump-dom,
 # so run it in the background and stop it once the frames have been fetched.
+# --use-mock-keychain / --password-store=basic: on a Mac nobody is sitting at
+# (a CI runner), Chrome otherwise asks the Keychain for its storage key and
+# can wait on a prompt no one will answer.
 "$BROWSER" --headless=new --disable-gpu --no-first-run --no-default-browser-check \
+    --use-mock-keychain --password-store=basic \
     --user-data-dir="$WORK/profile" \
     --load-extension="$WORK/ext" --disable-extensions-except="$WORK/ext" \
     --host-resolver-rules="MAP * 127.0.0.1:$PORT" --ignore-certificate-errors \

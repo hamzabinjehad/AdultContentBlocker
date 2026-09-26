@@ -102,7 +102,11 @@ for _ in $(seq 50); do [ -s "$WORK/port" ] && break; sleep 0.1; done
 PORT="$(head -1 "$WORK/port")"
 DEVTOOLS=9$((RANDOM % 900 + 100))
 
+# --use-mock-keychain / --password-store=basic: on a Mac nobody is sitting at
+# (a CI runner), Chrome otherwise asks the Keychain for its storage key and
+# can wait on a prompt no one will answer.
 "$BROWSER" --headless=new --disable-gpu --no-first-run --no-default-browser-check \
+    --use-mock-keychain --password-store=basic \
     --user-data-dir="$WORK/profile" --remote-debugging-port="$DEVTOOLS" \
     --load-extension="$WORK/ext" --disable-extensions-except="$WORK/ext" \
     --host-resolver-rules="MAP *.hisn.test 127.0.0.1:$PORT" --ignore-certificate-errors \

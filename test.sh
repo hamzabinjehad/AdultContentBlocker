@@ -51,19 +51,42 @@ suite_extension() {
     extension/eval/run.sh | tail -3
 }
 
+# Run one check and pass its output through. On GitHub Actions a failure also
+# becomes an annotation: anyone can read those on the run page, while the log
+# itself is shown only to a signed-in viewer — the first CI failure of this
+# suite was a bare "exit code 1" to everyone else.
+check() {
+    local title="$1"; shift
+    local log rc=0
+    log="$(mktemp "$SCRATCH/hisn-check.XXXXXX")"
+    "$@" 2>&1 | tee "$log" || rc=$?
+    if [ "$rc" -ne 0 ] && [ "${GITHUB_ACTIONS:-}" = "true" ]; then
+        # Workflow commands take one line: % and newlines are escaped.
+        local body
+        body="$( { grep -E 'FAIL|no verdict|error|Error' "$log" || tail -15 "$log"; } | head -25 \
+                 | sed 's/%/%25/g' | awk '{ printf "%s%%0A", $0 }')"
+        echo "::error title=$title::$body"
+    fi
+    rm -f "$log"
+    return "$rc"
+}
+
 suite_browser() {
+    # Every check runs even after one fails, so one CI run reports them all.
+    local rc=0
     echo "── extension: scanner harness in a real browser"
-    extension/test/browser/run.sh
+    check "browser: scanner harness" extension/test/browser/run.sh || rc=1
     echo "── extension: list signature verification (WebCrypto Ed25519)"
-    extension/test/browser/run.sh verify.html
+    check "browser: signature verification" extension/test/browser/run.sh verify.html || rc=1
     echo "── extension: the settings page, English and Arabic"
-    extension/test/browser/run.sh settings.html
+    check "browser: settings page" extension/test/browser/run.sh settings.html || rc=1
     echo "── extension: the block page, English and Arabic"
-    extension/test/browser/run.sh blocked.html
+    check "browser: block page" extension/test/browser/run.sh blocked.html || rc=1
     echo "── extension: network rules in a real browser (SafeSearch, blocklist)"
-    extension/test/browser/dnr.sh
+    check "browser: network rules" extension/test/browser/dnr.sh || rc=1
     echo "── extension: the scanner against evasive pages in a real browser"
-    extension/test/browser/scan_live.sh
+    check "browser: scanner on live pages" extension/test/browser/scan_live.sh || rc=1
+    return "$rc"
 }
 
 suite_macos() {
