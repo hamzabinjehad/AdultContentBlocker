@@ -110,7 +110,7 @@ DEVTOOLS=9$((RANDOM % 900 + 100))
     --user-data-dir="$WORK/profile" --remote-debugging-port="$DEVTOOLS" \
     --load-extension="$WORK/ext" --disable-extensions-except="$WORK/ext" \
     --host-resolver-rules="MAP *.hisn.test 127.0.0.1:$PORT" --ignore-certificate-errors \
-    about:blank > /dev/null 2>&1 &
+    about:blank > "$WORK/browser.log" 2>&1 &
 BROWSER_PID=$!
 
 tabs() { curl -s "http://127.0.0.1:$DEVTOOLS/json/list" 2>/dev/null || echo "[]"; }
@@ -152,4 +152,7 @@ check clean  open "an ordinary page is left alone"
 n=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1]).get("blocked",0))' "$v")
 [ "$n" = "3" ] && echo "  ok   three block pages" || { echo "  FAIL expected 3 block pages, saw $n"; fail=1; }
 
-[ "$fail" -eq 0 ] && echo "scan-live: PASS" || { echo "tabs: $v"; echo "scan-live: FAIL"; exit 1; }
+[ "$fail" -eq 0 ] && echo "scan-live: PASS" || {
+    echo "tabs: $v"
+    echo "--- the browser ($BROWSER), last lines:"; tail -15 "$WORK/browser.log" | sed 's/^/    /'
+    echo "scan-live: FAIL"; exit 1; }

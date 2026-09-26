@@ -116,7 +116,7 @@ PORT="$(head -1 "$WORK/port")"
     --user-data-dir="$WORK/profile" \
     --load-extension="$WORK/ext" --disable-extensions-except="$WORK/ext" \
     --host-resolver-rules="MAP * 127.0.0.1:$PORT" --ignore-certificate-errors \
-    "https://harness.hisn.test/" > /dev/null 2>&1 &
+    "https://harness.hisn.test/" > "$WORK/browser.log" 2>&1 &
 BROWSER_PID=$!
 arrived() {  # every frame that is expected to reach the server has
     for h in 'www\.google\.com' 'www\.bing\.com' 'duckduckgo\.com' 'www\.youtube\.com' \
@@ -157,6 +157,7 @@ n="$(grep -cE '^www\.google\.com	/search' "$LOG" || true)"
 
 if [ "$fail" -ne 0 ]; then
     echo "--- requests the server saw:"; cat "$LOG"
+    echo "--- the browser ($BROWSER), last lines:"; tail -15 "$WORK/browser.log" | sed 's/^/    /'
     echo "dnr: FAIL"; exit 1
 fi
 echo "dnr: PASS"

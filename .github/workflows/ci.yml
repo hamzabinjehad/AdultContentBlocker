@@ -93,7 +93,10 @@ jobs:
             exit 1
           fi
           unzip -q "$RUNNER_TEMP/cft.zip" -d "$RUNNER_TEMP/cft"
-          echo "CHROME=$RUNNER_TEMP/cft/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing" >> "$GITHUB_ENV"
+          chrome="$RUNNER_TEMP/cft/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"
+          # Fail here, by name, if the binary cannot even start.
+          "$chrome" --version
+          echo "CHROME=$chrome" >> "$GITHUB_ENV"
       - run: ./test.sh browser
 
   macos:

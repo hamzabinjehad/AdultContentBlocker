@@ -37,9 +37,9 @@ if [ -z "$CHROME_BIN" ]; then
 fi
 
 OUT="$(mktemp -t hisn-harness)"
-trap 'rm -f "$OUT"' EXIT
+ERR="$(mktemp -t hisn-harness-err)"
 PROFILE="$(mktemp -d -t hisn-harness-profile)"
-trap 'rm -rf "$PROFILE" "$OUT"' EXIT
+trap 'rm -rf "$PROFILE" "$OUT" "$ERR"' EXIT
 
 SCREENSHOT_ARGS=("--window-size=1280,1050")
 if [ -n "${SCREENSHOT:-}" ]; then SCREENSHOT_ARGS+=("--screenshot=$SCREENSHOT"); fi
@@ -51,7 +51,7 @@ if [ -n "${SCREENSHOT:-}" ]; then SCREENSHOT_ARGS+=("--screenshot=$SCREENSHOT");
     --user-data-dir="$PROFILE" \
     --allow-file-access-from-files \
     --virtual-time-budget=40000 \
-    "${SCREENSHOT_ARGS[@]}" --dump-dom "file://$HERE/$HARNESS" > "$OUT" 2>/dev/null &
+    "${SCREENSHOT_ARGS[@]}" --dump-dom "file://$HERE/$HARNESS" > "$OUT" 2>"$ERR" &
 BROWSER_PID=$!
 # Some Chromium variants keep background services alive after dumping the DOM.
 # Bound our isolated test process, and use its completed DOM as the verdict.
@@ -81,4 +81,9 @@ if grep -q 'data-result="fail"' "$OUT"; then
     exit 1
 fi
 echo "browser harness: no verdict — the page did not finish (is the virtual time budget enough?)" >&2
+# What the browser said, so a machine where it never started (CI) is not a
+# silent "no verdict".
+echo "  browser: $CHROME_BIN" >&2
+echo "  DOM bytes: $(wc -c < "$OUT" | tr -d ' '); last browser lines:" >&2
+tail -15 "$ERR" | sed 's/^/    /' >&2
 exit 1

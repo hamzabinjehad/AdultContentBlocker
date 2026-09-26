@@ -63,7 +63,7 @@ check() {
     if [ "$rc" -ne 0 ] && [ "${GITHUB_ACTIONS:-}" = "true" ]; then
         # Workflow commands take one line: % and newlines are escaped.
         local body
-        body="$( { grep -E 'FAIL|no verdict|error|Error' "$log" || tail -15 "$log"; } | head -25 \
+        body="$( { grep -iE 'fail|no verdict|error|browser|DOM bytes|^    ' "$log" || tail -15 "$log"; } | head -40 \
                  | sed 's/%/%25/g' | awk '{ printf "%s%%0A", $0 }')"
         echo "::error title=$title::$body"
     fi
