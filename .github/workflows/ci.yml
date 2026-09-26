@@ -66,26 +66,35 @@ jobs:
           fi
 
   extension:
-    name: Extension unit tests, package check, and browser harness
+    name: Extension unit tests and package check
     # JavaScriptCore's `jsc` is the test runner — it ships inside macOS, and it
-    # is why this repo has no Node toolchain to install or audit. The browser
-    # harness runs the page scanner in the runner's Google Chrome, headless.
+    # is why this repo has no Node toolchain to install or audit. The same
+    # code in a real browser is the `browser` job below.
     runs-on: macos-15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - run: ./test.sh extension
-      # The network-rules test loads the extension unpacked, which branded
-      # Chrome stopped allowing in 137. Chrome for Testing still does.
-      # Pinned, not "latest": the URL used to come from a JSON feed and was
-      # fetched wherever it pointed. Now it is one version, from Google's
-      # bucket only, checked against the md5 the bucket itself reports
-      # (x-goog-hash). Bump the two together.
+
+  browser:
+    name: Extension in a real browser (Chrome for Testing, Linux)
+    # Not on the macOS runners: headless Chrome starts there but never loads a
+    # page — its renderer and network processes are refused the browser's Mach
+    # rendezvous port outside a GUI login session ("bootstrap_look_up …
+    # MachPortRendezvousServer: Permission denied (1100)"). The tests need only
+    # Chromium, python3 and openssl; Linux is where headless Chrome is built
+    # to run. The extension loads unpacked, which branded Chrome stopped
+    # allowing in 137; Chrome for Testing still does.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # Pinned: one version, from Google's bucket only, checked against the md5
+      # the bucket itself reports (x-goog-hash). Bump the two together.
       - name: Chrome for Testing
         env:
           CFT_VERSION: "154.0.8037.57"
-          CFT_MD5: "TsIlmo+9Ym7Xr8cEuw69TQ=="
+          CFT_MD5: "D+qnMtvRxrB1r9bMVeDIrw=="
         run: |
-          url="https://storage.googleapis.com/chrome-for-testing-public/$CFT_VERSION/mac-arm64/chrome-mac-arm64.zip"
+          url="https://storage.googleapis.com/chrome-for-testing-public/$CFT_VERSION/linux64/chrome-linux64.zip"
           curl -fsSL --proto '=https' --max-redirs 0 -o "$RUNNER_TEMP/cft.zip" "$url"
           got=$(openssl md5 -binary "$RUNNER_TEMP/cft.zip" | base64)
           if [ "$got" != "$CFT_MD5" ]; then
@@ -93,7 +102,7 @@ jobs:
             exit 1
           fi
           unzip -q "$RUNNER_TEMP/cft.zip" -d "$RUNNER_TEMP/cft"
-          chrome="$RUNNER_TEMP/cft/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"
+          chrome="$RUNNER_TEMP/cft/chrome-linux64/chrome"
           # Fail here, by name, if the binary cannot even start.
           "$chrome" --version
           echo "CHROME=$chrome" >> "$GITHUB_ENV"

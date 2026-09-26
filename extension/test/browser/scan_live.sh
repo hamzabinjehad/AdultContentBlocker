@@ -30,7 +30,13 @@ find_chromium() {
 BROWSER="$(find_chromium)"
 [ -n "$BROWSER" ] || { echo "no Chromium that loads unpacked extensions — set CHROME" >&2; exit 1; }
 
-WORK="$(mktemp -d -t hisn-scan-live)"
+WORK="$(mktemp -d "${TMPDIR:-/tmp}/hisn-scan-live.XXXXXX")"
+# Linux (CI): Ubuntu 24.04 forbids the unprivileged user namespaces Chrome's
+# sandbox needs, and a small /dev/shm crashes renderers. The pages are local
+# and ours, so the sandbox buys nothing here.
+LINUX_FLAGS=()
+if [ "$(uname)" = "Linux" ]; then LINUX_FLAGS=(--no-sandbox --disable-dev-shm-usage); fi
+
 SERVER_PID=""; BROWSER_PID=""
 cleanup() {
     [ -n "$BROWSER_PID" ] && { kill "$BROWSER_PID"; wait "$BROWSER_PID"; } 2>/dev/null || true
@@ -106,7 +112,7 @@ DEVTOOLS=9$((RANDOM % 900 + 100))
 # (a CI runner), Chrome otherwise asks the Keychain for its storage key and
 # can wait on a prompt no one will answer.
 "$BROWSER" --headless=new --disable-gpu --no-first-run --no-default-browser-check \
-    --use-mock-keychain --password-store=basic \
+    --use-mock-keychain --password-store=basic ${LINUX_FLAGS[@]+"${LINUX_FLAGS[@]}"} \
     --user-data-dir="$WORK/profile" --remote-debugging-port="$DEVTOOLS" \
     --load-extension="$WORK/ext" --disable-extensions-except="$WORK/ext" \
     --host-resolver-rules="MAP *.hisn.test 127.0.0.1:$PORT" --ignore-certificate-errors \

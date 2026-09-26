@@ -36,9 +36,16 @@ if [ -z "$CHROME_BIN" ]; then
     exit 1
 fi
 
-OUT="$(mktemp -t hisn-harness)"
-ERR="$(mktemp -t hisn-harness-err)"
-PROFILE="$(mktemp -d -t hisn-harness-profile)"
+# Templates with X's: GNU mktemp (Linux CI) refuses a bare prefix.
+OUT="$(mktemp "${TMPDIR:-/tmp}/hisn-harness.XXXXXX")"
+ERR="$(mktemp "${TMPDIR:-/tmp}/hisn-harness-err.XXXXXX")"
+PROFILE="$(mktemp -d "${TMPDIR:-/tmp}/hisn-harness-profile.XXXXXX")"
+# Linux (CI): Ubuntu 24.04 forbids the unprivileged user namespaces Chrome's
+# sandbox needs, and a small /dev/shm crashes renderers. The pages are local
+# and ours, so the sandbox buys nothing here.
+LINUX_FLAGS=()
+if [ "$(uname)" = "Linux" ]; then LINUX_FLAGS=(--no-sandbox --disable-dev-shm-usage); fi
+
 trap 'rm -rf "$PROFILE" "$OUT" "$ERR"' EXIT
 
 SCREENSHOT_ARGS=("--window-size=1280,1050")
@@ -47,7 +54,7 @@ if [ -n "${SCREENSHOT:-}" ]; then SCREENSHOT_ARGS+=("--screenshot=$SCREENSHOT");
 # (a CI runner), Chrome otherwise asks the Keychain for its storage key and
 # can wait on a prompt no one will answer.
 "$CHROME_BIN" --headless=new --disable-gpu --no-first-run --no-default-browser-check \
-    --use-mock-keychain --password-store=basic \
+    --use-mock-keychain --password-store=basic ${LINUX_FLAGS[@]+"${LINUX_FLAGS[@]}"} \
     --user-data-dir="$PROFILE" \
     --allow-file-access-from-files \
     --virtual-time-budget=40000 \
