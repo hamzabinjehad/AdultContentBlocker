@@ -44,6 +44,33 @@ enum MainWindow {
     }
 }
 
+/// A lock started from the menu bar, confirmed in a dialog that names the
+/// moment it ends — the same fact the Lock page's confirmation gives, since a
+/// lock cannot be shortened once it starts.
+@MainActor
+enum QuickLock {
+    static let lengths: [TimeInterval] = [3600, 86400, 7 * 86400]
+
+    static func confirmAndStart(_ seconds: TimeInterval) {
+        NSApp.activate(ignoringOtherApps: true)
+        let end = Date().addingTimeInterval(seconds).formatted()
+        let alert = NSAlert()
+        alert.messageText = String(localized: "Start a lock of \(LockManager.describe(seconds))?")
+        alert.informativeText = String(localized: "You will not be able to turn this off until \(end).")
+        alert.addButton(withTitle: String(localized: "Start the lock"))
+        alert.addButton(withTitle: String(localized: "Not yet"))
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        Task {
+            do {
+                try await LockManager.shared.start(seconds: seconds, strict: false)
+            } catch {
+                let failed = NSAlert(error: error)
+                failed.runModal()
+            }
+        }
+    }
+}
+
 /// What the menu bar icon shows: a shield, a closed lock while a lock runs.
 ///
 /// Its own object, publishing only when that changes. The icon once observed
@@ -92,6 +119,14 @@ struct StatusMenu: View {
         Divider()
         Button("Open Hisn") { MainWindow.show(.overview, open: openWindow) }
         if !lock.isLocked {
+            // The moment a lock matters most is the moment it is hardest to
+            // go and set one up: one click from the menu bar, then a
+            // confirmation that names the end.
+            Menu("Lock now") {
+                ForEach(QuickLock.lengths, id: \.self) { seconds in
+                    Button(LockManager.describe(seconds)) { QuickLock.confirmAndStart(seconds) }
+                }
+            }
             Button("Start a lock…") { MainWindow.show(.lock, open: openWindow) }
         }
         Button("Setup") { MainWindow.show(.setup, open: openWindow) }

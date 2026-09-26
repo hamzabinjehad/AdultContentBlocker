@@ -947,16 +947,16 @@
     },
     "Daily lock at %@, until %@." : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Daily lock at %1$@, until %2$@."
-          }
-        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "القفل اليومي عند %1$@ حتى %2$@."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Daily lock at %1$@, until %2$@."
           }
         }
       }
@@ -1103,6 +1103,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "كل يوم"
+          }
+        }
+      }
+    },
+    "Forced for Google, YouTube, Bing, DuckDuckGo and Yandex in every browser and app." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مفروض على Google وYouTube وBing وDuckDuckGo وYandex في كل متصفح وتطبيق."
           }
         }
       }
@@ -1439,6 +1449,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "اقفل كل يوم"
+          }
+        }
+      }
+    },
+    "Lock now" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اقفل الآن"
           }
         }
       }
@@ -2955,16 +2975,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "كلماتك وتطبيقاتك"
-          }
-        }
-      }
-    },
-    "Forced for Google, YouTube, Bing, DuckDuckGo and Yandex in every browser and app." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "مفروض على Google وYouTube وBing وDuckDuckGo وYandex في كل متصفح وتطبيق."
           }
         }
       }
