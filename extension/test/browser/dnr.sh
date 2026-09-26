@@ -80,6 +80,8 @@ PAGE = b"""<!doctype html><meta charset=utf-8><body>
 <iframe src="https://kw4.hisn.test/free-porn-videos"></iframe>
 <iframe src="https://www.milford.hisn.test/"></iframe>
 <iframe src="https://milfs.hisn.test/"></iframe>
+<iframe src="https://www.reddit.com/r/nsfw_gifs/"></iframe>
+<iframe src="https://www.reddit.com/r/nosleep/"></iframe>
 <p id=done>loaded</p></body>""".replace(b"<p id=done>", CASE_FRAMES + b"<p id=done>")
 class H(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
@@ -155,7 +157,7 @@ sys.exit(1 if bad else 0)
 PY
 arrived() {  # every frame that is expected to reach the server has
     for h in 'www\.google\.com' 'www\.bing\.com' 'duckduckgo\.com' 'www\.youtube\.com' \
-             'kw\.hisn\.test' 'kw2\.hisn\.test' 'www\.milford\.hisn\.test'; do
+             'kw\.hisn\.test' 'kw2\.hisn\.test' 'www\.milford\.hisn\.test' 'www\.reddit\.com'; do
         grep -q "^$h	" "$WORK/requests.log" 2>/dev/null || return 1
     done
     python3 "$WORK/cases.py" "$CASES" "$WORK/requests.log" --waiting
@@ -186,6 +188,8 @@ expect "…nor a form field (?sex=female)"                   '^kw2\.hisn\.test'
 refuse "a substring keyword fires anywhere (/free-porn-…)" '^kw4\.hisn\.test'
 expect "Milford is not milf (guarded continuation)"        '^www\.milford\.hisn\.test'
 refuse "…while milfs still is"                              '^milfs\.hisn\.test'
+refuse "a Reddit community named nsfw (rules/paths.json)"    '^www\.reddit\.com	/r/nsfw'
+expect "…but not every community (/r/nosleep)"              '^www\.reddit\.com	/r/nosleep'
 
 python3 "$WORK/cases.py" "$CASES" "$LOG" --judge || fail=1
 

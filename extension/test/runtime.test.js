@@ -70,8 +70,9 @@ check(!(await message({ type: "forceSync" })).ok, "missing native app is tolerat
 check(!state.failClosed && !state.appPresent, "fresh browser-only install does not lock down");
 let r = await message({ type: "update", patch: { customBlocks: ["example.com"], customTerms: ["GAMBLING"] } });
 check(r.ok && state.customTerms[0] === "gambling", "standalone saves normalized terms through real worker");
-check(enabled.includes("blocklist") && enabled.includes("keywords") && enabled.includes("safesearch"),
-      "baseline rule sets, SafeSearch included, enabled without app");
+check(enabled.includes("blocklist") && enabled.includes("keywords") && enabled.includes("safesearch")
+      && enabled.includes("paths"),
+      "baseline rule sets, SafeSearch and path rules included, enabled without app");
 check(dynamic.some((r) => r.condition.requestDomains?.includes("example.com")), "standalone rules installed");
 r = await message({ type: "update", patch: { mode: "strict", allowlist: ["safe.example"] } });
 check(r.ok && dynamic.some((r) => r.condition.urlFilter === "*"), "standalone strict mode is operational");

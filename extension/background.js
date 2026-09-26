@@ -36,6 +36,10 @@ const RULESET_LOCKDOWN = "lockdown";
 // search engine is not rewritten; the profile's ForceGoogleSafeSearch /
 // ForceYouTubeRestrict policies cover that case where they are installed.
 const RULESET_SAFESEARCH = "safesearch";
+// Path rules for single sites whose words mean something only in one place:
+// "nsfw" in a Reddit community's name. Kept out of the keyword list, which
+// matches every site.
+const RULESET_PATHS = "paths";
 
 // Rule ids, priorities and the grace period live in lib/policy.js with the
 // rules themselves, so the tests evaluate exactly what Chrome is given.
@@ -154,7 +158,7 @@ async function applyRules(state) {
   // yet, and "no app" means they installed only the browser half. Neither is a
   // request to stop filtering.
   await chrome.declarativeNetRequest.updateEnabledRulesets({
-    enableRulesetIds: [RULESET_BLOCKLIST, RULESET_KEYWORDS, RULESET_SAFESEARCH],
+    enableRulesetIds: [RULESET_BLOCKLIST, RULESET_KEYWORDS, RULESET_SAFESEARCH, RULESET_PATHS],
     disableRulesetIds: [],
   });
 

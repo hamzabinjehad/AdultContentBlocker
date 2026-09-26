@@ -41,6 +41,11 @@
         "path": "rules/safesearch.json"
       },
       {
+        "id": "paths",
+        "enabled": true,
+        "path": "rules/paths.json"
+      },
+      {
         "id": "lockdown",
         "enabled": false,
         "path": "rules/lockdown.json"

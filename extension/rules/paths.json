@@ -1,0 +1,12 @@
+[
+  {
+    "id": 1,
+    "priority": 4,
+    "action": { "type": "redirect", "redirect": { "extensionPath": "/blocked.html?reason=terms" } },
+    "condition": {
+      "regexFilter": "^https?://([a-z0-9-]+\\.)*reddit\\.com/(r|u|user)/[a-z0-9_-]*(nsfw|nude|boob|xxx|lewd|gonewild|onlyfans|hentai|rule34)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": ["main_frame", "sub_frame"]
+    }
+  }
+]
