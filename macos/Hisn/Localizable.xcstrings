@@ -1347,6 +1347,16 @@
         }
       }
     },
+    "Locked · %@ left" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مقفل · بقي %@"
+          }
+        }
+      }
+    },
     "Locked until %@" : {
       "localizations" : {
         "ar" : {
@@ -1757,6 +1767,16 @@
         }
       }
     },
+    "Open Hisn" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افتح حصن"
+          }
+        }
+      }
+    },
     "Open Screen Time" : {
       "localizations" : {
         "ar" : {
@@ -1879,6 +1899,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Protection: %1$@. %2$@"
+          }
+        }
+      }
+    },
+    "Quit Hisn" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أنهِ حصن"
           }
         }
       }

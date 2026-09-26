@@ -3,8 +3,8 @@ import SwiftUI
 /// Main window.
 ///
 /// Organised around the three questions a person opens it to answer — *am I
-/// protected?*, *what is being blocked?*, *what can I change?* — as four pages
-/// in a sidebar: Overview, Blocking Rules, Lock, Settings. Each common task
+/// protected?*, *what is being blocked?*, *what can I change?* — as pages in a
+/// sidebar: Overview, Setup, Blocking Rules, Lock, Settings. Each common task
 /// has one obvious home, and the window resizes so longer text has room.
 ///
 /// The interface has one job beyond starting a lock: make the state honest.
@@ -15,8 +15,9 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var lock = LockManager.shared
     @StateObject private var filter = FilterController.shared
+    @ObservedObject private var navigation = AppNavigation.shared
 
-    @State private var page: Page? = .overview
+    private var page: Page? { navigation.page }
 
     enum Page: String, CaseIterable, Identifiable {
         case overview, setup, rules, lock, settings
@@ -46,7 +47,7 @@ struct ContentView: View {
 
     var body: some View {
         NavigationSplitView {
-            List(Page.allCases, selection: $page) { p in
+            List(Page.allCases, selection: $navigation.page) { p in
                 Label(p.title, systemImage: p.systemImage).tag(p)
             }
             .listStyle(.sidebar)
@@ -56,9 +57,9 @@ struct ContentView: View {
                 Group {
                     switch page ?? .overview {
                     case .overview:
-                        OverviewPage(lock: lock, filter: filter) { page = $0 }
+                        OverviewPage(lock: lock, filter: filter) { navigation.page = $0 }
                     case .setup:
-                        SetupPage(filter: filter) { page = $0 }
+                        SetupPage(filter: filter) { navigation.page = $0 }
                     case .rules:
                         RulesPage(isLocked: lock.isLocked)
                     case .lock:

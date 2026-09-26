@@ -77,6 +77,8 @@ APP_SOURCES = SHARED + [
     "Hisn/AppLanguage.swift",
     # The setup steps of docs/SETUP.md, read from this Mac.
     "Hisn/SetupChecklist.swift",
+    # The menu bar icon and menu.
+    "Hisn/StatusMenu.swift",
 ]
 
 # Every string the app shows, in English and Arabic. A String Catalog: Xcode

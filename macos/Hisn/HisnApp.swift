@@ -5,14 +5,20 @@ import CoreServices
 @main
 struct HisnApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    @StateObject private var icon = MenuBarIcon.shared
 
     var body: some Scene {
-        WindowGroup { ContentView() }
+        WindowGroup(id: MainWindow.id) { ContentView() }
             // Resizable, with a floor set by `ContentView`. The old fixed
             // 420-point column forced every explanation into caption-sized
             // text; this window is mostly explanations.
             .defaultSize(width: 880, height: 600)
             .commands { CommandGroup(replacing: .newItem) {} }
+        // Started at login the app has no window; this is the way back to it,
+        // and the lock's time left without opening anything.
+        MenuBarExtra(String(localized: "Hisn"), systemImage: icon.symbol) {
+            StatusMenu()
+        }
     }
 }
 
@@ -66,7 +72,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if CommandLine.arguments.contains("--background") {
             // Not the guard's countdown panel, which may already be up.
             DispatchQueue.main.async {
-                NSApp.windows.filter { !($0 is NSPanel) }.forEach { $0.close() }
+                MainWindow.all.forEach { $0.close() }
             }
         }
     }
@@ -95,7 +101,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             """)
         alert.addButton(withTitle: String(localized: "OK"))
         alert.runModal()
-        NSApp.windows.filter { !($0 is NSPanel) }.forEach { $0.close() }
+        MainWindow.all.forEach { $0.close() }
         return .terminateCancel
     }
 
