@@ -2,8 +2,9 @@
 
 This is the whole thing end to end. The order is not a suggestion — each step
 is only real if the one before it is done, and doing them out of order gives you
-a machine that looks protected and is not. Run `macos/verify_enforcement.sh`
-after any step to see the truth rather than the hope.
+a machine that looks protected and is not. After any step, the app's **Setup**
+page (or `macos/verify_enforcement.sh` in a terminal) shows the truth rather
+than the hope: each step read from this Mac, and what is left.
 
 Two facts decide everything below, so read them first:
 

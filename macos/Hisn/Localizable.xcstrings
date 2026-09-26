@@ -3,45 +3,45 @@
   "strings" : {
     "“%@” is too short to block safely. Words need at least %lld letters — shorter ones match parts of ordinary words and block pages you need." : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "“%1$@” is too short to block safely. Words need at least %2$lld letters — shorter ones match parts of ordinary words and block pages you need."
-          }
-        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "«%1$@» أقصر من أن تُحجب بأمان. يجب ألا تقل الكلمة عن %2$lld أحرف — فالأقصر منها تطابق أجزاءً من كلمات عادية وتحجب صفحات تحتاجها."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%1$@” is too short to block safely. Words need at least %2$lld letters — shorter ones match parts of ordinary words and block pages you need."
           }
         }
       }
     },
     "%@ · until %@" : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ · until %2$@"
-          }
-        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$@ · حتى %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · until %2$@"
           }
         }
       }
     },
     "%@ (%@)" : {
       "localizations" : {
-        "en" : {
+        "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$@ (%2$@)"
           }
         },
-        "ar" : {
+        "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$@ (%2$@)"
@@ -51,32 +51,32 @@
     },
     "%@ and %lld more" : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ and %2$lld more"
-          }
-        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$@ و%2$lld غيرها"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ and %2$lld more"
           }
         }
       }
     },
     "%@ closes in %lld s" : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ closes in %2$lld s"
-          }
-        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "يُغلَق %1$@ خلال %2$lld ث"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ closes in %2$lld s"
           }
         }
       }
@@ -87,6 +87,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ نطاق محجوب لكل التطبيقات"
+          }
+        }
+      }
+    },
+    "%@ domains in the hosts file." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ نطاق في ملف hosts."
           }
         }
       }
@@ -113,6 +123,48 @@
     },
     "%lld domains" : {
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld نطاقات"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld نطاقًا"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "نطاق واحد"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld نطاق"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "نطاقان"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld نطاق"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -130,47 +182,21 @@
               }
             }
           }
+        }
+      }
+    },
+    "%lld of %lld steps done." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld of %2$lld steps done."
+          }
         },
         "ar" : {
-          "variations" : {
-            "plural" : {
-              "zero" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld نطاق"
-                }
-              },
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "نطاق واحد"
-                }
-              },
-              "two" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "نطاقان"
-                }
-              },
-              "few" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld نطاقات"
-                }
-              },
-              "many" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld نطاقًا"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld نطاق"
-                }
-              }
-            }
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أُنجزت %1$lld من %2$lld خطوات."
           }
         }
       }
@@ -187,22 +213,64 @@
     },
     "%lld valid · %lld skipped (not a domain)" : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld valid · %2$lld skipped (not a domain)"
-          }
-        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "صالحة: %1$lld · ستُتجاهل (ليست نطاقات): %2$lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld valid · %2$lld skipped (not a domain)"
           }
         }
       }
     },
     "%lld words" : {
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld كلمات"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld كلمة"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "كلمة واحدة"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld كلمة"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "كلمتان"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld كلمة"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -216,48 +284,6 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld words"
-                }
-              }
-            }
-          }
-        },
-        "ar" : {
-          "variations" : {
-            "plural" : {
-              "zero" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld كلمة"
-                }
-              },
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "كلمة واحدة"
-                }
-              },
-              "two" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "كلمتان"
-                }
-              },
-              "few" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld كلمات"
-                }
-              },
-              "many" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld كلمة"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld كلمة"
                 }
               }
             }
@@ -287,16 +313,16 @@
     },
     "A lock has to be between %@ and %@." : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A lock has to be between %1$@ and %2$@."
-          }
-        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "يجب أن تكون مدة القفل بين %1$@ و%2$@."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A lock has to be between %1$@ and %2$@."
           }
         }
       }
@@ -353,32 +379,32 @@
     },
     "A lock is running, so you cannot stop blocking %@ or allow %@ until it ends." : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A lock is running, so you cannot stop blocking %1$@ or allow %2$@ until it ends."
-          }
-        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "يوجد قفل يعمل، لذلك لا يمكنك إيقاف حجب %1$@ ولا السماح بـ %2$@ حتى ينتهي."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A lock is running, so you cannot stop blocking %1$@ or allow %2$@ until it ends."
           }
         }
       }
     },
     "A lock is running, so you cannot stop blocking %@ or unblock %@ until it ends." : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A lock is running, so you cannot stop blocking %1$@ or unblock %2$@ until it ends."
-          }
-        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "يوجد قفل يعمل، لذلك لا يمكنك إيقاف حجب %1$@ ولا رفع الحجب عن %2$@ حتى ينتهي."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A lock is running, so you cannot stop blocking %1$@ or unblock %2$@ until it ends."
           }
         }
       }
@@ -439,6 +465,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "يستغرق طلب الإنهاء %@ حتى يسري، ولا يمكن تعجيله. يستطيع شريك المحاسبة الموافقة عليه فورًا."
+          }
+        }
+      }
+    },
+    "Account split" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فصل الحسابات"
           }
         }
       }
@@ -565,16 +601,16 @@
     },
     "Between %@ and %@." : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Between %1$@ and %2$@."
-          }
-        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "بين %1$@ و%2$@."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Between %1$@ and %2$@."
           }
         }
       }
@@ -799,6 +835,26 @@
         }
       }
     },
+    "Continue setup" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تابع الإعداد"
+          }
+        }
+      }
+    },
+    "Copied" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نُسخ"
+          }
+        }
+      }
+    },
     "Copy" : {
       "localizations" : {
         "ar" : {
@@ -825,6 +881,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تعذّرت قراءة حالته: %@"
+          }
+        }
+      }
+    },
+    "Could not read whether you are an administrator." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّرت معرفة ما إذا كنت مديرًا للجهاز."
           }
         }
       }
@@ -859,6 +925,16 @@
         }
       }
     },
+    "Domain blocking for every app" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حجب النطاقات لكل التطبيقات"
+          }
+        }
+      }
+    },
     "Domains in the filter" : {
       "localizations" : {
         "ar" : {
@@ -885,6 +961,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "نزّل قائمة الحجب"
+          }
+        }
+      }
+    },
+    "Each step closes a way around the others. Do them in this order, with your partner for the ones they hold — the account split last, because it is the one that makes the rest stick." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كل خطوة تسدّ طريقًا للالتفاف على غيرها. نفّذها بهذا الترتيب، ومع شريكك في ما يحمله هو — وفصل الحسابات في النهاية، لأنه ما يجعل البقية ثابتة."
           }
         }
       }
@@ -941,16 +1027,16 @@
     },
     "Enter a length between %@ and %@." : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enter a length between %1$@ and %2$@."
-          }
-        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "أدخل مدة بين %1$@ و%2$@."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter a length between %1$@ and %2$@."
           }
         }
       }
@@ -961,6 +1047,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "قمار\nمراهنات"
+          }
+        }
+      }
+    },
+    "guest windows in %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نوافذ الضيف في %@"
+          }
+        }
+      }
+    },
+    "Hardening profile" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ملف التقوية"
           }
         }
       }
@@ -1017,16 +1123,16 @@
     },
     "Hisn will close %@ in %lld seconds" : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hisn will close %1$@ in %2$lld seconds"
-          }
-        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "سيُغلق حصن %1$@ خلال %2$lld ثانية"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hisn will close %1$@ in %2$lld seconds"
           }
         }
       }
@@ -1111,6 +1217,16 @@
         }
       }
     },
+    "iCloud Private Relay" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud Private Relay"
+          }
+        }
+      }
+    },
     "If macOS asks, allow the filter under System Settings › General › Login Items & Extensions." : {
       "localizations" : {
         "ar" : {
@@ -1137,6 +1253,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ثبّت إضافة Hisn Protection في المتصفح، أو اطلب ممن جهّز هذا الماك أن يثبّتها لك."
+          }
+        }
+      }
+    },
+    "Installed: private and guest windows, browser DNS and Private Relay are locked." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مثبّت: النوافذ الخاصة ونوافذ الضيف وDNS المتصفح وPrivate Relay مقفلة."
           }
         }
       }
@@ -1181,6 +1307,16 @@
         }
       }
     },
+    "Limit Adult Websites is on. Its passcode belongs with your partner." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تقييد مواقع البالغين مفعّل. رمزه مكانه مع شريكك."
+          }
+        }
+      }
+    },
     "Lines that were not usable words: %lld." : {
       "localizations" : {
         "ar" : {
@@ -1217,6 +1353,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "خفض الحساسية"
+          }
+        }
+      }
+    },
+    "Make it hold" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اجعله ثابتًا"
           }
         }
       }
@@ -1261,6 +1407,16 @@
         }
       }
     },
+    "Missing or switched off in: %@. A profile without it is a way around it." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "غير موجودة أو معطّلة في: %@. أي ملف شخصي في المتصفح بدونها طريق للالتفاف عليها."
+          }
+        }
+      }
+    },
     "Mode" : {
       "localizations" : {
         "ar" : {
@@ -1277,6 +1433,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "يحتاج نسخة موقّعة ببرنامج مطوّري Apple (الخطوة 9 من الإعداد)"
+          }
+        }
+      }
+    },
+    "Needs the Apple Developer Program ($99 a year). It adds blocking no VPN can get around." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يحتاج برنامج مطوّري Apple (99 دولارًا في السنة). يضيف حجبًا لا تتجاوزه أي VPN."
           }
         }
       }
@@ -1347,6 +1513,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "لم يُعثر على متصفحات."
+          }
+        }
+      }
+    },
+    "No Chromium browser is installed. Safari is covered by the other layers." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يوجد متصفح Chromium مثبّت. تغطي الطبقات الأخرى Safari."
           }
         }
       }
@@ -1441,6 +1617,16 @@
         }
       }
     },
+    "Nothing blocks domains outside the browser yet. Run this in the Hisn folder; it asks for the Mac’s password." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا شيء يحجب النطاقات خارج المتصفح بعد. شغّل هذا في مجلد حصن؛ سيطلب كلمة مرور الماك."
+          }
+        }
+      }
+    },
     "Nothing is blocking right now. Fix the steps below." : {
       "localizations" : {
         "ar" : {
@@ -1491,6 +1677,16 @@
         }
       }
     },
+    "On in every profile of every browser." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مفعّلة في كل ملف شخصي في كل متصفح."
+          }
+        }
+      }
+    },
     "On top of the published list." : {
       "localizations" : {
         "ar" : {
@@ -1537,6 +1733,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "افتح أي صفحة ويب. ستتصل الإضافة بهذا التطبيق خلال دقيقة."
+          }
+        }
+      }
+    },
+    "Open Screen Time" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افتح مدة استخدام الجهاز"
+          }
+        }
+      }
+    },
+    "Open Settings" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افتح الإعدادات"
           }
         }
       }
@@ -1601,6 +1817,26 @@
         }
       }
     },
+    "private DNS in %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إعدادات DNS الخاصة في %@"
+          }
+        }
+      }
+    },
+    "private windows in %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "النوافذ الخاصة في %@"
+          }
+        }
+      }
+    },
     "Protection active" : {
       "localizations" : {
         "ar" : {
@@ -1613,16 +1849,16 @@
     },
     "Protection: %@. %@" : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Protection: %1$@. %2$@"
-          }
-        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "الحماية: %1$@. %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Protection: %1$@. %2$@"
           }
         }
       }
@@ -1779,16 +2015,26 @@
     },
     "Running: %@. Needs attention: %@." : {
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يعمل: %1$@. يحتاج انتباهًا: %2$@."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Running: %1$@. Needs attention: %2$@."
           }
-        },
+        }
+      }
+    },
+    "Running: every app, and no VPN gets around it." : {
+      "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "يعمل: %1$@. يحتاج انتباهًا: %2$@."
+            "value" : "يعمل: كل التطبيقات، ولا تتجاوزه أي VPN."
           }
         }
       }
@@ -1853,6 +2099,16 @@
         }
       }
     },
+    "Screen Time" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مدة استخدام الجهاز"
+          }
+        }
+      }
+    },
     "Settings" : {
       "localizations" : {
         "ar" : {
@@ -1863,12 +2119,38 @@
         }
       }
     },
+    "Setup" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإعداد"
+          }
+        }
+      }
+    },
     "Setup needed" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "يحتاج إعدادًا"
+          }
+        }
+      }
+    },
+    "Setup: %lld of %lld steps done." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Setup: %1$lld of %2$lld steps done."
+          }
+        },
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإعداد: أُنجزت %1$lld من %2$lld خطوات."
           }
         }
       }
@@ -1963,6 +2245,16 @@
         }
       }
     },
+    "Still open: %@. Install it with your partner, who keeps its removal password." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ما زال مفتوحًا: %@. ثبّته مع شريكك، وهو يحتفظ بكلمة مرور إزالته."
+          }
+        }
+      }
+    },
     "Strict mode" : {
       "localizations" : {
         "ar" : {
@@ -2015,16 +2307,16 @@
     },
     "That is %lld words; the limit is %lld. Past that nobody remembers what is on the list, and a surprising block looks like a broken app." : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "That is %1$lld words; the limit is %2$lld. Past that nobody remembers what is on the list, and a surprising block looks like a broken app."
-          }
-        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "هذه %1$lld كلمة، والحد الأقصى %2$lld. بعد ذلك لا يتذكر أحد ما في القائمة، ويبدو الحجب المفاجئ كأنه عطل في التطبيق."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That is %1$lld words; the limit is %2$lld. Past that nobody remembers what is on the list, and a surprising block looks like a broken app."
           }
         }
       }
@@ -2081,16 +2373,16 @@
     },
     "The Hisn extension stopped checking in from %@. Turn it back on in %@’s extensions page, or %@ will close." : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The Hisn extension stopped checking in from %1$@. Turn it back on in %2$@’s extensions page, or %3$@ will close."
-          }
-        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "توقفت إضافة حصن عن الاتصال من %1$@. أعد تفعيلها من صفحة الإضافات في %2$@، وإلا سيُغلَق %3$@."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Hisn extension stopped checking in from %1$@. Turn it back on in %2$@’s extensions page, or %3$@ will close."
           }
         }
       }
@@ -2155,6 +2447,16 @@
         }
       }
     },
+    "The system filter is blocking domains." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مرشّح النظام يحجب النطاقات."
+          }
+        }
+      }
+    },
     "These run on top of the site lists, and catch pages the lists have never seen." : {
       "localizations" : {
         "ar" : {
@@ -2197,16 +2499,16 @@
     },
     "too short: %lld (minimum %lld letters)" : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "too short: %1$lld (minimum %2$lld letters)"
-          }
-        },
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "قصيرة: %1$lld (الحد الأدنى %2$lld أحرف)"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "too short: %1$lld (minimum %2$lld letters)"
           }
         }
       }
@@ -2227,6 +2529,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "إيقاف فحص نص الصفحة"
+          }
+        }
+      }
+    },
+    "Turn on Limit Adult Websites, and let your partner choose the passcode." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فعّل تقييد مواقع البالغين، ودع شريكك يختار الرمز."
           }
         }
       }
@@ -2301,6 +2613,16 @@
         }
       }
     },
+    "Without it, the only way out of a lock is the 48-hour request." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بدونه، الطريق الوحيد للخروج من القفل هو طلب الـ48 ساعة."
+          }
+        }
+      }
+    },
     "Words" : {
       "localizations" : {
         "ar" : {
@@ -2317,6 +2639,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "سمحت به. يبقى مفتوحًا أثناء القفل دون فحص للصفحات."
+          }
+        }
+      }
+    },
+    "You are a standard user; someone else holds the administrator password." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أنت مستخدم عادي؛ كلمة مرور المدير مع شخص آخر."
+          }
+        }
+      }
+    },
+    "You are an administrator, so you can undo every step above. Do this last, with your partner." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أنت مدير للجهاز، لذلك تستطيع التراجع عن كل خطوة أعلاه. نفّذ هذه في النهاية، مع شريكك."
           }
         }
       }
@@ -2347,6 +2689,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "يستطيع شريكك إنهاءه الآن"
+          }
+        }
+      }
+    },
+    "Your partner’s key is set." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مفتاح شريكك مُعدّ."
           }
         }
       }

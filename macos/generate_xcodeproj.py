@@ -75,6 +75,8 @@ APP_SOURCES = SHARED + [
     "Hisn/FilterSync.swift",
     # The app's own language setting (English / Arabic).
     "Hisn/AppLanguage.swift",
+    # The setup steps of docs/SETUP.md, read from this Mac.
+    "Hisn/SetupChecklist.swift",
 ]
 
 # Every string the app shows, in English and Arabic. A String Catalog: Xcode
@@ -97,7 +99,8 @@ TEST_SOURCES = ["HisnTests/BlocklistStoreTests.swift",
                 "HisnTests/PolicyAuthorityTests.swift",
                 "HisnTests/PartnerTests.swift",
                 "HisnTests/AuditRegressionTests.swift",
-                "HisnTests/LocalizationTests.swift"]
+                "HisnTests/LocalizationTests.swift",
+                "HisnTests/SetupChecklistTests.swift"]
 
 # The signed seed list, bundled into the extension so a machine that has never
 # completed a list update still enforces something. Verified on the same path as

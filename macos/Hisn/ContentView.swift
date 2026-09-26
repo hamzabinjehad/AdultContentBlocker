@@ -19,13 +19,14 @@ struct ContentView: View {
     @State private var page: Page? = .overview
 
     enum Page: String, CaseIterable, Identifiable {
-        case overview, rules, lock, settings
+        case overview, setup, rules, lock, settings
 
         var id: String { rawValue }
 
         var title: LocalizedStringKey {
             switch self {
             case .overview: return "Overview"
+            case .setup:    return "Setup"
             case .rules:    return "Blocking Rules"
             case .lock:     return "Lock"
             case .settings: return "Settings"
@@ -35,6 +36,7 @@ struct ContentView: View {
         var systemImage: String {
             switch self {
             case .overview: return "checkmark.shield"
+            case .setup:    return "checklist"
             case .rules:    return "list.bullet.rectangle"
             case .lock:     return "lock"
             case .settings: return "gearshape"
@@ -55,6 +57,8 @@ struct ContentView: View {
                     switch page ?? .overview {
                     case .overview:
                         OverviewPage(lock: lock, filter: filter) { page = $0 }
+                    case .setup:
+                        SetupPage(filter: filter) { page = $0 }
                     case .rules:
                         RulesPage(isLocked: lock.isLocked)
                     case .lock:
@@ -170,6 +174,7 @@ private struct OverviewPage: View {
     }
 
     @ObservedObject private var guardian = BrowserGuard.shared
+    @State private var setup: SetupChecklist?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
@@ -183,6 +188,15 @@ private struct OverviewPage: View {
             }
             protectionCard
             lockCard
+            if let setup, !setup.isComplete {
+                HStack(alignment: .firstTextBaseline) {
+                    Label(String(localized: "Setup: \(setup.doneCount) of \(setup.required.count) steps done."),
+                          systemImage: "checklist")
+                        .font(.callout)
+                    Spacer()
+                    Button("Continue setup") { goTo(.setup) }
+                }
+            }
 
             // The one combination that is genuinely alarming: a lock is
             // recorded, and nothing enforces it. Neither card alone says so.
@@ -207,6 +221,12 @@ private struct OverviewPage: View {
             Button("OK") { error = nil }
         } message: { Text(error ?? "") }
         .sheet(isPresented: $showBrowserHelp) { BrowserSetupHelp() }
+        .task {
+            let running = protection.layers.first?.ok ?? false
+            setup = await Task.detached {
+                SetupChecklist(SetupEvidence.current(systemFilterRunning: running))
+            }.value
+        }
     }
 
     private var protectionCard: some View {
@@ -391,6 +411,116 @@ private struct BrowserSetupHelp: View {
             Text(verbatim: "\(n).").font(.callout.weight(.semibold)).monospacedDigit()
             Text(text).font(.callout).fixedSize(horizontal: false, vertical: true)
         }
+    }
+}
+
+// MARK: - Setup
+
+/// The steps of `docs/SETUP.md`, each read from this Mac: what is done, what
+/// is left, and for each one left, what to do. Re-read on appear and on
+/// "Check again" — most steps happen outside the app (a profile installed, a
+/// password handed over), so there is nothing to observe live.
+private struct SetupPage: View {
+    @ObservedObject var filter: FilterController
+    let goTo: (ContentView.Page) -> Void
+
+    @State private var checklist: SetupChecklist?
+    @State private var checking = false
+    @State private var showBrowserHelp = false
+    @State private var copied: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            PageSection(title: "Make it hold",
+                    subtitle: """
+                        Each step closes a way around the others. Do them in this order, \
+                        with your partner for the ones they hold — the account split last, \
+                        because it is the one that makes the rest stick.
+                        """) {
+                if let checklist {
+                    Text(String(localized: "\(checklist.doneCount) of \(checklist.required.count) steps done."))
+                        .font(.callout.weight(.medium))
+                        .foregroundStyle(checklist.isComplete ? Color.green : Color.secondary)
+                } else {
+                    ProgressView().controlSize(.small)
+                }
+            }
+
+            if let checklist {
+                VStack(alignment: .leading, spacing: 14) {
+                    ForEach(Array(checklist.steps.enumerated()), id: \.element.id) { index, step in
+                        row(index + 1, step)
+                    }
+                }
+            }
+
+            HStack {
+                Spacer()
+                Button("Check again") { Task { await refresh() } }
+                    .disabled(checking)
+            }
+        }
+        .task { await refresh() }
+        .sheet(isPresented: $showBrowserHelp) { BrowserSetupHelp() }
+    }
+
+    private func row(_ n: Int, _ step: SetupChecklist.Step) -> some View {
+        Card {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Image(systemName: step.state == .done ? "checkmark.circle.fill"
+                      : step.state == .optional ? "circle.dashed" : "circle")
+                    .foregroundStyle(step.state == .done ? Color.green : Color.secondary)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(verbatim: "\(n). \(step.title)").font(.body.weight(.medium))
+                    Text(step.detail)
+                        .font(.callout).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if case let .command(line) = step.action {
+                        HStack(spacing: 8) {
+                            Text(verbatim: line)
+                                .font(.callout.monospaced())
+                                .textSelection(.enabled)
+                                .environment(\.layoutDirection, .leftToRight)
+                            Button(copied == line ? "Copied" : "Copy") {
+                                NSPasteboard.general.clearContents()
+                                NSPasteboard.general.setString(line, forType: .string)
+                                copied = line
+                            }
+                            .controlSize(.small)
+                        }
+                        .padding(.top, 2)
+                    }
+                }
+                Spacer()
+                switch step.action {
+                case .browserHelp:
+                    Button("How to connect a browser") { showBrowserHelp = true }.controlSize(.small)
+                case .partnerSettings:
+                    Button("Open Settings") { goTo(.settings) }.controlSize(.small)
+                case .screenTimeSettings:
+                    Button("Open Screen Time") {
+                        if let url = URL(string: "x-apple.systempreferences:com.apple.Screen-Time-Settings.extension") {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }.controlSize(.small)
+                case .command, .none:
+                    EmptyView()
+                }
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private func refresh() async {
+        checking = true
+        defer { checking = false }
+        let running = ProtectionStatus(ProtectionEvidence.current(filter: filter.availability,
+                                                                    authority: FilterSync.shared.status))
+            .layers.first?.ok ?? false
+        checklist = await Task.detached {
+            SetupChecklist(SetupEvidence.current(systemFilterRunning: running))
+        }.value
     }
 }
 

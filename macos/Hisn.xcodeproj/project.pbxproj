@@ -131,6 +131,12 @@
 			path = Punycode.swift;
 			sourceTree = "<group>";
 		};
+		B5ABAB643E4DB0F9EFE758F8 /* SetupChecklist.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = SetupChecklist.swift;
+			sourceTree = "<group>";
+		};
 		9A85D28497AE287B0A4C4E8C /* SiteLists.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -257,6 +263,12 @@
 			path = SelfReleaseTests.swift;
 			sourceTree = "<group>";
 		};
+		883D07C40E91F1F9B4B56A52 /* SetupChecklistTests.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = SetupChecklistTests.swift;
+			sourceTree = "<group>";
+		};
 		851D93C8FC728A88C285B13F /* TestNamespace.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -369,6 +381,7 @@
 				0E75CDFA3B3510AD8AFAB3D9,
 				53D7D153B4628D493F051EA9,
 				EF9ED031BF18513FD91E71E0,
+				B5ABAB643E4DB0F9EFE758F8,
 				9A85D28497AE287B0A4C4E8C,
 				94DA4ECBC1B15A13858FC4BB,
 				10FB64131D78ACC9D6EEB33B,
@@ -411,6 +424,7 @@
 				C15C5BA8E7F3C7A5B3CC9BFB,
 				96BE623FB252DAE97AF70C17,
 				4792FDE5CE580FC1212B3EBD,
+				883D07C40E91F1F9B4B56A52,
 				851D93C8FC728A88C285B13F,
 			);
 			path = HisnTests;
@@ -1063,6 +1077,10 @@
 			isa = PBXBuildFile;
 			fileRef = E87D9CAD77EB91AAB54C8987;
 		};
+		9E812DD15CCA585BCFC2E32F /* SetupChecklist.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = B5ABAB643E4DB0F9EFE758F8;
+		};
 		079A944B3E87101645898B0C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1088,6 +1106,7 @@
 				BE03B7C06F8E1782A5EF2AD4,
 				FB98AF85AF11949BC05C682C,
 				B4EE4DB38517A27FB88356A0,
+				9E812DD15CCA585BCFC2E32F,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1314,6 +1333,10 @@
 			isa = PBXBuildFile;
 			fileRef = 8C0173C1C38F1936EC103F00;
 		};
+		9BC6E69A99DBE1477BB872B9 /* SetupChecklistTests.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 883D07C40E91F1F9B4B56A52;
+		};
 		A29CD87A3F623C88ED8997D1 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1330,6 +1353,7 @@
 				759EE7B9C81BF94505B490AB,
 				608855FBFE591CFA57FC9F03,
 				5C00E8EDDD34459D1728E0F5,
+				9BC6E69A99DBE1477BB872B9,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
