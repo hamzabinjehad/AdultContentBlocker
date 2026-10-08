@@ -16,9 +16,9 @@
 #      home-folder app is the user's own file and deletes without a password,
 #      and the system extension will only activate from /Applications.
 #   3. Installs a LaunchAgent that starts Hisn at login, in the background,
-#      and brings it back if it is force-quit. During a lock Hisn refuses an
-#      ordinary Quit (it is the browser guard); outside one it quits normally
-#      and stays quit until the next login.
+#      and brings it back after a crash or force-quit. Closing its window or
+#      an ordinary Quit leaves protection running throughout the signed-in
+#      session. Logout, restart and shutdown still work normally.
 #   4. Launches it once, which registers the browser link (native messaging)
 #      for every installed Chromium browser.
 #   5. Optionally: the hosts-file blocklist and the hardening profile.
@@ -111,7 +111,7 @@ trap - EXIT
 echo "installed $(defaults read "$APP/Contents/Info" CFBundleShortVersionString 2>/dev/null || echo "") at $APP"
 
 # ---- 3. keep it running ------------------------------------------------------
-step "LaunchAgent: start at login, come back if force-quit"
+step "LaunchAgent: keep Hisn running in the background after login"
 rm -f "$USER_AGENT"
 AGENT_TMP="$(mktemp "${TMPDIR:-/tmp}/hisn-agent.XXXXXX")"
 # /Library/LaunchAgents loads for every account that logs in — the partner's
@@ -126,8 +126,9 @@ cat > "$AGENT_TMP" <<PLIST
     <key>ProgramArguments</key>
     <array><string>$APP/Contents/MacOS/Hisn</string><string>--background</string><string>--for-user</string><string>$(id -un)</string></array>
     <key>RunAtLoad</key><true/>
-    <!-- Relaunch after a crash or a force-quit (a non-zero exit), not after
-         an ordinary Quit — which Hisn refuses during a lock anyway. -->
+    <!-- Hisn keeps ordinary Quit in the background. Relaunch a non-zero exit
+         after a crash or force-quit; an exit 0 in another account must stop
+         here because this agent is loaded in every signed-in account. -->
     <key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>
     <key>ThrottleInterval</key><integer>10</integer>
     <key>LimitLoadToSessionType</key><string>Aqua</string>
@@ -167,9 +168,9 @@ if [ "$PROFILE" -eq 1 ]; then
     step "Admin-owned browser link (asks for your password)"
     IDS=()
     while read -r id; do IDS+=(--extension-id "$id"); done < <(
-        grep -oE '"[a-p]{32}"' "$REPO/macos/Hisn/NativeMessagingInstaller.swift" | tr -d '"')
+        python3 -c 'import plistlib,sys; print("\n".join(plistlib.load(open(sys.argv[1], "rb"))["HisnExtensionIDs"]))' "$APP/Contents/Info.plist")
     if [ "${#IDS[@]}" -eq 0 ]; then   # and bash 3.2 cannot expand an empty array under set -u
-        echo "error: no extension ids found in NativeMessagingInstaller.swift" >&2
+        echo "error: no extension ids found in Hisn Info.plist" >&2
         exit 1
     fi
     sudo "$REPO/macos/install_native_host.sh" "${IDS[@]}"

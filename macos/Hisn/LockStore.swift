@@ -88,19 +88,30 @@ public enum LockStore {
         /// carried to the next one. Optional for the same reason as
         /// `selfReleaseAt`: a lock written before it existed must still load.
         public var releaseNonce: String?
+        /// Opt-in fixed commitment. Older locks decode with no fixed horizon.
+        public var commitmentUntil: Date?
 
         public init(deadline: Date, mode: String, startedAt: Date,
-                    selfReleaseAt: Date? = nil, releaseNonce: String? = nil) {
+                    selfReleaseAt: Date? = nil, releaseNonce: String? = nil, commitmentUntil: Date? = nil) {
             self.deadline = deadline
             self.mode = mode
             self.startedAt = startedAt
             self.selfReleaseAt = selfReleaseAt
             self.releaseNonce = releaseNonce
+            self.commitmentUntil = commitmentUntil
         }
 
         public static let unlocked = LockState(deadline: .distantPast,
                                                mode: "off",
                                                startedAt: .distantPast)
+
+        func extending(by seconds: TimeInterval) -> LockState? {
+            guard let end = CommitmentPolicy.extendedDeadline(deadline, by: seconds) else { return nil }
+            var next = self
+            next.deadline = end
+            if commitmentUntil != nil { next.commitmentUntil = end }
+            return next
+        }
     }
 
     /// How long a self-requested early release takes to arrive.
@@ -143,13 +154,15 @@ public enum LockStore {
         // store still holds. Cancelling has to go through `write`, which
         // updates every store at once.
         winner.selfReleaseAt = candidates.compactMap(\.selfReleaseAt).max()
+        winner.commitmentUntil = candidates.compactMap(\.commitmentUntil).max()
 
         // Self-heal: any store that is behind gets brought back up to the
         // winning value. Clearing one copy is then not merely useless, it is
         // undone on the next read.
         if candidates.count < 3
             || candidates.contains(where: { $0.deadline < winner.deadline })
-            || candidates.contains(where: { $0.selfReleaseAt != winner.selfReleaseAt }) {
+            || candidates.contains(where: { $0.selfReleaseAt != winner.selfReleaseAt
+                || $0.commitmentUntil != winner.commitmentUntil }) {
             write(winner)
         }
         return winner
@@ -214,6 +227,15 @@ public enum LockStore {
         guard let current, now < current.deadline else { return nil }
         if proposed.deadline < current.deadline {
             return "would shorten the lock (\(proposed.deadline) < \(current.deadline))"
+        }
+        if let fixed = current.commitmentUntil, now < fixed,
+           (proposed.commitmentUntil ?? .distantPast) < fixed {
+            return "would shorten the fixed commitment"
+        }
+        if current.commitmentUntil == current.deadline,
+           proposed.deadline > current.deadline,
+           (proposed.commitmentUntil ?? .distantPast) < proposed.deadline {
+            return "extension must preserve the full fixed commitment"
         }
         if let existing = current.selfReleaseAt, let asked = proposed.selfReleaseAt,
            asked < existing {
@@ -325,7 +347,8 @@ public enum LockStore {
         let matured = releaseFirstSeen.addingTimeInterval(selfReleaseDelay)
         // Never later than the deadline: a release request may only bring the
         // end forward, and a lock that has run its course is over regardless.
-        return min(state.deadline, max(requested, matured))
+        return CommitmentPolicy.releaseDeadline(deadline: state.deadline, requested: requested,
+            matured: matured, fixedUntil: state.commitmentUntil)
     }
 
     /// The first moment we observed this particular release date.
@@ -439,8 +462,9 @@ public enum LockStore {
 
     /// Plain read with no self-healing, used by `write` to avoid recursion.
     private static func readWithoutHealing() -> LockState? {
-        [readFromDefaults(), readFromKeychain(), readFromSystemFile()]
-            .compactMap { $0 }
-            .max(by: { $0.deadline < $1.deadline })
+        let copies = [readFromDefaults(), readFromKeychain(), readFromSystemFile()].compactMap { $0 }
+        guard var state = copies.max(by: { $0.deadline < $1.deadline }) else { return nil }
+        state.commitmentUntil = copies.compactMap(\.commitmentUntil).max()
+        return state
     }
 }

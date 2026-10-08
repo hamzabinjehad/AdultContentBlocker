@@ -1,0 +1,75 @@
+<!doctype html><meta charset="utf-8"><title>Hisn popup tests</title>
+<pre id="summary" data-result="pending">Running…</pre><div id="frames"></div>
+<script type="module">
+const results = [];
+const check = (ok, label) => { results.push(`${ok ? "ok" : "FAIL"} ${label}`); if (!ok) throw new Error(label); };
+const pause = () => new Promise((resolve) => setTimeout(resolve, 100));
+try {
+  const source = await (await fetch("../../popup.html")).text();
+  async function frame(state, language = "en", privateAccess = true) {
+    const f = document.createElement("iframe");
+    const mock = `<script>
+      window.opened = 0;
+      window.workerUnavailable = false;
+      window.syncDelay = 0;
+      window.syncCalls = 0;
+      window.close = () => {};
+      window.chrome = {
+        storage: { local: { get: async () => ({uiLanguage:${JSON.stringify(language)}}),set:async()=>{} }, onChanged:{addListener(){}} },
+        extension: { isAllowedIncognitoAccess: cb => cb(${privateAccess}) },
+        runtime: { getManifest:()=>({version:'1.0.0'}), openOptionsPage:()=>opened++,
+          sendMessage(msg, cb) {
+            if (workerUnavailable) throw new Error('Worker unavailable');
+            if (msg.type === 'getState') return cb(${JSON.stringify(state)});
+            syncCalls++;
+            setTimeout(() => cb({ok:false}), syncDelay);
+          } }
+      };
+    <\/script>`;
+    f.srcdoc = source.replace('<head>', `<head><base href="${new URL('../../popup.html', location.href).href}">${mock}`);
+    f.style.width = "360px"; f.style.height = "650px";
+    document.getElementById("frames").append(f);
+    await new Promise((resolve) => f.onload = resolve); await pause(); return f;
+  }
+  const base = {appPresent:false,inspectText:true,mode:"blocklist",lockUntil:0};
+  const solo = await frame(base), s = solo.contentDocument;
+  check(s.getElementById("pHead").textContent === "Protection active", "standalone protection status");
+  check(s.getElementById("lHead").textContent === "No active lock", "protection and lock are separate");
+  s.getElementById("checkConnection").click(); await pause();
+  check(s.getElementById("connectionMessage").textContent.includes("No connection"), "connection failure gives useful feedback");
+  solo.contentWindow.syncDelay = 300;
+  const reconnect = s.getElementById("checkConnection");
+  const calls = solo.contentWindow.syncCalls;
+  reconnect.querySelector("span").dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  check(reconnect.disabled, "clicking the reconnect icon disables the whole button");
+  reconnect.querySelector("span").dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  check(solo.contentWindow.syncCalls === calls + 1, "reconnect cannot queue duplicate checks");
+  await new Promise(resolve => setTimeout(resolve, 400));
+  check(!reconnect.disabled, "reconnect becomes available after completion");
+  solo.contentWindow.workerUnavailable = true;
+  reconnect.click(); await pause();
+  check(s.getElementById("connectionMessage").textContent.includes("could not be verified") && s.getElementById("pHead").textContent === "Status unavailable", "thrown worker error has honest status and recovery feedback");
+  solo.contentWindow.workerUnavailable = false;
+  solo.contentWindow.syncDelay = 0;
+  reconnect.click(); await pause();
+  check(s.getElementById("pHead").textContent === "Protection active", "retry recovers after worker failure");
+  s.getElementById("openSettings").click();
+  check(solo.contentWindow.opened === 1, "settings shortcut responds");
+  check(s.documentElement.scrollWidth <= solo.contentWindow.innerWidth, "popup does not overflow");
+  const failed = await frame({ok:false,reason:"internal-error"});
+  check(failed.contentDocument.getElementById("pHead").textContent === "Status unavailable", "a worker error never looks like active protection");
+  const old = await frame({...base,appPresent:true,lastHeartbeat:1});
+  check(old.contentDocument.getElementById("pDot").classList.contains("partial"), "stale app is reported as partial protection");
+  const ar = await frame(base,"ar",false), a = ar.contentDocument;
+  check(a.documentElement.dir === "rtl", "Arabic popup mirrors");
+  check(!a.getElementById("incognito").hidden, "private-window gap is visible");
+  check(a.getElementById("incognito").textContent.includes("الخاصة"), "private-window guidance is Arabic");
+  a.getElementById("langSwitch").click(); await pause();
+  check(a.documentElement.dir === "ltr" && a.getElementById("pHead").textContent === "Protection active", "language switch rerenders status");
+  check(a.getElementById("checkConnection").title === "Check connection", "icon command has a translated tooltip");
+  document.getElementById("summary").dataset.result = "pass";
+} catch (error) {
+  results.push(`FAIL ${error.stack}`); document.getElementById("summary").dataset.result = "fail";
+}
+document.getElementById("summary").textContent = results.join("\n");
+</script>

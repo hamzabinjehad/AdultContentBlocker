@@ -1,0 +1,390 @@
+[
+  {
+    "id": 1,
+    "priority": 2000,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=domain"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://(?:[^/?#@]*@)?yandex\\.com\\.?(:[0-9]+)?([/?#]|$)",
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ]
+    }
+  },
+  {
+    "id": 2,
+    "priority": 2000,
+    "action": {
+      "type": "block"
+    },
+    "condition": {
+      "regexFilter": "^https?://(?:[^/?#@]*@)?yandex\\.com\\.?(:[0-9]+)?([/?#]|$)",
+      "resourceTypes": [
+        "script",
+        "stylesheet",
+        "font",
+        "image",
+        "xmlhttprequest",
+        "ping",
+        "other",
+        "media",
+        "object",
+        "websocket",
+        "webtransport",
+        "webbundle",
+        "csp_report"
+      ]
+    }
+  },
+  {
+    "id": 3,
+    "priority": 2000,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=domain"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://(?:[^/?#@]*@)?www\\.yandex\\.com\\.?(:[0-9]+)?([/?#]|$)",
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ]
+    }
+  },
+  {
+    "id": 4,
+    "priority": 2000,
+    "action": {
+      "type": "block"
+    },
+    "condition": {
+      "regexFilter": "^https?://(?:[^/?#@]*@)?www\\.yandex\\.com\\.?(:[0-9]+)?([/?#]|$)",
+      "resourceTypes": [
+        "script",
+        "stylesheet",
+        "font",
+        "image",
+        "xmlhttprequest",
+        "ping",
+        "other",
+        "media",
+        "object",
+        "websocket",
+        "webtransport",
+        "webbundle",
+        "csp_report"
+      ]
+    }
+  },
+  {
+    "id": 5,
+    "priority": 2000,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=domain"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://(?:[^/?#@]*@)?yandex\\.ru\\.?(:[0-9]+)?([/?#]|$)",
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ]
+    }
+  },
+  {
+    "id": 6,
+    "priority": 2000,
+    "action": {
+      "type": "block"
+    },
+    "condition": {
+      "regexFilter": "^https?://(?:[^/?#@]*@)?yandex\\.ru\\.?(:[0-9]+)?([/?#]|$)",
+      "resourceTypes": [
+        "script",
+        "stylesheet",
+        "font",
+        "image",
+        "xmlhttprequest",
+        "ping",
+        "other",
+        "media",
+        "object",
+        "websocket",
+        "webtransport",
+        "webbundle",
+        "csp_report"
+      ]
+    }
+  },
+  {
+    "id": 7,
+    "priority": 2000,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=domain"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://(?:[^/?#@]*@)?www\\.yandex\\.ru\\.?(:[0-9]+)?([/?#]|$)",
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ]
+    }
+  },
+  {
+    "id": 8,
+    "priority": 2000,
+    "action": {
+      "type": "block"
+    },
+    "condition": {
+      "regexFilter": "^https?://(?:[^/?#@]*@)?www\\.yandex\\.ru\\.?(:[0-9]+)?([/?#]|$)",
+      "resourceTypes": [
+        "script",
+        "stylesheet",
+        "font",
+        "image",
+        "xmlhttprequest",
+        "ping",
+        "other",
+        "media",
+        "object",
+        "websocket",
+        "webtransport",
+        "webbundle",
+        "csp_report"
+      ]
+    }
+  },
+  {
+    "id": 9,
+    "priority": 2000,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=domain"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://(?:[^/?#@]*@)?ya\\.ru\\.?(:[0-9]+)?([/?#]|$)",
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ]
+    }
+  },
+  {
+    "id": 10,
+    "priority": 2000,
+    "action": {
+      "type": "block"
+    },
+    "condition": {
+      "regexFilter": "^https?://(?:[^/?#@]*@)?ya\\.ru\\.?(:[0-9]+)?([/?#]|$)",
+      "resourceTypes": [
+        "script",
+        "stylesheet",
+        "font",
+        "image",
+        "xmlhttprequest",
+        "ping",
+        "other",
+        "media",
+        "object",
+        "websocket",
+        "webtransport",
+        "webbundle",
+        "csp_report"
+      ]
+    }
+  },
+  {
+    "id": 11,
+    "priority": 2000,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=domain"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://(?:[^/?#@]*@)?www\\.ya\\.ru\\.?(:[0-9]+)?([/?#]|$)",
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ]
+    }
+  },
+  {
+    "id": 12,
+    "priority": 2000,
+    "action": {
+      "type": "block"
+    },
+    "condition": {
+      "regexFilter": "^https?://(?:[^/?#@]*@)?www\\.ya\\.ru\\.?(:[0-9]+)?([/?#]|$)",
+      "resourceTypes": [
+        "script",
+        "stylesheet",
+        "font",
+        "image",
+        "xmlhttprequest",
+        "ping",
+        "other",
+        "media",
+        "object",
+        "websocket",
+        "webtransport",
+        "webbundle",
+        "csp_report"
+      ]
+    }
+  },
+  {
+    "id": 13,
+    "priority": 2000,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=domain"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://(?:[^/?#@]*@)?yandex\\.com\\.tr\\.?(:[0-9]+)?([/?#]|$)",
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ]
+    }
+  },
+  {
+    "id": 14,
+    "priority": 2000,
+    "action": {
+      "type": "block"
+    },
+    "condition": {
+      "regexFilter": "^https?://(?:[^/?#@]*@)?yandex\\.com\\.tr\\.?(:[0-9]+)?([/?#]|$)",
+      "resourceTypes": [
+        "script",
+        "stylesheet",
+        "font",
+        "image",
+        "xmlhttprequest",
+        "ping",
+        "other",
+        "media",
+        "object",
+        "websocket",
+        "webtransport",
+        "webbundle",
+        "csp_report"
+      ]
+    }
+  },
+  {
+    "id": 15,
+    "priority": 2000,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=domain"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://(?:[^/?#@]*@)?www\\.yandex\\.com\\.tr\\.?(:[0-9]+)?([/?#]|$)",
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ]
+    }
+  },
+  {
+    "id": 16,
+    "priority": 2000,
+    "action": {
+      "type": "block"
+    },
+    "condition": {
+      "regexFilter": "^https?://(?:[^/?#@]*@)?www\\.yandex\\.com\\.tr\\.?(:[0-9]+)?([/?#]|$)",
+      "resourceTypes": [
+        "script",
+        "stylesheet",
+        "font",
+        "image",
+        "xmlhttprequest",
+        "ping",
+        "other",
+        "media",
+        "object",
+        "websocket",
+        "webtransport",
+        "webbundle",
+        "csp_report"
+      ]
+    }
+  },
+  {
+    "id": 17,
+    "priority": 2000,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=domain"
+      }
+    },
+    "condition": {
+      "requestDomains": [
+        "nitter.net",
+        "xcancel.com",
+        "sotwe.com",
+        "twstalker.com"
+      ],
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ]
+    }
+  },
+  {
+    "id": 18,
+    "priority": 2000,
+    "action": {
+      "type": "block"
+    },
+    "condition": {
+      "requestDomains": [
+        "nitter.net",
+        "xcancel.com",
+        "sotwe.com",
+        "twstalker.com"
+      ],
+      "resourceTypes": [
+        "script",
+        "stylesheet",
+        "font",
+        "image",
+        "xmlhttprequest",
+        "ping",
+        "other",
+        "media",
+        "object",
+        "websocket",
+        "webtransport",
+        "webbundle",
+        "csp_report"
+      ]
+    }
+  }
+]

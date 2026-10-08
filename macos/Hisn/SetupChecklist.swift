@@ -23,14 +23,22 @@ public struct BrowserSetup: Equatable {
     public var incognitoLocked: Bool
     public var guestLocked: Bool
     public var dnsLocked: Bool
+    public var profilesChecked: Bool
+    public var extensionManaged: Bool
+    public var nativeLinkProtected: Bool
 
     public init(name: String, extensionOffIn: [String] = [], incognitoLocked: Bool = false,
-                guestLocked: Bool = false, dnsLocked: Bool = false) {
+                guestLocked: Bool = false, dnsLocked: Bool = false,
+                profilesChecked: Bool = true, extensionManaged: Bool = false,
+                nativeLinkProtected: Bool = false) {
         self.name = name
         self.extensionOffIn = extensionOffIn
         self.incognitoLocked = incognitoLocked
         self.guestLocked = guestLocked
         self.dnsLocked = dnsLocked
+        self.profilesChecked = profilesChecked
+        self.extensionManaged = extensionManaged
+        self.nativeLinkProtected = nativeLinkProtected
     }
 }
 
@@ -103,13 +111,17 @@ public struct SetupChecklist: Equatable {
         case browserHelp
         case partnerSettings
         case screenTimeSettings
+        case enableFilter
+        case deviceManagementSettings
+        case accountsSettings
+        case applicationsFolder
         /// A command to run from the Hisn folder in Terminal.
         case command(String)
     }
 
     public struct Step: Identifiable, Equatable {
         public enum ID: String {
-            case browsers, domains, safeSearch, partner, profile, screenTime, appFiles, accounts, systemFilter
+            case browsers, extensionManagement, domains, safeSearch, partner, profile, screenTime, appFiles, accounts, systemFilter
         }
         public let id: ID
         public let title: String
@@ -133,6 +145,11 @@ public struct SetupChecklist: Equatable {
             steps.append(Step(id: .browsers, title: String(localized: "Browser extension"),
                               detail: String(localized: "No Chromium browser is installed. Safari is covered by the other layers."),
                               state: .done, action: nil))
+        } else if e.browsers.contains(where: { !$0.profilesChecked }) {
+            let names = e.browsers.filter { !$0.profilesChecked }.map(\.name).formatted(.list(type: .and))
+            steps.append(Step(id: .browsers, title: String(localized: "Browser extension"),
+                              detail: String(localized: "Open and connect these browsers, then check again: \(names). Their profiles have not been verified."),
+                              state: .todo, action: .browserHelp))
         } else if missing.isEmpty {
             steps.append(Step(id: .browsers, title: String(localized: "Browser extension"),
                               detail: String(localized: "On in every profile of every browser."),
@@ -146,12 +163,20 @@ public struct SetupChecklist: Equatable {
                               state: .todo, action: .browserHelp))
         }
 
+        let removable = e.browsers.filter { !$0.extensionManaged || !$0.nativeLinkProtected }
+        steps.append(Step(id: .extensionManagement, title: String(localized: "Required browser protection"),
+                          detail: removable.isEmpty
+                            ? String(localized: "Installed browsers have required Hisn protection and an administrator-protected connection to the app.")
+                            : String(localized: "Protection can still be removed or disconnected in \(removable.map(\.name).formatted(.list(type: .and))). Ask the administrator to install the published extension and Hisn protection profile."),
+                          state: removable.isEmpty ? .done : .todo,
+                          action: removable.isEmpty ? nil : .deviceManagementSettings))
+
         // 2. Domains for every app: the hosts file, or the system filter.
         let hostsOK = (e.hostsEntries ?? 0) >= ProtectionEvidence.hostsMinimum
         if hostsOK && !e.dnsBypassesBlocked && !e.systemFilterRunning {
             steps.append(Step(id: .domains, title: String(localized: "Domain blocking for every app"),
-                              detail: String(localized: "The hosts file blocks domains, but encrypted DNS and iCloud Private Relay can still go around it. Run this again in the Hisn folder."),
-                              state: .todo, action: .command("macos/install.sh --hosts")))
+                              detail: String(localized: "The hosts file blocks domains, but encrypted DNS and iCloud Private Relay can still go around it. Enable the system filter to cover this gap."),
+                              state: .todo, action: .enableFilter))
         } else if hostsOK || e.systemFilterRunning {
             steps.append(Step(id: .domains, title: String(localized: "Domain blocking for every app"),
                               detail: hostsOK
@@ -160,8 +185,8 @@ public struct SetupChecklist: Equatable {
                               state: .done, action: nil))
         } else {
             steps.append(Step(id: .domains, title: String(localized: "Domain blocking for every app"),
-                              detail: String(localized: "Nothing blocks domains outside the browser yet. Run this in the Hisn folder; it asks for the Mac’s password."),
-                              state: .todo, action: .command("macos/install.sh --hosts")))
+                              detail: String(localized: "Enable the system filter to block domains outside your browser."),
+                              state: .todo, action: .enableFilter))
         }
 
         // 2b. SafeSearch outside the browser: Safari, Firefox and every app
@@ -176,7 +201,7 @@ public struct SetupChecklist: Equatable {
                               state: .todo, action: .command("macos/install.sh --hosts")))
         } else {
             steps.append(Step(id: .safeSearch, title: String(localized: "SafeSearch everywhere"),
-                              detail: String(localized: "Forced for Google, YouTube, Bing, DuckDuckGo and Yandex in every browser and app."),
+                              detail: String(localized: "Forced for Google, YouTube, Bing, DuckDuckGo and Brave Search in every browser and app."),
                               state: .done, action: nil))
         }
 
@@ -207,9 +232,9 @@ public struct SetupChecklist: Equatable {
         steps.append(Step(id: .profile, title: String(localized: "Hardening profile"),
                           detail: open.isEmpty
                             ? String(localized: "Installed: private and guest windows, browser DNS and Private Relay are locked.")
-                            : String(localized: "Still open: \(open.formatted(.list(type: .and))). Install it with your partner, who keeps its removal password."),
+                            : String(localized: "Still open: \(open.formatted(.list(type: .and))). Ask the person who manages this Mac to install the Hisn protection profile."),
                           state: open.isEmpty ? .done : .todo,
-                          action: open.isEmpty ? nil : .command("macos/install.sh --profile")))
+                          action: open.isEmpty ? nil : .deviceManagementSettings))
 
         // 5. Screen Time's adult filter, its passcode with the partner.
         steps.append(Step(id: .screenTime, title: String(localized: "Screen Time"),
@@ -229,12 +254,12 @@ public struct SetupChecklist: Equatable {
                               state: .done, action: nil))
         case .some(false):
             steps.append(Step(id: .appFiles, title: String(localized: "Hisn’s own files"),
-                              detail: String(localized: "Your account owns them, so even after the account split you could replace the program the browsers talk to. Install Hisn again from the Hisn folder; it asks for the Mac’s password."),
-                              state: .todo, action: .command("macos/install.sh")))
+                              detail: String(localized: "Reinstall Hisn using its installer package so its files are protected by the administrator account."),
+                              state: .todo, action: .applicationsFolder))
         case .none:
             steps.append(Step(id: .appFiles, title: String(localized: "Hisn’s own files"),
-                              detail: String(localized: "Hisn is not installed in Applications. Install it from the Hisn folder."),
-                              state: .todo, action: .command("macos/install.sh")))
+                              detail: String(localized: "Install Hisn using its installer package, then open it from Applications."),
+                              state: .todo, action: .applicationsFolder))
         }
 
         // 7. Last: the account split. Everything above can be undone by an
@@ -242,23 +267,23 @@ public struct SetupChecklist: Equatable {
         switch e.isAdmin {
         case .some(false):
             steps.append(Step(id: .accounts, title: String(localized: "Account split"),
-                              detail: String(localized: "You are a standard user; someone else holds the administrator password."),
+                              detail: String(localized: "This is a standard account. Confirm below who keeps the separate administrator account."),
                               state: .done, action: nil))
         case .some(true):
             steps.append(Step(id: .accounts, title: String(localized: "Account split"),
                               detail: String(localized: "You are an administrator, so you can undo every step above. Do this last, with your partner."),
-                              state: .todo, action: .command("macos/setup_guardian.sh --check")))
+                              state: .todo, action: .accountsSettings))
         case .none:
             steps.append(Step(id: .accounts, title: String(localized: "Account split"),
                               detail: String(localized: "Could not read whether you are an administrator."),
-                              state: .todo, action: .command("macos/setup_guardian.sh --check")))
+                              state: .todo, action: .accountsSettings))
         }
 
         // 7. The system filter: VPN-proof, every app, needs the paid program.
         steps.append(Step(id: .systemFilter, title: String(localized: "System filter"),
                           detail: e.systemFilterRunning
-                            ? String(localized: "Running: every app, and no VPN gets around it.")
-                            : String(localized: "Needs the Apple Developer Program ($99 a year). It adds blocking no VPN can get around."),
+                            ? String(localized: "Running: domain filtering is active for app connections. Search settings and page text need their other protection layers.")
+                            : String(localized: "Enable the system filter, then approve it in System Settings if macOS asks."),
                           state: e.systemFilterRunning ? .done : .optional,
                           action: nil))
 
@@ -280,14 +305,24 @@ extension SetupEvidence {
             guard NSWorkspace.shared.urlForApplication(withBundleIdentifier: b.bundleID) != nil
             else { return nil }
             let domain = policyDomain(b.bundleID)
+            let root = support.appendingPathComponent(b.userSupportDir)
+            let profiles = inspectBrowserProfiles(in: root, ids: ids)
+            let managedIDs = ids.filter { extensionIsManaged(ids: [$0],
+                settings: forced("ExtensionSettings", domain),
+                forceList: forced("ExtensionInstallForcelist", domain)) }
+            let managedProfiles = inspectBrowserProfiles(in: root, ids: Set(managedIDs), requireManaged: true)
             return BrowserSetup(
                 name: b.name,
-                extensionOffIn: extensionMissing(in: support.appendingPathComponent(b.userSupportDir),
-                                                 ids: ids),
+                extensionOffIn: profiles.missing,
                 incognitoLocked: forced("IncognitoModeAvailability", domain) as? Int == 1,
                 guestLocked: forced("BrowserGuestModeEnabled", domain) as? Bool == false
                     && forced("BrowserAddPersonEnabled", domain) as? Bool == false,
-                dnsLocked: forced("DnsOverHttpsMode", domain) as? String == "off")
+                dnsLocked: forced("DnsOverHttpsMode", domain) as? String == "off",
+                profilesChecked: profiles.checked,
+                extensionManaged: !managedIDs.isEmpty && managedProfiles.checked
+                    && managedProfiles.missing.isEmpty,
+                nativeLinkProtected: forced("NativeMessagingUserLevelHosts", domain) as? Bool == false
+                    && protectedBrowserLink(directory: b.systemDir, ids: ids))
         }
         let hosts = try? String(contentsOfFile: "/etc/hosts", encoding: .utf8)
         return SetupEvidence(
@@ -310,7 +345,7 @@ extension SetupEvidence {
         ("YouTube", "www.youtube.com", "restrict.youtube.com"),
         ("Bing", "www.bing.com", "strict.bing.com"),
         ("DuckDuckGo", "duckduckgo.com", "safe.duckduckgo.com"),
-        ("Yandex", "yandex.com", "familysearch.yandex.ru"),
+        ("Brave Search", "search.brave.com", "forcesafe.search.brave.com"),
     ]
 
     /// Compares /etc/hosts with DNS. The SafeSearch hosts are not in the
@@ -424,18 +459,27 @@ extension SetupEvidence {
     /// sit in `Preferences` or `Secure Preferences`. Mirrors the check in
     /// `verify_enforcement.sh`.
     static func extensionMissing(in root: URL, ids: Set<String>) -> [String] {
+        inspectBrowserProfiles(in: root, ids: ids).missing
+    }
+
+    static func inspectBrowserProfiles(in root: URL, ids: Set<String>,
+                                       requireManaged: Bool = false) -> (checked: Bool, missing: [String]) {
         let fm = FileManager.default
-        guard let names = try? fm.contentsOfDirectory(atPath: root.path) else { return [] }
+        guard let names = try? fm.contentsOfDirectory(atPath: root.path) else { return (false, []) }
         var off: [String] = []
+        var checked = 0
+        var allReadable = true
         for folder in names.sorted() where folder == "Default" || folder.hasPrefix("Profile ") {
             let dir = root.appendingPathComponent(folder)
-            guard fm.fileExists(atPath: dir.appendingPathComponent("Preferences").path) else { continue }
+            checked += 1
             var settings: [String: Any] = [:]
             var shown = folder
+            var readable = false
             for file in ["Preferences", "Secure Preferences"] {
                 guard let data = fm.contents(atPath: dir.appendingPathComponent(file).path),
                       let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
                 else { continue }
+                readable = true
                 if let s = (json["extensions"] as? [String: Any])?["settings"] as? [String: Any] {
                     settings.merge(s) { _, new in new }
                 }
@@ -443,14 +487,70 @@ extension SetupEvidence {
                     shown = name
                 }
             }
+            allReadable = allReadable && readable
             let on = ids.contains { id in
                 guard let e = settings[id] as? [String: Any] else { return false }
+                if requireManaged {
+                    // Chromium persists ManifestLocation: 7/9 are policy installs;
+                    // an unpacked/user-installed copy is not proof the policy took.
+                    guard let location = e["location"] as? Int, [7, 9].contains(location) else { return false }
+                }
                 let reasons = e["disable_reasons"]
+                if reasons != nil && !(reasons is [Any]) && !(reasons is Int) { return false }
                 let disabled = (reasons as? [Any]).map { !$0.isEmpty } ?? ((reasons as? Int).map { $0 != 0 } ?? false)
-                return !disabled && (e["state"] as? Int ?? 1) != 0
+                return !disabled && (e["state"] as? Int) == 1
             }
             if !on { off.append(shown) }
         }
-        return off
+        return (checked > 0 && allReadable, off)
+    }
+
+    static func extensionIsManaged(ids: Set<String>, settings: Any?, forceList: Any?) -> Bool {
+        guard !ids.isEmpty else { return false }
+        let policies = settings as? [String: Any] ?? [:]
+        let list = forceList as? [String] ?? []
+        return ids.contains { id in
+            if let policy = policies[id] as? [String: Any],
+               let mode = policy["installation_mode"] as? String {
+                return mode == "force_installed"
+                    && secureUpdateURL(policy["update_url"] as? String)
+            }
+            return list.contains { entry in
+                let fields = entry.split(separator: ";", maxSplits: 1, omittingEmptySubsequences: false)
+                return fields.first.map(String.init) == id && fields.count == 2
+                    && secureUpdateURL(String(fields[1]))
+            }
+        }
+    }
+
+    private static func secureUpdateURL(_ value: String?) -> Bool {
+        guard let value, let url = URL(string: value), url.scheme == "https",
+              let host = url.host, !host.isEmpty else { return false }
+        return true
+    }
+
+    static func bridgeManifestMatches(_ data: Data, ids: Set<String>) -> Bool {
+        guard let manifest = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+              manifest["name"] as? String == NativeMessagingInstaller.hostName,
+              manifest["type"] as? String == "stdio",
+              manifest["path"] as? String == "/Applications/Hisn.app/Contents/MacOS/HisnBridge",
+              let origins = manifest["allowed_origins"] as? [String], !origins.isEmpty,
+              origins.allSatisfy({ origin in ids.contains { origin == "chrome-extension://\($0)/" } })
+        else { return false }
+        return true
+    }
+
+    static func protectedBrowserLink(directory: String, ids: Set<String>) -> Bool {
+        let fm = FileManager.default
+        let file = directory + "/\(NativeMessagingInstaller.hostName).json"
+        for path in [directory, file] {
+            guard let attributes = try? fm.attributesOfItem(atPath: path),
+                  attributes[.ownerAccountName] as? String == "root",
+                  let permissions = attributes[.posixPermissions] as? NSNumber,
+                  permissions.intValue & 0o022 == 0,
+                  !fm.isWritableFile(atPath: path) else { return false }
+        }
+        guard let data = fm.contents(atPath: file) else { return false }
+        return bridgeManifestMatches(data, ids: ids)
     }
 }

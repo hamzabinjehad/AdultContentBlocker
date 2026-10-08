@@ -62,13 +62,22 @@ public enum NativeMessagingInstaller {
     ///
     /// Listing both means one app build serves the developer and the published
     /// extension without a rebuild. When the extension is published, add its
-    /// store id here (and to the force-install profile). `allowed_origins` is
+    /// store id in Info.plist (and to the force-install profile). `allowed_origins` is
     /// an allowlist of exact ids, so listing an id that does not exist yet
     /// costs nothing — it simply never matches until that extension is loaded.
-    static let extensionIDs = [
-        "hfhaffbmoeepcdolgejeidkgaoapcjig",   // unpacked / local dev
-        // "…store-assigned id…",             // add after first Web Store publish
-    ]
+    static var extensionIDs: [String] {
+        Bundle.main.object(forInfoDictionaryKey: "HisnExtensionIDs") as? [String] ?? []
+    }
+
+    static var storeURLs: [URL] {
+        ["HisnChromeStoreURL", "HisnEdgeStoreURL"].compactMap { key in
+            guard let value = Bundle.main.object(forInfoDictionaryKey: key) as? String,
+                  let url = URL(string: value), url.scheme == "https",
+                  ["chromewebstore.google.com", "microsoftedge.microsoft.com"].contains(url.host)
+            else { return nil }
+            return url
+        }
+    }
 
     static let hostName = "app.hisn.bridge"
 
@@ -172,6 +181,15 @@ public enum NativeMessagingInstaller {
 
         for browser in browsers {
             if hasSystemManifest(for: browser) {
+                if let support = userSupportDirectory(for: browser) {
+                    let userManifest = support.appendingPathComponent("NativeMessagingHosts/\(hostName).json")
+                    do {
+                        try removeRedundantUserManifest(at: userManifest)
+                    } catch {
+                        NSLog("[Hisn] could not remove redundant browser link for %@: %@",
+                              browser.name, error.localizedDescription)
+                    }
+                }
                 NSLog("[Hisn] %@ already has a system-scope native messaging "
                     + "host (see install_native_host.sh) — leaving it alone",
                     browser.name)
@@ -203,6 +221,13 @@ public enum NativeMessagingInstaller {
     }
 
     // MARK: - Manifest content
+
+    /// Chrome checks user scope first. Remove the earlier app-created copy
+    /// after the system installer takes over, so it cannot shadow that copy.
+    static func removeRedundantUserManifest(at url: URL) throws {
+        guard FileManager.default.fileExists(atPath: url.path) else { return }
+        try FileManager.default.removeItem(at: url)
+    }
 
     static func hostManifest(bridgePath: String) -> [String: Any] {
         [

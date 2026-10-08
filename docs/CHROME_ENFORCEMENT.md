@@ -3,9 +3,32 @@
 The browser extension is the only layer that reads **page text** — the socket
 filter sees hosts and flows, never content. So catching adult material inside a
 general site (X, Reddit) or on a domain registered today, un-removably, means
-forcing the extension. On macOS that is possible for Chrome/Edge and **not** for
-Safari without supervised MDM (see `THREAT_MODEL.md`). This is the Chrome path,
+requiring a managed extension installation on supported Chrome/Edge deployments.
+Even then, text scanning does not identify every image/video or guarantee that
+all adult content is blocked. Safari needs separately configured protection;
+Hisn's Mac browser guard does not verify its exemption. This is the Chrome path,
 in order.
+
+## App-side guard versus managed installation
+
+The Mac app warns and closes disconnected, non-exempt browsers during a lock.
+Its new optional outside-lock requirement uses the same guard. Neither makes
+an unpacked extension undeletable: it reacts to missing check-ins while Hisn
+runs, with recovery grace periods, and does not prove every browser profile is
+protected. See [the exact behavior and limits](SELF_CONTROL_COMMITMENT.md#browser-extension-removal-and-disconnection).
+
+Runtime standard-profile checks now override a bundle heartbeat after repeated
+explicit removal/disablement evidence. Unknown/corrupt settings do not close
+the browser by themselves. This narrows the known second-profile bypass, not
+custom-data-directory, guest/private-window or editable-preference bypasses.
+Managed installation and real effective-policy checks remain necessary.
+
+Google documents `force_installed` as preventing ordinary extension removal or
+disabling when the managed policy is actually applied and its update source
+works. Verify effective policy in `chrome://policy`, not merely an exported
+profile. Management/removal permissions and browser-fork support need separate
+acceptance checks. [Google's Mac policy guidance](https://support.google.com/chrome/a/answer/7517624),
+[deployment verification](https://support.google.com/chrome/a/answer/9020078?hl=en).
 
 Every step depends on the one before it. Do them in this sequence or the result
 is an extension that looks installed and enforces nothing.
@@ -39,10 +62,10 @@ Read the real id from the dashboard after upload. Everything downstream that
 names an id must use the store id, or the browser and the app stop talking with
 no error anywhere visible.
 
-## 3. Wire the store id into the two places that hardcode one
+## 3. Configure the store id
 
-* **Native messaging** — add the store id to `extensionIDs` in
-  `macos/Hisn/NativeMessagingInstaller.swift`, then rebuild the app. The list
+* **Native messaging** — add the store id to `HisnExtensionIDs` in
+  `macos/Hisn/Info.plist`, then rebuild the app. The list
   already carries the local id; adding the store id lets one app build serve
   both the unpacked and the published extension. Miss this and `pollNative()`
   fails forever: the extension never hears the lock state and fails closed to
@@ -90,6 +113,14 @@ Chromium browsers and disables iCloud Private Relay — the network bypasses a
 blocklist cannot reach.
 
 ## 5. Verify it actually took
+
+Open **Protected Setup** in Hisn. Required browser protection checks both the
+forced extension policy and whether that same extension runs as a policy-installed
+extension in each profile. An unpacked copy does not satisfy that check.
+It also checks the administrator-owned native host and the forced policy that
+prevents a user-owned host from overriding it. An installed extension by itself
+does not count as required protection. Password handover remains a separate
+human confirmation, never an inferred fact.
 
 ```bash
 macos/verify_enforcement.sh

@@ -52,13 +52,16 @@ public struct PolicyRecord: Codable, Equatable {
     /// Incremented on every accepted change; picks the newer of the two
     /// on-disk copies.
     public var revision: Int = 0
+    /// A damaged authority is never a fresh, unlocked installation. This flag
+    /// is sticky until an administrator restores the policy and its evidence.
+    public var recoveryRequired: Bool = false
 
     public init() {}
 
     private enum CodingKeys: String, CodingKey {
         case lock, releaseFirstSeen, allowlist, customBlocks, customTerms, blockedApps,
              inspection, highWaterMark, listVersionFloor, stoppedDuringLock, partnerKey,
-             guardAllowed, revision
+             guardAllowed, revision, recoveryRequired
     }
 
     /// Every field optional on the way in. Synthesised decoding throws
@@ -67,6 +70,10 @@ public struct PolicyRecord: Codable, Equatable {
     /// partner key are gone the first time a filter update adds a field.
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
+        guard !c.allKeys.isEmpty else {
+            throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath,
+                                                   debugDescription: "Empty policy record."))
+        }
         lock = try c.decodeIfPresent(LockStore.LockState.self, forKey: .lock)
         releaseFirstSeen = try c.decodeIfPresent(Date.self, forKey: .releaseFirstSeen)
         allowlist = try c.decodeIfPresent([String].self, forKey: .allowlist) ?? []
@@ -80,6 +87,11 @@ public struct PolicyRecord: Codable, Equatable {
         partnerKey = try c.decodeIfPresent(String.self, forKey: .partnerKey)
         guardAllowed = try c.decodeIfPresent([String].self, forKey: .guardAllowed) ?? []
         revision = try c.decodeIfPresent(Int.self, forKey: .revision) ?? 0
+        recoveryRequired = try c.decodeIfPresent(Bool.self, forKey: .recoveryRequired) ?? false
+        guard revision >= 0, revision < Int.max else {
+            throw DecodingError.dataCorruptedError(forKey: .revision, in: c,
+                                                   debugDescription: "Invalid policy revision.")
+        }
     }
 }
 
@@ -137,8 +149,13 @@ public struct PolicyStatus: Codable, Equatable {
     /// be forged to keep the browser guard quiet. Optional so an older
     /// filter's reply still decodes.
     public var checkIns: [String: Date]?
+    /// A failed durable write or a damaged store, reported by the authority.
+    /// Optional so replies from older filters still decode.
+    public var persistenceError: String? = nil
 
-    public var isLocked: Bool { effectiveDeadline.map { now < $0 } ?? false }
+    public var isLocked: Bool {
+        record.recoveryRequired || (effectiveDeadline.map { now < $0 } ?? false)
+    }
 }
 
 public struct PolicyResponse: Codable, Equatable {
@@ -154,11 +171,15 @@ public struct PolicyResponse: Codable, Equatable {
 /// is a unit test.
 public enum PolicyAuthority {
 
+    public static let recoveryMessage = "Hisn's saved protection policy is damaged or unreadable. "
+        + "Protection stays restricted. Ask the administrator to restore the policy before changing it."
+
     public static func trustedNow(_ record: PolicyRecord, wall: Date) -> Date {
         max(wall, record.highWaterMark)
     }
 
     public static func effectiveDeadline(_ record: PolicyRecord) -> Date? {
+        if record.recoveryRequired { return .distantFuture }
         guard let lock = record.lock else { return nil }
         guard lock.selfReleaseAt != nil else { return lock.deadline }
         return LockStore.effectiveDeadline(
@@ -166,11 +187,12 @@ public enum PolicyAuthority {
     }
 
     public static func isLocked(_ record: PolicyRecord, now: Date) -> Bool {
-        effectiveDeadline(record).map { now < $0 } ?? false
+        if record.recoveryRequired { return true }
+        return effectiveDeadline(record).map { now < $0 } ?? false
     }
 
     public static func strictActive(_ record: PolicyRecord, now: Date) -> Bool {
-        isLocked(record, now: now) && record.lock?.mode == "strict"
+        record.recoveryRequired || (isLocked(record, now: now) && record.lock?.mode == "strict")
     }
 
     /// Advance the clock and drop a lock that has run out. Run on every read
@@ -191,6 +213,7 @@ public enum PolicyAuthority {
     public static func apply(_ request: PolicyRequest, to record: PolicyRecord,
                              wall: Date) -> Result<PolicyRecord, PolicyRefusal> {
         if case .checkIn = request { return .success(record) }   // not policy; see PolicyService
+        guard !record.recoveryRequired else { return .failure(.init(recoveryMessage)) }
         var r = settle(record, wall: wall)
         let now = r.highWaterMark
         let locked = isLocked(r, now: now)
@@ -271,69 +294,112 @@ public enum PolicyAuthority {
     }
 
     public static func status(_ record: PolicyRecord, health: FilterHealth,
-                              checkIns: [String: Date]? = nil) -> PolicyStatus {
+                              checkIns: [String: Date]? = nil,
+                              persistenceError: String? = nil) -> PolicyStatus {
         let now = record.highWaterMark
         return PolicyStatus(record: record,
                             effectiveDeadline: isLocked(record, now: now)
                                 ? effectiveDeadline(record) : nil,
                             strictActive: strictActive(record, now: now),
-                            now: now, health: health, checkIns: checkIns)
+                            now: now, health: health, checkIns: checkIns,
+                            persistenceError: persistenceError)
     }
 }
 
-public struct PolicyRefusal: Error, Equatable {
+public struct PolicyRefusal: LocalizedError, Equatable {
     public let message: String
     public init(_ message: String) { self.message = message }
+    public var errorDescription: String? { message }
 }
 
 // MARK: - Persistence
 
 /// The record on disk: two copies, written alternately, each atomically.
 ///
-/// A torn or corrupt write can cost at most the latest change — the other
-/// copy still decodes — rather than the lock itself. Starting over from an
-/// empty record because one file would not parse is the failure this avoids:
-/// it would end a running lock.
+/// A surviving copy preserves the last readable policy. A damaged copy could
+/// have held a newer, stricter lock, so any damage also requires recovery;
+/// silently reverting to an older permissive copy would be a way out.
 public final class PolicyStore {
 
     private let slots: [URL]
+    private let directory: URL
+    private let recoveryMarker: URL
+    private var initializationFailed = false
+    private var recoveryRequired = false
+    public static let recoveryMarkerName = "policy.recovery-required"
 
     public init(directory: URL) {
-        try? FileManager.default.createDirectory(
-            at: directory, withIntermediateDirectories: true,
-            attributes: [.posixPermissions: 0o700])
+        self.directory = directory
+        recoveryMarker = directory.appendingPathComponent(Self.recoveryMarkerName)
         slots = [directory.appendingPathComponent("policy.a.json"),
                  directory.appendingPathComponent("policy.b.json")]
+        do {
+            try FileManager.default.createDirectory(
+                at: directory, withIntermediateDirectories: true,
+                attributes: [.posixPermissions: 0o700])
+        } catch {
+            initializationFailed = true
+            NSLog("[Hisn] CRITICAL: cannot open the policy directory: %@", "\(error)")
+        }
     }
 
-    /// The newest copy that decodes, or an empty record if neither does.
-    ///
-    /// Copies that exist but will not decode are moved aside rather than left
-    /// for the next save to overwrite: they are the only record of a lock
-    /// that something went wrong with, and worth a person's look.
+    /// Freshness is proven by an accessible empty directory, not by failed
+    /// reads. Damaged originals stay in place, with forensic copies alongside
+    /// them; a marker and legacy evidence keep recovery sticky across restarts.
     public func load() -> PolicyRecord {
+        guard !initializationFailed,
+              let names = try? FileManager.default.contentsOfDirectory(atPath: directory.path) else {
+            return recoveryRecord()
+        }
         var decoded: [PolicyRecord] = []
         var unreadable: [URL] = []
-        for url in slots {
-            guard let data = try? Data(contentsOf: url) else { continue }
-            if let r = try? JSONDecoder().decode(PolicyRecord.self, from: data) {
-                decoded.append(r)
-            } else {
+        for url in slots where names.contains(url.lastPathComponent) {
+            do {
+                let data = try Data(contentsOf: url)
+                decoded.append(try JSONDecoder().decode(PolicyRecord.self, from: data))
+            } catch {
                 unreadable.append(url)
             }
         }
-        if decoded.isEmpty {
+        var record = decoded.max(by: { $0.revision < $1.revision }) ?? PolicyRecord()
+        let hasEvidence = names.contains(Self.recoveryMarkerName) || names.contains { name in
+            slots.contains { name.hasPrefix($0.lastPathComponent + ".unreadable-") }
+        }
+        if !unreadable.isEmpty || hasEvidence || record.recoveryRequired {
+            record.recoveryRequired = true
+            recoveryRequired = true
+            if !names.contains(Self.recoveryMarkerName) {
+                // Even if this write fails, the damaged originals and any
+                // existing evidence still prevent an unlocked fresh start.
+                try? Data(PolicyAuthority.recoveryMessage.utf8).write(to: recoveryMarker, options: .atomic)
+            }
             for url in unreadable {
-                let aside = url.appendingPathExtension("unreadable-\(Int(Date().timeIntervalSince1970))")
-                try? FileManager.default.moveItem(at: url, to: aside)
-                NSLog("[Hisn] CRITICAL: policy record %@ did not decode; kept as %@",
-                      url.lastPathComponent, aside.lastPathComponent)
+                let prefix = url.lastPathComponent + ".unreadable-"
+                if !names.contains(where: { $0.hasPrefix(prefix) }) {
+                    let aside = url.appendingPathExtension("unreadable-\(UUID().uuidString)")
+                    try? FileManager.default.copyItem(at: url, to: aside)
+                }
+                NSLog("[Hisn] CRITICAL: policy record %@ unreadable; administrator recovery required",
+                      url.lastPathComponent)
             }
         }
-        return decoded.max(by: { $0.revision < $1.revision }) ?? PolicyRecord()
+        return record
+    }
+
+    private func recoveryRecord() -> PolicyRecord {
+        recoveryRequired = true
+        var record = PolicyRecord()
+        record.recoveryRequired = true
+        return record
     }
 
     public func save(_ record: PolicyRecord) throws {
+        guard !recoveryRequired, !record.recoveryRequired else {
+            throw PolicyRefusal(PolicyAuthority.recoveryMessage)
+        }
+        guard record.revision >= 0, record.revision < Int.max else {
+            throw PolicyRefusal("Invalid policy revision.")
+        }
         let data = try JSONEncoder().encode(record)
         try data.write(to: slots[record.revision % 2], options: .atomic)
     }
@@ -354,6 +420,10 @@ public final class PolicyService: @unchecked Sendable {
     private let lock = OSAllocatedUnfairLock()
     private var record: PolicyRecord
     private var checkIns: [String: Date] = [:]
+    private var persistenceError: String?
+    /// An observed clock must not go backwards even when checkpointing it
+    /// fails. Only a successful save advances the persisted checkpoint.
+    private var observedHighWaterMark: Date
     /// Called after every accepted change, with the new record, so the filter
     /// can re-read its enforcement state at once rather than on its next tick.
     public var onChange: ((PolicyRecord) -> Void)?
@@ -363,7 +433,11 @@ public final class PolicyService: @unchecked Sendable {
         self.store = store
         self.clock = clock
         self.health = health
-        self.record = store.load()
+        let initial = store.load()
+        self.record = initial
+        self.observedHighWaterMark = initial.highWaterMark
+        self.persistedMark = initial.highWaterMark
+        if initial.recoveryRequired { persistenceError = PolicyAuthority.recoveryMessage }
     }
 
     /// The high-water mark last written to disk. The mark advances on every
@@ -376,21 +450,25 @@ public final class PolicyService: @unchecked Sendable {
     /// The current record, settled to now.
     public func current() -> PolicyRecord {
         lock.withLockUnchecked {
-            var settled = PolicyAuthority.settle(record, wall: clock())
+            guard !record.recoveryRequired else { return record }
+            var settled = PolicyAuthority.settle(record, wall: observeNow())
             let expired = settled.lock != record.lock
             if expired || settled.highWaterMark.timeIntervalSince(persistedMark)
                 > Self.markCheckpoint {
                 if expired { settled.revision += 1 }
-                persist(settled)
+                // Ending a lock is a persistent mutation too. If it cannot
+                // be saved, retain the last policy and try again next read.
+                _ = commit(settled)
+            } else {
+                record = settled
             }
-            record = settled
             return record
         }
     }
 
     public func status() -> PolicyStatus {
-        PolicyAuthority.status(current(), health: health(),
-                               checkIns: lock.withLockUnchecked { checkIns })
+        _ = current()
+        return lock.withLockUnchecked { statusLocked() }
     }
 
     public func handle(_ request: PolicyRequest) -> PolicyResponse {
@@ -401,62 +479,88 @@ public final class PolicyService: @unchecked Sendable {
             }
             return PolicyResponse(accepted: true, refusal: nil, status: status())
         }
-        let result: Result<PolicyRecord, PolicyRefusal> = lock.withLockUnchecked {
-            let outcome = PolicyAuthority.apply(request, to: record, wall: clock())
-            if case let .success(next) = outcome {
-                persist(next)
-                record = next
+        let result: (PolicyResponse, PolicyRecord?) = lock.withLockUnchecked {
+            switch PolicyAuthority.apply(request, to: record, wall: observeNow()) {
+            case let .success(next):
+                guard commit(next) else {
+                    return (PolicyResponse(accepted: false, refusal: persistenceError,
+                                           status: statusLocked()), nil)
+                }
+                return (PolicyResponse(accepted: true, refusal: nil, status: statusLocked()), next)
+            case let .failure(refusal):
+                return (PolicyResponse(accepted: false, refusal: refusal.message,
+                                       status: statusLocked()), nil)
             }
-            return outcome
         }
-        let status = self.status()
-        switch result {
-        case let .success(next):
-            onChange?(next)
-            return PolicyResponse(accepted: true, refusal: nil, status: status)
-        case let .failure(refusal):
-            return PolicyResponse(accepted: false, refusal: refusal.message, status: status)
-        }
+        if let next = result.1 { onChange?(next) }
+        return result.0
     }
 
     /// Raise the rollback floor after a list generation is installed.
-    public func raiseListFloor(to version: Int) {
+    @discardableResult
+    public func raiseListFloor(to version: Int) -> Bool {
         lock.withLockUnchecked {
-            guard version > record.listVersionFloor else { return }
+            guard !record.recoveryRequired else { return false }
+            guard version > record.listVersionFloor else { return true }
             var next = record
             next.listVersionFloor = version
             next.revision += 1
-            persist(next)
-            record = next
+            next.highWaterMark = observeNow()
+            return commit(next)
         }
     }
 
     /// The system is stopping the filter. If a lock was running, say so in the
     /// record — the app reports it and re-arms.
-    public func noteStoppedDuringLock() {
+    @discardableResult
+    public func noteStoppedDuringLock() -> Bool {
         lock.withLockUnchecked {
-            let now = PolicyAuthority.trustedNow(record, wall: clock())
-            guard PolicyAuthority.isLocked(record, now: now) else { return }
+            guard !record.recoveryRequired else { return false }
+            let now = observeNow()
+            guard PolicyAuthority.isLocked(record, now: now) else { return true }
             var next = record
             next.stoppedDuringLock = now
             next.revision += 1
-            persist(next)
-            record = next
+            next.highWaterMark = now
+            return commit(next)
         }
     }
 
     /// Carry forward a lock found only in the old mirrors — an install that
     /// predates the authority. Judged like any other proposal, so it can only
     /// ever extend what the authority already holds.
-    public func adopt(legacy lock: LockStore.LockState?) {
-        guard let lock, lock.deadline > clock() else { return }
-        _ = handle(.proposeLock(lock))
+    @discardableResult
+    public func adopt(legacy lock: LockStore.LockState?) -> Bool {
+        guard let lock else { return true }
+        return handle(.proposeLock(lock)).accepted
     }
 
-    private func persist(_ r: PolicyRecord) {
-        persistedMark = r.highWaterMark
-        do { try store.save(r) }
-        catch { NSLog("[Hisn] CRITICAL: policy record not saved: %@", "\(error)") }
+    /// Call only while holding `lock`. Memory, checkpoint and success replies
+    /// all follow the durable write, never precede it.
+    private func commit(_ r: PolicyRecord) -> Bool {
+        do {
+            try store.save(r)
+            record = r
+            persistedMark = r.highWaterMark
+            persistenceError = nil
+            return true
+        } catch {
+            persistenceError = "Hisn could not save the protection policy. The previous policy stays in force. "
+                + "Ask the administrator to check free disk space and policy-folder permissions, then retry. "
+                + error.localizedDescription
+            NSLog("[Hisn] CRITICAL: policy record not saved: %@", "\(error)")
+            return false
+        }
+    }
+
+    private func observeNow() -> Date {
+        observedHighWaterMark = max(observedHighWaterMark, max(record.highWaterMark, clock()))
+        return observedHighWaterMark
+    }
+
+    private func statusLocked() -> PolicyStatus {
+        PolicyAuthority.status(record, health: health(), checkIns: checkIns,
+                               persistenceError: persistenceError)
     }
 }
 
@@ -482,11 +586,14 @@ public struct PolicyView: Equatable {
     public var inspection: Inspection.Settings
     /// Apps the browser guard lets stay open during a lock.
     public var guardAllowed: [String]
+    /// Kept separate from a real lock, so recovery never writes an invented
+    /// permanent deadline into the user's mirrors.
+    public var recoveryRequired: Bool
 
     public init(lock: LockStore.LockState?, effectiveDeadline: Date?, locked: Bool? = nil,
                 allowlist: [String], customBlocks: [String], customTerms: [String],
                 blockedApps: [String], inspection: Inspection.Settings,
-                guardAllowed: [String] = []) {
+                guardAllowed: [String] = [], recoveryRequired: Bool = false) {
         self.lock = lock
         self.effectiveDeadline = effectiveDeadline
         self.locked = locked ?? (lock != nil && effectiveDeadline != nil)
@@ -496,12 +603,13 @@ public struct PolicyView: Equatable {
         self.blockedApps = blockedApps
         self.inspection = inspection
         self.guardAllowed = guardAllowed
+        self.recoveryRequired = recoveryRequired
     }
 
     /// Whether the lock this view describes is still running at `now` — for
     /// the browser, which compares `lockUntil` with its own clock anyway.
     public func isLocked(at now: Date) -> Bool {
-        locked && (effectiveDeadline.map { now < $0 } ?? false)
+        recoveryRequired || (locked && (effectiveDeadline.map { now < $0 } ?? false))
     }
 
     /// What this user's own stores say.
@@ -524,12 +632,13 @@ public struct PolicyView: Equatable {
     /// What the filter's authority says, judged by the authority's own clock.
     public init(status: PolicyStatus) {
         let r = status.record
-        self.init(lock: status.isLocked ? r.lock : nil,
+        self.init(lock: status.isLocked && !r.recoveryRequired ? r.lock : nil,
                   effectiveDeadline: status.isLocked ? status.effectiveDeadline : nil,
                   locked: status.isLocked,
-                  allowlist: r.allowlist, customBlocks: r.customBlocks,
+                  allowlist: r.recoveryRequired ? [] : r.allowlist, customBlocks: r.customBlocks,
                   customTerms: r.customTerms, blockedApps: r.blockedApps,
-                  inspection: r.inspection, guardAllowed: r.guardAllowed)
+                  inspection: r.inspection, guardAllowed: r.recoveryRequired ? [] : r.guardAllowed,
+                  recoveryRequired: r.recoveryRequired)
     }
 }
 
@@ -561,6 +670,18 @@ public enum PolicyMerge {
     /// With no lock anywhere, `editor` is the answer, and the authority is
     /// brought into line with it.
     public static func stricter(editor: PolicyView, other: PolicyView) -> PolicyView {
+        if editor.recoveryRequired || other.recoveryRequired {
+            return PolicyView(lock: nil, effectiveDeadline: .distantFuture, locked: true,
+                              allowlist: [], customBlocks: union(editor.customBlocks, other.customBlocks),
+                              customTerms: union(editor.customTerms, other.customTerms),
+                              blockedApps: union(editor.blockedApps, other.blockedApps),
+                              inspection: Inspection.Settings(
+                                text: true,
+                                textSensitivity: max(editor.inspection.textSensitivity,
+                                                     other.inspection.textSensitivity),
+                                hostKeywords: true),
+                              guardAllowed: [], recoveryRequired: true)
+        }
         let locked = [editor, other].filter(\.locked)
         guard !locked.isEmpty else { return editor }
 
@@ -585,6 +706,7 @@ public enum PolicyMerge {
             lock?.selfReleaseAt = mine.selfReleaseAt
         }
 
+        lock?.commitmentUntil = locked.compactMap { $0.lock?.commitmentUntil }.max()
         let first = locked[0]
         let both = locked.count == 2
         let o = both ? locked[1] : first
@@ -631,7 +753,7 @@ extension PolicyView {
         [
             "lockUntil": locked ? (effectiveDeadline ?? .distantPast).timeIntervalSince1970 * 1000
                                 : Double(0),
-            "mode": locked ? (lock?.mode ?? "blocklist") : "off",
+            "mode": recoveryRequired ? "strict" : (locked ? (lock?.mode ?? "blocklist") : "off"),
             "allowlist": allowlist,
             "customBlocks": customBlocks,
             "customTerms": customTerms,

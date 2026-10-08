@@ -79,6 +79,14 @@
   const HREF_POLL_MS = 1_000;
   const MAX_STALE = 3;           // a page that re-routes this often mid-verdict is dodging
   const MAX_SHADOW_NODES = 20_000;
+  const REPLY_TIMEOUT_MS = 5_000;
+  const OBSERVER_OPTIONS = { childList: true, subtree: true, characterData: true,
+    attributes: true, attributeFilter: ["alt", "aria-label", "content", "name", "property", "hidden"] };
+  const POLICY_FIELDS = ["inspectText", "textSensitivity", "customTerms", "ignoreTerms",
+    "textAllow", "failClosed", "lockUntil", "listVersion"];
+  function scoringPolicyChanged(oldState, newState) {
+    return POLICY_FIELDS.some((key) => JSON.stringify(oldState?.[key]) !== JSON.stringify(newState?.[key]));
+  }
 
   // ------------------------------------------------------------------------
   // Pure helpers
@@ -88,6 +96,17 @@
    *  typed; the scorer sees `%E0%A4%A` instead of nothing at all. */
   function safeDecode(s) {
     try { return decodeURIComponent(s); } catch { return String(s); }
+  }
+  function boundedText(text, limit = MAX_TEXT) {
+    const value = String(text || "");
+    return value.length <= limit ? value : value.slice(0, limit / 2) + "\n" + value.slice(-limit / 2);
+  }
+  function sampleElements(nodes, limit) {
+    if (nodes.length <= limit) return Array.from(nodes);
+    const half = Math.floor(limit / 2), result = [];
+    for (let i = 0; i < half; i++) result.push(nodes[i]);
+    for (let i = nodes.length - (limit - half); i < nodes.length; i++) result.push(nodes[i]);
+    return result;
   }
 
   /** FNV-1a over a string. Not cryptographic — it only has to notice that a
@@ -211,7 +230,7 @@
     });
     const observe = deps.observe ?? ((cb) => {
       const o = new globalThis.MutationObserver(cb);
-      o.observe(doc.documentElement, { childList: true, subtree: true, characterData: true });
+      o.observe(doc.documentElement, OBSERVER_OPTIONS);
       return () => o.disconnect();
     });
 
@@ -225,6 +244,7 @@
     let stopObserving = null;
     let lastHref = loc.href;
     let staleStreak = 0;
+    let policyRevision = 0;
 
     const stats = { evaluations: 0, requests: 0, failures: 0, verdicts: 0, stale: 0 };
 
@@ -233,16 +253,15 @@
       const meta = [];
       for (const sel of ['meta[name="description"]', 'meta[property^="og:"]',
                          'meta[name="keywords"]']) {
-        for (const el of doc.querySelectorAll(sel)) {
+        for (const el of sampleElements(doc.querySelectorAll(sel), 40)) {
           const c = el.getAttribute("content");
-          if (c) meta.push(c);
+          if (c) meta.push(boundedText(c, 2000));
         }
       }
 
       const headings = [];
-      for (const el of doc.querySelectorAll("h1, h2")) {
-        if (headings.length >= 40) break;
-        headings.push(el.textContent || "");
+      for (const el of sampleElements(doc.querySelectorAll("h1, h2"), 40)) {
+        headings.push(boundedText(el.textContent, 2000));
       }
 
       // `innerText` rather than `textContent`: it respects rendering, so it
@@ -255,22 +274,20 @@
       // the head alone meant an infinite-scroll page was judged on its first
       // screens forever, and the verdict froze because the signature did too.
       const full = [doc.body?.innerText || "", ...shadowTexts()].join("\n");
-      const body = full.length <= MAX_TEXT ? full
-        : full.slice(0, MAX_TEXT / 2) + "\n" + full.slice(-MAX_TEXT / 2);
+      const body = boundedText(full);
 
       const alt = [];
-      for (const el of doc.querySelectorAll("img[alt], [aria-label]")) {
-        if (alt.length >= 100) break;
-        alt.push(el.getAttribute("alt") || el.getAttribute("aria-label") || "");
+      for (const el of sampleElements(doc.querySelectorAll("img[alt], [aria-label]"), 100)) {
+        alt.push(boundedText(el.getAttribute("alt") || el.getAttribute("aria-label"), 2000));
       }
 
       return {
-        url: safeDecode(loc.pathname + loc.search),
-        title: doc.title || "",
-        meta: meta.join(" "),
+        url: boundedText(safeDecode(loc.pathname + loc.search), 8000),
+        title: boundedText(doc.title, 2000),
+        meta: boundedText(meta.join(" ")),
         heading: headings.join(" "),
         body,
-        alt: alt.join(" "),
+        alt: boundedText(alt.join(" ")),
       };
     }
 
@@ -313,7 +330,7 @@
       watchedRoots.add(root);
       try {
         new globalThis.MutationObserver(() => onMutation())
-          .observe(root, { childList: true, subtree: true, characterData: true });
+          .observe(root, OBSERVER_OPTIONS);
       } catch { /* a root we cannot observe is still read on the next pass */ }
     }
 
@@ -383,14 +400,24 @@
 
       inFlight = true;
       const hrefAtSend = loc.href;
+      const revisionAtSend = policyRevision;
       let verdict = null;
+      let replyTimer;
       try {
         stats.requests++;
-        verdict = await send(zones);
+        verdict = await Promise.race([send(zones), new Promise((resolve) => {
+          replyTimer = timers.setTimeout(() => resolve(null), REPLY_TIMEOUT_MS);
+        })]);
       } catch {
         verdict = null;
       } finally {
+        if (replyTimer !== undefined) timers.clearTimeout(replyTimer);
         inFlight = false;
+      }
+      if (revisionAtSend !== policyRevision) {
+        dirty = false;
+        evaluate();
+        return;
       }
 
       // A verdict for a page that is no longer here. A single-page app can
@@ -438,6 +465,15 @@
       scheduler.request();
     }
 
+    function recheck() {
+      if (stopped) return;
+      policyRevision++;
+      lastScored = "";
+      attempts = 0;
+      if (retryTimer !== null) { timers.clearTimeout(retryTimer); retryTimer = null; }
+      evaluate();
+    }
+
     function start() {
       // Pass 1: as soon as the head is parsed. Title and meta alone decide most
       // pages, and this fires long before images and scripts finish.
@@ -465,7 +501,7 @@
     }
 
     return {
-      start, evaluate, onMutation,
+      start, evaluate, onMutation, recheck,
       get stopped() { return stopped; },
       get stats() { return { ...stats }; },
     };
@@ -477,7 +513,9 @@
 
   globalThis.HisnScan = {
     safeDecode, fnv1a, contentSignature, retryDelayMs, createScheduler, createScanner,
+    boundedText, sampleElements,
     SETTLE_MS, MAX_WAIT_MS, RETRY_BASE_MS, MAX_RETRIES, MAX_TEXT, HREF_POLL_MS,
+    REPLY_TIMEOUT_MS, OBSERVER_OPTIONS, scoringPolicyChanged,
   };
 
   // Only a real extension has a runtime id. A test harness that loads this
@@ -491,7 +529,12 @@
     const version = globalThis.chrome.runtime.getManifest?.().version ?? "";
     if (globalThis.__hisnScanVersion !== version) {
       globalThis.__hisnScanVersion = version;
-      createScanner().start();
+      const scanner = createScanner();
+      scanner.start();
+      globalThis.chrome.storage?.onChanged?.addListener((changes, area) => {
+        if (area === "local" && changes.state
+            && scoringPolicyChanged(changes.state.oldValue, changes.state.newValue)) scanner.recheck();
+      });
     }
   }
 })();

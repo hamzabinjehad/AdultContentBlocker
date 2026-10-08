@@ -50,6 +50,46 @@ final class LockScheduleTests: XCTestCase {
         XCTAssertNil(off.window(containing: at(23), calendar: calendar))
     }
 
+    private func local(_ month: Int, _ day: Int, _ hour: Int, _ minute: Int = 0) -> Date {
+        calendar.date(from: DateComponents(year: 2026, month: month, day: day, hour: hour, minute: minute))!
+    }
+
+    func testSpringChangeStillEndsAtSeven() {
+        let window = night.window(containing: local(3, 29, 6), calendar: calendar)
+        XCTAssertEqual(window?.start, local(3, 28, 22))
+        XCTAssertEqual(window?.end, local(3, 29, 7))
+        XCTAssertEqual(window?.duration, 8 * 3600)
+        XCTAssertNil(night.window(containing: local(3, 29, 7), calendar: calendar))
+    }
+
+    func testAutumnChangeStillEndsAtSeven() {
+        let window = night.window(containing: local(10, 25, 6, 30), calendar: calendar)
+        XCTAssertEqual(window?.end, local(10, 25, 7))
+        XCTAssertEqual(window?.duration, 10 * 3600)
+        XCTAssertNil(night.window(containing: local(10, 25, 7), calendar: calendar))
+    }
+
+    func testNextWindowStartsAtChosenTimeOnClockChangeDays() {
+        XCTAssertEqual(night.nextWindow(after: local(3, 29, 12), calendar: calendar)?.start,
+                       local(3, 29, 22))
+        XCTAssertEqual(night.nextWindow(after: local(10, 25, 12), calendar: calendar)?.start,
+                       local(10, 25, 22))
+    }
+
+    func testMissingSpringTimeStartsAtNextAvailableTime() {
+        let early = LockSchedule(enabled: true, start: 2 * 60 + 30, end: 4 * 60, strict: false)
+        let window = early.nextWindow(after: local(3, 29, 0), calendar: calendar)
+        XCTAssertEqual(window?.start, local(3, 29, 3))
+        XCTAssertEqual(window?.end, local(3, 29, 4))
+    }
+
+    func testRepeatedAutumnTimeUsesFirstOccurrence() {
+        let early = LockSchedule(enabled: true, start: 2 * 60 + 30, end: 4 * 60, strict: false)
+        let window = early.nextWindow(after: local(10, 25, 0), calendar: calendar)
+        XCTAssertEqual(window?.start, local(10, 25, 0).addingTimeInterval(2.5 * 3600))
+        XCTAssertEqual(window?.end, local(10, 25, 4))
+    }
+
     // MARK: - When the tick starts a lock
 
     func testAnOpenWindowWithNoLockStartsOne() {

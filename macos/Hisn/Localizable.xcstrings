@@ -101,12 +101,28 @@
         }
       }
     },
-    "%@ has no Hisn protection inside it, so it cannot stay open during a lock. Use Safari or a browser with the Hisn extension." : {
+    "%@ has a standard browser profile with Hisn removed or disabled. Restore the extension in every listed profile or %@ will close." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "لا توجد حماية حصن داخل %@، لذلك لا يمكن أن يبقى مفتوحًا أثناء القفل. استخدم Safari أو متصفحًا فيه إضافة حصن."
+            "value" : "يوجد في %1$@ ملف متصفح قياسي حُذفت أو عُطّلت فيه إضافة حصن. أعد الإضافة في كل ملف مُدرج وإلا سيُغلق %2$@."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ has a standard browser profile with Hisn removed or disabled. Restore the extension in every listed profile or %2$@ will close."
+          }
+        }
+      }
+    },
+    "%@ has no Hisn protection inside it, so it cannot stay open while browser guarding is active. Reconnect a supported browser or review your protection settings." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا توجد حماية حصن داخل %@، لذلك لا يمكن أن يبقى مفتوحًا أثناء تفعيل رقابة المتصفحات. أعد توصيل متصفح مدعوم أو راجع إعدادات الحماية."
           }
         }
       }
@@ -311,6 +327,22 @@
         }
       }
     },
+    "A fixed commitment stays fixed for the added time. This does not weaken any existing restrictions." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يبقى الالتزام ثابتًا خلال المدة المضافة. هذا لا يُضعف أي قيود موجودة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A fixed commitment stays fixed for the added time. This does not weaken any existing restrictions."
+          }
+        }
+      }
+    },
     "A lock has to be between %@ and %@." : {
       "localizations" : {
         "ar" : {
@@ -469,12 +501,38 @@
         }
       }
     },
+    "A missing reply or an unavailable ordinary name does not prove blocking. Check connectivity and DNS settings, then retry." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "غياب الإجابة أو تعذّر الوصول إلى النطاق العادي لا يثبت الحجب. تحقّق من الاتصال وإعدادات DNS، ثم أعد المحاولة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A missing reply or an unavailable ordinary name does not prove blocking. Check connectivity and DNS settings, then retry."
+          }
+        }
+      }
+    },
     "A release request takes %@ to arrive and cannot be hurried. Your accountability partner can approve one immediately." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "يستغرق طلب الإنهاء %@ حتى يسري، ولا يمكن تعجيله. يستطيع شريك المحاسبة الموافقة عليه فورًا."
+          }
+        }
+      }
+    },
+    "A trusted person keeps the separate administrator password, and I use only this standard account." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يحتفظ شخص أثق به بكلمة مرور حساب المسؤول المنفصل، وأستخدم هذا الحساب القياسي فقط."
           }
         }
       }
@@ -529,6 +587,22 @@
         }
       }
     },
+    "Add seven days to this lock?" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إضافة سبعة أيام إلى هذا القفل؟"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add seven days to this lock?"
+          }
+        }
+      }
+    },
     "Adding blocks and removing allowances still work." : {
       "localizations" : {
         "ar" : {
@@ -549,12 +623,60 @@
         }
       }
     },
+    "Additional protection" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حماية إضافية"
+          }
+        }
+      }
+    },
+    "AdGuard Home project and supported filter rules" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مشروع AdGuard Home وصيغ قواعد الحجب المدعومة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AdGuard Home project and supported filter rules"
+          }
+        }
+      }
+    },
+    "Administrator setup" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إعداد المسؤول"
+          }
+        }
+      }
+    },
     "Allow during a lock" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "اسمح به أثناء القفل"
+          }
+        }
+      }
+    },
+    "Allow this browser" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "السماح لهذا المتصفح"
           }
         }
       }
@@ -619,6 +741,22 @@
         }
       }
     },
+    "Before changing anything, save the current router settings. In its page, look for Internet or DNS. If those settings are unavailable, continue with device protection." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قبل تغيير أي شيء، احفظ إعدادات الراوتر الحالية. ابحث في صفحته عن الإنترنت أو DNS. إذا لم تجد هذه الإعدادات، تابع حماية الجهاز."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Before changing anything, save the current router settings. In its page, look for Internet or DNS. If those settings are unavailable, continue with device protection."
+          }
+        }
+      }
+    },
     "Between %@ and %@." : {
       "localizations" : {
         "ar" : {
@@ -661,6 +799,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تُحجب إضافةً إلى القوائم المدمجة."
+          }
+        }
+      }
+    },
+    "Blocking response observed on this Mac" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "رُصدت إجابة حجب على هذا الماك"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blocking response observed on this Mac"
           }
         }
       }
@@ -715,6 +869,22 @@
         }
       }
     },
+    "Browser heartbeat has an invalid time. Reconnect the browser." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وقت اتصال المتصفح غير صالح. أعد توصيل المتصفح."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Browser heartbeat has an invalid time. Reconnect the browser."
+          }
+        }
+      }
+    },
     "Browser last connected" : {
       "localizations" : {
         "ar" : {
@@ -725,12 +895,43 @@
         }
       }
     },
+    "Browser protection" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حماية المتصفح"
+          }
+        }
+      }
+    },
+    "Browser protection settings could not be saved. Try again." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّر حفظ إعدادات حماية المتصفح. حاول مرة أخرى."
+          }
+        }
+      }
+    },
     "Browsers during a lock" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "المتصفحات أثناء القفل"
+          }
+        }
+      }
+    },
+    "Cancel" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إلغاء"
           }
         }
       }
@@ -775,12 +976,78 @@
         }
       }
     },
+    "Changes could not be saved. The previous policy remains in force. Ask the administrator to check storage and permissions." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّر حفظ التغييرات. تبقى السياسة السابقة سارية. اطلب من المسؤول التحقق من مساحة التخزين والصلاحيات."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changes could not be saved. The previous policy remains in force. Ask the administrator to check storage and permissions."
+          }
+        }
+      }
+    },
+    "Changing DNS uses the chosen provider's categories. To use Hisn's own list, point the router and its clients to an always-on filtering server that imports Hisn's verified rules. This guide does not establish direct list upload on your model." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يستخدم تغيير DNS فئات المزوّد المختار. لاستخدام قائمة حصن، وجّه الراوتر وأجهزته إلى خادم فلترة يعمل باستمرار ويستورد قواعد حصن المتحقق منها. لا يؤكد هذا الدليل إمكانية رفع القائمة مباشرةً إلى موديل جهازك."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changing DNS uses the chosen provider's categories. To use Hisn's own list, point the router and its clients to an always-on filtering server that imports Hisn's verified rules. This guide does not establish direct list upload on your model."
+          }
+        }
+      }
+    },
     "Check again" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "تحقق مجددًا"
+          }
+        }
+      }
+    },
+    "Check Cloudflare DNS on this Mac" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افحص DNS من Cloudflare على هذا الماك"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check Cloudflare DNS on this Mac"
+          }
+        }
+      }
+    },
+    "Check the installed RouterOS version for IP > DNS > Adlist support. The router can import a local hosts-format file where this feature is available. Check memory, storage, and client DNS routing before importing a large list." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تحقق من أن إصدار RouterOS المثبّت يدعم IP > DNS > Adlist. يستطيع الراوتر استيراد ملف محلي بصيغة hosts عندما تتوفر هذه الميزة. افحص الذاكرة والتخزين ومسار DNS للأجهزة قبل استيراد قائمة كبيرة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check the installed RouterOS version for IP > DNS > Adlist support. The router can import a local hosts-format file where this feature is available. Check memory, storage, and client DNS routing before importing a large list."
           }
         }
       }
@@ -815,6 +1082,16 @@
         }
       }
     },
+    "Checking this Mac..." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جارٍ فحص هذا الـ Mac..."
+          }
+        }
+      }
+    },
     "Checking…" : {
       "localizations" : {
         "ar" : {
@@ -825,12 +1102,90 @@
         }
       }
     },
+    "Checks a harmless adult-category test name and an ordinary name through this Mac's system resolver. No website is opened and no settings are changed." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يفحص نطاق اختبار آمن لتصنيف محتوى البالغين ونطاقاً عادياً عبر خدمة DNS في هذا الماك. لا يفتح أي موقع ولا يغيّر الإعدادات."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checks a harmless adult-category test name and an ordinary name through this Mac's system resolver. No website is opened and no settings are changed."
+          }
+        }
+      }
+    },
+    "Choose what your network allows, regardless of the router brand or internet provider. Hisn does not configure routers automatically yet." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختر ما تسمح به شبكتك، بغض النظر عن نوع الراوتر أو مزوّد الإنترنت. حصن لا يضبط الراوترات تلقائياً حتى الآن."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose what your network allows, regardless of the router brand or internet provider. Hisn does not configure routers automatically yet."
+          }
+        }
+      }
+    },
+    "Closed while browser guarding is active if its extension stops checking in or is confirmed missing or disabled in a standard profile." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يُغلق أثناء تفعيل رقابة المتصفحات إذا توقفت إضافته عن الاتصال، أو تأكد حذفها أو تعطيلها في ملف قياسي."
+          }
+        }
+      }
+    },
+    "Cloudflare router instructions" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعليمات Cloudflare للراوتر"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cloudflare router instructions"
+          }
+        }
+      }
+    },
     "Come back here — the Browser extension row reads Connected once it has." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "عد إلى هنا — سيظهر «متصل» في سطر إضافة المتصفح حين يتم ذلك."
+          }
+        }
+      }
+    },
+    "Confirmed by you, not checked by Hisn. Keep recovery details somewhere you can reach without this Mac." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أنت تؤكد ذلك، ولا يتحقق منه حصن. احتفظ بمعلومات الاستعادة في مكان يمكنك الوصول إليه دون هذا الـ Mac."
+          }
+        }
+      }
+    },
+    "Confirmed by you. Hisn can check account permissions, but cannot know who holds a password." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أنت تؤكد ذلك. يستطيع حصن التحقق من صلاحيات الحساب، لكنه لا يستطيع معرفة من يحتفظ بكلمة المرور."
           }
         }
       }
@@ -871,6 +1226,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تابع الإعداد"
+          }
+        }
+      }
+    },
+    "Continue with device protection" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متابعة حماية الجهاز"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue with device protection"
+          }
+        }
+      }
+    },
+    "Continue with this Mac's protection below. For an ISP-locked router, ask the provider whether custom DNS is supported, or use a gateway you administer. Public Wi-Fi stays outside your network control." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تابع إعداد حماية هذا الماك أدناه. إذا كان مزوّد الإنترنت يقفل إعدادات الراوتر، فاسأله عن دعم DNS مخصّص، أو استخدم بوابة شبكة تديرها أنت. تبقى شبكات Wi-Fi العامة خارج نطاق إدارتك."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue with this Mac's protection below. For an ISP-locked router, ask the provider whether custom DNS is supported, or use a gateway you administer. Public Wi-Fi stays outside your network control."
           }
         }
       }
@@ -981,6 +1368,58 @@
         }
       }
     },
+    "Device time could not be confirmed. Check automatic date and time. Your saved commitment deadline has not changed." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّر تأكيد وقت الجهاز. تحقق من ضبط التاريخ والوقت تلقائيًا. موعد انتهاء التزامك المحفوظ لم يتغير."
+          }
+        }
+      }
+    },
+    "DNS sample inconclusive" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نتيجة عيّنة DNS غير حاسمة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DNS sample inconclusive"
+          }
+        }
+      }
+    },
+    "DNS sample taken" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وقت أخذ عيّنة DNS"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DNS sample taken"
+          }
+        }
+      }
+    },
+    "Do this last. Keep a separate working administrator account; never remove the last administrator." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نفّذ هذه الخطوة أخيرًا. احتفظ بحساب مسؤول منفصل يعمل؛ ولا تحذف آخر حساب مسؤول أبدًا."
+          }
+        }
+      }
+    },
     "Domain blocking for every app" : {
       "localizations" : {
         "ar" : {
@@ -1021,7 +1460,18 @@
         }
       }
     },
+    "During a lock, Hisn closes supported browsers that lose their extension connection and other non-exempt browsers. Safari and browsers you previously allowed stay open." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أثناء القفل، يغلق حصن المتصفحات المدعومة التي تفقد اتصال الإضافة والمتصفحات الأخرى غير المستثناة. يظل Safari والمتصفحات التي سمحت بها سابقًا مفتوحًا."
+          }
+        }
+      }
+    },
     "Each step closes a way around the others. Do them in this order, with your partner for the ones they hold — the account split last, because it is the one that makes the rest stick." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1047,6 +1497,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "طُلب الإنهاء المبكر"
+          }
+        }
+      }
+    },
+    "Enable requirement" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تفعيل الاشتراط"
+          }
+        }
+      }
+    },
+    "Enable system filter" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تفعيل فلتر النظام"
+          }
+        }
+      }
+    },
+    "Enable the system filter to block domains outside your browser." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فعّل فلتر النظام لحجب النطاقات خارج متصفحك."
+          }
+        }
+      }
+    },
+    "Enable the system filter, then approve it in System Settings if macOS asks." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فعّل فلتر النظام، ثم وافق عليه في إعدادات النظام إذا طلب macOS ذلك."
           }
         }
       }
@@ -1107,12 +1597,164 @@
         }
       }
     },
-    "Forced for Google, YouTube, Bing, DuckDuckGo and Yandex in every browser and app." : {
+    "Extension removed or disabled: %@" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "مفروض على Google وYouTube وBing وDuckDuckGo وYandex في كل متصفح وتطبيق."
+            "value" : "الإضافة محذوفة أو معطّلة: %@"
+          }
+        }
+      }
+    },
+    "Filter setup is already in progress. Complete the approval in System Settings." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إعداد الفلتر جارٍ بالفعل. أكمل الموافقة في إعدادات النظام."
+          }
+        }
+      }
+    },
+    "Find my router" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ابحث عن الراوتر"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Find my router"
+          }
+        }
+      }
+    },
+    "Find the manufacturer and model on the router label or in its official app. An internet provider may restrict DNS settings. Choose the matching guide, or continue protecting this device." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ابحث عن الشركة والموديل على ملصق الراوتر أو في تطبيقه الرسمي. قد يقيّد مزوّد الإنترنت إعدادات DNS. اختر الدليل المناسب أو تابع حماية هذا الجهاز."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Find the manufacturer and model on the router label or in its official app. An internet provider may restrict DNS settings. Choose the matching guide, or continue protecting this device."
+          }
+        }
+      }
+    },
+    "Find the model on the device label or in its official app. Do not enter passwords or serial numbers. These details stay in this setup screen." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ستجد الموديل على ملصق الجهاز أو في تطبيقه الرسمي. لا تُدخل كلمات المرور أو الأرقام التسلسلية. تبقى هذه التفاصيل في شاشة الإعداد هذه."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Find the model on the device label or in its official app. Do not enter passwords or serial numbers. These details stay in this setup screen."
+          }
+        }
+      }
+    },
+    "Find your exact D-Link model and hardware revision in the official support center. Use its manual to locate Internet DNS and client DHCP DNS settings; a menu path from another D-Link model may not apply." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ابحث عن موديل D-Link وإصدار الجهاز بدقة في مركز الدعم الرسمي. استخدم دليله لتحديد إعدادات DNS للإنترنت وللأجهزة عبر DHCP؛ قد لا تصلح تعليمات موديل آخر."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Find your exact D-Link model and hardware revision in the official support center. Use its manual to locate Internet DNS and client DHCP DNS settings; a menu path from another D-Link model may not apply."
+          }
+        }
+      }
+    },
+    "Finding a router or opening its page does not verify blocking. After setup, use the DNS check below and test each device separately." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "العثور على الراوتر أو فتح صفحته لا يؤكد عمل الحجب. بعد الإعداد، استخدم فحص DNS أدناه واختبر كل جهاز على حدة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finding a router or opening its page does not verify blocking. After setup, use the DNS check below and test each device separately."
+          }
+        }
+      }
+    },
+    "Fixed commitment until the chosen deadline" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التزام ثابت حتى الموعد الذي تختاره"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fixed commitment until the chosen deadline"
+          }
+        }
+      }
+    },
+    "For Archer wireless routers, look under Advanced > Network > Internet. DSL models may use LAN Settings instead. Use the official guide for your hardware version; Deco has a separate app guide." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "في راوترات Archer اللاسلكية، ابحث ضمن Advanced > Network > Internet. قد تستخدم موديلات DSL قسم LAN Settings بدلًا منه. اتبع الدليل الرسمي لإصدار جهازك؛ ولـ Deco دليل مستقل لتطبيق الهاتف."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For Archer wireless routers, look under Advanced > Network > Internet. DSL models may use LAN Settings instead. Use the official guide for your hardware version; Deco has a separate app guide."
+          }
+        }
+      }
+    },
+    "For upstream DNS, use Internet > Account Information > DNS Server. For a local filtering server, use Home Network > Network > Network Settings and the IPv4/IPv6 DNS advertisement settings. The official guide explains both routes." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لإعداد DNS الخارجي استخدم Internet > Account Information > DNS Server. ولخادم فلترة محلي، استخدم Home Network > Network > Network Settings وإعدادات إعلان DNS للأجهزة عبر IPv4 وIPv6. يشرح الدليل الرسمي الطريقتين."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "For upstream DNS, use Internet > Account Information > DNS Server. For a local filtering server, use Home Network > Network > Network Settings and the IPv4/IPv6 DNS advertisement settings. The official guide explains both routes."
+          }
+        }
+      }
+    },
+    "Forced for Google, YouTube, Bing, DuckDuckGo and Brave Search in every browser and app." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مفروض على Google وYouTube وBing وDuckDuckGo وBrave Search في كل متصفح وتطبيق."
           }
         }
       }
@@ -1137,6 +1779,48 @@
         }
       }
     },
+    "Gateway address found — protection is not configured yet." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تم العثور على عنوان بوابة الشبكة — لم تُعدّ الحماية بعد."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gateway address found — protection is not configured yet."
+          }
+        }
+      }
+    },
+    "Get browser extension" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الحصول على إضافة المتصفح"
+          }
+        }
+      }
+    },
+    "GL.iNet lists this model as unsupported for built-in AdGuard Home. Use filtering DNS or a separate always-on filtering server instead." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تدرج GL.iNet هذا الموديل ضمن الأجهزة التي لا تدعم AdGuard Home المدمج. استخدم DNS مفلترًا أو خادم فلترة منفصلًا يعمل باستمرار."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GL.iNet lists this model as unsupported for built-in AdGuard Home. Use filtering DNS or a separate always-on filtering server instead."
+          }
+        }
+      }
+    },
     "guest windows in %@" : {
       "localizations" : {
         "ar" : {
@@ -1147,12 +1831,70 @@
         }
       }
     },
+    "Guide selected from your details. Check that the official instructions cover your model and version before changing settings." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اخترنا الدليل بحسب التفاصيل التي أدخلتها. تأكد من أن التعليمات الرسمية تشمل موديل جهازك وإصداره قبل تغيير الإعدادات."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guide selected from your details. Check that the official instructions cover your model and version before changing settings."
+          }
+        }
+      }
+    },
     "Hardening profile" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "ملف التقوية"
+          }
+        }
+      }
+    },
+    "Hardware and firmware version (optional)" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إصدار الجهاز والبرنامج (اختياري)"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hardware and firmware version (optional)"
+          }
+        }
+      }
+    },
+    "Have your administrator import Hisn's verified signed rules into AdGuard Home on a gateway or an always-on DNS server. Point the router and its clients to that server for IPv4 and IPv6." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اطلب من المسؤول استيراد قواعد حصن الموقّعة والمتحقّق منها إلى AdGuard Home على بوابة الشبكة أو خادم DNS يعمل باستمرار. وجّه الراوتر والأجهزة المتصلة إليه لكل من IPv4 وIPv6."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Have your administrator import Hisn's verified signed rules into AdGuard Home on a gateway or an always-on DNS server. Point the router and its clients to that server for IPv4 and IPv6."
+          }
+        }
+      }
+    },
+    "Hide Hisn" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إخفاء حصن"
           }
         }
       }
@@ -1178,6 +1920,7 @@
       }
     },
     "Hisn is not installed in Applications. Install it from the Hisn folder." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1188,11 +1931,33 @@
       }
     },
     "Hisn keeps running during a lock" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "يبقى حصن يعمل أثناء القفل"
+          }
+        }
+      }
+    },
+    "Hisn may close browsers that do not have a connected extension, even without an active lock. Save any work first. Safari and your allowed exceptions stay open. You can turn this off when no lock is running. This does not make Hisn or the extension unremovable." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قد يغلق حصن المتصفحات التي لا تحتوي على إضافة متصلة حتى دون قفل نشط. احفظ عملك أولًا. يظل Safari والاستثناءات التي سمحت بها مفتوحة. يمكنك إيقاف هذا الخيار عندما لا يكون هناك قفل نشط. لا يجعل هذا حصن أو الإضافة غير قابلين للإزالة."
+          }
+        }
+      }
+    },
+    "Hisn may close browsers that do not have a connected extension, or have Hisn removed or disabled in a standard profile, even without an active lock. Save any work first. Safari and your allowed exceptions stay open. You can turn this off when no lock is running. This does not make Hisn or the extension unremovable." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قد يغلق حصن المتصفحات التي لا تحتوي على إضافة متصلة، أو التي حُذفت أو عُطّلت فيها إضافة حصن في ملف قياسي، حتى دون قفل نشط. احفظ عملك أولًا. يظل Safari والاستثناءات التي سمحت بها مفتوحة. يمكنك إيقاف هذا الخيار عندما لا يكون هناك قفل نشط. لا يجعل هذا حصن أو الإضافة غير قابلين للإزالة."
           }
         }
       }
@@ -1323,6 +2088,144 @@
         }
       }
     },
+    "How to use Hisn's own blocking list" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كيفية استخدام قائمة حصن للحجب"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How to use Hisn's own blocking list"
+          }
+        }
+      }
+    },
+    "HTTP does not encrypt the administrator password. Use it only on a trusted home network if your router documentation requires it. Do not bypass unexpected certificate warnings." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يشفّر HTTP كلمة مرور الإدارة. استخدمه فقط على شبكة منزلية موثوقة إذا كانت تعليمات الراوتر تتطلبه. لا تتجاوز تحذيرات الشهادات غير المتوقعة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HTTP does not encrypt the administrator password. Use it only on a trusted home network if your router documentation requires it. Do not bypass unexpected certificate warnings."
+          }
+        }
+      }
+    },
+    "I can change the router's DNS" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أستطيع تغيير DNS في الراوتر"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I can change the router's DNS"
+          }
+        }
+      }
+    },
+    "I cannot change this network" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا أستطيع تغيير إعدادات هذه الشبكة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I cannot change this network"
+          }
+        }
+      }
+    },
+    "I don't know my router's capabilities yet" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا أعرف إمكانات الراوتر بعد"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I don't know my router's capabilities yet"
+          }
+        }
+      }
+    },
+    "I have a filtering DNS server" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لديّ خادم DNS يفلتر المحتوى"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I have a filtering DNS server"
+          }
+        }
+      }
+    },
+    "I know how to contact my trusted person and recover access if something goes wrong." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أعرف كيف أتواصل مع الشخص الذي أثق به وأستعيد الوصول إذا حدثت مشكلة."
+          }
+        }
+      }
+    },
+    "I own this network or have its owner's permission" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أنا أملك هذه الشبكة أو لدي إذن من صاحبها"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I own this network or have its owner's permission"
+          }
+        }
+      }
+    },
+    "I understand this commitment does not prevent an administrator from removing protection. Keep essential services accessible." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أفهم أن هذا الالتزام لا يمنع مسؤول الجهاز من إزالة الحماية. سأُبقي الخدمات الضرورية متاحة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I understand this commitment does not prevent an administrator from removing protection. Keep essential services accessible."
+          }
+        }
+      }
+    },
     "iCloud Private Relay" : {
       "localizations" : {
         "ar" : {
@@ -1343,12 +2246,116 @@
         }
       }
     },
+    "If the gateway supports firewall rules, your administrator can restrict outside DNS separately for IPv4 and IPv6. DNS settings alone do not prevent encrypted DNS or VPN bypass. Keep the router password with your trusted person and plan recovery before restricting access." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إذا كانت بوابة الشبكة تدعم قواعد جدار الحماية، يستطيع المسؤول تقييد DNS الخارجي لكل من IPv4 وIPv6 على حدة. إعدادات DNS وحدها لا تمنع التجاوز عبر DNS المشفّر أو VPN. احتفظ بكلمة مرور الراوتر لدى شخصك الموثوق وجهّز طريقة الاستعادة قبل تقييد الوصول."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If the gateway supports firewall rules, your administrator can restrict outside DNS separately for IPv4 and IPv6. DNS settings alone do not prevent encrypted DNS or VPN bypass. Keep the router password with your trusted person and plan recovery before restricting access."
+          }
+        }
+      }
+    },
     "Immediate, and never without them." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "فورًا، ولا يتم أبدًا دونه."
+          }
+        }
+      }
+    },
+    "In Google Home, select the network's Wi-Fi settings, then Advanced networking > DNS > Custom. Enter the chosen filtering DNS addresses and save. Use Google's guide for the current app layout." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "في Google Home اختر إعدادات Wi-Fi للشبكة ثم Advanced networking > DNS > Custom. أدخل عناوين DNS المفلترة المختارة واحفظها. اتبع دليل Google لشكل التطبيق الحالي."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In Google Home, select the network's Wi-Fi settings, then Advanced networking > DNS > Custom. Enter the chosen filtering DNS addresses and save. Use Google's guide for the current app layout."
+          }
+        }
+      }
+    },
+    "In the eero app, open Settings > Advanced networking > DNS > Custom DNS. Existing eero Plus or HomeKit settings can affect custom DNS; review the official instructions before changing them." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "في تطبيق eero افتح Settings > Advanced networking > DNS > Custom DNS. قد تؤثر إعدادات eero Plus أو HomeKit الحالية على DNS المخصص؛ راجع التعليمات الرسمية قبل تغييرها."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In the eero app, open Settings > Advanced networking > DNS > Custom DNS. Existing eero Plus or HomeKit settings can affect custom DNS; review the official instructions before changing them."
+          }
+        }
+      }
+    },
+    "In the router's web interface, open Internet and find Domain Name Server (DNS) Address > Use These DNS Servers. Check the official article's model list before following it." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افتح Internet في واجهة الراوتر وابحث عن Domain Name Server (DNS) Address > Use These DNS Servers. راجع قائمة الموديلات التي تشملها المقالة الرسمية قبل اتباعها."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In the router's web interface, open Internet and find Domain Name Server (DNS) Address > Use These DNS Servers. Check the official article's model list before following it."
+          }
+        }
+      }
+    },
+    "In UniFi Network, open Settings > CyberSecure > Content Filter. Choose the family networks or devices, enable the appropriate adult-content policy and Safe Search, then check the applied scope. Availability depends on the gateway and software version." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "في UniFi Network افتح Settings > CyberSecure > Content Filter. اختر شبكات العائلة أو أجهزتها، وفعّل سياسة المحتوى الإباحي المناسبة والبحث الآمن، ثم راجع نطاق تطبيقها. يعتمد التوفر على البوابة وإصدار البرنامج."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In UniFi Network, open Settings > CyberSecure > Content Filter. Choose the family networks or devices, enable the appropriate adult-content policy and Safe Search, then check the applied scope. Availability depends on the gateway and software version."
+          }
+        }
+      }
+    },
+    "Install and connect" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التثبيت والاتصال"
+          }
+        }
+      }
+    },
+    "Install Hisn using its installer package, then open it from Applications." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ثبّت حصن باستخدام حزمة التثبيت، ثم افتحه من التطبيقات."
           }
         }
       }
@@ -1363,12 +2370,80 @@
         }
       }
     },
+    "Installed browsers have required Hisn protection and an administrator-protected connection to the app." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تستخدم المتصفحات المثبتة حماية حصن الإلزامية واتصالًا بالتطبيق محميًا بصلاحيات المسؤول."
+          }
+        }
+      }
+    },
     "Installed: private and guest windows, browser DNS and Private Relay are locked." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "مثبّت: النوافذ الخاصة ونوافذ الضيف وDNS المتصفح وPrivate Relay مقفلة."
+          }
+        }
+      }
+    },
+    "Instructions for this router family" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعليمات لهذا النوع من الراوترات"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Instructions for this router family"
+          }
+        }
+      }
+    },
+    "IPv4 address lookup (A)" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استعلام عنوان IPv4‏ (A)"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "IPv4 address lookup (A)"
+          }
+        }
+      }
+    },
+    "IPv6 address lookup (AAAA)" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استعلام عنوان IPv6‏ (AAAA)"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "IPv6 address lookup (AAAA)"
+          }
+        }
+      }
+    },
+    "Keep a recovery route" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الاحتفاظ بطريقة للاستعادة"
           }
         }
       }
@@ -1383,6 +2458,16 @@
         }
       }
     },
+    "Last checked" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "آخر فحص"
+          }
+        }
+      }
+    },
     "Last list check" : {
       "localizations" : {
         "ar" : {
@@ -1393,7 +2478,18 @@
         }
       }
     },
+    "Left open — configure Screen Time and network protection separately; this exemption does not verify them." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يظل مفتوحًا — اضبط مدة استخدام الجهاز وحماية الشبكة بشكل مستقل؛ هذا الاستثناء لا يتحقق منهما."
+          }
+        }
+      }
+    },
     "Left open — covered by Screen Time and the network layers." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1429,6 +2525,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "أسطر لم تكن كلمات صالحة: %lld."
+          }
+        }
+      }
+    },
+    "Local name overrides could not be ruled out. Ask your administrator to check the hosts file, then retry." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يمكن استبعاد تجاوزات الأسماء المحلية. اطلب من المسؤول فحص ملف hosts، ثم أعد المحاولة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Local name overrides could not be ruled out. Ask your administrator to check the hosts file, then retry."
           }
         }
       }
@@ -1494,6 +2606,7 @@
       }
     },
     "Make it hold" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1563,6 +2676,22 @@
         }
       }
     },
+    "My router only supports HTTP" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الراوتر لدي يدعم HTTP فقط"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "My router only supports HTTP"
+          }
+        }
+      }
+    },
     "Needs a build signed with the Apple Developer Program (Setup step 9)" : {
       "localizations" : {
         "ar" : {
@@ -1574,11 +2703,44 @@
       }
     },
     "Needs the Apple Developer Program ($99 a year). It adds blocking no VPN can get around." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "يحتاج برنامج مطوّري Apple (99 دولارًا في السنة). يضيف حجبًا لا تتجاوزه أي VPN."
+          }
+        }
+      }
+    },
+    "Network protection not verified" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يتم التحقق من حماية الشبكة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Network protection not verified"
+          }
+        }
+      }
+    },
+    "Network setup" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إعداد الشبكة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Network setup"
           }
         }
       }
@@ -1599,6 +2761,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تراجع"
+          }
+        }
+      }
+    },
+    "Next: %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التالي: %@"
           }
         }
       }
@@ -1663,12 +2835,55 @@
         }
       }
     },
+    "No early self-release during a fixed commitment. Partner recovery remains available; this does not prevent an administrator from removing protection." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا إنهاء ذاتيًا مبكرًا أثناء الالتزام الثابت. يبقى استرداد الوصول بموافقة الشريك متاحًا؛ هذا لا يمنع مسؤول الجهاز من إزالة الحماية."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No early self-release during a fixed commitment. Partner recovery remains available; this does not prevent an administrator from removing protection."
+          }
+        }
+      }
+    },
     "No Hisn protection inside — closed during a lock." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "لا توجد حماية حصن داخله — يُغلق أثناء القفل."
+          }
+        }
+      }
+    },
+    "No Hisn protection inside — closed while browser guarding is active." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا توجد حماية حصن داخل المتصفح — يُغلق أثناء تفعيل رقابة المتصفحات."
+          }
+        }
+      }
+    },
+    "No list can guarantee that every blocked site is adult content. Category mistakes can affect ordinary sites. Keep a recovery path and review incorrect blocks; a signed list proves its origin, not that every classification is correct." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا تضمن أي قائمة أن كل موقع محجوب إباحي. قد تؤثر أخطاء التصنيف على مواقع عادية. احتفظ بطريقة لاستعادة الإعدادات وراجع الحجب الخاطئ؛ توقيع القائمة يثبت مصدرها وليس صحة كل تصنيف."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No list can guarantee that every blocked site is adult content. Category mistakes can affect ordinary sites. Keep a recovery path and review incorrect blocks; a signed list proves its origin, not that every classification is correct."
           }
         }
       }
@@ -1689,6 +2904,32 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "لا يوجد قفل يعمل."
+          }
+        }
+      }
+    },
+    "No supported local gateway address was found. This can happen with a VPN, an IPv6-only network, or a router managed through its own app. Use the router's official app or continue protecting this device." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم نعثر على عنوان محلي مدعوم لبوابة الشبكة. قد يحدث ذلك مع VPN أو شبكة تستخدم IPv6 فقط أو راوتر يُدار بتطبيق خاص. استخدم التطبيق الرسمي للراوتر أو تابع حماية هذا الجهاز."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No supported local gateway address was found. This can happen with a VPN, an IPv6-only network, or a router managed through its own app. Use the router's official app or continue protecting this device."
+          }
+        }
+      }
+    },
+    "Not confirmed: %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يتم التأكد: %@"
           }
         }
       }
@@ -1764,6 +3005,7 @@
       }
     },
     "Nothing blocks domains outside the browser yet. Run this in the Hisn folder; it asks for the Mac’s password." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1813,6 +3055,22 @@
         }
       }
     },
+    "Null address observed for this sample" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "رُصد عنوان فارغ في هذه العيّنة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Null address observed for this sample"
+          }
+        }
+      }
+    },
     "OK" : {
       "localizations" : {
         "ar" : {
@@ -1833,12 +3091,46 @@
         }
       }
     },
+    "On supported GL.iNet models, open Applications > AdGuard Home, enable it, then open Settings Page to manage filters. Check the official supported-model list first; client DNS handling can affect existing VPN and parental-control policies." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "في موديلات GL.iNet المدعومة افتح Applications > AdGuard Home وفعّله، ثم افتح Settings Page لإدارة القوائم. راجع قائمة الموديلات المدعومة أولًا؛ قد يؤثر التعامل مع DNS للأجهزة على سياسات VPN والرقابة الأبوية الحالية."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On supported GL.iNet models, open Applications > AdGuard Home, enable it, then open Settings Page to manage filters. Check the official supported-model list first; client DNS handling can affect existing VPN and parental-control policies."
+          }
+        }
+      }
+    },
     "On top of the published list." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "إضافةً إلى القائمة المنشورة."
+          }
+        }
+      }
+    },
+    "On your phone, connect to Deco Wi-Fi and open the Deco app with the owner's account. Look under More > Internet Connection > Internet Settings > DNS Address > Manual. Some models use More > Advanced > DHCP Server. Router mode is required." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اتصل بشبكة Deco من هاتفك وافتح تطبيق Deco بحساب المالك. ابحث ضمن More > Internet Connection > Internet Settings > DNS Address > Manual. تستخدم بعض الموديلات More > Advanced > DHCP Server. يلزم تشغيل الجهاز بوضع الراوتر."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On your phone, connect to Deco Wi-Fi and open the Deco app with the owner's account. Look under More > Internet Connection > Internet Settings > DNS Address > Manual. Some models use More > Advanced > DHCP Server. Router mode is required."
           }
         }
       }
@@ -1873,6 +3165,32 @@
         }
       }
     },
+    "Open an unencrypted router page?" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هل تريد فتح صفحة راوتر غير مشفّرة؟"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open an unencrypted router page?"
+          }
+        }
+      }
+    },
+    "Open and connect these browsers, then check again: %@. Their profiles have not been verified." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افتح هذه المتصفحات ووصلها، ثم افحص مرة أخرى: %@. لم يتم التحقق من ملفاتها الشخصية."
+          }
+        }
+      }
+    },
     "Open any web page. The extension contacts this app within a minute." : {
       "localizations" : {
         "ar" : {
@@ -1883,12 +3201,64 @@
         }
       }
     },
+    "Open Applications" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فتح التطبيقات"
+          }
+        }
+      }
+    },
+    "Open Device Management" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فتح إدارة الأجهزة"
+          }
+        }
+      }
+    },
     "Open Hisn" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "افتح حصن"
+          }
+        }
+      }
+    },
+    "Open local HTTP page" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فتح صفحة HTTP المحلية"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open local HTTP page"
+          }
+        }
+      }
+    },
+    "Open router settings" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فتح إعدادات الراوتر"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open router settings"
           }
         }
       }
@@ -1909,6 +3279,152 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "افتح الإعدادات"
+          }
+        }
+      }
+    },
+    "Open System Settings" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فتح إعدادات النظام"
+          }
+        }
+      }
+    },
+    "Open the ASUS router page and find WAN > Internet Connection, then the WAN DNS settings. The menus differ between firmware versions; follow the matching method in the official guide." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افتح صفحة راوتر ASUS وابحث عن WAN > Internet Connection ثم إعدادات WAN DNS. تختلف القوائم بحسب إصدار البرنامج؛ اتبع الطريقة المناسبة في الدليل الرسمي."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the ASUS router page and find WAN > Internet Connection, then the WAN DNS settings. The menus differ between firmware versions; follow the matching method in the official guide."
+          }
+        }
+      }
+    },
+    "Open the model's Connectivity or network setup page and look for Static DNS fields. Linksys firmware and product families differ; use the official model documentation to locate the fields." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افتح صفحة Connectivity أو إعداد الشبكة في موديل جهازك وابحث عن حقول Static DNS. تختلف برامج Linksys وعائلات أجهزتها؛ استخدم تعليمات الموديل الرسمية لتحديد مكان الحقول."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the model's Connectivity or network setup page and look for Static DNS fields. Linksys firmware and product families differ; use the official model documentation to locate the fields."
+          }
+        }
+      }
+    },
+    "Open the official router guide" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فتح دليل الراوتر الرسمي"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the official router guide"
+          }
+        }
+      }
+    },
+    "Open Users & Groups" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فتح المستخدمين والمجموعات"
+          }
+        }
+      }
+    },
+    "Open your router's app or administrator page and look for Internet, LAN, DHCP, or DNS settings. Check whether DNS can be changed for IPv4 and IPv6. On shared networks, ask the owner." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افتح تطبيق الراوتر أو صفحة إدارته وابحث عن إعدادات Internet أو LAN أو DHCP أو DNS. تحقّق من إمكانية تغيير DNS لكل من IPv4 وIPv6. في الشبكات المشتركة، اسأل مالك الشبكة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open your router's app or administrator page and look for Internet, LAN, DHCP, or DNS settings. Check whether DNS can be changed for IPv4 and IPv6. On shared networks, ask the owner."
+          }
+        }
+      }
+    },
+    "OpenWrt can run AdGuard Home on suitable hardware. Check available memory and storage, preserve existing DNS settings, and follow OpenWrt's installation guide. A separate always-on filtering server is an alternative for smaller routers." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يمكن لـ OpenWrt تشغيل AdGuard Home على الأجهزة المناسبة. افحص الذاكرة والتخزين، واحفظ إعدادات DNS الحالية، واتبع دليل تثبيت OpenWrt. للأجهزة الأصغر يمكن استخدام خادم فلترة منفصل يعمل باستمرار."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OpenWrt can run AdGuard Home on suitable hardware. Check available memory and storage, preserve existing DNS settings, and follow OpenWrt's installation guide. A separate always-on filtering server is an alternative for smaller routers."
+          }
+        }
+      }
+    },
+    "Opt-in: also close unprotected browsers when no lock is active. Off by default." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خيار اختياري: إغلاق المتصفحات غير المحمية حتى دون قفل نشط. متوقف افتراضيًا."
+          }
+        }
+      }
+    },
+    "Other / I don't know" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شركة أخرى / لا أعرف"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other / I don't know"
+          }
+        }
+      }
+    },
+    "Other network setup options" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خيارات أخرى لإعداد الشبكة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other network setup options"
           }
         }
       }
@@ -1983,6 +3499,22 @@
         }
       }
     },
+    "Previously ready layers are no longer confirmed. Recheck their configuration." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "طبقات كانت جاهزة لم تعد مؤكدة الآن. أعد التحقق من إعداداتها."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Previously ready layers are no longer confirmed. Recheck their configuration."
+          }
+        }
+      }
+    },
     "private DNS in %@" : {
       "localizations" : {
         "ar" : {
@@ -2003,12 +3535,94 @@
         }
       }
     },
+    "Protect browsing settings" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حماية إعدادات التصفح"
+          }
+        }
+      }
+    },
+    "Protected Setup" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإعداد المحمي"
+          }
+        }
+      }
+    },
+    "Protected setup checks passed" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اجتاز الإعداد المحمي الفحوصات"
+          }
+        }
+      }
+    },
     "Protection active" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "الحماية مفعّلة"
+          }
+        }
+      }
+    },
+    "Protection can still be removed or disconnected in %@. Ask the administrator to install the published extension and Hisn protection profile." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ما زال من الممكن إزالة الحماية أو قطع اتصالها في %@. اطلب من المسؤول تثبيت الإضافة المنشورة وملف حماية حصن."
+          }
+        }
+      }
+    },
+    "Protection is restricted because its saved policy could not be read. Ask the administrator to restore it." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الحماية مقيّدة لتعذّر قراءة سياستها المحفوظة. اطلب من المسؤول استعادتها."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Protection is restricted because its saved policy could not be read. Ask the administrator to restore it."
+          }
+        }
+      }
+    },
+    "Protection layers reporting ready" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "طبقات الحماية التي أبلغت عن الجاهزية"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Protection layers reporting ready"
+          }
+        }
+      }
+    },
+    "Protection needs attention" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تحتاج الحماية إلى اهتمام"
           }
         }
       }
@@ -2030,6 +3644,7 @@
       }
     },
     "Quit Hisn" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -2045,6 +3660,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "يمكن الوصول إليها حتى لو ذكرتها القائمة المنشورة. في الوضع الصارم لا يمكن الوصول إلى غيرها."
+          }
+        }
+      }
+    },
+    "Readiness is not proof that every route is blocked. Router protection is checked separately." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الجاهزية ليست إثباتًا لحجب كل طرق الوصول. يُتحقق من حماية الراوتر بشكل منفصل."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Readiness is not proof that every route is blocked. Router protection is checked separately."
           }
         }
       }
@@ -2075,6 +3706,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "أعد ربط المتصفح"
+          }
+        }
+      }
+    },
+    "Reinstall Hisn using its installer package so its files are protected by the administrator account." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أعد تثبيت حصن باستخدام حزمة التثبيت حتى تكون ملفاته محمية بحساب المسؤول."
           }
         }
       }
@@ -2149,6 +3790,36 @@
         }
       }
     },
+    "Require browser protection outside a lock?" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هل تريد اشتراط حماية المتصفح خارج فترة القفل؟"
+          }
+        }
+      }
+    },
+    "Require the extension outside a lock" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اشترط اتصال الإضافة خارج فترة القفل"
+          }
+        }
+      }
+    },
+    "Required browser protection" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حماية المتصفح الإلزامية"
+          }
+        }
+      }
+    },
     "Restart now" : {
       "localizations" : {
         "ar" : {
@@ -2159,12 +3830,90 @@
         }
       }
     },
+    "Restart required" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يلزم إعادة التشغيل"
+          }
+        }
+      }
+    },
+    "Restart your Mac to finish installing the filter, then open Hisn and enable it again." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أعد تشغيل جهاز Mac لإكمال تثبيت الفلتر، ثم افتح حصن وفعّله مرة أخرى."
+          }
+        }
+      }
+    },
+    "Restore Hisn in these profiles; browser guarding can close this browser." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أعد تفعيل حصن في هذه الملفات؛ قد تُغلق رقابة المتصفحات هذا المتصفح."
+          }
+        }
+      }
+    },
+    "Restricting traffic during policy recovery" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تقييد الاتصالات أثناء استعادة سياسة الحماية"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restricting traffic during policy recovery"
+          }
+        }
+      }
+    },
     "Revert" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "تراجع عن التعديلات"
+          }
+        }
+      }
+    },
+    "Router family" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نوع الراوتر"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Router family"
+          }
+        }
+      }
+    },
+    "Router name or model, for example Deco X50" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اسم الراوتر أو موديله، مثل Deco X50"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Router name or model, for example Deco X50"
           }
         }
       }
@@ -2205,7 +3954,18 @@
         }
       }
     },
+    "Running: domain filtering is active for app connections. Search settings and page text need their other protection layers." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يعمل: تصفية النطاقات نشطة لاتصالات التطبيقات. تحتاج إعدادات البحث ونصوص الصفحات إلى طبقات الحماية الأخرى."
+          }
+        }
+      }
+    },
     "Running: every app, and no VPN gets around it." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -2265,6 +4025,48 @@
         }
       }
     },
+    "Save the current settings with your trusted administrator. One option is Cloudflare Families, which filters adult content and malware:" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "احفظ الإعدادات الحالية لدى المسؤول الموثوق. أحد الخيارات هو Cloudflare Families الذي يفلتر محتوى البالغين والبرمجيات الضارة:"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save the current settings with your trusted administrator. One option is Cloudflare Families, which filters adult content and malware:"
+          }
+        }
+      }
+    },
+    "Saved protection history could not be read. Current checks are still shown below." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّرت قراءة سجل إعداد الحماية. ستظل نتائج التحقق الحالية ظاهرة أدناه."
+          }
+        }
+      }
+    },
+    "Saved protection policy" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سياسة الحماية المحفوظة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved protection policy"
+          }
+        }
+      }
+    },
     "Saved." : {
       "localizations" : {
         "ar" : {
@@ -2291,6 +4093,101 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "مدة استخدام الجهاز"
+          }
+        }
+      }
+    },
+    "Self-control comes first: you can set up these layers yourself. A trusted person is optional reinforcement against changing administrator or router settings, not a requirement for starting a commitment." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التحكم الذاتي أولًا: يمكنك إعداد هذه الطبقات بنفسك. الاستعانة بشخص موثوق حماية إضافية اختيارية من تغيير إعدادات المسؤول أو الراوتر، وليست شرطًا لبدء الالتزام."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Self-control comes first: you can set up these layers yourself. A trusted person is optional reinforcement against changing administrator or router settings, not a requirement for starting a commitment."
+          }
+        }
+      }
+    },
+    "Separate administrator access" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فصل صلاحيات المسؤول"
+          }
+        }
+      }
+    },
+    "Set the router's DNS and the DNS it advertises to clients, where supported. Every fallback must use the same filtering policy. Reconnect devices, then test blocking and an ordinary website from each device over IPv4 and IPv6." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اضبط DNS للراوتر وللأجهزة المتصلة حيثما أمكن. يجب أن تستخدم جميع الخوادم الاحتياطية سياسة الفلترة نفسها. أعد توصيل الأجهزة، ثم اختبر الحجب وموقعاً عادياً من كل جهاز عبر IPv4 وIPv6."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set the router's DNS and the DNS it advertises to clients, where supported. Every fallback must use the same filtering policy. Reconnect devices, then test blocking and an ordinary website from each device over IPv4 and IPv6."
+          }
+        }
+      }
+    },
+    "Set up Hisn" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إعداد حصن"
+          }
+        }
+      }
+    },
+    "Set up Hisn's own router list" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إعداد قائمة حصن على الشبكة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set up Hisn's own router list"
+          }
+        }
+      }
+    },
+    "Set up network protection" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إعداد حماية الشبكة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set up network protection"
+          }
+        }
+      }
+    },
+    "Setting up the filter..." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جارٍ إعداد الفلتر..."
           }
         }
       }
@@ -2341,6 +4238,38 @@
         }
       }
     },
+    "Show the DNS setup steps" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عرض خطوات إعداد DNS"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show the DNS setup steps"
+          }
+        }
+      }
+    },
+    "Some protection layers need attention. Your commitment remains active; review the checks below." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بعض طبقات الحماية تحتاج مراجعة. التزامك لا يزال نشطًا؛ راجع الفحوصات أدناه."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Some protection layers need attention. Your commitment remains active; review the checks below."
+          }
+        }
+      }
+    },
     "Someone you trust who can end a lock early by approving it — immediately, but never without them. They open the Hisn Partner page on their own phone or computer, create a key there, and send you the code it shows under “Your key”." : {
       "localizations" : {
         "ar" : {
@@ -2367,6 +4296,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "الوضع العادي"
+          }
+        }
+      }
+    },
+    "Standard profile checks" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فحص ملفات المتصفح القياسية"
           }
         }
       }
@@ -2401,6 +4340,22 @@
         }
       }
     },
+    "Start here. Hisn can find a local gateway address and guide you; it cannot upload lists to every router automatically." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ابدأ من هنا. يستطيع حصن العثور على عنوان بوابة الشبكة وإرشادك، لكنه لا يستطيع رفع القوائم تلقائيًا إلى كل راوتر."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start here. Hisn can find a local gateway address and guide you; it cannot upload lists to every router automatically."
+          }
+        }
+      }
+    },
     "Start lock" : {
       "localizations" : {
         "ar" : {
@@ -2421,7 +4376,35 @@
         }
       }
     },
+    "Start with the system filter and your browser. Complete additional protection with someone you trust." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ابدأ بفلتر النظام والمتصفح. أكمل الحماية الإضافية مع شخص تثق به."
+          }
+        }
+      }
+    },
+    "Start with your network" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ابدأ بحماية شبكتك"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start with your network"
+          }
+        }
+      }
+    },
     "Stays open while its Hisn extension checks in; closed if the extension is switched off." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -2431,7 +4414,18 @@
         }
       }
     },
+    "Still open: %@. Ask the person who manages this Mac to install the Hisn protection profile." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ما زال متاحًا: %@. اطلب من المسؤول عن جهاز Mac تثبيت ملف حماية حصن."
+          }
+        }
+      }
+    },
     "Still open: %@. Install it with your partner, who keeps its removal password." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -2477,6 +4471,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "مرشّح النظام"
+          }
+        }
+      }
+    },
+    "Test name returned a non-null address" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أعاد نطاق الاختبار عنواناً غير صفري"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Test name returned a non-null address"
           }
         }
       }
@@ -2537,6 +4547,22 @@
         }
       }
     },
+    "The DNS check could not finish. Check connectivity and try again." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّر إكمال فحص DNS. تحقّق من الاتصال ثم أعد المحاولة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The DNS check could not finish. Check connectivity and try again."
+          }
+        }
+      }
+    },
     "The filter cannot be turned off while a lock is running." : {
       "localizations" : {
         "ar" : {
@@ -2567,23 +4593,34 @@
         }
       }
     },
-    "The Hisn extension stopped checking in from %@. Turn it back on in %@’s extensions page, or %@ will close." : {
+    "The Hisn extension stopped checking in from %@. Reinstall or enable it in %@’s extensions page and check its app connection, or %@ will close." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "توقفت إضافة حصن عن الاتصال من %1$@. أعد تفعيلها من صفحة الإضافات في %2$@، وإلا سيُغلَق %3$@."
+            "value" : "توقفت إضافة حصن عن الاتصال من %1$@. أعد تثبيتها أو تفعيلها من صفحة الإضافات في %2$@ وتحقق من اتصالها بالتطبيق، وإلا سيُغلَق %3$@."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The Hisn extension stopped checking in from %1$@. Turn it back on in %2$@’s extensions page, or %3$@ will close."
+            "value" : "The Hisn extension stopped checking in from %1$@. Reinstall or enable it in %2$@’s extensions page and check its app connection, or %3$@ will close."
+          }
+        }
+      }
+    },
+    "The hosts file blocks domains, but encrypted DNS and iCloud Private Relay can still go around it. Enable the system filter to cover this gap." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ملف hosts يحجب النطاقات، لكن DNS المشفّر وiCloud Private Relay قد يتجاوزانه. فعّل فلتر النظام لسدّ هذه الفجوة."
           }
         }
       }
     },
     "The hosts file blocks domains, but encrypted DNS and iCloud Private Relay can still go around it. Run this again in the Hisn folder." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -2593,12 +4630,12 @@
         }
       }
     },
-    "The hosts-file blocklist and the browser extension are both running. The system filter would add every app and VPN-proof blocking." : {
+    "The hosts-file blocklist and the browser extension are both running. The system filter adds hostname and application rules for new connections. VPN and proxy coverage still requires verification." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "قائمة الحجب في ملف hosts وإضافة المتصفح تعملان كلتاهما. مرشّح النظام سيضيف حجبًا يشمل كل التطبيقات ولا تتجاوزه شبكات VPN."
+            "value" : "قائمة الحجب في ملف hosts وإضافة المتصفح تعملان كلتاهما. يضيف مرشّح النظام قواعد لأسماء النطاقات والتطبيقات على الاتصالات الجديدة. تغطية شبكات VPN والبروكسي ما زالت تحتاج إلى تحقق."
           }
         }
       }
@@ -2619,6 +4656,48 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "سينتهي القفل في %@. يمكنك إلغاء الطلب في أي وقت، لكن لا يمكنك تعجيله."
+          }
+        }
+      }
+    },
+    "The network changed or the page could not be opened. Find your router again, or use its official app." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تغيّرت الشبكة أو تعذّر فتح الصفحة. ابحث عن الراوتر مجددًا أو استخدم تطبيقه الرسمي."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The network changed or the page could not be opened. Find your router again, or use its official app."
+          }
+        }
+      }
+    },
+    "The network or DNS settings changed or could not be verified during this check. Retry on a stable connection." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تغيّرت الشبكة أو إعدادات DNS أثناء الفحص، أو تعذّر التحقق منها. أعد الفحص على اتصال مستقر."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The network or DNS settings changed or could not be verified during this check. Retry on a stable connection."
+          }
+        }
+      }
+    },
+    "The standard profile list could not be verified. This unknown result alone does not close the browser." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّر التحقق من قائمة ملفات المتصفح القياسية. هذه النتيجة غير المعروفة وحدها لا تؤدي إلى إغلاق المتصفح."
           }
         }
       }
@@ -2673,6 +4752,49 @@
         }
       }
     },
+    "Then protect this Mac and each phone. Other Wi-Fi networks and cellular connections need their own device protection." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ثم احمِ هذا الماك وكل هاتف. تحتاج شبكات Wi-Fi الأخرى والاتصالات الخلوية إلى حماية مستقلة على الجهاز."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Then protect this Mac and each phone. Other Wi-Fi networks and cellular connections need their own device protection."
+          }
+        }
+      }
+    },
+    "These checks cover this Mac and make protection harder to disable. Network protection, other devices, and recovery access are checked separately." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تغطي هذه الفحوصات هذا الماك وتجعل تعطيل الحماية أصعب. تُفحص حماية الشبكة والأجهزة الأخرى وإمكانية الاستعادة بشكل مستقل."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "These checks cover this Mac and make protection harder to disable. Network protection, other devices, and recovery access are checked separately."
+          }
+        }
+      }
+    },
+    "These checks make protection harder to disable, not impossible to remove. Administrator control, device recovery, and other devices remain outside this guarantee." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تجعل هذه الفحوصات تعطيل الحماية أصعب، لكنها لا تجعل إزالتها مستحيلة. لا يشمل هذا الضمان صلاحيات المسؤول أو استعادة الجهاز أو الأجهزة الأخرى."
+          }
+        }
+      }
+    },
     "These run on top of the site lists, and catch pages the lists have never seen." : {
       "localizations" : {
         "ar" : {
@@ -2693,6 +4815,53 @@
         }
       }
     },
+    "This guard works only while Hisn is running. A browser heartbeat does not prove protection in every profile. Safari and allowed exceptions remain exempt; force-quitting Hisn or administrator changes can bypass it. Safari's exemption is not verified protection: configure Screen Time and network layers separately." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعمل هذه الحماية فقط أثناء تشغيل حصن. اتصال المتصفح الدوري لا يثبت الحماية في كل ملف مستخدم. يظل Safari والاستثناءات المسموح بها خارج الرقابة؛ ويمكن تجاوزها بإنهاء حصن إجباريًا أو بتغييرات مسؤول الجهاز. استثناء Safari لا يعني التحقق من حمايته: اضبط مدة استخدام الجهاز وطبقات الشبكة بشكل مستقل."
+          }
+        }
+      }
+    },
+    "This guard works only while Hisn is running. Hisn checks supported browsers' standard Default/Profile folders; custom paths, guest and private windows are not verified. Safari and allowed exceptions remain exempt; force-quitting Hisn or administrator changes can bypass it. Safari's exemption is not verified protection: configure Screen Time and network layers separately." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعمل هذه الرقابة فقط أثناء تشغيل حصن. يفحص حصن مجلدات Default وProfile القياسية في المتصفحات المدعومة؛ لا يتم التحقق من المسارات المخصصة أو الضيف أو النوافذ الخاصة. يظل Safari والاستثناءات المسموح بها خارج الرقابة؛ ويمكن تجاوزها بإنهاء حصن إجباريًا أو بتغييرات مسؤول الجهاز. استثناء Safari لا يعني التحقق من حمايته: اضبط مدة استخدام الجهاز وطبقات الشبكة بشكل مستقل."
+          }
+        }
+      }
+    },
+    "This is a sample on this Mac and may come from a DNS cache. It does not verify router enforcement, IPv6 network routing, browser DNS, VPN restrictions, or other devices. Recheck after changing networks or DNS settings." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذه عيّنة على هذا الماك وقد تأتي من ذاكرة DNS المؤقتة. لا تتحقّق من إلزام الحجب في الراوتر أو توجيه شبكة IPv6 أو DNS المتصفح أو قيود VPN أو الأجهزة الأخرى. أعد الفحص بعد تغيير الشبكة أو إعدادات DNS."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This is a sample on this Mac and may come from a DNS cache. It does not verify router enforcement, IPv6 network routing, browser DNS, VPN restrictions, or other devices. Recheck after changing networks or DNS settings."
+          }
+        }
+      }
+    },
+    "This is a standard account. Confirm below who keeps the separate administrator account." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذا حساب قياسي. أكد أدناه من يحتفظ بحساب المسؤول المنفصل."
+          }
+        }
+      }
+    },
     "This makes the schedule weaker, so it takes effect %@." : {
       "localizations" : {
         "ar" : {
@@ -2703,12 +4872,104 @@
         }
       }
     },
+    "This may be your router's page. Confirm the address in your router's documentation. Enter its password only in the router's own page; Hisn does not collect it." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قد تكون هذه صفحة الراوتر. تأكد من العنوان في تعليمات جهازك. أدخل كلمة المرور في صفحة الراوتر نفسه فقط؛ حصن لا يجمعها."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This may be your router's page. Confirm the address in your router's documentation. Enter its password only in the router's own page; Hisn does not collect it."
+          }
+        }
+      }
+    },
+    "This requirement cannot be turned off while a lock is running." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يمكن إيقاف هذا الاشتراط أثناء تشغيل القفل."
+          }
+        }
+      }
+    },
+    "This router family uses its phone app for DNS settings. Open that app and follow the family guide above, then return here for the filtering DNS addresses and checks." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يستخدم هذا النوع من الراوترات تطبيق الهاتف لإعداد DNS. افتح التطبيق واتبع الدليل أعلاه، ثم عد إلى هنا لعناوين DNS المفلترة والفحوصات."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This router family uses its phone app for DNS settings. Open that app and follow the family guide above, then return here for the filtering DNS addresses and checks."
+          }
+        }
+      }
+    },
+    "This uses the provider's categories. To use Hisn's signed domain list, choose a filtering DNS server instead." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يستخدم هذا الخيار تصنيفات مزوّد الخدمة. لاستخدام قائمة حصن الموقّعة، اختر خادم DNS يفلتر المحتوى."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This uses the provider's categories. To use Hisn's signed domain list, choose a filtering DNS server instead."
+          }
+        }
+      }
+    },
     "This would shorten an active lock, which is not allowed." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "هذا سيقصّر قفلًا نشطًا، وهذا غير مسموح."
+          }
+        }
+      }
+    },
+    "To use Hisn's list with RouterOS Adlist, publish the signed bundle in hosts format and import the verified hosts.txt file through the supported local-file workflow. Test both address families and subdomains; hosts-format export does not promise wildcard coverage." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لاستخدام قائمة حصن مع RouterOS Adlist، جهّز الحزمة الموقّعة بصيغة hosts واستورد ملف hosts.txt المتحقق منه بالطريقة المحلية المدعومة. اختبر IPv4 وIPv6 والنطاقات الفرعية؛ تصدير hosts لا يضمن حجب كل النطاقات الفرعية."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To use Hisn's list with RouterOS Adlist, publish the signed bundle in hosts format and import the verified hosts.txt file through the supported local-file workflow. Test both address families and subdomains; hosts-format export does not promise wildcard coverage."
+          }
+        }
+      }
+    },
+    "To use Hisn's list, import the verified adguard.txt rules into AdGuard Home's DNS blocklists. The filtering server must remain online, and family devices must use it. Check one listed domain, a subdomain, and an ordinary site after import." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لاستخدام قائمة حصن، استورد قواعد adguard.txt المتحقق منها إلى قوائم DNS في AdGuard Home. يجب أن يبقى خادم الفلترة متصلًا وأن تستخدمه أجهزة العائلة. اختبر نطاقًا مدرجًا ونطاقًا فرعيًا وموقعًا عاديًا بعد الاستيراد."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To use Hisn's list, import the verified adguard.txt rules into AdGuard Home's DNS blocklists. The filtering server must remain online, and family devices must use it. Check one listed domain, a subdomain, and an ordinary site after import."
           }
         }
       }
@@ -2779,6 +5040,23 @@
         }
       }
     },
+    "UniFi's built-in category filter uses its provider's classification. The official guide does not establish bulk import of Hisn's full signed list. For that list, assess a separate filtering DNS server and its interaction with UniFi content filtering." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تستخدم فلترة الفئات المدمجة في UniFi تصنيف مزوّدها. لا تثبت التعليمات الرسمية إمكانية استيراد قائمة حصن الموقّعة كاملةً دفعةً واحدة. لاستخدامها، قيّم خادم DNS مفلترًا منفصلًا وكيفية تفاعله مع فلترة UniFi."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UniFi's built-in category filter uses its provider's classification. The official guide does not establish bulk import of Hisn's full signed list. For that list, assess a separate filtering DNS server and its interaction with UniFi content filtering."
+          }
+        }
+      }
+    },
     "Unit" : {
       "localizations" : {
         "ar" : {
@@ -2819,6 +5097,64 @@
         }
       }
     },
+    "Use the guide for %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استخدام دليل %1$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use the guide for %1$@"
+          }
+        }
+      }
+    },
+    "Verify a listed domain, a subdomain, and an ordinary website in the resolver's query log from each device. Check again after a list update. Importing a file alone does not prove that clients use it." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تحقّق من نطاق محجوب ونطاق فرعي وموقع عادي في سجل استعلامات الخادم من كل جهاز. أعد الفحص بعد تحديث القائمة. استيراد الملف وحده لا يثبت أن الأجهزة تستخدمه."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verify a listed domain, a subdomain, and an ordinary website in the resolver's query log from each device. Check again after a list update. Importing a file alone does not prove that clients use it."
+          }
+        }
+      }
+    },
+    "Version shown in the router's own settings" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإصدار الظاهر في إعدادات الراوتر نفسه"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Version shown in the router's own settings"
+          }
+        }
+      }
+    },
+    "Waiting for your approval in System Settings" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بانتظار موافقتك في إعدادات النظام"
+          }
+        }
+      }
+    },
     "weeks" : {
       "localizations" : {
         "ar" : {
@@ -2829,7 +5165,24 @@
         }
       }
     },
+    "Which router does your family use?" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ما الراوتر الذي تستخدمه العائلة؟"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Which router does your family use?"
+          }
+        }
+      }
+    },
     "While a lock runs, Hisn closes any browser it is not running inside: a Chromium browser whose Hisn extension has stopped checking in, and any other browser. Safari is covered by Screen Time and is left alone." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -2840,6 +5193,7 @@
       }
     },
     "While a lock runs, Hisn watches that every browser has its protection on. Close the window instead — Hisn stays in the background." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -2870,6 +5224,7 @@
       }
     },
     "You allowed it. It stays open during a lock with no page checking." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -2879,7 +5234,18 @@
         }
       }
     },
+    "You allowed it. It stays open without extension checks." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سمحتَ به. يظل مفتوحًا دون فحوصات الإضافة."
+          }
+        }
+      }
+    },
     "You are a standard user; someone else holds the administrator password." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -2910,11 +5276,44 @@
       }
     },
     "Your account owns them, so even after the account split you could replace the program the browsers talk to. Install Hisn again from the Hisn folder; it asks for the Mac’s password." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "حسابك يملكها، فحتى بعد فصل الحسابات تستطيع استبدال البرنامج الذي تتحدث إليه المتصفحات. ثبّت حصن مجددًا من مجلد حصن؛ سيطلب كلمة مرور الماك."
+          }
+        }
+      }
+    },
+    "Your chosen commitment" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الالتزام الذي اخترته"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your chosen commitment"
+          }
+        }
+      }
+    },
+    "Your fixed commitment has not finished. Self-release is unavailable until it ends." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم تنتهِ مدة التزامك الثابت. الإنهاء الذاتي غير متاح حتى نهايتها."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your fixed commitment has not finished. Self-release is unavailable until it ends."
           }
         }
       }

@@ -22,12 +22,14 @@ set -euo pipefail
 APP_PATH="/Applications/Hisn.app"
 EXTENSION_IDS=()
 SCOPE="system"
+PRINT_MANIFEST=0
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --app-path)     APP_PATH="$2"; shift 2 ;;
         --extension-id) EXTENSION_IDS+=("$2"); shift 2 ;;   # repeatable: unpacked + store
         --user)         SCOPE="user"; shift ;;
+        --print-manifest) PRINT_MANIFEST=1; shift ;;
         -h|--help)      sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *)              echo "unknown argument: $1" >&2; exit 2 ;;
     esac
@@ -85,31 +87,39 @@ fi
 # `allowed_origins` is the whole access-control story for a native messaging
 # host: any extension listed here can talk to this process. Specific ids only —
 # a wildcard would let any installed extension read the lock state.
-ORIGINS=""
+if [[ "$SCOPE" == system && "$EUID" -ne 0 && "$PRINT_MANIFEST" -eq 0 ]]; then
+    echo "error: system installation needs administrator privileges (run with sudo)" >&2
+    exit 1
+fi
+MANIFEST_DIR=$(mktemp -d "${TMPDIR:-/tmp}/hisn-native-host.XXXXXX")
+PENDING=""
+trap 'rm -rf "$MANIFEST_DIR"; if [ -n "$PENDING" ]; then rm -f "$PENDING"; fi' EXIT
+MANIFEST="$MANIFEST_DIR/host.plist"
+# Use the system's structured serializer so quotes and backslashes in an app
+# path cannot corrupt JSON. No Python installation is required on the user's Mac.
+plutil -create xml1 "$MANIFEST"
+plutil -insert name -string app.hisn.bridge "$MANIFEST"
+plutil -insert description -string 'Hisn lock-state bridge' "$MANIFEST"
+plutil -insert path -string "$BRIDGE" "$MANIFEST"
+plutil -insert type -string stdio "$MANIFEST"
+plutil -insert allowed_origins -array "$MANIFEST"
+INDEX=0
 for id in "${EXTENSION_IDS[@]}"; do
-    ORIGINS="$ORIGINS${ORIGINS:+,
-}    \"chrome-extension://$id/\""
+    plutil -insert "allowed_origins.$INDEX" -string "chrome-extension://$id/" "$MANIFEST"
+    INDEX=$((INDEX + 1))
 done
-MANIFEST=$(cat <<EOF
-{
-  "name": "app.hisn.bridge",
-  "description": "Hisn lock-state bridge",
-  "path": "$BRIDGE",
-  "type": "stdio",
-  "allowed_origins": [
-$ORIGINS
-  ]
-}
-EOF
-)
+plutil -convert json "$MANIFEST"
+if [ "$PRINT_MANIFEST" -eq 1 ]; then
+    cat "$MANIFEST"
+    exit
+fi
 
 for dir in "${TARGETS[@]}"; do
-    if ! mkdir -p "$dir" 2>/dev/null; then
-        echo "skipped $dir (no permission — re-run with sudo for system scope)" >&2
-        continue
-    fi
-    printf '%s\n' "$MANIFEST" > "$dir/app.hisn.bridge.json"
-    chmod 644 "$dir/app.hisn.bridge.json"
+    if [ "$SCOPE" = system ]; then install -d -m 755 "$dir"; else mkdir -p "$dir"; fi
+    PENDING=$(mktemp "$dir/.hisn-host.XXXXXX")
+    install -m 644 "$MANIFEST" "$PENDING"
+    mv -f "$PENDING" "$dir/app.hisn.bridge.json"
+    PENDING=""
     echo "installed $dir/app.hisn.bridge.json"
 done
 

@@ -64,7 +64,7 @@ for (const c of fixture.cases.filter((c) => c.mode === "strict")) {
   const ids = rules.map((r) => r.id);
   check(new Set(ids).size === ids.length, "rule ids are unique");
   const allow = rules.filter((r) => r.action.type === "allow" && r.condition.requestDomains);
-  const block = rules.filter((r) => r.action.type === "redirect" && r.condition.requestDomains);
+  const block = rules.filter((r) => r.action.redirect?.extensionPath && r.condition.requestDomains);
   eq(allow.map((r) => r.condition.requestDomains).flat().sort(),
      ["api.github.com", "github.com", "google.com"],
      "allow rules carry the canonical allowlist (case folded, trailing dot dropped)");

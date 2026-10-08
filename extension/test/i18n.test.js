@@ -28,7 +28,7 @@ const used = new Set();
 for (const file of ["../popup.html", "../options.html", "../blocked.html"]) {
   for (const m of readFile(file).matchAll(/data-i18n(?:-[a-z-]+)?="([^"]+)"/g)) used.add(m[1]);
 }
-for (const file of ["../popup.js", "../options.js", "../blocked.js", "../lib/status.js", "../lib/settings.js"]) {
+for (const file of ["../popup.js", "../options.js", "../blocked.js", "../lib/status.js", "../lib/settings.js", "../lib/site-editor.js"]) {
   for (const m of readFile(file).matchAll(/\bt\("([^"]+)"/g)) used.add(m[1]);
 }
 for (const reason of ["default", "strict", "custom", "terms"]) {           // blocked.js builds these

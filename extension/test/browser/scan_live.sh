@@ -10,6 +10,7 @@
 #             the scanner's own location.replace never happens and the worker
 #             has to replace the tab itself;
 #   clean   — an ordinary page, which must be left alone.
+#   policy  — unchanged content rechecked after a trusted settings update.
 #
 # Each is opened in its own tab; the browser's DevTools endpoint then says
 # which tabs ended on the block page.
@@ -46,6 +47,16 @@ cleanup() {
 trap cleanup EXIT
 
 rsync -a --exclude test --exclude _metadata --exclude keys "$EXT/" "$WORK/ext/"
+cp "$HERE/scan-worker.js" "$HERE/scan-setup.html" "$HERE/scan-setup.js" "$WORK/ext/"
+python3 - "$WORK/ext/manifest.json" <<'PY'
+import json, sys
+path = sys.argv[1]
+manifest = json.load(open(path))
+manifest.pop("key", None)  # No access to the user's real native bridge.
+manifest["background"]["service_worker"] = "scan-worker.js"
+with open(path, "w") as output:
+    json.dump(manifest, output)
+PY
 openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj "/CN=hisn-test" \
     -keyout "$WORK/key.pem" -out "$WORK/cert.pem" >/dev/null 2>&1
 
@@ -69,6 +80,7 @@ if (window.navigation) navigation.addEventListener('navigate', (e) => e.preventD
 </script></body>""",
     "clean": """<!doctype html><title>Gardening</title><body><p>How to grow tomatoes on a
 balcony: choose a sunny spot, water in the morning, and feed every two weeks.</p></body>""",
+    "policy": "<!doctype html><title>gardenfixture</title><body><p>Gardening notes.</p></body>",
 }
 class H(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
@@ -123,7 +135,7 @@ tabs() { curl -s "http://127.0.0.1:$DEVTOOLS/json/list" 2>/dev/null || echo "[]"
 for _ in $(seq 100); do [ "$(tabs)" != "[]" ] && break; sleep 0.1; done
 sleep 2   # let the worker install and register the scanner
 
-for page in shadow shy cancel clean; do
+for page in shadow shy cancel clean policy; do
     curl -s -X PUT "http://127.0.0.1:$DEVTOOLS/json/new?https://$page.hisn.test/" > /dev/null
 done
 
@@ -135,13 +147,13 @@ for t in json.load(sys.stdin):
     if t.get("type") != "page": continue
     u = t.get("url", "")
     if "blocked.html" in u: seen.setdefault("blocked", 0); seen["blocked"] += 1
-    for p in ("shadow", "shy", "cancel", "clean"):
+    for p in ("shadow", "shy", "cancel", "clean", "policy"):
         if f"://{p}.hisn.test" in u: seen[p] = "open"
 print(json.dumps(seen))'
 }
 for _ in $(seq 60); do
     v="$(verdicts)"
-    python3 -c 'import json,sys; v=json.loads(sys.argv[1]); sys.exit(0 if v.get("blocked",0)>=3 else 1)' "$v" && break
+    python3 -c 'import json,sys; v=json.loads(sys.argv[1]); sys.exit(0 if v.get("blocked",0)>=4 else 1)' "$v" && break
     sleep 0.25
 done
 v="$(verdicts)"
@@ -155,8 +167,9 @@ check shadow gone "text in a closed shadow root is read and blocked"
 check shy    gone "soft-hyphen-split words are read and blocked"
 check cancel gone "a page that cancels its navigation is replaced by the worker"
 check clean  open "an ordinary page is left alone"
+check policy gone "adding a custom word rechecks an unchanged open page through the real worker"
 n=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1]).get("blocked",0))' "$v")
-[ "$n" = "3" ] && echo "  ok   three block pages" || { echo "  FAIL expected 3 block pages, saw $n"; fail=1; }
+[ "$n" = "4" ] && echo "  ok   four block pages" || { echo "  FAIL expected 4 block pages, saw $n"; fail=1; }
 
 [ "$fail" -eq 0 ] && echo "scan-live: PASS" || {
     echo "tabs: $v"

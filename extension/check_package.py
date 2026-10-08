@@ -25,8 +25,11 @@ Stdlib only, so CI can run it on any runner.
 from __future__ import annotations
 
 import hashlib
+from html.parser import HTMLParser
 import json
+import posixpath
 import sys
+from urllib.parse import urlsplit, unquote
 import zipfile
 from pathlib import Path
 
@@ -40,8 +43,22 @@ PINNED = (
     "rules/dnr_keyword_rules.json",
 )
 
-FORBIDDEN_PREFIXES = ("test/", "keys/", "_metadata/")
+# Built-in policy is generated from maintained source, not the signed seed.
+BUILT_IN = ("rules/web_protection.json", "rules/safesearch.json", "lib/web-protection.js")
+
+FORBIDDEN_PREFIXES = ("test/", "eval/", "keys/", "_metadata/")
 FORBIDDEN_SUFFIXES = (".pem", ".DS_Store", "package.sh", "check_package.py")
+
+
+class PageAssets(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.assets: list[str] = []
+
+    def handle_starttag(self, tag, attrs):
+        attribute = {"script": "src", "link": "href", "img": "src"}.get(tag)
+        if attribute and (value := dict(attrs).get(attribute)):
+            self.assets.append(value)
 
 
 def check(zip_path: Path, repo: Path = REPO) -> list[str]:
@@ -69,6 +86,13 @@ def check(zip_path: Path, repo: Path = REPO) -> list[str]:
                 problems.append(f"manifest still carries {k}")
 
         referenced = []
+        action = manifest.get("action", {})
+        for page in [action.get("default_popup"), manifest.get("options_page"),
+                     manifest.get("options_ui", {}).get("page")]:
+            if page:
+                referenced.append(page)
+        for icons in [manifest.get("icons", {}), action.get("default_icon", {})]:
+            referenced.extend(icons.values() if isinstance(icons, dict) else [icons])
         sw = manifest.get("background", {}).get("service_worker")
         if sw:
             referenced.append(sw)
@@ -81,7 +105,19 @@ def check(zip_path: Path, repo: Path = REPO) -> list[str]:
             if r not in names:
                 problems.append(f"manifest references {r}, which is not in the package")
 
-        for rel in PINNED:
+        for page in sorted(n for n in names if n.endswith(".html")):
+            parser = PageAssets()
+            parser.feed(zf.read(page).decode("utf-8"))
+            for asset in parser.assets:
+                url = urlsplit(asset)
+                if url.scheme or url.netloc:
+                    problems.append(f"{page}: UI asset is not bundled: {asset}")
+                    continue
+                path = posixpath.normpath(posixpath.join(posixpath.dirname(page), unquote(url.path)))
+                if path not in names:
+                    problems.append(f"{page}: missing UI asset: {path}")
+
+        for rel in PINNED + BUILT_IN:
             if rel not in names:
                 continue        # already reported above if referenced
             packaged = hashlib.sha256(zf.read(rel)).hexdigest()

@@ -5,10 +5,46 @@
 	};
 	objectVersion = 56;
 	objects = {
+		E28D1D98114D4AAC5E07A0AA /* CommitmentPolicy.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = CommitmentPolicy.swift;
+			sourceTree = "<group>";
+		};
+		04A880A0C837D842A628A66A /* MirroredRuleStore.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = MirroredRuleStore.swift;
+			sourceTree = "<group>";
+		};
+		14875DFD54D89900A5E5A7DC /* ReadinessHistory.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = ReadinessHistory.swift;
+			sourceTree = "<group>";
+		};
+		8C9F5FB3A60642BE7E7C2530 /* MirroredRuleStoreTests.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = MirroredRuleStoreTests.swift;
+			sourceTree = "<group>";
+		};
+		9C216322626B1D2E4CDE23CB /* AppIcon.icon */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = folder.icon;
+			path = AppIcon.icon;
+			sourceTree = "<group>";
+		};
 		E87D9CAD77EB91AAB54C8987 /* AppLanguage.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = AppLanguage.swift;
+			sourceTree = "<group>";
+		};
+		F80A8B5D8F63FE7ADB74A193 /* Assets.xcassets */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = folder.assetcatalog;
+			path = Assets.xcassets;
 			sourceTree = "<group>";
 		};
 		6B0A4D54BFD2F08FF0BF42BB /* BlocklistStore.swift */ = {
@@ -21,6 +57,12 @@
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = BrowserGuard.swift;
+			sourceTree = "<group>";
+		};
+		14B886254B9AE172DF028557 /* BrowserProfileEvidence.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = BrowserProfileEvidence.swift;
 			sourceTree = "<group>";
 		};
 		A1954A7D9F26A7718A4AAAD4 /* ContentView.swift */ = {
@@ -41,6 +83,12 @@
 			path = FilterController.swift;
 			sourceTree = "<group>";
 		};
+		B0B6292AA4BDDFD544B5C34F /* FilterSetupControl.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = FilterSetupControl.swift;
+			sourceTree = "<group>";
+		};
 		A568FFA9D31BF93387C7D5E1 /* FilterSync.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -51,6 +99,12 @@
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = FilterXPC.swift;
+			sourceTree = "<group>";
+		};
+		9A6E6986B5708EE973E65C96 /* Hisn.DeveloperID.entitlements */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = text.plist.entitlements;
+			path = Hisn.DeveloperID.entitlements;
 			sourceTree = "<group>";
 		};
 		72164236627E5336E7EFBABC /* Hisn.entitlements */ = {
@@ -113,6 +167,24 @@
 			path = NativeMessagingInstaller.swift;
 			sourceTree = "<group>";
 		};
+		212E78320A736FEF56423B79 /* NetworkDNSProbe.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = NetworkDNSProbe.swift;
+			sourceTree = "<group>";
+		};
+		FB31DC7B17B7C3A5D9C86771 /* NetworkDNSProbeView.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = NetworkDNSProbeView.swift;
+			sourceTree = "<group>";
+		};
+		A87B5F224701DC1CE3D36F1D /* NetworkSetupGuide.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = NetworkSetupGuide.swift;
+			sourceTree = "<group>";
+		};
 		0DDFAADBE7361D65F79BE5B5 /* PartnerService.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -125,6 +197,12 @@
 			path = PolicyAuthority.swift;
 			sourceTree = "<group>";
 		};
+		6151ACEC3813F8DDB9D11983 /* ProtectedSetup.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = ProtectedSetup.swift;
+			sourceTree = "<group>";
+		};
 		53D7D153B4628D493F051EA9 /* ProtectionStatus.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -135,6 +213,30 @@
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = Punycode.swift;
+			sourceTree = "<group>";
+		};
+		6BF2D2CFC1ED5ED50A4CB11B /* RouterDiscovery.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = RouterDiscovery.swift;
+			sourceTree = "<group>";
+		};
+		F067F7A8C9A78FADDF06095F /* RouterGuideCatalog.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = RouterGuideCatalog.swift;
+			sourceTree = "<group>";
+		};
+		646E3673F30C9F64F8C58CC7 /* RouterIdentityView.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = RouterIdentityView.swift;
+			sourceTree = "<group>";
+		};
+		47D7593F13730648AEFF5006 /* RouterSetupAssistant.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = RouterSetupAssistant.swift;
 			sourceTree = "<group>";
 		};
 		B5ABAB643E4DB0F9EFE758F8 /* SetupChecklist.swift */ = {
@@ -167,6 +269,12 @@
 			path = UserBlocks.swift;
 			sourceTree = "<group>";
 		};
+		F041F0CA1C6D4EF1C5AB4B46 /* WebProtectionPolicy.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = WebProtectionPolicy.swift;
+			sourceTree = "<group>";
+		};
 		2ABF69CF9B6C0FFE5468AC8C /* HisnBridge.entitlements */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = text.plist.entitlements;
@@ -189,6 +297,12 @@
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = FilterXPCService.swift;
+			sourceTree = "<group>";
+		};
+		525B47EAC62E75A2543A3EF4 /* HisnFilter.DeveloperID.entitlements */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = text.plist.entitlements;
+			path = HisnFilter.DeveloperID.entitlements;
 			sourceTree = "<group>";
 		};
 		72141B20B04B65029C41CE8F /* HisnFilter.entitlements */ = {
@@ -227,6 +341,12 @@
 			path = BrowserGuardTests.swift;
 			sourceTree = "<group>";
 		};
+		2098ACD4010E242DD587819B /* FilterActivationTests.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = FilterActivationTests.swift;
+			sourceTree = "<group>";
+		};
 		5CEF7A7205FB28ED41D63CB3 /* InspectionTests.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -251,6 +371,18 @@
 			path = LockScheduleTests.swift;
 			sourceTree = "<group>";
 		};
+		DC90B013BD179CD039051189 /* NetworkDNSProbeTests.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = NetworkDNSProbeTests.swift;
+			sourceTree = "<group>";
+		};
+		EF920FDECFFF8044B3915C6D /* OnboardingTests.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = OnboardingTests.swift;
+			sourceTree = "<group>";
+		};
 		93F61A60BC5B807E6CE6E78F /* PartnerTests.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -267,6 +399,12 @@
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = PolicyContractTests.swift;
+			sourceTree = "<group>";
+		};
+		5F0D9FB6A869FC6B4EA74D95 /* ProtectedSetupTests.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = ProtectedSetupTests.swift;
 			sourceTree = "<group>";
 		};
 		96BE623FB252DAE97AF70C17 /* ProtectionStatusTests.swift */ = {
@@ -378,14 +516,19 @@
 		E5B5BA2D0DC56930613A8351 /* Hisn */ = {
 			isa = PBXGroup;
 			children = (
+				9C216322626B1D2E4CDE23CB,
 				E87D9CAD77EB91AAB54C8987,
+				F80A8B5D8F63FE7ADB74A193,
 				6B0A4D54BFD2F08FF0BF42BB,
 				46ADD645068CFF80B5C9D940,
+				14B886254B9AE172DF028557,
 				A1954A7D9F26A7718A4AAAD4,
 				638C07E6A6C63DB2FEDE498C,
 				CE441D8FDF481728F9B3694F,
+				B0B6292AA4BDDFD544B5C34F,
 				A568FFA9D31BF93387C7D5E1,
 				C3AFAA71CCFB961E2BEFD521,
+				9A6E6986B5708EE973E65C96,
 				72164236627E5336E7EFBABC,
 				07AFF5599709FBC667EAC9DC,
 				75885CCB6C132FED593384D7,
@@ -396,15 +539,24 @@
 				A79D559B5E6A0C557544711E,
 				10B6D354DDF0586B5B0D7A22,
 				0EE6D2898CA933202ECEECFB,
+				212E78320A736FEF56423B79,
+				FB31DC7B17B7C3A5D9C86771,
+				A87B5F224701DC1CE3D36F1D,
 				0DDFAADBE7361D65F79BE5B5,
 				0E75CDFA3B3510AD8AFAB3D9,
+				6151ACEC3813F8DDB9D11983,
 				53D7D153B4628D493F051EA9,
 				EF9ED031BF18513FD91E71E0,
+				6BF2D2CFC1ED5ED50A4CB11B,
+				F067F7A8C9A78FADDF06095F,
+				646E3673F30C9F64F8C58CC7,
+				47D7593F13730648AEFF5006,
 				B5ABAB643E4DB0F9EFE758F8,
 				9A85D28497AE287B0A4C4E8C,
 				51FD9D9EEE75399A2987D61E,
 				94DA4ECBC1B15A13858FC4BB,
 				10FB64131D78ACC9D6EEB33B,
+				F041F0CA1C6D4EF1C5AB4B46,
 			);
 			path = Hisn;
 			sourceTree = "<group>";
@@ -414,6 +566,7 @@
 			children = (
 				483809EFEA23DC4C65C7B5CE,
 				39A1CFBC537727BFAA39F27D,
+				525B47EAC62E75A2543A3EF4,
 				72141B20B04B65029C41CE8F,
 				1E0C1B80DE2B39A0260CE8A1,
 				A0DF15BD71B1EEE6A6C45915,
@@ -436,19 +589,43 @@
 				89BDAC009D56611F485D64DB,
 				80C98DE5808DA52CC4D9E0DD,
 				D6D64E38C469B55C566EB0A8,
+				2098ACD4010E242DD587819B,
 				5CEF7A7205FB28ED41D63CB3,
 				28A03C0E33E9129984BFCEA4,
 				8C0173C1C38F1936EC103F00,
 				7A388BAA57DF64855C0A223E,
+				DC90B013BD179CD039051189,
+				EF920FDECFFF8044B3915C6D,
 				93F61A60BC5B807E6CE6E78F,
 				51108B83C7EFBA266DC5773F,
 				C15C5BA8E7F3C7A5B3CC9BFB,
+				5F0D9FB6A869FC6B4EA74D95,
 				96BE623FB252DAE97AF70C17,
 				4792FDE5CE580FC1212B3EBD,
 				883D07C40E91F1F9B4B56A52,
 				851D93C8FC728A88C285B13F,
 			);
 			path = HisnTests;
+			sourceTree = "<group>";
+		};
+		CF6B3F23FBD4DF90032D28E3 /* Shared Apple policy */ = {
+			isa = PBXGroup;
+			children = (
+				E28D1D98114D4AAC5E07A0AA,
+				04A880A0C837D842A628A66A,
+				14875DFD54D89900A5E5A7DC,
+			);
+			name = "Shared Apple policy";
+			path = "../shared/apple";
+			sourceTree = "<group>";
+		};
+		4AE5F9167CD9118FCD9F6644 /* Shared policy tests */ = {
+			isa = PBXGroup;
+			children = (
+				8C9F5FB3A60642BE7E7C2530,
+			);
+			name = "Shared policy tests";
+			path = "../shared/tests";
 			sourceTree = "<group>";
 		};
 		938213E66EA8A4079FC417A5 /* seed */ = {
@@ -510,6 +687,8 @@
 				952370683EBE372EA84D0EBC,
 				CFCAD78C75934B02F892B6CA,
 				17AF22E3634A3628D8708404,
+				CF6B3F23FBD4DF90032D28E3,
+				4AE5F9167CD9118FCD9F6644,
 				938213E66EA8A4079FC417A5,
 				2876B7A244FA1681B694B457,
 				39562D9BA805AEA26FA18343,
@@ -568,11 +747,38 @@
 			};
 			name = Release;
 		};
+		6D0F4A0CD969D9C74B716F8A /* DeveloperID */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				ONLY_ACTIVE_ARCH = NO;
+			};
+			name = DeveloperID;
+		};
 		FB71138AD31B0629EBDFB955 /* Build configuration list for PBXProject */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				59C5F1D49841AA8D6DEA6494,
 				83F1F6AD69DE2BC2B957B80F,
+				6D0F4A0CD969D9C74B716F8A,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -611,6 +817,14 @@
 		5E2F76FFE6F5C926D10B81AC /* LockStore.swift in Sources */ = {
 			isa = PBXBuildFile;
 			fileRef = 10B6D354DDF0586B5B0D7A22;
+		};
+		6C46846E5F82981BD6B649A3 /* CommitmentPolicy.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = E28D1D98114D4AAC5E07A0AA;
+		};
+		5C4A35BD4EAA3462BB5D04DF /* WebProtectionPolicy.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = F041F0CA1C6D4EF1C5AB4B46;
 		};
 		16E9947CD4242E49F347299A /* PartnerService.swift in Sources */ = {
 			isa = PBXBuildFile;
@@ -662,6 +876,8 @@
 			files = (
 				A94EB14899ADCA602A404D0F,
 				5E2F76FFE6F5C926D10B81AC,
+				6C46846E5F82981BD6B649A3,
+				5C4A35BD4EAA3462BB5D04DF,
 				16E9947CD4242E49F347299A,
 				873B1F284D99348FC3C66127,
 				FE969185B6CD448713484846,
@@ -757,11 +973,48 @@
 			};
 			name = Release;
 		};
+		077B86527AB83EF6B3453A0A /* DeveloperID */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				CODE_SIGN_ENTITLEMENTS = HisnFilter/HisnFilter.DeveloperID.entitlements;
+				CURRENT_PROJECT_VERSION = 1;
+				MARKETING_VERSION = 1.0;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = HisnFilter/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = app.hisn.Hisn.HisnFilter;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+				"$(inherited)",
+				"@executable_path/../Frameworks",
+			);
+			};
+			name = DeveloperID;
+		};
 		F7458A6953BD062F13FC9A4D /* Build configuration list for HisnFilter */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				EAD27ABD6F98EE8115420245,
 				1ED240B115893FE0D33E9C41,
+				077B86527AB83EF6B3453A0A,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -790,6 +1043,14 @@
 		75397D87714B502554323803 /* LockStore.swift in Sources */ = {
 			isa = PBXBuildFile;
 			fileRef = 10B6D354DDF0586B5B0D7A22;
+		};
+		BED1AB29EAD1BEA4AEEBD63E /* CommitmentPolicy.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = E28D1D98114D4AAC5E07A0AA;
+		};
+		AAD4C4F280C1BC0457A2E2E8 /* WebProtectionPolicy.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = F041F0CA1C6D4EF1C5AB4B46;
 		};
 		C170097EEA3ED9E11C8310BD /* PartnerService.swift in Sources */ = {
 			isa = PBXBuildFile;
@@ -837,6 +1098,8 @@
 			files = (
 				E63497301DD2F99C0893CFC5,
 				75397D87714B502554323803,
+				BED1AB29EAD1BEA4AEEBD63E,
+				AAD4C4F280C1BC0457A2E2E8,
 				C170097EEA3ED9E11C8310BD,
 				3F2BDF1C8BC05034A32C0BCE,
 				FE2EEB282B2FB4A8BB989520,
@@ -921,11 +1184,43 @@
 			};
 			name = Release;
 		};
+		F2676E9006EF502687311FFF /* DeveloperID */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				CODE_SIGN_ENTITLEMENTS = HisnBridge/HisnBridge.entitlements;
+				CURRENT_PROJECT_VERSION = 1;
+				MARKETING_VERSION = 1.0;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = DeveloperID;
+		};
 		7A89C3EA17A9DF693F663862 /* Build configuration list for HisnBridge */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C1359A80ADC1AB72A906B25E,
 				FAD139AD084D7F006A7F6AD2,
+				F2676E9006EF502687311FFF,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -982,11 +1277,21 @@
 			isa = PBXBuildFile;
 			fileRef = A482D83B66E8C74486144AD2;
 		};
+		91B0E4A037ED6B45D67BDE50 /* Assets.xcassets in Resources */ = {
+			isa = PBXBuildFile;
+			fileRef = F80A8B5D8F63FE7ADB74A193;
+		};
+		10477D2365ED64C6DA83289A /* AppIcon.icon in Resources */ = {
+			isa = PBXBuildFile;
+			fileRef = 9C216322626B1D2E4CDE23CB;
+		};
 		7E4B2B42202196B8DEDF4BBA /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				BDF8914226C025CC49ED6309,
+				91B0E4A037ED6B45D67BDE50,
+				10477D2365ED64C6DA83289A,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1022,6 +1327,14 @@
 			isa = PBXBuildFile;
 			fileRef = 10B6D354DDF0586B5B0D7A22;
 		};
+		2F9AE50958409726CAE8899C /* CommitmentPolicy.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = E28D1D98114D4AAC5E07A0AA;
+		};
+		D71397F61E9910F9DE6F9E97 /* WebProtectionPolicy.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = F041F0CA1C6D4EF1C5AB4B46;
+		};
 		C443CF91599B47291668BF96 /* PartnerService.swift in Sources */ = {
 			isa = PBXBuildFile;
 			fileRef = 0DDFAADBE7361D65F79BE5B5;
@@ -1054,6 +1367,14 @@
 			isa = PBXBuildFile;
 			fileRef = C3AFAA71CCFB961E2BEFD521;
 		};
+		5BCE2A86891BBCED9601BA5C /* MirroredRuleStore.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 04A880A0C837D842A628A66A;
+		};
+		9EF7FC56EF8EBA72F9B45794 /* ReadinessHistory.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 14875DFD54D89900A5E5A7DC;
+		};
 		A6FB482C49EF9319FAE69EAD /* ContentView.swift in Sources */ = {
 			isa = PBXBuildFile;
 			fileRef = A1954A7D9F26A7718A4AAAD4;
@@ -1061,6 +1382,38 @@
 		61CAEB8F0184033FD53D9C6D /* FilterController.swift in Sources */ = {
 			isa = PBXBuildFile;
 			fileRef = CE441D8FDF481728F9B3694F;
+		};
+		F9B8570DE100D825DE5C3336 /* FilterSetupControl.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = B0B6292AA4BDDFD544B5C34F;
+		};
+		49457A404FABFB870209BD88 /* NetworkSetupGuide.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = A87B5F224701DC1CE3D36F1D;
+		};
+		173DD87889914CA5D5D95B7D /* RouterDiscovery.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 6BF2D2CFC1ED5ED50A4CB11B;
+		};
+		7F8ACA60CAC1AFB3B84B4362 /* RouterSetupAssistant.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 47D7593F13730648AEFF5006;
+		};
+		2983D34CC710EB351EA102CF /* RouterGuideCatalog.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = F067F7A8C9A78FADDF06095F;
+		};
+		61128FF6767F4F5A6A56749B /* RouterIdentityView.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 646E3673F30C9F64F8C58CC7;
+		};
+		B8EA5B6ADFBA4D0C051BDDF6 /* NetworkDNSProbe.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 212E78320A736FEF56423B79;
+		};
+		9B480D6461884AF836765AC7 /* NetworkDNSProbeView.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = FB31DC7B17B7C3A5D9C86771;
 		};
 		BBEC95CEB0C5C5CAFDED43AB /* HisnApp.swift in Sources */ = {
 			isa = PBXBuildFile;
@@ -1086,6 +1439,10 @@
 			isa = PBXBuildFile;
 			fileRef = 46ADD645068CFF80B5C9D940;
 		};
+		6D5B87248A4991FD66184221 /* BrowserProfileEvidence.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 14B886254B9AE172DF028557;
+		};
 		BE03B7C06F8E1782A5EF2AD4 /* ExtensionPresence.swift in Sources */ = {
 			isa = PBXBuildFile;
 			fileRef = 638C07E6A6C63DB2FEDE498C;
@@ -1102,6 +1459,10 @@
 			isa = PBXBuildFile;
 			fileRef = B5ABAB643E4DB0F9EFE758F8;
 		};
+		E7601A4D6C0B32B4414BCBA8 /* ProtectedSetup.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 6151ACEC3813F8DDB9D11983;
+		};
 		718274BF2627B7501E55E03D /* StatusMenu.swift in Sources */ = {
 			isa = PBXBuildFile;
 			fileRef = 51FD9D9EEE75399A2987D61E;
@@ -1116,6 +1477,8 @@
 			files = (
 				38645BD4412B827FC5CA06C6,
 				1F726C46E79D2589C7D5466F,
+				2F9AE50958409726CAE8899C,
+				D71397F61E9910F9DE6F9E97,
 				C443CF91599B47291668BF96,
 				A862EF0F416EB1AF4E9B1992,
 				F994908B6D53110153CCC1AF,
@@ -1124,18 +1487,30 @@
 				D03D2C850ACDB190BF41F131,
 				6E5CEDC9D23876D950B1252E,
 				F9F8D0F1731E2E8BEC4D6DC2,
+				5BCE2A86891BBCED9601BA5C,
+				9EF7FC56EF8EBA72F9B45794,
 				A6FB482C49EF9319FAE69EAD,
 				61CAEB8F0184033FD53D9C6D,
+				F9B8570DE100D825DE5C3336,
+				49457A404FABFB870209BD88,
+				173DD87889914CA5D5D95B7D,
+				7F8ACA60CAC1AFB3B84B4362,
+				2983D34CC710EB351EA102CF,
+				61128FF6767F4F5A6A56749B,
+				B8EA5B6ADFBA4D0C051BDDF6,
+				9B480D6461884AF836765AC7,
 				BBEC95CEB0C5C5CAFDED43AB,
 				9E6560DDB2E30CF063E1CC2D,
 				55EEFF567258F1CEE1CFC3FF,
 				E2AEF87216467A0BAEB3B90C,
 				BF5115646CB0123EDCB52F30,
 				B08D22A0F88654A0E18637F4,
+				6D5B87248A4991FD66184221,
 				BE03B7C06F8E1782A5EF2AD4,
 				FB98AF85AF11949BC05C682C,
 				B4EE4DB38517A27FB88356A0,
 				9E812DD15CCA585BCFC2E32F,
+				E7601A4D6C0B32B4414BCBA8,
 				718274BF2627B7501E55E03D,
 				F3CFEAB96B0EB2308922F407,
 			);
@@ -1171,6 +1546,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Hisn/Hisn.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				MARKETING_VERSION = 1.0;
@@ -1207,6 +1583,7 @@
 				ENABLE_NS_ASSERTIONS = NO;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Hisn/Hisn.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				MARKETING_VERSION = 1.0;
@@ -1222,11 +1599,49 @@
 			};
 			name = Release;
 		};
+		A9BC26661D538C7569FB93A4 /* DeveloperID */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Hisn/Hisn.DeveloperID.entitlements;
+				CURRENT_PROJECT_VERSION = 1;
+				MARKETING_VERSION = 1.0;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = Hisn/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = app.hisn.Hisn;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+				"$(inherited)",
+				"@executable_path/../Frameworks",
+			);
+			};
+			name = DeveloperID;
+		};
 		E03E3D145312480538703605 /* Build configuration list for Hisn */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				287F1F6160A7CBABCBCA0B7B,
 				3FB10815246EB3533579F7DC,
+				A9BC26661D538C7569FB93A4,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -1368,9 +1783,29 @@
 			isa = PBXBuildFile;
 			fileRef = 883D07C40E91F1F9B4B56A52;
 		};
+		785C489290CAD4BED01DFA13 /* ProtectedSetupTests.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 5F0D9FB6A869FC6B4EA74D95;
+		};
 		CA326A27BE0AA00513073B3E /* LockScheduleTests.swift in Sources */ = {
 			isa = PBXBuildFile;
 			fileRef = 7A388BAA57DF64855C0A223E;
+		};
+		6B359C0EDA3B8E5B66561B34 /* FilterActivationTests.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 2098ACD4010E242DD587819B;
+		};
+		5332F9043E93BC0DFEA27EAC /* OnboardingTests.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = EF920FDECFFF8044B3915C6D;
+		};
+		DC37F31CB2E6CC1AFC5011B7 /* NetworkDNSProbeTests.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = DC90B013BD179CD039051189;
+		};
+		3139C6D825483E39B3F44E88 /* MirroredRuleStoreTests.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 8C9F5FB3A60642BE7E7C2530;
 		};
 		A29CD87A3F623C88ED8997D1 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -1389,7 +1824,12 @@
 				608855FBFE591CFA57FC9F03,
 				5C00E8EDDD34459D1728E0F5,
 				9BC6E69A99DBE1477BB872B9,
+				785C489290CAD4BED01DFA13,
 				CA326A27BE0AA00513073B3E,
+				6B359C0EDA3B8E5B66561B34,
+				5332F9043E93BC0DFEA27EAC,
+				DC37F31CB2E6CC1AFC5011B7,
+				3139C6D825483E39B3F44E88,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1460,11 +1900,41 @@
 			};
 			name = Release;
 		};
+		B5EF3BFD6B2BC335D7355611 /* DeveloperID */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = app.hisn.HisnTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Hisn.app/Contents/MacOS/Hisn";
+			};
+			name = DeveloperID;
+		};
 		40E392F256EFF174CF37311F /* Build configuration list for HisnTests */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				100F55B8AFA76893F7B5A00D,
 				31203BC604D3B126FE62BAC1,
+				B5EF3BFD6B2BC335D7355611,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

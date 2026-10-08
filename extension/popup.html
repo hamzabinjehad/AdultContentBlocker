@@ -1,94 +1,19 @@
 <!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<title>Hisn</title>
-<style>
-  :root { --bg:#f7f7f5; --fg:#1a1a18; --muted:#6b6b66; --line:#e3e3df; --accent:#2f6f4f; --warn:#8a5a2b; --card:#ffffff; }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg:#161614; --fg:#f0efec; --muted:#9a9a94; --line:#33322e; --accent:#7fb79a; --warn:#d2a464; --card:#201f1c; }
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin:0; width:320px; padding:16px;
-    background:var(--bg); color:var(--fg);
-    font:14px/1.45 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  }
-  h1 { margin:0 0 12px; font-size:15px; font-weight:600; letter-spacing:-0.01em; }
-  h2 { margin:0; font-size:14px; font-weight:600; }
-  p { margin:4px 0 0; }
-
-  /* One block per question. Protection first, the lock second; each has a
-     headline that answers its question in two or three words and a sentence
-     under it that says what that means here. */
-  .block { padding:12px; border:1px solid var(--line); border-radius:10px;
-           background:var(--card); }
-  .block + .block { margin-top:10px; }
-  .head { display:flex; align-items:center; gap:8px; }
-  .dot { width:9px; height:9px; border-radius:50%; flex:none; background:var(--muted); }
-  .dot.active { background:var(--accent); }
-  .dot.partial { background:var(--warn); }
-  .dot.unknown { background:transparent; border:1.5px solid var(--muted); }
-  .detail { font-size:12.5px; color:var(--muted); }
-
-  .notice { margin-top:10px; padding:10px; border-radius:8px; font-size:12.5px;
-            background:color-mix(in srgb, var(--warn) 14%, transparent);
-            color:var(--warn); border:1px solid color-mix(in srgb, var(--warn) 30%, transparent); }
-  .notice ol { margin:6px 0 0; padding-inline-start:18px; }
-  .lang-switch { margin-inline-start:auto; margin-inline-end:8px; padding:2px 8px; cursor:pointer;
-                 font:inherit; font-size:11.5px; color:var(--muted); background:transparent;
-                 border:1px solid var(--line); border-radius:999px; }
-  .lang-switch:hover { color:var(--accent); border-color:var(--accent); }
-  .notice li { margin:2px 0; }
-  .notice button { margin-top:9px; width:100%; padding:7px 10px; cursor:pointer;
-                   font:inherit; font-weight:600; font-size:12.5px;
-                   color:#fff; background:var(--warn); border:none; border-radius:7px; }
-
-  /* The numbers. Useful when something is wrong, noise when nothing is. */
-  details { margin-top:12px; font-size:12.5px; }
-  summary { cursor:pointer; color:var(--muted); }
-  summary:focus-visible, button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; border-radius:4px; }
-  dl { margin:6px 0 0; display:grid; grid-template-columns:auto 1fr; gap:3px 12px; }
-  dt { color:var(--muted); }
-  dd { margin:0; font-variant-numeric:tabular-nums; }
-
-  .actions { margin-top:12px; display:flex; gap:8px; }
-  .actions button { flex:1; padding:7px 10px; cursor:pointer; font:inherit; font-size:13px;
-                    color:var(--fg); background:var(--card); border:1px solid var(--line);
-                    border-radius:8px; }
-  .actions button:hover { border-color:var(--accent); color:var(--accent); }
-</style><link rel="stylesheet" href="ui.css">
-</head>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Hisn</title><link rel="stylesheet" href="ui.css"></head>
 <body class="popup">
-  <header><div class="brand"><span class="brand-mark" aria-hidden="true">H</span> Hisn</div><button type="button" class="lang-switch" id="langSwitch" lang="ar">العربية</button><span class="connection-badge" id="connectionBadge" data-i18n="popup.checking">Checking…</span></header>
-
+  <header><div class="brand"><img src="icons/icon-48.png" width="30" height="30" alt="">Hisn</div><button type="button" class="lang-switch" id="langSwitch" lang="ar">العربية</button></header>
+  <p class="connection-badge" id="connectionBadge" data-i18n="popup.checking">Checking…</p>
   <section class="block" aria-live="polite">
-    <div class="head">
-      <span class="dot unknown" id="pDot" aria-hidden="true"></span>
-      <h2 id="pHead" data-i18n="popup.checkingStatus">Checking status…</h2>
-    </div>
+    <div class="head"><span class="dot unknown" id="pDot" aria-hidden="true"></span><h2 id="pHead" data-i18n="popup.checkingStatus">Checking status…</h2></div>
     <p class="detail" id="pDetail"></p>
   </section>
-
-  <section class="block" id="lockBlock">
-    <div class="head"><h2 id="lHead">&nbsp;</h2></div>
-    <p class="detail" id="lDetail"></p>
-  </section>
-
-  <div id="notices"></div>
-  <div id="incognito" class="notice" hidden></div>
-
-  <details>
-    <summary data-i18n="popup.details">Details</summary>
-    <dl id="details"></dl>
-  </details>
-
-  <nav class="actions" aria-label="Shortcuts" data-i18n-aria-label="popup.shortcuts">
-    <button type="button" id="openSettings" data-i18n="popup.manage">Manage protection →</button>
-    <button type="button" id="checkConnection" data-i18n="popup.checkConnection">Check connection</button>
+  <section class="block" id="lockBlock"><div class="head"><span data-icon="lock" aria-hidden="true"></span><h2 id="lHead">&nbsp;</h2></div><p class="detail" id="lDetail"></p></section>
+  <div id="notices"></div><div id="incognito" class="notice" hidden></div>
+  <details><summary data-i18n="popup.details">Details</summary><dl id="details"></dl></details>
+  <nav class="actions" data-i18n-aria-label="popup.shortcuts">
+    <button type="button" id="openSettings"><span data-icon="settings" aria-hidden="true"></span><span data-i18n="popup.manage">Manage protection</span></button>
+    <button type="button" class="secondary" id="checkConnection" data-i18n-title="popup.checkConnection" data-i18n-aria-label="popup.checkConnection"><span data-icon="refresh-cw" aria-hidden="true"></span></button>
   </nav>
-  <p class="detail" id="connectionMessage" role="status"></p>
-  <p class="privacy-note" data-i18n="privacy.onDevice">Content checks stay on your device.</p>
-<script type="module" src="popup.js"></script>
-</body>
-</html>
+  <p class="detail" id="connectionMessage" role="status"></p><p class="privacy-note" data-i18n="privacy.onDevice">Content checks stay on your device.</p>
+  <script type="module" src="popup.js"></script>
+</body></html>

@@ -13,12 +13,16 @@
  */
 
 import { describeStatus } from "./lib/status.js";
+import { renderIcons } from "./lib/icons.js";
 import { send } from "./lib/messages.js";
-import { connectionStatus } from "./lib/settings.js";
+import { connectionStatus, connectionFeedback } from "./lib/settings.js";
 import { initLanguage, t, language, setLanguage, savePreference, translatePage } from "./lib/i18n.js";
 
 await initLanguage();
+renderIcons();
 let lastState;
+let lastRender;
+setInterval(() => { if (lastState) render(lastState); }, 1000);
 
 /** How long to wait for the worker before saying we could not reach it. */
 const REPLY_TIMEOUT_MS = 3000;
@@ -28,6 +32,9 @@ function render(state) {
   const version = chrome.runtime.getManifest?.().version;
   const s = describeStatus(state, { version });
   const connection = connectionStatus(state);
+  const signature = JSON.stringify([s, connection]);
+  if (signature === lastRender) return;
+  lastRender = signature;
   document.getElementById("connectionBadge").textContent = !state ? t("badge.unavailable")
     : !connection.managed ? t("badge.browserOnly")
     : connection.fresh ? t("badge.connected") : t("badge.offline");
@@ -128,14 +135,16 @@ document.getElementById("openSettings").addEventListener("click", () => {
 });
 
 document.getElementById("checkConnection").addEventListener("click", async (event) => {
-  event.target.disabled = true;
+  const button = event.currentTarget;
+  if (button.disabled) return;
+  button.disabled = true;
   const message = document.getElementById("connectionMessage");
   message.textContent = t("conn.checking");
   const result = await send({ type: "forceSync" });
-  message.textContent = result.ok ? t("conn.synced") : t("conn.none");
   const state = await send({ type: "getState" });
+  message.textContent = connectionFeedback(result, state);
   render(state.ok === false ? undefined : state);
-  event.target.disabled = false;
+  button.disabled = false;
 });
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "local" && changes.state?.newValue) render(changes.state.newValue);
@@ -144,14 +153,8 @@ chrome.storage.onChanged.addListener((changes, area) => {
 // The page opens saying "Checking status…" and stays there until the worker
 // answers. If it never does, say THAT — `render(undefined)` produces "Status
 // unavailable" — rather than letting the timeout look like a verdict.
-let answered = false;
-const giveUp = setTimeout(() => { if (!answered) render(undefined); }, REPLY_TIMEOUT_MS);
-chrome.runtime.sendMessage({ type: "getState" }, (state) => {
-  answered = true;
-  clearTimeout(giveUp);
-  // lastError means the worker is gone; `state` is undefined in that case and
-  // must not be replaced with defaults.
-  render(chrome.runtime.lastError ? undefined : state);
+send({ type: "getState" }, REPLY_TIMEOUT_MS).then((state) => {
+  render(state.ok === false ? undefined : state);
 });
 checkIncognitoAccess();
 
@@ -167,6 +170,7 @@ langSwitch.addEventListener("click", async () => {
   setLanguage(next);
   await savePreference(next).catch(() => {});
   translatePage(document);
+  lastRender = undefined;
   labelSwitch();
   if (lastState !== undefined) render(lastState);
   checkIncognitoAccess();

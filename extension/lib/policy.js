@@ -62,6 +62,8 @@
 
 /** How long the native app may stay silent during a lock before the browser
  *  assumes it was removed and clamps down. */
+import { WEB_PROTECTION_RULES, SAFESEARCH_TEMPLATES } from "./web-protection.js";
+
 export const HEARTBEAT_GRACE_MS = 5 * 60 * 1000;
 
 // Dynamic rule ids owned by applyRules. Everything below RULE_DOWNLOADED_BASE
@@ -73,6 +75,7 @@ export const RULE_STRICT_PLUMBING = 3;         // an allowed page's own assets
 export const RULE_ALLOW_BASE = 200;            // + label count
 export const RULE_CUSTOM_BLOCK_BASE = 300;     // + label count, documents
 export const RULE_CUSTOM_BLOCK_EMBEDDED_BASE = 400;   // + label count, the rest
+export const RULE_SAFESEARCH_BASE = 500;
 export const RULE_DOWNLOADED_BASE = 10000;
 
 /**
@@ -260,6 +263,22 @@ export function policyRules(state) {
       action: { type: "allow" },
       condition: { requestDomains: domains, resourceTypes: ALL_RESOURCE_TYPES },
     });
+    // An allowance must not disable SafeSearch. Scope copies to this allowance
+    // and exclude equally/more-specific custom blocks so denial still wins.
+    const excluded = [...groupByDepth(state.customBlocks)]
+      .filter(([blockedDepth]) => blockedDepth >= d).flatMap(([, hosts]) => hosts);
+    for (const template of SAFESEARCH_TEMPLATES) {
+      const requestDomains = template.condition.requestDomains
+        ? domainIntersection(domains, template.condition.requestDomains) : domains;
+      if (!requestDomains.length) continue;
+      rules.push({
+        ...template,
+        id: RULE_SAFESEARCH_BASE + (template.id - 1) * MAX_LABELS + d,
+        priority: PRIORITY_HAND + 2 * d + 1,
+        condition: { ...template.condition, requestDomains,
+          ...(excluded.length ? { excludedRequestDomains: excluded } : {}) },
+      });
+    }
   }
 
   // Rules 1 and 3: custom blocks apply in every mode and to every resource
@@ -291,11 +310,22 @@ function coveredBy(list, host) {
   return list.some((d) => host === d || host.endsWith("." + d));
 }
 
+function domainIntersection(left, right) {
+  const out = new Set();
+  for (const a of left) for (const b of right) {
+    if (coveredBy([a], b)) out.add(b);
+    else if (coveredBy([b], a)) out.add(a);
+  }
+  return [...out];
+}
+
 function ruleMatches(rule, host, resourceType, initiator) {
   const c = rule.condition;
   if (c.resourceTypes && !c.resourceTypes.includes(resourceType)) return false;
   if (c.initiatorDomains && !(initiator && coveredBy(c.initiatorDomains, initiator))) return false;
-  if (c.requestDomains) return coveredBy(c.requestDomains, host);
+  if (c.excludedRequestDomains && coveredBy(c.excludedRequestDomains, host)) return false;
+  if (c.requestDomains && !coveredBy(c.requestDomains, host)) return false;
+  if (c.regexFilter && !new RegExp(c.regexFilter, "i").test(`https://${host}/`)) return false;
   // No URL condition at all means any URL, as it does for Chrome.
   return c.urlFilter === undefined || c.urlFilter === "*";
 }
@@ -316,7 +346,9 @@ export function decide(state, hostname,
                        { listed = false, resourceType = "main_frame", initiator = null } = {}) {
   const host = String(hostname || "").toLowerCase().replace(/\.$/, "");
   const from = initiator ? String(initiator).toLowerCase().replace(/\.$/, "") : null;
-  const rules = policyRules(state);
+  // SafeSearch transforms and headers do not decide hostname access.
+  const rules = [...policyRules(state), ...WEB_PROTECTION_RULES].filter((r) =>
+    r.action.type !== "modifyHeaders" && !r.action.redirect?.transform);
   if (listed) {
     rules.push({
       id: RULE_DOWNLOADED_BASE,
@@ -369,7 +401,9 @@ export function tabsToBlock(tabs, state) {
     if (decide(state, host, { listed: false }) === "block") {
       const custom = coveredBy((state.customBlocks || []).map(canonicalHost).filter(Boolean),
                                host.toLowerCase().replace(/\.$/, ""));
-      out.push({ id: tab.id, reason: custom ? "custom" : "strict" });
+      const builtIn = WEB_PROTECTION_RULES.some((r) => ruleMatches(r,
+        host.toLowerCase().replace(/\.$/, ""), "main_frame", null));
+      out.push({ id: tab.id, reason: builtIn ? "domain" : custom ? "custom" : "strict" });
     }
   }
   return out;

@@ -2,6 +2,31 @@ import XCTest
 import CryptoKit
 @testable import Hisn
 
+final class WebProtectionPolicyTests: XCTestCase {
+    func testBuiltInBlocksCannotBeAllowedInEitherMode() {
+        let store = BlocklistStore()
+        let blocked = Array(WebProtectionPolicy.searchHosts) + Array(WebProtectionPolicy.viewerDomains)
+        store.setAllowlist(blocked + WebProtectionPolicy.viewerDomains.map { "api." + $0 })
+        for host in blocked {
+            XCTAssertTrue(store.isBlocked(host: host), host)
+            XCTAssertFalse(store.isAllowedInStrictMode(host: host), host)
+            XCTAssertTrue(store.isBlocked(host: " \(host.uppercased()). \n"), host)
+        }
+        for host in WebProtectionPolicy.viewerDomains {
+            XCTAssertTrue(store.isBlocked(host: "api." + host), host)
+            XCTAssertFalse(store.isAllowedInStrictMode(host: "api." + host), host)
+        }
+    }
+
+    func testSearchBlocksAreExactAndViewerBlocksRespectBoundaries() {
+        let store = BlocklistStore()
+        for host in ["mail.yandex.ru", "maps.yandex.com", "search.brave.com",
+                     "yandex.com.example.org", "notyandex.com", "sotwe.com.example.org"] {
+            XCTAssertFalse(store.isBlocked(host: host), host)
+        }
+    }
+}
+
 // MARK: - Helpers
 
 private func hex(_ bytes: some Sequence<UInt8>) -> String {
@@ -348,6 +373,90 @@ final class LookupTests: XCTestCase {
     }
 }
 
+final class NetworkFlowPolicyTests: XCTestCase {
+    func testAlternateDomainSeparatorsCannotBypassNetworkPolicy() {
+        let store = BlocklistStore()
+        for separator in [".", "\u{3002}", "\u{FF0E}", "\u{FF61}"] {
+            store.setNetworkPolicy(strict: false, allowlist: [],
+                customBlocks: [" BLOCKED\(separator)EXAMPLE\(separator) "], blockedApps: [])
+            XCTAssertTrue(store.shouldBlockFlow(host: "cdn.blocked\(separator)example") { nil })
+            XCTAssertFalse(store.shouldBlockFlow(host: "blocked\(separator)example.evil.org") { nil })
+            store.setNetworkPolicy(strict: true, allowlist: ["work\(separator)example"],
+                customBlocks: ["chat.work.example"], blockedApps: [])
+            XCTAssertFalse(store.shouldBlockFlow(host: "docs.work\(separator)example") { nil })
+            XCTAssertTrue(store.shouldBlockFlow(host: "chat.work\(separator)example") { nil })
+            store.setAllowlist(["yandex.com"])
+            XCTAssertTrue(store.isBlocked(host: "yandex\(separator)com"))
+            XCTAssertFalse(store.isAllowedInStrictMode(host: "yandex\(separator)com"))
+        }
+    }
+
+    func testStrictPolicyDeniesUnknownFlowsAndHonorsSiteRules() {
+        let store = BlocklistStore()
+        store.setNetworkPolicy(strict: true, allowlist: ["work.example"],
+                               customBlocks: ["chat.work.example"], blockedApps: [])
+        for host: String? in [nil, "", "192.0.2.1", "2001:db8::1", "elsewhere.example",
+                             "chat.work.example", "work.example.evil.org"] {
+            XCTAssertTrue(store.shouldBlockFlow(host: host) { nil }, host ?? "unknown")
+        }
+        XCTAssertFalse(store.shouldBlockFlow(host: "docs.work.example.") { nil })
+    }
+
+    func testBlockedAppWinsOverAllowedDestination() {
+        let store = BlocklistStore()
+        for strict in [false, true] {
+            store.setNetworkPolicy(strict: strict, allowlist: ["work.example"],
+                                   customBlocks: [], blockedApps: ["app.blocked"])
+            XCTAssertTrue(store.shouldBlockFlow(host: "work.example") { "app.blocked" })
+            XCTAssertTrue(store.shouldBlockFlow(host: nil) { "app.blocked" })
+            XCTAssertFalse(store.shouldBlockFlow(host: "work.example") { "app.other" })
+        }
+    }
+
+    func testNormalModeDoesNotBlockUnknownTrafficOrIdentifyAppsUnnecessarily() {
+        let store = BlocklistStore()
+        store.setNetworkPolicy(strict: false, allowlist: [],
+                               customBlocks: ["blocked.example"], blockedApps: [])
+        func identify() -> String? { XCTFail("unnecessary app identity lookup"); return nil }
+        XCTAssertFalse(store.shouldBlockFlow(host: nil, sourceAppIdentifier: identify))
+        XCTAssertTrue(store.shouldBlockFlow(host: "sub.blocked.example", sourceAppIdentifier: identify))
+        XCTAssertFalse(store.shouldBlockFlow(host: "work.example", sourceAppIdentifier: identify))
+    }
+
+    func testConcurrentUpdatesNeverExposeMixedStrictAndSitePolicy() {
+        let store = BlocklistStore()
+        func install(_ strict: Bool) {
+            // Both versions deny target.example. Mixing normal mode with the
+            // strict policy's empty blocklist would temporarily allow it.
+            store.setNetworkPolicy(strict: strict, allowlist: [],
+                                   customBlocks: strict ? [] : ["target.example"], blockedApps: [])
+        }
+        install(false)
+        DispatchQueue.concurrentPerform(iterations: 2000) { index in
+            if index % 3 == 0 { install(index % 2 == 0) }
+            else { XCTAssertTrue(store.shouldBlockFlow(host: "target.example") { nil }) }
+        }
+    }
+
+    func testConcurrentUpdatesNeverExposeMixedAllowAndBlockLists() {
+        let store = BlocklistStore()
+        func install(_ narrow: Bool) {
+            store.setNetworkPolicy(strict: false,
+                                   allowlist: narrow ? ["sub.example.com"] : [],
+                                   customBlocks: narrow ? ["sub.example.com"] : ["example.com"],
+                                   blockedApps: [])
+        }
+        install(true)
+        DispatchQueue.concurrentPerform(iterations: 2000) { index in
+            if index % 3 == 0 { install(index % 2 == 0) }
+            else {
+                XCTAssertTrue(store.shouldBlockFlow(host: "sub.example.com") { nil })
+                XCTAssertTrue(store.isBlocked(host: "sub.example.com"))
+            }
+        }
+    }
+}
+
 // MARK: - Native messaging registration
 
 /// The reason the blocking system did not block anything: nothing ever wrote
@@ -355,6 +464,20 @@ final class LookupTests: XCTestCase {
 /// `background.js`'s `pollNative()` fails on every attempt, forever, and the
 /// extension never learns a lock is running — see `NativeMessagingInstaller`.
 final class NativeMessagingInstallerTests: XCTestCase {
+
+    func testOldUserManifestDoesNotShadowSystemInstallation() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let oldManifest = directory.appendingPathComponent("app.hisn.bridge.json")
+        let unrelated = directory.appendingPathComponent("other.host.json")
+        try Data("old user copy".utf8).write(to: oldManifest)
+        try Data("another host".utf8).write(to: unrelated)
+        try NativeMessagingInstaller.removeRedundantUserManifest(at: oldManifest)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: oldManifest.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: unrelated.path))
+        try NativeMessagingInstaller.removeRedundantUserManifest(at: oldManifest)
+    }
 
     func testManifestShapeIsWhatChromeExpects() {
         let manifest = NativeMessagingInstaller.hostManifest(bridgePath: "/tmp/HisnBridge")

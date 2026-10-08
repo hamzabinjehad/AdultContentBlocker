@@ -18,13 +18,16 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<!-- Exact browser IDs shared by the app and the packaged installer.
+	     Add store IDs and HisnChromeStoreURL / HisnEdgeStoreURL after publication. -->
+	<key>HisnExtensionIDs</key>
+	<array><string>hfhaffbmoeepcdolgejeidkgaoapcjig</string></array>
 	<key>LSMinimumSystemVersion</key>
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 	<key>NSHumanReadableCopyright</key>
 	<string></string>
-	<!-- The lock lives in the filter and on disk, not in this process, but a
-	     user who closes the window and sees the app vanish will assume
-	     otherwise. AppDelegate keeps the process alive while a lock runs. -->
+	<!-- Keep the browser guard and schedules running without an open window.
+	     AppDelegate treats ordinary Quit as hiding the interface. -->
 	<key>NSSupportsAutomaticTermination</key>
 	<false/>
 	<key>NSSupportsSuddenTermination</key>

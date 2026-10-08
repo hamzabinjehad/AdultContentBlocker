@@ -28,7 +28,7 @@ const base = {
 };
 
 // ── no reply is not a status ───────────────────────────────────────────────
-for (const missing of [undefined, null, "", 0]) {
+for (const missing of [undefined, null, "", 0, { ok: false, reason: "internal-error" }]) {
   const s = describe(missing, { version: "1.0.0" });
   check(s.protection.level === "unknown", `no reply → unknown (${String(missing)})`);
   check(s.protection.headline === "Status unavailable", "no reply headline");

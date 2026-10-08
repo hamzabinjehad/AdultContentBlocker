@@ -69,6 +69,8 @@ public final class BlocklistStore {
     private var hashes: Set<UInt64> = []
     private var allowlist: Set<UInt64> = []
     private var customBlocks: Set<UInt64> = []
+    private var networkStrict = false
+    private var networkBlockedApps: Set<String> = []
 
     /// The keyword layer. Kept as strings rather than hashes: `substrings`
     /// needs `contains`, which a hash cannot answer, and both sets are small
@@ -157,6 +159,15 @@ public final class BlocklistStore {
     ///
     /// Callers must already hold `queue`.
     @inline(__always)
+    private static func canonicalHost(_ host: String) -> String {
+        // IDNA dot separators are domain boundaries, not arbitrary confusables.
+        host.replacingOccurrences(of: "\u{3002}", with: ".")
+            .replacingOccurrences(of: "\u{FF0E}", with: ".")
+            .replacingOccurrences(of: "\u{FF61}", with: ".")
+            .lowercased().trimmingCharacters(in: hostTrimSet)
+    }
+
+    @inline(__always)
     private func walk(_ host: String, _ decide: (UInt64) -> Bool?) -> Bool {
         // Strip a trailing dot before matching. `pornhub.com.` is a valid
         // absolute FQDN, browsers accept it, and it resolves to exactly the
@@ -164,7 +175,7 @@ public final class BlocklistStore {
         // this every blocked domain has a one-keystroke bypass. Leading dots
         // and surrounding whitespace are trimmed on the same grounds.
         var candidate = Substring(
-            host.lowercased().trimmingCharacters(in: Self.hostTrimSet))
+            Self.canonicalHost(host))
         while true {
             if let decision = decide(Self.hash(candidate)) { return decision }
             guard let dot = candidate.firstIndex(of: ".") else { return false }
@@ -180,9 +191,17 @@ public final class BlocklistStore {
     /// misses, so a domain that is explicitly allowed can never be re-blocked
     /// by a keyword that happens to appear in its name.
     public func isBlocked(host: String) -> Bool {
-        if queue.sync(execute: { allowedByHand(host) }) { return false }
+        queue.sync { blocked(host) }
+    }
+
+    // The entire verdict uses one policy/list snapshot, including exceptions
+    // and keyword rules. Callers must hold queue.
+    private func blocked(_ host: String) -> Bool {
+        let host = Self.canonicalHost(host)
+        if WebProtectionPolicy.isBlocked(host) { return true }
+        if allowedByHand(host) { return false }
         if listSaysBlocked(host: host) { return true }
-        return queue.sync { hostMatchesTerm(host) }
+        return hostMatchesTerm(host)
     }
 
     /// A hand-added allowance, checked before anything else.
@@ -195,16 +214,14 @@ public final class BlocklistStore {
     }
 
     private func listSaysBlocked(host: String) -> Bool {
-        queue.sync {
-            walk(host) { h in
-                // An explicit "always block this" is a statement about one
-                // named domain, so it outranks a broad allowance. Contradicting
-                // yourself resolves to the safer answer.
-                if customBlocks.contains(h) { return true }
-                if allowlist.contains(h) { return false }
-                if hashes.contains(h) { return true }
-                return nil
-            }
+        walk(host) { h in
+            // An explicit "always block this" is a statement about one
+            // named domain, so it outranks a broad allowance. Contradicting
+            // yourself resolves to the safer answer.
+            if customBlocks.contains(h) { return true }
+            if allowlist.contains(h) { return false }
+            if hashes.contains(h) { return true }
+            return nil
         }
     }
 
@@ -311,23 +328,55 @@ public final class BlocklistStore {
 
     /// Strict mode inverts the question: everything is blocked unless allowed.
     public func isAllowedInStrictMode(host: String) -> Bool {
+        queue.sync { allowedInStrictMode(host) }
+    }
+
+    private func allowedInStrictMode(_ host: String) -> Bool {
+        let host = Self.canonicalHost(host)
+        if WebProtectionPolicy.isBlocked(host) { return false }
+        return walk(host) { h in
+            if customBlocks.contains(h) { return false }
+            if allowlist.contains(h) { return true }
+            return nil
+        }
+    }
+
+    /// Install all authority-controlled flow rules in one transaction. A flow
+    /// sees the old policy or the new one, never a mixture of both.
+    public func setNetworkPolicy(strict: Bool, allowlist: [String],
+                                 customBlocks: [String], blockedApps: [String]) {
+        let allowed = Set(allowlist.map { Self.hash(Substring(Self.canonicalHost($0))) })
+        let blocked = Set(customBlocks.map { Self.hash(Substring(Self.canonicalHost($0))) })
+        let apps = Set(blockedApps)
+        queue.sync(flags: .barrier) {
+            self.allowlist = allowed
+            self.customBlocks = blocked
+            self.networkStrict = strict
+            self.networkBlockedApps = apps
+        }
+    }
+
+    public var networkStrictActive: Bool { queue.sync { networkStrict } }
+
+    /// Identification is lazy because it involves Security framework work.
+    /// The callback must not call back into this store.
+    public func shouldBlockFlow(host: String?, sourceAppIdentifier: () -> String?) -> Bool {
         queue.sync {
-            walk(host) { h in
-                if customBlocks.contains(h) { return false }
-                if allowlist.contains(h) { return true }
-                return nil
-            }
+            if !networkBlockedApps.isEmpty, let app = sourceAppIdentifier(),
+               networkBlockedApps.contains(app) { return true }
+            guard let host, !host.isEmpty else { return networkStrict }
+            return networkStrict ? !allowedInStrictMode(host) : blocked(host)
         }
     }
 
     public func setAllowlist(_ domains: [String]) {
-        let set = Set(domains.map { Self.hash(Substring($0.lowercased())) })
+        let set = Set(domains.map { Self.hash(Substring(Self.canonicalHost($0))) })
         queue.sync(flags: .barrier) { self.allowlist = set }
     }
 
     /// Domains the person added by hand, on top of the published list.
     public func setCustomBlocks(_ domains: [String]) {
-        let set = Set(domains.map { Self.hash(Substring($0.lowercased())) })
+        let set = Set(domains.map { Self.hash(Substring(Self.canonicalHost($0))) })
         queue.sync(flags: .barrier) { self.customBlocks = set }
     }
 

@@ -5,8 +5,8 @@
     "action": { "type": "redirect", "redirect": { "transform": { "queryTransform": {
       "addOrReplaceParams": [{ "key": "safe", "value": "active" }] } } } },
     "condition": {
-      "regexFilter": "^https?://(www\\.)?google\\.[a-z]{2,3}(\\.[a-z]{2})?/(search|webhp|imgres)([?#/]|$)",
-      "resourceTypes": ["main_frame", "sub_frame"]
+      "regexFilter": "^https?://(www\\.)?google\\.[a-z]{2,3}(\\.[a-z]{2})?\\.?(:[0-9]+)?/(search|webhp|imgres)([?#/]|$)",
+      "resourceTypes": ["main_frame", "sub_frame", "xmlhttprequest"]
     }
   },
   {
@@ -15,8 +15,8 @@
     "action": { "type": "redirect", "redirect": { "transform": { "queryTransform": {
       "addOrReplaceParams": [{ "key": "adlt", "value": "strict" }] } } } },
     "condition": {
-      "regexFilter": "^https?://(www\\.|cn\\.)?bing\\.com/(search|images/search|videos/search)([?#/]|$)",
-      "resourceTypes": ["main_frame", "sub_frame"]
+      "regexFilter": "^https?://(www\\.|cn\\.)?bing\\.com\\.?(:[0-9]+)?/(search|images/search|videos/search)([?#/]|$)",
+      "resourceTypes": ["main_frame", "sub_frame", "xmlhttprequest"]
     }
   },
   {
@@ -25,8 +25,8 @@
     "action": { "type": "redirect", "redirect": { "transform": { "queryTransform": {
       "addOrReplaceParams": [{ "key": "kp", "value": "1" }] } } } },
     "condition": {
-      "regexFilter": "^https?://(html\\.|lite\\.)?duckduckgo\\.com/.*[?&]q=",
-      "resourceTypes": ["main_frame", "sub_frame"]
+      "regexFilter": "^https?://(www\\.|html\\.|lite\\.)?duckduckgo\\.com\\.?(:[0-9]+)?/[^#]*[?&]q=",
+      "resourceTypes": ["main_frame", "sub_frame", "xmlhttprequest"]
     }
   },
   {
@@ -35,8 +35,8 @@
     "action": { "type": "redirect", "redirect": { "transform": { "queryTransform": {
       "addOrReplaceParams": [{ "key": "vm", "value": "r" }] } } } },
     "condition": {
-      "regexFilter": "^https?://([a-z]+\\.)?search\\.yahoo\\.com/(search|yhs/search)",
-      "resourceTypes": ["main_frame", "sub_frame"]
+      "regexFilter": "^https?://([a-z]+\\.)?search\\.yahoo\\.com\\.?(:[0-9]+)?/(search|yhs/search)([?#/]|$)",
+      "resourceTypes": ["main_frame", "sub_frame", "xmlhttprequest"]
     }
   },
   {
@@ -45,8 +45,8 @@
     "action": { "type": "redirect", "redirect": { "transform": { "queryTransform": {
       "addOrReplaceParams": [{ "key": "safesearch", "value": "strict" }] } } } },
     "condition": {
-      "regexFilter": "^https?://search\\.brave\\.com/(search|images|videos)([?#/]|$)",
-      "resourceTypes": ["main_frame", "sub_frame"]
+      "regexFilter": "^https?://(safe\\.)?search\\.brave\\.com\\.?(:[0-9]+)?/((search|images|videos|news)([?#/]|$)|[?]([^#]*&)?q=)",
+      "resourceTypes": ["main_frame", "sub_frame", "xmlhttprequest"]
     }
   },
   {

@@ -447,6 +447,13 @@ def sign_manifest(manifest_bytes: bytes, key_path: Path) -> str:
 # Main
 # --------------------------------------------------------------------------- #
 
+def fetch_source(source: dict, base: Path) -> str:
+    """Read an imported snapshot relative to its config, or fetch upstream."""
+    if "path" in source:
+        return (base / source["path"]).read_text(encoding="utf-8")
+    return fetch(source["url"], source.get("member"))
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Build the Hisn blocklist artifacts.")
     ap.add_argument("--sources", default=str(Path(__file__).parent / "sources.json"))
@@ -470,7 +477,7 @@ def main() -> int:
     stats: list[dict] = []
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
-        futures = {pool.submit(fetch, s["url"], s.get("member")): s
+        futures = {pool.submit(fetch_source, s, Path(args.sources).resolve().parent): s
                    for s in active}
         for fut in concurrent.futures.as_completed(futures):
             src = futures[fut]

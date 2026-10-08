@@ -5,7 +5,7 @@ import XCTest
 /// Mac worth pinning: which browser profiles run the extension.
 final class SetupChecklistTests: XCTestCase {
 
-    private static let noSafeSearch = SafeSearchDNS(missing: ["Google", "YouTube", "Bing", "DuckDuckGo", "Yandex"])
+    private static let noSafeSearch = SafeSearchDNS(missing: ["Google", "YouTube", "Bing", "DuckDuckGo", "Brave Search"])
 
     private func evidence(admin: Bool? = true, hosts: Int? = nil, bypassesBlocked: Bool = true,
                           safe: SafeSearchDNS = noSafeSearch, partner: Bool = false,
@@ -20,7 +20,8 @@ final class SetupChecklistTests: XCTestCase {
     }
 
     private let lockedHelium = BrowserSetup(name: "Helium", incognitoLocked: true,
-                                            guestLocked: true, dnsLocked: true)
+                                            guestLocked: true, dnsLocked: true,
+                                            extensionManaged: true, nativeLinkProtected: true)
 
     private func step(_ c: SetupChecklist, _ id: SetupChecklist.Step.ID) -> SetupChecklist.Step {
         c.steps.first { $0.id == id }!
@@ -29,7 +30,7 @@ final class SetupChecklistTests: XCTestCase {
     func testTheStepsComeInSetupOrderWithTheAccountSplitLast() {
         let c = SetupChecklist(evidence())
         XCTAssertEqual(c.steps.map(\.id),
-                       [.browsers, .domains, .safeSearch, .partner, .profile, .screenTime, .appFiles,
+                       [.browsers, .extensionManagement, .domains, .safeSearch, .partner, .profile, .screenTime, .appFiles,
                         .accounts, .systemFilter])
     }
 
@@ -38,12 +39,12 @@ final class SetupChecklistTests: XCTestCase {
         XCTAssertEqual(c.doneCount, 0)
         XCTAssertFalse(c.isComplete)
         XCTAssertEqual(step(c, .browsers).action, .browserHelp)
-        XCTAssertEqual(step(c, .domains).action, .command("macos/install.sh --hosts"))
+        XCTAssertEqual(step(c, .domains).action, .enableFilter)
         XCTAssertEqual(step(c, .safeSearch).action, .command("macos/install.sh --hosts"))
         XCTAssertEqual(step(c, .partner).action, .partnerSettings)
-        XCTAssertEqual(step(c, .profile).action, .command("macos/install.sh --profile"))
+        XCTAssertEqual(step(c, .profile).action, .deviceManagementSettings)
         XCTAssertEqual(step(c, .screenTime).action, .screenTimeSettings)
-        XCTAssertEqual(step(c, .accounts).action, .command("macos/setup_guardian.sh --check"))
+        XCTAssertEqual(step(c, .accounts).action, .accountsSettings)
         XCTAssertTrue(step(c, .browsers).detail.contains("Helium (Default)"), step(c, .browsers).detail)
     }
 
@@ -54,7 +55,7 @@ final class SetupChecklistTests: XCTestCase {
         XCTAssertTrue(c.isComplete, c.steps.filter { $0.state == .todo }.map(\.title).joined(separator: ", "))
         XCTAssertEqual(step(c, .systemFilter).state, .optional,
                        "the $99 filter is worth having, not required to finish setup")
-        XCTAssertEqual(c.required.count, 8)
+        XCTAssertEqual(c.required.count, 9)
     }
 
     func testTheSystemFilterAloneCoversDomains() {
@@ -123,7 +124,7 @@ final class SetupChecklistTests: XCTestCase {
     private let dns: (String) -> Set<String>? = { host in
         ["forcesafesearch.google.com": ["216.239.38.120"], "restrict.youtube.com": ["216.239.38.120"],
          "strict.bing.com": ["150.171.27.16", "150.171.28.16"],
-         "safe.duckduckgo.com": ["40.114.177.246"], "familysearch.yandex.ru": ["213.180.193.56"]][host]
+         "safe.duckduckgo.com": ["40.114.177.246"], "forcesafe.search.brave.com": ["192.0.2.5"]][host]
     }
 
     func testEveryEngineMappedIsForced() {
@@ -134,7 +135,7 @@ final class SetupChecklistTests: XCTestCase {
             216.239.38.120\twww.youtube.com
             150.171.28.16 www.bing.com
             40.114.177.246 duckduckgo.com www.duckduckgo.com
-            213.180.193.56 yandex.com www.yandex.com
+            192.0.2.5 search.brave.com
             """
         XCTAssertEqual(SetupEvidence.safeSearchDNS(hosts: hosts, resolve: dns), SafeSearchDNS())
     }
@@ -147,21 +148,21 @@ final class SetupChecklistTests: XCTestCase {
             # 40.114.177.246 duckduckgo.com
             """
         let r = SetupEvidence.safeSearchDNS(hosts: hosts, resolve: dns)
-        XCTAssertEqual(r.missing, ["YouTube", "DuckDuckGo", "Yandex"], "a sinkhole or a comment is no SafeSearch")
+        XCTAssertEqual(r.missing, ["YouTube", "DuckDuckGo", "Brave Search"], "a sinkhole or a comment is no SafeSearch")
         XCTAssertEqual(r.stale, ["Bing"], "Bing's old address")
     }
 
     func testOfflineAPresentLineCountsAsForced() {
         let r = SetupEvidence.safeSearchDNS(hosts: "150.171.28.16 www.bing.com", resolve: { _ in nil })
         XCTAssertEqual(r.stale, [])
-        XCTAssertEqual(r.missing, ["Google", "YouTube", "DuckDuckGo", "Yandex"])
+        XCTAssertEqual(r.missing, ["Google", "YouTube", "DuckDuckGo", "Brave Search"])
     }
 
     /// The browser link runs the bridge inside the bundle: a bundle the user
     /// owns is a program they can swap, split or no split.
     func testAppFilesTheUserOwnsAreNotDone() {
         XCTAssertEqual(step(SetupChecklist(evidence(appFiles: false)), .appFiles).action,
-                       .command("macos/install.sh"))
+                       .applicationsFolder)
         XCTAssertEqual(step(SetupChecklist(evidence(appFiles: nil)), .appFiles).state, .todo)
         XCTAssertEqual(step(SetupChecklist(evidence(appFiles: true)), .appFiles).state, .done)
     }

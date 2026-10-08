@@ -36,6 +36,52 @@ final class PolicyAuthorityTests: XCTestCase {
 
     // MARK: Lock
 
+    func testFixedExtensionKeepsItsFullHorizonAndRejectsInvalidIncrements() throws {
+        var fixed = lock(7)
+        fixed.commitmentUntil = fixed.deadline
+        fixed.selfReleaseAt = t0.addingTimeInterval(2 * day)
+        let extended = try XCTUnwrap(fixed.extending(by: 7 * day))
+        XCTAssertEqual(extended.deadline, t0.addingTimeInterval(14 * day))
+        XCTAssertEqual(extended.commitmentUntil, extended.deadline)
+        XCTAssertEqual(extended.startedAt, fixed.startedAt)
+        XCTAssertEqual(extended.selfReleaseAt, fixed.selfReleaseAt)
+        let original = applied([.proposeLock(fixed)])
+        var weakExtension = extended
+        weakExtension.commitmentUntil = fixed.deadline
+        XCTAssertTrue(refused(.proposeLock(weakExtension), original))
+        let record = applied([.proposeLock(extended)], to: original)
+        XCTAssertTrue(A.isLocked(record, now: t0.addingTimeInterval(10 * day)))
+        XCTAssertEqual(A.effectiveDeadline(record), extended.deadline)
+        for seconds: TimeInterval in [-1, 0, 59, .infinity, .nan, 366 * day] {
+            XCTAssertNil(fixed.extending(by: seconds))
+        }
+        XCTAssertNil(try XCTUnwrap(lock(7).extending(by: day)).commitmentUntil,
+                     "Legacy non-fixed locks retain their existing recovery behavior")
+    }
+
+    func testFixedCommitmentCannotBeRemovedOrBypassedBySelfRelease() throws {
+        var fixed = lock(7)
+        fixed.commitmentUntil = fixed.deadline
+        var record = applied([.proposeLock(fixed)])
+        var weakened = fixed
+        weakened.commitmentUntil = nil
+        XCTAssertTrue(refused(.proposeLock(weakened), record))
+        weakened.commitmentUntil = t0.addingTimeInterval(day)
+        XCTAssertTrue(refused(.proposeLock(weakened), record))
+        fixed.selfReleaseAt = t0
+        record = applied([.proposeLock(fixed)], to: record)
+        XCTAssertEqual(A.effectiveDeadline(record), fixed.deadline)
+        XCTAssertTrue(A.isLocked(record, now: t0.addingTimeInterval(3 * day)))
+        XCTAssertFalse(A.isLocked(record, now: fixed.deadline))
+        let decoded = try JSONDecoder().decode(LockStore.LockState.self, from: JSONEncoder().encode(fixed))
+        XCTAssertEqual(decoded.commitmentUntil, fixed.deadline)
+        var oldPayload = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(fixed)) as? [String: Any])
+        oldPayload.removeValue(forKey: "commitmentUntil")
+        let oldLock = try JSONDecoder().decode(LockStore.LockState.self,
+            from: JSONSerialization.data(withJSONObject: oldPayload))
+        XCTAssertNil(oldLock.commitmentUntil, "Existing locks keep their original release behavior")
+    }
+
     func testStartExtendAndTighten() {
         var r = applied([.proposeLock(lock(7))])
         XCTAssertTrue(A.isLocked(r, now: t0))
@@ -172,10 +218,83 @@ final class PolicyAuthorityTests: XCTestCase {
         let recovered = PolicyStore(directory: dir).load()
         XCTAssertEqual(recovered.revision, 1)
         XCTAssertNotNil(recovered.lock, "one bad write must not end the lock")
+        XCTAssertTrue(recovered.recoveryRequired,
+                      "the lost newer copy could have held stricter rules")
     }
 
     func testEmptyDirectoryIsAnEmptyRecord() {
         XCTAssertEqual(PolicyStore(directory: scratch()).load(), PolicyRecord())
+    }
+
+    func testOneValidCopyIsAUsableInstallation() throws {
+        let dir = scratch()
+        let store = PolicyStore(directory: dir)
+        let r = applied([.proposeLock(lock(7, mode: "strict"))])
+        try store.save(r)
+        XCTAssertEqual(PolicyStore(directory: dir).load(), r,
+                       "a first saved policy has only one copy and is not damage")
+    }
+
+    func testBothCorruptCopiesRequireRecoveryAcrossRestarts() throws {
+        let dir = scratch()
+        _ = PolicyStore(directory: dir)
+        let a = dir.appendingPathComponent("policy.a.json")
+        let b = dir.appendingPathComponent("policy.b.json")
+        let badA = Data("{ damaged".utf8), badB = Data("{}".utf8)
+        try badA.write(to: a)
+        try badB.write(to: b)
+        for _ in 0..<3 {
+            let service = PolicyService(store: PolicyStore(directory: dir), clock: { self.t0 })
+            let status = service.status()
+            XCTAssertTrue(status.record.recoveryRequired)
+            XCTAssertTrue(status.isLocked)
+            XCTAssertTrue(status.strictActive)
+            XCTAssertNotNil(status.persistenceError)
+            XCTAssertFalse(service.handle(.setLists(customBlocks: [], allowlist: ["escape.example"])).accepted)
+            XCTAssertFalse(service.handle(.proposeLock(lock(1))).accepted)
+            XCTAssertTrue(service.handle(.checkIn(browser: "com.google.Chrome")).accepted,
+                          "liveness reporting remains available during recovery")
+            XCTAssertEqual(try Data(contentsOf: a), badA, "retain the original evidence")
+            XCTAssertEqual(try Data(contentsOf: b), badB)
+        }
+        // Even if somebody moves the bad originals aside, the persistent
+        // marker/evidence still distinguishes this from a fresh installation.
+        try FileManager.default.removeItem(at: a)
+        try FileManager.default.removeItem(at: b)
+        XCTAssertTrue(PolicyStore(directory: dir).load().recoveryRequired)
+    }
+
+    func testLegacyCorruptEvidenceCannotBecomeAFreshUnlockedInstall() throws {
+        let dir = scratch()
+        _ = PolicyStore(directory: dir)
+        try Data("bad old record".utf8).write(to: dir.appendingPathComponent("policy.a.json.unreadable-old"))
+        XCTAssertTrue(PolicyStore(directory: dir).load().recoveryRequired)
+    }
+
+    func testOlderPermissiveCopyDoesNotUnlockAfterNewerCopyIsDamaged() throws {
+        let dir = scratch()
+        let store = PolicyStore(directory: dir)
+        try store.save(PolicyRecord()) // slot a: the state before any lock
+        let locked = applied([.proposeLock(lock(7, mode: "strict"))])
+        try store.save(locked)         // slot b: the newer lock
+        try Data("torn lock".utf8).write(to: dir.appendingPathComponent("policy.b.json"))
+        let service = PolicyService(store: PolicyStore(directory: dir), clock: { self.t0 })
+        XCTAssertNil(service.current().lock, "the surviving copy was permissive")
+        XCTAssertTrue(service.status().strictActive, "unknown lost policy requires restriction")
+        XCTAssertTrue(service.status().isLocked)
+        XCTAssertFalse(service.handle(.setInspection(.default)).accepted)
+    }
+
+    func testUnreadableSlotAndUnavailableDirectoryRequireRecovery() throws {
+        let dir = scratch()
+        _ = PolicyStore(directory: dir)
+        try FileManager.default.createDirectory(at: dir.appendingPathComponent("policy.a.json"),
+                                                withIntermediateDirectories: true)
+        XCTAssertTrue(PolicyStore(directory: dir).load().recoveryRequired)
+        let file = scratch()
+        try Data("not a directory".utf8).write(to: file)
+        XCTAssertTrue(PolicyStore(directory: file).load().recoveryRequired,
+                      "a failed directory open must not count as a fresh installation")
     }
 
     // MARK: Service
@@ -218,6 +337,119 @@ final class PolicyAuthorityTests: XCTestCase {
         service.raiseListFloor(to: 9)
         service.raiseListFloor(to: 4)
         XCTAssertEqual(service.current().listVersionFloor, 9)
+    }
+
+    /// A directory at the next slot deterministically rejects an atomic file
+    /// write, without depending on the test runner's UID or disk exhaustion.
+    private func blockWrite(at directory: URL, slot: String) throws -> URL {
+        let url = directory.appendingPathComponent(slot)
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        try Data("keep directory nonempty".utf8).write(to: url.appendingPathComponent("sentinel"))
+        return url
+    }
+
+    func testFailedMutationIsRefusedAndKeepsThePreviousAuthority() throws {
+        let dir = scratch()
+        let service = PolicyService(store: PolicyStore(directory: dir), clock: { self.t0 })
+        XCTAssertTrue(service.handle(.proposeLock(lock(7, mode: "strict"))).accepted)
+        let previous = service.current()
+        var changes = 0
+        service.onChange = { _ in changes += 1 }
+        let blocked = try blockWrite(at: dir, slot: "policy.a.json")
+        let reply = service.handle(.setLists(customBlocks: ["a.example"], allowlist: []))
+        XCTAssertFalse(reply.accepted)
+        XCTAssertNotNil(reply.refusal)
+        XCTAssertNotNil(reply.status.persistenceError)
+        XCTAssertEqual(reply.status.record, previous)
+        XCTAssertEqual(service.current(), previous)
+        XCTAssertEqual(changes, 0, "a refused write must not update enforcement")
+        try FileManager.default.removeItem(at: blocked)
+        XCTAssertEqual(PolicyStore(directory: dir).load(), previous)
+        let retry = service.handle(.setLists(customBlocks: ["a.example"], allowlist: []))
+        XCTAssertTrue(retry.accepted)
+        XCTAssertNil(retry.status.persistenceError)
+        XCTAssertEqual(changes, 1)
+        XCTAssertEqual(PolicyStore(directory: dir).load(), retry.status.record,
+                       "the acknowledged response describes exactly what was saved")
+    }
+
+    func testFirstLockCannotBeAcknowledgedWhenItsSaveFails() throws {
+        let dir = scratch()
+        let service = PolicyService(store: PolicyStore(directory: dir), clock: { self.t0 })
+        _ = try blockWrite(at: dir, slot: "policy.b.json")
+        let reply = service.handle(.proposeLock(lock(7)))
+        XCTAssertFalse(reply.accepted)
+        XCTAssertNil(reply.status.record.lock)
+        XCTAssertEqual(reply.status.record.revision, 0)
+    }
+
+    func testInternalPersistentMutationsReportFailureWithoutChangingState() throws {
+        let dir = scratch()
+        let service = PolicyService(store: PolicyStore(directory: dir), clock: { self.t0 })
+        XCTAssertTrue(service.handle(.proposeLock(lock(7))).accepted)
+        let previous = service.current()
+        _ = try blockWrite(at: dir, slot: "policy.a.json")
+        XCTAssertFalse(service.raiseListFloor(to: 9))
+        XCTAssertEqual(service.current(), previous)
+        XCTAssertFalse(service.noteStoppedDuringLock())
+        XCTAssertEqual(service.current(), previous)
+        XCTAssertFalse(service.adopt(legacy: lock(14)))
+        XCTAssertEqual(service.current(), previous)
+        XCTAssertNotNil(service.status().persistenceError)
+    }
+
+    func testExpiredLockStaysEnforcedUntilItsEndCanBeSaved() throws {
+        let dir = scratch()
+        var now = t0
+        let service = PolicyService(store: PolicyStore(directory: dir), clock: { now })
+        XCTAssertTrue(service.handle(.proposeLock(lock(1, mode: "strict"))).accepted)
+        let previous = service.current()
+        let blocked = try blockWrite(at: dir, slot: "policy.a.json")
+        now = t0.addingTimeInterval(2 * day)
+        let failed = service.status()
+        XCTAssertEqual(failed.record, previous)
+        XCTAssertTrue(failed.isLocked)
+        XCTAssertTrue(failed.strictActive)
+        XCTAssertNotNil(failed.persistenceError)
+        let unlockedMirror = PolicyView(lock: nil, effectiveDeadline: nil,
+            allowlist: [], customBlocks: [], customTerms: [], blockedApps: [], inspection: .default)
+        let heldReply = BridgePolicy.reply(local: unlockedMirror, authority: failed,
+                                          requiresAuthority: true, listVersion: 1)
+        XCTAssertEqual(heldReply["mode"] as? String, "strict")
+        XCTAssertGreaterThan(try XCTUnwrap(heldReply["lockUntil"] as? Double),
+                             now.timeIntervalSince1970 * 1000,
+                             "browser restrictions must not expire while authority holds the old policy")
+        XCTAssertEqual(failed.record.lock, previous.lock, "the real deadline is never extended")
+        try FileManager.default.removeItem(at: blocked)
+        let recovered = service.status()
+        XCTAssertFalse(recovered.isLocked)
+        XCTAssertNil(recovered.record.lock)
+        XCTAssertNil(recovered.persistenceError)
+        XCTAssertNil(PolicyStore(directory: dir).load().lock)
+        let unlockedReply = BridgePolicy.reply(local: unlockedMirror, authority: recovered,
+                                              requiresAuthority: true, listVersion: 1)
+        XCTAssertEqual(unlockedReply["lockUntil"] as? Double, 0)
+    }
+
+    func testFailedClockCheckpointIsRetriedAndDoesNotLoseObservedTime() throws {
+        let dir = scratch()
+        var now = t0
+        let service = PolicyService(store: PolicyStore(directory: dir), clock: { now })
+        XCTAssertTrue(service.handle(.proposeLock(lock(7))).accepted)
+        let slot = dir.appendingPathComponent("policy.b.json")
+        let original = try Data(contentsOf: slot)
+        try FileManager.default.removeItem(at: slot)
+        let blocked = try blockWrite(at: dir, slot: "policy.b.json")
+        let later = t0.addingTimeInterval(600)
+        now = later
+        XCTAssertNotNil(service.status().persistenceError)
+        now = t0.addingTimeInterval(-day)
+        try FileManager.default.removeItem(at: blocked)
+        try original.write(to: slot)
+        XCTAssertEqual(service.current().highWaterMark, later,
+                       "a failed checkpoint never lets the in-process clock move back")
+        XCTAssertEqual(PolicyStore(directory: dir).load().highWaterMark, later,
+                       "the failed checkpoint was not marked as already persisted")
     }
 
     // MARK: Wire format
@@ -332,5 +564,22 @@ final class PolicyMergeTests: XCTestCase {
         XCTAssertEqual(reply["mode"] as? String, "strict")
         XCTAssertEqual(reply["lockUntil"] as? Double,
                        now.addingTimeInterval(2 * 86_400).timeIntervalSince1970 * 1000)
+    }
+
+    func testRecoveryRestrictsTheBrowserWithoutInventingAMirroredLock() {
+        var damaged = PolicyRecord()
+        damaged.recoveryRequired = true
+        damaged.allowlist = ["escape.example"]
+        let authority = PolicyView(status: PolicyAuthority.status(damaged, health: FilterHealth()))
+        let merged = PolicyMerge.stricter(editor: view(lockDays: 2, allows: ["escape.example"]),
+                                         other: authority)
+        XCTAssertTrue(merged.recoveryRequired)
+        XCTAssertTrue(merged.isLocked(at: .distantFuture), "recovery does not expire with a clock")
+        XCTAssertNil(merged.lock, "sync must not adopt an artificial permanent lock into user mirrors")
+        XCTAssertTrue(merged.allowlist.isEmpty)
+        let reply = merged.bridgeReply(listVersion: 1)
+        XCTAssertEqual(reply["mode"] as? String, "strict")
+        XCTAssertEqual(reply["allowlist"] as? [String], [])
+        XCTAssertGreaterThan(reply["lockUntil"] as? Double ?? 0, now.timeIntervalSince1970 * 1000)
     }
 }

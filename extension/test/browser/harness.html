@@ -28,7 +28,7 @@
 <div id="frames"></div>
 <script>
 (() => {
-  const SCENARIOS = ["equal-length", "feed", "malformed", "worker", "nested"];
+  const SCENARIOS = ["equal-length", "feed", "malformed", "worker", "nested", "attributes", "policy", "timeout"];
   const DEADLINE_MS = 16_000;
   const tally = Object.fromEntries(SCENARIOS.map((s) => [s, { asks: [], navigated: 0, hidden: 0 }]));
 
@@ -79,6 +79,10 @@
     // 5. nested frame: hides itself, never navigates
     check(t.nested.hidden === 1, "nested: a blocked subframe hid itself");
     check(t.nested.navigated === 0, "nested: and did not navigate the tab");
+    for (const name of ["attributes", "policy", "timeout"]) {
+      check(t[name].asks.length === 2, `${name}: a fresh verdict was requested (${t[name].asks.length} asks)`);
+      check(t[name].navigated === 1, `${name}: changed protection caught the fixture`);
+    }
 
     const failed = results.filter((r) => !r.ok);
     const summary = document.getElementById("summary");

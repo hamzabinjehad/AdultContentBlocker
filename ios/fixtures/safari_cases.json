@@ -1,0 +1,12 @@
+[
+  {"domain":"blocked.example.net","url":"https://blocked.example.net/","blocked":true},
+  {"domain":"blocked.example.net","url":"https://a.b.blocked.example.net:443/path","blocked":true},
+  {"domain":"blocked.example.net","url":"https://blocked.example.net./","blocked":true},
+  {"domain":"blocked.example.net","url":"https://user:pass@blocked.example.net/","blocked":true},
+  {"domain":"blocked.example.net","url":"https://notblocked.example.net/","blocked":false},
+  {"domain":"blocked.example.net","url":"https://blocked.example.net.innocent.example.net/","blocked":false},
+  {"domain":"blocked.example.net","url":"https://innocent.example.net/blocked.example.net","blocked":false},
+  {"domain":"blocked.example.net","url":"https://blocked.example.net@innocent.example.net/","blocked":false},
+  {"domain":"tenant.cloudfront.net","url":"https://tenant.cloudfront.net/","blocked":true},
+  {"domain":"tenant.cloudfront.net","url":"https://another.cloudfront.net/","blocked":false}
+]

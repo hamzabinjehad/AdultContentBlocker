@@ -371,5 +371,40 @@ await (async () => {
   check(h.log.sent[0].body.length <= S.MAX_TEXT + 1, "and the text sent stays bounded");
 })();
 
+// Policy changes must invalidate a clean verdict even when the DOM is unchanged.
+await (async () => {
+  const h = harness({ doc: fakeDoc({ alt: [...Array(120).fill("garden"), "fixture marker"] }),
+    verdicts: (zones) => ({ block: zones.alt.includes("fixture marker") }) });
+  h.scanner.start(); await h.clock.advance(10);
+  check(h.log.navigated.length === 1, "late image labels in long feeds are sampled instead of only the first hundred");
+})();
+check(S.boundedText("x".repeat(3000) + "tail", 1000).endsWith("tail")
+  && S.boundedText("x".repeat(3000), 1000).length <= 1001, "oversized metadata stays bounded while retaining its tail");
+await (async () => {
+  let enabled = false;
+  const h = harness({ doc: fakeDoc({ body: "fixture content" }), verdicts: () => ({ block: enabled }) });
+  h.scanner.start(); await h.clock.advance(10);
+  enabled = true; h.scanner.recheck(); await h.clock.advance(10);
+  check(h.log.sent.length === 2 && h.log.navigated.length === 1, "policy change rechecks unchanged open content");
+})();
+await (async () => {
+  let release;
+  const h = harness({ doc: fakeDoc({ body: "fixture content" }), verdicts: (_, n) => n === 1
+    ? new Promise((resolve) => { release = resolve; }) : { block: false } });
+  h.scanner.start(); await h.clock.advance(10);
+  h.scanner.recheck(); release({ block: true }); await h.clock.advance(10);
+  check(h.log.sent.length === 2 && h.log.navigated.length === 0, "old-policy verdict is discarded and new policy is consulted");
+})();
+await (async () => {
+  const h = harness({ doc: fakeDoc({ body: "fixture content" }), verdicts: (_, n) => n === 1
+    ? new Promise(() => {}) : { block: true } });
+  h.scanner.start(); await h.clock.advance(S.REPLY_TIMEOUT_MS + S.RETRY_BASE_MS + 10);
+  check(h.log.sent.length === 2 && h.log.navigated.length === 1, "a hung worker request times out and retries instead of freezing the scanner");
+})();
+check(S.OBSERVER_OPTIONS.attributes && ["alt", "aria-label", "content"].every((key) => S.OBSERVER_OPTIONS.attributeFilter.includes(key)), "metadata and image-label attribute changes are observed");
+check(S.scoringPolicyChanged({ customTerms: [] }, { customTerms: ["fixture"] }), "new words invalidate content verdicts");
+check(S.scoringPolicyChanged({ inspectText: false }, { inspectText: true }), "enabling checking invalidates content verdicts");
+check(!S.scoringPolicyChanged({ lastHeartbeat: 1, textSensitivity: 50 }, { lastHeartbeat: 2, textSensitivity: 50 }), "ordinary heartbeat does not rescan every page");
+
 print(`  ${checks - failures}/${checks} checks passed`);
 if (failures) throw new Error(`${failures} scanner checks failed`);

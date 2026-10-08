@@ -31,13 +31,19 @@ public final class FilterSync: ObservableObject {
 
     private var timer: Timer?
     private var syncing = false
+    private var lockEvidence = AuthorityLockEvidence()
 
     private init() {}
 
     public func start() {
         guard timer == nil, FilterLink.shared.isConfigured else { return }
         timer = Timer.scheduledTimer(withTimeInterval: 20, repeats: true) { _ in
-            Task { @MainActor in await FilterSync.shared.sync() }
+            Task { @MainActor in
+                await FilterSync.shared.sync()
+                // Reconciliation has released its guard before activation can
+                // suspend awaiting approval. Further ticks can still read status.
+                await FilterController.shared.reassertIfNeeded()
+            }
         }
         Task { await sync() }
     }
@@ -54,6 +60,7 @@ public final class FilterSync: ObservableObject {
             status = nil
             return
         }
+        lockEvidence.observe(locked: latest.isLocked)
 
         // The partner key FIRST, while the authority may still be unlocked. A
         // first lock is what turns the filter on, and a key sent after the lock
@@ -126,15 +133,28 @@ public final class FilterSync: ObservableObject {
             BrowserGuard.shared.replaceAllowed(Set(merged.guardAllowed))
         }
         status = latest
+        lockEvidence.observe(locked: latest.isLocked)
     }
 
     /// Whether the filter's authority says a lock is running — by its own
     /// clock, which a key in the user's defaults cannot move.
-    public var authorityLocked: Bool { status?.isLocked ?? false }
+    public var authorityLocked: Bool { lockEvidence.locked }
 
     /// Kick a sync without waiting for it — for call sites that just saved.
     public nonisolated static func soon() {
         Task { @MainActor in await FilterSync.shared.sync() }
+    }
+}
+
+/// Missing IPC is a liveness failure, not proof that a trusted lock ended.
+/// Preserve the last authority verdict in memory until that authority answers
+/// again. The public status stays nil during an outage so UI never presents
+/// this cached lock as evidence that traffic is being filtered.
+struct AuthorityLockEvidence {
+    private(set) var locked = false
+
+    mutating func observe(locked: Bool?) {
+        if let locked { self.locked = locked }
     }
 }
 

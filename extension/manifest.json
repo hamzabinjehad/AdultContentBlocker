@@ -3,9 +3,16 @@
   "name": "Hisn Protection",
   "version": "1.0.0",
 
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoaysT5wF/Cs85r5wQZGDpgrrVe2iEO4R1ExiZnzhTn/JmMZTf/n/5I8E4rYZFmtQNWwIm+khyos5cQ0UFy0/GW9qlQimk3rYwl1x/s7UuQrbS8/QsvIX/MPkom5yQbybd2aFBxT+I0gGwKAILLQtSqbFnc0s//P8YUUswk4lbn0wgXiwp57uFbk4MoJL6tTu+2KuNLj/4AFBszlKc3Y2+0LBbqZKG41YHNmSUV1DkDIDYhAqXQhci5pQH8MoFGnW6yDX1M4lNMcVWNM6sEhB0+gkL5lP9GHrIgGyMvpKRd47bqeAd9M7tKH0jOi1gNxyhFGoJPNoBopCZo4jVdDCdwIDAQAB",
 
-  "description": "Blocks adult content. Once a lock period starts it cannot be turned off until the timer expires.",
+  "description": "On-device adult-content filtering with SafeSearch, custom blocking rules, and optional locks managed by the Hisn macOS app.",
   "minimum_chrome_version": "137",
 
   "permissions": [
@@ -41,6 +48,11 @@
         "path": "rules/safesearch.json"
       },
       {
+        "id": "web_protection",
+        "enabled": true,
+        "path": "rules/web_protection.json"
+      },
+      {
         "id": "paths",
         "enabled": true,
         "path": "rules/paths.json"
@@ -62,7 +74,11 @@
 
   "action": {
     "default_title": "Hisn Protection",
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png"
+    }
   },
 
   "options_page": "options.html",

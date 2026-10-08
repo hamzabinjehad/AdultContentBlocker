@@ -102,10 +102,10 @@ func handle(_ message: [String: Any]) -> [String: Any] {
         // A short timeout: no filter is the normal state without the paid
         // entitlements, and a heartbeat must never hang on it.
         let local = PolicyView.local()
-        let view = FilterLink.shared.status(timeout: 0.5)
-            .map { PolicyMerge.stricter(editor: local, other: PolicyView(status: $0)) }
-            ?? local
-        var reply = view.bridgeReply(listVersion: defaults?.integer(forKey: "listVersion") ?? 0)
+        var reply = BridgePolicy.reply(local: local,
+                                      authority: FilterLink.shared.status(timeout: 0.5),
+                                      requiresAuthority: FilterLink.shared.isConfigured,
+                                      listVersion: defaults?.integer(forKey: "listVersion") ?? 0)
         // The app's language, for the extension's pages on Automatic. Not
         // policy: nothing here can loosen or tighten a thing.
         if let language = defaults?.string(forKey: "appLanguage"), ["ar", "en"].contains(language) {

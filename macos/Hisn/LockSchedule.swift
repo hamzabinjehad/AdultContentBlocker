@@ -42,9 +42,8 @@ public struct LockSchedule: Codable, Equatable {
         // A window crossing midnight that contains `now` began yesterday or today.
         for dayOffset in [-1, 0] {
             guard let day = calendar.date(byAdding: .day, value: dayOffset, to: today),
-                  let begins = calendar.date(byAdding: .minute, value: start, to: day)
+                  let window = interval(startingOn: day, calendar: calendar)
             else { continue }
-            let window = DateInterval(start: begins, duration: TimeInterval(lengthMinutes * 60))
             if now >= window.start && now < window.end { return window }
         }
         return nil
@@ -57,12 +56,26 @@ public struct LockSchedule: Codable, Equatable {
         let today = calendar.startOfDay(for: now)
         for dayOffset in [0, 1] {
             guard let day = calendar.date(byAdding: .day, value: dayOffset, to: today),
-                  let begins = calendar.date(byAdding: .minute, value: start, to: day),
-                  begins > now
+                  let window = interval(startingOn: day, calendar: calendar),
+                  window.start > now
             else { continue }
-            return DateInterval(start: begins, duration: TimeInterval(lengthMinutes * 60))
+            return window
         }
         return nil
+    }
+
+    private func interval(startingOn day: Date, calendar: Calendar) -> DateInterval? {
+        // Resolve both endpoints as local clock times. Elapsed-minute arithmetic
+        // shifts them on daylight-saving days. A missing time uses the next
+        // available time; a repeated time uses its first occurrence.
+        guard let endDay = calendar.date(byAdding: .day, value: end > start ? 0 : 1, to: day),
+              let begins = calendar.date(bySettingHour: start / 60, minute: start % 60, second: 0,
+                                         of: day, matchingPolicy: .nextTime, repeatedTimePolicy: .first),
+              let ends = calendar.date(bySettingHour: end / 60, minute: end % 60, second: 0,
+                                       of: endDay, matchingPolicy: .nextTime, repeatedTimePolicy: .first),
+              ends > begins
+        else { return nil }
+        return DateInterval(start: begins, end: ends)
     }
 
     /// The window to lock now: the one containing `now`, when the lock that

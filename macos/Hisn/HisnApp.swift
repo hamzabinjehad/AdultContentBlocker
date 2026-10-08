@@ -2,6 +2,22 @@ import SwiftUI
 import AppKit
 import CoreServices
 
+/// Keep ordinary Quit requests from stopping background protection, while
+/// allowing the system to end a session and an unlocked language restart.
+enum AppLifecyclePolicy {
+    static func permitsTermination(hostingTests: Bool, endingSession: Bool,
+                                   restarting: Bool, locked: @autoclosure () -> Bool) -> Bool {
+        // Logout and test shutdown must not wait on lock stores or Keychain.
+        hostingTests || endingSession || (restarting && !locked())
+    }
+
+    /// A managed duplicate must leave launchd ready to retry if the existing
+    /// Finder-launched copy later stops. Manual duplicates can leave normally.
+    static func duplicateExitStatus(managed: Bool) -> Int32 {
+        managed ? EXIT_FAILURE : EXIT_SUCCESS
+    }
+}
+
 @main
 struct HisnApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
@@ -13,11 +29,23 @@ struct HisnApp: App {
             // 420-point column forced every explanation into caption-sized
             // text; this window is mostly explanations.
             .defaultSize(width: 880, height: 600)
-            .commands { CommandGroup(replacing: .newItem) {} }
+            .commands {
+                CommandGroup(replacing: .newItem) {}
+                CommandGroup(replacing: .appTermination) {
+                    Button("Hide Hisn") { MainWindow.hide() }
+                        .keyboardShortcut("q")
+                }
+            }
         // Started at login the app has no window; this is the way back to it,
         // and the lock's time left without opening anything.
-        MenuBarExtra(String(localized: "Hisn"), systemImage: icon.symbol) {
+        MenuBarExtra {
             StatusMenu()
+        } label: {
+            Label {
+                Text("Hisn")
+            } icon: {
+                Image(nsImage: icon.image)
+            }
         }
     }
 }
@@ -36,6 +64,14 @@ struct HisnApp: App {
 /// on. See `NativeMessagingInstaller` for why this cannot be a one-time setup
 /// step.
 final class AppDelegate: NSObject, NSApplicationDelegate {
+
+    private var protectionActivity: NSObjectProtocol?
+    static var restartRequested = false
+
+    static var isAgentManaged: Bool {
+        CommandLine.arguments.contains("--background")
+            && CommandLine.arguments.contains("--for-user")
+    }
 
     /// True when this process is the host for the unit tests. None of the
     /// launch work below may run then: it rewrote the browsers' real
@@ -58,17 +94,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
            args[i + 1] != NSUserName() {
             exit(0)
         }
-        // One copy of this app bundle at a time: the LaunchAgent starts one at
-        // login, and a second from Finder would run a second guard. A build of
-        // Hisn from elsewhere (Xcode) is a different bundle and may coexist.
+        // One guard per app bundle. A managed duplicate exits unsuccessfully
+        // so launchd retries: a Finder-launched copy must not permanently take
+        // away supervision if it is later force-quit. Other accounts exited
+        // successfully above and are never retried.
         if let other = NSRunningApplication.runningApplications(
                 withBundleIdentifier: Bundle.main.bundleIdentifier ?? "")
             .first(where: { $0.processIdentifier != getpid()
                             && $0.bundleURL?.standardizedFileURL
                                == Bundle.main.bundleURL.standardizedFileURL }) {
-            other.activate()
-            exit(0)
+            if !Self.isAgentManaged { other.activate() }
+            exit(AppLifecyclePolicy.duplicateExitStatus(managed: Self.isAgentManaged))
         }
+        // Hidden windows must not let App Nap defer browser checks or daily
+        // lock timers. This activity still allows normal system sleep.
+        protectionActivity = ProcessInfo.processInfo.beginActivity(
+            options: .userInitiatedAllowingIdleSystemSleep,
+            reason: "Maintain browser protection and scheduled locks")
         NativeMessagingInstaller.installIfNeeded()
         AppLanguage.publish()
         BrowserGuard.shared.start()
@@ -90,31 +132,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Closing the window never quits. It used to, whenever no lock ran — and
     /// started at login with its window closed, the app then exited at once,
     /// so the daily lock had no process to start it and the menu bar icon was
-    /// gone. Hisn is a menu bar app now: it runs until Quit (which a lock
-    /// refuses), and the window comes back from the menu bar or the Dock.
+    /// gone. Hisn stays in the background, and the window comes back from the
+    /// menu bar or the Dock.
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         false
     }
 
-    /// During a lock this process is the browser guard, so Quit is refused.
-    /// A logout, restart or shutdown is always let through — refusing those
-    /// would hold the whole Mac hostage — and a force-quit cannot be refused
-    /// at all; the LaunchAgent's KeepAlive brings the app straight back.
+    /// Ordinary Quit closes the interface while protection keeps running.
+    /// Logout, restart and shutdown remain available; the installed agent
+    /// restores the app after a crash or force-quit.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        guard !Self.isHostingTests, EffectiveLock.isLocked, !Self.systemIsEndingSession else {
+        let endingSession = Self.systemIsEndingSession
+        if AppLifecyclePolicy.permitsTermination(hostingTests: Self.isHostingTests,
+                endingSession: endingSession,
+                restarting: Self.restartRequested, locked: EffectiveLock.isLocked) {
+            if endingSession { Self.restartRequested = false }
             return .terminateNow
         }
-        let alert = NSAlert()
-        alert.messageText = String(localized: "Hisn keeps running during a lock")
-        alert.informativeText = String(localized: """
-            While a lock runs, Hisn watches that every browser \
-            has its protection on. Close the window instead — Hisn stays in \
-            the background.
-            """)
-        alert.addButton(withTitle: String(localized: "OK"))
-        alert.runModal()
-        MainWindow.all.forEach { $0.close() }
+        Self.restartRequested = false
+        MainWindow.hide()
         return .terminateCancel
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        if let protectionActivity {
+            ProcessInfo.processInfo.endActivity(protectionActivity)
+            self.protectionActivity = nil
+        }
+        // A successful exit would stand the agent down until the next login.
+        // A controlled language restart keeps the replacement supervised.
+        if !Self.isHostingTests, Self.restartRequested, Self.isAgentManaged {
+            exit(EXIT_FAILURE)
+        }
     }
 
     /// Whether this quit comes from the system ending the session.

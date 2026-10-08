@@ -1,0 +1,16 @@
+#!/bin/bash
+set -euo pipefail
+if [ "${3:-/}" != / ]; then
+    echo "Hisn must be installed on the current startup volume." >&2
+    exit 1
+fi
+# A fresh install needs a person signed in to choose which account to protect.
+# An update keeps the existing account, even if a different administrator runs it.
+if [ ! -f /Library/LaunchAgents/app.hisn.agent.plist ]; then
+    USER_NAME=$(stat -f '%Su' /dev/console)
+    case "$USER_NAME" in
+        root|loginwindow|_mbsetupuser|"")
+            echo "Sign in to the account that will use Hisn, then run the installer." >&2
+            exit 1 ;;
+    esac
+fi

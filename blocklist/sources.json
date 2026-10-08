@@ -84,6 +84,15 @@
       "license": "free for non-commercial use — verify terms before shipping commercially",
       "note": "Small but pointed: sites carrying adult content alongside ordinary content. Exactly the category a domain list normally cannot express, curated by hand upstream.",
       "tier": "extended"
+    },
+    {
+      "id": "stevenblack-laptop",
+      "path": "local/stevenblack-laptop.txt",
+      "format": "plain",
+      "enabled": true,
+      "license": "MIT",
+      "tier": "core",
+      "note": "Snapshot of the existing laptop hosts list, including ads and trackers; enforced by Hisn instead of globally through /etc/hosts."
     }
   ],
   "_never_block_comment": "SAFETY RAIL, applied last, after every upstream source. A poisoned or sloppy upstream list that blocks apple.com would brick the machine AND lock the user out of asking for help. Two tiers, because they are NOT the same problem.",

@@ -1,0 +1,70 @@
+{
+  "fill": {
+    "automatic-gradient": "extended-srgb:0.00000,0.53333,1.00000,1.00000"
+  },
+  "groups": [
+    {
+      "layers": [
+        {
+          "glass": false,
+          "image-name": "hisn-icon-source-1024.png",
+          "name": "Default artwork",
+          "opacity-specializations": [
+            {
+              "appearance": "light",
+              "value": 1
+            },
+            {
+              "appearance": "dark",
+              "value": 0
+            },
+            {
+              "appearance": "tinted",
+              "value": 0
+            }
+          ]
+        },
+        {
+          "glass": false,
+          "image-name": "hisn-icon-dark-1024.png",
+          "name": "Dark and Mono artwork",
+          "opacity-specializations": [
+            {
+              "appearance": "base",
+              "value": 0
+            },
+            {
+              "appearance": "dark",
+              "value": 1
+            },
+            {
+              "appearance": "tinted",
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.5
+      },
+      "translucency": {
+        "enabled": false,
+        "value": 0.3
+      }
+    }
+  ],
+  "supported-platforms": {
+    "squares": [
+      "macOS"
+    ]
+  },
+  "fill-specializations": [
+    {
+      "appearance": "dark",
+      "value": {
+        "solid": "extended-srgb:0.06667,0.07451,0.09412,1.00000"
+      }
+    }
+  ]
+}

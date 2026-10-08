@@ -1,0 +1,60 @@
+#!/bin/bash
+set -euo pipefail
+[ "${3:-/}" = / ] || exit 1
+APP=/Applications/Hisn.app
+LABEL=app.hisn.agent
+AGENT="/Library/LaunchAgents/$LABEL.plist"
+PLIST="$APP/Contents/Info.plist"
+SCRIPTS="$(cd "$(dirname "$0")" && pwd)"
+
+USER_NAME=""
+if [ -f "$AGENT" ]; then
+    USER_NAME=$(/usr/libexec/PlistBuddy -c 'Print :ProgramArguments:3' "$AGENT" 2>/dev/null || true)
+fi
+if [ -z "$USER_NAME" ]; then USER_NAME=$(stat -f '%Su' /dev/console); fi
+[[ "$USER_NAME" =~ ^[a-zA-Z0-9._-]+$ ]] || { echo "Cannot determine the protected account" >&2; exit 1; }
+case "$USER_NAME" in root|loginwindow|_mbsetupuser) exit 1 ;; esac
+USER_ID=$(id -u "$USER_NAME")
+DOMAIN="gui/$USER_ID"
+
+IDS=()
+INDEX=0
+while ID=$(/usr/libexec/PlistBuddy -c "Print :HisnExtensionIDs:$INDEX" "$PLIST" 2>/dev/null); do
+    IDS+=(--extension-id "$ID")
+    INDEX=$((INDEX + 1))
+done
+[ "${#IDS[@]}" -gt 0 ] || { echo "No browser extension IDs in the app" >&2; exit 1; }
+/bin/bash "$SCRIPTS/install_native_host.sh" "${IDS[@]}"
+
+chown -R root:wheel "$APP"
+chmod -R go-w "$APP"
+mkdir -p /Library/LaunchAgents
+TEMP_AGENT=$(mktemp /Library/LaunchAgents/.hisn-agent.XXXXXX)
+trap 'rm -f "$TEMP_AGENT"' EXIT
+# PlistBuddy creates typed values and escapes the account name as XML.
+/usr/libexec/PlistBuddy -c "Add :Label string $LABEL" "$TEMP_AGENT"
+/usr/libexec/PlistBuddy -c 'Add :ProgramArguments array' "$TEMP_AGENT"
+/usr/libexec/PlistBuddy -c "Add :ProgramArguments:0 string $APP/Contents/MacOS/Hisn" "$TEMP_AGENT"
+/usr/libexec/PlistBuddy -c 'Add :ProgramArguments:1 string --background' "$TEMP_AGENT"
+/usr/libexec/PlistBuddy -c 'Add :ProgramArguments:2 string --for-user' "$TEMP_AGENT"
+/usr/libexec/PlistBuddy -c "Add :ProgramArguments:3 string $USER_NAME" "$TEMP_AGENT"
+/usr/libexec/PlistBuddy -c 'Add :RunAtLoad bool true' "$TEMP_AGENT"
+# Ordinary Quit keeps Hisn in the background. A crash or force-quit relaunches;
+# exit 0 in another account must stay stopped because this agent is device-wide.
+/usr/libexec/PlistBuddy -c 'Add :KeepAlive dict' "$TEMP_AGENT"
+/usr/libexec/PlistBuddy -c 'Add :KeepAlive:SuccessfulExit bool false' "$TEMP_AGENT"
+/usr/libexec/PlistBuddy -c 'Add :ThrottleInterval integer 10' "$TEMP_AGENT"
+/usr/libexec/PlistBuddy -c 'Add :LimitLoadToSessionType string Aqua' "$TEMP_AGENT"
+/usr/libexec/PlistBuddy -c 'Add :ProcessType string Interactive' "$TEMP_AGENT"
+plutil -lint "$TEMP_AGENT"
+chown root:wheel "$TEMP_AGENT"
+chmod 644 "$TEMP_AGENT"
+mv -f "$TEMP_AGENT" "$AGENT"
+trap - EXIT
+
+# A logged-out account picks up its agent at its next login.
+if launchctl print "$DOMAIN" >/dev/null 2>&1; then
+    launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null || true
+    launchctl bootstrap "$DOMAIN" "$AGENT"
+fi
+echo "Hisn installed. Open Hisn in Applications to complete setup."

@@ -18,7 +18,7 @@ export function settingsAccess(state, patch) {
 }
 
 export function connectionStatus(state, now = Date.now()) {
-  if (!state) return { title: t("connection.checking"), detail: t("connection.waitingExtension"),
+  if (!state || state.ok === false) return { title: t("connection.checking"), detail: t("connection.waitingExtension"),
                        managed: true, fresh: false };
   if (!state.appPresent) return {
     title: t("connection.browserOnly"), managed: false, fresh: false,
@@ -31,6 +31,14 @@ export function connectionStatus(state, now = Date.now()) {
     title: fresh ? t("connection.managed") : t("connection.waitingApp"), managed: true, fresh,
     detail: fresh ? t("connection.managed.detail") : t("connection.waiting.detail"),
   };
+}
+
+// A failed worker request is not evidence that the native app is absent.
+// Only claim a successful sync after reading back fresh, app-managed state.
+export function connectionFeedback(result, state, now = Date.now()) {
+  if (!state || state.ok === false || result?.reason === "unavailable") return t("conn.unavailable");
+  if (result?.ok && connectionStatus(state, now).fresh) return t("conn.synced");
+  return t(state.appPresent ? "connection.waiting.detail" : "conn.none");
 }
 
 export function parseDomains(text) {

@@ -91,14 +91,20 @@ enum AppLanguage: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Quit and open again. Only offered while no lock runs: during one, quit
-    /// is refused (this process is the browser guard), so the choice waits for
-    /// the next launch instead.
+    /// An explicit restart is allowed only outside a lock. An installed
+    /// agent restarts its own process so the replacement stays supervised;
+    /// manually launched development builds use the helper below instead.
     ///
     /// The helper waits for this process to be gone before opening the app,
     /// so the new copy's one-instance check does not find the old one and
     /// quit itself.
     @MainActor static func restart() {
+        guard !AppDelegate.isHostingTests, !EffectiveLock.isLocked else { return }
+        if AppDelegate.isAgentManaged {
+            AppDelegate.restartRequested = true
+            NSApp.terminate(nil)
+            return
+        }
         let helper = Process()
         helper.executableURL = URL(fileURLWithPath: "/bin/sh")
         helper.arguments = [
@@ -107,6 +113,10 @@ enum AppLanguage: String, CaseIterable, Identifiable {
             "sh", String(ProcessInfo.processInfo.processIdentifier), Bundle.main.bundleURL.path,
         ]
         do { try helper.run() } catch { return }
+        AppDelegate.restartRequested = true
         NSApp.terminate(nil)
+        // If a lock began before termination was approved, do not leave the
+        // restart helper waiting indefinitely for a process that stays alive.
+        if !AppDelegate.restartRequested, helper.isRunning { helper.terminate() }
     }
 }

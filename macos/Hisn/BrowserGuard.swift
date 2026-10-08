@@ -2,7 +2,8 @@ import AppKit
 import SwiftUI
 import UserNotifications
 
-/// During a lock, close any browser that Hisn is not running inside.
+/// During a lock (or an explicit outside-lock opt-in), warn and close
+/// non-exempt browsers without a live extension connection.
 ///
 /// THE HOLE THIS CLOSES
 /// --------------------
@@ -13,10 +14,10 @@ import UserNotifications
 /// until it is force-installed from a store, nothing stops that click. A lock
 /// that one click undoes is not a lock.
 ///
-/// So while a lock runs, every app that can open web pages is judged:
+/// While guarding is active, apps identified as browsers are judged:
 ///
-///  * **Safari** is left alone. It is covered by Screen Time's own web filter,
-///    the hosts file and the socket filter; no Hisn extension runs there.
+///  * **Safari** is left alone for compatibility. No Hisn extension runs there;
+///    its exemption is not evidence that Screen Time or network layers are on.
 ///  * **A Chromium browser Hisn links** (`NativeMessagingInstaller.browsers`)
 ///    stays open for as long as its extension keeps checking in through the
 ///    bridge. When it stops, the person is warned, and the browser is closed if
@@ -33,11 +34,64 @@ import UserNotifications
 /// This is not tamper-proof — the process can be quit, and an administrator
 /// can do anything. It turns "switch the extension off" from a one-click
 /// escape into one that closes the browser, and the installer's LaunchAgent
-/// brings the app back if it is quit.
+/// can bring the app back if it is quit when separately installed. A heartbeat
+/// identifies a browser bundle, not every profile or private window in it.
 public enum BrowserGuardPolicy {
+    public static func isActive(locked: Bool, requireOutsideLock: Bool) -> Bool {
+        locked || requireOutsideLock
+    }
+
+    /// An empty authoritative record is not permission to trust an editable
+    /// local heartbeat. Local fallback is only for an unavailable authority.
+    public static func checkIn(browser: String, authority: [String: Date]?, local: Date?) -> Date? {
+        if let authority { return authority[browser] }
+        return local
+    }
+
+    /// Session-local timing by browser, not process. An unverified restart
+    /// cannot buy a new connection grace or warning countdown.
+    public struct Session {
+        private var starts: [String: Date] = [:]
+        private var violations: [String: Date] = [:]
+        private var instances: [String: String] = [:]
+        private var healthyRestart: Set<String> = []
+        public init() {}
+        public mutating func graceStart(browser: String, now: Date, notBefore floor: Date,
+                                        instance: String? = nil) -> Date {
+            if let instance, instances[browser] != instance {
+                // One new grace after verified connectivity, not after merely
+                // passing through the unverified startup grace again.
+                if instances[browser] != nil, healthyRestart.remove(browser) != nil {
+                    starts[browser] = now
+                }
+                instances[browser] = instance
+            }
+            if starts[browser] == nil { starts[browser] = now }
+            return max(starts[browser]!, floor)
+        }
+        public func firstViolation(browser: String) -> Date? { violations[browser] }
+        public mutating func observe(_ verdict: Verdict, browser: String, at now: Date,
+                                      verifiedConnection: Bool = false) {
+            switch verdict {
+            case .ok:
+                violations[browser] = nil
+                if verifiedConnection { healthyRestart.insert(browser) }
+            case .close:
+                violations[browser] = nil
+                healthyRestart.remove(browser)
+            case .warn:
+                healthyRestart.remove(browser)
+                if violations[browser] == nil { violations[browser] = now }
+            }
+        }
+        public mutating func reset() {
+            starts.removeAll(); violations.removeAll()
+            instances.removeAll(); healthyRestart.removeAll()
+        }
+    }
 
     public enum Coverage: Equatable {
-        /// Covered by other layers; never judged.
+        /// Compatibility exemption; other layers must be verified separately.
         case exempt
         /// A browser Hisn's extension runs in — fine while it checks in.
         case needsExtension
@@ -50,6 +104,7 @@ public enum BrowserGuardPolicy {
     public enum Reason: Equatable {
         case extensionSilent
         case uncovered
+        case profileUnprotected
     }
 
     public enum Verdict: Equatable {
@@ -58,7 +113,7 @@ public enum BrowserGuardPolicy {
         case close(Reason)
     }
 
-    /// Safari and its preview build: WebKit, covered by Screen Time's filter.
+    /// Safari and its preview build: compatibility exemptions, not verified coverage.
     public static let exempt: Set<String> = [
         "com.apple.Safari", "com.apple.SafariTechnologyPreview",
     ]
@@ -115,28 +170,53 @@ public enum BrowserGuardPolicy {
         return age >= -clockSkewTolerance && age < staleAfter
     }
 
+    /// Recheck delayed force-termination against current consent and recovery,
+    /// rather than blindly applying a decision made ten seconds ago.
+    public static func shouldForceClose(active: Bool, coverage: Coverage,
+                                         lastSeen: Date?, now: Date, profileLoss: Bool = false) -> Bool {
+        guard active else { return false }
+        switch coverage {
+        case .exempt, .allowedByUser: return false
+        case .needsExtension: return profileLoss || !extensionAlive(lastSeen: lastSeen, now: now)
+        case .uncovered: return true
+        }
+    }
+
+    /// Cached loss must not close a browser before a read at its original
+    /// warning deadline. Repairing a running profile deserves the same fresh
+    /// evidence check as repairing one while its browser was stopped.
+    public static func profileRefreshRequired(profileLoss: Bool, checkedAt: Date?, now: Date,
+                                               firstViolation: Date?, recentlyClosed: Bool) -> Bool {
+        guard profileLoss, let firstViolation else { return false }
+        let deadline = firstViolation.addingTimeInterval(recentlyClosed ? warnRepeat : warnSilent)
+        guard now >= deadline else { return false }
+        guard let checkedAt, checkedAt >= deadline, checkedAt <= now else { return true }
+        return false
+    }
+
     /// The verdict for one running browser.
     ///
     /// - Parameters:
-    ///   - graceStart: the later of its launch, the Mac's last wake and the
-    ///     guard's own start — the moment from which it has had a fair chance
-    ///     to check in.
+    ///   - graceStart: the later of the browser's first observation in this
+    ///     enforcement session, the Mac's last wake and the guard's own start.
+    ///     Only a restart following verified connectivity can renew it.
     ///   - firstViolation: when the guard first found it in breach, if it has.
     ///     The caller records it the first time this returns `.warn`.
     ///   - recentlyClosed: the guard closed this browser within
     ///     `repeatWindow` and it has been relaunched.
     public static func verdict(coverage: Coverage, lastSeen: Date?, now: Date,
                                graceStart: Date, firstViolation: Date?,
-                               recentlyClosed: Bool) -> Verdict {
+                               recentlyClosed: Bool, profileLoss: Bool = false,
+                               profileRefreshPending: Bool = false) -> Verdict {
         let reason: Reason
         let warning: TimeInterval
         switch coverage {
         case .exempt, .allowedByUser:
             return .ok
         case .needsExtension:
-            if extensionAlive(lastSeen: lastSeen, now: now) { return .ok }
-            if now.timeIntervalSince(graceStart) < launchGrace { return .ok }
-            reason = .extensionSilent
+            if !profileLoss && extensionAlive(lastSeen: lastSeen, now: now) { return .ok }
+            if !profileLoss && !recentlyClosed && now.timeIntervalSince(graceStart) < launchGrace { return .ok }
+            reason = profileLoss ? .profileUnprotected : .extensionSilent
             warning = recentlyClosed ? warnRepeat : warnSilent
         case .uncovered:
             reason = .uncovered
@@ -144,6 +224,12 @@ public enum BrowserGuardPolicy {
         }
         let since = firstViolation ?? now
         let closeAt = since.addingTimeInterval(warning)
+        // A repaired, relaunched browser deserves a new reading before an
+        // old cached profile failure can close it again. Keep the original
+        // violation timestamp; a genuinely off profile cannot reset its timer.
+        if reason == .profileUnprotected && profileRefreshPending && now >= closeAt {
+            return .warn(reason, closeAt: now.addingTimeInterval(1))
+        }
         return now >= closeAt ? .close(reason) : .warn(reason, closeAt: closeAt)
     }
 
@@ -190,6 +276,7 @@ public final class BrowserGuard: ObservableObject {
     /// Apps the person allowed to stay open during a lock. Add-only while
     /// unlocked; see `setAllowed`.
     public static let allowedKey = "guardAllowedApps"
+    public static let requireOutsideLockKey = "guardRequireOutsideLock"
 
     /// A browser the guard is about to close, for the warning panel and the
     /// Overview banner.
@@ -209,20 +296,55 @@ public final class BrowserGuard: ObservableObject {
         public let coverage: BrowserGuardPolicy.Coverage
     }
 
+    public struct ProfileIssue: Identifiable, Equatable {
+        public let id: String
+        public let browserName: String
+        public let unprotected: [String]
+        public let unconfirmed: [String]
+        public let enumerationVerified: Bool
+    }
+
     @Published public private(set) var alerts: [Alert] = []
+    @Published public private(set) var profileIssues: [ProfileIssue] = []
 
     private var timer: Timer?
     private var started = Date()
     private var awakeSince = Date()
-    private var violations: [pid_t: Date] = [:]
+    private var session = BrowserGuardPolicy.Session()
+    private var enforcing = false
+    private var enforcementBegan = Date()
     private var recentlyClosed: [String: Date] = [:]
     private var notified: Set<pid_t> = []
+    private var closing: [pid_t: Task<Void, Never>] = [:]
+    private var closingIDs: [pid_t: UUID] = [:]
+    private var profileChecks: [String: BrowserProfileEvidence.Confirmation] = [:]
+    private var profileCheckedAt: [String: Date] = [:]
+    private var profileInstances: [String: Set<String>] = [:]
+    private var needsFreshProfile: Set<String> = []
+    private var profileScan: Task<Void, Never>?
+    private var lastProfileScan: Date?
+    private var profileEpoch: UInt64 = 0
     private var schemeCache: [String: Bool] = [:]
     private var panel: NSPanel?
 
     private var defaults: UserDefaults? { UserDefaults(suiteName: LockStore.appGroup) }
 
     private init() {}
+
+    /// Optional preference outside a commitment; an active lock always guards
+    /// browsers regardless of this ordinary, user-owned preference.
+    public var requireOutsideLock: Bool { defaults?.bool(forKey: Self.requireOutsideLockKey) == true }
+
+    public func setRequireOutsideLock(_ enabled: Bool) throws {
+        if !enabled, EffectiveLock.isLocked { throw AllowError.locked }
+        guard let defaults else { throw AllowError.storageUnavailable }
+        defaults.set(enabled, forKey: Self.requireOutsideLockKey)
+        guard defaults.object(forKey: Self.requireOutsideLockKey) as? Bool == enabled else {
+            throw AllowError.storageUnavailable
+        }
+        objectWillChange.send()
+        tick()
+    }
 
     public func start() {
         guard timer == nil else { return }
@@ -266,8 +388,12 @@ public final class BrowserGuard: ObservableObject {
 
     public enum AllowError: LocalizedError {
         case locked
+        case storageUnavailable
         public var errorDescription: String? {
-            String(localized: "A lock is running. Apps can be allowed again once it ends.")
+            switch self {
+            case .locked: return String(localized: "A lock is running. Apps can be allowed again once it ends.")
+            case .storageUnavailable: return String(localized: "Browser protection settings could not be saved. Try again.")
+            }
         }
     }
 
@@ -340,16 +466,32 @@ public final class BrowserGuard: ObservableObject {
         if wall.timeIntervalSince(lastTick) > 15 { awakeSince = wall }
         lastTick = wall
 
-        guard EffectiveLock.isLocked else {
-            if !alerts.isEmpty || !violations.isEmpty {
+        guard BrowserGuardPolicy.isActive(locked: EffectiveLock.isLocked,
+                                          requireOutsideLock: requireOutsideLock) else {
+            session.reset()
+            enforcing = false
+            recentlyClosed.removeAll()
+            notified.removeAll()
+            for task in closing.values { task.cancel() }
+            closing.removeAll()
+            closingIDs.removeAll()
+            profileScan?.cancel()
+            profileScan = nil
+            lastProfileScan = nil
+            profileEpoch &+= 1
+            profileChecks.removeAll()
+            profileCheckedAt.removeAll()
+            profileInstances.removeAll()
+            needsFreshProfile.removeAll()
+            if !profileIssues.isEmpty { profileIssues = [] }
+            if !alerts.isEmpty {
                 alerts = []
-                violations.removeAll()
-                notified.removeAll()
                 updatePanel()
             }
             return
         }
         let now = Date()
+        if !enforcing { enforcementBegan = now; enforcing = true }
         let linked = Set(NativeMessagingInstaller.browsers.map(\.bundleID))
         let allowed = effectiveAllowed
         let own = Bundle.main.bundleIdentifier
@@ -359,6 +501,8 @@ public final class BrowserGuard: ObservableObject {
         let authorityCheckIns = FilterSync.shared.status?.checkIns
         var next: [Alert] = []
         var running = Set<pid_t>()
+        var runningLinked = Set<String>()
+        var instances: [String: Set<String>] = [:]
 
         // Regular AND accessory apps: a browser relaunched as an agent
         // (LSUIElement) still shows web pages. An app with no bundle id is
@@ -371,54 +515,166 @@ public final class BrowserGuard: ObservableObject {
             else { continue }
             let pid = app.processIdentifier
             running.insert(pid)
+            let instance = "\(pid):\(app.launchDate?.timeIntervalSinceReferenceDate ?? 0)"
+            if linked.contains(id) {
+                runningLinked.insert(id)
+                instances[id, default: []].insert(instance)
+                if profileInstances[id]?.contains(instance) != true { needsFreshProfile.insert(id) }
+            }
             let coverage = BrowserGuardPolicy.coverage(bundleID: id, linked: linked,
                                                        userAllowed: allowed)
-            let graceStart = [app.launchDate ?? .distantPast, awakeSince, started].max()!
+            let lastSeen = BrowserGuardPolicy.checkIn(browser: id, authority: authorityCheckIns,
+                local: ExtensionPresence.lastSeen(browser: id, in: defaults))
+            let graceStart = session.graceStart(browser: id, now: now,
+                notBefore: max(awakeSince, max(started, enforcementBegan)),
+                instance: instance)
             let repeatOffender = recentlyClosed[id].map {
                 now.timeIntervalSince($0) < BrowserGuardPolicy.repeatWindow } ?? false
+            let profileLoss = !(profileChecks[id]?.confirmed(at: now).isEmpty ?? true)
+            if coverage == .needsExtension && BrowserGuardPolicy.profileRefreshRequired(
+                profileLoss: profileLoss, checkedAt: profileCheckedAt[id], now: now,
+                firstViolation: session.firstViolation(browser: id), recentlyClosed: repeatOffender) {
+                needsFreshProfile.insert(id)
+            }
             let verdict = BrowserGuardPolicy.verdict(
                 coverage: coverage,
-                // The filter's record when it has one for this browser (a
-                // forged local stamp cannot outlive it going stale); the app's
-                // own only for a browser the filter has never heard from.
-                lastSeen: authorityCheckIns?[id]
-                    ?? ExtensionPresence.lastSeen(browser: id, in: defaults),
+                lastSeen: lastSeen,
                 now: now, graceStart: graceStart,
-                firstViolation: violations[pid],
-                recentlyClosed: repeatOffender)
+                firstViolation: session.firstViolation(browser: id),
+                recentlyClosed: repeatOffender,
+                profileLoss: profileLoss, profileRefreshPending: needsFreshProfile.contains(id))
             let name = app.localizedName ?? id
+            session.observe(verdict, browser: id, at: now,
+                verifiedConnection: !profileLoss && coverage == .needsExtension &&
+                    BrowserGuardPolicy.extensionAlive(lastSeen: lastSeen, now: now))
 
             switch verdict {
             case .ok:
-                violations[pid] = nil
                 notified.remove(pid)
+                closing.removeValue(forKey: pid)?.cancel()
+                closingIDs.removeValue(forKey: pid)
             case let .warn(reason, closeAt):
-                if violations[pid] == nil { violations[pid] = now }
                 next.append(Alert(id: pid, name: name, reason: reason, closeAt: closeAt))
                 if notified.insert(pid).inserted {
                     notify(name: name, reason: reason, seconds: closeAt.timeIntervalSince(now))
                 }
             case .close:
-                NSLog("[Hisn] guard closing %@ (%@) during a lock", name, id)
-                violations[pid] = nil
+                NSLog("[Hisn] guard closing disconnected browser %@ (%@)", name, id)
                 notified.remove(pid)
                 recentlyClosed[id] = now
                 close(app)
             }
         }
-        violations = violations.filter { running.contains($0.key) }
+        // Keep browser-level warning evidence while a process is absent. Clearing
+        // it here would make terminate/relaunch loops reset the countdown again.
         notified = notified.filter { running.contains($0) }
+        profileInstances = instances
+        scanProfiles(for: runningLinked, at: now)
         if next != alerts {
             alerts = next
             updatePanel()
         }
     }
 
+    /// Bounded preference IO is off-main-thread. A cancelled/outdated scan
+    /// cannot restore evidence after consent is withdrawn or a lock ends.
+    private func scanProfiles(for browserIDs: Set<String>, at now: Date) {
+        guard profileScan == nil,
+              (!needsFreshProfile.intersection(browserIDs).isEmpty ||
+               (lastProfileScan.map({ now.timeIntervalSince($0) >= 15 }) ?? true)),
+              let support = FileManager.default.urls(for: .applicationSupportDirectory,
+                                                     in: .userDomainMask).first else { return }
+        let requests = NativeMessagingInstaller.browsers.filter { browserIDs.contains($0.bundleID) }
+            .map { (id: $0.bundleID, name: $0.name, root: support.appendingPathComponent($0.userSupportDir)) }
+        let ids = Set(NativeMessagingInstaller.extensionIDs)
+        let capturedInstances = profileInstances
+        let epoch = profileEpoch
+        lastProfileScan = now
+        profileScan = Task { @MainActor [weak self] in
+            let readings = await Task.detached(priority: .utility) {
+                requests.map { request in
+                    (id: request.id, name: request.name,
+                     snapshot: BrowserProfileEvidence.inspect(root: request.root, ids: ids))
+                }
+            }.value
+            guard !Task.isCancelled, let self, self.profileEpoch == epoch else { return }
+            self.profileScan = nil
+            let readAt = Date()
+            var issues: [ProfileIssue] = []
+            for reading in readings {
+                guard self.profileInstances[reading.id] == capturedInstances[reading.id] else { continue }
+                self.needsFreshProfile.remove(reading.id)
+                var check = self.profileChecks[reading.id] ?? BrowserProfileEvidence.Confirmation()
+                // A slow scan cannot relabel an older file observation as
+                // freshly checked at completion time.
+                check.observe(reading.snapshot, at: now)
+                self.profileChecks[reading.id] = check
+                self.profileCheckedAt[reading.id] = now
+                let confirmed = check.confirmed(at: readAt)
+                let unconfirmed = reading.snapshot.profiles.filter {
+                    $0.state == .unconfirmed || ($0.state == .explicitLoss && !confirmed.contains($0.folder))
+                }.map(\.folder)
+                if !reading.snapshot.enumerationVerified || !confirmed.isEmpty || !unconfirmed.isEmpty {
+                    issues.append(ProfileIssue(id: reading.id, browserName: reading.name,
+                        unprotected: confirmed, unconfirmed: unconfirmed,
+                        enumerationVerified: reading.snapshot.enumerationVerified))
+                }
+            }
+            if self.profileIssues != issues { self.profileIssues = issues }
+            self.tick()
+        }
+    }
+
     private func close(_ app: NSRunningApplication) {
+        let pid = app.processIdentifier
+        guard closing[pid] == nil else { return }
         app.terminate()
-        Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 10_000_000_000)
-            if !app.isTerminated { app.forceTerminate() }
+        let launchDate = app.launchDate
+        let closeID = UUID()
+        closingIDs[pid] = closeID
+        closing[pid] = Task { @MainActor [weak self] in
+            do { try await Task.sleep(nanoseconds: 10_000_000_000) }
+            catch { return }
+            guard let self else { return }
+            defer {
+                if self.closingIDs[pid] == closeID {
+                    self.closing[pid] = nil
+                    self.closingIDs[pid] = nil
+                }
+            }
+            guard !app.isTerminated else { return }
+            let id = app.bundleIdentifier ?? app.bundleURL?.path ?? app.executableURL?.path ?? ""
+            var currentProfileLoss = false
+            if !self.needsFreshProfile.contains(id),
+               !(self.profileChecks[id]?.confirmed(at: Date()).isEmpty ?? true),
+               let browser = NativeMessagingInstaller.browsers.first(where: { $0.bundleID == id }),
+               let support = FileManager.default.urls(for: .applicationSupportDirectory,
+                                                      in: .userDomainMask).first {
+                let root = support.appendingPathComponent(browser.userSupportDir)
+                let ids = Set(NativeMessagingInstaller.extensionIDs)
+                // The warning-deadline read cannot prove loss ten seconds
+                // later. Do not force a repaired browser using that old read.
+                let snapshot = await Task.detached(priority: .utility) {
+                    BrowserProfileEvidence.inspect(root: root, ids: ids)
+                }.value
+                currentProfileLoss = !self.needsFreshProfile.contains(id) &&
+                    BrowserProfileEvidence.lossPersists(in: snapshot,
+                        confirmedFolders: self.profileChecks[id]?.confirmed(at: Date()) ?? [])
+            }
+            guard !Task.isCancelled, !app.isTerminated,
+                  app.processIdentifier == pid, app.launchDate == launchDate else { return }
+            let coverage = BrowserGuardPolicy.coverage(bundleID: id,
+                linked: Set(NativeMessagingInstaller.browsers.map(\.bundleID)),
+                userAllowed: self.effectiveAllowed)
+            let seen = BrowserGuardPolicy.checkIn(browser: id, authority: FilterSync.shared.status?.checkIns,
+                local: ExtensionPresence.lastSeen(browser: id, in: self.defaults))
+            if BrowserGuardPolicy.shouldForceClose(
+                active: BrowserGuardPolicy.isActive(locked: EffectiveLock.isLocked,
+                                                    requireOutsideLock: self.requireOutsideLock),
+                coverage: coverage, lastSeen: seen, now: Date(),
+                profileLoss: currentProfileLoss) {
+                app.forceTerminate()
+            }
         }
     }
 
@@ -428,14 +684,20 @@ public final class BrowserGuard: ObservableObject {
         switch reason {
         case .extensionSilent:
             return String(localized: """
-                The Hisn extension stopped checking in from \(name). Turn it \
-                back on in \(name)’s extensions page, or \(name) will close.
+                The Hisn extension stopped checking in from \(name). Reinstall \
+                or enable it in \(name)’s extensions page and check its app \
+                connection, or \(name) will close.
                 """)
         case .uncovered:
             return String(localized: """
                 \(name) has no Hisn protection inside it, so it cannot stay \
-                open during a lock. Use Safari or a browser with the Hisn \
-                extension.
+                open while browser guarding is active. Reconnect a supported \
+                browser or review your protection settings.
+                """)
+        case .profileUnprotected:
+            return String(localized: """
+                \(name) has a standard browser profile with Hisn removed or disabled. \
+                Restore the extension in every listed profile or \(name) will close.
                 """)
         }
     }

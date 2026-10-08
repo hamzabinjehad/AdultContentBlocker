@@ -1,10 +1,12 @@
 # Setting it up, in order
 
-This is the whole thing end to end. The order is not a suggestion — each step
-is only real if the one before it is done, and doing them out of order gives you
-a machine that looks protected and is not. After any step, the app's **Setup**
-page (or `macos/verify_enforcement.sh` in a terminal) shows the truth rather
-than the hope: each step read from this Mac, and what is left.
+Start with the network where you have administrator access, then protect this
+Mac independently. An unavailable router must not delay device protection.
+The Mac steps below preserve the dependency order: install and verify protection
+and recovery before changing account permissions. The app's **Setup** page (or
+`macos/verify_enforcement.sh`) reads the Mac's state. The network guide remains
+unverified; it does not infer live network enforcement from a selected route or
+a successful DNS sample on this Mac.
 
 Two facts decide everything below, so read them first:
 
@@ -27,6 +29,37 @@ must be someone who is **not** the daily user — a secret you hold yourself is 
 stop button, not a lock. Without this person, stop here: nothing below becomes
 a lock, and building more is wasted effort.
 
+## Network first — any router or internet provider
+
+In the app's **Start with your network** guide, choose by capability, not model:
+
+- **Unknown:** inspect the router's app or administrator page for editable DNS,
+  DHCP/LAN settings, IPv6 behavior, and firewall controls with the network owner.
+- **Editable DNS:** set a filtering resolver for every advertised IPv4/IPv6
+  primary and backup address. The guide offers Cloudflare Families and links
+  to its [official router instructions](https://developers.cloudflare.com/1.1.1.1/setup/router/).
+  This uses the provider's categories, not Hisn's signed list. The app's
+  **Check Cloudflare DNS on this Mac** button samples the harmless category
+  test and a benign control via the system resolver. Results are separate
+  for A/AAAA records and remain scoped to this Mac at that time, with cache
+  and local-override limitations. They are not proof of gateway enforcement.
+- **A filtering DNS server:** an administrator can use Hisn's
+  [verified rule publisher](../network/README.md) with AdGuard Home, then direct
+  clients to it. Test the listed host, its descendant, and a benign host using
+  each client's query log and both active address families.
+- **Locked ISP router or public Wi-Fi:** continue to the Mac steps. Ask the ISP
+  about custom DNS or use an administrator-controlled gateway where appropriate.
+
+DNS advertisement is coverage, not enforced routing. Gateway firewall controls,
+encrypted DNS restrictions, administrator separation, outage behavior, and
+reboot persistence need their own tests. Save a configuration backup and a
+working recovery route before changes. No live router API adapter is implemented
+yet. The [offline capability planner](../network/README.md#plan-for-any-router)
+produces instructions without changing settings or claiming verification.
+
+Network protection does not follow phones onto cellular or other Wi-Fi. Configure
+and verify every phone separately; the Mac installer does not enroll them.
+
 ## Step 1 — the app · `macos/install.sh`
 
 ```bash
@@ -38,12 +71,21 @@ Builds Hisn, puts it in **`/Applications`** owned by root (a home-folder app,
 or one its user owns, can be changed or deleted without a password, and the
 system extension only activates from `/Applications`), installs a LaunchAgent
 in `/Library/LaunchAgents` that starts it at login and brings it back if it is
-force-quit, registers the browser link for every Chromium browser, and runs
-the verifier. During a lock the app refuses an ordinary Quit: it is also the
-**browser guard**, which closes any browser Hisn is not running inside
+force-quit or crashes, registers the browser link for every Chromium browser,
+and runs the verifier. Hisn stays in the background when you close its window
+or use Quit, with or without an active lock. Open the window again from the
+menu bar or Applications. It runs while the protected Mac account is signed
+in; logout, restart and shutdown are allowed. Sleep pauses its work, which
+resumes when the Mac wakes. The app is also the **browser guard**, which closes
+any browser Hisn is not running inside
 (`BrowserGuard.swift`) — review *Blocking Rules › Browsers during a lock*
 before your first lock, and allow any app there that opens web links without
 being a browser.
+
+The agent is scoped to the account that ran the installer. It exits cleanly
+in other accounts, so they do not run a second guard. An administrator can
+remove automatic startup using `macos/install.sh --remove-agent` before
+uninstalling the app.
 
 **In Arabic:** *Settings › Language › العربية*, then **Restart now** — the
 window mirrors right-to-left and numbers stay in Latin digits, as in the
@@ -72,9 +114,9 @@ and the profile: **`docs/CHROME_ENFORCEMENT.md`** is that runbook.
 macos/install.sh --hosts          # or: sudo macos/block_dns.sh --merge
 ```
 
-Free. Blocks the core list for every app and browser, VPN or not — the OS
-resolver is below the browser. Bypassed only by browser DoH, which step 5
-closes.
+Free. Blocks core-list hosts for clients that use the OS resolver. Apps using
+their own resolver, encrypted DNS, or a tunnel may bypass this path. Step 5
+restricts supported browser DNS settings; this is one layer of protection.
 
 It also forces **SafeSearch everywhere**: Google (all 187 of its domains),
 YouTube (Restricted Mode, strict), Bing, DuckDuckGo and Yandex are pointed at their own

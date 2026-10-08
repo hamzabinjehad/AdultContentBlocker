@@ -2,6 +2,32 @@ import Foundation
 import Security
 import os
 
+/// A signed installation must not downgrade the browser to editable local
+/// mirrors when the configured authority stops answering. A diagnostic reply
+/// has no lockUntil, so the browser counts it as a failed heartbeat and keeps
+/// its last restrictive rules. Unsigned/browser-only setups still use mirrors.
+public enum BridgePolicy {
+    public static func reply(local: PolicyView, authority: PolicyStatus?,
+                             requiresAuthority: Bool, listVersion: Int) -> [String: Any] {
+        guard !requiresAuthority || authority != nil else {
+            return ["ok": false, "reason": "authority-unreachable"]
+        }
+        let view = authority.map {
+            PolicyMerge.stricter(editor: local, other: PolicyView(status: $0))
+        } ?? local
+        var reply = view.bridgeReply(listVersion: listVersion)
+        if let authority, authority.isLocked, authority.persistenceError != nil {
+            // A failed expiry save keeps the previous policy in force, whose
+            // real deadline may already be past on the browser's clock. Keep
+            // correction/settings guards locked until a fresh authority reply
+            // confirms a durable unlock. This is transport only: neither the
+            // real lock nor the user's mirrors acquire an invented deadline.
+            reply["lockUntil"] = Date.distantFuture.timeIntervalSince1970 * 1000
+        }
+        return reply
+    }
+}
+
 /// The channel between the app (and the bridge) and the filter's
 /// `PolicyService`.
 ///

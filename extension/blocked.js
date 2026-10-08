@@ -8,8 +8,10 @@
  */
 
 import { initLanguage, t } from "./lib/i18n.js";
+import { renderIcons } from "./lib/icons.js";
 
 await initLanguage();
+renderIcons();
 
 const REASONS = new Set(["strict", "custom", "terms"]);
 

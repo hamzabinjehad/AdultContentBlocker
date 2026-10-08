@@ -23,14 +23,93 @@
  */
 
 import { send } from "./lib/messages.js";
-import { connectionStatus, parseDomains, settingsError, restrictionsActive } from "./lib/settings.js";
+import { describeStatus } from "./lib/status.js";
+import { renderIcons } from "./lib/icons.js";
+import { siteEditor } from "./lib/site-editor.js";
+import { connectionStatus, connectionFeedback, parseDomains, settingsError, restrictionsActive } from "./lib/settings.js";
 import { initLanguage, t, setLanguage, resolveLanguage, savePreference, translatePage, appLanguage } from "./lib/i18n.js";
 
 const { preference: languagePreference } = await initLanguage();
 const $ = (id) => document.getElementById(id);
+renderIcons();
+$("rules").append($("reportSettings"), $("disputedFs"));
+const views = ["overview", "rules", "lock", "settings"];
+const legacyViews = { mode: "overview", modeSettings: "rules", siteSettings: "rules", reportSettings: "rules", contentSettings: "settings" };
+function showView() {
+  const hash = location.hash.slice(1);
+  const view = views.includes(hash) ? hash : legacyViews[hash] || "overview";
+  for (const id of views) $(id).hidden = id !== view;
+  for (const link of document.querySelectorAll(".sidebar nav a")) {
+    if (link.hash === `#${view}`) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
+  }
+  window.scrollTo(0, 0);
+  $(view).scrollTo(0, 0);
+}
+window.addEventListener("hashchange", showView);
+for (const link of document.querySelectorAll(".sidebar nav a")) link.addEventListener("click", (event) => {
+  event.preventDefault();
+  location.hash = link.hash;
+  showView();
+});
+showView();
 let current = null;
+let saving = false;
+const siteEditors = new Map();
+let privateCoverage;
+let overviewSignature;
+chrome.extension?.isAllowedIncognitoAccess?.((allowed) => {
+  privateCoverage = allowed;
+  renderOverview();
+});
+function renderOverview() {
+  const s = describeStatus(current, { version: chrome.runtime.getManifest?.().version });
+  const signature = JSON.stringify([s, privateCoverage, current?.inspectText, current?.failClosed]);
+  if (signature === overviewSignature) return;
+  overviewSignature = signature;
+  $("protectionDot").className = `dot ${s.protection.level}`;
+  $("protectionTitle").textContent = s.protection.headline;
+  $("protectionDetail").textContent = s.protection.detail;
+  $("lockTitle").textContent = s.lock.headline;
+  $("lockDetail").textContent = s.lock.detail;
+  $("lockNotice").textContent = current && restrictionsActive(current) ? t("opt.lockHint.active")
+    : current?.appPresent ? t("opt.lockHint.managed") : t("opt.lockHint.browser");
+  $("domainLayer").textContent = $("searchLayer").textContent = current ? t("details.on") : t("opt.coverage.unknown");
+  $("textLayer").textContent = !current ? t("opt.coverage.unknown") : current.inspectText !== false || restrictionsActive(current) ? t("details.on") : t("details.off");
+  $("privateLayer").textContent = t(privateCoverage === undefined ? "opt.coverage.unknown" : privateCoverage ? "details.on" : "opt.coverage.notEnabled");
+  $("privateHint").hidden = privateCoverage !== false;
+  $("statusDetails").replaceChildren(...s.details.flatMap(([key, value]) => {
+    const dt = document.createElement("dt"), dd = document.createElement("dd");
+    dt.textContent = key; dd.textContent = value;
+    return [dt, dd];
+  }));
+  $("protectionNotices").replaceChildren(...s.notices.map((notice) => {
+    const p = document.createElement("p");
+    p.className = "notice"; p.textContent = notice.text;
+    return p;
+  }));
+}
+// Timers can expire and connections can go stale without a storage write.
+let previousRestrictions;
+setInterval(() => {
+  if (!current) return;
+  renderOverview();
+  renderConnection();
+  const restricted = restrictionsActive(current);
+  if (restricted !== previousRestrictions) { previousRestrictions = restricted; refreshEditors(); }
+}, 1000);
 const fields = ["custom", "allow", "customTerms", "blockingMode", "inspectText", "textSensitivity"];
 const saves = ["saveCustom", "saveAllow", "saveTerms", "saveMode", "saveChecks"];
+for (const id of [...saves, "checkConnection"]) {
+  const button = $(id), label = document.createElement("span"), icon = document.createElement("span");
+  label.dataset.i18n = button.dataset.i18n;
+  label.textContent = button.textContent;
+  delete button.dataset.i18n;
+  icon.dataset.icon = id === "checkConnection" ? "refresh-cw" : "save";
+  icon.setAttribute("aria-hidden", "true");
+  button.replaceChildren(icon, label);
+}
+renderIcons();
 const sections = [
   { button: "saveCustom", message: "msgCustom", controls: { custom: "customBlocks" } },
   { button: "saveAllow", message: "msgAllow", controls: { allow: "allowlist" } },
@@ -50,11 +129,34 @@ function isDirty(section) {
     (id === "inspectText" ? $(id).checked : $(id).value) !== savedValue(id, key));
 }
 function updateDrafts() {
+  const dirtySections = sections.filter(isDirty);
   for (const section of sections) {
     const dirty = isDirty(section);
     section.note.textContent = dirty ? t("opt.unsaved") : "";
     section.reset.hidden = !dirty;
+    $(section.button).hidden = true;
+    section.reset.disabled = saving;
   }
+  $("saveBar").hidden = !dirtySections.length;
+  $("draftCount").textContent = t("opt.draftCount", dirtySections.length);
+  $("saveAll").disabled = $("discardAll").disabled = saving;
+  for (const id of views) {
+    const link = document.querySelector(`.sidebar a[href="#${id}"]`);
+    link.classList.toggle("has-draft", dirtySections.some(section => $(section.button).closest(".page-view").id === id));
+  }
+  refreshEditors();
+}
+function refreshEditors() {
+  const restricted = current && restrictionsActive(current);
+  $("lockHint").hidden = !restricted && !current?.appPresent;
+  $("lockHint").textContent = t(restricted ? "opt.lockHint.active" : "opt.lockHint.managed");
+  for (const editor of siteEditors.values()) editor.refresh();
+  for (const radio of document.querySelectorAll('[name="modeChoice"]')) {
+    radio.checked = radio.value === $("blockingMode").value;
+    radio.disabled = !current || !!current.appPresent || saving ||
+      (restrictionsActive(current) && current.mode === "strict" && radio.value === "blocklist");
+  }
+  $("modeDescription").textContent = t($("blockingMode").value === "strict" ? "opt.mode.strict" : "opt.mode.standard");
 }
 for (const section of sections) {
   const actions = document.createElement("div");
@@ -75,6 +177,7 @@ for (const section of sections) {
     }
     $("sensitivityValue").textContent = $("textSensitivity").value;
     $(section.message).textContent = t("opt.discarded");
+    $("saveMessage").textContent = "";
     updateDrafts();
   };
   actions.append(reset);
@@ -85,9 +188,25 @@ for (const section of sections) {
   actions.before(section.note);
   for (const id of Object.keys(section.controls)) $(id).addEventListener("input", () => {
     $(section.message).textContent = "";
+    $("saveMessage").textContent = $("savedMessage").textContent = "";
     updateDrafts();
   });
 }
+for (const [id, key] of [["custom", "customBlocks"], ["allow", "allowlist"]]) {
+  siteEditors.set(id, siteEditor($(id), key, () => current));
+}
+for (const radio of document.querySelectorAll('[name="modeChoice"]')) radio.onchange = () => {
+  $("blockingMode").value = radio.value;
+  $("blockingMode").dispatchEvent(new Event("input", { bubbles: true }));
+};
+$("discardAll").onclick = () => {
+  if (saving || !current || current.appPresent) return;
+  fillFields(current);
+  for (const section of sections) $(section.message).textContent = "";
+  $("saveMessage").textContent = "";
+  $("savedMessage").textContent = t("opt.discarded");
+  updateDrafts();
+};
 window.addEventListener("beforeunload", (event) => {
   if (sections.some(isDirty)) { event.preventDefault(); event.returnValue = ""; }
 });
@@ -104,6 +223,11 @@ function renderReported(state) {
   for (const key of ["ignoreTerms", "textAllow"]) {
     const box = $(key);
     box.textContent = "";
+    if (!state[key]?.length) {
+      const note = document.createElement("span");
+      note.className = "empty-note"; note.textContent = t("opt.corr.empty");
+      box.append(note);
+    }
     for (const item of state[key] || []) {
       const chip = document.createElement("span");
       chip.className = "chip";
@@ -196,23 +320,39 @@ async function resolveDisputed(state, entry, apply) {
 async function init() {
   const state = await send({ type: "getState" });
   if (!state || state.ok === false) {
+    renderOverview();
+    $("modeTitle").textContent = t("status.unavailable");
     $("connectionMessage").textContent = settingsError({ reason: "unavailable" });
     return;
   }
   showState(state, true);
 }
 
-function showState(state, fill = false) {
-  current = state;
-  const connection = connectionStatus(state);
+function renderConnection() {
+  const connection = connectionStatus(current);
   $("mode").className = `mode ${connection.managed ? "managed" : "standalone"}`;
   $("modeTitle").textContent = connection.title;
   $("modeDetail").textContent = connection.detail;
-  $("lockHint").textContent = restrictionsActive(state) ? t("opt.lockHint.active")
-    : connection.managed ? t("opt.lockHint.managed")
-    : t("opt.lockHint.browser");
-  for (const id of [...fields, ...saves]) $(id).disabled = connection.managed;
+}
+
+function showState(state, fill = false) {
+  const drafts = new Set(sections.filter(isDirty));
+  current = state;
+  previousRestrictions = restrictionsActive(state);
+  renderOverview();
+  const connection = connectionStatus(state);
+  renderConnection();
+  for (const id of [...fields, ...saves]) $(id).disabled = connection.managed || saving;
+  for (const notice of document.querySelectorAll(".managed-notice")) notice.hidden = !connection.managed;
   if (fill) fillFields(state);
+  else for (const section of sections) {
+    if (drafts.has(section)) continue;
+    for (const [id, key] of Object.entries(section.controls)) {
+      if (id === "inspectText") $(id).checked = savedValue(id, key);
+      else $(id).value = savedValue(id, key);
+    }
+  }
+  $("sensitivityValue").textContent = $("textSensitivity").value;
   renderReported(state);
   renderDisputed(state);
   updateDrafts();
@@ -229,26 +369,68 @@ function fillFields(state) {
 }
 
 async function save(patch, messageID, buttonID) {
-  $(buttonID).disabled = true;
+  if (saving || !current || current.appPresent) return;
+  saving = true;
+  for (const id of [...fields, ...saves]) $(id).disabled = true;
+  updateDrafts();
   $(messageID).className = "msg";
   $(messageID).textContent = t("opt.saving");
   const r = await send({ type: "update", patch });
   if (r.ok) {
     // Update only the saved fields: another section may contain unsaved edits.
     showState(r.state);
-    if (patch.customBlocks) $("custom").value = r.state.customBlocks.join("\n");
-    if (patch.allowlist) $("allow").value = r.state.allowlist.join("\n");
-    if (patch.customTerms) $("customTerms").value = r.state.customTerms.join("\n");
+    for (const section of sections) for (const [id, key] of Object.entries(section.controls)) {
+      if (!(key in patch)) continue;
+      if (id === "inspectText") $(id).checked = savedValue(id, key);
+      else $(id).value = savedValue(id, key);
+    }
     $(messageID).textContent = t("opt.saved");
     $(messageID).className = "msg success";
+    $("savedMessage").textContent = t("opt.saved");
+    $("savedMessage").className = "msg success";
     updateDrafts();
   } else {
     $(messageID).textContent = settingsError(r);
     $(messageID).className = "msg error";
+    const section = sections.find(item => Object.values(item.controls).includes(r.field));
+    if (section) {
+      location.hash = $(section.button).closest(".page-view").id; showView();
+      $(section.message).className = "msg error";
+      $(section.message).textContent = settingsError(r);
+    }
     if (r.reason === "app-managed") await init();
   }
-  $(buttonID).disabled = !current || !!current.appPresent;
+  saving = false;
+  for (const id of [...fields, ...saves]) $(id).disabled = !current || !!current.appPresent;
+  updateDrafts();
+  if (!r.ok && r.field) {
+    const section = sections.find(item => Object.values(item.controls).includes(r.field));
+    const id = section && Object.keys(section.controls).find(id => section.controls[id] === r.field);
+    if (id) { if (siteEditors.has(id)) siteEditors.get(id).reveal(); else $(id).focus(); }
+  }
 }
+
+$("saveAll").onclick = () => {
+  const patch = {};
+  for (const section of sections.filter(isDirty)) {
+    for (const [id, key] of Object.entries(section.controls)) {
+      if (id === "custom" || id === "allow") {
+        const parsed = parseDomains($(id).value);
+        if (parsed.invalid.length) {
+          $("saveMessage").className = "msg error";
+          $("saveMessage").textContent = t("opt.badLines", parsed.invalid.join(", "));
+          location.hash = "rules"; showView(); siteEditors.get(id).reveal(); return;
+        }
+        patch[key] = parsed.domains;
+      } else if (id === "customTerms") {
+        patch[key] = [...new Set($(id).value.split(/\r?\n/).map(term => term.trim()).filter(Boolean))];
+      } else patch[key] = id === "inspectText" ? $(id).checked : id === "textSensitivity" ? Number($(id).value) : $(id).value;
+    }
+  }
+  if (!Object.keys(patch).length) return;
+  if (patch.mode === "strict" && current.mode !== "strict" && !window.confirm(t("opt.strictConfirm"))) return;
+  save(patch, "saveMessage", "saveAll");
+};
 
 for (const [input, key, msg, button] of [
   ["custom", "customBlocks", "msgCustom", "saveCustom"],
@@ -282,8 +464,8 @@ $("checkConnection").onclick = async () => {
   $("checkConnection").disabled = true;
   $("connectionMessage").textContent = t("conn.checking");
   const r = await send({ type: "forceSync" });
-  $("connectionMessage").textContent = r.ok ? t("opt.connected") : t("opt.notConnected");
   const state = await send({ type: "getState" });
+  $("connectionMessage").textContent = connectionFeedback(r, state);
   if (state && state.ok !== false) showState(state, !!state.appPresent);
   $("checkConnection").disabled = false;
 };
@@ -296,17 +478,20 @@ chrome.storage.onChanged.addListener((changes, area) => {
   }
 });
 for (const id of [...fields, ...saves]) $(id).disabled = true;
+updateDrafts();
 
 // Language: Automatic follows the browser; a choice here is remembered for
 // every Hisn page. Switching re-renders in place — drafts in the fields stay.
 $("uiLanguage").value = languagePreference === "ar" || languagePreference === "en"
   ? languagePreference : "auto";
 $("uiLanguage").onchange = async () => {
+  for (const el of document.querySelectorAll(".msg, #connectionMessage")) el.textContent = "";
   const preference = $("uiLanguage").value;
   await savePreference(preference).catch(() => {});
   setLanguage(resolveLanguage(preference, chrome.i18n?.getUILanguage?.() ?? navigator.language,
                               await appLanguage()));
   translatePage(document);
+  overviewSignature = undefined;
   if (current) showState(current);
 };
 init();

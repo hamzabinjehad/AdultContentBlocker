@@ -45,6 +45,8 @@ TESTS_BUNDLE_ID = "app.hisn.HisnTests"
 # same files rather than linking a framework, which keeps the extension a
 # single self-contained bundle with no embedded dylib to sign and load.
 SHARED = ["Hisn/BlocklistStore.swift", "Hisn/LockStore.swift",
+          "../shared/apple/CommitmentPolicy.swift",
+          "Hisn/WebProtectionPolicy.swift",
           "Hisn/PartnerService.swift", "Hisn/SiteLists.swift",
           # The keyword layer. `BlocklistStore.hostMatchesTerm` calls into both,
           # so they are shared by the same three targets it is — the app, the
@@ -61,8 +63,18 @@ SHARED = ["Hisn/BlocklistStore.swift", "Hisn/LockStore.swift",
           "Hisn/PolicyAuthority.swift", "Hisn/FilterXPC.swift"]
 
 APP_SOURCES = SHARED + [
+    "../shared/apple/MirroredRuleStore.swift",
+    "../shared/apple/ReadinessHistory.swift",
     "Hisn/ContentView.swift",
     "Hisn/FilterController.swift",
+    "Hisn/FilterSetupControl.swift",
+    "Hisn/NetworkSetupGuide.swift",
+    "Hisn/RouterDiscovery.swift",
+    "Hisn/RouterSetupAssistant.swift",
+    "Hisn/RouterGuideCatalog.swift",
+    "Hisn/RouterIdentityView.swift",
+    "Hisn/NetworkDNSProbe.swift",
+    "Hisn/NetworkDNSProbeView.swift",
     "Hisn/HisnApp.swift",
     "Hisn/ListUpdater.swift",
     "Hisn/LockManager.swift",
@@ -70,6 +82,7 @@ APP_SOURCES = SHARED + [
     "Hisn/ProtectionStatus.swift",
     # During a lock, closes browsers Hisn is not running inside.
     "Hisn/BrowserGuard.swift",
+    "Hisn/BrowserProfileEvidence.swift",
     "Hisn/ExtensionPresence.swift",
     # Reconciles the app's mirrors with the filter's root-owned authority.
     "Hisn/FilterSync.swift",
@@ -77,6 +90,7 @@ APP_SOURCES = SHARED + [
     "Hisn/AppLanguage.swift",
     # The setup steps of docs/SETUP.md, read from this Mac.
     "Hisn/SetupChecklist.swift",
+    "Hisn/ProtectedSetup.swift",
     # The menu bar icon and menu.
     "Hisn/StatusMenu.swift",
     # The daily lock.
@@ -86,7 +100,7 @@ APP_SOURCES = SHARED + [
 # Every string the app shows, in English and Arabic. A String Catalog: Xcode
 # compiles it into en.lproj / ar.lproj at build time, plural forms included.
 # `macos/check_localization.py` fails the tests when a string has no Arabic.
-APP_RESOURCES = ["Hisn/Localizable.xcstrings"]
+APP_RESOURCES = ["Hisn/Localizable.xcstrings", "Hisn/Assets.xcassets", "Hisn/AppIcon.icon"]
 FILTER_SOURCES = SHARED + ["HisnFilter/FilterDataProvider.swift",
                            "HisnFilter/FilterXPCService.swift",
                            "HisnFilter/main.swift"]
@@ -105,7 +119,12 @@ TEST_SOURCES = ["HisnTests/BlocklistStoreTests.swift",
                 "HisnTests/AuditRegressionTests.swift",
                 "HisnTests/LocalizationTests.swift",
                 "HisnTests/SetupChecklistTests.swift",
-                "HisnTests/LockScheduleTests.swift"]
+                "HisnTests/ProtectedSetupTests.swift",
+                "HisnTests/LockScheduleTests.swift",
+                "HisnTests/FilterActivationTests.swift",
+                "HisnTests/OnboardingTests.swift",
+                "HisnTests/NetworkDNSProbeTests.swift",
+                "../shared/tests/MirroredRuleStoreTests.swift"]
 
 # The signed seed list, bundled into the extension so a machine that has never
 # completed a list update still enforces something. Verified on the same path as
@@ -131,7 +150,9 @@ TEST_RESOURCES = ["../blocklist/terms/normalize_cases.json",
 
 ALL_FILES = sorted(set(APP_SOURCES + FILTER_SOURCES + BRIDGE_SOURCES + TEST_SOURCES) | {
     "Hisn/Info.plist", "Hisn/Hisn.entitlements",
+    "Hisn/Hisn.DeveloperID.entitlements",
     "HisnFilter/Info.plist", "HisnFilter/HisnFilter.entitlements",
+    "HisnFilter/HisnFilter.DeveloperID.entitlements",
     "HisnBridge/HisnBridge.entitlements",
 } | set(APP_RESOURCES)) + FILTER_RESOURCES + TEST_RESOURCES
 
@@ -224,6 +245,8 @@ def main() -> int:
             ".js": "sourcecode.javascript",
             ".sh": "text.script.sh",
             ".xcstrings": "text.json.xcstrings",
+            ".xcassets": "folder.assetcatalog",
+            ".icon": "folder.icon",
         }[Path(path).suffix]
         ref = oid("fileref", path)
         file_refs[path] = ref
@@ -264,6 +287,12 @@ def main() -> int:
     for folder in (APP, FILTER, BRIDGE, TESTS):
         members = [file_refs[f] for f in ALL_FILES if f.startswith(folder + "/")]
         dir_groups.append(group(oid("group", folder), members, None, folder))
+    dir_groups.append(group(oid("group", "shared-apple"),
+                            [file_refs[f] for f in ALL_FILES if f.startswith("../shared/apple/")],
+                            "Shared Apple policy", "../shared/apple"))
+    dir_groups.append(group(oid("group", "shared-tests"),
+                            [file_refs[f] for f in ALL_FILES if f.startswith("../shared/tests/")],
+                            "Shared policy tests", "../shared/tests"))
     dir_groups.append(group(oid("group", "seed"),
                             [file_refs[f] for f in FILTER_RESOURCES],
                             "seed", "../seed"))
@@ -318,7 +347,15 @@ def main() -> int:
 
     def config_list(owner: str, settings_debug: dict, settings_release: dict) -> str:
         ids = []
-        for cname, settings in (("Debug", settings_debug), ("Release", settings_release)):
+        developer_id = dict(settings_release)
+        entitlement = developer_id.get("CODE_SIGN_ENTITLEMENTS")
+        if entitlement in ("Hisn/Hisn.entitlements", "HisnFilter/HisnFilter.entitlements"):
+            developer_id["CODE_SIGN_ENTITLEMENTS"] = entitlement.replace(".entitlements", ".DeveloperID.entitlements")
+        if owner == "PBXProject":
+            developer_id["CODE_SIGN_IDENTITY"] = q("Developer ID Application")
+            developer_id["ONLY_ACTIVE_ARCH"] = "NO"
+        for cname, settings in (("Debug", settings_debug), ("Release", settings_release),
+                                ("DeveloperID", developer_id)):
             ident = p.add(oid("config", owner, cname), "XCBuildConfiguration", {
                 "buildSettings": build_settings(settings),
                 "name": cname,
@@ -333,6 +370,7 @@ def main() -> int:
     project_configs = config_list("PBXProject", debug, release)
 
     app_settings = {
+        "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
         "CODE_SIGN_ENTITLEMENTS": "Hisn/Hisn.entitlements",
         "CURRENT_PROJECT_VERSION": "1",
         "MARKETING_VERSION": "1.0",
@@ -586,7 +624,7 @@ def scheme() -> str:
       </BuildableProductRunnable>
    </ProfileAction>
    <AnalyzeAction buildConfiguration = "Debug"></AnalyzeAction>
-   <ArchiveAction buildConfiguration = "Release" revealArchiveInOrganizer = "YES"></ArchiveAction>
+   <ArchiveAction buildConfiguration = "DeveloperID" revealArchiveInOrganizer = "YES"></ArchiveAction>
 </Scheme>
 """
 

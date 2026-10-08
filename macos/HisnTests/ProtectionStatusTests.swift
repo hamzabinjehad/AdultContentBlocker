@@ -19,6 +19,35 @@ final class ProtectionStatusTests: XCTestCase {
     }
 
     // MARK: Levels
+    func testLayerIdentitiesAreStableAndIndependentOfDisplayNames() {
+        let s = status(filter: .on(domainCount: 150_000), extensionSeen: 30)
+        XCTAssertEqual(s.layers.map(\.id), ["filter", "extension"])
+        let lost = status(filter: .off, extensionSeen: 30)
+        XCTAssertEqual(lost.unconfirmedLayers(previouslyReady: ["filter"]).map(\.id), ["filter"])
+        XCTAssertTrue(lost.unconfirmedLayers(previouslyReady: ["System filter"]).isEmpty)
+    }
+    func testReadinessLossDoesNotAccuseUnconfiguredLayersAndClearsOnRecovery() {
+        let first = status(filter: .off)
+        XCTAssertTrue(first.unconfirmedLayers(previouslyReady: []).isEmpty)
+        let good = status(filter: .on(domainCount: 150_000), extensionSeen: 30)
+        let remembered = Set(good.layers.filter(\.ok).map(\.id))
+        let lost = status(filter: .off, extensionSeen: 30)
+        XCTAssertEqual(lost.unconfirmedLayers(previouslyReady: remembered).map(\.name), ["System filter"])
+        XCTAssertTrue(good.unconfirmedLayers(previouslyReady: remembered).isEmpty)
+    }
+
+    func testFutureHeartbeatAndNegativeDomainCountCannotLookHealthy() {
+        let future = status(filter: .on(domainCount: 150_000), extensionSeen: -60)
+        XCTAssertTrue(future.hasProblems)
+        XCTAssertEqual(future.layers.last?.state, .problem)
+        XCTAssertEqual(future.layers.last?.action, .reconnectExtension)
+        XCTAssertNotEqual(future.level, .active)
+        let invalidCount = status(filter: .on(domainCount: -1), extensionSeen: 30)
+        XCTAssertTrue(invalidCount.hasProblems)
+        XCTAssertEqual(invalidCount.layers.first?.state, .problem)
+        XCTAssertNotEqual(invalidCount.level, .active)
+        XCTAssertFalse(status(filter: .on(domainCount: 150_000), extensionSeen: 30).hasProblems)
+    }
 
     func testFreshMachineNeedsSetup() {
         let s = status(filter: .off)
@@ -37,6 +66,44 @@ final class ProtectionStatusTests: XCTestCase {
         XCTAssertTrue(s.isEnforcingAnything)
         XCTAssertTrue(s.layers.allSatisfy(\.ok))
         XCTAssertTrue(s.layers.allSatisfy { $0.action == nil })
+    }
+
+    func testDamagedPolicyIsVisibleEvenWhenBothProcessesAreRunning() {
+        let s = ProtectionStatus(ProtectionEvidence(
+            filter: .on(domainCount: 150_000), extensionLastSeen: now,
+            policyRecoveryRequired: true))
+        XCTAssertEqual(s.level, .partial)
+        XCTAssertTrue(s.isEnforcingAnything)
+        XCTAssertEqual(s.layers.last?.name, "Saved protection policy")
+        XCTAssertEqual(s.layers.last?.state, .problem)
+        XCTAssertTrue(s.layers.last?.detail.contains("administrator") == true)
+    }
+
+    func testStrictPolicyRecoveryStillRestrictsTrafficWithNoDomainList() {
+        let s = ProtectionStatus(ProtectionEvidence(
+            filter: .on(domainCount: 0), extensionLastSeen: nil, policyRecoveryRequired: true))
+        XCTAssertTrue(s.isEnforcingAnything)
+        XCTAssertTrue(s.layers[0].ok)
+        XCTAssertEqual(s.level, .partial)
+    }
+
+    func testFailedSaveCannotLookFullyHealthy() {
+        let s = ProtectionStatus(ProtectionEvidence(
+            filter: .on(domainCount: 150_000), extensionLastSeen: now,
+            policyPersistenceError: "disk full"))
+        XCTAssertEqual(s.level, .partial)
+        XCTAssertTrue(s.isEnforcingAnything)
+        XCTAssertTrue(s.layers.last?.detail.contains("previous policy") == true)
+    }
+
+    func testHostsFallbackDoesNotHideAConfiguredAuthorityOutage() {
+        for filter in [FilterEvidence.silent, .unavailable("unreachable")] {
+            let s = ProtectionStatus(ProtectionEvidence(
+                filter: filter, extensionLastSeen: now, hostsEntries: 150_000))
+            XCTAssertEqual(s.level, .partial)
+            XCTAssertTrue(s.isEnforcingAnything, "hosts filtering is still partial coverage")
+            XCTAssertEqual(s.layers.first?.state, .problem)
+        }
     }
 
     func testOneLayerRunningIsPartial() {

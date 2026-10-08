@@ -37,15 +37,23 @@ public final class FilterController: ObservableObject {
 
     @Published public private(set) var availability: Availability = .unknown
     @Published public private(set) var lastError: String?
+    @Published public private(set) var isEnabling = false
+    @Published public private(set) var needsUserApproval = false
+    @Published public private(set) var restartRequired = false
 
     public var isEnabled: Bool { availability == .on }
 
     private let extensionIdentifier = "app.hisn.Hisn.HisnFilter"
+    private let recovery = FilterRecoveryCoordinator()
+    private var configurationRevision = 0
+    private var isDisabling = false
 
     public enum FilterError: LocalizedError {
         case lockedCannotDisable
         case activationFailed(String)
         case configurationFailed(String)
+        case activationInProgress
+        case activationRequiresRestart
 
         public var errorDescription: String? {
             switch self {
@@ -55,6 +63,10 @@ public final class FilterController: ObservableObject {
                 return String(localized: "The system extension could not be activated: \(d)")
             case let .configurationFailed(d):
                 return String(localized: "The filter configuration could not be saved: \(d)")
+            case .activationInProgress:
+                return String(localized: "Filter setup is already in progress. Complete the approval in System Settings.")
+            case .activationRequiresRestart:
+                return String(localized: "Restart your Mac to finish installing the filter, then open Hisn and enable it again.")
             }
         }
     }
@@ -65,10 +77,11 @@ public final class FilterController: ObservableObject {
 
     // MARK: - Public API
 
-    public func refresh() async {
+    public func refresh(clearError: Bool = true) async {
         do {
             try await NEFilterManager.shared().loadFromPreferences()
             availability = NEFilterManager.shared().isEnabled ? .on : .off
+            if clearError && !restartRequired { lastError = nil }
         } catch {
             lastError = error.localizedDescription
             availability = .unavailable(error.localizedDescription)
@@ -77,14 +90,44 @@ public final class FilterController: ObservableObject {
 
     /// Ensure the filter is installed, configured and running.
     public func enable() async throws {
-        try await activateSystemExtension()
+        // A second request used to replace the first request's weak delegate,
+        // leaving its continuation suspended forever while approval was open.
+        guard !isEnabling, !isDisabling else { throw FilterError.activationInProgress }
+        configurationRevision &+= 1
+        isEnabling = true
+        needsUserApproval = false
+        restartRequired = false
+        lastError = nil
+        defer {
+            isEnabling = false
+            needsUserApproval = false
+            retainedDelegate = nil
+        }
+        do {
+            try await activateSystemExtension()
+            try await configureFilter()
+        } catch {
+            if case FilterError.activationRequiresRestart = error {
+                restartRequired = true
+            }
+            lastError = error.localizedDescription
+            throw error
+        }
+    }
+
+    @discardableResult
+    private func configureFilter(requiresEnabled: Bool = false) async throws -> Bool {
 
         let manager = NEFilterManager.shared()
         try await manager.loadFromPreferences()
+        if requiresEnabled && !manager.isEnabled && !EffectiveLock.isLocked {
+            availability = .off
+            return false
+        }
 
         if manager.providerConfiguration == nil {
             let config = NEFilterProviderConfiguration()
-            config.filterSockets = true      // the VPN-proof layer
+            config.filterSockets = true      // evaluate application socket flows
             config.filterPackets = false     // flow-level is enough, and cheaper
             manager.providerConfiguration = config
         }
@@ -97,6 +140,7 @@ public final class FilterController: ObservableObject {
             throw FilterError.configurationFailed(error.localizedDescription)
         }
         availability = .on
+        return true
     }
 
     /// Turn the filter off. Refused outright while a lock is running.
@@ -106,6 +150,10 @@ public final class FilterController: ObservableObject {
         // app decided the lock was over and switched the filter off itself —
         // and the filter's authority, which knew better, went down with it.
         guard !EffectiveLock.isLocked else { throw FilterError.lockedCannotDisable }
+        guard !isEnabling, !isDisabling else { throw FilterError.activationInProgress }
+        configurationRevision &+= 1
+        isDisabling = true
+        defer { isDisabling = false }
         if FilterLink.shared.isConfigured, isEnabled {
             guard let status = await FilterLink.shared.status() else {
                 throw FilterError.configurationFailed("the filter did not confirm the lock is over")
@@ -120,21 +168,52 @@ public final class FilterController: ObservableObject {
         availability = .off
     }
 
-    /// Called at every app launch.
-    ///
-    /// If a lock is running but the filter is off, someone turned it off — by
-    /// disabling it in System Settings, or by the extension being torn down.
-    /// Re-arm silently and record it, so the state the user sees always matches
-    /// the state that is actually enforced.
+    /// Called at launch and by the reconciliation timer, even with no window.
+    /// Disabled configuration is restored only during a lock. An enabled but
+    /// unreachable provider gets its configuration reasserted without toggling
+    /// it off. This is a recovery attempt, not a guarantee of continuous denial:
+    /// protection status still requires the provider's own live response.
     public func reassertIfNeeded() async {
-        guard EffectiveLock.isLocked, FilterLink.shared.isConfigured else { return }
-        await refresh()
-        guard !isEnabled else { return }
-
-        NSLog("[Hisn] filter was off during an active lock — re-arming")
-        UserDefaults(suiteName: LockStore.appGroup)?
-            .set(Date(), forKey: "filterReassertedAt")
-        try? await enable()
+        let revision = configurationRevision
+        await recovery.run(eligible: {
+            FilterLink.shared.isConfigured && !self.isEnabling
+                && !self.isDisabling && !self.needsUserApproval && !self.restartRequired
+                && self.configurationRevision == revision
+        }, inspect: {
+            // Keep the last failure visible while automatic retries back off.
+            await self.refresh(clearError: false)
+            switch self.availability {
+            case .off:
+                return EffectiveLock.isLocked ? .disabled : .healthy
+            case .on:
+                return await FilterLink.shared.status() == nil ? .unresponsive : .healthy
+            case .unknown, .unavailable:
+                return .unavailable
+            }
+        }, stillNeeded: { condition in
+            condition != .disabled || EffectiveLock.isLocked
+        }, recover: { condition in
+            NSLog("[Hisn] reasserting filter configuration: %@", "\(condition)")
+            switch condition {
+            case .disabled:
+                try await self.enable()
+            case .unresponsive:
+                // The system extension is already configured. Don't submit a
+                // new activation request or create a disable/enable gap.
+                self.isEnabling = true
+                defer { self.isEnabling = false }
+                do {
+                    guard try await self.configureFilter(requiresEnabled: true) else { return }
+                    self.lastError = nil
+                }
+                catch { self.lastError = error.localizedDescription; throw error }
+            case .healthy, .unavailable:
+                return
+            }
+            // This records a saved configuration, never provider liveness.
+            UserDefaults(suiteName: LockStore.appGroup)?
+                .set(Date(), forKey: "filterReassertedAt")
+        })
     }
 
     // MARK: - System extension activation
@@ -144,9 +223,11 @@ public final class FilterController: ObservableObject {
             let request = OSSystemExtensionRequest.activationRequest(
                 forExtensionWithIdentifier: extensionIdentifier,
                 queue: .main)
-            let delegate = ActivationDelegate(continuation: cont)
+            let delegate = ActivationDelegate(continuation: cont) { [weak self] in
+                Task { @MainActor in self?.needsUserApproval = true }
+            }
             request.delegate = delegate
-            Self.retainedDelegate = delegate
+            retainedDelegate = delegate
             OSSystemExtensionManager.shared.submitRequest(request)
         }
     }
@@ -154,15 +235,59 @@ public final class FilterController: ObservableObject {
     /// `OSSystemExtensionRequest.delegate` is weak; without this the delegate is
     /// deallocated before the request completes and the continuation never
     /// resumes.
-    private static var retainedDelegate: ActivationDelegate?
+    private var retainedDelegate: ActivationDelegate?
 }
 
-private final class ActivationDelegate: NSObject, OSSystemExtensionRequestDelegate {
+/// Serializes automatic recovery across suspension points. Uses monotonic
+/// uptime so changing the wall clock cannot accelerate retries. Manual setup
+/// remains available independently of this backoff.
+@MainActor
+final class FilterRecoveryCoordinator {
+    enum Condition: Equatable { case healthy, unavailable, disabled, unresponsive }
+
+    private let uptime: () -> TimeInterval
+    private var inFlight = false
+    private var lastAttempt: TimeInterval?
+    private var failures = 0
+
+    init(uptime: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }) {
+        self.uptime = uptime
+    }
+
+    func run(eligible: () -> Bool, inspect: () async -> Condition,
+             stillNeeded: (Condition) -> Bool = { _ in true },
+             recover: (Condition) async throws -> Void) async {
+        guard !inFlight, eligible() else { return }
+        let delay = min(300.0, 60.0 * pow(2.0, Double(max(0, failures - 1))))
+        if let lastAttempt, uptime() - lastAttempt < delay { return }
+        inFlight = true
+        defer { inFlight = false }
+        let condition = await inspect()
+        // Approval, restart state or a lock may have changed during the read.
+        guard eligible() else { return }
+        switch condition {
+        case .healthy:
+            lastAttempt = nil
+            failures = 0
+        case .unavailable:
+            break // no confirmed configuration to safely change
+        case .disabled, .unresponsive:
+            guard stillNeeded(condition) else { return }
+            lastAttempt = uptime() // reserve before another actor turn can run
+            do { try await recover(condition); failures = 0 }
+            catch { failures = min(failures + 1, 4) }
+        }
+    }
+}
+
+final class ActivationDelegate: NSObject, OSSystemExtensionRequestDelegate {
     private let continuation: CheckedContinuation<Void, Error>
+    private let needsApproval: () -> Void
     private var resumed = false
 
-    init(continuation: CheckedContinuation<Void, Error>) {
+    init(continuation: CheckedContinuation<Void, Error>, needsApproval: @escaping () -> Void) {
         self.continuation = continuation
+        self.needsApproval = needsApproval
     }
 
     private func finish(_ result: Result<Void, Error>) {
@@ -179,6 +304,7 @@ private final class ActivationDelegate: NSObject, OSSystemExtensionRequestDelega
     }
 
     func requestNeedsUserApproval(_ request: OSSystemExtensionRequest) {
+        needsApproval()
         NSLog("[Hisn] waiting for user approval in System Settings")
     }
 
@@ -188,11 +314,9 @@ private final class ActivationDelegate: NSObject, OSSystemExtensionRequestDelega
         case .completed:
             finish(.success(()))
         case .willCompleteAfterReboot:
-            // Treat as success: the lock is already recorded, and the filter
-            // comes up on next boot.
-            finish(.success(()))
+            finish(.failure(FilterController.FilterError.activationRequiresRestart))
         @unknown default:
-            finish(.success(()))
+            finish(.failure(FilterController.FilterError.activationFailed("Unknown activation result")))
         }
     }
 

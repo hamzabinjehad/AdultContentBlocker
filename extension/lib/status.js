@@ -43,7 +43,7 @@ export function describeStatus(state, opts = {}) {
   const now = opts.now ?? Date.now();
   const when = opts.formatWhen ?? formatWhen;
 
-  if (!state || typeof state !== "object") {
+  if (!state || typeof state !== "object" || state.ok === false) {
     return {
       protection: {
         level: "unknown",

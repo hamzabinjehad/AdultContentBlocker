@@ -50,6 +50,9 @@ public struct ProtectionEvidence: Equatable {
     /// build — no paid Apple team — cannot, and its filter row says so
     /// instead of offering a button that can only fail.
     public var filterCanRun: Bool
+    /// Live authority diagnostics, separate from whether its process runs.
+    public var policyRecoveryRequired: Bool
+    public var policyPersistenceError: String?
 
     /// Fewer than this and the hosts file is not a blocklist, it is a few
     /// hand-written lines.
@@ -60,12 +63,15 @@ public struct ProtectionEvidence: Equatable {
     public static let extensionStaleAfter: TimeInterval = 5 * 60
 
     public init(filter: FilterEvidence, extensionLastSeen: Date?, now: Date = Date(),
-                hostsEntries: Int? = nil, filterCanRun: Bool = true) {
+                hostsEntries: Int? = nil, filterCanRun: Bool = true,
+                policyRecoveryRequired: Bool = false, policyPersistenceError: String? = nil) {
         self.filter = filter
         self.extensionLastSeen = extensionLastSeen
         self.now = now
         self.hostsEntries = hostsEntries
         self.filterCanRun = filterCanRun
+        self.policyRecoveryRequired = policyRecoveryRequired
+        self.policyPersistenceError = policyPersistenceError
     }
 
     /// Read fresh from the shared container — the only honest source, since
@@ -98,7 +104,9 @@ public struct ProtectionEvidence: Equatable {
             filter: filterEvidence,
             extensionLastSeen: d?.object(forKey: "extensionLastSeen") as? Date,
             hostsEntries: HostsFile.blockingEntries(),
-            filterCanRun: FilterLink.shared.isConfigured)
+            filterCanRun: FilterLink.shared.isConfigured,
+            policyRecoveryRequired: authority?.record.recoveryRequired ?? false,
+            policyPersistenceError: authority?.persistenceError)
     }
 }
 
@@ -184,7 +192,13 @@ public struct ProtectionStatus: Equatable {
         public let detail: String
         public let state: State
         public let action: StatusAction?
-        public var id: String { name }
+        public private(set) var identity: String? = nil
+        public var id: String { identity ?? name }
+        func identified(as identity: String) -> Layer {
+            var layer = self
+            layer.identity = identity
+            return layer
+        }
 
         public var ok: Bool { state == .ok }
     }
@@ -197,12 +211,36 @@ public struct ProtectionStatus: Equatable {
     /// Would a lock started now actually block anything? Consulted by the
     /// Lock page, which repeats the answer at the point of decision.
     public var isEnforcingAnything: Bool { layers.contains(where: \.ok) }
+    public var hasProblems: Bool { layers.contains { $0.state == .problem } }
+    public func unconfirmedLayers(previouslyReady: Set<String>) -> [Layer] {
+        layers.filter { !$0.ok && previouslyReady.contains($0.id) }
+    }
 
     public init(_ evidence: ProtectionEvidence) {
-        let filter = Self.filterLayer(evidence.filter, canRun: evidence.filterCanRun)
+        let filter: Layer
+        if evidence.policyRecoveryRequired, case .on = evidence.filter {
+            filter = Layer(name: String(localized: "System filter"),
+                           detail: String(localized: "Restricting traffic during policy recovery"),
+                           state: .ok, action: nil)
+        } else {
+            filter = Self.filterLayer(evidence.filter, canRun: evidence.filterCanRun)
+        }
         let ext = Self.extensionLayer(lastSeen: evidence.extensionLastSeen, now: evidence.now)
         let hosts = evidence.hostsEntries.map(Self.hostsLayer)
-        layers = [filter] + (hosts.map { [$0] } ?? []) + [ext]
+        let policy: Layer?
+        if evidence.policyRecoveryRequired {
+            policy = Layer(name: String(localized: "Saved protection policy"),
+                           detail: String(localized: "Protection is restricted because its saved policy could not be read. Ask the administrator to restore it."),
+                           state: .problem, action: nil)
+        } else if evidence.policyPersistenceError != nil {
+            policy = Layer(name: String(localized: "Saved protection policy"),
+                           detail: String(localized: "Changes could not be saved. The previous policy remains in force. Ask the administrator to check storage and permissions."),
+                           state: .problem, action: nil)
+        } else {
+            policy = nil
+        }
+        layers = [filter.identified(as: "filter")] + (hosts.map { [$0.identified(as: "hosts")] } ?? [])
+            + [ext.identified(as: "extension")] + (policy.map { [$0.identified(as: "policy")] } ?? [])
 
         // Two jobs, and protection is active when both are done: something
         // blocks domains for every app (the filter, or failing it the hosts
@@ -215,14 +253,15 @@ public struct ProtectionStatus: Equatable {
             level = .checking
             headline = String(localized: "Checking status")
             summary = String(localized: "Reading the system filter’s state…")
-        } else if networkOK && ext.ok {
+        } else if networkOK && ext.ok && policy == nil && filter.state != .problem {
             level = .active
             headline = String(localized: "Protection active")
             summary = filter.ok
                 ? String(localized: "The system filter and the browser extension are both running.")
                 : String(localized: """
                     The hosts-file blocklist and the browser extension are both running. \
-                    The system filter would add every app and VPN-proof blocking.
+                    The system filter adds hostname and application rules for new connections. \
+                    VPN and proxy coverage still requires verification.
                     """)
         } else if okCount > 0 {
             level = .partial
@@ -275,7 +314,7 @@ public struct ProtectionStatus: Equatable {
             return Layer(name: name,
                          detail: String(localized: "Switched on, but not answering — open Hisn again, or restart the Mac"),
                          state: .problem, action: .retryFilterCheck)
-        case .on(let count) where count == 0:
+        case .on(let count) where count <= 0:
             return Layer(name: name,
                          detail: String(localized: "Running, but it has no block list yet"),
                          state: .problem, action: .updateList)
@@ -291,7 +330,13 @@ public struct ProtectionStatus: Equatable {
             return Layer(name: name, detail: String(localized: "Not set up"),
                          state: .missing, action: .installExtension)
         }
-        if now.timeIntervalSince(lastSeen) < ProtectionEvidence.extensionStaleAfter {
+        let age = now.timeIntervalSince(lastSeen)
+        guard age.isFinite, age >= 0 else {
+            return Layer(name: name,
+                         detail: String(localized: "Browser heartbeat has an invalid time. Reconnect the browser."),
+                         state: .problem, action: .reconnectExtension)
+        }
+        if age < ProtectionEvidence.extensionStaleAfter {
             return Layer(name: name, detail: String(localized: "Connected"),
                          state: .ok, action: nil)
         }

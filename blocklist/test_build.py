@@ -18,6 +18,7 @@ import re
 import subprocess
 import sys
 import unittest
+import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -25,6 +26,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from build import (                                    # noqa: E402
     apply_never_block,
     clean,
+    fetch_source,
     collapse_subdomains,
     parse_adblock,
     parse_hosts,
@@ -47,6 +49,15 @@ def client_lookup(host: str, blocked: set[str]) -> bool:
 
 
 class TestParsers(unittest.TestCase):
+
+    def test_imported_source_is_relative_to_config(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            (base / "snapshot.txt").write_text("blocked.example\n", encoding="utf-8")
+            self.assertEqual(fetch_source({"path": "snapshot.txt"}, base),
+                             "blocked.example\n")
+            with self.assertRaises(FileNotFoundError):
+                fetch_source({"path": "missing.txt"}, base)
 
     def test_hosts_format(self):
         text = (
@@ -416,8 +427,8 @@ class TestClientConfig(unittest.TestCase):
         manifest = json.loads((self.repo / "extension" / "manifest.json").read_text())
         digest = hashlib.sha256(base64.b64decode(manifest["key"])).hexdigest()[:32]
         ext_id = "".join("abcdefghijklmnop"[int(c, 16)] for c in digest)
-        swift = (self.repo / "macos" / "Hisn" / "NativeMessagingInstaller.swift").read_text()
-        ids = re.findall(r'"([a-p]{32})"', swift.split("extensionIDs")[1].split("]")[0])
+        import plistlib
+        ids = plistlib.loads((self.repo / "macos" / "Hisn" / "Info.plist").read_bytes())["HisnExtensionIDs"]
         self.assertIn(ext_id, ids, "extension/manifest.json's key no longer derives an id "
                       "the app admits — native messaging would silently stop")
 

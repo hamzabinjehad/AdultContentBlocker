@@ -54,6 +54,9 @@ END_MARK="# <<< hisn blocklist end <<<"
 SAFE_BEGIN="# >>> hisn safesearch begin >>>"
 SAFE_END="# <<< hisn safesearch end <<<"
 SAFE_LIST="$REPO/macos/safesearch_hosts.txt"
+WEB_BEGIN="# >>> hisn web protection begin >>>"
+WEB_END="# <<< hisn web protection end <<<"
+WEB_LIST="$REPO/macos/web_protection_hosts.txt"
 SAFESEARCH=1
 BYPASS_BEGIN="# >>> hisn dns bypass begin >>>"
 BYPASS_END="# <<< hisn dns bypass end <<<"
@@ -168,6 +171,10 @@ write_extras() {
         n=$(write_group_block "$SAFE_LIST" "$SAFE_BEGIN" "$SAFE_END" "$target")
         echo "SafeSearch forced for $n search-engine names (every browser and app)"
     fi
+    if [ -f "$WEB_LIST" ]; then
+        n=$(write_group_block "$WEB_LIST" "$WEB_BEGIN" "$WEB_END" "$target")
+        echo "blocked $n search/viewer hostnames"
+    fi
     if [ -f "$BYPASS_LIST" ]; then
         n=$(write_group_block "$BYPASS_LIST" "$BYPASS_BEGIN" "$BYPASS_END" "$target")
         echo "blocked $n names that route DNS around this file (Private Relay, public DoH)"
@@ -203,6 +210,11 @@ if [ "$UNDO" -eq 1 ]; then
     if grep -qF "$SAFE_BEGIN" /etc/hosts 2>/dev/null; then
         sed -i '' "/^${SAFE_BEGIN}$/,/^${SAFE_END}$/d" /etc/hosts
         echo "removed the SafeSearch addresses from /etc/hosts"
+        did_something=1
+    fi
+    if grep -qF "$WEB_BEGIN" /etc/hosts 2>/dev/null; then
+        sed -i '' "/^${WEB_BEGIN}$/,/^${WEB_END}$/d" /etc/hosts
+        echo "removed the search/viewer block from /etc/hosts"
         did_something=1
     fi
     if grep -qF "$SUB_BEGIN" /etc/hosts 2>/dev/null; then
@@ -278,6 +290,9 @@ if [ "$MODE" = "dnsmasq" ]; then
         echo "# Hisn blocklist — $COUNT domains, generated $(date -u +%FT%TZ)"
         echo "# Wildcards: each line covers the domain and every subdomain."
         grep -v '^#' "$LIST" | grep -v '^$' | sed 's|^|address=/|; s|$|/0.0.0.0|'
+        if [ "$SAFESEARCH" -eq 1 ]; then
+            cat "$REPO/macos/web_protection_dnsmasq.conf"
+        fi
     } > "$OUT"
 
     echo "wrote $(grep -c '^address=' "$OUT") wildcard rules to $OUT"

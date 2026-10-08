@@ -4,6 +4,7 @@
 <pre id="summary" data-result="pending">Running…</pre>
 <div id="frames"></div>
 <script type="module">
+import { HEARTBEAT_GRACE_MS } from "../../lib/policy.js";
 const results = [];
 function check(ok, label) { results.push(`${ok ? "ok" : "FAIL"} ${label}`); if (!ok) throw new Error(label); }
 const pause = () => new Promise((resolve) => setTimeout(resolve, 100));
@@ -19,17 +20,24 @@ try {
     const mock = `<script>
       window.fixture = ${JSON.stringify(fixture)};
       window.writes = 0;
+      window.writeDelay = 0;
+      window.rejectWrite = false;
+      window.workerUnavailable = false;
       window.changeHandlers = [];
       window.chrome = { storage: { onChanged: { addListener(fn) { changeHandlers.push(fn); } },
           local: { get: async () => (${JSON.stringify(uiLanguage ?? null)} ? { uiLanguage: ${JSON.stringify(uiLanguage ?? null)} } : {}),
                    set: async () => {} } },
         runtime: { sendMessage(msg, cb) {
+          if (workerUnavailable) return cb({ok:false,reason:'unavailable'});
           if (msg.type === 'getState') return cb(structuredClone(fixture));
           if (msg.type === 'forceSync') return cb({ok:false});
           if (msg.type === 'update') {
             writes++;
-            Object.assign(fixture, msg.patch);
-            return cb({ok:true,state:structuredClone(fixture)});
+            return setTimeout(() => {
+              if (rejectWrite) return cb({ok:false,reason:'unavailable'});
+              Object.assign(fixture, msg.patch);
+              cb({ok:true,state:structuredClone(fixture)});
+            }, writeDelay);
           }
         } }
       };
@@ -44,6 +52,10 @@ try {
   const s = solo.contentDocument, w = solo.contentWindow;
   check(s.getElementById("modeTitle").textContent === "Browser-only protection", "standalone identity");
   check(!s.getElementById("custom").disabled, "standalone fields editable");
+  check(!s.getElementById("overview").hidden && s.getElementById("rules").hidden, "overview is the first screen");
+  s.querySelector('a[href="#rules"]').click(); await pause();
+  check(!s.getElementById("rules").hidden && s.getElementById("overview").hidden, "navigation opens Blocking Rules");
+  check(s.querySelector('a[href="#rules"]').getAttribute("aria-current") === "page", "navigation exposes the selected view");
   s.getElementById("custom").value = "draft.example";
   s.getElementById("custom").dispatchEvent(new Event("input"));
   check(s.getElementById("siteSettings").querySelector(".draft-note").textContent === "Unsaved changes", "draft clearly distinguished from applied settings");
@@ -61,16 +73,100 @@ try {
   s.getElementById("customTerms").value = "gambling";
   s.getElementById("saveTerms").click(); await pause();
   check(s.getElementById("allow").value === "unsaved.example", "saving another section preserves drafts");
+  s.querySelector('a[href="#settings"]').click(); await pause();
+  s.querySelector('a[href="#rules"]').click(); await pause();
+  check(s.getElementById("allow").value === "unsaved.example", "navigation preserves unsaved drafts");
+  w.workerUnavailable = true;
+  s.getElementById("checkConnection").click(); await pause();
+  check(s.getElementById("connectionMessage").textContent.includes("could not be verified"), "worker outage is distinct from a missing app");
+  check(s.getElementById("allow").value === "unsaved.example", "unavailable reconnect preserves drafts");
+  w.workerUnavailable = false;
+  s.getElementById("checkConnection").click(); await pause();
+  check(s.getElementById("connectionMessage").textContent.includes("No connection") && s.getElementById("allow").value === "unsaved.example", "retry recovers worker access without losing drafts");
   check(w.fixture.customTerms[0] === "gambling", "custom terms saved");
+  w.fixture.textSensitivity = 75;
+  for (const fn of w.changeHandlers) fn({state:{newValue:w.fixture}}, "local");
+  check(s.getElementById("textSensitivity").value === "75", "untouched controls follow changes from another settings window");
+  check(s.getElementById("allow").value === "unsaved.example", "external changes preserve edited controls");
+  s.getElementById("discardAll").click();
+  check(s.getElementById("saveBar").hidden && s.getElementById("allow").value === "", "global discard restores all saved fields");
+  const entry = s.getElementById("customEntry");
+  entry.value = "https://www.docs.example/path";
+  entry.closest("form").dispatchEvent(new Event("submit", {cancelable:true}));
+  check(s.getElementById("custom").value.includes("docs.example") && !s.getElementById("saveBar").hidden, "quick add canonicalizes a web address into a draft");
+  check(s.querySelector('a[href="#rules"]').classList.contains("has-draft"), "sidebar marks the unsaved view");
+  entry.value = "docs.example";
+  entry.closest("form").dispatchEvent(new Event("submit", {cancelable:true}));
+  check(s.querySelectorAll("#siteSettings .site-list button").length === 2, "duplicate site is not added twice");
+  entry.value = "bad domain";
+  entry.closest("form").dispatchEvent(new Event("submit", {cancelable:true}));
+  check(entry.getAttribute("aria-invalid") === "true", "quick add identifies an invalid address");
+  const search = s.getElementById("customSearch");
+  search.value = "docs"; search.dispatchEvent(new Event("input"));
+  check(s.querySelectorAll("#siteSettings .site-list button").length === 1, "site search filters the list");
+  search.value = "missing"; search.dispatchEvent(new Event("input"));
+  check(s.querySelector("#siteSettings .site-list").textContent.includes("No matching"), "site search has an empty result state");
+  search.value = ""; search.dispatchEvent(new Event("input"));
+  s.getElementById("allowEntry").value = "reference.example";
+  s.getElementById("allowEntry").closest("form").dispatchEvent(new Event("submit", {cancelable:true}));
+  const beforeAtomic = w.writes;
+  w.writeDelay = 200;
+  s.getElementById("saveAll").click();
+  check(entry.disabled && s.getElementById("discardAll").disabled, "editing is frozen during an asynchronous save");
+  for (const fn of w.changeHandlers) fn({state:{newValue:structuredClone(w.fixture)}}, "local");
+  check(entry.disabled, "storage notifications cannot unlock editing during a save");
+  await pause(); await pause(); await pause();
+  check(w.writes === beforeAtomic + 1 && w.fixture.allowlist[0] === "reference.example" && w.fixture.customBlocks.includes("docs.example"), "save all writes multiple sections in one atomic update");
+  check(s.getElementById("saveBar").hidden && !entry.disabled, "successful save clears drafts and restores editing");
+  w.writeDelay = 0;
+  s.getElementById("custom").value += "\nbad domain";
+  s.getElementById("custom").dispatchEvent(new Event("input"));
+  const beforeInvalid = w.writes;
+  s.getElementById("saveAll").click(); await pause();
+  check(w.writes === beforeInvalid && s.querySelector("#siteSettings details").open, "invalid bulk draft prevents every save and reveals the error");
+  s.querySelector("#siteSettings .site-list button").click();
+  check(s.getElementById("custom").value.includes("bad domain"), "removing a site does not erase invalid bulk lines");
+  s.getElementById("discardAll").click();
+  entry.value = "new.example";
+  entry.closest("form").dispatchEvent(new Event("submit", {cancelable:true}));
+  w.rejectWrite = true;
+  s.getElementById("saveAll").click(); await pause();
+  check(!s.getElementById("saveBar").hidden && !entry.disabled && s.getElementById("saveMessage").classList.contains("error"), "failed save preserves drafts and allows retry");
+  w.rejectWrite = false;
+  s.getElementById("discardAll").click();
+  const strictChoice = s.querySelector('[name="modeChoice"][value="strict"]');
+  strictChoice.click();
+  check(s.getElementById("blockingMode").value === "strict" && s.getElementById("modeDescription").textContent.startsWith("Strict"), "mode choice updates the draft and explanation");
+  const beforeMode = w.writes;
+  w.confirm = () => false;
+  s.getElementById("saveAll").click();
+  check(w.writes === beforeMode && !s.getElementById("saveBar").hidden, "canceling strict mode confirmation preserves the draft without writing");
+  w.confirm = () => true;
+  s.getElementById("saveAll").click(); await pause();
+  check(w.fixture.mode === "strict" && s.getElementById("saveBar").hidden, "confirmed strict mode is saved through the shared bar");
+  w.fixture.mode = "blocklist";
+  w.fixture.lockUntil = Date.now() + 60000;
+  for (const fn of w.changeHandlers) fn({state:{newValue:structuredClone(w.fixture)}}, "local");
+  check(s.getElementById("allowEntry").disabled && !entry.disabled && s.querySelector("#siteSettings .site-list button").disabled, "lock prevents new allowances and saved block removals but permits new blocks");
+  w.fixture.mode = "strict";
+  for (const fn of w.changeHandlers) fn({state:{newValue:structuredClone(w.fixture)}}, "local");
+  check(s.querySelector('[name="modeChoice"][value="strict"]').checked && s.querySelector('[name="modeChoice"][value="blocklist"]').disabled, "strict mode cannot be weakened during a lock");
   w.fixture.appPresent = true;
   w.fixture.customBlocks = ["app.example"];
   for (const fn of w.changeHandlers) fn({state:{newValue:w.fixture}}, "local");
   check(s.getElementById("custom").disabled && s.getElementById("custom").value === "app.example", "live native connection updates and locks app-owned controls");
+  check(entry.disabled && s.querySelector("#rules .managed-notice").hidden === false && s.getElementById("saveBar").hidden, "app ownership is reflected by the site editor and save bar");
   const app = await frame(true), a = app.contentDocument;
   check(a.getElementById("blockingMode").disabled && a.getElementById("saveChecks").disabled, "managed controls read-only on load");
   a.getElementById("checkConnection").click(); await pause();
   check(a.getElementById("custom").disabled, "connection failure never grants local policy ownership");
-  check(a.getElementById("connectionMessage").textContent.includes("Could not connect"), "connection error has visible feedback");
+  check(a.getElementById("connectionMessage").textContent.includes("remain app-managed"), "connection error explains retained app ownership");
+  const aw = app.contentWindow;
+  aw.fixture.lastHeartbeat = Date.now() - HEARTBEAT_GRACE_MS + 500;
+  for (const fn of aw.changeHandlers) fn({state:{newValue:structuredClone(aw.fixture)}}, "local");
+  check(a.getElementById("modeTitle").textContent === "Managed by the Hisn app", "fresh heartbeat updates the connection label");
+  await new Promise(resolve => setTimeout(resolve, 1600));
+  check(a.getElementById("modeTitle").textContent === "Waiting for the Hisn app", "connection label expires without a storage event");
   solo.style.width = "390px";
   await pause();
   check(s.documentElement.scrollWidth <= w.innerWidth, "narrow settings page has no horizontal overflow");
@@ -80,7 +176,9 @@ try {
   const a2 = arFrame.contentDocument;
   check(a2.documentElement.dir === "rtl" && a2.documentElement.lang === "ar", "Arabic page is right-to-left");
   check(a2.getElementById("modeTitle").textContent === "حماية المتصفح فقط", "Arabic status text");
-  check(a2.querySelector("h1").textContent.includes("لما يهمّك"), "Arabic static text");
+  check(a2.querySelector("h1").textContent === "نظرة عامة", "Arabic static text");
+  a2.querySelector('a[href="#rules"]').click(); await pause();
+  check(!a2.getElementById("rules").hidden, "Arabic navigation opens the rules view");
   check(a2.getElementById("custom").dir === "ltr", "domain fields stay left-to-right");
   check(a2.getElementById("uiLanguage").value === "ar", "the language picker shows the choice");
   arFrame.style.width = "390px";

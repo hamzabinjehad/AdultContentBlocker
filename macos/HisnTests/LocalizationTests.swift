@@ -7,6 +7,27 @@ import XCTest
 /// it; these prove the build actually carries them — that the catalog was
 /// compiled into `ar.lproj` and that Arabic's plural forms choose right.
 final class LocalizationTests: XCTestCase {
+    func testBrowserRequirementConsentShipsArabic() throws {
+        let ar = try arabic()
+        XCTAssertEqual(ar.localizedString(forKey: "Require the extension outside a lock", value: nil, table: nil),
+                       "اشترط اتصال الإضافة خارج فترة القفل")
+        XCTAssertEqual(ar.localizedString(forKey: "Require browser protection outside a lock?", value: nil, table: nil),
+                       "هل تريد اشتراط حماية المتصفح خارج فترة القفل؟")
+        XCTAssertEqual(ar.localizedString(forKey: "Enable requirement", value: nil, table: nil),
+                       "تفعيل الاشتراط")
+        XCTAssertEqual(ar.localizedString(forKey: "This requirement cannot be turned off while a lock is running.", value: nil, table: nil),
+                       "لا يمكن إيقاف هذا الاشتراط أثناء تشغيل القفل.")
+        XCTAssertEqual(ar.localizedString(forKey: "Left open — configure Screen Time and network protection separately; this exemption does not verify them.", value: nil, table: nil),
+                       "يظل مفتوحًا — اضبط مدة استخدام الجهاز وحماية الشبكة بشكل مستقل؛ هذا الاستثناء لا يتحقق منهما.")
+    }
+
+    func testProtectionPlanShipsArabicLabels() throws {
+        let ar = try arabic()
+        XCTAssertEqual(ar.localizedString(forKey: "Protection layers reporting ready", value: nil, table: nil),
+                       "طبقات الحماية التي أبلغت عن الجاهزية")
+        XCTAssertEqual(ar.localizedString(forKey: "I understand this commitment does not prevent an administrator from removing protection. Keep essential services accessible.", value: nil, table: nil),
+                       "أفهم أن هذا الالتزام لا يمنع مسؤول الجهاز من إزالة الحماية. سأُبقي الخدمات الضرورية متاحة.")
+    }
 
     private func arabic() throws -> Bundle {
         try XCTUnwrap(Bundle(for: LockManager.self).path(forResource: "ar", ofType: "lproj")
@@ -19,6 +40,22 @@ final class LocalizationTests: XCTestCase {
         XCTAssertEqual(ar.localizedString(forKey: "Overview", value: nil, table: nil), "نظرة عامة")
         XCTAssertEqual(ar.localizedString(forKey: "Locked until %@", value: nil, table: nil),
                        "مقفل حتى %@")
+    }
+
+    func testProtectedSetupShipsArabicLabels() throws {
+        let ar = try arabic()
+        XCTAssertEqual(ar.localizedString(forKey: "Protected Setup", value: nil, table: nil), "الإعداد المحمي")
+        XCTAssertEqual(ar.localizedString(forKey: "Required browser protection", value: nil, table: nil), "حماية المتصفح الإلزامية")
+        XCTAssertEqual(ar.localizedString(forKey: "Protected setup checks passed", value: nil, table: nil), "اجتاز الإعداد المحمي الفحوصات")
+    }
+
+    func testNetworkSetupShipsArabic() throws {
+        let ar = try arabic()
+        XCTAssertEqual(ar.localizedString(forKey: "Start with your network", value: nil, table: nil), "ابدأ بحماية شبكتك")
+        XCTAssertEqual(ar.localizedString(forKey: "Network protection not verified", value: nil, table: nil), "لم يتم التحقق من حماية الشبكة")
+        XCTAssertEqual(ar.localizedString(forKey: "I cannot change this network", value: nil, table: nil), "لا أستطيع تغيير إعدادات هذه الشبكة")
+        XCTAssertEqual(ar.localizedString(forKey: "Check Cloudflare DNS on this Mac", value: nil, table: nil), "افحص DNS من Cloudflare على هذا الماك")
+        XCTAssertEqual(ar.localizedString(forKey: "DNS sample inconclusive", value: nil, table: nil), "نتيجة عيّنة DNS غير حاسمة")
     }
 
     /// Six plural categories, and each count lands in its own.

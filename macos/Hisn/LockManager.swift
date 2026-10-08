@@ -120,9 +120,12 @@ public final class LockManager: ObservableObject {
         case releaseNotDue(at: Date)
         case filterUnavailable(String)
         case durationOutOfRange
+        case fixedCommitment
 
         public var errorDescription: String? {
             switch self {
+            case .fixedCommitment:
+                return String(localized: "Your fixed commitment has not finished. Self-release is unavailable until it ends.")
             case .durationOutOfRange:
                 let shortest = LockManager.describe(LockManager.minimumLock)
                 let longest = LockManager.describe(LockManager.maximumLock)
@@ -218,7 +221,7 @@ public final class LockManager: ObservableObject {
     /// typed. The range is re-checked here and not only in the view: this is
     /// the last point before a deadline becomes unshortenable, so it is the
     /// wrong place to trust a caller.
-    public func start(seconds: TimeInterval, strict: Bool) async throws {
+    public func start(seconds: TimeInterval, strict: Bool, fixedCommitment: Bool = false) async throws {
         guard let seconds = Self.validated(seconds: seconds) else {
             throw LockError.durationOutOfRange
         }
@@ -243,7 +246,8 @@ public final class LockManager: ObservableObject {
             deadline: deadline,
             mode: strict || keepStrict ? "strict" : "blocklist",
             startedAt: running ? state.startedAt : LockStore.trustedNow(),
-            releaseNonce: running ? state.releaseNonce : PartnerService.newNonce())
+            releaseNonce: running ? state.releaseNonce : PartnerService.newNonce(),
+            commitmentUntil: fixedCommitment ? deadline : (running ? state.commitmentUntil : nil))
 
         guard LockStore.write(newState) else { throw LockError.wouldShorten }
         state = newState
@@ -268,8 +272,7 @@ public final class LockManager: ObservableObject {
     /// Add time to a running lock. Always permitted.
     public func extend(by seconds: TimeInterval) throws {
         guard mirrorsHoldLock else { FilterSync.soon(); throw LockError.notLocked }
-        var next = state
-        next.deadline = state.deadline.addingTimeInterval(seconds)
+        guard let next = state.extending(by: seconds) else { throw LockError.durationOutOfRange }
         guard LockStore.write(next) else { throw LockError.wouldShorten }
         state = next
         FilterSync.soon()
@@ -308,6 +311,7 @@ public final class LockManager: ObservableObject {
     @discardableResult
     public func requestSelfRelease() throws -> Date {
         guard mirrorsHoldLock else { FilterSync.soon(); throw LockError.notLocked }
+        guard !hasFixedCommitment else { throw LockError.fixedCommitment }
         if let existing = state.selfReleaseAt { return existing }
 
         let at = min(LockStore.trustedNow().addingTimeInterval(Self.selfReleaseDelay),
@@ -340,6 +344,10 @@ public final class LockManager: ObservableObject {
     public var pendingSelfRelease: Date? {
         guard state.selfReleaseAt != nil else { return nil }
         return LockStore.effectiveDeadline(state)
+    }
+
+    public var hasFixedCommitment: Bool {
+        isLocked && now < (state.commitmentUntil ?? .distantPast)
     }
 
     /// The code to send an accountability partner, or nil when no lock runs.

@@ -1,4 +1,5 @@
 import XCTest
+import Darwin
 @testable import Hisn
 
 /// One test per finding of the macOS audit (2026-09-25) — each a way a lock
@@ -149,16 +150,20 @@ final class AuditRegressionTests: XCTestCase {
         XCTAssertEqual(r.revision, 3)
     }
 
-    func testUnreadableCopiesAreSetAsideNotOverwritten() throws {
+    func testUnreadableCopiesArePreservedAndRequireRecovery() throws {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("hisn-audit-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: dir) }
         let store = PolicyStore(directory: dir)
         try Data("not json".utf8).write(to: dir.appendingPathComponent("policy.a.json"))
-        XCTAssertEqual(store.load(), PolicyRecord())
+        XCTAssertTrue(store.load().recoveryRequired)
         let names = try FileManager.default.contentsOfDirectory(atPath: dir.path)
         XCTAssertTrue(names.contains { $0.hasPrefix("policy.a.json.unreadable-") },
                       "the unreadable copy is kept for a person to look at")
+        XCTAssertTrue(names.contains(PolicyStore.recoveryMarkerName))
+        XCTAssertTrue(names.contains("policy.a.json"), "keep original evidence until recovery")
+        XCTAssertThrowsError(try store.save(PolicyRecord()),
+                             "ordinary saves cannot turn damaged authority into a fresh record")
     }
 
     // 15 — a filter that is switched on but does not answer is not "Running".
@@ -200,5 +205,87 @@ final class AuditRegressionTests: XCTestCase {
         XCTAssertTrue(BrowserGuardPolicy.bundlesBrowserEngine(at: chromium))
         XCTAssertFalse(BrowserGuardPolicy.bundlesBrowserEngine(at: electron), "Electron apps are not browsers")
         XCTAssertFalse(BrowserGuardPolicy.bundlesBrowserEngine(at: plain))
+    }
+}
+
+/// Lifecycle decisions must keep protection running without preventing logout
+/// or letting a controlled restart bypass an active lock.
+final class AppLifecyclePolicyTests: XCTestCase {
+    func testOrdinaryQuitKeepsProtectionRunningWhileUnlocked() {
+        XCTAssertFalse(AppLifecyclePolicy.permitsTermination(
+            hostingTests: false, endingSession: false, restarting: false, locked: false))
+    }
+
+    func testOrdinaryQuitKeepsProtectionRunningDuringALock() {
+        XCTAssertFalse(AppLifecyclePolicy.permitsTermination(
+            hostingTests: false, endingSession: false, restarting: false, locked: true))
+    }
+
+    func testLogoutAndShutdownCanTerminateEvenDuringALock() {
+        for locked in [false, true] {
+            for restarting in [false, true] {
+                XCTAssertTrue(AppLifecyclePolicy.permitsTermination(
+                    hostingTests: false, endingSession: true,
+                    restarting: restarting, locked: locked),
+                    "ending a user session must remain possible, locked=\(locked), restarting=\(restarting)")
+            }
+        }
+    }
+
+    func testTestHostCanTerminateInEveryLifecycleState() {
+        for endingSession in [false, true] {
+            for restarting in [false, true] {
+                for locked in [false, true] {
+                    XCTAssertTrue(AppLifecyclePolicy.permitsTermination(
+                        hostingTests: true, endingSession: endingSession,
+                        restarting: restarting, locked: locked),
+                        "test-host shutdown must never be intercepted")
+                }
+            }
+        }
+    }
+
+    func testControlledRestartCanTerminateOutsideALock() {
+        XCTAssertTrue(AppLifecyclePolicy.permitsTermination(
+            hostingTests: false, endingSession: false, restarting: true, locked: false))
+    }
+
+    func testControlledRestartCannotBypassALock() {
+        XCTAssertFalse(AppLifecyclePolicy.permitsTermination(
+            hostingTests: false, endingSession: false, restarting: true, locked: true))
+    }
+
+    func testLockStateIsReadOnlyForAControlledRestart() {
+        var reads = 0
+        let readLock = {
+            reads += 1
+            return false
+        }
+
+        XCTAssertFalse(AppLifecyclePolicy.permitsTermination(
+            hostingTests: false, endingSession: false, restarting: false, locked: readLock()))
+        XCTAssertEqual(reads, 0, "ordinary Quit must be refused without accessing lock stores")
+
+        XCTAssertTrue(AppLifecyclePolicy.permitsTermination(
+            hostingTests: true, endingSession: false, restarting: true, locked: readLock()))
+        XCTAssertEqual(reads, 0, "test-host shutdown must not access installed lock stores")
+
+        XCTAssertTrue(AppLifecyclePolicy.permitsTermination(
+            hostingTests: false, endingSession: true, restarting: true, locked: readLock()))
+        XCTAssertEqual(reads, 0, "logout and shutdown must not wait for lock stores")
+
+        XCTAssertTrue(AppLifecyclePolicy.permitsTermination(
+            hostingTests: false, endingSession: false, restarting: true, locked: readLock()))
+        XCTAssertEqual(reads, 1, "a controlled restart must check the lock exactly once")
+    }
+
+    func testManagedDuplicateRequestsAnotherLaunchAttempt() {
+        XCTAssertEqual(AppLifecyclePolicy.duplicateExitStatus(managed: true), EXIT_FAILURE,
+                       "launchd must retry when its managed process loses to an existing instance")
+    }
+
+    func testManualDuplicateExitsSuccessfully() {
+        XCTAssertEqual(AppLifecyclePolicy.duplicateExitStatus(managed: false), EXIT_SUCCESS,
+                       "a second manual launch only hands off to the existing instance")
     }
 }

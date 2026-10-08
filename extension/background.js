@@ -32,10 +32,10 @@ const RULESET_LOCKDOWN = "lockdown";
 // Forces SafeSearch on the search engines and restricted mode on YouTube.
 // Priority 1 on purpose: a custom block or strict mode (also at 1, where a
 // block beats a redirect) still wins, so SafeSearch can never be a way to
-// reach a search engine someone blocked. The cost is that an allowlisted
-// search engine is not rewritten; the profile's ForceGoogleSafeSearch /
-// ForceYouTubeRestrict policies cover that case where they are installed.
+// reach a search engine someone blocked. policyRules also adds scoped copies
+// above each allowance, without outranking matching custom blocks.
 const RULESET_SAFESEARCH = "safesearch";
+const RULESET_WEB_PROTECTION = "web_protection";
 // Path rules for single sites whose words mean something only in one place:
 // "nsfw" in a Reddit community's name. Kept out of the keyword list, which
 // matches every site.
@@ -158,8 +158,12 @@ async function applyRules(state) {
   // yet, and "no app" means they installed only the browser half. Neither is a
   // request to stop filtering.
   await chrome.declarativeNetRequest.updateEnabledRulesets({
-    enableRulesetIds: [RULESET_BLOCKLIST, RULESET_KEYWORDS, RULESET_SAFESEARCH, RULESET_PATHS],
-    disableRulesetIds: [],
+    enableRulesetIds: [RULESET_BLOCKLIST, RULESET_KEYWORDS, RULESET_SAFESEARCH, RULESET_PATHS, RULESET_WEB_PROTECTION],
+    // Chrome retains enabled static rulesets across worker/browser restarts.
+    // The legacy static catch-all must not outlive its Strict policy. Strict
+    // enforcement is now entirely dynamic (including allowlist carve-outs),
+    // and those rules were installed successfully above before this removal.
+    disableRulesetIds: [RULESET_LOCKDOWN],
   });
 
   await syncTextScanning(state);
@@ -370,7 +374,7 @@ async function scoreText(zones, sender) {
   // slot overwritten each block, and never persisted, sent, or put in a URL.
   if (result.block) {
     await rememberBlock(host, result.hits);
-    if (sender?.tab?.id !== undefined && sender.frameId === 0) ensureBlocked(sender.tab.id);
+    if (sender?.tab?.id !== undefined && sender.frameId === 0) ensureBlocked(sender.tab.id, sender.url);
   }
   return { block: result.block };
 }
@@ -382,11 +386,13 @@ async function scoreText(zones, sender) {
  * worker checks, and if the tab is still not on the block page it replaces
  * the tab itself, which no page can refuse.
  */
-function ensureBlocked(tabId) {
+function ensureBlocked(tabId, sourceURL) {
   const blockedPage = chrome.runtime.getURL("blocked.html");
   setTimeout(async () => {
     try {
       const tab = await chrome.tabs.get(tabId);
+      // Never carry an old page's content verdict onto a new navigation.
+      if (!sourceURL || tab.pendingUrl || tab.url !== sourceURL) return;
       if (!String(tab.url || tab.pendingUrl || "").startsWith(blockedPage)) {
         await replaceTab(tab, chrome.runtime.getURL("blocked.html?reason=terms"));
       }
@@ -1007,4 +1013,4 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 });
 
 export { applyRules, guardedUpdate, DEFAULT_STATE, resolveDisputed, ensureAlarms, booted, ALARMS,
-         senderAllowed };
+         senderAllowed, ensureBlocked };

@@ -1,5 +1,13 @@
 # Threat model
 
+This document includes historical design expectations, not a hardware acceptance
+record. Table labels such as "Closed" and "Yes" must not be read as universal
+coverage or proof of the current signed build. In particular, hostname-based
+new-flow filtering does not establish classification inside every VPN/tunnel,
+and mobile individual authorization does not prevent app deletion. See
+[current platform limits](APPLE_PLATFORMS.md), [commitment limits](SELF_CONTROL_COMMITMENT.md)
+and [release evidence](RELEASE_VALIDATION.md) before relying on a configuration.
+
 The adversary is the user. Not a hostile stranger — the same person who
 installed this, three weeks later, at 2am, motivated and with a search engine.
 That framing decides everything: the attacks that matter are the *easy* ones,

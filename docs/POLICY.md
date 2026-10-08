@@ -14,6 +14,7 @@ test suites assert every case: `PolicyContractTests.swift` against the store,
 | Input | Owner | Reaches the browser via |
 |---|---|---|
 | Published list + URL keyword rules | CI, signed | static rulesets and the downloaded list |
+| Built-in search/viewer blocks | maintained `blocklist/web_protection.json` | generated static ruleset |
 | `customBlocks` — "Always block these" | the app (`SiteLists`) | native heartbeat |
 | `allowlist` — "Always allowed" | the app (`SiteLists`) | native heartbeat |
 | mode, lock deadline | the app (`LockStore`) | native heartbeat |
@@ -62,6 +63,18 @@ below are identical.
    requests only, so the worker walks open tabs and sends the ones the policy
    now refuses to the block page (`tabsToBlock`). The Mac cannot do the
    equivalent: a socket open before a lock starts is not torn down.
+10. **Built-in search/viewer blocks cannot be allowlisted.** Yandex search
+    hosts are matched exactly (not its mail/maps subdomains). The maintained
+    anonymous-viewer domains and all their subdomains are denied for documents
+    and embedded traffic, even without a lock. Both clients consume generated
+    policy from `blocklist/web_protection.json`; `web_protection.py --check`
+    rejects drift. These are bundled policy, not a change to the signed seed.
+11. **Allowing a supported search engine does not turn SafeSearch off.**
+    Browser transforms and YouTube headers are copied above each allowance,
+    scoped to its domains, excluding equally/more-specific custom blocks.
+    They never turn a custom denial into access. Strict mode still denies
+    engines that are not allowed. SafeSearch is a provider filter, not a
+    guarantee that every result is suitable.
 
 ## Scope, stated plainly
 
@@ -86,7 +99,8 @@ allows. A request matches every group whose entry covers it; the highest
 priority among them is the most specific entry, and a tie between an allow and
 a block at the same depth goes to the block. Below the hand lists, the ladder
 is: strict catch-all 1, strict plumbing carve-out 2, published domain list 3,
-published URL keywords 4. So any allowance outranks the published rules and
+published URL keywords 4. Built-in search/viewer blocks sit at 2000, above
+every hand-list rule. So any allowance outranks the published rules and
 carves through strict mode, while the plumbing carve-out — an allowed page's
 scripts, images and fetches — can never reach a listed domain. (It sat above
 the list until 2026-09-25, which let an allowed page in strict mode load

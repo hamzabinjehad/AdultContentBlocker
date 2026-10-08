@@ -27,7 +27,7 @@ struct ContentView: View {
         var title: LocalizedStringKey {
             switch self {
             case .overview: return "Overview"
-            case .setup:    return "Setup"
+            case .setup:    return "Protected Setup"
             case .rules:    return "Blocking Rules"
             case .lock:     return "Lock"
             case .settings: return "Settings"
@@ -79,6 +79,9 @@ struct ContentView: View {
         .frame(minWidth: 720, minHeight: 500)
         .task {
             guard !AppDelegate.isHostingTests else { return }
+            if !CommandLine.arguments.contains("--background") {
+                AppNavigation.shared.markSetupSeen()
+            }
             await filter.reassertIfNeeded()
         }
     }
@@ -160,6 +163,22 @@ private struct OverviewPage: View {
     @State private var error: String?
     @State private var showBrowserHelp = false
     @State private var notice: String?
+    @State private var previouslyReadyLayers: Set<String> = []
+    @State private var historyStorageHealthy = true
+    @State private var clockAssessment: CommitmentClock.Assessment = .consistent
+    @State private var clockMonitor = CommitmentClock(wallAnchor: Date(), uptimeAnchor: CommitmentClock.continuousTime)
+    @State private var readinessHistory = ReadinessHistory.deviceLocal(key: "hisn.mac.readiness",
+        allowed: ["filter", "hosts", "extension"])
+
+    private func rememberReadiness(_ status: ProtectionStatus) {
+        readinessHistory.observe(Set(status.layers.filter(\.ok).map(\.id)))
+        previouslyReadyLayers = readinessHistory.known
+        historyStorageHealthy = readinessHistory.storageHealthy
+    }
+
+    private var lostLayers: [ProtectionStatus.Layer] {
+        protection.unconfirmedLayers(previouslyReady: previouslyReadyLayers)
+    }
 
     /// Re-read on every render. `lock.now` ticks once a second, so the
     /// extension heartbeat and the filter's domain count are never more than a
@@ -176,6 +195,14 @@ private struct OverviewPage: View {
 
     @ObservedObject private var guardian = BrowserGuard.shared
     @State private var setup: SetupChecklist?
+    @State private var readingSetup = false
+    @AppStorage("hisn.setup.administratorConfirmed") private var administratorConfirmed = false
+    @AppStorage("hisn.setup.recoveryConfirmed") private var recoveryConfirmed = false
+
+    private var protectedSetup: ProtectedSetup? {
+        setup.map { ProtectedSetup(checklist: $0, administratorConfirmed: administratorConfirmed,
+                                   recoveryConfirmed: recoveryConfirmed) }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
@@ -188,10 +215,34 @@ private struct OverviewPage: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             protectionCard
+            if clockAssessment != .consistent {
+                Label("Device time could not be confirmed. Check automatic date and time. Your saved commitment deadline has not changed.",
+                      systemImage: "clock.badge.exclamationmark")
+                    .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if !historyStorageHealthy {
+                Label("Saved protection history could not be read. Current checks are still shown below.",
+                      systemImage: "exclamationmark.triangle")
+                    .foregroundStyle(.orange)
+            }
+            if !lostLayers.isEmpty {
+                Label("Previously ready layers are no longer confirmed. Recheck their configuration.",
+                      systemImage: "exclamationmark.triangle")
+                    .foregroundStyle(.orange)
+                ForEach(lostLayers) { layer in Text(layer.name).font(.callout) }
+                Button("Continue setup") { goTo(.setup) }
+            } else if lock.isLocked && protection.hasProblems && protection.isEnforcingAnything {
+                Label("Some protection layers need attention. Your commitment remains active; review the checks below.",
+                      systemImage: "exclamationmark.triangle")
+                    .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button("Continue setup") { goTo(.setup) }
+            }
             lockCard
-            if let setup, !setup.isComplete {
+            if let setup = protectedSetup, !setup.isComplete {
                 HStack(alignment: .firstTextBaseline) {
-                    Label(String(localized: "Setup: \(setup.doneCount) of \(setup.required.count) steps done."),
+                    Label(String(localized: "Setup: \(setup.doneCount) of \(setup.totalCount) steps done."),
                           systemImage: "checklist")
                         .font(.callout)
                     Spacer()
@@ -222,13 +273,27 @@ private struct OverviewPage: View {
             Button("OK") { error = nil }
         } message: { Text(error ?? "") }
         .sheet(isPresented: $showBrowserHelp) { BrowserSetupHelp() }
+        .onAppear { rememberReadiness(protection) }
+        .onChange(of: lock.now) { _ in
+            clockAssessment = clockMonitor.assessment(wall: Date(), uptime: CommitmentClock.continuousTime)
+        }
+        .onChange(of: protection) { current in
+            rememberReadiness(current)
+        }
         .task { await readSetup() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            Task { await readSetup() }
+        }
+        .onChange(of: filter.isEnabled) { _ in Task { await readSetup() } }
+        .onReceive(Timer.publish(every: 30, on: .main, in: .common).autoconnect()) { _ in
             Task { await readSetup() }
         }
     }
 
     private func readSetup() async {
+        guard !readingSetup, !AppDelegate.isHostingTests else { return }
+        readingSetup = true
+        defer { readingSetup = false }
         let running = protection.layers.first?.ok ?? false
         setup = await Task.detached {
             SetupChecklist(SetupEvidence.current(systemFilterRunning: running))
@@ -250,6 +315,12 @@ private struct OverviewPage: View {
                     .fixedSize(horizontal: false, vertical: true)
 
                 Divider()
+
+                LabeledContent("Protection layers reporting ready",
+                    value: "\(protection.layers.filter { $0.ok }.count) / \(protection.layers.count)")
+                    .accessibilityIdentifier("plan.configuredLayers")
+                Text("Readiness is not proof that every route is blocked. Router protection is checked separately.")
+                    .font(.caption).foregroundStyle(.secondary)
 
                 ForEach(protection.layers) { layer in
                     layerRow(layer)
@@ -278,7 +349,7 @@ private struct OverviewPage: View {
             Spacer()
             if let action = layer.action {
                 Button(action.title) { perform(action) }
-                    .disabled(busy != nil)
+                    .disabled(busy != nil || (action == .enableFilter && filter.isEnabling))
                     .controlSize(.small)
             }
         }
@@ -409,6 +480,11 @@ private struct BrowserSetupHelp: View {
                 step(2, "Open any web page. The extension contacts this app within a minute.")
                 step(3, "Come back here — the Browser extension row reads Connected once it has.")
             }
+            ForEach(NativeMessagingInstaller.storeURLs, id: \.self) { url in
+                Link(destination: url) {
+                    Label("Get browser extension", systemImage: "arrow.up.right.square")
+                }
+            }
             Text("Safari and Firefox are covered by the system filter only; the extension does not run there.")
                 .font(.caption).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -432,7 +508,7 @@ private struct BrowserSetupHelp: View {
 /// is left, and for each one left, what to do. Re-read on appear and on
 /// "Check again" — most steps happen outside the app (a profile installed, a
 /// password handed over), so there is nothing to observe live.
-private struct SetupPage: View {
+struct SetupPage: View {
     @ObservedObject var filter: FilterController
     let goTo: (ContentView.Page) -> Void
 
@@ -440,35 +516,110 @@ private struct SetupPage: View {
     @State private var checking = false
     @State private var showBrowserHelp = false
     @State private var copied: String?
+    @State private var expandedStages: Set<ProtectedSetup.Stage.ID> = []
+    @State private var lastChecked: Date?
+    @AppStorage("hisn.setup.administratorConfirmed") private var administratorConfirmed = false
+    @AppStorage("hisn.setup.recoveryConfirmed") private var recoveryConfirmed = false
+
+    private var protectedSetup: ProtectedSetup? {
+        checklist.map { ProtectedSetup(checklist: $0, administratorConfirmed: administratorConfirmed,
+                                       recoveryConfirmed: recoveryConfirmed) }
+    }
+
+    init(filter: FilterController, goTo: @escaping (ContentView.Page) -> Void,
+         initialChecklist: SetupChecklist? = nil,
+         confirmationDefaults: UserDefaults = .standard,
+         initialExpandedStages: Set<ProtectedSetup.Stage.ID>? = nil) {
+        self.filter = filter
+        self.goTo = goTo
+        _checklist = State(initialValue: initialChecklist)
+        _administratorConfirmed = AppStorage(wrappedValue: false, "hisn.setup.administratorConfirmed", store: confirmationDefaults)
+        _recoveryConfirmed = AppStorage(wrappedValue: false, "hisn.setup.recoveryConfirmed", store: confirmationDefaults)
+        var expanded = initialExpandedStages ?? []
+        if initialExpandedStages == nil, let checklist = initialChecklist {
+            let setup = ProtectedSetup(checklist: checklist,
+                administratorConfirmed: confirmationDefaults.bool(forKey: "hisn.setup.administratorConfirmed"),
+                recoveryConfirmed: confirmationDefaults.bool(forKey: "hisn.setup.recoveryConfirmed"))
+            if let next = setup.nextStage { expanded.insert(next.id) }
+        }
+        _expandedStages = State(initialValue: expanded)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
-            PageSection(title: "Make it hold",
-                    subtitle: """
-                        Each step closes a way around the others. Do them in this order, \
-                        with your partner for the ones they hold — the account split last, \
-                        because it is the one that makes the rest stick.
-                        """) {
-                if let checklist {
-                    Text(String(localized: "\(checklist.doneCount) of \(checklist.required.count) steps done."))
+            NetworkSetupGuide()
+            Divider()
+            PageSection(title: "Protected Setup") {
+                if let setup = protectedSetup {
+                    Label(setup.isComplete ? "Protected setup checks passed" : "Protection needs attention",
+                          systemImage: setup.isComplete ? "checkmark.shield" : "exclamationmark.shield")
+                        .font(.headline)
+                        .foregroundStyle(setup.isComplete ? Color.green : Color.primary)
+                    ProgressView(value: Double(setup.doneCount), total: Double(setup.totalCount))
+                    Text(String(localized: "\(setup.doneCount) of \(setup.totalCount) steps done."))
                         .font(.callout.weight(.medium))
-                        .foregroundStyle(checklist.isComplete ? Color.green : Color.secondary)
+                        .foregroundStyle(.secondary)
+                    if let next = setup.nextStage {
+                        Text(String(localized: "Next: \(next.title)"))
+                            .font(.callout.weight(.medium))
+                    }
                 } else {
-                    ProgressView().controlSize(.small)
+                    ProgressView("Checking this Mac...").controlSize(.small)
                 }
+                Text("These checks cover this Mac and make protection harder to disable. Network protection, other devices, and recovery access are checked separately.")
+                    .font(.callout).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
-            if let checklist {
-                VStack(alignment: .leading, spacing: 14) {
-                    ForEach(Array(checklist.steps.enumerated()), id: \.element.id) { index, step in
-                        row(index + 1, step)
+            if let setup = protectedSetup {
+                ForEach(setup.stages) { stage in
+                    DisclosureGroup(isExpanded: Binding(
+                        get: { expandedStages.contains(stage.id) },
+                        set: { if $0 { expandedStages.insert(stage.id) } else { expandedStages.remove(stage.id) } }
+                    )) {
+                        VStack(alignment: .leading, spacing: 14) {
+                            ForEach(stage.steps) { row($0) }
+                            if stage.id == .recovery {
+                                Toggle("I know how to contact my trusted person and recover access if something goes wrong.", isOn: $recoveryConfirmed)
+                                    .toggleStyle(.checkbox)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                Text("Confirmed by you, not checked by Hisn. Keep recovery details somewhere you can reach without this Mac.")
+                                    .font(.callout).foregroundStyle(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            if stage.id == .accounts {
+                                Text("Do this last. Keep a separate working administrator account; never remove the last administrator.")
+                                    .font(.callout).foregroundStyle(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                Toggle("A trusted person keeps the separate administrator password, and I use only this standard account.", isOn: $administratorConfirmed)
+                                    .toggleStyle(.checkbox)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .disabled(stage.steps.contains { $0.state != .done })
+                                Text("Confirmed by you. Hisn can check account permissions, but cannot know who holds a password.")
+                                    .font(.callout).foregroundStyle(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                        .padding(.top, 12)
+                    } label: {
+                        Label(stage.title, systemImage: stage.isComplete ? "checkmark.circle.fill" : "circle")
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(stage.isComplete ? Color.green : Color.primary)
                     }
+                    Divider()
                 }
             }
 
             HStack {
+                if let lastChecked {
+                    Text("Last checked").foregroundStyle(.secondary)
+                    Text(lastChecked, style: .time).foregroundStyle(.secondary)
+                }
                 Spacer()
-                Button("Check again") { Task { await refresh() } }
+                if checking { ProgressView().controlSize(.small) }
+                Button { Task { await refresh() } } label: {
+                    Label("Check again", systemImage: "arrow.clockwise")
+                }
                     .disabled(checking)
             }
         }
@@ -479,65 +630,108 @@ private struct SetupPage: View {
             Task { await refresh() }
         }
         .sheet(isPresented: $showBrowserHelp) { BrowserSetupHelp() }
+        .onChange(of: filter.isEnabled) { _ in Task { await refresh() } }
+        .onChange(of: checklist) { _ in
+            if expandedStages.isEmpty, let next = protectedSetup?.nextStage { expandedStages.insert(next.id) }
+        }
+        .onReceive(Timer.publish(every: 30, on: .main, in: .common).autoconnect()) { _ in
+            Task { await refresh() }
+        }
     }
 
-    private func row(_ n: Int, _ step: SetupChecklist.Step) -> some View {
+    private func row(_ step: SetupChecklist.Step) -> some View {
         Card {
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Image(systemName: step.state == .done ? "checkmark.circle.fill"
-                      : step.state == .optional ? "circle.dashed" : "circle")
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: step.state == .done ? "checkmark.circle.fill" : "circle")
                     .foregroundStyle(step.state == .done ? Color.green : Color.secondary)
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(verbatim: "\(n). \(step.title)").font(.body.weight(.medium))
+                    Text(step.title).font(.body.weight(.medium))
                     Text(step.detail)
                         .font(.callout).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                     if case let .command(line) = step.action {
-                        HStack(spacing: 8) {
-                            Text(verbatim: line)
-                                .font(.callout.monospaced())
-                                .textSelection(.enabled)
-                                .environment(\.layoutDirection, .leftToRight)
-                            Button(copied == line ? "Copied" : "Copy") {
-                                NSPasteboard.general.clearContents()
-                                NSPasteboard.general.setString(line, forType: .string)
-                                copied = line
+                        DisclosureGroup("Administrator setup") {
+                            HStack(spacing: 8) {
+                                Text(verbatim: line)
+                                    .font(.callout.monospaced())
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .textSelection(.enabled)
+                                    .environment(\.layoutDirection, .leftToRight)
+                                Button(copied == line ? "Copied" : "Copy") {
+                                    NSPasteboard.general.clearContents()
+                                    NSPasteboard.general.setString(line, forType: .string)
+                                    copied = line
+                                }
+                                .controlSize(.small)
                             }
-                            .controlSize(.small)
+                            .padding(.top, 2)
                         }
-                        .padding(.top, 2)
+                        .padding(.top, 4)
                     }
-                }
-                Spacer()
-                switch step.action {
-                case .browserHelp:
-                    Button("How to connect a browser") { showBrowserHelp = true }.controlSize(.small)
-                case .partnerSettings:
-                    Button("Open Settings") { goTo(.settings) }.controlSize(.small)
-                case .screenTimeSettings:
-                    Button("Open Screen Time") {
-                        if let url = URL(string: "x-apple.systempreferences:com.apple.Screen-Time-Settings.extension") {
-                            NSWorkspace.shared.open(url)
-                        }
-                    }.controlSize(.small)
-                case .command, .none:
-                    EmptyView()
+                    stepAction(step)
+                    if step.id == .systemFilter && step.state != .done {
+                        FilterSetupControl(filter: filter)
+                    }
                 }
             }
         }
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .contain)
+    }
+
+    @ViewBuilder private func stepAction(_ step: SetupChecklist.Step) -> some View {
+        switch step.action {
+        case .browserHelp:
+            Button("How to connect a browser") { showBrowserHelp = true }.controlSize(.small)
+        case .partnerSettings:
+            Button("Open Settings") { goTo(.settings) }.controlSize(.small)
+        case .screenTimeSettings:
+            Button("Open Screen Time") {
+                if let url = URL(string: "x-apple.systempreferences:com.apple.Screen-Time-Settings.extension") {
+                    NSWorkspace.shared.open(url)
+                }
+            }.controlSize(.small)
+        case .enableFilter:
+            FilterSetupControl(filter: filter)
+        case .deviceManagementSettings:
+            Button("Open Device Management") {
+                openSystemSettings("com.apple.Profiles-Settings.extension")
+            }.controlSize(.small)
+        case .accountsSettings:
+            Button("Open Users & Groups") {
+                openSystemSettings("com.apple.Users-Groups-Settings.extension")
+            }.controlSize(.small)
+        case .applicationsFolder:
+            Button("Open Applications") {
+                NSWorkspace.shared.open(URL(fileURLWithPath: "/Applications", isDirectory: true))
+            }.controlSize(.small)
+        case .command, .none:
+            EmptyView()
+        }
+    }
+
+    private func openSystemSettings(_ pane: String) {
+        guard let url = URL(string: "x-apple.systempreferences:\(pane)") else { return }
+        if !NSWorkspace.shared.open(url) {
+            NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/System Settings.app"))
+        }
     }
 
     private func refresh() async {
+        guard !checking, !AppDelegate.isHostingTests else { return }
         checking = true
         defer { checking = false }
+        await filter.refresh()
+        await FilterSync.shared.sync()
         let running = ProtectionStatus(ProtectionEvidence.current(filter: filter.availability,
                                                                     authority: FilterSync.shared.status))
             .layers.first?.ok ?? false
-        checklist = await Task.detached {
-            SetupChecklist(SetupEvidence.current(systemFilterRunning: running))
-        }.value
+        var evidence = await Task.detached { SetupEvidence.current(systemFilterRunning: running) }.value
+        // The filter can change while disk/DNS evidence is being collected.
+        evidence.systemFilterRunning = ProtectionStatus(ProtectionEvidence.current(filter: filter.availability,
+            authority: FilterSync.shared.status)).layers.first?.ok ?? false
+        checklist = SetupChecklist(evidence)
+        lastChecked = Date()
     }
 }
 
@@ -548,13 +742,16 @@ private struct LockPage: View {
     @ObservedObject var lock: LockManager
     @ObservedObject var filter: FilterController
 
-    @State private var duration: LockManager.Duration = .week
-    @State private var customAmount = ""
-    @State private var customUnit: CustomUnit = .days
+    @State private var duration: LockManager.Duration = .custom
+    @State private var customAmount = "5"
+    @State private var customUnit: CustomUnit = .minutes
     @State private var strict = false
+    @State private var fixedCommitment = true
+    @State private var understandsLimits = false
     @State private var error: String?
     @State private var showConfirm = false
     @State private var showReleaseConfirm = false
+    @State private var showExtendConfirm = false
 
     enum CustomUnit: String, CaseIterable, Identifiable {
         // Minutes exist so a lock can be TRIED. Without them the shortest
@@ -619,6 +816,25 @@ private struct LockPage: View {
         .alert("Something went wrong", isPresented: .constant(error != nil)) {
             Button("OK") { error = nil }
         } message: { Text(error ?? "") }
+        .onChange(of: duration) { _ in understandsLimits = false }
+        .onChange(of: customAmount) { _ in understandsLimits = false }
+        .onChange(of: customUnit) { _ in understandsLimits = false }
+        .onChange(of: fixedCommitment) { _ in understandsLimits = false }
+        .onChange(of: strict) { _ in understandsLimits = false }
+        .onChange(of: lock.isLocked) { _ in understandsLimits = false }
+        .confirmationDialog("Add seven days to this lock?", isPresented: $showExtendConfirm,
+                            titleVisibility: .visible) {
+            Button("Add a week", role: .destructive) {
+                do { try lock.extend(by: 7 * 86400) }
+                catch { self.error = error.localizedDescription }
+            }
+            Button("Not yet", role: .cancel) { }
+        } message: {
+            Text("A fixed commitment stays fixed for the added time. This does not weaken any existing restrictions.")
+            if let next = lock.state.extending(by: 7 * 86400) {
+                Text(next.deadline, format: .dateTime.day().month().year().hour().minute())
+            }
+        }
     }
 
     // MARK: Not locked
@@ -656,6 +872,9 @@ private struct LockPage: View {
             }
 
             PageSection(title: "Mode") {
+                Toggle("Fixed commitment until the chosen deadline", isOn: $fixedCommitment)
+                Text("No early self-release during a fixed commitment. Partner recovery remains available; this does not prevent an administrator from removing protection.")
+                    .font(.callout).foregroundStyle(.secondary)
                 Toggle(isOn: $strict) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Strict mode")
@@ -671,17 +890,20 @@ private struct LockPage: View {
             // people who chose it with clear eyes keep it.
             Card {
                 VStack(alignment: .leading, spacing: 8) {
-                    Label("This cannot be undone by you alone",
+                    Label(fixedCommitment ? "Your chosen commitment" : "This cannot be undone by you alone",
                           systemImage: "lock.fill")
                         .font(.body.weight(.medium))
-                    Text("""
+                    if fixedCommitment {
+                        Text("No early self-release during a fixed commitment. Partner recovery remains available; this does not prevent an administrator from removing protection.")
+                            .font(.callout).foregroundStyle(.secondary)
+                    } else { Text("""
                          Once started, you cannot shorten or cancel this. \
                          Early release takes 48 hours, or an approval from \
                          your accountability partner.
                          """)
                         .font(.callout)
                         .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                        .fixedSize(horizontal: false, vertical: true) }
                 }
             }
 
@@ -701,6 +923,9 @@ private struct LockPage: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
+            Toggle("I understand this commitment does not prevent an administrator from removing protection. Keep essential services accessible.",
+                   isOn: $understandsLimits)
+
             Button {
                 showConfirm = true
             } label: {
@@ -709,7 +934,7 @@ private struct LockPage: View {
             }
             .controlSize(.large)
             .buttonStyle(.borderedProminent)
-            .disabled(selectedSeconds == nil)
+            .disabled(selectedSeconds == nil || !understandsLimits)
             .confirmationDialog(
                 confirmTitle,
                 isPresented: $showConfirm, titleVisibility: .visible
@@ -756,12 +981,16 @@ private struct LockPage: View {
                 }
             }
 
+            if lock.hasFixedCommitment {
+                Label("Your fixed commitment has not finished. Self-release is unavailable until it ends.", systemImage: "lock.fill")
+                    .font(.callout).foregroundStyle(.secondary)
+            }
+
             PageSection(title: "Make it stronger",
                     subtitle: "Always available. Making the lock weaker is not.") {
                 HStack {
                     Button("Add a week") {
-                        do { try lock.extend(by: 7 * 86400) }
-                        catch { self.error = error.localizedDescription }
+                        showExtendConfirm = true
                     }
                     if lock.state.mode != "strict" {
                         Button("Switch to strict") {
@@ -777,7 +1006,7 @@ private struct LockPage: View {
                 PartnerReleaseCard(lock: lock)
             }
 
-            if lock.pendingSelfRelease == nil {
+            if lock.pendingSelfRelease == nil && !lock.hasFixedCommitment {
                 // The way out. Without this button the request could not be
                 // created at all, and the panel above — which only ever offered
                 // to *cancel* one — was showing an exit nobody could reach.
@@ -850,6 +1079,9 @@ private struct LockPage: View {
         guard let seconds = selectedSeconds else { return "" }
         let end = Date().addingTimeInterval(seconds).formatted()
         var msg = String(localized: "You will not be able to turn this off until \(end).")
+        if fixedCommitment {
+            msg += "\n\n" + String(localized: "No early self-release during a fixed commitment. Partner recovery remains available; this does not prevent an administrator from removing protection.")
+        }
         if !enforcingAnything {
             msg += "\n\n" + String(localized: """
                 Nothing is set up to enforce it yet, so it will run but \
@@ -860,9 +1092,9 @@ private struct LockPage: View {
     }
 
     private func start() {
-        guard let seconds = selectedSeconds else { return }
+        guard understandsLimits, let seconds = selectedSeconds else { return }
         Task {
-            do { try await lock.start(seconds: seconds, strict: strict) }
+            do { try await lock.start(seconds: seconds, strict: strict, fixedCommitment: fixedCommitment) }
             catch { self.error = error.localizedDescription }
         }
     }
@@ -1361,15 +1593,48 @@ struct BrowsersSection: View {
     @ObservedObject private var guardian = BrowserGuard.shared
     @State private var candidates: [BrowserGuard.Candidate] = []
     @State private var error: String?
+    @State private var confirmOutsideLock = false
 
     var body: some View {
-        PageSection(title: "Browsers during a lock",
+        PageSection(title: "Browser protection",
                 subtitle: """
-                    While a lock runs, Hisn closes any browser it is not \
-                    running inside: a Chromium browser whose Hisn extension has \
-                    stopped checking in, and any other browser. Safari is covered \
-                    by Screen Time and is left alone.
+                    During a lock, Hisn closes supported browsers that lose their \
+                    extension connection and other non-exempt browsers. Safari \
+                    and browsers you previously allowed stay open.
                     """) {
+            Toggle("Require the extension outside a lock", isOn: Binding(
+                get: { guardian.requireOutsideLock },
+                set: { enabled in
+                    if enabled { confirmOutsideLock = true }
+                    else { setOutsideLock(false) }
+                }))
+                .toggleStyle(.switch)
+                .disabled(isLocked && guardian.requireOutsideLock)
+            Text("Opt-in: also close unprotected browsers when no lock is active. Off by default.")
+                .font(.callout).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            if isLocked && guardian.requireOutsideLock {
+                Text("This requirement cannot be turned off while a lock is running.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Text("""
+                This guard works only while Hisn is running. Hisn checks supported \
+                browsers' standard Default/Profile folders; custom paths, guest \
+                and private windows are not verified. Safari and allowed exceptions \
+                remain exempt; force-quitting Hisn or administrator changes can \
+                bypass it. Safari's exemption is not verified protection: configure \
+                Screen Time and network layers separately.
+                """)
+                .font(.callout).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            if !guardian.profileIssues.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Standard profile checks").font(.subheadline.weight(.semibold))
+                    ForEach(guardian.profileIssues) { issue in
+                        profileIssueRow(issue)
+                    }
+                }
+            }
             if candidates.isEmpty {
                 Text("No browsers found.").font(.callout).foregroundStyle(.secondary)
             }
@@ -1383,7 +1648,7 @@ struct BrowsersSection: View {
                     }
                     Spacer()
                     if c.coverage == .uncovered || c.coverage == .allowedByUser {
-                        Toggle("Allow during a lock", isOn: Binding(
+                        Toggle("Allow this browser", isOn: Binding(
                             get: { c.coverage == .allowedByUser },
                             set: { allow in
                                 do { try guardian.setAllowed(c.bundleID, allow) }
@@ -1401,23 +1666,68 @@ struct BrowsersSection: View {
             }
         }
         .onAppear(perform: reload)
+        .alert("Require browser protection outside a lock?", isPresented: $confirmOutsideLock) {
+            Button("Enable requirement") { setOutsideLock(true) }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("""
+                Hisn may close browsers that do not have a connected extension, \
+                or have Hisn removed or disabled in a standard profile, even \
+                without an active lock. Save any work first. Safari and your allowed \
+                exceptions stay open. You can turn this off when no lock is running. \
+                This does not make Hisn or the extension unremovable.
+                """)
+        }
+    }
+
+    private func profileIssueRow(_ issue: BrowserGuard.ProfileIssue) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(verbatim: issue.browserName).font(.body.weight(.medium))
+            if !issue.unprotected.isEmpty {
+                Label("Extension removed or disabled: \(issue.unprotected.joined(separator: ", "))",
+                      systemImage: "exclamationmark.shield")
+                    .font(.callout).foregroundStyle(.orange)
+                Text("Restore Hisn in these profiles; browser guarding can close this browser.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            if !issue.unconfirmed.isEmpty {
+                Label("Not confirmed: \(issue.unconfirmed.joined(separator: ", "))",
+                      systemImage: "questionmark.circle")
+                    .font(.callout).foregroundStyle(.secondary)
+            }
+            if !issue.enumerationVerified {
+                Text("The standard profile list could not be verified. This unknown result alone does not close the browser.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        }
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     private func reload() { candidates = guardian.candidates() }
 
+    private func setOutsideLock(_ enabled: Bool) {
+        do {
+            try guardian.setRequireOutsideLock(enabled)
+            error = nil
+        } catch {
+            self.error = error.localizedDescription
+        }
+        reload()
+    }
+
     private func describe(_ coverage: BrowserGuardPolicy.Coverage) -> String {
         switch coverage {
         case .exempt:
-            return String(localized: "Left open — covered by Screen Time and the network layers.")
+            return String(localized: "Left open — configure Screen Time and network protection separately; this exemption does not verify them.")
         case .needsExtension:
             return String(localized: """
-                Stays open while its Hisn extension checks in; closed if the \
-                extension is switched off.
+                Closed while browser guarding is active if its extension stops \
+                checking in or is confirmed missing or disabled in a standard profile.
                 """)
         case .uncovered:
-            return String(localized: "No Hisn protection inside — closed during a lock.")
+            return String(localized: "No Hisn protection inside — closed while browser guarding is active.")
         case .allowedByUser:
-            return String(localized: "You allowed it. It stays open during a lock with no page checking.")
+            return String(localized: "You allowed it. It stays open without extension checks.")
         }
     }
 }

@@ -1,5 +1,5 @@
 <!doctype html><meta charset="utf-8"><title>Hisn UI preview</title>
-<style>html,body{margin:0;height:100%;background:#f5f6f2}iframe{border:0;width:100%;height:100%}</style>
+<style>html,body{margin:0;height:100%;background:#fff}iframe{border:0;width:100%;height:100%}</style>
 <iframe title="Hisn preview" id="screen"></iframe>
 <pre id="summary" hidden data-result="pending"></pre>
 <script type="module">
@@ -7,8 +7,9 @@
 const params = new URLSearchParams(location.search);
 const page = ["options", "popup", "blocked"].includes(params.get("page")) ? params.get("page") : "options";
 const managed = params.get("managed") === "1";
+const uiLanguage = params.get("lang") === "ar" ? "ar" : "en";
 const base = new URL(`../../${page}.html`, location.href);
-const state = { appPresent:managed, mode:"blocklist", lockUntil:0, lastHeartbeat:Date.now(),
+const state = { appPresent:managed, mode:"blocklist", lockUntil:params.get("locked") === "1" ? Date.now() + 300000 : 0, lastHeartbeat:Date.now(),
   customBlocks:["example.com"],allowlist:["wikipedia.org"],customTerms:[],textAllow:[],ignoreTerms:[],disputed:[],
   inspectText:true,textSensitivity:50,failClosed:false };
 const mock = `<script>
@@ -19,8 +20,8 @@ window.chrome = {
    else if(msg.type==='forceSync')cb({ok:state.appPresent});
    else if(msg.type==='update'){Object.assign(state,msg.patch);cb({ok:true,state:{...state}});}
    else cb({ok:false}); } },
- storage:{onChanged:{addListener(){}},session:{get:async()=>({})}},
- extension:{isAllowedIncognitoAccess:cb=>cb(true)},
+ storage:{onChanged:{addListener(){}},session:{get:async()=>({})},local:{get:async()=>({uiLanguage:${JSON.stringify(uiLanguage)}}),set:async()=>{}}},
+ extension:{isAllowedIncognitoAccess:cb=>cb(${params.get("private") !== "0"})},
  tabs:{getCurrent:cb=>cb({id:1}),update(){}},
 };
 <\/script>`;

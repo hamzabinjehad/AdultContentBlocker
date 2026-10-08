@@ -1,45 +1,45 @@
 {
   "artifacts": {
     "dnr_block_rules.json": {
-      "bytes": 4215467,
-      "sha256": "dbb7afc64f1442dc229c86a5ca5bc8baab8433e415ae5afec549161832cb4643"
+      "bytes": 5945541,
+      "sha256": "463861e8809d2169e5d0c6145e5545defb9c2ecd2d048b0c578b0138c0aafb6c"
     },
     "dnr_keyword_rules.json": {
       "bytes": 79908,
-      "sha256": "0879fa3951426034cab58f65f561f74fa304d456633ace49063588588c8921b3"
+      "sha256": "a514609121a9a77bc91050bda75d9be18d6fbc13562695c4e39af28843c254d9"
     },
     "domains.index": {
       "bytes": 8192,
       "sha256": "7d2c7ac4888bfd75cd5f56e8d61f69595121183afc81556c876732fd3782c62f"
     },
     "domains.packed": {
-      "bytes": 134245821,
-      "sha256": "756a2307ce4dc53ae60fea3d1e1c7b6d94efc75078c7f7e7256541ebbc9ffc2d"
+      "bytes": 135020477,
+      "sha256": "862ea5794ab69f205586704e8dccd9d58d7d3274975739fea9a437dec4176d87"
     },
     "domains.packed.deflate": {
-      "bytes": 20938333,
-      "sha256": "68775aa10c155b08dea4ceb30333b6b87bd4cdd1e21e4e4afafc90e0aba4eede"
+      "bytes": 21249029,
+      "sha256": "76b2bcd075a31606b50d09749027de2322029ecb7c11f2093b7bd5259876b2e7"
     },
     "domains.txt": {
-      "bytes": 134245953,
-      "sha256": "c21ef5ff4a53da1d4dc992a68b5930e67fa72dc64d6615b731318afc736fc752"
+      "bytes": 135020609,
+      "sha256": "816ae43645e0ffc9604c68b59349cdf70b918f2ba6413212d4d788fd0e608d73"
     },
     "domains_core.txt": {
-      "bytes": 1851834,
-      "sha256": "0845c488d067e48538b3149281fdda17a25ec779b4300a7d9fb135612cdca6d1"
+      "bytes": 2624139,
+      "sha256": "2c0b684ff34e85fb317a53c4e5c78a3c1b8eb0cfddb427122242990f183b60ba"
     },
     "terms.json": {
       "bytes": 288545,
       "sha256": "c7caf064946841384502136787b97f4996577d9835319f06fda9c076af6f7859"
     }
   },
-  "built_at": "2026-09-26T05:56:55+00:00",
-  "core_domain_count": 117245,
+  "built_at": "2026-10-01T20:29:42+00:00",
+  "core_domain_count": 159768,
   "dnr_keyword_rule_count": 116,
-  "dnr_rule_count": 236,
-  "domain_count": 5205364,
+  "dnr_rule_count": 320,
+  "domain_count": 5248731,
   "host_term_count": 116,
-  "never_block_removed": 4,
+  "never_block_removed": 20,
   "schema": 1,
   "sources": [
     {
@@ -53,18 +53,23 @@
       "ok": true
     },
     {
-      "domains": 84133,
+      "domains": 83461,
       "id": "hagezi-nsfw",
       "ok": true
     },
     {
-      "domains": 469748,
+      "domains": 467397,
       "id": "oisd-nsfw",
       "ok": true
     },
     {
       "domains": 53908,
       "id": "sinfonietta-porn",
+      "ok": true
+    },
+    {
+      "domains": 121016,
+      "id": "stevenblack-laptop",
       "ok": true
     },
     {

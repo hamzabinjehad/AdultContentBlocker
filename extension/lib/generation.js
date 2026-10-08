@@ -91,9 +91,24 @@ export function planGeneration(manifest, artifacts) {
   // Every entry must be usable by the scorer. A signed file whose entries
   // lacked `t` made buildIndex throw on every page, and the page-text layer
   // died silently for the life of that generation.
-  const badTerm = t.terms.find((e) => !e || typeof e.t !== "string" || !e.t
-                                      || !Number.isFinite(e.w));
-  if (badTerm !== undefined) return { ok: false, reason: "terms-entry-malformed" };
+  const malformedWeightedEntry = (e) => !e || typeof e.t !== "string" || !e.t.trim()
+                                          || !Number.isFinite(e.w);
+  if (t.terms.some(malformedWeightedEntry)) {
+    return { ok: false, reason: "terms-entry-malformed" };
+  }
+  // Negatives go through the same matcher as positive terms. Missing text
+  // throws in buildIndex, while a missing/non-numeric weight poisons scores
+  // with NaN. Refuse the whole generation before either reaches durable storage.
+  if (t.negatives.some(malformedWeightedEntry)) {
+    return { ok: false, reason: "negatives-entry-malformed" };
+  }
+  // Older vocabularies may omit exemptions; the scorer treats that as empty.
+  // A present field must be an array of usable strings, not an iterable string
+  // (which Set would split into letters) or a value that makes Set throw.
+  if (t.exempt_domains !== undefined && (!Array.isArray(t.exempt_domains)
+      || t.exempt_domains.some((e) => typeof e !== "string" || !e.trim()))) {
+    return { ok: false, reason: "exempt-domains-malformed" };
+  }
   if (t.host_terms.some((e) => typeof e !== "string" && typeof e?.t !== "string")) {
     return { ok: false, reason: "host-terms-entry-malformed" };
   }

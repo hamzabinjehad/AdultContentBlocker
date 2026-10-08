@@ -49,15 +49,31 @@ LINUX_FLAGS=()
 if [ "$(uname)" = "Linux" ]; then LINUX_FLAGS=(--no-sandbox --disable-dev-shm-usage); fi
 
 SERVER_PID=""
+DEBUG_FLAGS=()
+if [ -n "${DNR_NETLOG:-}" ]; then DEBUG_FLAGS=(--log-net-log="$DNR_NETLOG"); fi
 cleanup() { [ -n "$SERVER_PID" ] && { kill "$SERVER_PID"; wait "$SERVER_PID"; } 2>/dev/null || true
             sleep 0.2; rm -rf "$WORK" 2>/dev/null || true; }
 trap cleanup EXIT
 
 # A copy, so the browser's _metadata cache never lands in the source tree.
 rsync -a --exclude test --exclude _metadata --exclude keys "$EXT/" "$WORK/ext/"
+cp "$HERE/dnr-setup.html" "$HERE/dnr-setup.js" "$HERE/dnr-worker.js" "$WORK/ext/"
+python3 - "$WORK/ext/manifest.json" <<'PY'
+import json, sys
+path = sys.argv[1]
+manifest = json.load(open(path))
+# A temporary identity cannot connect to the real user's installed native host.
+# The fixture must own its settings without touching the user's lock or lists.
+manifest.pop("key", None)
+manifest["background"]["service_worker"] = "dnr-worker.js"
+with open(path, "w") as output:
+    json.dump(manifest, output)
+PY
 
 openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj "/CN=hisn-test" \
     -keyout "$WORK/key.pem" -out "$WORK/cert.pem" >/dev/null 2>&1
+SPKI="$(openssl x509 -in "$WORK/cert.pem" -pubkey -noout \
+    | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | openssl base64 -A)"
 
 # A domain the bundled static rules block, taken from the rules themselves.
 BLOCKED="$(python3 -c "import json;r=json.load(open('$EXT/rules/dnr_block_rules.json'));print(r[0]['condition']['requestDomains'][0])")"
@@ -68,11 +84,32 @@ LOG = open("$WORK/requests.log", "a", buffering=1)
 # One frame per case of the shared host contract.
 CASE_FRAMES = "".join('<iframe src="https://%s/?hisn-case"></iframe>\n' % c["host"]
                       for c in json.load(open("$CASES"))["cases"]).encode()
+POLICY = json.load(open("$EXT/../blocklist/web_protection.json"))
+POLICY_FRAMES = "".join('<iframe src="https://%s/?hisn-policy"></iframe><img src="https://%s/image.png">\n' % (h, h)
+    for h in POLICY["blockedSearchHosts"] + POLICY["blockedViewerDomains"]
+    + ["api." + h for h in POLICY["blockedViewerDomains"]]).encode()
 PAGE = b"""<!doctype html><meta charset=utf-8><body>
-<iframe src="https://www.google.com/search?q=hisn"></iframe>
-<iframe src="https://www.bing.com/search?q=hisn"></iframe>
-<iframe src="https://duckduckgo.com/?q=hisn"></iframe>
+<iframe src="https://www.google.com/search?q=hisn&safe=off"></iframe>
+<iframe src="https://www.bing.com/search?q=hisn&adlt=off"></iframe>
+<iframe src="https://duckduckgo.com/?q=hisn&kp=-2"></iframe>
+<script>
+for (const url of [
+ "https://www.google.com/search?q=background&safe=off",
+ "https://www.bing.com/images/search?q=background&adlt=off",
+ "https://duckduckgo.com/?q=background&kp=-2",
+ "https://search.brave.com/images?q=background&safesearch=off"
+]) fetch(url).catch(() => {});
+</script>
 <iframe src="https://www.youtube.com/results?search_query=hisn"></iframe>
+<iframe src="https://search.brave.com/search?q=hisn&safesearch=off"></iframe>
+<iframe src="https://search.brave.com/images?q=hisn&safesearch=off"></iframe>
+<iframe src="https://search.brave.com/videos?q=hisn&safesearch=off"></iframe>
+<iframe src="https://search.brave.com/news?q=hisn&safesearch=off"></iframe>
+<iframe src="https://cn.bing.com/images/search?q=hisn"></iframe>
+<iframe src="https://safe.search.brave.com/search?q=hisn"></iframe>
+<iframe src="https://mail.yandex.ru/?hisn-unrelated"></iframe>
+<iframe src="https://yandex.com.hisn.test/?hisn-lookalike"></iframe>
+<iframe src="https://sotwe.com.hisn.test/?hisn-lookalike"></iframe>
 <iframe src="https://$BLOCKED/"></iframe>
 <iframe src="https://hot-sex.hisn.test/"></iframe>
 <iframe src="https://kw.hisn.test/search?q=adult%20adhd"></iframe>
@@ -82,7 +119,7 @@ PAGE = b"""<!doctype html><meta charset=utf-8><body>
 <iframe src="https://milfs.hisn.test/"></iframe>
 <iframe src="https://www.reddit.com/r/nsfw_gifs/"></iframe>
 <iframe src="https://www.reddit.com/r/nosleep/"></iframe>
-<p id=done>loaded</p></body>""".replace(b"<p id=done>", CASE_FRAMES + b"<p id=done>")
+<p id=done>loaded</p></body>""".replace(b"<p id=done>", CASE_FRAMES + POLICY_FRAMES + b"<p id=done>")
 class H(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         host = self.headers.get("Host", "")
@@ -128,10 +165,11 @@ PORT="$(head -1 "$WORK/port")"
 # can wait on a prompt no one will answer.
 "$BROWSER" --headless=new --disable-gpu --no-first-run --no-default-browser-check \
     --use-mock-keychain --password-store=basic ${LINUX_FLAGS[@]+"${LINUX_FLAGS[@]}"} \
+    ${DEBUG_FLAGS[@]+"${DEBUG_FLAGS[@]}"} \
     --user-data-dir="$WORK/profile" \
     --load-extension="$WORK/ext" --disable-extensions-except="$WORK/ext" \
-    --host-resolver-rules="MAP * 127.0.0.1:$PORT" --ignore-certificate-errors \
-    "https://harness.hisn.test/" > "$WORK/browser.log" 2>&1 &
+    --host-resolver-rules="MAP * 127.0.0.1:$PORT" --ignore-certificate-errors-spki-list="$SPKI" \
+    "about:blank" > "$WORK/browser.log" 2>&1 &
 BROWSER_PID=$!
 # The host cases, judged from what reached the server. A host is compared
 # lowercased and without a trailing dot, as a browser sends it.
@@ -156,8 +194,10 @@ print(f"  {'ok  ' if not bad else 'FAIL'} host contract: {len(cases) - bad}/{len
 sys.exit(1 if bad else 0)
 PY
 arrived() {  # every frame that is expected to reach the server has
+    [ "$(grep -c 'q=background' "$WORK/requests.log" 2>/dev/null || true)" = "4" ] || return 1
     for h in 'www\.google\.com' 'www\.bing\.com' 'duckduckgo\.com' 'www\.youtube\.com' \
-             'kw\.hisn\.test' 'kw2\.hisn\.test' 'www\.milford\.hisn\.test' 'www\.reddit\.com'; do
+             'kw\.hisn\.test' 'kw2\.hisn\.test' 'www\.milford\.hisn\.test' 'www\.reddit\.com' \
+             'search\.brave\.com' 'mail\.yandex\.ru' 'yandex\.com\.hisn\.test' 'sotwe\.com\.hisn\.test'; do
         grep -q "^$h	" "$WORK/requests.log" 2>/dev/null || return 1
     done
     python3 "$WORK/cases.py" "$CASES" "$WORK/requests.log" --waiting
@@ -191,9 +231,36 @@ refuse "…while milfs still is"                              '^milfs\.hisn\.tes
 refuse "a Reddit community named nsfw (rules/paths.json)"    '^www\.reddit\.com	/r/nsfw'
 expect "…but not every community (/r/nosleep)"              '^www\.reddit\.com	/r/nosleep'
 
+for path in search images videos news; do
+    # The same endpoints must be protected for fetch(), not just page loads.
+    expect "allowlisted Brave $path arrives with strict filtering" "^search\\.brave\\.com	/$path\\?.*safesearch=strict"
+done
+expect "background Google search is safe" '^www\.google\.com	/search\?.*q=background.*safe=active'
+expect "background Bing image search is safe" '^www\.bing\.com	/images/search\?.*q=background.*adlt=strict'
+expect "background DuckDuckGo search is safe" '^duckduckgo\.com	/\?.*q=background.*kp=1'
+expect "background Brave image search is safe" '^search\.brave\.com	/images\?.*q=background.*safesearch=strict'
+refuse "unsafe Brave search parameters never reach the server" '^search\.brave\.com	.*safesearch=off'
+refuse "custom-blocked Bing host stays blocked despite SafeSearch" '^cn\.bing\.com	'
+refuse "custom-blocked Brave alias stays blocked despite SafeSearch" '^safe\.search\.brave\.com	'
+expect "unrelated Yandex services are not blanket-blocked" '^mail\.yandex\.ru	'
+expect "Yandex lookalike is not blocked" '^yandex\.com\.hisn\.test	'
+expect "viewer lookalike is not blocked" '^sotwe\.com\.hisn\.test	'
+python3 - "$EXT/../blocklist/web_protection.json" "$LOG" <<'PY' || fail=1
+import json, sys
+policy = json.load(open(sys.argv[1]))
+hosts = {line.split("\t")[0].lower().rstrip(".") for line in open(sys.argv[2])}
+bad = [h for h in hosts if h in policy["blockedSearchHosts"] or any(
+    h == d or h.endswith("." + d) for d in policy["blockedViewerDomains"])]
+if bad:
+    print("  FAIL built-in blocks reached the server:", bad)
+else:
+    print("  ok   Yandex and viewer documents/images blocked even when allowlisted")
+sys.exit(bool(bad))
+PY
+
 python3 "$WORK/cases.py" "$CASES" "$LOG" --judge || fail=1
 
-n="$(grep -cE '^www\.google\.com	/search' "$LOG" || true)"
+n="$(grep -cE '^www\.google\.com	/search\?q=hisn' "$LOG" || true)"
 [ "$n" = "1" ] && echo "  ok   no redirect loop (one Google request)" \
                || { echo "  FAIL expected one Google request, saw $n"; fail=1; }
 

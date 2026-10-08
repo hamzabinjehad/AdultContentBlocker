@@ -35,8 +35,11 @@ is the contract that replaces that.
 
 ## What the app should say (status model contract)
 
-* **Filter**: ok only if `isEnabled` **and** heartbeat fresh **and**
-  `filterDomainCount > 0`. Detail names which is missing. "Enabled, never
+* **Filter**: ok only if `isEnabled` and the provider's live status is fresh,
+  with either `filterDomainCount > 0` or strict damaged-policy recovery (which
+  denies new flows even without a domain list). Recovery also
+  adds a separate problem line and never counts as complete protection.
+  Detail names which is missing. "Enabled, never
   reported in" and "enabled, last seen 40 m ago" are different failures with
   different fixes (activate vs. relaunch/reassert).
 * **Keyword layer**: its own line; ok if `filterHostTermCount > 0`, with the
@@ -46,19 +49,46 @@ is the contract that replaces that.
   a persistent `lastListError` is shown, never counted as a missing layer.
 * **During a lock**, a stale heartbeat or `filterStoppedDuringLock` newer than
   the heartbeat is a *problem line*, and the app's `reassertIfNeeded` is the
-  recovery path — re-arming the filter configuration, which relaunches the
-  provider.
+  recovery path — re-arming the filter configuration. Live status must confirm
+  whether the provider actually returns.
 
 ## Recovery behaviour by component
 
 | Failure | Behaviour | Recovery |
 |---|---|---|
-| Provider crashes or is stopped | Traffic passes (macOS does not fail closed for a stopped content filter). `filterStoppedDuringLock` is written; heartbeat stops | App re-asserts on launch and hourly; the status header names it within 2 min |
+| Provider crashes or is stopped | Traffic can pass while the provider is absent. Its live XPC status becomes unavailable; the last confirmed lock remains restrictive in the app and browser | While the app runs, the 20-second reconciliation timer checks recovery. Attempts use monotonic backoff (60–300 s), respect approval/restart/manual-disable state, and never toggle an enabled configuration off. Re-saving preferences is an attempt; signed hardware testing must measure actual provider restart and outage duration |
+| Policy write fails | Mutation refused; previous authority remains in force; Overview reports the storage problem. If expiry cannot be saved, browser correction guards retain the lock until a fresh authoritative unlock | Administrator checks free space/permissions and retries; automatic clock checkpoints retry without discarding observed time |
+| Policy copy damaged/unreadable | Strict recovery with no allowed destinations; surviving policy/evidence retained; ordinary mutations refused | Administrator restores trusted policy; see recovery guidance below |
 | Downloaded generation corrupt or rolled back | Refused; previous generation kept; on restart the seed is loaded if the container fails | Next update replaces it |
 | `terms.json` missing from a generation | Whole generation refused (native and browser) | Next generation |
 | Native host silent | Browser fails closed to strict after 5 min (rule 5) | Heartbeat resumes → normal |
 | App quit / not running | Filter enforces from its own memory and the mirrors; updates and re-assertion pause | App relaunch |
 | Sleep/wake | Provider keeps running; the 30 s tick resumes; no state is lost | none needed |
+
+## Damaged-policy recovery
+
+The provider does not treat failed reads as a new unlocked install. Any damaged
+copy can have held a newer, stricter policy, so even a surviving readable copy
+requires administrator recovery. `policy.recovery-required`, damaged originals,
+and `.unreadable-*` forensic copies keep this state across restarts.
+
+Keep an offline recovery route. A guardian/administrator must preserve the
+complete policy directory, investigate disk/permissions, and restore a trusted,
+valid policy generation into both slots. A standard user must not be granted
+write access to the authority. Remove the recovery marker and forensic files
+from the active directory only after archiving the evidence and restoring the
+trusted policy, then restart the filter and verify its live status and blocking.
+Do not delete the directory as a routine fix: that discards the lock, partner
+key, hand rules, and rollback floor. If no trustworthy policy is recoverable,
+an explicit administrator-controlled re-enrollment is required; no XPC request
+silently resets this state.
+
+A configured native bridge with no authority reply returns a failed heartbeat,
+not an unlocked policy from editable mirrors. The browser retains its last
+restrictive rules and applies the existing native-loss grace policy. Actual
+browser-only/unsigned installations continue to use local policy. The hosts
+fallback remains useful partial blocking, but does not make an unreachable
+configured authority appear fully healthy.
 
 ## Where the app gets these now
 

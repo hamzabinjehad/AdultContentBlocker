@@ -25,6 +25,9 @@ check(manifest.declarative_net_request.rule_resources
       "the ruleset is declared and enabled from install");
 
 const google = byParam("safe");
+for (const rule of rules.filter((r) => r.action.type === "redirect")) {
+  check(rule.condition.resourceTypes.includes("xmlhttprequest"), "background search fetches are filtered as well as navigation");
+}
 for (const url of ["https://www.google.com/search?q=x", "https://google.com/search?q=x",
                    "https://www.google.co.uk/search?q=x", "https://www.google.com.sa/search?q=x",
                    "https://www.google.ae/webhp?q=x", "https://www.google.com/imgres?imgurl=x"]) {
@@ -45,11 +48,27 @@ check(!rewrites(bing, "https://www.bing.com/maps"), "Bing maps untouched");
 
 const ddg = byParam("kp");
 check(rewrites(ddg, "https://duckduckgo.com/?q=x"), "DuckDuckGo");
+check(rewrites(ddg, "https://www.duckduckgo.com/?q=test&kp=-2"), "DuckDuckGo www alias");
 check(rewrites(ddg, "https://html.duckduckgo.com/html/?q=x"), "DuckDuckGo html");
 check(!rewrites(ddg, "https://duckduckgo.com/about"), "DuckDuckGo non-search untouched");
 
 check(rewrites(byParam("vm"), "https://search.yahoo.com/search?p=x"), "Yahoo");
 check(rewrites(byParam("safesearch"), "https://search.brave.com/search?q=x"), "Brave Search");
+check(rewrites(byParam("safesearch"), "https://search.brave.com/?q=test&safesearch=off"), "Brave root query");
+for (const [key, url] of [
+  ["safe", "https://www.google.com.:443/search?q=test"],
+  ["adlt", "https://www.bing.com.:443/images/search?q=test"],
+  ["kp", "https://duckduckgo.com.:443/?q=test"],
+  ["vm", "https://search.yahoo.com.:443/search?p=test"],
+  ["safesearch", "https://search.brave.com.:443/images?q=test"],
+]) check(rewrites(byParam(key), url), `trailing-dot/port alias: ${key}`);
+for (const path of ["images", "videos", "news"]) {
+  check(rewrites(byParam("safesearch"), `https://search.brave.com/${path}?q=test&safesearch=off`), `Brave ${path}`);
+}
+check(rewrites(byParam("safesearch"), "https://safe.search.brave.com/search?q=test"), "Brave safe host alias");
+for (const host of ["search.brave.com.example.org", "imgs.search.brave.com", "cdn.search.brave.com"]) {
+  check(!rewrites(byParam("safesearch"), `https://${host}/search?q=test`), `do not rewrite ${host}`);
+}
 
 const yt = rules.find((r) => r.action.type === "modifyHeaders");
 check(yt.action.requestHeaders[0].header === "YouTube-Restrict"

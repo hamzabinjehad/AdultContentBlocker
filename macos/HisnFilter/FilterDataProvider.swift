@@ -12,8 +12,10 @@ import os
 /// click: turn on any VPN and DNS resolution moves inside the tunnel where our
 /// resolver never sees it. `NEFilterDataProvider` runs at the *socket flow*
 /// level, so it evaluates a connection when the app opens it — before the
-/// packets reach a VPN interface. A VPN therefore does not bypass this filter,
-/// which is why it, not DNS, is the load-bearing control on macOS.
+/// packets reach a VPN interface. That does not identify every destination
+/// transported inside an opaque tunnel. Unknown hosts pass in blocklist mode
+/// and are denied in strict mode; existing flows are not re-evaluated here.
+/// Signed hardware tests must establish the supported VPN/proxy behavior.
 ///
 /// It also means we see flows from every browser, every Electron app and every
 /// command-line tool, not just the browsers we ship policy for.
@@ -34,23 +36,6 @@ final class FilterDataProvider: NEFilterDataProvider {
     /// `store.version` — otherwise a fresh install would never swap its
     /// 148k-domain seed for the ~982k-domain download.
     private var installedDownloadedVersion = 0
-
-    /// Whether strict mode is in force right now.
-    ///
-    /// Cached rather than derived per flow. `LockStore.read()` queries the
-    /// keychain, stats a file and decodes three JSON blobs, and may write all
-    /// three stores back when it self-heals — costs that are fine every thirty
-    /// seconds and ruinous once per socket. The refresh timer below is what
-    /// keeps it current, which is the job that timer already had.
-    ///
-    /// Behind a lock because the timer fires on a utility queue while
-    /// `handleNewFlow` runs on the provider's own queue. Uncontended, this is
-    /// tens of nanoseconds — the keychain query it replaces is milliseconds.
-    private let strictModeActive = OSAllocatedUnfairLock(initialState: false)
-
-    /// Signing identifiers of apps whose traffic is refused outright.
-    /// Same locking rationale as `strictModeActive` above.
-    private let blockedApps = OSAllocatedUnfairLock(initialState: Set<String>())
 
     /// The root-owned authority for the lock, the hand lists and the rollback
     /// floor — see `PolicyAuthority` for why the app's defaults cannot be it.
@@ -86,7 +71,12 @@ final class FilterDataProvider: NEFilterDataProvider {
         // On the work queue, like the 30-second tick: run from the XPC queue it
         // could interleave with a tick holding an older snapshot, and whichever
         // landed last won — a just-started strict lock unenforced for 30 s.
-        policy.onChange = { [weak self] _ in self?.work.async { self?.refreshLockState() } }
+        // PolicyService invokes this after releasing its lock, from XPC.
+        // Wait for installation before acknowledging the policy mutation.
+        policy.onChange = { [weak self] _ in
+            guard let self else { return }
+            self.work.sync { self.refreshLockState() }
+        }
         self.policy = policy
 
         // Rollback protection across restarts: the highest version this
@@ -144,7 +134,7 @@ final class FilterDataProvider: NEFilterDataProvider {
         d.set(store.domainCount, forKey: "filterDomainCount")
         d.set(store.hostTermCount, forKey: "filterHostTermCount")
         d.set(keywordSource, forKey: "filterKeywordSource")
-        d.set(strictModeActive.withLock { $0 }, forKey: "filterStrictActive")
+        d.set(store.networkStrictActive, forKey: "filterStrictActive")
         d.set(store.version, forKey: Self.listVersionKey)
     }
 
@@ -176,36 +166,19 @@ final class FilterDataProvider: NEFilterDataProvider {
     // MARK: - Flow handling
 
     override func handleNewFlow(_ flow: NEFilterFlow) -> NEFilterNewFlowVerdict {
-        let isStrict = strictModeActive.withLock { $0 }
-
         // App blocking, before any hostname work: a blocked app reaches
         // nothing, whatever host it is asking for. Note what this is NOT — the
         // app still launches and still works offline. macOS gives a normal
         // application no way to stop a launch; refusing the traffic is the
         // whole of what a content filter can do here.
         //
-        // The empty check comes first and is doing real work. Resolving the app
+        // The store's empty check avoids unnecessary work. Resolving the app
         // behind a flow costs several Security framework calls (see
         // `signingIdentifier`), and this runs for every socket the machine
         // opens. Nobody who has not used this feature should pay for it.
-        let blocked = blockedApps.withLock { $0 }
-        if !blocked.isEmpty,
-           let appID = Self.signingIdentifier(for: flow),
-           blocked.contains(appID) {
-            return .drop()
-        }
-
-        guard let host = Self.hostname(for: flow) else {
-            // No hostname to judge. In strict mode an unidentifiable flow is
-            // exactly what a bypass tool looks like, so deny; otherwise allow.
-            return isStrict ? .drop() : .allow()
-        }
-
-        if isStrict {
-            return store.isAllowedInStrictMode(host: host) ? .allow() : .drop()
-        }
-
-        return store.isBlocked(host: host) ? .drop() : .allow()
+        return store.shouldBlockFlow(host: Self.hostname(for: flow), sourceAppIdentifier: {
+            Self.signingIdentifier(for: flow)
+        }) ? .drop() : .allow()
     }
 
     // MARK: - State
@@ -219,20 +192,18 @@ final class FilterDataProvider: NEFilterDataProvider {
         // The EFFECTIVE deadline — a matured self-release ends strict mode
         // here at the same moment it ends everywhere else.
         let strict = PolicyAuthority.strictActive(record, now: record.highWaterMark)
-        strictModeActive.withLock { $0 = strict }
 
         // Both hand-maintained lists, re-read on the same tick. The custom
         // blocks used to be read by the browser extension and ignored here,
         // which meant a domain the person added by hand was blocked in Chrome
         // and reachable from every other app on the machine.
-        store.setAllowlist(record.allowlist)
-        store.setCustomBlocks(record.customBlocks)
-
-        // Apps the person blocked by hand. Cached in the same way and for the
-        // same reason as `strictModeActive`: `handleNewFlow` is on the
-        // connection path for every socket the machine opens, and reading
-        // anything there would put a lookup in front of every one.
-        blockedApps.withLock { $0 = Set(record.blockedApps) }
+        // A readable surviving copy may be older and more permissive than the
+        // damaged one. Recovery therefore permits no destination until the
+        // administrator restores the authority, while keeping its evidence.
+        store.setNetworkPolicy(strict: strict,
+                               allowlist: record.recoveryRequired ? [] : record.allowlist,
+                               customBlocks: record.customBlocks,
+                               blockedApps: record.blockedApps)
     }
 
     /// The signing identifier of the app that opened this flow.
@@ -548,6 +519,10 @@ final class FilterDataProvider: NEFilterDataProvider {
                 throw BlocklistStore.LoadError.rollback(offered: m.version, held: held)
             }
             if m.version == installedDownloadedVersion, installedDownloadedVersion > 0 {
+                guard policy?.raiseListFloor(to: m.version) == true else {
+                    throw PolicyRefusal("The filter could not save the blocklist rollback protection. "
+                        + "Ask the administrator to repair the policy store, then retry.")
+                }
                 return GenerationReply(installed: true, version: m.version, error: nil)
             }
             guard m.domain_count > 100_000 else {
@@ -587,9 +562,12 @@ final class FilterDataProvider: NEFilterDataProvider {
             guard loadDownloadedList() else {
                 throw BlocklistStore.LoadError.malformed("installed generation did not load")
             }
-            installedDownloadedVersion = m.version
             loadKeywordLayer()
-            policy?.raiseListFloor(to: m.version)
+            guard policy?.raiseListFloor(to: m.version) == true else {
+                throw PolicyRefusal("The filter could not save the blocklist rollback protection. "
+                    + "Ask the administrator to repair the policy store, then retry.")
+            }
+            installedDownloadedVersion = m.version
             publishHealth()
             NSLog("[Hisn] installed generation v%d from the app: %d domains", m.version,
                   store.domainCount)

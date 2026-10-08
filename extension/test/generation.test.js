@@ -10,6 +10,7 @@
 import { planGeneration, downloadedRuleIds, RULE_DOWNLOADED_KEYWORDS_BASE, GENERATION_ARTIFACTS }
   from "../lib/generation.js";
 import { RULE_DOWNLOADED_BASE, PRIORITY_LIST, PRIORITY_KEYWORDS } from "../lib/policy.js";
+import { buildIndex, scorePage } from "../lib/score.js";
 
 let failures = 0, checks = 0;
 function check(ok, label) {
@@ -56,6 +57,14 @@ const artifacts = () => new Map([
   check(plan.terms.terms.length === seedTerms.terms.length, "the vocabulary comes through intact");
   const legacy = planGeneration({ ...manifest, dnr_keyword_rule_count: undefined }, artifacts());
   check(legacy.ok, "a manifest without a keyword-rule count (older build) still installs");
+  const score = scorePage({ body: "An ordinary page about studying and learning." }, buildIndex(plan.terms));
+  check(Number.isFinite(score.score) && !score.block, "accepted vocabulary builds and scores ordinary text");
+
+  const oldTerms = { ...seedTerms }; delete oldTerms.exempt_domains;
+  const oldArtifacts = artifacts(); oldArtifacts.set("terms.json", enc(oldTerms));
+  const oldPlan = planGeneration(manifest, oldArtifacts);
+  check(oldPlan.ok && buildIndex(oldPlan.terms).exempt.size === 0,
+        "an older vocabulary without optional exemptions remains usable");
 }
 
 // ── refused whole ──────────────────────────────────────────────────────────
@@ -86,6 +95,36 @@ const artifacts = () => new Map([
   const a = artifacts(); a.set("terms.json", enc(tiny));
   const plan = planGeneration({ ...manifest, term_count: 10, host_term_count: 5 }, a);
   check(!plan.ok && plan.reason.startsWith("terms-implausible"), "a signed-but-empty vocabulary is refused");
+}
+
+// Every weighted field feeds the scorer, including the negative vocabulary.
+// A signed, hash-correct file is not necessarily safe to execute as a matcher.
+{
+  const malformed = [null, {}, "word", { t: 42, w: 1 }, { t: "", w: 1 },
+    { t: "   ", w: 1 }, { t: "word" }, { t: "word", w: null }, { t: "word", w: "1" }];
+  for (const field of ["terms", "negatives"]) {
+    const reason = field === "terms" ? "terms-entry-malformed" : "negatives-entry-malformed";
+    for (const entry of malformed) {
+      const changed = { ...seedTerms, [field]: [...seedTerms[field]] };
+      changed[field][0] = entry;
+      const a = artifacts(); a.set("terms.json", enc(changed));
+      const plan = planGeneration(manifest, a);
+      check(!plan.ok && plan.reason === reason, `${field} refuses malformed weighted entry ${enc(entry)}`);
+    }
+    // JSON numbers can overflow to Infinity even though that value has no
+    // literal spelling in JSON; numeric finiteness must be checked after parse.
+    const a = artifacts();
+    a.set("terms.json", enc({ ...seedTerms, [field]: [...seedTerms[field], { t: "overflow", w: 1 }] })
+      .replace('"t":"overflow","w":1', '"t":"overflow","w":1e400'));
+    const plan = planGeneration({ ...manifest, term_count: undefined }, a);
+    check(!plan.ok && plan.reason === reason, `${field} refuses an overflowing JSON weight`);
+  }
+  for (const exemptions of [null, {}, "medical.example", [null], [42], [{}], [""], ["  "]]) {
+    const a = artifacts(); a.set("terms.json", enc({ ...seedTerms, exempt_domains: exemptions }));
+    const plan = planGeneration(manifest, a);
+    check(!plan.ok && plan.reason === "exempt-domains-malformed",
+          `exemptions refuse malformed shape ${enc(exemptions)}`);
+  }
 }
 
 // ── clearing the previous generation ──────────────────────────────────────

@@ -13,11 +13,21 @@ final class AppNavigation: ObservableObject {
     /// The very first window opens on Setup: someone who has just installed
     /// Hisn needs the list of what is left, not a status saying most of it is
     /// missing. Every later window opens on the Overview.
-    private static func firstPage() -> ContentView.Page {
-        let d = UserDefaults.standard
-        guard !AppDelegate.isHostingTests, !d.bool(forKey: seenSetupKey) else { return .overview }
-        d.set(true, forKey: seenSetupKey)
+    static func firstPage(defaults: UserDefaults = .standard,
+                          hostingTests: Bool = AppDelegate.isHostingTests) -> ContentView.Page {
+        guard !hostingTests, !defaults.bool(forKey: seenSetupKey) else { return .overview }
         return .setup
+    }
+
+    func markSetupSeen() {
+        guard !AppDelegate.isHostingTests else { return }
+        UserDefaults.standard.set(true, forKey: Self.seenSetupKey)
+    }
+
+    func open(_ page: ContentView.Page) {
+        self.page = page == .overview && !UserDefaults.standard.bool(forKey: Self.seenSetupKey)
+            ? .setup : page
+        markSetupSeen()
     }
 }
 
@@ -31,10 +41,16 @@ enum MainWindow {
         NSApp.windows.filter { !($0 is NSPanel) && $0.canBecomeMain }
     }
 
+    @MainActor static func hide() {
+        // Keep the browser guard's warning panel visible above other apps.
+        // Hiding the entire application would hide that countdown too.
+        all.forEach { $0.close() }
+    }
+
     /// Bring the existing window forward, or open one: a second window over
     /// the same state would only confuse.
     @MainActor static func show(_ page: ContentView.Page, open: OpenWindowAction) {
-        AppNavigation.shared.page = page
+        AppNavigation.shared.open(page)
         if let window = all.first {
             window.makeKeyAndOrderFront(nil)
         } else {
@@ -71,7 +87,7 @@ enum QuickLock {
     }
 }
 
-/// What the menu bar icon shows: a shield, a closed lock while a lock runs.
+/// Hisn's shield and gateway, with a small badge while a lock runs.
 ///
 /// Its own object, publishing only when that changes. The icon once observed
 /// LockManager directly, which publishes every second for the countdown; a
@@ -80,8 +96,41 @@ enum QuickLock {
 @MainActor
 final class MenuBarIcon: ObservableObject {
     static let shared = MenuBarIcon()
-    @Published private(set) var symbol = "shield.lefthalf.filled"
+    @Published private(set) var isLocked = false
     private var timer: Timer?
+
+    var image: NSImage { isLocked ? Self.lockedImage : Self.unlockedImage }
+    private static let unlockedImage = makeImage(locked: false)
+    private static let lockedImage = makeImage(locked: true)
+
+    /// A single template image lets MenuBarExtra tint the mark and badge
+    /// together. Both states have the same size, so nearby items stay put.
+    /// Cache them rather than redrawing on every lock-status poll.
+    private static func makeImage(locked: Bool) -> NSImage {
+        guard let mark = NSImage(named: "HisnMenuBar") else {
+            assertionFailure("Missing HisnMenuBar image asset")
+            return NSImage(systemSymbolName: "shield.fill", accessibilityDescription: nil)
+                ?? NSImage()
+        }
+        let badge = NSImage(systemSymbolName: "lock.fill", accessibilityDescription: nil)?
+            .withSymbolConfiguration(.init(paletteColors: [.black]))
+        let image = NSImage(size: NSSize(width: 22, height: 20), flipped: false) { _ in
+            mark.draw(in: NSRect(x: 0, y: 0, width: 20, height: 20))
+            if locked, let badge, let context = NSGraphicsContext.current?.cgContext {
+                // Clear space around the badge instead of painting a background
+                // that would disagree with the menu bar in another appearance.
+                context.saveGState()
+                context.setBlendMode(.clear)
+                NSBezierPath(roundedRect: NSRect(x: 14, y: 0, width: 8, height: 10),
+                             xRadius: 2, yRadius: 2).fill()
+                context.restoreGState()
+                badge.draw(in: NSRect(x: 15, y: 0, width: 7, height: 9))
+            }
+            return true
+        }
+        image.isTemplate = true
+        return image
+    }
 
     private init() {
         update()
@@ -91,14 +140,13 @@ final class MenuBarIcon: ObservableObject {
     }
 
     private func update() {
-        let next = LockManager.shared.isLocked ? "lock.shield.fill" : "shield.lefthalf.filled"
-        if next != symbol { symbol = next }
+        let next = LockManager.shared.isLocked
+        if next != isLocked { isLocked = next }
     }
 }
 
 /// The menu: the two answers the Overview gives — is it protecting, is it
-/// locked — and the three ways in. No Quit during a lock, the same rule as
-/// the app menu's.
+/// locked — and the three ways in. Hiding the interface keeps protection on.
 struct StatusMenu: View {
     @ObservedObject private var lock = LockManager.shared
     @ObservedObject private var filter = FilterController.shared
@@ -130,12 +178,7 @@ struct StatusMenu: View {
             Button("Start a lock…") { MainWindow.show(.lock, open: openWindow) }
         }
         Button("Setup") { MainWindow.show(.setup, open: openWindow) }
-        // LockManager's answer, not EffectiveLock's: the same facts (mirrors
-        // or authority), already read by its tick, where EffectiveLock would
-        // read all three mirrors, the Keychain included, on every refresh.
-        if !lock.isLocked {
-            Divider()
-            Button("Quit Hisn") { NSApp.terminate(nil) }
-        }
+        Divider()
+        Button("Hide Hisn") { MainWindow.hide() }
     }
 }

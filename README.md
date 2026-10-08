@@ -10,6 +10,15 @@ this exists next to Screen Time, and what it should and should not try to be.
 Every design decision in this repo is downstream of that document, and several
 of them look wrong until you know which bypass they close.
 
+For the network-first protection roadmap and current limits, see
+[`docs/NETWORK_FIRST_PROTECTION.md`](docs/NETWORK_FIRST_PROTECTION.md).
+The app starts setup with a guide for any router's capabilities. The
+[`network/` tools](network/README.md) plan manual/device fallback paths and
+atomically publish verified signed DNS rules for administrator import. Live
+router configuration is not automated yet.
+The Cloudflare guide can sample DNS blocking on this Mac; it keeps that result
+separate from verified gateway enforcement.
+
 **To actually deploy it on a Mac, follow [`docs/SETUP.md`](docs/SETUP.md)** —
 the whole thing in dependency order, with what each step needs and who does it.
 `macos/install.sh` does the software half in one command. Then
@@ -22,48 +31,81 @@ and [`docs/LAUNCH.md`](docs/LAUNCH.md) is what stands between that and publishin
 
 ```
 blocklist/       list pipeline: fetch → merge → sign, keyword layer, seed bundle  (Python)
+network/         capability planning + verified DNS-rule publication             (Python)
 profile/         .mobileconfig generator: DNS, DoH, Private Relay                (Python)
 extension/       Chrome/Edge MV3 extension                                       (JS)
 macos/           the app + content filter                                        (Swift)
+ios/             universal iPhone/iPad app, Safari blockers + optional family DNS (Swift)
+ipados/          iPad-specific documentation; shares the ios/ target
+shared/apple/   portable Apple-platform configuration and protection-state code
 seed/            signed starter list + keyword layer, bundled into the filter
 partner/         the accountability partner's page: key, and signed approvals    (HTML)
 .github/         CI on every PR; daily signed rebuild and publish                 (Actions)
 ```
 
+The new iPhone/iPad development version is documented in [`ios/README.md`](ios/README.md).
+See [`docs/APPLE_PLATFORMS.md`](docs/APPLE_PLATFORMS.md) for platform boundaries.
+It shares the signed core list, not macOS privileges: Safari domain protection
+and optional family DNS are implemented; all-app filtering and Mac/phone sync
+are not. A signed real-device build is required before testing phone DNS.
+
 ## Testing
 
+For the planned signed beta, see [Using Hisn](docs/USER_GUIDE.md).
+Maintainers: [Release runbook](docs/RELEASE_RUNBOOK.md) and
+[release validation record](docs/RELEASE_VALIDATION.md).
+
 ```bash
-./test.sh              # python, seed, extension, macos
+./test.sh              # python, seed, extension, release, macos, ios
 ./test.sh python seed  # the suites that run on any OS
 ./test.sh browser      # the page scanner in headless Chrome (CI always runs it)
+./test.sh ios          # mobile unit tests + a locally available iOS simulator
 extension/eval/run.sh  # score the evaluation corpus; a blocked benign page fails
 ```
 
-One entry point, four suites, and the same script CI runs. `python` is the
-list pipeline, keyword layer, seed tool and profile generator; `seed` is the
+One entry point, six default suites, and the same script CI runs. `python` is the
+list pipeline, keyword layer, seed tool, profile generator, and network tools; `seed` is the
 gate that every shipped artifact matches the signed seed manifest; `extension`
-is the JavaScript suites plus a check of the packaged zip; `macos` is
-`xcodebuild test`. A suite whose toolchain is missing fails rather than skips —
+is the JavaScript suites plus a check of the packaged zip; `release` validates
+distribution settings and installer behavior; `macos` is
+`xcodebuild test`; `ios` runs native mobile tests on an available iPhone Simulator.
+The default run requires Xcode and an installed iOS Simulator runtime; explicit
+suite names allow a narrower run. A suite whose toolchain is missing fails rather than skips —
 "the tests passed" has to mean they ran.
 
-## The four layers
+## Protection layers
 
 | Layer | Closes | Defeated by |
 |---|---|---|
-| Browser extension | Casual browsing in Chrome/Edge | Another browser, disabling the extension |
-| Configuration profile | Encrypted DNS, Private Relay, browser DoH | A VPN; a local admin removing the profile |
-| **Content filter (system extension)** | **Everything above, including VPNs** | Recovery mode; an admin disabling it |
-| **Accountability partner** | **The admin, and the human at 2am** | A second device |
-| Browser guard (in the app) | Switching the extension off; another browser | Quitting the app as an admin |
+| Network DNS (administrator setup) | Listed hosts on devices using the resolver | Outside DNS, tunnels, another network, gateway reset |
+| Browser extension | Known domains and scanned page content in supported browsers | Another browser, disabling the extension, classification misses |
+| Configuration profile | Supported DNS, Private Relay, and browser settings | A tunnel; an administrator removing the profile |
+| Content filter (system extension) | Host/application decisions on new Mac flows | Provider loss, established flows, unidentified destinations outside strict mode, recovery/admin changes |
+| Accountability partner | Ordinary user loosening an active policy | Guardian authority or recovery; a separate unprotected device |
+| Browser guard (in the app) | Warns/closes disconnected browsers and repeatedly confirmed off standard profiles during locks or outside-lock opt-in | Force-quitting Hisn, exempt browsers, unreadable/custom profiles, guest/private windows, admin changes |
 
 The load-bearing layers are the bottom two. The top two are convenience and
 defence in depth — they are not what makes this work.
 
-Why the content filter matters more than DNS: DNS filtering is defeated by
-turning on any VPN, because resolution moves inside the tunnel. A
-`NEFilterDataProvider` evaluates flows at the *socket* level, before packets
-reach a VPN interface, so a VPN does not bypass it. That is why the Swift
-filter — not the DNS profile — is the primary control on macOS.
+Mac **Blocking Rules → Browser protection** has an optional **Require the
+extension outside a lock** switch, off by default with explicit confirmation.
+Active locks already require browser guarding. This is best-effort process
+closure while Hisn runs, not an instant traffic block or uninstall prohibition.
+See [browser-removal behavior and limits](docs/SELF_CONTROL_COMMITMENT.md#browser-extension-removal-and-disconnection).
+
+The installed Mac app starts at login for the protected account and keeps
+running in the background when its window closes or Quit is selected. Its
+LaunchAgent restarts it after a crash or force-quit. Logout, restart, shutdown
+and sleep retain their normal system behavior. See [setup](docs/SETUP.md#step-1--the-app--macosinstallsh)
+for the account scope and administrator removal command.
+
+Why the content filter adds coverage beyond DNS: VPNs and encrypted resolvers
+can bypass router DNS. Hisn's `NEFilterDataProvider` evaluates new Mac socket
+flows by available hostname and application identity. This is not a guarantee
+of identifying destinations inside every tunnel. Unknown destinations pass in
+normal blocklist mode and are denied in strict mode; already-open flows are not
+re-evaluated by the current implementation. Verify the supported VPN/proxy and
+essential-service cases on a signed installed Mac before relying on them.
 
 ---
 

@@ -37,6 +37,9 @@
                             if (asks === 2) return undefined;
                             return { block: true }; },
     "nested":       (z) => ({ block: z.body.includes(MARK) }),
+    "attributes":   (z) => ({ block: z.alt.includes(MARK) }),
+    "policy":       () => ({ block: asks > 1 }),
+    "timeout":      () => asks === 1 ? new Promise(() => {}) : { block: true },
   };
 
   const deps = {
@@ -47,6 +50,23 @@
   };
 
   switch (scenario) {
+    case "attributes": {
+      const img = document.createElement("img");
+      img.alt = "garden"; content.append(img);
+      deps.isTop = true; HisnScan.createScanner(deps).start();
+      setTimeout(() => img.alt = MARK, 500);
+      break;
+    }
+    case "policy": {
+      setText("unchanged fixture"); deps.isTop = true;
+      const scanner = HisnScan.createScanner(deps); scanner.start();
+      setTimeout(() => scanner.recheck(), 500);
+      break;
+    }
+    case "timeout":
+      setText("unchanged fixture"); deps.isTop = true;
+      HisnScan.createScanner(deps).start();
+      break;
     case "equal-length":
       setText("a perfectly ordinary post about gardening.");
       deps.isTop = true;
