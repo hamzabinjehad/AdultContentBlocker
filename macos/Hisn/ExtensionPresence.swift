@@ -6,7 +6,7 @@ import AppKit
 /// When the browser extension last checked in — overall, and per browser.
 ///
 /// The bridge is the only process that can observe this: the extension polls
-/// *into* it once a minute, so a timestamp written here is the whole of the
+/// *into* it every thirty seconds, so a timestamp written here is the whole of the
 /// evidence that the extension is alive. The overall stamp has always existed
 /// (the Overview's "Browser extension" row reads it). The per-browser stamps
 /// are what `BrowserGuard` needs: "the extension is running somewhere" says

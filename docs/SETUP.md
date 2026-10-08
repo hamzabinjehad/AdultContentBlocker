@@ -76,11 +76,26 @@ and runs the verifier. Hisn stays in the background when you close its window
 or use Quit, with or without an active lock. Open the window again from the
 menu bar or Applications. It runs while the protected Mac account is signed
 in; logout, restart and shutdown are allowed. Sleep pauses its work, which
-resumes when the Mac wakes. The app is also the **browser guard**, which closes
-any browser Hisn is not running inside
-(`BrowserGuard.swift`) — review *Blocking Rules › Browsers during a lock*
-before your first lock, and allow any app there that opens web links without
-being a browser.
+resumes when the Mac wakes. The app is also the **browser guard**. While a lock is active, or
+**Blocking Rules → Browser protection → Keep browser protection on** is enabled,
+a browser without a verified extension connection gets a visible one-minute
+recovery countdown, followed by a termination request if protection does not
+return. Supported browsers also close for repeatedly confirmed removal or
+disablement in a standard profile. Safari and other known unsupported browsers
+have no automatic exemption and cannot be trusted as app exceptions; use a
+supported browser with Hisn connected. You may explicitly trust an unknown
+non-browser app that only registers for web links, before a lock. A custom
+browser granted that exception can bypass checks, so review exceptions carefully.
+
+**Keep browser protection on** requires confirmation and is off by default.
+It cannot be switched off during a lock. Detection is periodic: check-ins are
+scheduled every thirty seconds and become stale after ninety seconds; the
+one-minute countdown starts on detection, not at the exact moment of removal.
+A refusing browser may be force-closed after ten additional seconds, with fresh
+connection, consent and recovery-deadline checks. Reopening an unrepaired browser
+does not restart the countdown; after closure its repeat warning is five seconds.
+Sleep/wake gets a visible recovery window. Standard-profile checks do not verify
+custom paths, guest/private windows or unreadable preferences.
 
 The agent is scoped to the account that ran the installer. It exits cleanly
 in other accounts, so they do not run a second guard. An administrator can
@@ -172,8 +187,9 @@ disabled** — the enforceable way to close the incognito bypass
 
 System Settings › Screen Time › Content & Privacy › **Limit Adult Websites**,
 and a Screen Time passcode the partner sets and keeps. This is Apple's lock,
-and Hisn sits under it (`docs/POSITIONING.md`): Safari is covered by it, and
-the guard leaves Safari open for that reason.
+and Hisn can complement it (`docs/POSITIONING.md`). This is a separate layer:
+Hisn cannot infer verified Safari protection from those settings. While browser
+guarding is active, Safari still closes because it has no supported Hisn extension.
 
 ## Step 7 — the phone, at the same time
 

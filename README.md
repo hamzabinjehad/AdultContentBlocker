@@ -82,15 +82,20 @@ suite names allow a narrower run. A suite whose toolchain is missing fails rathe
 | Configuration profile | Supported DNS, Private Relay, and browser settings | A tunnel; an administrator removing the profile |
 | Content filter (system extension) | Host/application decisions on new Mac flows | Provider loss, established flows, unidentified destinations outside strict mode, recovery/admin changes |
 | Accountability partner | Ordinary user loosening an active policy | Guardian authority or recovery; a separate unprotected device |
-| Browser guard (in the app) | Warns/closes disconnected browsers and repeatedly confirmed off standard profiles during locks or outside-lock opt-in | Force-quitting Hisn, exempt browsers, unreadable/custom profiles, guest/private windows, admin changes |
+| Browser guard (in the app) | Warns/closes disconnected browsers and repeatedly confirmed off standard profiles during locks or outside-lock opt-in | Force-quitting Hisn, explicitly trusted unknown apps, unreadable/custom profiles, guest/private windows, admin changes |
 
 The load-bearing layers are the bottom two. The top two are convenience and
 defence in depth — they are not what makes this work.
 
-Mac **Blocking Rules → Browser protection** has an optional **Require the
-extension outside a lock** switch, off by default with explicit confirmation.
-Active locks already require browser guarding. This is best-effort process
-closure while Hisn runs, not an instant traffic block or uninstall prohibition.
+Mac **Blocking Rules → Browser protection** has an optional **Keep browser
+protection on** switch, off by default with explicit confirmation. Active locks
+always require guarding. Loss of a verified extension connection or confirmed
+standard-profile removal starts a visible **60-second recovery countdown**.
+Known unsupported browsers, including Safari, also close and cannot use app
+exceptions. An unrepaired relaunch cannot renew the warning. Check-ins are
+scheduled every thirty seconds; detection is periodic, not instantaneous.
+This is best-effort process closure while Hisn runs, not an immediate traffic
+block or uninstall prohibition.
 See [browser-removal behavior and limits](docs/SELF_CONTROL_COMMITMENT.md#browser-extension-removal-and-disconnection).
 
 The installed Mac app starts at login for the protected account and keeps

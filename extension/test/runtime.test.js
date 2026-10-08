@@ -41,10 +41,19 @@ globalThis.chrome = {
   alarms: {
     onAlarm: { addListener() {} },
     get: async (name) => alarms.get(name),
-    create: async (name, info) => { alarms.set(name, { name, ...info }); },
+    create: async (name, info) => {
+      alarmCreations.push({ name, ...info });
+      alarms.set(name, { name, ...info });
+    },
   },
 };
-const alarms = new Map();
+// An upgraded installation can retain the old one-minute heartbeat.
+// Its list alarm is absent, as it can be after browser restart. No lifecycle
+// callback is invoked here: worker boot must repair both conditions.
+const alarms = new Map([
+  ["heartbeat", { name: "heartbeat", periodInMinutes: 1 }],
+]);
+const alarmCreations = [];
 globalThis.console = { info() {}, warn() {}, error() {} };
 // Timers under our control: jsc has no clearTimeout, and a real 10 s timer
 // would hold the run open. `fire(ms)` runs every pending timer of that length.
@@ -76,16 +85,28 @@ await applyRules({ ...DEFAULT_STATE, mode: "blocklist" });
 check(!enabled.includes("lockdown") && !dynamic.some((r) => r.condition.urlFilter === "*")
       && ["blocklist", "keywords", "safesearch", "paths", "web_protection"].every((id) => enabled.includes(id)),
       "Standard mode retires stale lockdown without a catch-all while preserving baseline sets");
-check(alarms.get("heartbeat")?.periodInMinutes === ALARMS.heartbeat
-      && alarms.get("listUpdate")?.periodInMinutes === ALARMS.listUpdate,
-      "a worker start restores both alarms without an install event");
+check(ALARMS.heartbeat === 0.5 && ALARMS.listUpdate === 360,
+      "heartbeat is thirty seconds without accelerating list downloads");
+check(alarms.get("heartbeat")?.periodInMinutes === 0.5,
+      "worker boot migrates a legacy one-minute heartbeat without lifecycle events");
+check(alarms.get("listUpdate")?.periodInMinutes === 360 && alarms.size === 2,
+      "worker boot restores the missing list alarm without an install event");
 check(nativeCalls === 1, "a worker start with a stale heartbeat checks in at once");
+const alreadyConfigured = alarmCreations.length;
+await ensureAlarms();
+check(alarmCreations.length === alreadyConfigured,
+      "healthy alarms are not recreated or their next firing postponed");
 alarms.clear();
 await ensureAlarms();
-check(alarms.size === 2, "alarms cleared by a browser restart come back");
+check(alarms.size === 2 && alarms.get("heartbeat")?.periodInMinutes === 0.5
+      && alarms.get("listUpdate")?.periodInMinutes === 360,
+      "alarms cleared by a browser restart return with current periods");
 alarms.set("heartbeat", { name: "heartbeat", periodInMinutes: 60 });
 await ensureAlarms();
-check(alarms.get("heartbeat").periodInMinutes === 1, "a wrong period is corrected");
+check(alarms.get("heartbeat")?.periodInMinutes === 0.5,
+      "an incorrect persisted heartbeat period is corrected");
+check(alarms.get("listUpdate")?.periodInMinutes === 360,
+      "correcting the heartbeat preserves the list-update schedule");
 state = { ...DEFAULT_STATE };
 check(!(await message({ type: "forceSync" })).ok, "missing native app is tolerated");
 check(!state.failClosed && !state.appPresent, "fresh browser-only install does not lock down");

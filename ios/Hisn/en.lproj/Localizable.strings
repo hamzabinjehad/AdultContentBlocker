@@ -72,7 +72,7 @@
 "apps.title" = "My apps and daily time";
 "apps.scope" = "Choose apps, categories or websites through Apple's private picker. Always-block mode shields them until you remove the rule outside a commitment. It is not a whole-phone lock; keep essential apps accessible.";
 "apps.browserGuardGuidance" = "Safari rules do not protect every browser. To shield browsers or mixed-content apps such as X, use Choose apps and websites, select every browser app you want blocked, choose Always block, then apply the rule. This is a separate Screen Time choice, not an extension or profile scan. During a commitment, Hisn will not let you weaken that saved rule.";
-"apps.browserGuardLimits" = "iPhone and iPad cannot require this Mac browser extension. Screen Time app shields, family DNS and Safari filtering are separate layers; none scans all content in other apps. Personal adult Screen Time authorization can be revoked and Hisn can be deleted.";
+"apps.browserGuardLimits" = "iPhone and iPad cannot require this Mac browser extension or continuously watch extension presence, close other browsers, or offer the Mac one-minute repair countdown. Applied Screen Time shields do not need Hisn to stay open: iOS manages them while authorization remains approved. Safari and family DNS are separate layers; none scans all content in other apps. Personal adult authorization can be revoked and Hisn can be deleted.";
 "apps.authorization" = "First enable personal Screen Time protection above and accept Apple's permission on a real device.";
 "apps.choose" = "Choose apps and websites";
 "apps.count %lld" = "%lld selected items";
@@ -130,7 +130,7 @@
 "removal.simulator" = "Guardian authorization cannot be tested in Simulator. Use a signed build on a real child's device with a guardian in the same family.";
 "removal.failed" = "Child authorization was not confirmed. Check the child account, Family Sharing, guardian approval and the app's Family Controls entitlement. No fallback authorization was requested.";
 "family.steps" = "Add Screen Time's adult-website restriction in Content & Privacy Restrictions. For family protection, let a trusted guardian keep its passcode.";
-"family.scope" = "Hisn does not set or verify Screen Time automatically. App shielding and managed-device enforcement are not included in this first version.";
+"family.scope" = "Hisn can configure its own app shields and adult-web filter after Apple authorization. The family Screen Time settings described here are manual and unverified; managed-device enforcement is not included.";
 "language.title" = "Language";
 "language.system" = "Follow device language";
 "privacy.title" = "Privacy";

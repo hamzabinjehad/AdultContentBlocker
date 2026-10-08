@@ -1598,11 +1598,12 @@ struct BrowsersSection: View {
     var body: some View {
         PageSection(title: "Browser protection",
                 subtitle: """
-                    During a lock, Hisn closes supported browsers that lose their \
-                    extension connection and other non-exempt browsers. Safari \
-                    and browsers you previously allowed stay open.
+                    While browser protection is active, losing the extension \
+                    connection starts a visible one-minute recovery countdown. \
+                    Restore protection or the browser closes. Safari and other \
+                    unsupported browsers also close.
                     """) {
-            Toggle("Require the extension outside a lock", isOn: Binding(
+            Toggle("Keep browser protection on", isOn: Binding(
                 get: { guardian.requireOutsideLock },
                 set: { enabled in
                     if enabled { confirmOutsideLock = true }
@@ -1610,7 +1611,7 @@ struct BrowsersSection: View {
                 }))
                 .toggleStyle(.switch)
                 .disabled(isLocked && guardian.requireOutsideLock)
-            Text("Opt-in: also close unprotected browsers when no lock is active. Off by default.")
+            Text("Opt-in: keep requiring the extension after a lock ends. Off by default; active locks always require it.")
                 .font(.callout).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             if isLocked && guardian.requireOutsideLock {
@@ -1618,12 +1619,12 @@ struct BrowsersSection: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
             Text("""
-                This guard works only while Hisn is running. Hisn checks supported \
-                browsers' standard Default/Profile folders; custom paths, guest \
-                and private windows are not verified. Safari and allowed exceptions \
-                remain exempt; force-quitting Hisn or administrator changes can \
-                bypass it. Safari's exemption is not verified protection: configure \
-                Screen Time and network layers separately.
+                Hisn stays in the background when its window closes; the separately \
+                installed login agent restarts it after a crash or force-quit. \
+                Detection is periodic, not instant. Standard Default/Profile folders \
+                are checked; custom paths, guest and private windows are unverified. \
+                Explicitly trusted unknown apps bypass extension checks. Administrator \
+                changes can bypass the guard. Save work before enabling it.
                 """)
                 .font(.callout).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -1647,8 +1648,9 @@ struct BrowsersSection: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     Spacer()
-                    if c.coverage == .uncovered || c.coverage == .allowedByUser {
-                        Toggle("Allow this browser", isOn: Binding(
+                    if BrowserGuardPolicy.canAllowException(bundleID: c.bundleID,
+                        linked: Set(NativeMessagingInstaller.browsers.map(\.bundleID))) {
+                        Toggle("Trust this app without extension checks", isOn: Binding(
                             get: { c.coverage == .allowedByUser },
                             set: { allow in
                                 do { try guardian.setAllowed(c.bundleID, allow) }
@@ -1671,11 +1673,12 @@ struct BrowsersSection: View {
             Button("Cancel", role: .cancel) { }
         } message: {
             Text("""
-                Hisn may close browsers that do not have a connected extension, \
-                or have Hisn removed or disabled in a standard profile, even \
-                without an active lock. Save any work first. Safari and your allowed \
-                exceptions stay open. You can turn this off when no lock is running. \
-                This does not make Hisn or the extension unremovable.
+                Hisn will also guard browsers when no lock is running. Once lost \
+                protection is detected, you have one minute to restore the extension \
+                before closure; an unresolved relaunch gets only five seconds. \
+                Unsupported browsers, including Safari, also close. Save your work. \
+                Unknown apps you explicitly trust stay open without checks. You can \
+                turn this off outside a lock. It does not prevent uninstalling Hisn.
                 """)
         }
     }
@@ -1718,7 +1721,7 @@ struct BrowsersSection: View {
     private func describe(_ coverage: BrowserGuardPolicy.Coverage) -> String {
         switch coverage {
         case .exempt:
-            return String(localized: "Left open — configure Screen Time and network protection separately; this exemption does not verify them.")
+            return String(localized: "Link router only — left open because it hands links to a browser and does not render pages.")
         case .needsExtension:
             return String(localized: """
                 Closed while browser guarding is active if its extension stops \
@@ -1727,7 +1730,7 @@ struct BrowsersSection: View {
         case .uncovered:
             return String(localized: "No Hisn protection inside — closed while browser guarding is active.")
         case .allowedByUser:
-            return String(localized: "You allowed it. It stays open without extension checks.")
+            return String(localized: "Trusted app exception — stays open without extension checks. Only use this for a non-browser app.")
         }
     }
 }

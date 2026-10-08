@@ -79,8 +79,9 @@ final class BrowserGuardPolicyTests: XCTestCase {
         let returned = now.addingTimeInterval(3600)
         XCTAssertEqual(session.graceStart(browser: id, now: returned, notBefore: now,
                                          instance: "second"), returned)
-        // Startup .ok is not evidence that the extension actually reconnected.
-        session.observe(.ok, browser: id, at: returned)
+        // Unverified startup is visible, and cannot earn another grace.
+        session.observe(.warn(.extensionSilent, closeAt: returned.addingTimeInterval(P.warnSilent)),
+                        browser: id, at: returned)
         XCTAssertEqual(session.graceStart(browser: id, now: returned.addingTimeInterval(55),
                                          notBefore: now, instance: "third"), returned)
     }
@@ -158,9 +159,12 @@ final class BrowserGuardPolicyTests: XCTestCase {
                                          notBefore: now), later)
     }
 
-    func testSafariIsNeverJudged() {
-        XCTAssertEqual(P.coverage(bundleID: "com.apple.Safari", linked: [], userAllowed: []),
-                       .exempt)
+    func testSafariAndPreviewHaveNoAutomaticExemption() {
+        for id in ["com.apple.Safari", "com.apple.SafariTechnologyPreview"] {
+            XCTAssertEqual(P.coverage(bundleID: id, linked: [], userAllowed: []), .uncovered)
+            XCTAssertEqual(P.coverage(bundleID: id, linked: [], userAllowed: [id]), .uncovered)
+            XCTAssertFalse(P.canAllowException(bundleID: id, linked: []))
+        }
     }
 
     func testLinkedChromiumBrowserNeedsItsExtension() {
@@ -196,8 +200,121 @@ final class BrowserGuardPolicyTests: XCTestCase {
         XCTAssertEqual(verdict(.needsExtension, lastSeen: 30), .ok)
     }
 
-    func testJustLaunchedGetsAChanceToCheckIn() {
-        XCTAssertEqual(verdict(.needsExtension, lastSeen: nil, launchedAgo: 20), .ok)
+    func testJustLaunchedGetsVisibleRecoveryNotPresumedProtection() {
+        XCTAssertEqual(verdict(.needsExtension, lastSeen: nil, launchedAgo: 20),
+                       .warn(.extensionSilent, closeAt: now.addingTimeInterval(60)))
+    }
+
+    func testInitialRecoveryIsExactlyOneMinuteAndRestartCannotRenewIt() {
+        var session = P.Session()
+        let id = "net.imput.helium"
+        let start = session.graceStart(browser: id, now: now, notBefore: now, instance: "first")
+        let initial = P.verdict(coverage: .needsExtension, lastSeen: nil, now: now,
+            graceStart: start, firstViolation: nil, recentlyClosed: false)
+        XCTAssertEqual(initial, .warn(.extensionSilent, closeAt: now.addingTimeInterval(60)))
+        session.observe(initial, browser: id, at: now)
+        let restarted = now.addingTimeInterval(55)
+        let restartGrace = session.graceStart(browser: id, now: restarted,
+                                              notBefore: now, instance: "second")
+        XCTAssertEqual(P.verdict(coverage: .needsExtension, lastSeen: nil, now: restarted,
+            graceStart: restartGrace, firstViolation: session.firstViolation(browser: id),
+            recentlyClosed: false), .warn(.extensionSilent, closeAt: now.addingTimeInterval(60)))
+        for coverage in [P.Coverage.needsExtension, .uncovered] {
+            XCTAssertEqual(P.verdict(coverage: coverage, lastSeen: nil,
+                now: now.addingTimeInterval(59.999), graceStart: start,
+                firstViolation: now, recentlyClosed: false),
+                .warn(coverage == .needsExtension ? .extensionSilent : .uncovered,
+                      closeAt: now.addingTimeInterval(60)))
+            XCTAssertEqual(P.verdict(coverage: coverage, lastSeen: nil,
+                now: now.addingTimeInterval(60), graceStart: start,
+                firstViolation: now, recentlyClosed: false),
+                .close(coverage == .needsExtension ? .extensionSilent : .uncovered))
+        }
+    }
+
+    func testWakeRecoveryIsVisibleAndKeepsOneDeadline() {
+        let wake = now.addingTimeInterval(3600)
+        for elapsed in [0.0, 20, 59.999] {
+            XCTAssertEqual(P.verdict(coverage: .needsExtension, lastSeen: nil,
+                now: wake.addingTimeInterval(elapsed), graceStart: wake,
+                firstViolation: now, recentlyClosed: false),
+                .warn(.extensionSilent, closeAt: wake.addingTimeInterval(60)))
+        }
+        XCTAssertEqual(P.verdict(coverage: .needsExtension, lastSeen: nil,
+            now: wake.addingTimeInterval(60), graceStart: wake,
+            firstViolation: now, recentlyClosed: false), .close(.extensionSilent))
+    }
+
+    func testOldInstanceHeartbeatCannotClearARestartWarning() {
+        XCTAssertNil(P.instanceCheckIn(lastSeen: now, launchedAt: now.addingTimeInterval(1)))
+        XCTAssertNil(P.instanceCheckIn(lastSeen: nil, launchedAt: now))
+        XCTAssertEqual(P.instanceCheckIn(lastSeen: now, launchedAt: now), now)
+        XCTAssertEqual(P.instanceCheckIn(lastSeen: now, launchedAt: nil), now)
+        XCTAssertEqual(P.instanceCheckIn(lastSeen: now.addingTimeInterval(1),
+                                         launchedAt: now), now.addingTimeInterval(1))
+        XCTAssertEqual(verdict(.needsExtension, lastSeen: 1, firstViolationAgo: 59), .ok)
+        let staleInstance = P.instanceCheckIn(lastSeen: now, launchedAt: now.addingTimeInterval(1))
+        XCTAssertEqual(P.verdict(coverage: .needsExtension, lastSeen: staleInstance,
+            now: now.addingTimeInterval(55), graceStart: now, firstViolation: now,
+            recentlyClosed: false), .warn(.extensionSilent, closeAt: now.addingTimeInterval(60)))
+    }
+
+    func testForceTerminationRespectsCurrentWarningAndWakeRecovery() {
+        let earlier = now.addingTimeInterval(-1)
+        XCTAssertNil(P.forceRecoveryDeadline(requestedAt: now, awakeSince: earlier,
+                                              warningDeadline: nil))
+        let wakeDeadline = now.addingTimeInterval(60)
+        XCTAssertEqual(P.forceRecoveryDeadline(requestedAt: earlier, awakeSince: now,
+                                                warningDeadline: nil), wakeDeadline)
+        XCTAssertEqual(P.forceRecoveryDeadline(requestedAt: earlier, awakeSince: now,
+            warningDeadline: now.addingTimeInterval(80)), now.addingTimeInterval(80))
+        XCTAssertEqual(P.forceRecoveryDeadline(requestedAt: earlier, awakeSince: now,
+            warningDeadline: now.addingTimeInterval(10)), wakeDeadline)
+        for coverage in [P.Coverage.needsExtension, .uncovered] {
+            XCTAssertFalse(P.shouldForceClose(active: true, coverage: coverage,
+                lastSeen: nil, now: wakeDeadline.addingTimeInterval(-0.001), notBefore: wakeDeadline))
+            XCTAssertTrue(P.shouldForceClose(active: true, coverage: coverage,
+                lastSeen: nil, now: wakeDeadline, notBefore: wakeDeadline))
+        }
+        XCTAssertFalse(P.shouldForceClose(active: true, coverage: .needsExtension,
+            lastSeen: now, now: now, profileLoss: true, notBefore: wakeDeadline))
+        XCTAssertFalse(P.shouldForceClose(active: false, coverage: .uncovered,
+            lastSeen: nil, now: wakeDeadline, notBefore: wakeDeadline))
+        XCTAssertFalse(P.shouldForceClose(active: true, coverage: .needsExtension,
+            lastSeen: wakeDeadline, now: wakeDeadline, notBefore: wakeDeadline))
+    }
+
+    func testRepeatClosureDoesNotOverrideWakeAndRejectsFutureStamps() {
+        XCTAssertFalse(P.isRepeatClosure(closedAt: nil, awakeSince: now, now: now))
+        XCTAssertFalse(P.isRepeatClosure(closedAt: now.addingTimeInterval(-1),
+                                         awakeSince: now, now: now))
+        XCTAssertFalse(P.isRepeatClosure(closedAt: now.addingTimeInterval(1),
+                                         awakeSince: now, now: now))
+        XCTAssertTrue(P.isRepeatClosure(closedAt: now, awakeSince: now, now: now))
+        XCTAssertFalse(P.isRepeatClosure(closedAt: now, awakeSince: now,
+                                         now: now.addingTimeInterval(P.repeatWindow)))
+    }
+
+    func testKnownBrowsersIgnoreSavedAppAllowances() {
+        for id in P.knownBrowsers {
+            XCTAssertEqual(P.coverage(bundleID: id, linked: [], userAllowed: [id]), .uncovered, id)
+            XCTAssertFalse(P.canAllowException(bundleID: id, linked: []), id)
+        }
+        for id in P.linkRouters {
+            XCTAssertEqual(P.coverage(bundleID: id, linked: [], userAllowed: []), .exempt, id)
+            XCTAssertFalse(P.canAllowException(bundleID: id, linked: []), id)
+        }
+        XCTAssertFalse(P.canAllowException(bundleID: "", linked: []))
+        XCTAssertFalse(P.canAllowException(bundleID: "net.imput.helium", linked: ["net.imput.helium"]))
+        XCTAssertTrue(P.canAllowException(bundleID: "com.example.nonbrowser", linked: []))
+    }
+
+    func testHeartbeatTimingBudgetIsIndependentOfExpectedConstants() {
+        XCTAssertEqual(P.staleAfter, 90)
+        XCTAssertEqual(P.launchGrace, 60)
+        XCTAssertEqual(P.warnSilent, 60)
+        XCTAssertEqual(P.warnUncovered, 60)
+        XCTAssertEqual(P.warnRepeat, 5)
     }
 
     func testSilentExtensionIsWarnedNotClosed() {

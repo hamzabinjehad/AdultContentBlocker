@@ -878,8 +878,10 @@ async function guardedUpdate(rawPatch) {
 // Wiring
 // --------------------------------------------------------------------------
 
-/** The two recurring jobs, and how often each runs. */
-const ALARMS = { heartbeat: 1, listUpdate: 360 };
+/** Thirty-second app check-ins; list downloads retain their six-hour cadence.
+ * Chrome may delay alarms. Missing checks are not an instant uninstall event.
+ */
+const ALARMS = { heartbeat: 0.5, listUpdate: 360 };
 
 /**
  * Make sure both alarms exist. Runs on EVERY worker start, not only on install.
