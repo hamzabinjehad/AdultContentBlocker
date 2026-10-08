@@ -89,7 +89,7 @@ class TestSigningPreflight(unittest.TestCase):
         self.assertLess(self.build.index(STEP), self.build.index("      - name: Fetch previous manifest"))
 
     def test_environment_and_ci_gate_are_preserved(self):
-        self.assertIn("\n    needs: test\n", self.build)
+        self.assertTrue(self.build.startswith("    needs: test\n"))
         self.assertIn("\n    environment:\n      name: list-signing\n", self.build)
         self.assertIn("SIGNING_KEY: ${{ secrets.BLOCKLIST_SIGNING_KEY }}", self.step)
         self.assertNotIn("continue-on-error:", self.step)
