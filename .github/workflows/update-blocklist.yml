@@ -57,6 +57,31 @@ jobs:
       name: list-signing
       url: https://raw.githubusercontent.com/${{ github.repository }}/lists/manifest.json
     steps:
+      # Fail before checkout, dependencies, or previous-manifest network IO.
+      # This checks availability only; signed-build verification stays mandatory.
+      - name: Check signing configuration
+        env:
+          SIGNING_KEY: ${{ secrets.BLOCKLIST_SIGNING_KEY }}
+        run: |
+          if [ -z "${SIGNING_KEY//[[:space:]]/}" ]; then
+            echo "::error title=Blocklist signing is not configured::BLOCKLIST_SIGNING_KEY is unavailable to list-signing. Restore the existing matching key in the environment settings and check its main-only deployment policy."
+            {
+              echo "### Blocklist publication is blocked"
+              echo
+              echo "No signed list has been built or published by this job."
+              echo
+              echo "1. Open [repository environments](https://github.com/$GITHUB_REPOSITORY/settings/environments) and select **list-signing**."
+              echo '2. Add or restore the environment secret **BLOCKLIST_SIGNING_KEY** using the existing Ed25519 PEM whose public half matches **blocklist/public_key.hex**.'
+              echo '3. Check that the environment allows deployments from **main** only; do not broaden its branch policy or use a repository-level signing secret.'
+              echo '4. Rerun **Build and publish blocklist** on **main** after configuration.'
+              echo
+              echo 'Do not generate a replacement key, publish unsigned lists, or paste the private key into repository files, issues, pull requests, or logs.'
+              echo
+              echo "See [publishing setup](https://github.com/$GITHUB_REPOSITORY/blob/main/docs/SETUP.md#publishing-the-list-the-clients-download)."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7

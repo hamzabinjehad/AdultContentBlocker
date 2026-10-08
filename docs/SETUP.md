@@ -231,6 +231,32 @@ Both clients download signed updates from this repository's `lists` branch —
 Check it took: `curl -sI https://raw.githubusercontent.com/<owner>/<repo>/lists/manifest.json`
 answers `200`.
 
+### If signing configuration is unavailable
+
+The publisher checks secret availability at the start of its environment-bound
+build job, before checkout, dependency setup or previous-manifest fetching. This
+is a configuration diagnostic, not proof that the key is valid: signed-build
+verification against `blocklist/public_key.hex` still runs before publication.
+The complete CI gate still runs before this publishing job.
+
+A missing or whitespace-only value produces an error annotation and an Actions
+job summary with the environment-settings and setup links. If the environment
+itself refuses a deployment, its GitHub deployment message is the first place
+to check; the preflight cannot run before that approval/policy gate.
+
+In GitHub's web interface, open **Settings → Environments → list-signing**.
+Restore `BLOCKLIST_SIGNING_KEY` using the existing Ed25519 private PEM whose
+public half matches `blocklist/public_key.hex`, and restrict deployment branches
+to `main`. Keep the signing key environment-scoped, not repository-scoped.
+Then rerun **Build and publish blocklist** on `main`.
+
+Never paste the key into a repository file, issue, pull request, workflow log or
+chat. Do not generate a replacement key to silence the error: existing clients
+trust the pinned public key. If the matching private-key backup is lost,
+publication must remain blocked until a planned key rotation updates the clients.
+These steps configure GitHub only; they do not require changing a user's device.
+
+
 ## Check it took
 
 ```bash
