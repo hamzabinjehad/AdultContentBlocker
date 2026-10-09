@@ -57,10 +57,14 @@ public enum BrowserGuardPolicy {
         private var violations: [String: Date] = [:]
         private var instances: [String: String] = [:]
         private var healthyRestart: Set<String> = []
+        private var closedBrowsers: Set<String> = []
         public init() {}
         public mutating func graceStart(browser: String, now: Date, notBefore floor: Date,
                                         instance: String? = nil) -> Date {
             if let instance, instances[browser] != instance {
+                // A genuinely new process after closure gets its repeat warning.
+                // The still-running process refusing quit keeps its old deadline.
+                if closedBrowsers.remove(browser) != nil { violations[browser] = nil }
                 // One new grace after verified connectivity, not after merely
                 // passing through the unverified startup grace again.
                 if instances[browser] != nil, healthyRestart.remove(browser) != nil {
@@ -77,18 +81,24 @@ public enum BrowserGuardPolicy {
             switch verdict {
             case .ok:
                 violations[browser] = nil
+                closedBrowsers.remove(browser)
                 if verifiedConnection { healthyRestart.insert(browser) }
             case .close:
-                violations[browser] = nil
+                // Keep the unresolved deadline while this same instance resists
+                // termination; manufactured repeat warnings can starve force-close.
+                closedBrowsers.insert(browser)
                 healthyRestart.remove(browser)
             case .warn:
+                // A wake recovery warning supersedes a pending close decision.
+                // Its unverified restarts must retain this same warning deadline.
+                closedBrowsers.remove(browser)
                 healthyRestart.remove(browser)
                 if violations[browser] == nil { violations[browser] = now }
             }
         }
         public mutating func reset() {
             starts.removeAll(); violations.removeAll()
-            instances.removeAll(); healthyRestart.removeAll()
+            instances.removeAll(); healthyRestart.removeAll(); closedBrowsers.removeAll()
         }
     }
 

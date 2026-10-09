@@ -149,13 +149,16 @@ final class ProtectionStatusTests: XCTestCase {
     }
 
     func testExtensionLivenessIsTimeBounded() {
-        XCTAssertTrue(status(filter: .off, extensionSeen: 4 * 60).layers[1].ok)
-
-        let stale = status(filter: .off, extensionSeen: 10 * 60).layers[1]
-        XCTAssertFalse(stale.ok)
-        XCTAssertEqual(stale.state, .problem)
-        XCTAssertEqual(stale.action, .reconnectExtension)
-        XCTAssertTrue(stale.detail.hasPrefix("Not responding"))
+        XCTAssertEqual(ProtectionEvidence.extensionStaleAfter, 90)
+        XCTAssertEqual(ProtectionEvidence.extensionStaleAfter, BrowserGuardPolicy.staleAfter)
+        XCTAssertTrue(status(filter: .off, extensionSeen: 89.999).layers[1].ok)
+        for age in [90.0, 4 * 60.0, 10 * 60.0] {
+            let stale = status(filter: .off, extensionSeen: age).layers[1]
+            XCTAssertFalse(stale.ok)
+            XCTAssertEqual(stale.state, .problem)
+            XCTAssertEqual(stale.action, .reconnectExtension)
+            XCTAssertTrue(stale.detail.hasPrefix("Not responding"))
+        }
     }
 
     // MARK: Without the paid filter

@@ -9,16 +9,24 @@ import XCTest
 final class LocalizationTests: XCTestCase {
     func testBrowserRequirementConsentShipsArabic() throws {
         let ar = try arabic()
-        XCTAssertEqual(ar.localizedString(forKey: "Require the extension outside a lock", value: nil, table: nil),
-                       "اشترط اتصال الإضافة خارج فترة القفل")
+        XCTAssertEqual(ar.localizedString(forKey: "Keep browser protection on", value: nil, table: nil),
+                       "أبقِ حماية المتصفح مفعّلة")
         XCTAssertEqual(ar.localizedString(forKey: "Require browser protection outside a lock?", value: nil, table: nil),
                        "هل تريد اشتراط حماية المتصفح خارج فترة القفل؟")
         XCTAssertEqual(ar.localizedString(forKey: "Enable requirement", value: nil, table: nil),
                        "تفعيل الاشتراط")
         XCTAssertEqual(ar.localizedString(forKey: "This requirement cannot be turned off while a lock is running.", value: nil, table: nil),
                        "لا يمكن إيقاف هذا الاشتراط أثناء تشغيل القفل.")
-        XCTAssertEqual(ar.localizedString(forKey: "Left open — configure Screen Time and network protection separately; this exemption does not verify them.", value: nil, table: nil),
-                       "يظل مفتوحًا — اضبط مدة استخدام الجهاز وحماية الشبكة بشكل مستقل؛ هذا الاستثناء لا يتحقق منهما.")
+        XCTAssertEqual(ar.localizedString(forKey: "Link router only — left open because it hands links to a browser and does not render pages.", value: nil, table: nil),
+                       "موجّه روابط فقط — يبقى مفتوحًا لأنه يرسل الروابط إلى متصفح ولا يعرض الصفحات.")
+    }
+
+    func testBrowserExceptionLimitsShipArabic() throws {
+        let ar = try arabic()
+        XCTAssertEqual(ar.localizedString(forKey: "Trust this app without extension checks", value: nil, table: nil),
+                       "ثق بهذا التطبيق دون فحوصات الإضافة")
+        XCTAssertEqual(ar.localizedString(forKey: "Known browsers need a connected Hisn extension and cannot be allowed as app exceptions.", value: nil, table: nil),
+                       "تحتاج المتصفحات المعروفة إلى إضافة حصن متصلة ولا يمكن السماح بها كاستثناءات للتطبيقات.")
     }
 
     func testProtectionPlanShipsArabicLabels() throws {

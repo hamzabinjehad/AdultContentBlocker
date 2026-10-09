@@ -58,9 +58,10 @@ public struct ProtectionEvidence: Equatable {
     /// hand-written lines.
     public static let hostsMinimum = 1000
 
-    /// The extension polls once a minute; a gap this long means it stopped,
-    /// not that we caught it between beats.
-    public static let extensionStaleAfter: TimeInterval = 5 * 60
+    /// Match the guard's missed-heartbeat window for thirty-second check-ins,
+    /// so Overview does not call a stale connection healthy. This global stamp
+    /// still does not verify every browser or profile.
+    public static let extensionStaleAfter: TimeInterval = BrowserGuardPolicy.staleAfter
 
     public init(filter: FilterEvidence, extensionLastSeen: Date?, now: Date = Date(),
                 hostsEntries: Int? = nil, filterCanRun: Bool = true,

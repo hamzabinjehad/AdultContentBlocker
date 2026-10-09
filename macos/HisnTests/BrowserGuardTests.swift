@@ -309,6 +309,68 @@ final class BrowserGuardPolicyTests: XCTestCase {
         XCTAssertTrue(P.canAllowException(bundleID: "com.example.nonbrowser", linked: []))
     }
 
+    func testRefusingSameInstanceCannotManufactureFutureForceDeadlines() {
+        var session = P.Session()
+        let id = "net.imput.helium"
+        _ = session.graceStart(browser: id, now: now, notBefore: now, instance: "first")
+        session.observe(.warn(.extensionSilent, closeAt: now.addingTimeInterval(60)),
+                        browser: id, at: now)
+        let requested = now.addingTimeInterval(60)
+        for elapsed in [60.0, 65.2, 70.0, 75.2, 80.0] {
+            let time = now.addingTimeInterval(elapsed)
+            let start = session.graceStart(browser: id, now: time, notBefore: now, instance: "first")
+            let decision = P.verdict(coverage: .needsExtension, lastSeen: nil, now: time,
+                graceStart: start, firstViolation: session.firstViolation(browser: id),
+                recentlyClosed: elapsed > 60)
+            XCTAssertEqual(decision, .close(.extensionSilent))
+            session.observe(decision, browser: id, at: time)
+            XCTAssertEqual(session.firstViolation(browser: id), now)
+        }
+        XCTAssertTrue(P.shouldForceClose(active: true, coverage: .needsExtension,
+            lastSeen: nil, now: requested.addingTimeInterval(10),
+            notBefore: P.forceRecoveryDeadline(requestedAt: requested,
+                awakeSince: now, warningDeadline: nil)))
+        let relaunched = now.addingTimeInterval(81)
+        let newStart = session.graceStart(browser: id, now: relaunched,
+                                          notBefore: now, instance: "second")
+        XCTAssertNil(session.firstViolation(browser: id))
+        XCTAssertEqual(P.verdict(coverage: .needsExtension, lastSeen: nil, now: relaunched,
+            graceStart: newStart, firstViolation: session.firstViolation(browser: id),
+            recentlyClosed: true), .warn(.extensionSilent, closeAt: relaunched.addingTimeInterval(5)))
+    }
+
+    func testWakeAfterClosureStillShowsRecoveryAndVerifiedRepairClearsLedger() {
+        var session = P.Session()
+        let id = "net.imput.helium"
+        _ = session.graceStart(browser: id, now: now, notBefore: now, instance: "first")
+        session.observe(.warn(.extensionSilent, closeAt: now.addingTimeInterval(60)),
+                        browser: id, at: now)
+        session.observe(.close(.extensionSilent), browser: id, at: now.addingTimeInterval(60))
+        let wake = now.addingTimeInterval(3600)
+        let grace = session.graceStart(browser: id, now: wake, notBefore: wake, instance: "first")
+        let recovery = P.verdict(coverage: .needsExtension, lastSeen: nil, now: wake,
+            graceStart: grace, firstViolation: session.firstViolation(browser: id),
+            recentlyClosed: false)
+        XCTAssertEqual(recovery, .warn(.extensionSilent, closeAt: wake.addingTimeInterval(60)))
+        session.observe(recovery, browser: id, at: wake)
+        let unverifiedRestart = wake.addingTimeInterval(55)
+        let restartGrace = session.graceStart(browser: id, now: unverifiedRestart,
+            notBefore: wake, instance: "wake-restart")
+        XCTAssertEqual(session.firstViolation(browser: id), now)
+        XCTAssertEqual(P.verdict(coverage: .needsExtension, lastSeen: nil, now: unverifiedRestart,
+            graceStart: restartGrace, firstViolation: session.firstViolation(browser: id),
+            recentlyClosed: false), .warn(.extensionSilent, closeAt: wake.addingTimeInterval(60)))
+        XCTAssertFalse(P.shouldForceClose(active: true, coverage: .needsExtension,
+            lastSeen: nil, now: wake.addingTimeInterval(10),
+            notBefore: P.forceRecoveryDeadline(requestedAt: now.addingTimeInterval(60),
+                awakeSince: wake, warningDeadline: wake.addingTimeInterval(60))))
+        session.observe(.ok, browser: id, at: wake.addingTimeInterval(20), verifiedConnection: true)
+        XCTAssertNil(session.firstViolation(browser: id))
+        let healthyRestart = wake.addingTimeInterval(120)
+        XCTAssertEqual(session.graceStart(browser: id, now: healthyRestart,
+            notBefore: wake, instance: "second"), healthyRestart)
+    }
+
     func testHeartbeatTimingBudgetIsIndependentOfExpectedConstants() {
         XCTAssertEqual(P.staleAfter, 90)
         XCTAssertEqual(P.launchGrace, 60)
