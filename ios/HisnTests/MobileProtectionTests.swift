@@ -6,6 +6,124 @@ import XCTest
 @testable import HisnMobile
 
 final class MobileProtectionTests: XCTestCase {
+    private func setupAssessment(checked: Bool = true, busy: Bool = false,
+                                 listVerified: Bool = true, listCount: Int = 4, listVersion: Int = 1,
+                                 safari: [Bool?] = [true, true, true, true],
+                                 lastReload: [Bool?] = [nil, nil, nil, nil],
+                                 screenTime: Bool = true, dns: MobileProtectionPolicy.DNSState = .enabled,
+                                 storageHealthy: Bool = true) -> MobileProtectionPolicy.SetupAssessment {
+        MobileProtectionPolicy.setupAssessment(checked: checked, busy: busy,
+            listVerified: listVerified, listCount: listCount, listVersion: listVersion,
+            safari: safari, lastReload: lastReload, screenTime: screenTime, dns: dns,
+            storageHealthy: storageHealthy)
+    }
+
+    func testVerifiedSetupRequiresCurrentChecksNotSavedSuccessOrAButton() {
+        XCTAssertEqual(setupAssessment(checked: false).state, .unchecked)
+        XCTAssertEqual(setupAssessment(busy: true).state, .checking)
+        let ready = setupAssessment()
+        XCTAssertEqual(ready.state, .configured)
+        XCTAssertEqual(ready.state.rawValue, "setup.status.configured")
+        XCTAssertTrue(ready.issues.isEmpty)
+        XCTAssertEqual(setupAssessment(checked: false, busy: true).state, .checking)
+    }
+
+    func testVerifiedSetupRejectsMissingEmptyAndUnverifiedSafariLists() {
+        for count in [0, -1, 160_001, Int.max] {
+            XCTAssertEqual(setupAssessment(listCount: count).issues, [.list])
+        }
+        XCTAssertEqual(setupAssessment(listVersion: 0).issues, [.list])
+        XCTAssertEqual(setupAssessment(listVerified: false).state, .needsSetup)
+        XCTAssertEqual(setupAssessment(listVerified: false).issues, [.list])
+    }
+
+    func testVerifiedSetupLosesReadyStateOnSafariOffUnknownOrReloadFailure() {
+        for enabled: [Bool?] in [[], [true], [true, true, true, false], [true, true, true, nil]] {
+            XCTAssertEqual(setupAssessment(safari: enabled).state, .needsSetup)
+            XCTAssertEqual(setupAssessment(safari: enabled).issues, [.safari])
+        }
+        XCTAssertEqual(setupAssessment(lastReload: [true, false, true, true]).issues, [.safari])
+        XCTAssertEqual(setupAssessment(lastReload: []).issues, [.safari])
+    }
+
+    func testVerifiedSetupLosesReadyStateOnScreenTimeRevocation() {
+        XCTAssertEqual(setupAssessment(screenTime: false).state, .needsSetup)
+        XCTAssertEqual(setupAssessment(screenTime: false).issues, [.screenTime])
+        XCTAssertEqual(setupAssessment().state, .configured, "Only fresh approved/configured evidence can restore readiness")
+    }
+
+    func testVerifiedSetupDistinguishesSavedDisabledAndDifferentDNS() {
+        XCTAssertEqual(setupAssessment(dns: .saved).issues, [.dnsSaved])
+        XCTAssertEqual(setupAssessment(dns: .differentConfiguration).issues, [.dnsDifferent])
+        for dns in [MobileProtectionPolicy.DNSState.absent, .unknown, .unavailable] {
+            XCTAssertEqual(setupAssessment(dns: dns).state, .needsSetup)
+            XCTAssertEqual(setupAssessment(dns: dns).issues, [.dns])
+        }
+    }
+
+    func testVerifiedSetupDoesNotHideUnreadableCommitmentOrHistory() {
+        XCTAssertEqual(setupAssessment(storageHealthy: false).state, .needsSetup)
+        XCTAssertEqual(setupAssessment(storageHealthy: false).issues, [.storage])
+        XCTAssertEqual(setupAssessment(listVerified: false, safari: [], screenTime: false,
+            dns: .absent, storageHealthy: false).issues, [.list, .safari, .screenTime, .dns, .storage])
+    }
+
+    func testSafariListReadinessRequiresFourNonemptyMatchingVerifiedParts() {
+        typealias Part = MobileProtectionPolicy.SafariListPart
+        let valid = Array(repeating: Part(count: 1, version: 1, integrityMatches: true), count: 4)
+        XCTAssertTrue(MobileProtectionPolicy.safariListReady(count: 4, version: 1, parts: valid))
+        XCTAssertFalse(MobileProtectionPolicy.safariListReady(count: 0, version: 1, parts: valid))
+        XCTAssertFalse(MobileProtectionPolicy.safariListReady(count: 4, version: 0, parts: valid))
+        XCTAssertFalse(MobileProtectionPolicy.safariListReady(count: 5, version: 1, parts: valid))
+        XCTAssertFalse(MobileProtectionPolicy.safariListReady(count: 4, version: 1, parts: Array(valid.prefix(3))))
+        for bad in [Part(count: 0, version: 1, integrityMatches: true),
+                    Part(count: 40_001, version: 1, integrityMatches: true),
+                    Part(count: 1, version: 2, integrityMatches: true),
+                    Part(count: 1, version: 1, integrityMatches: false)] {
+            XCTAssertFalse(MobileProtectionPolicy.safariListReady(count: 4, version: 1, parts: [bad] + Array(valid.prefix(3))))
+        }
+    }
+
+    func testBundledListCheckRejectsMissingDamagedAndEmptyResources() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("hisn-list-test-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        XCTAssertFalse(ProtectionController.checkBundledList(at: directory).verified)
+        let summary = try JSONSerialization.data(withJSONObject: ["count": 4, "version": 1, "parts": 4])
+        try summary.write(to: directory.appendingPathComponent("rules-metadata.json"))
+        XCTAssertFalse(ProtectionController.checkBundledList(at: directory).verified)
+        let raw = Data("[{\"trigger\":{\"url-filter\":\"example.com\"},\"action\":{\"type\":\"block\"}}]".utf8)
+        let digest = SHA256.hash(data: raw).map { String(format: "%02x", $0) }.joined()
+        let metadata = try JSONSerialization.data(withJSONObject: ["count": 1, "version": 1, "sha256": digest])
+        for part in 1...4 {
+            let partURL = directory.appendingPathComponent("PlugIns/Hisn\(part).appex")
+            try FileManager.default.createDirectory(at: partURL, withIntermediateDirectories: true)
+            try raw.write(to: partURL.appendingPathComponent("rules.json"))
+            try metadata.write(to: partURL.appendingPathComponent("rules-metadata.json"))
+        }
+        let verified = ProtectionController.checkBundledList(at: directory)
+        XCTAssertTrue(verified.verified)
+        XCTAssertEqual(verified.count, 4)
+        XCTAssertEqual(verified.version, 1)
+        try Data("[]".utf8).write(to: directory.appendingPathComponent("PlugIns/Hisn4.appex/rules.json"))
+        XCTAssertFalse(ProtectionController.checkBundledList(at: directory).verified)
+    }
+
+    func testVerifiedSetupGuidanceShipsInEnglishAndArabic() throws {
+        let keys = ["setup.status.title", "setup.status.scope", "setup.status.mixedcontent", "setup.next.check"]
+            + [MobileProtectionPolicy.SetupState.unchecked, .checking, .needsSetup, .configured].map(\.rawValue)
+            + [MobileProtectionPolicy.SetupIssue.list, .safari, .screenTime, .dns, .dnsSaved, .dnsDifferent, .storage].map(\.rawValue)
+        for language in ["en", "ar"] {
+            let path = try XCTUnwrap(Bundle.main.path(forResource: language, ofType: "lproj"))
+            let localized = try XCTUnwrap(Bundle(path: path))
+            for key in keys {
+                let text = localized.localizedString(forKey: key, value: nil, table: nil)
+                XCTAssertFalse(text.isEmpty, "\(language): \(key)")
+                XCTAssertNotEqual(text, key, "\(language): \(key)")
+            }
+        }
+    }
+
     func testBrowserShieldGuidanceShipsInEnglishAndArabic() throws {
         for language in ["en", "ar"] {
             let path = try XCTUnwrap(Bundle.main.path(forResource: language, ofType: "lproj"))
@@ -48,6 +166,7 @@ final class MobileProtectionTests: XCTestCase {
         XCTAssertEqual(controller.previouslyReadyContentLayers, ["dns.title"])
         XCTAssertEqual(controller.unconfirmedContentLayers, ["dns.title"])
         XCTAssertEqual(controller.configuredContentLayers, 0)
+        XCTAssertEqual(controller.setupAssessment.state, .unchecked)
         XCTAssertTrue(controller.historyStorageHealthy)
     }
     @MainActor func testAppRuleStorageFailureIsNotUnconfiguredProtection() throws {
@@ -150,6 +269,11 @@ final class MobileProtectionTests: XCTestCase {
         XCTAssertEqual(controller.configuredContentLayers, 0)
         XCTAssertFalse(controller.safariConfigured)
         XCTAssertFalse(controller.hasBlockingConfiguration)
+        XCTAssertFalse(controller.listIntegrityVerified)
+        XCTAssertEqual(controller.setupAssessment.state, .unchecked)
+        controller.startCommitment(days: 7)
+        XCTAssertEqual(controller.setupAssessment.state, .unchecked,
+            "Starting a commitment must not mark unchecked protection as configured")
         XCTAssertTrue(controller.previouslyReadyContentLayers.isEmpty)
         XCTAssertTrue(controller.unconfirmedContentLayers.isEmpty)
     }
@@ -311,6 +435,8 @@ final class MobileProtectionTests: XCTestCase {
 
     func testEveryBundledPartHasMatchingIntegrityAndCount() throws {
         let bundle = Bundle.main.bundleURL
+        XCTAssertTrue(ProtectionController.checkBundledList(at: bundle).verified,
+            "The same resource evidence used by live setup must verify the shipped bundle")
         var total = 0
         var patterns = Set<String>()
         for part in 1...4 {

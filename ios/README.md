@@ -194,3 +194,13 @@ authority boundary fixtures and Arabic/English key parity. Hosted iOS tests
 cover actual bundled integrity/counts, DNS configuration classification, partial
 Safari state, WebKit compilation and layouts at phone/tablet widths. Device
 signing and real Safari/DNS behavior still require a provisioned physical device.
+# Current protection setup checks
+
+Overview and Setup now show a live, non-persisted configuration assessment.
+It requires nonempty bundled Safari parts with matching hashes, counts and
+versions, all four Safari blockers enabled, Hisn Screen Time readback, and
+matching enabled Family DNS before reporting all three layer configurations
+verified. A saved-but-disabled DNS configuration, revoked permission, failed
+reload, empty rules or unreadable commitment/history remains incomplete.
+These checks do not activate settings silently or establish device-wide
+blocking, all-content coverage, VPN resistance or app-removal prevention.

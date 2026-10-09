@@ -79,9 +79,6 @@ struct ContentView: View {
         .frame(minWidth: 720, minHeight: 500)
         .task {
             guard !AppDelegate.isHostingTests else { return }
-            if !CommandLine.arguments.contains("--background") {
-                AppNavigation.shared.markSetupSeen()
-            }
             await filter.reassertIfNeeded()
         }
     }
@@ -157,6 +154,7 @@ private struct SaveRow: View {
 private struct OverviewPage: View {
     @ObservedObject var lock: LockManager
     @ObservedObject var filter: FilterController
+    @ObservedObject private var sync = FilterSync.shared
     let goTo: (ContentView.Page) -> Void
 
     @State private var busy: StatusAction?
@@ -184,8 +182,19 @@ private struct OverviewPage: View {
     /// extension heartbeat and the filter's domain count are never more than a
     /// second stale here without any extra plumbing.
     private var protection: ProtectionStatus {
-        ProtectionStatus(ProtectionEvidence.current(filter: filter.availability,
-                                                      authority: FilterSync.shared.status))
+        ProtectionStatus(protectionEvidence)
+    }
+
+    private var protectionEvidence: ProtectionEvidence {
+        ProtectionEvidence.current(filter: filter.availability, authority: sync.status)
+    }
+
+    private var laptopReadiness: LaptopSetupReadiness {
+        LaptopSetupReadiness(protection: protectionEvidence,
+            checklist: readingSetup ? nil : setup,
+            requireOutsideLock: guardian.requireOutsideLock,
+            browserWarning: !guardian.alerts.isEmpty,
+            hasAppExceptions: !guardian.allowed.isEmpty)
     }
 
     private var lockStatus: LockStatus {
@@ -215,6 +224,13 @@ private struct OverviewPage: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             protectionCard
+            Card {
+                TimelineView(.periodic(from: .now, by: 10)) { _ in
+                    LaptopSetupStatusView(readiness: laptopReadiness) { issue in
+                        goTo(issue == .browserGuard || issue == .appExceptions ? .rules : .setup)
+                    }
+                }
+            }
             if clockAssessment != .consistent {
                 Label("Device time could not be confirmed. Check automatic date and time. Your saved commitment deadline has not changed.",
                       systemImage: "clock.badge.exclamationmark")
@@ -294,10 +310,14 @@ private struct OverviewPage: View {
         guard !readingSetup, !AppDelegate.isHostingTests else { return }
         readingSetup = true
         defer { readingSetup = false }
-        let running = protection.layers.first?.ok ?? false
-        setup = await Task.detached {
-            SetupChecklist(SetupEvidence.current(systemFilterRunning: running))
+        let running = LaptopSetupReadiness.filterIsReady(protectionEvidence)
+        var evidence = await Task.detached {
+            SetupEvidence.current(systemFilterRunning: running)
         }.value
+        // Never certify the filter from the pre-scan snapshot or from a
+        // restrictive recovery state that intentionally reports a live layer.
+        evidence.systemFilterRunning = LaptopSetupReadiness.filterIsReady(protectionEvidence)
+        setup = SetupChecklist(evidence)
     }
 
     private var protectionCard: some View {
@@ -510,6 +530,8 @@ private struct BrowserSetupHelp: View {
 /// password handed over), so there is nothing to observe live.
 struct SetupPage: View {
     @ObservedObject var filter: FilterController
+    @ObservedObject private var sync = FilterSync.shared
+    @ObservedObject private var guardian = BrowserGuard.shared
     let goTo: (ContentView.Page) -> Void
 
     @State private var checklist: SetupChecklist?
@@ -524,6 +546,18 @@ struct SetupPage: View {
     private var protectedSetup: ProtectedSetup? {
         checklist.map { ProtectedSetup(checklist: $0, administratorConfirmed: administratorConfirmed,
                                        recoveryConfirmed: recoveryConfirmed) }
+    }
+
+    private var protectionEvidence: ProtectionEvidence {
+        ProtectionEvidence.current(filter: filter.availability, authority: sync.status)
+    }
+
+    private var laptopReadiness: LaptopSetupReadiness {
+        LaptopSetupReadiness(protection: protectionEvidence,
+            checklist: checking ? nil : checklist,
+            requireOutsideLock: guardian.requireOutsideLock,
+            browserWarning: !guardian.alerts.isEmpty,
+            hasAppExceptions: !guardian.allowed.isEmpty)
     }
 
     init(filter: FilterController, goTo: @escaping (ContentView.Page) -> Void,
@@ -547,14 +581,18 @@ struct SetupPage: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
-            NetworkSetupGuide()
-            Divider()
+            Card {
+                TimelineView(.periodic(from: .now, by: 10)) { _ in
+                    LaptopSetupStatusView(readiness: laptopReadiness, review: reviewSetupIssue)
+                }
+            }
             PageSection(title: "Protected Setup") {
                 if let setup = protectedSetup {
-                    Label(setup.isComplete ? "Protected setup checks passed" : "Protection needs attention",
-                          systemImage: setup.isComplete ? "checkmark.shield" : "exclamationmark.shield")
+                    let complete = setup.isComplete && laptopReadiness.isReady
+                    Label(complete ? "Protected setup checks passed" : "Protection needs attention",
+                          systemImage: complete ? "checkmark.shield" : "exclamationmark.shield")
                         .font(.headline)
-                        .foregroundStyle(setup.isComplete ? Color.green : Color.primary)
+                        .foregroundStyle(complete ? Color.green : Color.primary)
                     ProgressView(value: Double(setup.doneCount), total: Double(setup.totalCount))
                     Text(String(localized: "\(setup.doneCount) of \(setup.totalCount) steps done."))
                         .font(.callout.weight(.medium))
@@ -622,6 +660,8 @@ struct SetupPage: View {
                 }
                     .disabled(checking)
             }
+            Divider()
+            NetworkSetupGuide()
         }
         .task { await refresh() }
         // Most steps happen outside the app — a command in Terminal, a
@@ -717,19 +757,27 @@ struct SetupPage: View {
         }
     }
 
+    private func reviewSetupIssue(_ issue: LaptopSetupReadiness.Issue) {
+        switch issue {
+        case .browserGuard, .appExceptions:
+            goTo(.rules)
+        case .browserProfiles, .browserConnection, .browserWarning:
+            showBrowserHelp = true
+        case .signedBuild, .filter, .policy, .installation:
+            expandedStages.insert(.installation)
+        }
+    }
+
     private func refresh() async {
         guard !checking, !AppDelegate.isHostingTests else { return }
         checking = true
         defer { checking = false }
         await filter.refresh()
         await FilterSync.shared.sync()
-        let running = ProtectionStatus(ProtectionEvidence.current(filter: filter.availability,
-                                                                    authority: FilterSync.shared.status))
-            .layers.first?.ok ?? false
+        let running = LaptopSetupReadiness.filterIsReady(protectionEvidence)
         var evidence = await Task.detached { SetupEvidence.current(systemFilterRunning: running) }.value
         // The filter can change while disk/DNS evidence is being collected.
-        evidence.systemFilterRunning = ProtectionStatus(ProtectionEvidence.current(filter: filter.availability,
-            authority: FilterSync.shared.status)).layers.first?.ok ?? false
+        evidence.systemFilterRunning = LaptopSetupReadiness.filterIsReady(protectionEvidence)
         checklist = SetupChecklist(evidence)
         lastChecked = Date()
     }

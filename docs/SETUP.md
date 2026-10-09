@@ -102,6 +102,26 @@ in other accounts, so they do not run a second guard. An administrator can
 remove automatic startup using `macos/install.sh --remove-agent` before
 uninstalling the app.
 
+### Installed is not the same as protection working
+
+Every new Mac app process begins on Setup. The laptop-protection card is
+derived from current filter and browser evidence; merely opening this page
+does not finish setup. It requires a live filter with a nonempty verified list
+and healthy saved policy, administrator-protected installation files, verified
+detected standard profiles, a recent browser connection, and **Keep browser
+protection on** explicitly enabled. Current warnings and trusted app exceptions
+leave these checks incomplete. Rules, Settings, and recovery remain accessible.
+
+The card does not enable anything by itself. Follow the filter approval flow,
+connect the extension, and review Browser protection in Blocking Rules. The
+development build cannot activate the filter; its setup control explains the
+properly signed release requirement instead of offering an unusable button.
+Hosts-only blocking is partial even with a connected extension. Passing these
+configuration/liveness checks is not an end-to-end acceptance test: verify
+supported flows, tunnels, essential services, and outage behavior separately.
+The additional administrator and trusted-person confirmations remain distinct
+from functional protection checks.
+
 **In Arabic:** *Settings › Language › العربية*, then **Restart now** — the
 window mirrors right-to-left and numbers stay in Latin digits, as in the
 extension. During a lock the app cannot quit, so the switch waits for the next

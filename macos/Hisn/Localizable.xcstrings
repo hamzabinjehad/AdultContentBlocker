@@ -82,6 +82,7 @@
       }
     },
     "%@ domains blocked for every app" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -97,6 +98,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ نطاق في ملف hosts."
+          }
+        }
+      }
+    },
+    "%@ domains listed for clients using the system resolver" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ نطاقات مدرجة للتطبيقات التي تستخدم محلّل أسماء النظام"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ domains listed for clients using the system resolver"
           }
         }
       }
@@ -323,6 +340,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "2. إن وافق، تعطيه صفحة «شريك حصن» موافقةً يرسلها إليك. الصقها هنا:"
+          }
+        }
+      }
+    },
+    "A browser currently has a protection warning. Restore its extension connection before continuing." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يوجد تحذير حماية لأحد المتصفحات حاليًا. أعد اتصال إضافته قبل المتابعة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A browser currently has a protection warning. Restore its extension connection before continuing."
           }
         }
       }
@@ -667,16 +700,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "اسمح به أثناء القفل"
-          }
-        }
-      }
-    },
-    "Trust this app without extension checks" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ثق بهذا التطبيق دون فحوصات الإضافة"
           }
         }
       }
@@ -1072,6 +1095,22 @@
         }
       }
     },
+    "Checking laptop protection" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جارٍ التحقق من حماية اللابتوب"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checking laptop protection"
+          }
+        }
+      }
+    },
     "Checking status" : {
       "localizations" : {
         "ar" : {
@@ -1196,6 +1235,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "اربط متصفحًا"
+          }
+        }
+      }
+    },
+    "Connect Hisn in a supported browser and verify every detected standard profile. Missing or unreadable profiles are not protected evidence." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اربط حصن بمتصفح مدعوم وتحقّق من كل ملف تعريف عادي مكتشف. ملفات التعريف المفقودة أو غير القابلة للقراءة ليست دليلًا على الحماية."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect Hisn in a supported browser and verify every detected standard profile. Missing or unreadable profiles are not protected evidence."
           }
         }
       }
@@ -1460,16 +1515,6 @@
         }
       }
     },
-    "While browser protection is active, losing the extension connection starts a visible one-minute recovery countdown. Restore protection or the browser closes. Safari and other unsupported browsers also close." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "أثناء تفعيل حماية المتصفح، يؤدي فقدان اتصال الإضافة إلى ظهور مهلة استعادة مدتها دقيقة واحدة. أعد الحماية وإلا يُغلَق المتصفح. يُغلَق أيضًا Safari والمتصفحات الأخرى غير المدعومة."
-          }
-        }
-      }
-    },
     "Each step closes a way around the others. Do them in this order, with your partner for the ones they hold — the account split last, because it is the one that makes the rest stick." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1497,6 +1542,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "طُلب الإنهاء المبكر"
+          }
+        }
+      }
+    },
+    "Enable Keep browser protection on in Blocking Rules to require protection after a commitment ends. This needs your confirmation." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فعّل «إبقاء حماية المتصفح مفعّلة» في قواعد الحظر لطلب الحماية بعد انتهاء الالتزام. يتطلب ذلك موافقتك."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enable Keep browser protection on in Blocking Rules to require protection after a commitment ends. This needs your confirmation."
           }
         }
       }
@@ -1919,6 +1980,22 @@
         }
       }
     },
+    "Hisn cannot confirm an extension connection from %@. Reinstall or enable it in %@’s extensions page and check its app connection, or %@ will close." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يستطيع حصن تأكيد اتصال الإضافة من %1$@. أعد تثبيتها أو تفعيلها من صفحة الإضافات في %2$@ وتحقق من اتصالها بالتطبيق، وإلا سيُغلَق %3$@."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hisn cannot confirm an extension connection from %1$@. Reinstall or enable it in %2$@’s extensions page and check its app connection, or %3$@ will close."
+          }
+        }
+      }
+    },
     "Hisn is not installed in Applications. Install it from the Hisn folder." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1952,12 +2029,12 @@
         }
       }
     },
-    "Hisn will also guard browsers when no lock is running. Once lost protection is detected, you have one minute to restore the extension before closure; an unresolved relaunch gets only five seconds. Unsupported browsers, including Safari, also close. Save your work. Unknown apps you explicitly trust stay open without checks. You can turn this off outside a lock. It does not prevent uninstalling Hisn." : {
+    "Hisn stays in the background when its window closes; the separately installed login agent restarts it after a crash or force-quit. Detection is periodic, not instant. Standard Default/Profile folders are checked; custom paths, guest and private windows are unverified. Explicitly trusted unknown apps bypass extension checks. Administrator changes can bypass the guard. Save work before enabling it." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "سيحمي حصن المتصفحات أيضًا عندما لا يوجد قفل نشط. عند اكتشاف فقدان الحماية، لديك دقيقة لاستعادة الإضافة قبل الإغلاق؛ وإعادة التشغيل دون إصلاح تمنح خمس ثوانٍ فقط. تُغلَق المتصفحات غير المدعومة، بما فيها Safari، أيضًا. احفظ عملك. تظل التطبيقات غير المعروفة التي وثقتَ بها صراحةً مفتوحة دون فحوصات. يمكنك إيقاف هذا الخيار خارج القفل. لا يمنع ذلك إزالة حصن."
+            "value" : "يبقى حصن في الخلفية عند إغلاق نافذته؛ وتعيد خدمة تسجيل الدخول المثبّتة بشكل مستقل تشغيله بعد التعطل أو الإنهاء الإجباري. الكشف دوري وليس فوريًا. تُفحص مجلدات Default وProfile القياسية، ولا تُتحقق المسارات المخصصة أو الضيف أو النوافذ الخاصة. تتجاوز التطبيقات غير المعروفة التي وثقتَ بها صراحةً فحوصات الإضافة. يمكن لتغييرات مسؤول الجهاز تجاوز الحارس. احفظ عملك قبل التفعيل."
           }
         }
       }
@@ -1978,6 +2055,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "يغيّر حصن لغته عند إعادة تشغيله."
+          }
+        }
+      }
+    },
+    "Hisn will also guard browsers when no lock is running. Once lost protection is detected, you have one minute to restore the extension before closure; an unresolved relaunch gets only five seconds. Unsupported browsers, including Safari, also close. Save your work. Unknown apps you explicitly trust stay open without checks. You can turn this off outside a lock. It does not prevent uninstalling Hisn." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سيحمي حصن المتصفحات أيضًا عندما لا يوجد قفل نشط. عند اكتشاف فقدان الحماية، لديك دقيقة لاستعادة الإضافة قبل الإغلاق؛ وإعادة التشغيل دون إصلاح تمنح خمس ثوانٍ فقط. تُغلَق المتصفحات غير المدعومة، بما فيها Safari، أيضًا. احفظ عملك. تظل التطبيقات غير المعروفة التي وثقتَ بها صراحةً مفتوحة دون فحوصات. يمكنك إيقاف هذا الخيار خارج القفل. لا يمنع ذلك إزالة حصن."
           }
         }
       }
@@ -2390,6 +2477,22 @@
         }
       }
     },
+    "Installing or opening Hisn does not finish protection setup. Complete the missing checks below; your current commitment is unchanged." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تثبيت حصن أو فتحه لا يُكمل إعداد الحماية. أكمل الفحوصات الناقصة أدناه؛ التزامك الحالي لم يتغيّر."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Installing or opening Hisn does not finish protection setup. Complete the missing checks below; your current commitment is unchanged."
+          }
+        }
+      }
+    },
     "Instructions for this router family" : {
       "localizations" : {
         "ar" : {
@@ -2448,12 +2551,48 @@
         }
       }
     },
+    "Keep browser protection on" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أبقِ حماية المتصفح مفعّلة"
+          }
+        }
+      }
+    },
+    "Known browsers need a connected Hisn extension and cannot be allowed as app exceptions." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تحتاج المتصفحات المعروفة إلى إضافة حصن متصلة ولا يمكن السماح بها كاستثناءات للتطبيقات."
+          }
+        }
+      }
+    },
     "Language" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "اللغة"
+          }
+        }
+      }
+    },
+    "Laptop protection checks passed" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اجتازت حماية اللابتوب الفحوصات"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Laptop protection checks passed"
           }
         }
       }
@@ -2474,16 +2613,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "آخر تحقق من القائمة"
-          }
-        }
-      }
-    },
-    "Link router only — left open because it hands links to a browser and does not render pages." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "موجّه روابط فقط — يبقى مفتوحًا لأنه يرسل الروابط إلى متصفح ولا يعرض الصفحات."
           }
         }
       }
@@ -2525,6 +2654,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "أسطر لم تكن كلمات صالحة: %lld."
+          }
+        }
+      }
+    },
+    "Link router only — left open because it hands links to a browser and does not render pages." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "موجّه روابط فقط — يبقى مفتوحًا لأنه يرسل الروابط إلى متصفح ولا يعرض الصفحات."
           }
         }
       }
@@ -2662,6 +2801,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "غير موجودة أو معطّلة في: %@. أي ملف شخصي في المتصفح بدونها طريق للالتفاف عليها."
+          }
+        }
+      }
+    },
+    "Mixed-content sites can still contain adult material. Strict mode restricts allowed destinations, but cannot certify everything on an allowed site. Custom profiles, tunnels, administrator changes, and recovery access need separate checks." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قد تحتوي المواقع ذات المحتوى المختلط على مواد إباحية. يقيّد الوضع الصارم الوجهات المسموح بها، لكنه لا يضمن كل محتوى الموقع المسموح. تحتاج ملفات التعريف المخصّصة والأنفاق وتغييرات المسؤول وصلاحيات الاسترداد إلى فحوصات منفصلة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mixed-content sites can still contain adult material. Strict mode restricts allowed destinations, but cannot certify everything on an allowed site. Custom profiles, tunnels, administrator changes, and recovery access need separate checks."
           }
         }
       }
@@ -2826,6 +2981,7 @@
       }
     },
     "No Chromium browser is installed. Safari is covered by the other layers." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -2904,6 +3060,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "لا يوجد قفل يعمل."
+          }
+        }
+      }
+    },
+    "No recent browser connection is confirmed. Open your protected browser and reconnect Hisn." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يُؤكَّد اتصال حديث بالمتصفح. افتح متصفحك المحمي وأعد ربط حصن."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No recent browser connection is confirmed. Open your protected browser and reconnect Hisn."
+          }
+        }
+      }
+    },
+    "No supported browser is installed. Connect Hisn in a supported browser; Safari has no verified Hisn page scanner on this Mac." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يوجد متصفح مدعوم مثبّت. اربط حصن بمتصفح مدعوم؛ لا يوجد في Safari على هذا الماك ماسح صفحات من حصن جرى التحقق منه."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No supported browser is installed. Connect Hisn in a supported browser; Safari has no verified Hisn page scanner on this Mac."
           }
         }
       }
@@ -3413,6 +3601,22 @@
         }
       }
     },
+    "Other missing checks" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الفحوصات الناقصة الأخرى"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other missing checks"
+          }
+        }
+      }
+    },
     "Other network setup options" : {
       "localizations" : {
         "ar" : {
@@ -3800,16 +4004,6 @@
         }
       }
     },
-    "Keep browser protection on" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "أبقِ حماية المتصفح مفعّلة"
-          }
-        }
-      }
-    },
     "Required browser protection" : {
       "localizations" : {
         "ar" : {
@@ -3882,6 +4076,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تراجع عن التعديلات"
+          }
+        }
+      }
+    },
+    "Review next step" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مراجعة الخطوة التالية"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Review next step"
           }
         }
       }
@@ -4162,6 +4372,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Set up Hisn's own router list"
+          }
+        }
+      }
+    },
+    "Set up laptop protection" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إعداد حماية اللابتوب"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set up laptop protection"
           }
         }
       }
@@ -4593,18 +4819,34 @@
         }
       }
     },
-    "Hisn cannot confirm an extension connection from %@. Reinstall or enable it in %@’s extensions page and check its app connection, or %@ will close." : {
+    "The filter reports a saved-policy problem. Repair it before relying on these checks." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "لا يستطيع حصن تأكيد اتصال الإضافة من %1$@. أعد تثبيتها أو تفعيلها من صفحة الإضافات في %2$@ وتحقق من اتصالها بالتطبيق، وإلا سيُغلَق %3$@."
+            "value" : "أبلغ المرشّح عن مشكلة في سياسة الحماية المحفوظة. أصلحها قبل الاعتماد على هذه الفحوصات."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hisn cannot confirm an extension connection from %1$@. Reinstall or enable it in %2$@’s extensions page and check its app connection, or %3$@ will close."
+            "value" : "The filter reports a saved-policy problem. Repair it before relying on these checks."
+          }
+        }
+      }
+    },
+    "The filter, browser connection, detected standard profiles, installation files, and outside-lock browser requirement are confirmed. This is not proof that every route is blocked." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تأكّدت استجابة المرشّح واتصال المتصفح وملفات التعريف العادية المكتشفة وملفات التثبيت واشتراط حماية المتصفح خارج القفل. هذا ليس دليلًا على حظر جميع الطرق."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The filter, browser connection, detected standard profiles, installation files, and outside-lock browser requirement are confirmed. This is not proof that every route is blocked."
           }
         }
       }
@@ -4631,11 +4873,28 @@
       }
     },
     "The hosts-file blocklist and the browser extension are both running. The system filter adds hostname and application rules for new connections. VPN and proxy coverage still requires verification." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "قائمة الحجب في ملف hosts وإضافة المتصفح تعملان كلتاهما. يضيف مرشّح النظام قواعد لأسماء النطاقات والتطبيقات على الاتصالات الجديدة. تغطية شبكات VPN والبروكسي ما زالت تحتاج إلى تحقق."
+          }
+        }
+      }
+    },
+    "The installed app, browser bridge, and login agent need administrator-protected files in their expected locations." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يجب أن تكون ملفات التطبيق المثبّت ووصلة المتصفح وعامل التشغيل عند تسجيل الدخول محمية بصلاحيات المسؤول وفي مواقعها المتوقعة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The installed app, browser bridge, and login agent need administrator-protected files in their expected locations."
           }
         }
       }
@@ -4742,6 +5001,22 @@
         }
       }
     },
+    "The system filter must answer with a nonempty verified blocklist. An enabled setting or a hosts file is not enough." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يجب أن يستجيب مرشّح النظام بقائمة حظر موثّقة وغير فارغة. تفعيل الإعداد أو وجود ملف hosts لا يكفي."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The system filter must answer with a nonempty verified blocklist. An enabled setting or a hosts file is not enough."
+          }
+        }
+      }
+    },
     "The window is open now: saving starts a lock until %@." : {
       "localizations" : {
         "ar" : {
@@ -4815,6 +5090,22 @@
         }
       }
     },
+    "This development build cannot activate laptop-wide filtering. Install a properly signed Hisn release, then approve its filter in macOS." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نسخة التطوير هذه لا تستطيع تفعيل التصفية على مستوى اللابتوب. ثبّت إصدارًا من حصن موقّعًا بشكل صحيح، ثم وافق على مرشّحه في macOS."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This development build cannot activate laptop-wide filtering. Install a properly signed Hisn release, then approve its filter in macOS."
+          }
+        }
+      }
+    },
     "This guard works only while Hisn is running. A browser heartbeat does not prove protection in every profile. Safari and allowed exceptions remain exempt; force-quitting Hisn or administrator changes can bypass it. Safari's exemption is not verified protection: configure Screen Time and network layers separately." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -4822,16 +5113,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تعمل هذه الحماية فقط أثناء تشغيل حصن. اتصال المتصفح الدوري لا يثبت الحماية في كل ملف مستخدم. يظل Safari والاستثناءات المسموح بها خارج الرقابة؛ ويمكن تجاوزها بإنهاء حصن إجباريًا أو بتغييرات مسؤول الجهاز. استثناء Safari لا يعني التحقق من حمايته: اضبط مدة استخدام الجهاز وطبقات الشبكة بشكل مستقل."
-          }
-        }
-      }
-    },
-    "Hisn stays in the background when its window closes; the separately installed login agent restarts it after a crash or force-quit. Detection is periodic, not instant. Standard Default/Profile folders are checked; custom paths, guest and private windows are unverified. Explicitly trusted unknown apps bypass extension checks. Administrator changes can bypass the guard. Save work before enabling it." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "يبقى حصن في الخلفية عند إغلاق نافذته؛ وتعيد خدمة تسجيل الدخول المثبّتة بشكل مستقل تشغيله بعد التعطل أو الإنهاء الإجباري. الكشف دوري وليس فوريًا. تُفحص مجلدات Default وProfile القياسية، ولا تُتحقق المسارات المخصصة أو الضيف أو النوافذ الخاصة. تتجاوز التطبيقات غير المعروفة التي وثقتَ بها صراحةً فحوصات الإضافة. يمكن لتغييرات مسؤول الجهاز تجاوز الحارس. احفظ عملك قبل التفعيل."
           }
         }
       }
@@ -4996,6 +5277,42 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "too short: %1$lld (minimum %2$lld letters)"
+          }
+        }
+      }
+    },
+    "Trust this app without extension checks" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ثق بهذا التطبيق دون فحوصات الإضافة"
+          }
+        }
+      }
+    },
+    "Trusted app exception — stays open without extension checks. Only use this for a non-browser app." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استثناء تطبيق موثوق — يبقى مفتوحًا دون فحوصات الإضافة. استخدمه فقط لتطبيق ليس متصفحًا."
+          }
+        }
+      }
+    },
+    "Trusted app exceptions bypass extension checks. Review them in Blocking Rules; these checks cannot certify their browsing coverage." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تتجاوز استثناءات التطبيقات الموثوقة فحوصات الإضافة. راجعها في قواعد الحظر؛ لا يمكن لهذه الفحوصات تأكيد تغطية تصفّحها."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trusted app exceptions bypass extension checks. Review them in Blocking Rules; these checks cannot certify their browsing coverage."
           }
         }
       }
@@ -5203,6 +5520,16 @@
         }
       }
     },
+    "While browser protection is active, losing the extension connection starts a visible one-minute recovery countdown. Restore protection or the browser closes. Safari and other unsupported browsers also close." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أثناء تفعيل حماية المتصفح، يؤدي فقدان اتصال الإضافة إلى ظهور مهلة استعادة مدتها دقيقة واحدة. أعد الحماية وإلا يُغلَق المتصفح. يُغلَق أيضًا Safari والمتصفحات الأخرى غير المدعومة."
+          }
+        }
+      }
+    },
     "Without it, the only way out of a lock is the 48-hour request." : {
       "localizations" : {
         "ar" : {
@@ -5230,16 +5557,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "سمحت به. يبقى مفتوحًا أثناء القفل دون فحص للصفحات."
-          }
-        }
-      }
-    },
-    "Trusted app exception — stays open without extension checks. Only use this for a non-browser app." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "استثناء تطبيق موثوق — يبقى مفتوحًا دون فحوصات الإضافة. استخدمه فقط لتطبيق ليس متصفحًا."
           }
         }
       }
@@ -5374,16 +5691,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "كلماتك وتطبيقاتك"
-          }
-        }
-      }
-    },
-    "Known browsers need a connected Hisn extension and cannot be allowed as app exceptions." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تحتاج المتصفحات المعروفة إلى إضافة حصن متصلة ولا يمكن السماح بها كاستثناءات للتطبيقات."
           }
         }
       }

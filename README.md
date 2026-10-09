@@ -104,6 +104,17 @@ LaunchAgent restarts it after a crash or force-quit. Logout, restart, shutdown
 and sleep retain their normal system behavior. See [setup](docs/SETUP.md#step-1--the-app--macosinstallsh)
 for the account scope and administrator removal command.
 
+Each new Mac app process opens on Setup, not on a remembered successful visit.
+Setup and Overview distinguish partial blocking from current laptop protection
+checks: a live nonempty filter response, healthy policy, protected installation
+files, detected standard browser profiles, a recent extension connection, and
+the explicitly enabled outside-lock browser requirement. Browser warnings and
+trusted app exceptions prevent a passing verdict. These are configuration and
+liveness checks, not an end-to-end blocking test or a guarantee of all-content
+coverage. Administrator/partner hardening is shown separately. A development
+build without the filter's signing prerequisites cannot pass these checks.
+Hosts-file coverage remains available but is reported as partial protection.
+
 Why the content filter adds coverage beyond DNS: VPNs and encrypted resolvers
 can bypass router DNS. Hisn's `NEFilterDataProvider` evaluates new Mac socket
 flows by available hostname and application identity. This is not a guarantee

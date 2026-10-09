@@ -80,10 +80,9 @@ public struct ProtectionEvidence: Equatable {
     /// on itself would be no evidence at all.
     ///
     /// `authority` is the filter's own answer over XPC, when it gave one: the
-    /// domain count it reports is the count held in the filter's memory. The
-    /// defaults key is the fallback, and on a real install it is root's, not
-    /// ours — see `PolicyAuthority` — so without an answer the count reads 0
-    /// and the row says so rather than guessing.
+    /// domain count it reports is the count held in the filter's memory.
+    /// Without a configured, answering authority the filter is silent, even
+    /// if a user-writable defaults key contains a plausible domain count.
     public static func current(filter: FilterController.Availability,
                                authority: PolicyStatus? = nil) -> ProtectionEvidence {
         let d = UserDefaults(suiteName: LockStore.appGroup)
@@ -93,12 +92,11 @@ public struct ProtectionEvidence: Equatable {
         case .unavailable(let m): filterEvidence = .unavailable(m)
         case .off:                filterEvidence = .off
         case .on:
-            if let authority {
+            if let authority, FilterLink.shared.isConfigured {
                 filterEvidence = .on(domainCount: authority.health.domainCount)
-            } else if FilterLink.shared.isConfigured {
-                filterEvidence = .silent
             } else {
-                filterEvidence = .on(domainCount: d?.integer(forKey: "filterDomainCount") ?? 0)
+                // User-writable domain counts are never provider liveness.
+                filterEvidence = .silent
             }
         }
         return ProtectionEvidence(
@@ -243,27 +241,17 @@ public struct ProtectionStatus: Equatable {
         layers = [filter.identified(as: "filter")] + (hosts.map { [$0.identified(as: "hosts")] } ?? [])
             + [ext.identified(as: "extension")] + (policy.map { [$0.identified(as: "policy")] } ?? [])
 
-        // Two jobs, and protection is active when both are done: something
-        // blocks domains for every app (the filter, or failing it the hosts
-        // file), and the extension reads pages. The hosts file is not a
-        // second requirement next to a running filter — it is the fallback
-        // for a Mac without one — so its absence then is not a gap.
-        let networkOK = filter.ok || (hosts?.ok ?? false)
+        // A hosts fallback only covers clients using the OS resolver. Keep
+        // it useful, but never promote it to the system filter's coverage.
         let okCount = layers.filter(\.ok).count
         if layers.contains(where: { $0.state == .checking }) {
             level = .checking
             headline = String(localized: "Checking status")
             summary = String(localized: "Reading the system filter’s state…")
-        } else if networkOK && ext.ok && policy == nil && filter.state != .problem {
+        } else if filter.ok && ext.ok && policy == nil {
             level = .active
             headline = String(localized: "Protection active")
-            summary = filter.ok
-                ? String(localized: "The system filter and the browser extension are both running.")
-                : String(localized: """
-                    The hosts-file blocklist and the browser extension are both running. \
-                    The system filter adds hostname and application rules for new connections. \
-                    VPN and proxy coverage still requires verification.
-                    """)
+            summary = String(localized: "The system filter and the browser extension are both running.")
         } else if okCount > 0 {
             level = .partial
             headline = String(localized: "Partially active")
@@ -286,7 +274,7 @@ public struct ProtectionStatus: Equatable {
     private static func hostsLayer(_ entries: Int) -> Layer {
         entries >= ProtectionEvidence.hostsMinimum
             ? Layer(name: String(localized: "Hosts-file blocklist"),
-                    detail: String(localized: "\(entries.formatted()) domains blocked for every app"),
+                    detail: String(localized: "\(entries.formatted()) domains listed for clients using the system resolver"),
                     state: .ok, action: nil)
             : Layer(name: String(localized: "Hosts-file blocklist"),
                     detail: String(localized: "Not installed — run macos/install.sh --hosts"),
@@ -295,7 +283,7 @@ public struct ProtectionStatus: Equatable {
 
     private static func filterLayer(_ f: FilterEvidence, canRun: Bool) -> Layer {
         let name = String(localized: "System filter")
-        if !canRun, f == .off || f == .unknown || { if case .unavailable = f { return true }; return false }() {
+        if !canRun {
             return Layer(name: name,
                          detail: String(localized: "Needs a build signed with the Apple Developer Program (Setup step 9)"),
                          state: .missing, action: nil)

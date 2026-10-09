@@ -45,6 +45,7 @@ struct MobileRootView: View {
 
     private var overview: some View {
         List {
+            verifiedSetup
             readiness
             CommitmentSection(protection: protection)
             Section {
@@ -85,6 +86,7 @@ struct MobileRootView: View {
 
     private var setup: some View {
         List {
+            verifiedSetup
             readiness
             CommitmentSection(protection: protection)
             AppUsageSection(protection: protection, usage: usage)
@@ -113,6 +115,40 @@ struct MobileRootView: View {
             }
             removalSection
             errorRow
+        }
+    }
+
+    private var verifiedSetup: some View {
+        let assessment = protection.setupAssessment
+        return Section("setup.status.title") {
+            setupStatusLabel(assessment.state)
+                .font(.headline)
+                .foregroundStyle(assessment.state == .configured ? Color.teal : Color.orange)
+                .accessibilityIdentifier("setup.currentAssessment")
+            Text("setup.status.scope").font(.footnote).foregroundStyle(.secondary)
+            if assessment.state == .unchecked {
+                Text("setup.next.check").font(.callout)
+            }
+            ForEach(assessment.issues, id: \.rawValue) { issue in
+                Label(LocalizedStringKey(issue.rawValue), systemImage: "arrow.right.circle")
+                    .font(.callout)
+            }
+            if assessment.state == .checking { ProgressView("working") }
+            Button("status.refresh") { Task { await protection.refresh() } }
+                .disabled(protection.busy)
+            if assessment.state == .needsSetup, selectedTab != 1 {
+                Button("setup.continue") { selectedTab = 1 }
+            }
+            Text("setup.status.mixedcontent").font(.footnote).foregroundStyle(.secondary)
+        }
+    }
+
+    @ViewBuilder
+    private func setupStatusLabel(_ state: MobileProtectionPolicy.SetupState) -> some View {
+        switch state {
+        case .configured: Label(LocalizedStringKey(state.rawValue), systemImage: "checkmark.shield")
+        case .checking, .unchecked: Label(LocalizedStringKey(state.rawValue), systemImage: "arrow.clockwise")
+        case .needsSetup: Label(LocalizedStringKey(state.rawValue), systemImage: "exclamationmark.shield")
         }
     }
 
