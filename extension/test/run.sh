@@ -34,7 +34,9 @@ for f in ../background.js ../popup.js ../options.js ../blocked.js ../lib/*.js ..
   # checkModuleSyntax takes SOURCE, not a path — readFile it first.
   "$JSC" -e "checkModuleSyntax(readFile('$f'))" >/dev/null || { echo "  syntax error: $f" >&2; fail=1; }
 done
-"$JSC" -e "checkSyntax('../content/scan.js')" >/dev/null || { echo "  syntax error: content/scan.js" >&2; fail=1; }
+for f in ../content/*.js; do
+  "$JSC" -e "checkSyntax('$f')" >/dev/null || { echo "  syntax error: $f" >&2; fail=1; }
+done
 [ "$fail" -eq 0 ] && echo "  all scripts parse"
 
 for t in *.test.js; do

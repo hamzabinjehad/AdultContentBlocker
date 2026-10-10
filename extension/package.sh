@@ -54,7 +54,7 @@ mkdir -p "$BUILD"
 # the safe direction — a forgotten allowlist entry ships a broken extension,
 # a forgotten prune ships a harmless extra file.
 cp -R "$EXT_DIR"/. "$BUILD"/
-rm -rf "$BUILD/test" "$BUILD/eval" "$BUILD/keys" "$BUILD/package.sh" "$BUILD/check_package.py"
+rm -rf "$BUILD/test" "$BUILD/eval" "$BUILD/keys" "$BUILD/package.sh" "$BUILD/check_package.py" "$BUILD/prepare_unpacked.py"
 # `_metadata/` is Chrome's own indexed-ruleset cache, written into the
 # directory whenever the extension is loaded unpacked. Names starting with
 # `_` are reserved by Chrome and the store rejects a package that carries one.

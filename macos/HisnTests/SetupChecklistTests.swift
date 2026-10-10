@@ -48,14 +48,20 @@ final class SetupChecklistTests: XCTestCase {
         XCTAssertTrue(step(c, .browsers).detail.contains("Helium (Default)"), step(c, .browsers).detail)
     }
 
-    func testEverythingDoneIsCompleteWithoutThePaidFilter() {
+    func testLegacyChecklistCompletionDoesNotCertifyLaptopWideProtection() {
         let c = SetupChecklist(evidence(admin: false, hosts: 358_239, safe: SafeSearchDNS(), partner: true,
                                         browsers: [lockedHelium], relayOff: true, screenTime: true,
                                         appFiles: true))
         XCTAssertTrue(c.isComplete, c.steps.filter { $0.state == .todo }.map(\.title).joined(separator: ", "))
         XCTAssertEqual(step(c, .systemFilter).state, .optional,
-                       "the $99 filter is worth having, not required to finish setup")
+                       "legacy checklist completion remains separate from verified laptop-wide coverage")
         XCTAssertEqual(c.required.count, 9)
+        let readiness = LaptopSetupReadiness(
+            protection: ProtectionEvidence(filter: .off, extensionLastSeen: Date(),
+                hostsEntries: 358_239, filterCanRun: false),
+            checklist: c, requireOutsideLock: true)
+        XCTAssertFalse(readiness.isReady, "legacy completion is not verified laptop-wide coverage")
+        XCTAssertTrue(readiness.issues.contains(.signedBuild))
     }
 
     func testTheSystemFilterAloneCoversDomains() {
@@ -89,9 +95,13 @@ final class SetupChecklistTests: XCTestCase {
         XCTAssertEqual(step(SetupChecklist(evidence(hosts: 12)), .domains).state, .todo)
     }
 
-    func testNoChromiumBrowserMeansNothingToInstall() {
+    func testNoSupportedBrowserDoesNotClaimSafariPageScanning() {
         let c = SetupChecklist(evidence(browsers: []))
-        XCTAssertEqual(step(c, .browsers).state, .done)
+        let browser = step(c, .browsers)
+        XCTAssertEqual(browser.state, .todo)
+        XCTAssertEqual(browser.action, .browserHelp)
+        XCTAssertTrue(browser.detail.contains("no verified Hisn page scanner"), browser.detail)
+        XCTAssertFalse(c.isComplete)
     }
 
     /// The profile step names what is still open, browser by browser.

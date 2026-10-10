@@ -45,9 +45,12 @@ partner/         the accountability partner's page: key, and signed approvals   
 
 The new iPhone/iPad development version is documented in [`ios/README.md`](ios/README.md).
 See [`docs/APPLE_PLATFORMS.md`](docs/APPLE_PLATFORMS.md) for platform boundaries.
-It shares the signed core list, not macOS privileges: Safari domain protection
-and optional family DNS are implemented; all-app filtering and Mac/phone sync
-are not. A signed real-device build is required before testing phone DNS.
+It shares the signed core list, not macOS privileges: Safari domain protection,
+an independently enabled Safari text-scanning extension and optional family DNS
+are implemented; all-app content scanning and Mac/phone sync are not. A signed
+real-device build is required before relying on phone enforcement.
+See [browser-first mixed-content protection](docs/BROWSER_FIRST_PROTECTION.md)
+for individual X/Twitter post checking and optional native-app restrictions.
 
 ## Testing
 
@@ -82,15 +85,20 @@ suite names allow a narrower run. A suite whose toolchain is missing fails rathe
 | Configuration profile | Supported DNS, Private Relay, and browser settings | A tunnel; an administrator removing the profile |
 | Content filter (system extension) | Host/application decisions on new Mac flows | Provider loss, established flows, unidentified destinations outside strict mode, recovery/admin changes |
 | Accountability partner | Ordinary user loosening an active policy | Guardian authority or recovery; a separate unprotected device |
-| Browser guard (in the app) | Warns/closes disconnected browsers and repeatedly confirmed off standard profiles during locks or outside-lock opt-in | Force-quitting Hisn, exempt browsers, unreadable/custom profiles, guest/private windows, admin changes |
+| Browser guard (in the app) | Warns/closes disconnected browsers and repeatedly confirmed off standard profiles during locks or outside-lock opt-in | Force-quitting Hisn, explicitly trusted unknown apps, unreadable/custom profiles, guest/private windows, admin changes |
 
 The load-bearing layers are the bottom two. The top two are convenience and
 defence in depth — they are not what makes this work.
 
-Mac **Blocking Rules → Browser protection** has an optional **Require the
-extension outside a lock** switch, off by default with explicit confirmation.
-Active locks already require browser guarding. This is best-effort process
-closure while Hisn runs, not an instant traffic block or uninstall prohibition.
+Mac **Blocking Rules → Browser protection** has an optional **Keep browser
+protection on** switch, off by default with explicit confirmation. Active locks
+always require guarding. Loss of a verified extension connection or confirmed
+standard-profile removal starts a visible **60-second recovery countdown**.
+Known unsupported browsers, including Safari, also close and cannot use app
+exceptions. An unrepaired relaunch cannot renew the warning. Check-ins are
+scheduled every thirty seconds; detection is periodic, not instantaneous.
+This is best-effort process closure while Hisn runs, not an immediate traffic
+block or uninstall prohibition.
 See [browser-removal behavior and limits](docs/SELF_CONTROL_COMMITMENT.md#browser-extension-removal-and-disconnection).
 
 The installed Mac app starts at login for the protected account and keeps
@@ -98,6 +106,17 @@ running in the background when its window closes or Quit is selected. Its
 LaunchAgent restarts it after a crash or force-quit. Logout, restart, shutdown
 and sleep retain their normal system behavior. See [setup](docs/SETUP.md#step-1--the-app--macosinstallsh)
 for the account scope and administrator removal command.
+
+Each new Mac app process opens on Setup, not on a remembered successful visit.
+Setup and Overview distinguish partial blocking from current laptop protection
+checks: a live nonempty filter response, healthy policy, protected installation
+files, detected standard browser profiles, a recent extension connection, and
+the explicitly enabled outside-lock browser requirement. Browser warnings and
+trusted app exceptions prevent a passing verdict. These are configuration and
+liveness checks, not an end-to-end blocking test or a guarantee of all-content
+coverage. Administrator/partner hardening is shown separately. A development
+build without the filter's signing prerequisites cannot pass these checks.
+Hosts-file coverage remains available but is reported as partial protection.
 
 Why the content filter adds coverage beyond DNS: VPNs and encrypted resolvers
 can bypass router DNS. Hisn's `NEFilterDataProvider` evaluates new Mac socket
@@ -173,9 +192,22 @@ it with the accountability partner; the user must never see it.
 
 ### Extension
 
-Load `extension/` unpacked in `chrome://extensions`. Needs Chrome 137+ for
+Prepare a clean local copy with
+`python3 extension/prepare_unpacked.py --out dist/hisn-unpacked-chrome-1.0.2`,
+then choose that folder in **Load unpacked** at `chrome://extensions`. Use a
+fresh output name per browser or update; the tool excludes generated `_metadata`
+caches without changing the pinned identity or overwriting a live folder.
+Needs Chrome 137+ for
 Ed25519 in WebCrypto. `rules/*.json` and `seed/terms.json` are placed by
 `blocklist/seed.py sync`, never by hand — see *Seed bundle* above.
+
+For X/Twitter, text checking hides individual signalled tweet articles,
+including descriptions attached to the article itself, and pauses their media.
+Ordinary articles remain available. This is text-based filtering, not visual
+video detection: media without useful text and viewers outside tweet articles
+can still be missed. After installing a new unpacked copy, reload existing
+X/Twitter tabs so they use its scanner. The iPhone/iPad Safari extension packages
+the same scanner; updating source files alone does not update an installed app.
 
 Its ID is pinned by the `"key"` in `manifest.json` (see
 `extension/keys/README.md`), so it loads as

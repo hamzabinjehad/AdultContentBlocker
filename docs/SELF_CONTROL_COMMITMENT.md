@@ -70,14 +70,15 @@ all-app removal prohibition or silent OS setting changes are introduced.
 ## Browser extension removal and disconnection
 
 On Mac, browser guarding already runs during an active commitment. The
-**Blocking Rules → Browser protection → Require the extension outside a lock**
+**Blocking Rules → Browser protection → Keep browser protection on**
 switch extends that behavior outside a commitment with explicit confirmation.
 It is off by default; disabling it does not disable the guard inside a lock.
 The UI does not offer turning an enabled requirement off during a lock.
 
 Supported Chromium browsers need their own extension heartbeat. A missing or
 stale heartbeat produces a visible warning followed by a termination request.
-Unknown non-exempt browsers receive a shorter warning. A known active filter
+Known unsupported browsers, including Safari and Firefox, receive the same
+first one-minute warning. There is no automatic Safari exemption. A known active filter
 authority's empty check-in record no longer falls back to editable app defaults;
 that fallback remains only when no authority answers.
 
@@ -103,13 +104,24 @@ confirmed off profiles from unconfirmed checks. Neither category proves page
 content classification or authenticates user-editable preferences. Existing
 setup/managed-deployment checks retain their separate conservative semantics.
 
-Startup/wake grace is 60 seconds. Heartbeats become stale after 150 seconds;
-the ordinary disconnected-browser warning is 45 seconds, uncovered-browser
-warning 15 seconds, and repeat-closure warning 5 seconds. Checks run every five
-seconds. A browser refusing termination may be force-closed after ten more
-seconds, only if enforcement still applies and connection has not recovered.
-Pending force-closure is cancelled when guarding stops or coverage recovers.
-These windows are recovery allowances, not immediate denial of web access.
+The extension schedules native check-ins every thirty seconds and repairs a
+legacy one-minute alarm on every worker boot, including re-enable and restart.
+Heartbeats become stale after ninety seconds. Missing connections are visibly
+warned from the first unverified observation, including startup: there is no
+hidden period marked healthy. The first recovery countdown is sixty seconds
+for both disconnected and unsupported browsers; startup/wake provides a
+sixty-second deadline floor, not another hidden minute. Repeat-closure warning
+remains five seconds, unless a wake has occurred since that closure. A successful
+verified reconnection clears the repeat-closure history.
+
+Checks run every five seconds. After its countdown the app requests termination;
+a refusing browser may be force-closed after ten more seconds. Fresh consent,
+process identity, connection and visible/wake recovery deadlines are rechecked
+before force termination. Pending force-closure is cancelled when guarding stops
+or coverage recovers. A previous process's heartbeat does not verify a relaunched
+browser instance. These are recovery allowances, not immediate denial of traffic.
+The minute begins when loss is detected, not necessarily when the extension is
+deleted; Chrome explicitly permits delayed alarms.
 
 Unverified browser restarts do not reset either initial grace or a warning
 countdown. A previously verified healthy browser may receive one fresh startup
@@ -117,9 +129,12 @@ grace after a normal restart; startup grace alone cannot earn another one.
 This evidence is session-local: restarting Hisn or changing the system clock
 is not solved by this ledger.
 
-Safari, link-routing apps and previously allowed exceptions retain their
-existing compatibility exemptions. Safari exemption does not prove Screen Time
-or network protection is configured. A heartbeat is browser-bundle evidence,
+Non-rendering link-routing apps remain exempt because they hand links to a real
+browser. Known browsers, including Safari and its preview, cannot use saved app
+allowances to bypass extension checks. Explicitly trusted unknown apps stay open
+to handle non-browser false positives; the UI names that bypass and only offers
+trust before a lock. A custom browser granted this exception is still a bypass.
+Separate Screen Time or network settings do not satisfy the extension requirement. A heartbeat is browser-bundle evidence,
 not proof that every profile or private window is protected. Standard-profile
 checks improve known removal detection; custom profile paths, guest/private
 windows and unreadable profiles remain unverified and can remain bypasses.
@@ -143,8 +158,11 @@ family DNS remain independent layers. No new permission or shield is enabled
 merely by displaying this guidance.
 
 Mobile guidance explicitly says to select every browser app the person wants
-shielded: Safari rules alone do not cover every other browser. No Mac-style
-profile reader or arbitrary-browser termination is implemented on iPhone/iPad.
+shielded: Safari rules alone do not cover every other browser. Applied Screen Time
+shields do not require Hisn to remain open; iOS manages them while authorization
+remains approved. No continuous extension-presence watchdog, Mac-style profile
+reader, arbitrary-browser termination or Mac repair countdown is implemented on
+iPhone/iPad. Both share this guidance through the universal app.
 
 `x.com` is a mixed-content service, not an adult-only domain. If a person wants
 to avoid the entire service, they can deliberately add the whole domain/app to
@@ -207,6 +225,8 @@ actual blocking. Test the recovery steps on signed physical devices.
 
 Sources:
 
+- [Chrome: alarm scheduling and timing limits](https://developer.chrome.com/docs/extensions/reference/api/alarms)
+- [Chrome: one-shot vs persistent native messaging](https://developer.chrome.com/docs/extensions/develop/concepts/native-messaging)
 - [Apple: individual authorization and revocation](https://developer.apple.com/videos/play/wwdc2022/110336/)
 - [Apple: Family Controls entitlement](https://developer.apple.com/documentation/familycontrols/requesting-the-family-controls-entitlement)
 - [Apple: Web Content Settings](https://developer.apple.com/documentation/managedsettings/webcontentsettings)

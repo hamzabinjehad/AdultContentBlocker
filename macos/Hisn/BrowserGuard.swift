@@ -16,20 +16,22 @@ import UserNotifications
 ///
 /// While guarding is active, apps identified as browsers are judged:
 ///
-///  * **Safari** is left alone for compatibility. No Hisn extension runs there;
-///    its exemption is not evidence that Screen Time or network layers are on.
+///  * **Safari and other unsupported known browsers** have no connected Hisn
+///    extension, so receive the same first one-minute warning and close.
+///    Screen Time or DNS alone is not proof that page scanning is present.
 ///  * **A Chromium browser Hisn links** (`NativeMessagingInstaller.browsers`)
 ///    stays open for as long as its extension keeps checking in through the
 ///    bridge. When it stops, the person is warned, and the browser is closed if
 ///    the extension is not back on within the warning.
 ///  * **Any other browser** — Firefox, Tor Browser, a Chromium fork downloaded
-///    tonight — has nothing of Hisn inside it, so it is closed after a short
-///    warning. "Browser" is decided from the app's own Info.plist (it declares
+///    tonight — has nothing of Hisn inside it, so it is closed after a visible
+///    one-minute warning. "Browser" is decided from the app's own Info.plist (it declares
 ///    the `http`/`https` URL schemes, which every browser does so it can be the
 ///    default), not from a list of names that tomorrow's fork is missing from.
-///  * **Apps the person allowed** before the lock started are left alone. An
-///    app that registers for web links without being a browser shows up here
-///    and needs allowing once; the allowance can only be added while unlocked.
+///  * **Unknown apps explicitly allowed** before the lock are left alone to
+///    accommodate non-browser apps that register for web links. Known browsers
+///    cannot use this exception to bypass their required extension. A custom
+///    browser explicitly trusted as an unknown app remains a possible bypass.
 ///
 /// This is not tamper-proof — the process can be quit, and an administrator
 /// can do anything. It turns "switch the extension off" from a one-click
@@ -55,10 +57,14 @@ public enum BrowserGuardPolicy {
         private var violations: [String: Date] = [:]
         private var instances: [String: String] = [:]
         private var healthyRestart: Set<String> = []
+        private var closedBrowsers: Set<String> = []
         public init() {}
         public mutating func graceStart(browser: String, now: Date, notBefore floor: Date,
                                         instance: String? = nil) -> Date {
             if let instance, instances[browser] != instance {
+                // A genuinely new process after closure gets its repeat warning.
+                // The still-running process refusing quit keeps its old deadline.
+                if closedBrowsers.remove(browser) != nil { violations[browser] = nil }
                 // One new grace after verified connectivity, not after merely
                 // passing through the unverified startup grace again.
                 if instances[browser] != nil, healthyRestart.remove(browser) != nil {
@@ -75,23 +81,29 @@ public enum BrowserGuardPolicy {
             switch verdict {
             case .ok:
                 violations[browser] = nil
+                closedBrowsers.remove(browser)
                 if verifiedConnection { healthyRestart.insert(browser) }
             case .close:
-                violations[browser] = nil
+                // Keep the unresolved deadline while this same instance resists
+                // termination; manufactured repeat warnings can starve force-close.
+                closedBrowsers.insert(browser)
                 healthyRestart.remove(browser)
             case .warn:
+                // A wake recovery warning supersedes a pending close decision.
+                // Its unverified restarts must retain this same warning deadline.
+                closedBrowsers.remove(browser)
                 healthyRestart.remove(browser)
                 if violations[browser] == nil { violations[browser] = now }
             }
         }
         public mutating func reset() {
             starts.removeAll(); violations.removeAll()
-            instances.removeAll(); healthyRestart.removeAll()
+            instances.removeAll(); healthyRestart.removeAll(); closedBrowsers.removeAll()
         }
     }
 
     public enum Coverage: Equatable {
-        /// Compatibility exemption; other layers must be verified separately.
+        /// Non-rendering link router, not a protected web browser.
         case exempt
         /// A browser Hisn's extension runs in — fine while it checks in.
         case needsExtension
@@ -113,11 +125,6 @@ public enum BrowserGuardPolicy {
         case close(Reason)
     }
 
-    /// Safari and its preview build: compatibility exemptions, not verified coverage.
-    public static let exempt: Set<String> = [
-        "com.apple.Safari", "com.apple.SafariTechnologyPreview",
-    ]
-
     /// Link routers register for web links only to hand them to a real
     /// browser; they render nothing themselves.
     public static let linkRouters: Set<String> = [
@@ -127,6 +134,7 @@ public enum BrowserGuardPolicy {
     /// Browsers named outright, in case one does not declare the URL schemes.
     /// Not the primary test — see the type comment — only a backstop.
     public static let knownBrowsers: Set<String> = [
+        "com.apple.Safari", "com.apple.SafariTechnologyPreview",
         "org.mozilla.firefox", "org.mozilla.firefoxdeveloperedition",
         "org.mozilla.nightly", "org.torproject.torbrowser",
         "net.mullvad.mullvadbrowser", "com.kagi.kagimacOS",
@@ -138,29 +146,58 @@ public enum BrowserGuardPolicy {
         "com.google.Chrome.beta", "com.google.Chrome.dev", "com.google.Chrome.canary",
     ]
 
-    /// How long a just-launched (or just-woken) browser has to check in. The
-    /// extension checks in as its worker starts, normally within seconds; the
-    /// minute covers a restart inside the worker's thirty-second poll
-    /// throttle, after which the next one-minute alarm does it.
+    /// Visible recovery window for a just-launched or just-woken browser.
+    /// It is a deadline floor, never a hidden period of presumed protection.
     public static let launchGrace: TimeInterval = 60
-    /// Two and a half missed one-minute heartbeats.
-    public static let staleAfter: TimeInterval = 150
+    /// Three nominal thirty-second check-ins. Leaves room for the ten-second
+    /// native timeout and authority refresh; Chrome may still delay alarms.
+    public static let staleAfter: TimeInterval = 90
     /// A heartbeat stamped this far in the FUTURE is not evidence of anything:
     /// winding the clock back would otherwise make the last check-in look
     /// fresh for as long as the clock stays wound back.
     public static let clockSkewTolerance: TimeInterval = 60
-    public static let warnSilent: TimeInterval = 45
-    public static let warnUncovered: TimeInterval = 15
+    public static let warnSilent: TimeInterval = 60
+    public static let warnUncovered: TimeInterval = 60
     /// Relaunched without fixing what got it closed: no second long warning.
     public static let warnRepeat: TimeInterval = 5
     public static let repeatWindow: TimeInterval = 10 * 60
 
+    /// Only unknown detected apps may be trusted as false positives.
+    /// Stored exceptions cannot exempt a known browser, including Safari.
+    public static func canAllowException(bundleID: String, linked: Set<String>) -> Bool {
+        !bundleID.isEmpty && !linked.contains(bundleID) &&
+            !knownBrowsers.contains(bundleID) && !linkRouters.contains(bundleID)
+    }
+
     public static func coverage(bundleID: String, linked: Set<String>,
                                 userAllowed: Set<String>) -> Coverage {
-        if exempt.contains(bundleID) || linkRouters.contains(bundleID) { return .exempt }
+        if linkRouters.contains(bundleID) { return .exempt }
         if linked.contains(bundleID) { return .needsExtension }
-        if userAllowed.contains(bundleID) { return .allowedByUser }
+        if canAllowException(bundleID: bundleID, linked: linked),
+           userAllowed.contains(bundleID) { return .allowedByUser }
         return .uncovered
+    }
+
+    /// A previous process's heartbeat cannot verify a newly launched instance.
+    public static func instanceCheckIn(lastSeen: Date?, launchedAt: Date?) -> Date? {
+        guard let lastSeen else { return nil }
+        if let launchedAt, lastSeen < launchedAt { return nil }
+        return lastSeen
+    }
+
+    public static func isRepeatClosure(closedAt: Date?, awakeSince: Date, now: Date) -> Bool {
+        guard let closedAt else { return false }
+        let age = now.timeIntervalSince(closedAt)
+        return closedAt >= awakeSince && age >= 0 && age < repeatWindow
+    }
+
+    /// Pending termination must not override a visible countdown or the
+    /// recovery window following a wake that happened after it was requested.
+    public static func forceRecoveryDeadline(requestedAt: Date, awakeSince: Date,
+                                              warningDeadline: Date?) -> Date? {
+        let wakeDeadline = awakeSince > requestedAt ? awakeSince.addingTimeInterval(launchGrace) : nil
+        if let wakeDeadline, let warningDeadline { return max(wakeDeadline, warningDeadline) }
+        return wakeDeadline ?? warningDeadline
     }
 
     /// Whether this browser's extension is alive, judged at `now`.
@@ -173,8 +210,9 @@ public enum BrowserGuardPolicy {
     /// Recheck delayed force-termination against current consent and recovery,
     /// rather than blindly applying a decision made ten seconds ago.
     public static func shouldForceClose(active: Bool, coverage: Coverage,
-                                         lastSeen: Date?, now: Date, profileLoss: Bool = false) -> Bool {
-        guard active else { return false }
+                                         lastSeen: Date?, now: Date, profileLoss: Bool = false,
+                                         notBefore: Date? = nil) -> Bool {
+        guard active, notBefore.map({ now >= $0 }) ?? true else { return false }
         switch coverage {
         case .exempt, .allowedByUser: return false
         case .needsExtension: return profileLoss || !extensionAlive(lastSeen: lastSeen, now: now)
@@ -215,7 +253,6 @@ public enum BrowserGuardPolicy {
             return .ok
         case .needsExtension:
             if !profileLoss && extensionAlive(lastSeen: lastSeen, now: now) { return .ok }
-            if !profileLoss && !recentlyClosed && now.timeIntervalSince(graceStart) < launchGrace { return .ok }
             reason = profileLoss ? .profileUnprotected : .extensionSilent
             warning = recentlyClosed ? warnRepeat : warnSilent
         case .uncovered:
@@ -223,7 +260,10 @@ public enum BrowserGuardPolicy {
             warning = recentlyClosed ? warnRepeat : warnUncovered
         }
         let since = firstViolation ?? now
-        let closeAt = since.addingTimeInterval(warning)
+        var closeAt = since.addingTimeInterval(warning)
+        if reason == .extensionSilent && !recentlyClosed {
+            closeAt = max(closeAt, graceStart.addingTimeInterval(launchGrace))
+        }
         // A repaired, relaunched browser deserves a new reading before an
         // old cached profile failure can close it again. Keep the original
         // violation timestamp; a genuinely off profile cannot reset its timer.
@@ -389,10 +429,12 @@ public final class BrowserGuard: ObservableObject {
     public enum AllowError: LocalizedError {
         case locked
         case storageUnavailable
+        case extensionRequired
         public var errorDescription: String? {
             switch self {
             case .locked: return String(localized: "A lock is running. Apps can be allowed again once it ends.")
             case .storageUnavailable: return String(localized: "Browser protection settings could not be saved. Try again.")
+            case .extensionRequired: return String(localized: "Known browsers need a connected Hisn extension and cannot be allowed as app exceptions.")
             }
         }
     }
@@ -403,6 +445,10 @@ public final class BrowserGuard: ObservableObject {
         var set = allowed
         if allow {
             guard !EffectiveLock.isLocked else { throw AllowError.locked }
+            guard BrowserGuardPolicy.canAllowException(bundleID: bundleID,
+                linked: Set(NativeMessagingInstaller.browsers.map(\.bundleID))) else {
+                throw AllowError.extensionRequired
+            }
             set.insert(bundleID)
         } else {
             set.remove(bundleID)
@@ -440,7 +486,7 @@ public final class BrowserGuard: ObservableObject {
 
     private func isBrowser(id: String, bundleURL: URL?, linked: Set<String>) -> Bool {
         if linked.contains(id) || BrowserGuardPolicy.knownBrowsers.contains(id)
-            || BrowserGuardPolicy.exempt.contains(id) { return true }
+            || BrowserGuardPolicy.linkRouters.contains(id) { return true }
         guard let bundleURL else { return false }
         // Keyed by path AND modification date: a browser copied over a path
         // already judged "not a browser" must be judged again.
@@ -461,7 +507,7 @@ public final class BrowserGuard: ObservableObject {
 
     func tick() {
         // A long gap between ticks is a sleep the wake notification has not
-        // been delivered for yet; judging now would warn about every browser.
+        // been delivered for yet; renew recovery without hiding its warning.
         let wall = Date()
         if wall.timeIntervalSince(lastTick) > 15 { awakeSince = wall }
         lastTick = wall
@@ -523,13 +569,15 @@ public final class BrowserGuard: ObservableObject {
             }
             let coverage = BrowserGuardPolicy.coverage(bundleID: id, linked: linked,
                                                        userAllowed: allowed)
-            let lastSeen = BrowserGuardPolicy.checkIn(browser: id, authority: authorityCheckIns,
-                local: ExtensionPresence.lastSeen(browser: id, in: defaults))
+            let lastSeen = BrowserGuardPolicy.instanceCheckIn(
+                lastSeen: BrowserGuardPolicy.checkIn(browser: id, authority: authorityCheckIns,
+                    local: ExtensionPresence.lastSeen(browser: id, in: defaults)),
+                launchedAt: app.launchDate)
             let graceStart = session.graceStart(browser: id, now: now,
                 notBefore: max(awakeSince, max(started, enforcementBegan)),
                 instance: instance)
-            let repeatOffender = recentlyClosed[id].map {
-                now.timeIntervalSince($0) < BrowserGuardPolicy.repeatWindow } ?? false
+            let repeatOffender = BrowserGuardPolicy.isRepeatClosure(
+                closedAt: recentlyClosed[id], awakeSince: awakeSince, now: now)
             let profileLoss = !(profileChecks[id]?.confirmed(at: now).isEmpty ?? true)
             if coverage == .needsExtension && BrowserGuardPolicy.profileRefreshRequired(
                 profileLoss: profileLoss, checkedAt: profileCheckedAt[id], now: now,
@@ -544,12 +592,13 @@ public final class BrowserGuard: ObservableObject {
                 recentlyClosed: repeatOffender,
                 profileLoss: profileLoss, profileRefreshPending: needsFreshProfile.contains(id))
             let name = app.localizedName ?? id
-            session.observe(verdict, browser: id, at: now,
-                verifiedConnection: !profileLoss && coverage == .needsExtension &&
-                    BrowserGuardPolicy.extensionAlive(lastSeen: lastSeen, now: now))
+            let verifiedConnection = !profileLoss && coverage == .needsExtension &&
+                BrowserGuardPolicy.extensionAlive(lastSeen: lastSeen, now: now)
+            session.observe(verdict, browser: id, at: now, verifiedConnection: verifiedConnection)
 
             switch verdict {
             case .ok:
+                if verifiedConnection { recentlyClosed.removeValue(forKey: id) }
                 notified.remove(pid)
                 closing.removeValue(forKey: pid)?.cancel()
                 closingIDs.removeValue(forKey: pid)
@@ -628,6 +677,7 @@ public final class BrowserGuard: ObservableObject {
     private func close(_ app: NSRunningApplication) {
         let pid = app.processIdentifier
         guard closing[pid] == nil else { return }
+        let requestedAt = Date()
         app.terminate()
         let launchDate = app.launchDate
         let closeID = UUID()
@@ -666,13 +716,18 @@ public final class BrowserGuard: ObservableObject {
             let coverage = BrowserGuardPolicy.coverage(bundleID: id,
                 linked: Set(NativeMessagingInstaller.browsers.map(\.bundleID)),
                 userAllowed: self.effectiveAllowed)
-            let seen = BrowserGuardPolicy.checkIn(browser: id, authority: FilterSync.shared.status?.checkIns,
-                local: ExtensionPresence.lastSeen(browser: id, in: self.defaults))
+            let seen = BrowserGuardPolicy.instanceCheckIn(
+                lastSeen: BrowserGuardPolicy.checkIn(browser: id, authority: FilterSync.shared.status?.checkIns,
+                    local: ExtensionPresence.lastSeen(browser: id, in: self.defaults)),
+                launchedAt: launchDate)
+            let notBefore = BrowserGuardPolicy.forceRecoveryDeadline(
+                requestedAt: requestedAt, awakeSince: self.awakeSince,
+                warningDeadline: self.alerts.first(where: { $0.id == pid })?.closeAt)
             if BrowserGuardPolicy.shouldForceClose(
                 active: BrowserGuardPolicy.isActive(locked: EffectiveLock.isLocked,
                                                     requireOutsideLock: self.requireOutsideLock),
                 coverage: coverage, lastSeen: seen, now: Date(),
-                profileLoss: currentProfileLoss) {
+                profileLoss: currentProfileLoss, notBefore: notBefore) {
                 app.forceTerminate()
             }
         }
@@ -684,7 +739,7 @@ public final class BrowserGuard: ObservableObject {
         switch reason {
         case .extensionSilent:
             return String(localized: """
-                The Hisn extension stopped checking in from \(name). Reinstall \
+                Hisn cannot confirm an extension connection from \(name). Reinstall \
                 or enable it in \(name)’s extensions page and check its app \
                 connection, or \(name) will close.
                 """)

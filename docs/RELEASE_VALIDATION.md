@@ -36,6 +36,30 @@ passed only after it was actually performed.
 
 No browsing history or private keys should be included in this record.
 
+## Local Engineering Checks: 2026-10-09 — Verified setup milestone
+
+- Mac setup readiness is derived from current live filter/policy evidence,
+  detected browser profiles, connection freshness, installation files and the
+  consented outside-lock requirement. Legacy setup visits and user-writable
+  domain counts cannot certify a new session; hosts-only blocking stays partial.
+- Local Mac Release build succeeded. The 439 hosted Mac tests passed, including
+  readiness regression, explicit navigation and injected EN/AR setup rendering.
+  Arabic catalog validation and compiler-based localization export passed.
+- Python, signed-seed and release-configuration suites passed. The mobile app,
+  all four Safari extensions and hosted test target compiled for generic iOS
+  Simulator. A standalone Swift check passed 9,216 mobile setup-evidence
+  combinations and list-integrity guards. This is not a real-device acceptance
+  record, and compilation is not execution of the hosted mobile tests.
+- Mobile readiness checks include nonempty bundled Safari resources with
+  matching hashes/counts/versions, all four blocker states, Screen Time readback
+  and matching enabled Family DNS. The verdict describes layer configuration,
+  never all-content filtering or uninstall prevention.
+- The laptop remains a local ad-hoc development installation. Hisn's system
+  filter is not activated by this milestone. Proper signing, macOS approval,
+  installed filter liveness and supported end-to-end flow/outage checks remain
+  release gates. No account, DNS, router, commitment or guardian settings were
+  changed by the setup-screen work.
+
 ## Local Engineering Checks: 2026-10-08
 
 ### Repeated standard-profile removal evidence and safe closure

@@ -149,29 +149,64 @@ final class ProtectionStatusTests: XCTestCase {
     }
 
     func testExtensionLivenessIsTimeBounded() {
-        XCTAssertTrue(status(filter: .off, extensionSeen: 4 * 60).layers[1].ok)
-
-        let stale = status(filter: .off, extensionSeen: 10 * 60).layers[1]
-        XCTAssertFalse(stale.ok)
-        XCTAssertEqual(stale.state, .problem)
-        XCTAssertEqual(stale.action, .reconnectExtension)
-        XCTAssertTrue(stale.detail.hasPrefix("Not responding"))
+        XCTAssertEqual(ProtectionEvidence.extensionStaleAfter, 90)
+        XCTAssertEqual(ProtectionEvidence.extensionStaleAfter, BrowserGuardPolicy.staleAfter)
+        XCTAssertTrue(status(filter: .off, extensionSeen: 89.999).layers[1].ok)
+        for age in [90.0, 4 * 60.0, 10 * 60.0] {
+            let stale = status(filter: .off, extensionSeen: age).layers[1]
+            XCTAssertFalse(stale.ok)
+            XCTAssertEqual(stale.state, .problem)
+            XCTAssertEqual(stale.action, .reconnectExtension)
+            XCTAssertTrue(stale.detail.hasPrefix("Not responding"))
+        }
     }
 
     // MARK: Without the paid filter
 
-    func testHostsFileAndExtensionAreProtectionWithoutTheFilter() {
+    func testHostsFileAndExtensionRemainPartialWithoutTheFilter() {
         let s = ProtectionStatus(ProtectionEvidence(
             filter: .off, extensionLastSeen: now.addingTimeInterval(-30), now: now,
             hostsEntries: 358_239, filterCanRun: false))
-        XCTAssertEqual(s.level, .active)
+        XCTAssertEqual(s.level, .partial)
+        XCTAssertEqual(s.headline, "Partially active")
+        XCTAssertTrue(s.isEnforcingAnything, "keep reporting useful partial protection")
         XCTAssertEqual(s.layers.map(\.name),
                        ["System filter", "Hosts-file blocklist", "Browser extension"])
         // The filter row says why, and offers no button that can only fail.
         XCTAssertEqual(s.layers[0].state, .missing)
         XCTAssertNil(s.layers[0].action)
         XCTAssertTrue(s.layers[0].detail.contains("Apple Developer Program"))
-        XCTAssertTrue(s.summary.contains("hosts-file"))
+        XCTAssertTrue(s.summary.localizedCaseInsensitiveContains("hosts-file"))
+    }
+
+    func testHostsCannotPromoteAnEnabledButEmptyFilterToActive() {
+        let s = ProtectionStatus(ProtectionEvidence(
+            filter: .on(domainCount: 0), extensionLastSeen: now, now: now,
+            hostsEntries: 400_000, filterCanRun: true))
+        XCTAssertEqual(s.level, .partial)
+        XCTAssertTrue(s.isEnforcingAnything)
+        XCTAssertEqual(s.layers.first?.state, .problem)
+        XCTAssertEqual(s.layers.first?.action, .updateList)
+    }
+
+    func testHostsRemainPartialEvenWhenASignedFilterIsAvailableButOff() {
+        let s = ProtectionStatus(ProtectionEvidence(
+            filter: .off, extensionLastSeen: now, now: now,
+            hostsEntries: 400_000, filterCanRun: true))
+        XCTAssertEqual(s.level, .partial)
+        XCTAssertEqual(s.layers.first?.action, .enableFilter)
+    }
+
+    func testUnsignedBuildCannotBorrowAnOnOrSilentFilterState() {
+        for filter in [FilterEvidence.on(domainCount: 150_000), .silent] {
+            let s = ProtectionStatus(ProtectionEvidence(
+                filter: filter, extensionLastSeen: now, now: now,
+                hostsEntries: 400_000, filterCanRun: false))
+            XCTAssertEqual(s.level, .partial)
+            XCTAssertEqual(s.layers.first?.state, .missing)
+            XCTAssertNil(s.layers.first?.action)
+            XCTAssertTrue(s.layers.first?.detail.contains("Apple Developer Program") == true)
+        }
     }
 
     func testAHandfulOfHostsLinesIsNotABlocklist() {
@@ -203,9 +238,9 @@ final class ProtectionStatusTests: XCTestCase {
         XCTAssertEqual(HostsFile.count(in: Data("0.0.0.0 first.example".utf8)), 1)
     }
 
-    // MARK: Evidence is read from the shared container
+    // MARK: A saved domain count is not provider liveness
 
-    func testCurrentEvidenceReadsTheContainer() {
+    func testCurrentEvidenceNeverTrustsSavedCountsWithoutLiveAuthority() {
         let namespace = TestNamespace.make()
         let saved = LockStore.appGroup
         LockStore.appGroup = namespace
@@ -216,12 +251,12 @@ final class ProtectionStatusTests: XCTestCase {
         let d = UserDefaults(suiteName: namespace)!
 
         XCTAssertEqual(ProtectionEvidence.current(filter: .unknown).filter, .unknown)
-        XCTAssertEqual(ProtectionEvidence.current(filter: .on).filter, .on(domainCount: 0))
+        XCTAssertEqual(ProtectionEvidence.current(filter: .on).filter, .silent)
 
         d.set(150_000, forKey: "filterDomainCount")
         d.set(now, forKey: "extensionLastSeen")
         let e = ProtectionEvidence.current(filter: .on)
-        XCTAssertEqual(e.filter, .on(domainCount: 150_000))
+        XCTAssertEqual(e.filter, .silent, "user-writable counts cannot stand in for a live provider")
         XCTAssertEqual(e.extensionLastSeen, now)
     }
 }

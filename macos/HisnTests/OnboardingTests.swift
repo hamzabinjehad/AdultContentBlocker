@@ -5,6 +5,33 @@ import XCTest
 
 @MainActor
 final class OnboardingTests: XCTestCase {
+    func testBrowserFirstGuidanceRendersWithoutChangingPolicyInBothLanguages() async throws {
+        let policy = Inspection.read()
+        for language in ["en", "ar"] {
+            let view = NSHostingView(rootView: BrowserFirstGuide()
+                .environment(\.locale, Locale(identifier: language))
+                .environment(\.layoutDirection, language == "ar" ? .rightToLeft : .leftToRight)
+                .padding(24).frame(width: 600, height: 520))
+            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 520),
+                                  styleMask: [.titled], backing: .buffered, defer: false)
+            window.isReleasedWhenClosed = false
+            window.contentView = view
+            defer { window.close() }
+            window.orderFront(nil)
+            try await Task.sleep(nanoseconds: 200_000_000)
+            view.layoutSubtreeIfNeeded()
+            let bitmap = try XCTUnwrap(view.bitmapImageRepForCachingDisplay(in: view.bounds))
+            view.cacheDisplay(in: view.bounds, to: bitmap)
+            let data = try XCTUnwrap(bitmap.representation(using: .png, properties: [:]))
+            XCTAssertGreaterThan(data.count, 2000)
+            let attachment = XCTAttachment(data: data, uniformTypeIdentifier: "public.png")
+            attachment.name = "browser-first-\(language)"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+        }
+        XCTAssertEqual(Inspection.read(), policy, "Guidance must not silently enable or weaken checking")
+    }
+
     func testProtectionAndCommitmentScreensRenderInBothLanguages() async throws {
         let originalPage = AppNavigation.shared.page
         defer { AppNavigation.shared.page = originalPage }
@@ -157,14 +184,100 @@ final class OnboardingTests: XCTestCase {
         }
     }
 
-    func testBackgroundInitializationDoesNotConsumeFirstRunSetup() throws {
+    func testHistoricalSetupVisitDoesNotCertifyANewProcess() throws {
         let name = TestNamespace.make()
         defer { TestNamespace.dispose(name) }
         let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
         XCTAssertEqual(AppNavigation.firstPage(defaults: defaults, hostingTests: false), .setup)
         XCTAssertEqual(AppNavigation.firstPage(defaults: defaults, hostingTests: false), .setup)
         defaults.set(true, forKey: "hisn.openedOnSetup")
-        XCTAssertEqual(AppNavigation.firstPage(defaults: defaults, hostingTests: false), .overview)
+        defaults.set(true, forKey: "hisn.setup.administratorConfirmed")
+        defaults.set(true, forKey: "hisn.setup.recoveryConfirmed")
+        XCTAssertEqual(AppNavigation.firstPage(defaults: defaults, hostingTests: false), .setup,
+                       "a visit or human confirmation is not live protection evidence")
+        XCTAssertEqual(AppNavigation.firstPage(defaults: defaults, hostingTests: true), .overview)
+    }
+
+    func testExplicitNavigationDoesNotTrapSettingsOrRecoveryBehindSetup() {
+        let originalPage = AppNavigation.shared.page
+        defer { AppNavigation.shared.page = originalPage }
+        for page in ContentView.Page.allCases {
+            AppNavigation.shared.open(page)
+            XCTAssertEqual(AppNavigation.shared.page, page)
+        }
+    }
+
+    func testLaptopSetupStatesRenderFromInjectedEvidenceInBothLanguages() async throws {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let goodChecklist = SetupChecklist(SetupEvidence(isAdmin: true, hostsEntries: nil,
+            partnerKeySet: false, browsers: [BrowserSetup(name: "Chrome")],
+            privateRelayOff: false, screenTimeAdultFilter: false,
+            systemFilterRunning: true, appFilesProtected: true))
+        let cases: [(String, LaptopSetupReadiness)] = [
+            ("ready", LaptopSetupReadiness(
+                protection: ProtectionEvidence(filter: .on(domainCount: 150_000),
+                    extensionLastSeen: now, now: now),
+                checklist: goodChecklist, requireOutsideLock: true)),
+            ("missing", LaptopSetupReadiness(
+                protection: ProtectionEvidence(filter: .off, extensionLastSeen: nil,
+                    now: now, filterCanRun: false),
+                checklist: SetupChecklist(SetupEvidence(isAdmin: true, hostsEntries: nil,
+                    partnerKeySet: false, browsers: [], privateRelayOff: false,
+                    screenTimeAdultFilter: false, systemFilterRunning: false,
+                    appFilesProtected: nil)),
+                requireOutsideLock: false)),
+            ("checking", LaptopSetupReadiness(
+                protection: ProtectionEvidence(filter: .unknown, extensionLastSeen: nil, now: now),
+                checklist: nil, requireOutsideLock: false)),
+        ]
+        XCTAssertTrue(cases[0].1.isReady)
+        XCTAssertFalse(cases[1].1.isReady)
+        XCTAssertTrue(cases[2].1.isChecking)
+        var actions = 0
+        for language in ["en", "ar"] {
+            for (state, readiness) in cases {
+                let view = NSHostingView(rootView: ScrollView {
+                    LaptopSetupStatusView(readiness: readiness, review: { _ in actions += 1 })
+                        .padding(28)
+                }
+                .environment(\.locale, Locale(identifier: language))
+                .environment(\.layoutDirection, language == "ar" ? .rightToLeft : .leftToRight)
+                .frame(width: 520, height: 900))
+                let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 520, height: 900),
+                    styleMask: [.titled], backing: .buffered, defer: false)
+                window.isReleasedWhenClosed = false
+                window.contentView = view
+                defer { window.close() }
+                window.orderFront(nil)
+                try await Task.sleep(nanoseconds: 200_000_000)
+                view.layoutSubtreeIfNeeded()
+                let bitmap = try XCTUnwrap(view.bitmapImageRepForCachingDisplay(in: view.bounds))
+                view.cacheDisplay(in: view.bounds, to: bitmap)
+                let data = try XCTUnwrap(bitmap.representation(using: .png, properties: [:]))
+                XCTAssertGreaterThanOrEqual(bitmap.pixelsWide, 520)
+                XCTAssertGreaterThan(data.count, 2000)
+                var screenData = data
+                if ProcessInfo.processInfo.environment["HISN_CAPTURE_UI"] == "1" {
+                    NSApp.activate(ignoringOtherApps: true)
+                    window.makeKeyAndOrderFront(nil)
+                    try await Task.sleep(nanoseconds: 300_000_000)
+                    let captureURL = FileManager.default.temporaryDirectory
+                        .appendingPathComponent("hisn-setup-\(UUID().uuidString).png")
+                    let capture = Process()
+                    capture.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+                    capture.arguments = ["-x", "-l", String(window.windowNumber), captureURL.path]
+                    try capture.run()
+                    capture.waitUntilExit()
+                    XCTAssertEqual(capture.terminationStatus, 0)
+                    screenData = try Data(contentsOf: captureURL)
+                }
+                let attachment = XCTAttachment(data: screenData, uniformTypeIdentifier: "public.png")
+                attachment.name = "mac-laptop-setup-\(language)-\(state)"
+                attachment.lifetime = .keepAlways
+                add(attachment)
+            }
+        }
+        XCTAssertEqual(actions, 0, "rendering a status must not activate a setup action")
     }
 
     func testSetupRendersAtMinimumWindowWidth() async throws {

@@ -53,6 +53,12 @@
 			path = BlocklistStore.swift;
 			sourceTree = "<group>";
 		};
+		D68220CB3B507756D38D8E30 /* BrowserFirstGuide.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = BrowserFirstGuide.swift;
+			sourceTree = "<group>";
+		};
 		46ADD645068CFF80B5C9D940 /* BrowserGuard.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -520,6 +526,7 @@
 				E87D9CAD77EB91AAB54C8987,
 				F80A8B5D8F63FE7ADB74A193,
 				6B0A4D54BFD2F08FF0BF42BB,
+				D68220CB3B507756D38D8E30,
 				46ADD645068CFF80B5C9D940,
 				14B886254B9AE172DF028557,
 				A1954A7D9F26A7718A4AAAD4,
@@ -1379,6 +1386,10 @@
 			isa = PBXBuildFile;
 			fileRef = A1954A7D9F26A7718A4AAAD4;
 		};
+		4BBCCFD459E4CD07D7C3280F /* BrowserFirstGuide.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = D68220CB3B507756D38D8E30;
+		};
 		61CAEB8F0184033FD53D9C6D /* FilterController.swift in Sources */ = {
 			isa = PBXBuildFile;
 			fileRef = CE441D8FDF481728F9B3694F;
@@ -1490,6 +1501,7 @@
 				5BCE2A86891BBCED9601BA5C,
 				9EF7FC56EF8EBA72F9B45794,
 				A6FB482C49EF9319FAE69EAD,
+				4BBCCFD459E4CD07D7C3280F,
 				61CAEB8F0184033FD53D9C6D,
 				F9B8570DE100D825DE5C3336,
 				49457A404FABFB870209BD88,

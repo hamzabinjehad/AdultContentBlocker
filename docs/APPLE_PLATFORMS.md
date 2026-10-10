@@ -12,8 +12,10 @@ Mobile UI and state follow native SwiftUI patterns. A portable policy file can
 be shared without pretending all Apple platforms have the same privileges.
 Existing Mac filtering is not moved or weakened by the mobile app.
 
-The initial mobile app works alone. It does not yet sync settings with the Mac,
-carry the JavaScript page scanner. Selected-app shielding uses Apple's private
+The mobile app works alone. It does not yet sync settings with the Mac. Its
+separately enabled Hisn Text Safari Web Extension carries the shared JavaScript
+text scanner; website permission and actual phone behavior need separate checks.
+It does not inspect native-app content. Selected-app shielding uses Apple's private
 picker and requires Family Controls authorization. Family DNS uses a
 provider's categories; Safari carries Hisn's core list. Neither layer is
 advertised as an all-app, non-removable network filter.
