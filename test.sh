@@ -37,6 +37,8 @@ suite_python() {
         | tee /dev/stderr | grep -q "^OK" )
     echo "── python: verified network publication"
     python3 -m unittest discover -s network -p 'test_*.py'
+    echo "── python: clean unpacked extension staging"
+    python3 -m unittest discover -s extension/test -p 'test_*.py'
     echo "── python: mobile Safari rules"
     python3 -m unittest discover -s ios -p 'test_*.py'
 }
@@ -56,6 +58,8 @@ suite_release() {
 }
 
 suite_extension() {
+    echo "── extension: unpacked-load regression checks"
+    python3 -m unittest discover -s extension/test -p 'test_*.py'
     echo "── extension: unit"
     extension/test/run.sh
     echo "── extension: package"

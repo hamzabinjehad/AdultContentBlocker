@@ -192,7 +192,12 @@ it with the accountability partner; the user must never see it.
 
 ### Extension
 
-Load `extension/` unpacked in `chrome://extensions`. Needs Chrome 137+ for
+Prepare a clean local copy with
+`python3 extension/prepare_unpacked.py --out dist/hisn-unpacked-chrome-1.0.1`,
+then choose that folder in **Load unpacked** at `chrome://extensions`. Use a
+fresh output name per browser or update; the tool excludes generated `_metadata`
+caches without changing the pinned identity or overwriting a live folder.
+Needs Chrome 137+ for
 Ed25519 in WebCrypto. `rules/*.json` and `seed/terms.json` are placed by
 `blocklist/seed.py sync`, never by hand — see *Seed bundle* above.
 

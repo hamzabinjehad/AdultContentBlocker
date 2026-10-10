@@ -35,6 +35,7 @@ BROWSER="$(find_chromium)"
 [ -n "$BROWSER" ] || { echo "no Chromium that loads unpacked extensions — set CHROME" >&2; exit 1; }
 
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/hisn-scan-live.XXXXXX")"
+WORK="$(cd "$WORK" && pwd -P)"
 # Linux (CI): Ubuntu 24.04 forbids the unprivileged user namespaces Chrome's
 # sandbox needs, and a small /dev/shm crashes renderers. The pages are local
 # and ours, so the sandbox buys nothing here.
@@ -49,7 +50,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-rsync -a --exclude test --exclude _metadata --exclude keys "$EXT/" "$WORK/ext/"
+python3 "$EXT/prepare_unpacked.py" --out "$WORK/ext" >/dev/null
 cp "$HERE/scan-worker.js" "$HERE/scan-setup.html" "$HERE/scan-setup.js" "$WORK/ext/"
 python3 - "$WORK/ext/manifest.json" <<'PY'
 import json, sys

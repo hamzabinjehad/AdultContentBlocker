@@ -133,11 +133,28 @@ The extension is the only layer that reads page **text** — it is what catches
 adult content on a new domain or inside a general site, and where the Arabic
 vocabulary lives. Until it is on the Chrome Web Store, load it unpacked:
 
-1. Open `helium://extensions` (or `chrome://extensions`), switch on
-   **Developer mode**, **Load unpacked**, and pick this repository's
-   `extension/` folder. It loads with the pinned id
+1. Prepare a fresh browser-specific load folder from the repository root:
+
+   ```bash
+   python3 extension/prepare_unpacked.py --out dist/hisn-unpacked-chrome-1.0.1
+   ```
+
+   Choose a new output name for another browser or update. The tool refuses to
+   overwrite a folder a browser may already be using, leaves source untouched,
+   and excludes browser-generated caches. Do not use an extracted Web Store ZIP
+   for this step: store packaging removes the local identity key.
+2. Open `helium://extensions` (or `chrome://extensions`), switch on
+   **Developer mode**, **Load unpacked**, and pick the newly prepared
+   `dist/hisn-unpacked-chrome-1.0.1/` folder. It loads with the pinned id
    `hfhaffbmoeepcdolgejeidkgaoapcjig`.
-2. The Hisn popup should say **App connected** within a minute.
+3. The Hisn popup should say **App connected** within a minute.
+
+If loading a previously used folder fails with **Cannot load extension with
+file or directory name _metadata**, that is a browser-generated rules cache,
+not a reason to remove the manifest's `key` or weaken protection. Prepare a
+fresh folder as above and select it. Avoid sharing one unpacked directory
+between different browsers. A browser can create its own cache after loading;
+the staging tool never removes it or rewrites an already-used folder.
 
 Unpacked, it can be switched off on that page — which is exactly what the
 browser guard answers during a lock. Making it un-removable needs the store

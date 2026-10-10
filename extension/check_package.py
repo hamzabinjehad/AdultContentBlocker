@@ -47,7 +47,7 @@ PINNED = (
 BUILT_IN = ("rules/web_protection.json", "rules/safesearch.json", "lib/web-protection.js")
 
 FORBIDDEN_PREFIXES = ("test/", "eval/", "keys/", "_metadata/")
-FORBIDDEN_SUFFIXES = (".pem", ".DS_Store", "package.sh", "check_package.py")
+FORBIDDEN_SUFFIXES = (".pem", ".DS_Store", "package.sh", "check_package.py", "prepare_unpacked.py")
 
 
 class PageAssets(HTMLParser):
