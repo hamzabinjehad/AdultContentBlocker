@@ -173,6 +173,64 @@ await (async () => {
 })();
 
 await (async () => {
+  const caption = item("Today's weather"), safe = item("Gardening notes");
+  caption.setAttribute("aria-label", "fixtureadult");
+  safe.setAttribute("aria-label", "Video: planting tomatoes");
+  const h = harness([caption, safe]); h.scanner.start(); await flush();
+  check(hidden(caption) && !hidden(safe), "root article description is checked without blocking ordinary sibling video");
+  check(caption.media.paused && caption.inert === true, "root-description verdict withholds and pauses this article's media");
+  safe.media.paused = false; h.play(safe.media);
+  check(!safe.media.paused, "ordinary root-labelled video can be played manually after clean verdict");
+  caption.media.paused = false; h.play(caption.media);
+  check(caption.media.paused, "play event in root-description-blocked article is paused again");
+  check(h.messages[0].alt === "fixtureadult", "root description uses existing caption zone, not page or new payload fields");
+  const requests = h.messages.length;
+  caption.setAttribute("aria-label", "Video: weather forecast"); h.mutate(); await flush();
+  check(!hidden(caption) && h.messages.length === requests + 1, "changing only root description invalidates blocked verdict");
+  safe.setAttribute("aria-label", "fixtureadult"); h.mutate(); await flush();
+  check(hidden(safe), "root-description mutation invalidates clean verdict while body is unchanged");
+  h.scanner.stop();
+})();
+
+await (async () => {
+  const post = item("Weather", Array.from({ length: 10000 }, (_, i) => i === 9999 ? "tail caption" : "ordinary"));
+  post.setAttribute("aria-label", "root description");
+  const win = { getComputedStyle() { return { display: "block", visibility: "visible" }; } };
+  let zones = F.collectItemZones(post, win);
+  check(zones.alt.split("\n").length === F.MAX_CAPTION_NODES
+    && zones.alt.startsWith("root description\n") && zones.alt.endsWith("tail caption"),
+    "root caption participates in bounded node budget without losing descendant tail sample");
+  post.captions = [];
+  post.setAttribute("aria-label", "head" + "x".repeat(10000) + "tail");
+  zones = F.collectItemZones(post, win);
+  check(zones.alt.length === 2001 && zones.alt.startsWith("head") && zones.alt.endsWith("tail"),
+    "root description has the same bounded head/tail sample as other captions");
+  post.attrs["aria-label"] = { toString() { throw new Error("must not coerce attributes"); } };
+  check(F.collectItemZones(post, win).alt === "", "non-string root description is neither coerced nor transmitted");
+})();
+
+await (async () => {
+  const post = item("Weather"); post.setAttribute("aria-label", "fixtureadult");
+  post.parentElement = { display: "none" };
+  const h = harness([post]); h.scanner.start(); await flush();
+  check(h.messages.length === 0, "root description in an author-hidden ancestor is not scanned");
+  post.parentElement.display = "block"; h.mutate(); await flush();
+  check(hidden(post), "root description is judged when its article becomes visible");
+  h.scanner.stop();
+})();
+
+await (async () => {
+  let answer;
+  const post = item("Weather"), h = harness([post], (_, n) => n === 1
+    ? new Promise((resolve) => { answer = resolve; }) : { block: true, enabled: true });
+  h.scanner.start(); await flush();
+  post.setAttribute("aria-label", "fixtureadult"); answer({ block: false, enabled: true }); await flush();
+  check(hidden(post) && h.messages.length === 2 && h.scanner.stats.stale === 1,
+    "late clean verdict cannot release a changed root description before observer callback");
+  h.scanner.stop();
+})();
+
+await (async () => {
   let answer;
   const post = item(), h = harness([post], (_, n) => n === 1 ? new Promise((resolve) => { answer = resolve; }) : { block: true, enabled: true });
   h.scanner.start(); await flush(); h.loc.href = "https://x.com/person/status/2";

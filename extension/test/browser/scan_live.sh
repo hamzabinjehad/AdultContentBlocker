@@ -11,7 +11,7 @@
 #             has to replace the tab itself;
 #   clean   — an ordinary page, which must be left alone.
 #   policy  — unchanged content rechecked after a trusted settings update.
-#   x/twitter — one adult tweet/caption withheld, benign posts stay usable;
+#   x/twitter — signalled tweet/root/descendant captions withheld, benign posts stay usable;
 #              continuous additions, DOM recycling and policy rechecks use the
 #              real service-worker scorer without whole-tab redirects.
 #
@@ -72,11 +72,12 @@ adult = ("Watch free adult videos in HD. Thousands of adult movies added daily. 
          "Categories: anal sex, big tits, blowjob, amateur. Free porn, hardcore porn videos, "
          "xxx porn tube, nude girls, naked sex videos.")
 shy = " ".join("­".join(word) for word in adult.split())
-feed = """<!doctype html><meta charset=utf-8><title>Mixed feed fixture</title><body>
+feed = """<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Mixed feed fixture</title><body>
 <main><h1>Gardening feed</h1>
-<article data-testid=tweet id=safe><p data-testid=tweetText>How to grow tomatoes on a balcony.</p></article>
+<article data-testid=tweet id=safe aria-label="Video: planting tomatoes"><p data-testid=tweetText>How to grow tomatoes on a balcony.</p><video controls></video></article>
 <article data-testid=tweet id=bad><p data-testid=tweetText>ADULT_FIXTURE</p><video></video></article>
 <article data-testid=tweet id=caption><p data-testid=tweetText>Today's weather.</p><img alt="ADULT_FIXTURE"></article>
+<article data-testid=tweet id=rootcaption aria-label="ADULT_FIXTURE"><p data-testid=tweetText>Today's weather.</p><video></video></article>
 <article data-testid=tweet id=medical><p data-testid=tweetText>Medical education and clinical reproductive health.</p>
 <span hidden>ADULT_FIXTURE</span><script type=application/json>{"payload":"ADULT_FIXTURE"}</script></article>
 <article data-testid=tweet id=policy><p data-testid=tweetText>gardenfixture</p></article>
@@ -91,9 +92,17 @@ async function waitFor(predicate) {
   return false;
 }
 (async () => {
-  check(await waitFor(() => withheld('bad') && withheld('caption') && !withheld('safe') && !withheld('medical')),
-        'only signalled tweet/caption hidden; ordinary and medical/script-payload posts stay usable');
+  check(await waitFor(() => withheld('bad') && withheld('caption') && withheld('rootcaption') && !withheld('safe') && !withheld('medical')),
+        'signalled tweet/root/descendant captions hidden; ordinary and medical/script-payload posts stay usable');
   check(byId('bad').querySelector('video').paused, 'media in hidden article remains paused');
+  check(byId('rootcaption').querySelector('video').paused && byId('rootcaption').inert,
+        'root-only description withholds and pauses that video article');
+  check(!byId('safe').inert && byId('safe').querySelector('video').controls,
+        'ordinary labelled video remains visible with controls accessible');
+  byId('rootcaption').setAttribute('aria-label', 'Video: weather forecast');
+  check(await waitFor(() => !withheld('rootcaption')), 'root label mutation releases safe article without body change');
+  byId('rootcaption').setAttribute('aria-label', adult);
+  check(await waitFor(() => withheld('rootcaption')), 'root label mutation invalidates clean verdict without body change');
   check(byId('bad').getAttribute('aria-hidden') === 'true' && byId('safe').getAttribute('aria-hidden') !== 'true',
         'blocked article inaccessible; benign article accessibility preserved');
   check(byId('bad').inert && !byId('safe').inert, 'blocked item inert for keyboard navigation; ordinary item usable');
@@ -127,6 +136,7 @@ async function waitFor(predicate) {
   await pause(350); observer.disconnect();
   check(churn < 20, 'settled feed does not loop on scanner-owned style/notice mutations');
   const summary = document.createElement('pre'); summary.id = 'feed-summary';
+  summary.style.whiteSpace = 'pre-wrap'; summary.style.overflowWrap = 'anywhere';
   summary.textContent = JSON.stringify(results); document.body.append(summary);
   document.title = results.every((r) => r.ok) ? 'HISN FEED PASS' : 'HISN FEED FAIL';
 })().catch(() => { document.title = 'HISN FEED FAIL'; });
@@ -247,3 +257,10 @@ n=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1]).get("blocked",0))
     echo "tabs: $v"
     echo "--- the browser ($BROWSER), last lines:"; tail -15 "$WORK/browser.log" | sed 's/^/    /'
     echo "scan-live: FAIL"; exit 1; }
+
+# Optional local QA hook, before the isolated browser is cleaned up. The hook
+# receives only this test's DevTools port and scratch directory; normal CI has
+# no added runtime dependency. Never point it at the user's browser profile.
+if [ -n "${HISN_SCAN_LIVE_EVIDENCE_SCRIPT:-}" ]; then
+    "$HISN_SCAN_LIVE_EVIDENCE_SCRIPT" "$DEVTOOLS" "$WORK"
+fi

@@ -54,14 +54,22 @@
     // Our opacity withholding preserves rendering/layout and therefore innerText.
     const body = boundedText(item.innerText || "");
     const captions = [];
+    // querySelectorAll excludes the article itself. X may attach a media/post
+    // description directly to that root, not a descendant img or control.
+    // Keep it in the same bounded caption zone and node budget as descendants.
+    const rootLabel = item.getAttribute("aria-label");
+    if (typeof rootLabel === "string" && rootLabel && isRendered(item, null, win)) {
+      captions.push(boundedText(rootLabel, 2_000));
+    }
     const nodes = item.querySelectorAll("img[alt], [aria-label]");
     // A hostile/huge article must not allocate an unbounded joined payload.
     // Sample both ends, matching the bounded text path's documented limits.
+    const remaining = MAX_CAPTION_NODES - captions.length;
     let selected = nodes;
-    if (nodes.length > MAX_CAPTION_NODES) {
+    if (nodes.length > remaining) {
       selected = [];
-      for (let i = 0; i < MAX_CAPTION_NODES / 2; i++) selected.push(nodes[i]);
-      for (let i = nodes.length - MAX_CAPTION_NODES / 2; i < nodes.length; i++) selected.push(nodes[i]);
+      for (let i = 0; i < Math.ceil(remaining / 2); i++) selected.push(nodes[i]);
+      for (let i = nodes.length - Math.floor(remaining / 2); i < nodes.length; i++) selected.push(nodes[i]);
     }
     for (const el of selected) {
       if (!isRendered(el, item, win)) continue;

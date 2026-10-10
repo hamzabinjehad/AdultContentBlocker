@@ -193,13 +193,21 @@ it with the accountability partner; the user must never see it.
 ### Extension
 
 Prepare a clean local copy with
-`python3 extension/prepare_unpacked.py --out dist/hisn-unpacked-chrome-1.0.1`,
+`python3 extension/prepare_unpacked.py --out dist/hisn-unpacked-chrome-1.0.2`,
 then choose that folder in **Load unpacked** at `chrome://extensions`. Use a
 fresh output name per browser or update; the tool excludes generated `_metadata`
 caches without changing the pinned identity or overwriting a live folder.
 Needs Chrome 137+ for
 Ed25519 in WebCrypto. `rules/*.json` and `seed/terms.json` are placed by
 `blocklist/seed.py sync`, never by hand — see *Seed bundle* above.
+
+For X/Twitter, text checking hides individual signalled tweet articles,
+including descriptions attached to the article itself, and pauses their media.
+Ordinary articles remain available. This is text-based filtering, not visual
+video detection: media without useful text and viewers outside tweet articles
+can still be missed. After installing a new unpacked copy, reload existing
+X/Twitter tabs so they use its scanner. The iPhone/iPad Safari extension packages
+the same scanner; updating source files alone does not update an installed app.
 
 Its ID is pinned by the `"key"` in `manifest.json` (see
 `extension/keys/README.md`), so it loads as
