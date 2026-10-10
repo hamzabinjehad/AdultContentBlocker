@@ -1265,6 +1265,8 @@ private struct RulesPage: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            BrowserFirstGuide()
+            Divider()
             SiteListsSection(isLocked: isLocked)
             Divider()
             UserBlocksSection(isLocked: isLocked)
@@ -1942,7 +1944,7 @@ private struct SettingsPage: View {
                 Toggle(isOn: $settings.text) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Check the words on a page")
-                        Text("Reads the page itself, so it catches explicit content on an ordinary site. Chrome and Edge only.")
+                        Text("Checks changing page text in supported Chromium browsers with Hisn connected. Detected X/Twitter posts are hidden individually; other sites use page-level checking. Images and videos without meaningful text can be missed.")
                             .font(.callout).foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }

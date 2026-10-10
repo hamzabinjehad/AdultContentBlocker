@@ -89,6 +89,7 @@ struct MobileRootView: View {
             verifiedSetup
             readiness
             CommitmentSection(protection: protection)
+            BrowserFirstSection()
             AppUsageSection(protection: protection, usage: usage)
             Section("safari.title") {
                 Text("safari.steps")

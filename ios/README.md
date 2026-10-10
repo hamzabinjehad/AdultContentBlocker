@@ -31,6 +31,10 @@ runner, for example `platform=iOS Simulator,name=iPhone 17 Pro`.
   159,768 domains; increasing capacity requires explicit additional targets.
 - Domain requests and descendant hostnames are matched with host boundaries.
   Safari applies rules without reporting visited sites to Hisn.
+- A separate **Hisn Text** Safari Web Extension uses the shared on-device text
+  scorer and scanner. It hides detected X/Twitter posts individually and uses
+  page-level checking on other sites. It must be enabled and granted website
+  access separately; its access is explicitly unverified in Hisn's guide.
 - Optional encrypted Cloudflare Family DNS configuration, including IPv4 and
   IPv6 resolver addresses. This uses **Cloudflare categories**, not Hisn's list.
 - Actual DNS enabled-state readback and separate Safari state for each part.
@@ -53,7 +57,8 @@ shipping a new seed requires rebuilding and redistributing the app.
 
 ## Activate on a real device
 
-1. Set your Apple development team on the app and all four Safari targets.
+1. Set your Apple development team on the app, all four Safari domain targets,
+   and the separate Hisn Text target.
    Keep extension bundle IDs prefixed by the app ID. If changing the app ID,
    also change `shared/apple/MobileProtectionPolicy.swift` and the generator.
 2. Enable the app's **Network Extensions → DNS Settings** signing capability.
@@ -64,6 +69,9 @@ shipping a new seed requires rebuilding and redistributing the app.
    **not** verify real-device DNS activation.
 4. In Safari settings, enable **Hisn 1**, **Hisn 2**, **Hisn 3**, **Hisn 4**.
    Reload the rules from Hisn, then return to the protection tab and check state.
+   To add text checking, separately enable **Hisn Text**, grant access to each
+   wanted website, reload existing tabs and test profiles/private browsing.
+   The existing three-layer setup assessment does not certify these permissions.
 5. Optional: choose **Prepare family DNS**, accept Apple's permission dialog,
    then explicitly select **Hisn Family DNS** in system DNS settings. Return to
    Hisn; a saved-but-disabled configuration remains visibly incomplete.
@@ -89,8 +97,12 @@ below is optional and only appropriate for genuine child-device use.
 See [the shared self-control design](../docs/SELF_CONTROL_COMMITMENT.md) for
 actual enforcement layers, clock/persistence limits and real-device tests.
 
-Safari blocking does not read page text, scan images, filter non-Safari apps,
-or shield apps. DNS can be bypassed by alternate DNS, tunnels, Private Relay or
+The four Safari domain blockers do not read page text. Hisn Text separately
+checks permitted Safari pages; it does not classify image/video pixels, inspect
+other apps or guarantee every post. For optional native-app blocking while
+keeping its website available, select only the app, not its domain or an
+overlapping category. See [browser-first setup and tests](../docs/BROWSER_FIRST_PROTECTION.md).
+DNS can be bypassed by alternate DNS, tunnels, Private Relay or
 configuration removal; enabling it is not VPN-proof enforcement. There is no
 macOS system-extension installer on iOS, no hidden router setup, no phone/Mac
 settings synchronization, and no promise of undeletable or 100% protection.

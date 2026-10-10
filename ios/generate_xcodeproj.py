@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the universal iPhone/iPad app, four blockers and hosted tests.
+"""Generate the universal app, four blockers, web scanner and hosted tests.
 
 Reuses the repository's deterministic pbxproj writer, not macOS targets or
 entitlements. Does not delete existing projects or user Xcode settings.
@@ -21,17 +21,21 @@ def main() -> None:
     app, tests = "HisnMobile", "HisnMobileTests"
     blockers = [f"Hisn{i}" for i in range(1, 5)]
     monitor = "HisnActivityMonitor"
-    names = [app, *blockers, monitor, tests]
+    scanner = "HisnText"
+    names = [app, *blockers, monitor, scanner, tests]
     sources = {
         app: ["Hisn/HisnMobileApp.swift", "Hisn/MobileRootView.swift", "Hisn/ProtectionController.swift",
               "Hisn/MobileCommitmentStore.swift", "Hisn/CommitmentSection.swift",
-              "Hisn/AppUsageController.swift", "Hisn/AppUsageSection.swift", "Shared/AppUsageConfiguration.swift",
+              "Hisn/AppUsageController.swift", "Hisn/AppUsageSection.swift", "Hisn/BrowserFirstSection.swift",
+              "Shared/AppUsageConfiguration.swift",
               "../shared/apple/RouterAppDomains.swift", "../shared/apple/RouterAppDomainsView.swift",
               "../shared/apple/CommitmentPolicy.swift", "../shared/apple/MobileProtectionPolicy.swift",
               "../shared/apple/MirroredRuleStore.swift", "../shared/apple/ReadinessHistory.swift"],
-        tests: ["HisnTests/MobileProtectionTests.swift", "../shared/tests/MirroredRuleStoreTests.swift"],
+        tests: ["HisnTests/MobileProtectionTests.swift", "HisnTests/SafariWebScannerPackageTests.swift",
+                "../shared/tests/MirroredRuleStoreTests.swift"],
         monitor: ["HisnActivityMonitor/ActivityMonitor.swift", "Shared/AppUsageConfiguration.swift",
                   "../shared/apple/MirroredRuleStore.swift"],
+        scanner: ["HisnWebExtension/SafariWebExtensionHandler.swift"],
         **{name: ["HisnBlocker/ContentBlockerRequestHandler.swift"] for name in blockers},
     }
     resources = {app: ["Hisn/en.lproj/Localizable.strings", "Hisn/ar.lproj/Localizable.strings", "Hisn/Assets.xcassets"],
@@ -114,6 +118,7 @@ def main() -> None:
                         [refs[path] for path in resources.get(name, [])])]
         extra = {"PRODUCT_BUNDLE_IDENTIFIER": q("app.hisn.mobile" if name == app else
                  "app.hisn.mobile.tests" if name == tests else "app.hisn.mobile.activity" if name == monitor
+                 else "app.hisn.mobile.HisnText" if name == scanner
                  else f"app.hisn.mobile.blocker{blockers.index(name) + 1}")}
         deps = []
         if name in [app, *blockers]:
@@ -131,7 +136,7 @@ def main() -> None:
             extra["CODE_SIGN_ENTITLEMENTS"] = "Hisn/Hisn.entitlements"
             extra["ASSETCATALOG_COMPILER_APPICON_NAME"] = "AppIcon"
             embedded = []
-            for blocker in [*blockers, monitor]:
+            for blocker in [*blockers, monitor, scanner]:
                 embedded.append(p.add(oid("ios-embed", blocker), "PBXBuildFile", {
                     "fileRef": products[blocker], "settings": "{ATTRIBUTES = (RemoveHeadersOnCopy, );}"}))
                 deps.append(dependency(name, blocker))
@@ -143,6 +148,17 @@ def main() -> None:
             extra.update({"INFOPLIST_FILE": "HisnActivityMonitor/Info.plist",
                           "CODE_SIGN_ENTITLEMENTS": "HisnActivityMonitor/HisnActivityMonitor.entitlements",
                           "APPLICATION_EXTENSION_API_ONLY": "YES", "SKIP_INSTALL": "YES"})
+        elif name == scanner:
+            extra.update({"INFOPLIST_FILE": "HisnWebExtension/Info.plist",
+                          "APPLICATION_EXTENSION_API_ONLY": "YES", "SKIP_INSTALL": "YES"})
+            script = ('set -eu\nPYTHON="${HISN_PYTHON:-python3}"\n'
+                      '"$PYTHON" "$SRCROOT/prepare_web_extension.py" '
+                      '--output "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH"\n')
+            phases.append(p.add(oid("ios-verify-web-scanner", name), "PBXShellScriptBuildPhase", {
+                "name": q("Verify signed terms and stage shared Safari scanner"), "buildActionMask": "2147483647",
+                "files": "()", "inputPaths": "()", "outputPaths": "()", "alwaysOutOfDate": "1",
+                "shellPath": "/bin/sh", "shellScript": q(script).replace("\n", "\\n"),
+                "runOnlyForDeploymentPostprocessing": "0"}))
         elif name == tests:
             extra.update({"GENERATE_INFOPLIST_FILE": "YES", "BUNDLE_LOADER": q("$(TEST_HOST)"),
                           "TEST_HOST": q("$(BUILT_PRODUCTS_DIR)/HisnMobile.app/HisnMobile")})
@@ -182,7 +198,7 @@ def main() -> None:
 </Scheme>
 '''
     (schemes / f"{app}.xcscheme").write_text(scheme)
-    print("Generated ios/HisnMobile.xcodeproj: universal app, four Safari parts, tests")
+    print("Generated ios/HisnMobile.xcodeproj: universal app, four Safari parts, text scanner, tests")
 
 
 if __name__ == "__main__":

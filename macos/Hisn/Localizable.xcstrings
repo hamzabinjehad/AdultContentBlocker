@@ -1157,6 +1157,16 @@
         }
       }
     },
+    "Checks changing page text in supported Chromium browsers with Hisn connected. Detected X/Twitter posts are hidden individually; other sites use page-level checking. Images and videos without meaningful text can be missed." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يفحص النصوص المتغيرة في متصفحات Chromium المدعومة عند اتصال حصن. تُخفى منشورات X/Twitter المكتشفة كلّاً على حدة؛ وتُفحص المواقع الأخرى على مستوى الصفحة. قد يفوته محتوى الصور والفيديوهات بلا نصوص دالّة."
+          }
+        }
+      }
+    },
     "Choose what your network allows, regardless of the router brand or internet provider. Hisn does not configure routers automatically yet." : {
       "localizations" : {
         "ar" : {
@@ -2349,6 +2359,16 @@
         }
       }
     },
+    "If you choose, use Add app below to block the native app's new internet connections, then use its website with the Hisn extension connected. Do not add the service's domain to blocked sites if you want its website to remain available. Existing connections and cached or offline content are not removed." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إذا رغبت، استخدم «إضافة تطبيق» أدناه لحظر اتصالات الإنترنت الجديدة للتطبيق الأصلي، ثم استخدم موقعه مع اتصال إضافة حصن. لا تُضف نطاق الخدمة إلى المواقع المحظورة إذا أردت إبقاء موقعها متاحاً. لا تُزال الاتصالات القائمة أو المحتويات المحفوظة والمتاحة بلا إنترنت."
+          }
+        }
+      }
+    },
     "Immediate, and never without them." : {
       "localizations" : {
         "ar" : {
@@ -2547,6 +2567,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "الاحتفاظ بطريقة للاستعادة"
+          }
+        }
+      }
+    },
+    "Keep a service's website available while checking its text. In supported Chromium browsers, Hisn checks changing page text and individually hides detected X/Twitter posts; one detected post does not add the whole service to your blocked sites." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أبقِ موقع الخدمة متاحاً مع فحص نصوصه. في متصفحات Chromium المدعومة، يفحص حصن النصوص المتغيرة ويخفي منشورات X/Twitter المكتشفة كلّاً على حدة؛ اكتشاف منشور واحد لا يضيف الخدمة كلها إلى مواقعك المحظورة."
           }
         }
       }
@@ -3895,6 +3925,7 @@
       }
     },
     "Reads the page itself, so it catches explicit content on an ordinary site. Chrome and Edge only." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -4092,6 +4123,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Review next step"
+          }
+        }
+      }
+    },
+    "Review text checking" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "راجع فحص النصوص"
           }
         }
       }
@@ -4713,6 +4754,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Test name returned a non-null address"
+          }
+        }
+      }
+    },
+    "Text checking uses words, captions and image descriptions, not image or video classification. Media without meaningful text can be missed. Checking takes time, requires the extension and website access, and can make mistakes. Unsupported X/Twitter layouts remain unverified; other sites use page-level checking. Deliberate domain blocks and strict-mode rules still apply." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يستخدم فحص النصوص الكلمات والتعليقات وأوصاف الصور، وليس تصنيف الصور أو الفيديوهات. قد يفوته محتوى الوسائط بلا نصوص دالّة. يحتاج الفحص وقتاً وإضافةً مفعّلةً وصلاحية الوصول إلى الموقع، وقد يخطئ. تظل تصاميم X/Twitter غير المدعومة غير متحقّقة؛ وتُفحص المواقع الأخرى على مستوى الصفحة. تظل قيود النطاقات التي اخترتها وقواعد الوضع الصارم سارية."
           }
         }
       }
@@ -5414,6 +5465,16 @@
         }
       }
     },
+    "Use a protected browser for mixed-content services" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استخدم متصفحاً محمياً للخدمات ذات المحتوى المختلط"
+          }
+        }
+      }
+    },
     "Use the guide for %@" : {
       "localizations" : {
         "ar" : {
@@ -5478,6 +5539,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "أسابيع"
+          }
+        }
+      }
+    },
+    "What text checking cannot detect" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ما الذي لا يستطيع فحص النصوص اكتشافه"
           }
         }
       }

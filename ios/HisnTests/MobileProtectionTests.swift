@@ -136,6 +136,19 @@ final class MobileProtectionTests: XCTestCase {
         }
     }
 
+    func testBrowserFirstGuidanceShipsInEnglishAndArabic() throws {
+        for language in ["en", "ar"] {
+            let path = try XCTUnwrap(Bundle.main.path(forResource: language, ofType: "lproj"))
+            let localized = try XCTUnwrap(Bundle(path: path))
+            for key in ["browserfirst.title", "browserfirst.body", "browserfirst.unverified",
+                        "browserfirst.steps", "browserfirst.appOnly", "browserfirst.limits"] {
+                let text = localized.localizedString(forKey: key, value: nil, table: nil)
+                XCTAssertFalse(text.isEmpty, "\(language): \(key)")
+                XCTAssertNotEqual(text, key, "\(language): \(key)")
+            }
+        }
+    }
+
     @MainActor func testWallClockJumpDoesNotReplaceOrExpireRunningMobileCommitment() throws {
         let start = Date(timeIntervalSince1970: 1_800_000_000)
         var wall = start

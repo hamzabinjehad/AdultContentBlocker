@@ -66,6 +66,7 @@ APP_SOURCES = SHARED + [
     "../shared/apple/MirroredRuleStore.swift",
     "../shared/apple/ReadinessHistory.swift",
     "Hisn/ContentView.swift",
+    "Hisn/BrowserFirstGuide.swift",
     "Hisn/FilterController.swift",
     "Hisn/FilterSetupControl.swift",
     "Hisn/NetworkSetupGuide.swift",

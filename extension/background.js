@@ -15,6 +15,7 @@
 import { acceptList } from "./lib/verify.js";
 import { buildIndex, scorePage, isExempt, hostInList, withoutTerms }
   from "./lib/score.js";
+import "./content/feed.js";
 import { normalize } from "./lib/normalize.js";
 import { isLocked, effectiveStrict, shouldFailClosed, policyRules, tabsToBlock, canonicalHost,
          validatePatch, bridgePatch, RULE_DOWNLOADED_BASE, HEARTBEAT_GRACE_MS }
@@ -301,12 +302,16 @@ async function syncTextScanning(state) {
     }
     return;
   }
-  if (existing.length) return;
+  const scannerFiles = ["content/feed.js", "content/scan.js"];
+  if (existing.length && JSON.stringify(existing[0].js) === JSON.stringify(scannerFiles)) return;
+  // A registered script survives updates. Migrate older registrations that
+  // lack the granular feed dependency before accepting newly opened pages.
+  if (existing.length) await chrome.scripting.unregisterContentScripts({ ids: ["hisn-scan"] });
 
   await chrome.scripting.registerContentScripts([{
     id: "hisn-scan",
     matches: ["<all_urls>"],
-    js: ["content/scan.js"],
+    js: scannerFiles,
     runAt: "document_start",
     allFrames: true,
     // `allFrames` alone still misses the frames that carry no real URL of their
@@ -331,7 +336,7 @@ async function injectScannerIntoOpenTabs() {
   let tabs = [];
   try { tabs = await chrome.tabs.query({ url: ["http://*/*", "https://*/*"] }); } catch { return; }
   await Promise.all(tabs.map((t) => chrome.scripting.executeScript({
-    target: { tabId: t.id, allFrames: true }, files: ["content/scan.js"],
+    target: { tabId: t.id, allFrames: true }, files: ["content/feed.js", "content/scan.js"],
   }).catch(() => { /* a tab that closed, or a page we may not script */ })));
 }
 
@@ -377,6 +382,29 @@ async function scoreText(zones, sender) {
     if (sender?.tab?.id !== undefined && sender.frameId === 0) ensureBlocked(sender.tab.id, sender.url);
   }
   return { block: result.block };
+}
+
+/** Judge ONE rendered feed item. No block-page state, tab navigation, matched
+ * terms or host history is created by this path. Only known top-level feed
+ * origins can invoke it; client-supplied page title/URL/meta are ignored. */
+async function scoreFeedItem(zones, sender) {
+  let location;
+  try { location = new URL(sender?.url ?? ""); } catch { return { ok: false, reason: "unsupported-feed" }; }
+  if (sender?.frameId !== 0 || !globalThis.HisnFeed.isSupportedLocation(location)) {
+    return { ok: false, reason: "unsupported-feed" };
+  }
+  const state = await getState();
+  if (!(state.inspectText || state.failClosed || isLocked(state))) return { block: false, enabled: false };
+  const index = await getTermIndex(state.customTerms ?? [], state.ignoreTerms ?? []);
+  if (isExempt(location.hostname, index) || hostInList(location.hostname, state.textAllow ?? [])) {
+    return { block: false, enabled: false };
+  }
+  const itemZones = {
+    body: globalThis.HisnFeed.boundedText(zones?.body),
+    alt: globalThis.HisnFeed.boundedText(zones?.alt),
+  };
+  const sensitivity = state.failClosed ? 80 : (state.textSensitivity ?? 50);
+  return { block: scorePage(itemZones, index, sensitivity).block, enabled: true };
 }
 
 /**
@@ -972,7 +1000,7 @@ function fromExtensionPage(sender) {
 
 function senderAllowed(type, sender) {
   if (PAGE_MESSAGES.has(type)) return fromExtensionPage(sender);
-  if (type === "scoreText") return sender?.id === chrome.runtime.id && !!sender.tab;
+  if (type === "scoreText" || type === "scoreFeedItem") return sender?.id === chrome.runtime.id && !!sender.tab;
   return false;
 }
 
@@ -994,6 +1022,9 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         break;
       case "scoreText":
         sendResponse(await scoreText(msg.zones || {}, _sender));
+        break;
+      case "scoreFeedItem":
+        sendResponse(await scoreFeedItem(msg.zones || {}, _sender));
         break;
       case "reportWrongBlock":
         sendResponse(await transaction(() => reportWrongBlock(msg.host)));

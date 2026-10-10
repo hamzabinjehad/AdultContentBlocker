@@ -4,8 +4,8 @@
 "setup.status.checking" = "Checking the current layers";
 "setup.status.incomplete" = "Protection setup needs attention";
 "setup.status.configured" = "All three layer configurations verified";
-"setup.status.scope" = "This checks nonempty Safari rules, all four Safari switches, Hisn's Screen Time web filter and enabled Family DNS. It is configuration evidence—not proof of device-wide blocking or removal prevention. No button marks setup complete.";
-"setup.status.mixedcontent" = "Mixed-content apps such as X can still contain adult content. In Setup, choose and always block the apps or websites you want inaccessible. Hisn does not scan every app, image or video.";
+"setup.status.scope" = "This checks nonempty Safari rules, all four Safari switches, Hisn's Screen Time web filter and enabled Family DNS. It does not verify Hisn Text's website access or selected-app shields. It is configuration evidence—not proof of device-wide blocking or removal prevention. No button marks setup complete.";
+"setup.status.mixedcontent" = "Mixed-content apps such as X can still contain adult content. In Setup, you can choose to block only the native app and keep its website available with Hisn Text enabled and permitted in Safari. This is text checking, not inspection of every app, image or video.";
 "setup.next.check" = "Check the live state first. Downloading Hisn or starting a commitment does not activate these layers.";
 "setup.next.list" = "The bundled Safari rules are missing, empty or could not be verified. Install a verified Hisn build; do not rely on Safari switches alone.";
 "setup.next.safari" = "In Safari Settings, enable Hisn 1–4. Reload the rules in Setup if a reload failed, then check again.";
@@ -151,7 +151,7 @@
 "privacy.title" = "Privacy";
 "privacy.body" = "Hisn does not record visited sites or blocked browsing attempts. Safari applies declarative rules without sending browsing history to Hisn. Family DNS is handled by Cloudflare under its own privacy policy.";
 "coverage.title" = "What this version protects";
-"coverage.body" = "A self-control commitment, Safari domain blocking, optional family DNS and Apple's adult-content web filter. This does not guarantee all content, all apps, VPN resistance or protection that cannot be disabled. It works independently of your Mac; settings do not sync yet.";
+"coverage.body" = "A self-control commitment, Safari domain blockers, separately enabled Hisn Text webpage checking, selected-app shields, optional family DNS and Apple's adult-content web filter. These do not guarantee all content, all apps, VPN resistance or protection that cannot be disabled. Hisn works independently of your Mac; settings do not sync yet.";
 "apple.title" = "iPhone and iPad";
 "apple.body" = "One universal app for iOS and iPadOS 16 or later. Real-device DNS and Screen Time need signing and matching DNS Settings and Family Controls capabilities. Family Controls distribution also requires Apple's entitlement approval. An unsigned build is not an installable phone release.";
 "cancel" = "Cancel";
@@ -161,3 +161,9 @@
 "part.enabled" = "Enabled";
 "part.disabled" = "Disabled";
 "part.failed" = "Reload failed · retry";
+"browserfirst.title" = "Use websites with text checking";
+"browserfirst.body" = "Hisn Text is a separate Safari extension that checks changing webpage text on this device. Detected X/Twitter posts are hidden individually without adding the whole service to your blocked sites. Other websites use page-level checking.";
+"browserfirst.unverified" = "Text-scanner access is not verified here";
+"browserfirst.steps" = "In Safari's extension settings, enable Hisn Text and allow website access for each site you want checked. This is separate from Hisn 1–4 domain blockers. Reload existing tabs after enabling it; check profiles and private browsing separately. Merely installing Hisn does not enable the scanner.";
+"browserfirst.appOnly" = "If you choose to move a mixed-content service to Safari, select only its native app below and choose Always block. Do not select its website or an overlapping category if you want to keep the website available. Not every app has an equivalent website.";
+"browserfirst.limits" = "The scanner does not inspect other apps or classify image/video pixels. Textless media and unsupported feed layouts can be missed; content may appear before a verdict. Website permission, extension removal and OS authorization remain separate limits. Intentional site blocks and other protection rules still apply.";

@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Hisn Text",
+  "version": "1.0.0",
+  "description": "On-device web text checking. Hides text-flagged X/Twitter posts individually; does not classify image or video pixels.",
+  "icons": {"32": "icons/icon-32.png", "128": "icons/icon-128.png"},
+  "host_permissions": ["http://*/*", "https://*/*"],
+  "background": {"service_worker": "background.js", "type": "module"},
+  "content_scripts": [{
+    "matches": ["http://*/*", "https://*/*"],
+    "js": ["content/feed.js", "content/scan.js"],
+    "run_at": "document_start",
+    "all_frames": true
+  }],
+  "web_accessible_resources": [{
+    "resources": ["blocked.html", "blocked.js"],
+    "matches": ["http://*/*", "https://*/*"]
+  }],
+  "action": {"default_title": "Hisn Text"},
+  "content_security_policy": {"extension_pages": "script-src 'self'; object-src 'self'"}
+}

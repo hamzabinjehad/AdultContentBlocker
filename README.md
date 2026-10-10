@@ -45,9 +45,12 @@ partner/         the accountability partner's page: key, and signed approvals   
 
 The new iPhone/iPad development version is documented in [`ios/README.md`](ios/README.md).
 See [`docs/APPLE_PLATFORMS.md`](docs/APPLE_PLATFORMS.md) for platform boundaries.
-It shares the signed core list, not macOS privileges: Safari domain protection
-and optional family DNS are implemented; all-app filtering and Mac/phone sync
-are not. A signed real-device build is required before testing phone DNS.
+It shares the signed core list, not macOS privileges: Safari domain protection,
+an independently enabled Safari text-scanning extension and optional family DNS
+are implemented; all-app content scanning and Mac/phone sync are not. A signed
+real-device build is required before relying on phone enforcement.
+See [browser-first mixed-content protection](docs/BROWSER_FIRST_PROTECTION.md)
+for individual X/Twitter post checking and optional native-app restrictions.
 
 ## Testing
 

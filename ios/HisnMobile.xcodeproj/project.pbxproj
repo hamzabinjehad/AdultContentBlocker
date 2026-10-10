@@ -65,6 +65,12 @@
 			path = "Hisn/Assets.xcassets";
 			sourceTree = "<group>";
 		};
+		0EBF9AB5818BE3FB3CC7C87B  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/BrowserFirstSection.swift";
+			sourceTree = "<group>";
+		};
 		C34582A095CC840419BB2B67  = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -125,6 +131,18 @@
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = "HisnTests/MobileProtectionTests.swift";
+			sourceTree = "<group>";
+		};
+		5A4596A8AC23253937A69D67  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "HisnTests/SafariWebScannerPackageTests.swift";
+			sourceTree = "<group>";
+		};
+		C04E1F33DC7CE7CFD4CD8A41  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "HisnWebExtension/SafariWebExtensionHandler.swift";
 			sourceTree = "<group>";
 		};
 		76CFB910A4011D94CDB9761F  = {
@@ -190,6 +208,13 @@
 			sourceTree = BUILT_PRODUCTS_DIR;
 			includeInIndex = 0;
 		};
+		0BC62AF2FE57A9299247DC0B  = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.cfbundle;
+			path = HisnText.appex;
+			sourceTree = BUILT_PRODUCTS_DIR;
+			includeInIndex = 0;
+		};
 		348D69D2223DD3E5314F8853  = {
 			isa = PBXFileReference;
 			explicitFileType = wrapper.cfbundle;
@@ -206,6 +231,7 @@
 				4EBF2B2D008D1DFE6CF00CBB,
 				5FB357DD48BE21500641536B,
 				121F4066E0355F6750B62C82,
+				0BC62AF2FE57A9299247DC0B,
 				348D69D2223DD3E5314F8853,
 			);
 			name = Products;
@@ -224,6 +250,7 @@
 				F4A4A803611C34FD3F87E18B,
 				D962BB45B52B4FE0516D8BD8,
 				50D5E2EE75626431AAA2BD98,
+				0EBF9AB5818BE3FB3CC7C87B,
 				C34582A095CC840419BB2B67,
 				05D3E25C09E84BF6A4E4E3F9,
 				FCE2B547D5D74B8316E364F7,
@@ -232,6 +259,8 @@
 				97E3A110C1EF2759EB12FA3D,
 				1349496B0BFBD6AE9C197419,
 				663781E64B80A15C0EE27C59,
+				5A4596A8AC23253937A69D67,
+				C04E1F33DC7CE7CFD4CD8A41,
 				76CFB910A4011D94CDB9761F,
 				6A6050B4078DF3D6C6D4F890,
 				ED9BA85BF38759FD67931242,
@@ -266,6 +295,10 @@
 		9C919C0944858D597CE28EDE  = {
 			isa = PBXBuildFile;
 			fileRef = D962BB45B52B4FE0516D8BD8;
+		};
+		F18BE6724423D4FCCBFBB1F7  = {
+			isa = PBXBuildFile;
+			fileRef = 0EBF9AB5818BE3FB3CC7C87B;
 		};
 		E63E463FCF5BDC5519A9DB2A  = {
 			isa = PBXBuildFile;
@@ -306,6 +339,7 @@
 				C0C5CE59BE9FF4F661A17FCA,
 				D8DDC4F32728D713E18BFB81,
 				9C919C0944858D597CE28EDE,
+				F18BE6724423D4FCCBFBB1F7,
 				E63E463FCF5BDC5519A9DB2A,
 				67A34052DA24D995BDA10FA4,
 				4841FAB2F7715FBD6FB4C434,
@@ -437,6 +471,23 @@
 			target = 00C720EBBC64B62F3D0D6334;
 			targetProxy = FEDC253F063E752A22508B27;
 		};
+		72B49A4C39663C2BB16F9412  = {
+			isa = PBXBuildFile;
+			fileRef = 0BC62AF2FE57A9299247DC0B;
+			settings = {ATTRIBUTES = (RemoveHeadersOnCopy, );};
+		};
+		3C5AEED204A72B7B884BD37B  = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97FC7254CB7BA92C8E24EF04;
+			proxyType = 1;
+			remoteGlobalIDString = C9029192E9B2166080E0897B;
+			remoteInfo = HisnText;
+		};
+		FB54EF4C2030B44986F2DDAF  = {
+			isa = PBXTargetDependency;
+			target = C9029192E9B2166080E0897B;
+			targetProxy = 3C5AEED204A72B7B884BD37B;
+		};
 		FF30F53173E32C0B2BD5EA05  = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -448,6 +499,7 @@
 				A66C5D9B584A942C463541AE,
 				CC8C4C5A0855CC2BF9919DEB,
 				6A65D44DB56DBC698CEB58E7,
+				72B49A4C39663C2BB16F9412,
 			);
 			name = "Embed Safari Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -536,6 +588,7 @@
 				6102B47D09B56BD19F5AE689,
 				A689C6761368A631A0B9CDDE,
 				A87C639EC0A13A481755362C,
+				FB54EF4C2030B44986F2DDAF,
 			);
 			buildRules = ();
 		};
@@ -1141,9 +1194,132 @@
 			);
 			buildRules = ();
 		};
+		4EC8CBF81BA4B39066F43DA1  = {
+			isa = PBXBuildFile;
+			fileRef = C04E1F33DC7CE7CFD4CD8A41;
+		};
+		47240EB75ED6545AD0D04E78  = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4EC8CBF81BA4B39066F43DA1,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4FA555A2BDAD101894B2FBB0  = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		670CCE18B5D698E658D0AF5F  = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E6BBF294ADD6B7B944743AA6  = {
+			isa = PBXShellScriptBuildPhase;
+			name = "Verify signed terms and stage shared Safari scanner";
+			buildActionMask = 2147483647;
+			files = ();
+			inputPaths = ();
+			outputPaths = ();
+			alwaysOutOfDate = 1;
+			shellPath = /bin/sh;
+			shellScript = "set -eu\nPYTHON=\"${HISN_PYTHON:-python3}\"\n\"$PYTHON\" \"$SRCROOT/prepare_web_extension.py\" --output \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH\"\n";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1CFD6B2393AE479CB8D10991  = {
+			isa = XCBuildConfiguration;
+			name = Debug;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 1;
+				MARKETING_VERSION = 0.1.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.hisn.mobile.HisnText;
+				INFOPLIST_FILE = HisnWebExtension/Info.plist;
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				SKIP_INSTALL = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				ENABLE_TESTABILITY = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+			};
+		};
+		850121FBFE73989802F8F379  = {
+			isa = XCBuildConfiguration;
+			name = Release;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 1;
+				MARKETING_VERSION = 0.1.0;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.hisn.mobile.HisnText;
+				INFOPLIST_FILE = HisnWebExtension/Info.plist;
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				SKIP_INSTALL = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				ENABLE_TESTABILITY = NO;
+			};
+		};
+		4FB7EC867C6D3CBCA1D8C8C5  = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1CFD6B2393AE479CB8D10991,
+				850121FBFE73989802F8F379,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C9029192E9B2166080E0897B  = {
+			isa = PBXNativeTarget;
+			name = HisnText;
+			productName = HisnText;
+			productReference = 0BC62AF2FE57A9299247DC0B;
+			productType = "com.apple.product-type.app-extension";
+			buildConfigurationList = 4FB7EC867C6D3CBCA1D8C8C5;
+			buildPhases = (
+				47240EB75ED6545AD0D04E78,
+				4FA555A2BDAD101894B2FBB0,
+				670CCE18B5D698E658D0AF5F,
+				E6BBF294ADD6B7B944743AA6,
+			);
+			dependencies = (
+			);
+			buildRules = ();
+		};
 		85BBA81F143CB1411223B2CB  = {
 			isa = PBXBuildFile;
 			fileRef = 663781E64B80A15C0EE27C59;
+		};
+		CF445B6175B34EAAAD8E758E  = {
+			isa = PBXBuildFile;
+			fileRef = 5A4596A8AC23253937A69D67;
 		};
 		59C5F51CCE4172371A75875E  = {
 			isa = PBXBuildFile;
@@ -1154,6 +1330,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				85BBA81F143CB1411223B2CB,
+				CF445B6175B34EAAAD8E758E,
 				59C5F51CCE4172371A75875E,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1345,6 +1522,7 @@
 				BB1C2D1BC66CA79222500205,
 				FB57806DAC021B26192C5C34,
 				00C720EBBC64B62F3D0D6334,
+				C9029192E9B2166080E0897B,
 				8DEFDCFDEF4818A57B7545C8,
 			);
 		};

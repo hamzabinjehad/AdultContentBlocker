@@ -2,6 +2,7 @@
 // Model an existing installation upgraded while the legacy catch-all remains
 // enabled. Manifest defaults do not reset Chrome's persisted enabled rulesets.
 let state, dynamic = [], enabled = ["lockdown"], listener, nativeReply, rejectDynamic = false;
+let registeredScripts = [{ id: "hisn-scan", js: ["content/scan.js"] }], registrations = 0;
 globalThis.chrome = {
   storage: { local: {
     get: async () => ({ state }),
@@ -22,9 +23,9 @@ globalThis.chrome = {
     },
   },
   scripting: {
-    getRegisteredContentScripts: async () => [],
-    registerContentScripts: async () => {},
-    unregisterContentScripts: async () => {},
+    getRegisteredContentScripts: async () => registeredScripts,
+    registerContentScripts: async (scripts) => { registeredScripts = scripts; registrations++; },
+    unregisterContentScripts: async () => { registeredScripts = []; },
   },
   tabs: { query: async () => [] },
   runtime: {
@@ -71,6 +72,8 @@ const message = (msg, sender = OPTIONS) => new Promise((resolve) => listener(msg
 let checks = 0;
 function check(ok, label) { checks++; if (!ok) throw new Error(label); }
 await booted;
+check(registeredScripts[0].js.join(",") === "content/feed.js,content/scan.js" && registrations === 1,
+      "worker migrates legacy persisted scanner registration to feed dependency order");
 check(!enabled.includes("lockdown"), "worker startup retires an inherited legacy static lockdown");
 check(!dynamic.some((r) => r.condition.urlFilter === "*"),
       "a fresh unlocked worker does not replace stale static lockdown with dynamic lockdown");
@@ -211,5 +214,53 @@ delete testTab.pendingUrl;
 ensureBlocked(3, testTab.url);
 fire(1500); await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
 check(replacements === 1, "a refused page still open is replaced by the worker");
+
+// The actual granular worker branch, not a reimplementation of its policy.
+// jsc has no URL/fetch; provide only the protocol surface this branch needs.
+globalThis.URL = class {
+  constructor(value) {
+    const match = /^(https?):\/\/([^/?#]+)(?:[/?#]|$)/.exec(value);
+    if (!match) throw new Error("invalid fixture URL");
+    this.protocol = match[1] + ":"; this.hostname = match[2];
+  }
+};
+const seedTerms = JSON.parse(readFile("../seed/terms.json"));
+let termsFetches = 0, sessionWrites = 0;
+globalThis.fetch = async () => { termsFetches++; return { json: async () => seedTerms }; };
+chrome.storage.session = { set: async () => { sessionWrites++; } };
+const FEED = { id: "hisnextid", url: "https://x.com/home", tab: { id: 3 }, frameId: 0 };
+state = { ...DEFAULT_STATE, customTerms: ["fixtureadult"] };
+const replacementCount = replacements, timerCount = timers.filter((t) => t.ms === 1500).length;
+r = await message({ type: "scoreFeedItem", zones: { body: "fixtureadult" } }, FEED);
+check(r.block && r.enabled, "granular real worker detects selected post text");
+check(Object.keys(r).sort().join(",") === "block,enabled", "feed verdict reveals no matched terms/host/text");
+check(sessionWrites === 0 && replacements === replacementCount
+      && timers.filter((t) => t.ms === 1500).length === timerCount,
+      "granular adult verdict writes no session record and schedules no whole-tab enforcement");
+r = await message({ type: "scoreFeedItem", zones: { body: "Gardening notes", title: "fixtureadult", url: "fixtureadult", meta: "fixtureadult" } }, FEED);
+check(!r.block && r.enabled, "granular worker ignores supplied page title/path/meta");
+r = await message({ type: "scoreFeedItem", zones: { body: "Weather", alt: "fixtureadult" } }, FEED);
+check(r.block, "granular worker includes visible caption/alt signals");
+r = await message({ type: "scoreFeedItem", zones: { body: { malicious: "fixtureadult" }, alt: [] } }, FEED);
+check(!r.block, "non-string granular payloads are never coerced to text");
+state.ignoreTerms = ["fixtureadult"];
+check(!(await message({ type: "scoreFeedItem", zones: { body: "fixtureadult" } }, FEED)).block,
+      "granular scores preserve user term corrections");
+state.ignoreTerms = []; state.textAllow = ["x.com"];
+r = await message({ type: "scoreFeedItem", zones: { body: "fixtureadult" } }, FEED);
+check(!r.block && !r.enabled, "narrow text-only host exception suppresses granular scoring");
+state.textAllow = []; state.inspectText = false;
+check(!(await message({ type: "scoreFeedItem", zones: { body: "fixtureadult" } }, FEED)).enabled,
+      "unlocked text-scanning off disables granular layer, not baseline rules");
+state.lockUntil = Date.now() + 60000;
+check((await message({ type: "scoreFeedItem", zones: { body: "fixtureadult" } }, FEED)).block,
+      "active commitment keeps granular scoring despite stale inspect flag");
+for (const sender of [PAGE, { ...FEED, frameId: 1 }, { ...FEED, url: "https://x.com.evil.test/home" }, { ...FEED, url: "https://cdn.x.com/home" }]) {
+  r = await message({ type: "scoreFeedItem", zones: { body: "fixtureadult" } }, sender);
+  check(r.reason === "unsupported-feed", "feed scoring rejects unsupported origins/frames based on trusted sender");
+}
+check((await message({ type: "scoreFeedItem", zones: {} }, OPTIONS)).reason === "forbidden-sender",
+      "extension settings page cannot impersonate feed content frame");
+check(termsFetches === 1, "same worker vocabulary cached across individual item scores");
 
 print(`${checks}/${checks} production worker checks passed`);
