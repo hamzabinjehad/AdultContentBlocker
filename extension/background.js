@@ -18,11 +18,12 @@ import { buildIndex, scorePage, isExempt, hostInList, withoutTerms }
 import "./content/feed.js";
 import { normalize } from "./lib/normalize.js";
 import { isLocked, effectiveStrict, shouldFailClosed, policyRules, tabsToBlock, canonicalHost,
-         validatePatch, bridgePatch, RULE_DOWNLOADED_BASE, HEARTBEAT_GRACE_MS }
+         validatePatch, bridgePatch, visualPolicyWeakens, RULE_DOWNLOADED_BASE, HEARTBEAT_GRACE_MS }
   from "./lib/policy.js";
 import { createLock } from "./lib/serial.js";
 import { settingsAccess, restrictionsActive } from "./lib/settings.js";
 import { planGeneration, downloadedRuleIds, GENERATION_ARTIFACTS } from "./lib/generation.js";
+import { handleVisualMessage, getVisualStatus, disableVisualEngine, cancelVisualTab } from "./visual/broker.js";
 
 const NATIVE_HOST = "app.hisn.bridge";
 const LIST_BASE = "https://raw.githubusercontent.com/hamzabinjehad/AdultContentBlocker/lists";
@@ -60,6 +61,8 @@ const DEFAULT_STATE = {
   lastHeartbeat: 0,
   failClosed: false,        // true once we lost the native app mid-lock
   inspectText: true,        // page-text scoring
+  inspectVisual: false,    // explicit opt-in; model quality is not universal coverage
+  personBlur: "off",       // optional estimated-face preference, not adult content
   textSensitivity: 50,      // 0-100, higher = stricter (see lib/score.js)
   textAllow: [],            // hosts the user reported as WRONG page-text blocks;
                             // page-text scoring skips them. Extension-local (the
@@ -168,6 +171,7 @@ async function applyRules(state) {
   });
 
   await syncTextScanning(state);
+  await syncVisualScanning(state);
   await enforceOpenTabs(state);
 
   console.info("[hisn] rules applied", {
@@ -328,6 +332,35 @@ async function syncTextScanning(state) {
   // started while checking was off, pages opened while the extension was
   // switched off — would otherwise go unscanned for as long as they stay open.
   await injectScannerIntoOpenTabs();
+}
+
+/** A separate registration keeps visual inference independent of the text
+ * layer and avoids running/decoding media when the user did not opt in. */
+async function syncVisualScanning(state) {
+  const id = "hisn-visual";
+  const wanted = state.inspectVisual === true || (state.personBlur && state.personBlur !== "off");
+  const existing = await chrome.scripting.getRegisteredContentScripts({ ids: [id] }).catch(() => []);
+  const files = ["visual/capture.js", "content/visual.js"];
+  if (!wanted) {
+    await disableVisualEngine();
+    if (existing.some((script) => script.id === id)) {
+      await chrome.scripting.unregisterContentScripts({ ids: [id] });
+    }
+    return;
+  }
+  const current = existing.find((script) => script.id === id);
+  if (!current || JSON.stringify(current.js) !== JSON.stringify(files)) {
+    if (current) await chrome.scripting.unregisterContentScripts({ ids: [id] });
+    await chrome.scripting.registerContentScripts([{
+      id, matches: ["<all_urls>"], js: files, runAt: "document_start",
+      allFrames: true, matchOriginAsFallback: true, persistAcrossSessions: true,
+    }]);
+  }
+  let tabs = [];
+  try { tabs = await chrome.tabs.query({ url: ["http://*/*", "https://*/*"] }); } catch { return; }
+  await Promise.all(tabs.map((tab) => chrome.scripting.executeScript({
+    target: { tabId: tab.id, allFrames: true }, files,
+  }).catch(() => {})));
 }
 
 /** Run the scanner in every open web page now. It starts once per frame
@@ -882,6 +915,7 @@ async function guardedUpdate(rawPatch) {
       // sensitivity is tightening and is always allowed — the same asymmetry
       // every other guard in this file enforces.
       (patch.inspectText === false && state.inspectText) ||
+      visualPolicyWeakens(state, patch) ||
       (patch.textSensitivity !== undefined &&
         patch.textSensitivity < state.textSensitivity) ||
       // Exempting a host from the text layer is a loosening like any other, so
@@ -990,7 +1024,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
  * frame in a tab.
  */
 const PAGE_MESSAGES = new Set(["getState", "update", "forceSync", "reportWrongBlock",
-                               "reportWrongWord", "resolveDisputed"]);
+                               "reportWrongWord", "resolveDisputed", "getVisualStatus"]);
 
 function fromExtensionPage(sender) {
   return sender?.id === chrome.runtime.id
@@ -1001,10 +1035,17 @@ function fromExtensionPage(sender) {
 function senderAllowed(type, sender) {
   if (PAGE_MESSAGES.has(type)) return fromExtensionPage(sender);
   if (type === "scoreText" || type === "scoreFeedItem") return sender?.id === chrome.runtime.id && !!sender.tab;
+  if (["getVisualSettings", "inspectVisualMedia", "cancelVisualMedia"].includes(type)) {
+    return sender?.id === chrome.runtime.id && Number.isInteger(sender?.tab?.id)
+      && sender.tab.id >= 0 && Number.isInteger(sender.frameId) && sender.frameId >= 0;
+  }
   return false;
 }
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  // Only the private engine listener answers relayed engine operations. It
+  // validates the extension sender itself; this worker must not race its reply.
+  if (msg?.target === "hisn-visual-engine") return false;
   if (!senderAllowed(msg?.type, _sender)) {
     sendResponse({ ok: false, reason: "forbidden-sender" });
     return false;
@@ -1013,6 +1054,18 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     switch (msg?.type) {
       case "getState":
         sendResponse(await getState());
+        break;
+      case "getVisualSettings": {
+        const state = await getState();
+        sendResponse({ inspectVisual: state.inspectVisual === true, personBlur: state.personBlur ?? "off" });
+        break;
+      }
+      case "getVisualStatus":
+        sendResponse(await getVisualStatus(await getState()));
+        break;
+      case "inspectVisualMedia":
+      case "cancelVisualMedia":
+        sendResponse(await handleVisualMessage(msg, _sender, await getState()));
         break;
       case "update":
         sendResponse(await transaction(() => guardedUpdate(msg.patch || {})));
@@ -1045,5 +1098,10 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   return true; // async response
 });
 
+chrome.tabs.onRemoved?.addListener(tabId => { cancelVisualTab(tabId).catch(() => {}); });
+chrome.tabs.onUpdated?.addListener((tabId, change) => {
+  if (change.status === 'loading') cancelVisualTab(tabId).catch(() => {});
+});
+
 export { applyRules, guardedUpdate, DEFAULT_STATE, resolveDisputed, ensureAlarms, booted, ALARMS,
-         senderAllowed, ensureBlocked };
+         senderAllowed, ensureBlocked, syncVisualScanning };

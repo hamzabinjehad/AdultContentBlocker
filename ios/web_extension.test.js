@@ -1,5 +1,6 @@
 // The Python package test places this harness beside the staged resources.
-import { checkedRequest, messageHandler } from "./background.js";
+import { checkedRequest, messageHandler, checkedVisualRequest,
+  checkedVisualPatch, visualMessageHandler } from "./background.js";
 import { buildIndex } from "./lib/score.js";
 
 // JavaScriptCore's bare shell has no browser URL class; Node and real browsers
@@ -44,6 +45,51 @@ async function main() {
       update: async (id, options) => updates.push({ id, options }),
       create: async (options) => { replacements.push(options); return { id: 2 }; },
       remove: async (id) => removed.push(id) } };
+  let stored = { inspectVisual: true, personBlur: "all" };
+  api.storage = { local: { get: async () => ({ state: stored }),
+    set: async ({ state }) => { stored = state; } } };
+  const options = { id: sender.id, url: api.runtime.getURL("options.html") };
+  for (const type of ["getVisualSettings", "inspectVisualMedia", "cancelVisualMedia"]) {
+    check(checkedVisualRequest({ type }, sender, api), "HTTP content visual request permitted");
+    for (const altered of [{ ...sender, id: "foreign" }, { ...sender, frameId: -1 },
+      { ...sender, tab: { id: -1 } }, { ...sender, url: "file:///example" },
+      { ...sender, url: "not a URL" }]) {
+      check(!checkedVisualRequest({ type }, altered, api), "Untrusted visual sender rejected");
+    }
+  }
+  for (const type of ["getVisualSettings", "getVisualStatus", "saveVisualSettings"]) {
+    check(checkedVisualRequest({ type }, options, api), "Own options visual request permitted");
+  }
+  check(!checkedVisualRequest({ type: "saveVisualSettings" }, sender, api), "Content cannot change visual preferences");
+  check(!checkedVisualRequest({ type: "getVisualStatus" }, sender, api), "Content cannot probe engine status");
+  check(!checkedVisualRequest({ type: "saveVisualSettings" }, { ...options, url: api.runtime.getURL("blocked.html") }, api),
+    "Another extension page cannot mutate preferences");
+  for (const patch of [null, [], {}, { inspectVisual: 1 }, { personBlur: "unknown" },
+    { inspectVisual: true, allowlist: ["x.com"] }, { inspectVisual: "true" }]) {
+    check(checkedVisualPatch(patch) === null, "Malformed visual settings rejected");
+  }
+  check(checkedVisualPatch({ inspectVisual: true, personBlur: "female" })?.personBlur === "female", "Valid opt-in visual preferences accepted");
+  const inspectionInputs = [];
+  const visual = visualMessageHandler(api, { inspect: async (message, source, preferences) => {
+    inspectionInputs.push(preferences); return { state: "ready" };
+  }, status: async () => ({ state: "loading" }) });
+  function visualRequest(message, source = options, handler = visual) {
+    return new Promise((resolve, reject) => {
+      if (!handler(message, source, resolve)) reject(new Error("Visual request rejected"));
+    });
+  }
+  check((await visualRequest({ type: "getVisualSettings" })).inspectVisual === true, "Visual defaults read only from local settings");
+  await visualRequest({ type: "inspectVisualMedia", inspectVisual: false, personBlur: "off" }, sender);
+  check(inspectionInputs[0].inspectVisual === true && inspectionInputs[0].personBlur === "all", "Page payload cannot override saved visual policy");
+  check((await visualRequest({ type: "getVisualStatus" })).state === "loading", "Model status returned without clean-media claim");
+  check((await visualRequest({ type: "saveVisualSettings", patch: { personBlur: "male" } })).settings.personBlur === "male", "Options persist a bounded visual setting");
+  check((await visualRequest({ type: "saveVisualSettings", patch: { inspectText: false } })).error === "invalid-settings", "Visual options cannot disable text scanner");
+  stored = { inspectVisual: "yes", personBlur: "unsupported" };
+  const sanitized = await visualRequest({ type: "getVisualSettings" });
+  check(sanitized.inspectVisual === false && sanitized.personBlur === "off", "Malformed stored preferences fail to opt in");
+  api.storage.local.get = async () => { throw new Error("Storage unavailable"); };
+  const visualUnavailable = await visualRequest({ type: "getVisualSettings" });
+  check(visualUnavailable.state === "unavailable" && visualUnavailable.block === undefined, "Storage failure never becomes a clean verdict");
   async function score(message, source = sender, load = async () => index) {
     return new Promise((resolve, reject) => {
       if (!messageHandler(api, load)(message, source, resolve)) reject(new Error("Message rejected"));

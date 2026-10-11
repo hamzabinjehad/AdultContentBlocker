@@ -108,6 +108,19 @@ install requires someone signed in; an update retains the existing agent's
 account. It does not change account roles, install a removal-password profile,
 or set a Screen Time passcode automatically.
 
+For a local development update, build and test as the ordinary account before
+running `macos/install.sh --built-app /absolute/path/to/Hisn.app` with administrator
+permission. This skips building even when invoked by a macOS administrator
+prompt. The staged app must pass signature validation and have a newer build
+number; an existing signed app cannot be downgraded to another team or ad-hoc
+signing. An active Hisn system filter also prevents an ad-hoc replacement.
+The installer retains the existing protected account and login-agent file,
+keeps the previous bundle under the root-only
+`/Library/Application Support/Hisn Updates/backup.*` folder, and attempts to
+restore it if bundle replacement or agent loading fails. It does not erase
+protection policy or browser data. A local ad-hoc build does not provide a
+signed or approved system filter, nor replace signed-device acceptance testing.
+
 Record each result in RELEASE_VALIDATION.md. An unsigned build is evidence of
 compilation and package structure only. Keep every untested signed/device case
 marked pending.

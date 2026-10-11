@@ -570,19 +570,15 @@ final class NativeMessagingInstallerTests: XCTestCase {
             "/Library/Application Support/net.imput.helium/NativeMessagingHosts")
     }
 
-    /// Every browser the profile force-installs the extension on must also get
-    /// a native-messaging link, or the extension is installed there and mute.
-    /// The two lists living in different files (Swift here, Python in
-    /// `make_profile.py`) is the drift risk; this asserts the family the app
-    /// links matches the family the profile locks, by the bundle-id-free names
-    /// they share.
+    /// The configured native-link subset must stay aligned with the Python
+    /// profile catalog. Policy candidates without a host remain distinct;
+    /// this test is not proof of live managed installation in every fork.
     func testFamilyMatchesTheForceInstallProfile() {
         let linked = Set(NativeMessagingInstaller.browsers.map(\.name))
         for name in ["Chrome", "Edge", "Brave", "Vivaldi", "Opera",
-                     "Arc", "Chromium", "Helium"] {
+                     "Arc", "Chromium", "Helium", "Chrome Beta", "Chrome Dev", "Chrome Canary"] {
             XCTAssertTrue(linked.contains(name),
-                "\(name) is force-installed by the profile but has no "
-                + "native-messaging host written — it would run mute")
+                "\(name) is missing from the configured native-link catalog")
         }
     }
 
@@ -593,12 +589,35 @@ final class NativeMessagingInstallerTests: XCTestCase {
     /// branded exceptions Chromium hard-codes and are checked separately.
     func testForkSystemPathsFollowTheConvention() {
         for browser in NativeMessagingInstaller.browsers
-            where browser.name != "Chrome" && browser.name != "Edge" {
+            where !browser.bundleID.hasPrefix("com.google.Chrome") && browser.name != "Edge" {
             XCTAssertEqual(browser.systemDir,
                 "/Library/Application Support/\(browser.userSupportDir)/NativeMessagingHosts",
                 "\(browser.name)'s system and user directories name different "
                 + "product folders")
         }
+    }
+
+    func testChromeChannelsShareSystemHostButHaveDistinctUserDirectories() throws {
+        for (id, suffix) in [("com.google.Chrome.beta", "Beta"),
+                             ("com.google.Chrome.dev", "Dev"),
+                             ("com.google.Chrome.canary", "Canary")] {
+            let browser = try XCTUnwrap(NativeMessagingInstaller.browsers.first { $0.bundleID == id })
+            XCTAssertEqual(browser.systemDir, "/Library/Google/Chrome/NativeMessagingHosts")
+            XCTAssertEqual(browser.userSupportDir, "Google/Chrome \(suffix)")
+            XCTAssertEqual(browser.policyDomain, id)
+        }
+        XCTAssertEqual(Set(NativeMessagingInstaller.browsers.map(\.bundleID)).count,
+                       NativeMessagingInstaller.browsers.count)
+        XCTAssertEqual(Set(NativeMessagingInstaller.browsers.map(\.userSupportDir)).count,
+                       NativeMessagingInstaller.browsers.count)
+    }
+
+    func testPolicyDomainIsNotConfusedWithEdgeApplicationIdentity() throws {
+        let edge = try XCTUnwrap(NativeMessagingInstaller.browsers.first { $0.name == "Edge" })
+        XCTAssertEqual(edge.bundleID, "com.microsoft.edgemac")
+        XCTAssertEqual(edge.policyDomain, "com.microsoft.Edge")
+        XCTAssertEqual(NativeMessagingInstaller.browsers.first { $0.name == "Helium" }?.policyDomain,
+                       "net.imput.helium")
     }
 }
 

@@ -6,7 +6,7 @@ const check = (ok, label) => { results.push(`${ok ? "ok" : "FAIL"} ${label}`); i
 const pause = () => new Promise((resolve) => setTimeout(resolve, 100));
 try {
   const source = await (await fetch("../../popup.html")).text();
-  async function frame(state, language = "en", privateAccess = true) {
+  async function frame(state, language = "en", privateAccess = true, viewport = {width:360,height:650}) {
     const f = document.createElement("iframe");
     const mock = `<script>
       window.opened = 0;
@@ -21,13 +21,14 @@ try {
           sendMessage(msg, cb) {
             if (workerUnavailable) throw new Error('Worker unavailable');
             if (msg.type === 'getState') return cb(${JSON.stringify(state)});
+            if (msg.type === 'getVisualStatus') return cb({state:'disabled',available:true});
             syncCalls++;
             setTimeout(() => cb({ok:false}), syncDelay);
           } }
       };
     <\/script>`;
     f.srcdoc = source.replace('<head>', `<head><base href="${new URL('../../popup.html', location.href).href}">${mock}`);
-    f.style.width = "360px"; f.style.height = "650px";
+    f.style.width = `${viewport.width}px`; f.style.height = `${viewport.height}px`;
     document.getElementById("frames").append(f);
     await new Promise((resolve) => f.onload = resolve); await pause(); return f;
   }
@@ -67,6 +68,33 @@ try {
   a.getElementById("langSwitch").click(); await pause();
   check(a.documentElement.dir === "ltr" && a.getElementById("pHead").textContent === "Protection active", "language switch rerenders status");
   check(a.getElementById("checkConnection").title === "Check connection", "icon command has a translated tooltip");
+  async function checkCompactPopup(language, viewport) {
+    const f = await frame(base, language, false, viewport), d = f.contentDocument, w = f.contentWindow;
+    const main = d.querySelector(".popup-scroll"), firstLayer = d.querySelector(".layer-checklist li");
+    check(d.documentElement.scrollWidth <= w.innerWidth, `${language} ${viewport.width}×${viewport.height}: popup fits horizontally`);
+    check(main.clientHeight > 0 && main.clientHeight >= firstLayer.clientHeight, `${language} ${viewport.width}×${viewport.height}: protection layers never collapse`);
+    check(w.getComputedStyle(main).overflowY === "visible", `${language} ${viewport.width}×${viewport.height}: one document scroll instead of a trapped inner scroll`);
+    const scrolling = d.scrollingElement;
+    firstLayer.scrollIntoView({block:"start"});
+    let rect = firstLayer.getBoundingClientRect();
+    check(rect.top >= -1 && rect.top < w.innerHeight, `${language} ${viewport.width}×${viewport.height}: first protection layer is reachable`);
+    for (const id of ["langSwitch", "openSettings", "checkConnection"]) {
+      const button = d.getElementById(id);
+      button.scrollIntoView({block:"nearest"});
+      rect = button.getBoundingClientRect();
+      check(rect.top >= -1 && rect.bottom <= w.innerHeight + 1 && rect.left >= -1 && rect.right <= w.innerWidth + 1, `${language} ${viewport.width}×${viewport.height}: ${id} remains reachable`);
+    }
+    check(scrolling.scrollHeight > scrolling.clientHeight, `${language} ${viewport.width}×${viewport.height}: full popup can scroll`);
+  }
+  for (const language of ["en", "ar"]) {
+    await checkCompactPopup(language, {width:200,height:280});
+    await checkCompactPopup(language, {width:400,height:280});
+    await checkCompactPopup(language, {width:200,height:650});
+    const normal = await frame(base, language, false, {width:400,height:600}), d = normal.contentDocument;
+    const main = d.querySelector(".popup-scroll"), firstLayer = d.querySelector(".layer-checklist li");
+    check(normal.contentWindow.getComputedStyle(main).overflowY === "auto" && main.clientHeight >= firstLayer.clientHeight, `${language}: normal popup keeps its usable layer scroll`);
+    check(d.getElementById("checkConnection").getBoundingClientRect().bottom <= normal.contentWindow.innerHeight, `${language}: normal popup keeps actions visible`);
+  }
   document.getElementById("summary").dataset.result = "pass";
 } catch (error) {
   results.push(`FAIL ${error.stack}`); document.getElementById("summary").dataset.result = "fail";

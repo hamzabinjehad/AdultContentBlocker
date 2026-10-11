@@ -37,7 +37,8 @@ import UserNotifications
 /// can do anything. It turns "switch the extension off" from a one-click
 /// escape into one that closes the browser, and the installer's LaunchAgent
 /// can bring the app back if it is quit when separately installed. A heartbeat
-/// identifies a browser bundle, not every profile or private window in it.
+/// identifies the native host's browser process, not every profile or private
+/// window in it. Actual browser parent attribution needs deployment verification.
 public enum BrowserGuardPolicy {
     public static func isActive(locked: Bool, requireOutsideLock: Bool) -> Bool {
         locked || requireOutsideLock
@@ -50,6 +51,15 @@ public enum BrowserGuardPolicy {
         return local
     }
 
+    /// Never borrow a bundle-level or another process's healthy check-in.
+    /// Older bridges need updating together with the app before guarding.
+    public static func checkIn(browser: String, processID: Int32,
+                                authority: [String: Date]?, local: Date?) -> Date? {
+        guard let key = BrowserCheckInIdentity.key(browser: browser, processID: processID) else { return nil }
+        if let authority { return authority[key] }
+        return local
+    }
+
     /// Session-local timing by browser, not process. An unverified restart
     /// cannot buy a new connection grace or warning countdown.
     public struct Session {
@@ -58,9 +68,36 @@ public enum BrowserGuardPolicy {
         private var instances: [String: String] = [:]
         private var healthyRestart: Set<String> = []
         private var closedBrowsers: Set<String> = []
+        private var activeInstances: [String: Set<String>] = [:]
+        private var instanceViolations: [String: [String: Date]] = [:]
+        private var verifiedInstances: [String: Set<String>] = [:]
+        private var closedInstances: [String: Set<String>] = [:]
         public init() {}
+        /// Snapshot the complete pass before observing any process. A healthy
+        /// sibling must not erase another running process's recovery deadline.
+        public mutating func setRunningInstances(_ instances: [String: Set<String>]) {
+            activeInstances = instances
+        }
+        public func hasUnresolvedWarning(browser: String) -> Bool { violations[browser] != nil }
         public mutating func graceStart(browser: String, now: Date, notBefore floor: Date,
                                         instance: String? = nil) -> Date {
+            if (activeInstances[browser]?.count ?? 0) > 1 {
+                if let instance, instanceViolations[browser]?[instance] == nil,
+                   !(verifiedInstances[browser]?.contains(instance) ?? false) {
+                    // A new offender after a completed closure gets the short
+                    // repeat warning. A still-running refusing process does not.
+                    let retired = (closedInstances[browser] ?? [])
+                        .subtracting(activeInstances[browser] ?? [])
+                    for old in retired { instanceViolations[browser]?[old] = nil }
+                    closedInstances[browser]?.subtract(retired)
+                    if !retired.isEmpty {
+                        violations[browser] = instanceViolations[browser]?.values.min()
+                    }
+                }
+                if starts[browser] == nil { starts[browser] = now }
+                healthyRestart.remove(browser)
+                return max(starts[browser]!, floor)
+            }
             if let instance, instances[browser] != instance {
                 // A genuinely new process after closure gets its repeat warning.
                 // The still-running process refusing quit keeps its old deadline.
@@ -77,7 +114,40 @@ public enum BrowserGuardPolicy {
         }
         public func firstViolation(browser: String) -> Date? { violations[browser] }
         public mutating func observe(_ verdict: Verdict, browser: String, at now: Date,
-                                      verifiedConnection: Bool = false) {
+                                      verifiedConnection: Bool = false, instance: String? = nil) {
+            if let instance {
+                switch verdict {
+                case .warn:
+                    // A new warning supersedes this instance's older closure.
+                    // Its next restart must preserve the current deadline.
+                    closedInstances[browser]?.remove(instance)
+                    verifiedInstances[browser]?.remove(instance)
+                    if instanceViolations[browser]?[instance] == nil {
+                        // This process already inherited the browser's visible
+                        // deadline. Repairing a sibling must not extend it.
+                        instanceViolations[browser, default: [:]][instance] = violations[browser] ?? now
+                    }
+                case .ok:
+                    if verifiedConnection { closedInstances[browser]?.remove(instance) }
+                    // An already-healthy sibling cannot clear a stopped
+                    // offender's deadline and grant its relaunch another minute.
+                    let newlyVerified = verifiedConnection &&
+                        !(verifiedInstances[browser]?.contains(instance) ?? false)
+                    if newlyVerified && (activeInstances[browser]?.count ?? 0) <= 1 {
+                        instanceViolations[browser] = nil
+                    } else {
+                        instanceViolations[browser]?[instance] = nil
+                    }
+                    if verifiedConnection { verifiedInstances[browser, default: []].insert(instance) }
+                case .close:
+                    closedInstances[browser, default: []].insert(instance)
+                }
+                if case .ok = verdict, let unresolved = instanceViolations[browser]?.values.min() {
+                    violations[browser] = unresolved
+                    healthyRestart.remove(browser)
+                    return
+                }
+            }
             switch verdict {
             case .ok:
                 violations[browser] = nil
@@ -99,6 +169,8 @@ public enum BrowserGuardPolicy {
         public mutating func reset() {
             starts.removeAll(); violations.removeAll()
             instances.removeAll(); healthyRestart.removeAll(); closedBrowsers.removeAll()
+            activeInstances.removeAll(); instanceViolations.removeAll(); verifiedInstances.removeAll()
+            closedInstances.removeAll()
         }
     }
 
@@ -553,12 +625,19 @@ public final class BrowserGuard: ObservableObject {
         // Regular AND accessory apps: a browser relaunched as an agent
         // (LSUIElement) still shows web pages. An app with no bundle id is
         // judged by its path.
-        for app in NSWorkspace.shared.runningApplications
-        where app.activationPolicy != .prohibited && !app.isTerminated {
+        let applications = NSWorkspace.shared.runningApplications.filter { app in
+            guard app.activationPolicy != .prohibited, !app.isTerminated else { return false }
             let id = app.bundleIdentifier ?? app.bundleURL?.path ?? app.executableURL?.path ?? ""
-            guard !id.isEmpty, id != own,
-                  isBrowser(id: id, bundleURL: app.bundleURL, linked: linked)
-            else { continue }
+            return !id.isEmpty && id != own && isBrowser(id: id, bundleURL: app.bundleURL, linked: linked)
+        }
+        var allInstances: [String: Set<String>] = [:]
+        for app in applications {
+            let id = app.bundleIdentifier ?? app.bundleURL?.path ?? app.executableURL?.path ?? ""
+            allInstances[id, default: []].insert("\(app.processIdentifier):\(app.launchDate?.timeIntervalSinceReferenceDate ?? 0)")
+        }
+        session.setRunningInstances(allInstances)
+        for app in applications {
+            let id = app.bundleIdentifier ?? app.bundleURL?.path ?? app.executableURL?.path ?? ""
             let pid = app.processIdentifier
             running.insert(pid)
             let instance = "\(pid):\(app.launchDate?.timeIntervalSinceReferenceDate ?? 0)"
@@ -570,8 +649,8 @@ public final class BrowserGuard: ObservableObject {
             let coverage = BrowserGuardPolicy.coverage(bundleID: id, linked: linked,
                                                        userAllowed: allowed)
             let lastSeen = BrowserGuardPolicy.instanceCheckIn(
-                lastSeen: BrowserGuardPolicy.checkIn(browser: id, authority: authorityCheckIns,
-                    local: ExtensionPresence.lastSeen(browser: id, in: defaults)),
+                lastSeen: BrowserGuardPolicy.checkIn(browser: id, processID: pid, authority: authorityCheckIns,
+                    local: ExtensionPresence.lastSeen(browser: id, processID: pid, in: defaults)),
                 launchedAt: app.launchDate)
             let graceStart = session.graceStart(browser: id, now: now,
                 notBefore: max(awakeSince, max(started, enforcementBegan)),
@@ -594,11 +673,13 @@ public final class BrowserGuard: ObservableObject {
             let name = app.localizedName ?? id
             let verifiedConnection = !profileLoss && coverage == .needsExtension &&
                 BrowserGuardPolicy.extensionAlive(lastSeen: lastSeen, now: now)
-            session.observe(verdict, browser: id, at: now, verifiedConnection: verifiedConnection)
+            session.observe(verdict, browser: id, at: now, verifiedConnection: verifiedConnection, instance: instance)
 
             switch verdict {
             case .ok:
-                if verifiedConnection { recentlyClosed.removeValue(forKey: id) }
+                if verifiedConnection && !session.hasUnresolvedWarning(browser: id) {
+                    recentlyClosed.removeValue(forKey: id)
+                }
                 notified.remove(pid)
                 closing.removeValue(forKey: pid)?.cancel()
                 closingIDs.removeValue(forKey: pid)
@@ -717,8 +798,8 @@ public final class BrowserGuard: ObservableObject {
                 linked: Set(NativeMessagingInstaller.browsers.map(\.bundleID)),
                 userAllowed: self.effectiveAllowed)
             let seen = BrowserGuardPolicy.instanceCheckIn(
-                lastSeen: BrowserGuardPolicy.checkIn(browser: id, authority: FilterSync.shared.status?.checkIns,
-                    local: ExtensionPresence.lastSeen(browser: id, in: self.defaults)),
+                lastSeen: BrowserGuardPolicy.checkIn(browser: id, processID: pid, authority: FilterSync.shared.status?.checkIns,
+                    local: ExtensionPresence.lastSeen(browser: id, processID: pid, in: self.defaults)),
                 launchedAt: launchDate)
             let notBefore = BrowserGuardPolicy.forceRecoveryDeadline(
                 requestedAt: requestedAt, awakeSince: self.awakeSince,

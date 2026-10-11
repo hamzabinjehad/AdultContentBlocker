@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import fnmatch
+import hashlib
 from html.parser import HTMLParser
 import json
 import os
@@ -24,11 +25,21 @@ import sys
 from urllib.parse import unquote, urlsplit
 
 SOURCE = Path(__file__).resolve().parent
-SKIP_DIRECTORIES = {"test", "eval", "keys", "scripts", "dist", "__MACOSX"}
+SKIP_DIRECTORIES = {"test", "eval", "keys", "scripts", "dist", "__MACOSX", "node_modules"}
 SKIP_FILES = {"package.sh", "check_package.py", "prepare_unpacked.py", "id_rsa", "id_ed25519"}
+VISUAL_BUILD_FILES = {"visual/engine.js", "visual/build.mjs", "visual/package.json", "visual/pnpm-lock.yaml"}
 SKIP_SUFFIXES = {".py", ".pyc", ".sh", ".pem", ".key", ".p12", ".pfx", ".crx", ".zip",
                  ".mobileprovision", ".provisionprofile"}
 REQUIRED_DYNAMIC = ("content/feed.js", "content/scan.js", "seed/terms.json")
+VISUAL_REQUIRED = (
+    "content/visual.js", "visual/capture.js", "visual/broker.js", "visual/offscreen.html",
+    "visual/offscreen.js", "visual/engine.bundle.js", "visual/engine.bundle.js.LEGAL.txt", "visual/assets.json",
+    "visual/models/blazeface.json", "visual/models/gender.json",
+    "visual/notices/human-models-MIT.txt", "visual/notices/face-classification-MIT.txt",
+    "visual/notices/mediapipe-Apache-2.0.txt", "visual/notices/nsfwjs-LICENSE.txt",
+    "visual/notices/@vladmandic-human-LICENSE.txt", "visual/notices/tensorflowjs-Apache-2.0.txt",
+    "visual/notices/buffer-LICENSE.txt",
+)
 MODULE_IMPORT = re.compile(
     r"^\s*(?:import|export)\s+(?:[^;\"']*?\bfrom\s*)?[\"']([^\"']+)[\"']",
     re.MULTILINE,
@@ -73,6 +84,8 @@ def _inventory(source: Path, prefix="") -> list[str]:
         if _skip(entry, directory):
             continue
         relative = f"{prefix}/{entry.name}" if prefix else entry.name
+        if relative in VISUAL_BUILD_FILES:
+            continue
         if directory:
             files.extend(_inventory(entry, relative))
         elif stat.S_ISREG(mode):
@@ -103,6 +116,67 @@ def _path_without_symlinks(path: Path) -> Path:
     return absolute
 
 
+def validate_visual_assets(read_bytes, files, enabled=False) -> None:
+    """Detect incomplete or corrupted local model builds, not authenticity.
+
+    The build manifest is not signed. Its hashes bind the prepared files to the
+    recorded build output; they do not establish who produced those files.
+    The byte reader also permits checking an archive without extracting it.
+    """
+    files = set(files)
+    if not enabled and not ({"visual/broker.js", "content/visual.js", "visual/assets.json"} & files):
+        return
+    for name in VISUAL_REQUIRED:
+        if name not in files:
+            raise PreparationError(f"missing bundled visual resource: {name}")
+    try:
+        manifest = json.loads(read_bytes("visual/assets.json"))
+    except (OSError, ValueError, KeyError) as exc:
+        raise PreparationError(f"invalid visual/assets.json: {exc}") from exc
+    if not isinstance(manifest, dict) or manifest.get("schema") != 1:
+        raise PreparationError("visual/assets.json must use schema 1")
+    artifacts = manifest.get("artifacts")
+    if not isinstance(artifacts, dict) or not artifacts:
+        raise PreparationError("visual/assets.json has no recorded artifacts")
+    for relative, record in artifacts.items():
+        if not isinstance(relative, str) or not relative or "\\" in relative:
+            raise PreparationError("invalid visual artifact path")
+        parts = PurePosixPath(relative).parts
+        if relative.startswith("/") or ".." in parts or relative != PurePosixPath(relative).as_posix():
+            raise PreparationError(f"visual artifact escapes bundle: {relative}")
+        name = f"visual/{relative}"
+        if name not in files:
+            raise PreparationError(f"missing recorded visual artifact: {name}")
+        if not isinstance(record, dict):
+            raise PreparationError(f"invalid visual artifact record: {relative}")
+        digest, size = record.get("sha256"), record.get("bytes")
+        if not isinstance(digest, str) or not re.fullmatch(r"[a-f0-9]{64}", digest):
+            raise PreparationError(f"invalid visual artifact checksum: {relative}")
+        if type(size) is not int or not 0 < size <= 50_000_000:
+            raise PreparationError(f"invalid visual artifact size: {relative}")
+        data = read_bytes(name)
+        if len(data) != size or hashlib.sha256(data).hexdigest() != digest:
+            raise PreparationError(f"visual artifact differs from recorded build: {relative}")
+    required_records = {"engine.bundle.js", "engine.bundle.js.LEGAL.txt", "models/blazeface.json", "models/gender.json"}
+    required_records.update(name.removeprefix("visual/") for name in VISUAL_REQUIRED if name.startswith("visual/notices/"))
+    for model in ("blazeface", "gender"):
+        try:
+            definition = json.loads(read_bytes(f"visual/models/{model}.json"))
+            groups = definition["weightsManifest"]
+            if not isinstance(groups, list) or not groups:
+                raise ValueError("weightsManifest is missing")
+            shards = [shard for group in groups for shard in group["paths"]]
+            if not shards or any(not isinstance(shard, str) or not re.fullmatch(
+                    r"[a-zA-Z0-9_.-]+\.bin", shard) for shard in shards):
+                raise ValueError("invalid model weight paths")
+        except (OSError, ValueError, TypeError, KeyError) as exc:
+            raise PreparationError(f"invalid bundled visual model {model}: {exc}") from exc
+        required_records.update(f"models/{shard}" for shard in shards)
+    missing = required_records - artifacts.keys()
+    if missing:
+        raise PreparationError(f"visual build has no checksum for: {', '.join(sorted(missing))}")
+
+
 def validate(folder: Path, files=None) -> None:
     """Check bundled dependencies, not browser permissions or protection state.
 
@@ -123,6 +197,8 @@ def validate(folder: Path, files=None) -> None:
     if not isinstance(manifest.get("key"), str) or not manifest["key"]:
         raise PreparationError("local manifest key is required to preserve the extension identity")
     files = set(_inventory(folder) if files is None else files)
+    validate_visual_assets(lambda name: (folder / name).read_bytes(), files,
+                           enabled="offscreen" in manifest.get("permissions", []))
 
     def require(reference, owner="", wildcard=False):
         if not isinstance(reference, str) or not reference:

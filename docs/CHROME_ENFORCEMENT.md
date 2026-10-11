@@ -1,163 +1,161 @@
-# Forcing the extension on Chrome/Edge
+# Browser protection and independent managed layers
 
-The browser extension is the only layer that reads **page text** — the socket
-filter sees hosts and flows, never content. So catching adult material inside a
-general site (X, Reddit) or on a domain registered today, un-removably, means
-requiring a managed extension installation on supported Chrome/Edge deployments.
-Even then, text scanning does not identify every image/video or guarantee that
-all adult content is blocked. Safari needs separately configured protection;
-Hisn's Mac browser guard does not verify its exemption. This is the Chrome path,
-in order.
+Hisn's extension can filter page text on mixed-content sites without blocking
+the entire site. Optional local visual inspection is another extension layer,
+not proof that every image or video can be read or classified. DNS and socket
+filters see domains/flows, not the contents of every encrypted post.
 
-## App-side guard versus managed installation
+An ordinary unpacked extension remains removable. Stronger removal resistance
+requires consented, effective browser management and a recovery arrangement.
+Exporting a configuration file is not enforcement, and a device owner with
+administrator/recovery access can still undo protections.
 
-The Mac app warns and closes disconnected, non-exempt browsers during a lock.
-Its new optional outside-lock requirement uses the same guard. Neither makes
-an unpacked extension undeletable: it reacts to missing check-ins while Hisn
-runs, with recovery grace periods, and does not prove every browser profile is
-protected. See [the exact behavior and limits](SELF_CONTROL_COMMITMENT.md#browser-extension-removal-and-disconnection).
+## What the app guard adds
 
-Runtime standard-profile checks now override a bundle heartbeat after repeated
-explicit removal/disablement evidence. Unknown/corrupt settings do not close
-the browser by themselves. This narrows the known second-profile bypass, not
-custom-data-directory, guest/private-window or editable-preference bypasses.
-Managed installation and real effective-policy checks remain necessary.
+When the Mac browser guard is required, Hisn warns and closes supported,
+non-exempt browser processes that lose their verified extension check-in,
+after the configured recovery grace period. Process-scoped check-ins prevent
+a healthy, separate browser process from covering a disconnected process.
+This requires the matching app, bridge and filter versions and Hisn to run.
 
-Google documents `force_installed` as preventing ordinary extension removal or
-disabling when the managed policy is actually applied and its update source
-works. Verify effective policy in `chrome://policy`, not merely an exported
-profile. Management/removal permissions and browser-fork support need separate
-acceptance checks. [Google's Mac policy guidance](https://support.google.com/chrome/a/answer/7517624),
-[deployment verification](https://support.google.com/chrome/a/answer/9020078?hl=en).
+A process check-in is **not** proof of protection in every profile, guest or
+private window inside that process. Runtime checks of standard-profile
+preferences add evidence of removal/disablement, but custom data directories
+and inaccessible/corrupt preferences are not a universal coverage check.
+See [exact guard behavior and limits](SELF_CONTROL_COMMITMENT.md#browser-extension-removal-and-disconnection).
 
-Every step depends on the one before it. Do them in this sequence or the result
-is an extension that looks installed and enforces nothing.
+The extension's browser-only protection does not require the app connection.
+Conversely, independently installed DNS/browser profiles do not disappear just
+because the app or extension is removed. Each layer needs its own verification.
 
-## 0. Prerequisite: the account split
+## Browser support: distinguish three kinds
 
-None of this is a lock until the person under it is a **standard user** and a
-second person holds admin — `macos/setup_guardian.sh`. A managed profile keeps
-the extension un-removable only for as long as the profile itself cannot be
-removed, and removing a profile needs admin. Skip this and everything below is a
-setting the user can undo in a minute.
+| Layer | Configured scope | What is not yet proved by configuration |
+| --- | --- | --- |
+| Chromium extension | Manifest V3-compatible desktop browsers | Every fork/version/API, profile and private-window combination |
+| Mac native link and guard catalog | Chrome Stable/Beta/Dev/Canary, Edge, Brave, Vivaldi, Opera, Arc, Chromium, Helium | A working live bridge or enforcement on every listed browser |
+| Profile policy candidates | The above plus Opera GX, Thorium, Yandex, Comet, Dia, Atlas; Firefox has separate DNS/private-browsing policy | That every fork reads its policy domain or accepts the update service; these extra candidates have no configured native link |
 
-## 1. Package the extension
+The generator retains its existing broad candidate catalog by default.
+Use repeatable `--browser` flags to request only the browsers actually intended
+for a deployment. Do not label a candidate as supported merely because its
+policy names appear in its binary.
 
-```bash
-extension/package.sh          # -> dist/hisn-extension-<version>.zip
-```
-
-Strips the private key, the `key` field, `_comment_*` keys, and `test/`. The zip
-is what you upload; it is verified to contain no `.pem` and a clean manifest.
-
-## 2. Publish to the Chrome Web Store
-
-Upload the zip at <https://chrome.google.com/webstore/devconsole> (one-time $5
-developer registration, separate from Apple's $99). It goes through review.
-
-**THE gotcha, and it is a silent one.** The Web Store assigns the extension its
-own id and ignores the manifest `key`. So the published extension's id is **not**
-`hfhaffbmoeepcdolgejeidkgaoapcjig` — that id belongs to the local unpacked key.
-Read the real id from the dashboard after upload. Everything downstream that
-names an id must use the store id, or the browser and the app stop talking with
-no error anywhere visible.
-
-## 3. Configure the store id
-
-* **Native messaging** — add the store id to `HisnExtensionIDs` in
-  `macos/Hisn/Info.plist`, then rebuild the app. The list
-  already carries the local id; adding the store id lets one app build serve
-  both the unpacked and the published extension. Miss this and `pollNative()`
-  fails forever: the extension never hears the lock state and fails closed to
-  strict.
-
-* **The force-install profile** — pass the store id when generating it:
-
-  ```bash
-  python3 profile/make_profile.py --resolver cloudflare \
-      --extension-id <STORE_ID> \
-      --out dist/hisn-hardening.mobileconfig --print-password
-  ```
-
-  This emits `ExtensionInstallForcelist` (force-install by id from the store)
-  plus `ExtensionSettings` with `"*": blocked`, for Chrome, Edge **and every
-  Chromium fork in the family — Helium included**. The extension cannot be
-  disabled or removed, and no other extension can be installed to proxy around
-  it. Save the printed removal password; give it to the second person, never the
-  user.
-
-  **Helium (`net.imput.helium`), verified and still to verify.** Its framework
-  is Chromium 152 with the full enterprise-policy engine — `ExtensionSettings`,
-  `ExtensionInstallForcelist`, `IncognitoModeAvailability`, `DnsOverHttpsMode`
-  are all compiled in — so the profile's DNS lock and incognito block will hold
-  there, and the force-install policy is now written into its payload. Two
-  things need a real install to confirm and cannot be checked from the binary:
-  (1) that Helium reads managed policy from
-  `/Library/Managed Preferences/net.imput.helium.plist` (standard Chromium
-  behaviour, but confirm via `helium://policy` after installing the profile),
-  and (2) that Helium's force-install accepts the Chrome Web Store update URL —
-  if it uses a different extension source, the `update_url` needs changing for
-  its payload.
-
-  Do **not** install this profile until the extension is actually live on the
-  store. Before then, the force-install fails and `"*": blocked` stops even the
-  unpacked copy from loading — you get no extension at all. `make_profile.py`
-  with no `--extension-id` deliberately omits this whole block for exactly that
-  reason, and a test pins the behaviour.
-
-## 4. Install the profile, as the second person
-
-System Settings → General → Device Management → install
-`dist/hisn-hardening.mobileconfig`. It also locks DNS-over-HTTPS across eleven
-Chromium browsers and disables iCloud Private Relay — the network bypasses a
-blocklist cannot reach.
-
-## 5. Verify it actually took
-
-Open **Protected Setup** in Hisn. Required browser protection checks both the
-forced extension policy and whether that same extension runs as a policy-installed
-extension in each profile. An unpacked copy does not satisfy that check.
-It also checks the administrator-owned native host and the forced policy that
-prevents a user-owned host from overriding it. An installed extension by itself
-does not count as required protection. Password handover remains a separate
-human confirmation, never an inferred fact.
+Chrome's release channels have different user-data folders but share the
+configured system native-host folder. [Chromium's user-data directory documentation](https://chromium.googlesource.com/chromium/src/+/HEAD/docs/user_data_dir.md)
+and [Chrome's native-messaging documentation](https://developer.chrome.com/docs/extensions/develop/concepts/native-messaging)
+describe the underlying path rules. The installer offers a read-only inventory:
 
 ```bash
-macos/verify_enforcement.sh
+macos/install_native_host.sh --user --print-targets
+macos/install_native_host.sh --print-targets
 ```
 
-Read-only. It reports which layers are genuinely live — account split, hosts,
-incognito and DoH **across every Chromium browser actually installed** (not just
-Chrome — a Helium-only Mac would otherwise read "enforced" off a browser nobody
-runs), whether the extension's native-messaging link is present on each of them,
-Private Relay, and the system filter — and exits non-zero if any critical one is
-open. Run it as the second person after setup:
-the whole point of this product is that "looks protected" and "is protected"
-can differ, and this is where you catch the difference.
+Edge's app identity is `com.microsoft.edgemac`; its managed policy domain is
+`com.microsoft.Edge`. Browser identities and policy domains are not interchangeable.
 
-**Incognito is the row people miss, and there are two ways to close it.**
-The extension is `incognito: spanning`: it *can* run in a private window, but
-the browser keeps it off there until the user turns on "Allow in Incognito" —
-so the popup detects that and asks. That path depends on the user opting in,
-which a determined person will not.
+## Consented setup sequence
 
-The enforceable path is to remove private browsing altogether:
-`make_profile.py` sets `IncognitoModeAvailability = 1` by default (and
-`DisablePrivateBrowsing` for Firefox), so there is no private window to slip
-through. Pass `--allow-incognito` only if you deliberately want incognito to
-exist and to rely on the opt-in extension coverage instead. Until the profile
-is installed, `verify_enforcement.sh` reports this row OPEN, and it is.
+1. Package and publish the extension through an accepted update service.
+   `extension/package.sh` produces a clean upload ZIP. An unpacked folder is
+   not a managed update feed. Use the real published extension ID, not an
+   assumed development ID.
+2. Add that published ID to `HisnExtensionIDs` in the Mac app's `Info.plist`
+   before rebuilding. Native-host `allowed_origins` must match that exact ID.
+3. Test the update feed and policy on a disposable/test deployment first.
+   Google's guidance states that force-installed items cannot be removed by
+   ordinary users when management applies. This is not a claim that the owner
+   can never remove management. [Google's force-installation guidance](https://support.google.com/chrome/a/answer/6306504?hl=en)
+   and [Mac configuration instructions](https://support.google.com/chrome/a/answer/7517624?hl=en).
+4. Generate the optional profiles and explain the scope before the user
+   installs them. The browser profile requests disabling incognito, guest/new
+   profiles, developer tools, browser DoH overrides and rival extensions.
+   These are significant restrictions, not invisible defaults. `--lock-settings`
+   is separately opt-in because hiding Network settings also affects repairs.
+5. Agree on recovery and password custody. A standard daily account with
+   separately held administration can strengthen resistance; do not change
+   accounts or install profiles silently. Self-managed administrator access
+   remains an override. Keep a usable, disclosed recovery path.
 
-## What this gets you, and what it still does not
+### Separate profiles survive losing one layer
 
-Enforced: the extension cannot be disabled or removed, no rival extension can be
-installed, incognito is gone (so it cannot be used to escape the extension), DoH
-is off, page text is scanned against the ~5,800-term list including the 5,547
-Arabic terms.
+The new `--separate-layers` mode writes **two files**, without installing either:
 
-Still open, honestly: an admin removing the profile (closed only by the account
-split), Recovery mode (`THREAT_MODEL.md` row 13), and another device (row 15).
-The profile narrows the browser gap to a list of known Chromium forks; a fork
-published tomorrow needs adding by hand. The socket filter — which never asks
-which browser opened a flow — is the layer that closes that class for good, and
-it needs Apple's $99 and the same account split to be un-disableable.
+```bash
+python3 profile/make_profile.py --resolver cloudflare \
+    --browser com.google.Chrome --browser net.imput.helium \
+    --extension-id YOUR_PUBLISHED_32_LETTER_ID \
+    --separate-layers --out dist/hisn-hardening.mobileconfig --print-password
+```
+
+Replace the placeholder with the real 32-character ID (letters a–p). This writes:
+
+- `hisn-hardening-network.mobileconfig`: system filtering DNS and the Private
+  Relay restriction, without a Hisn app/extension dependency.
+- `hisn-hardening-browsers.mobileconfig`: selected browser policy and any
+  explicitly requested settings restrictions, independently removable from
+  the network profile.
+
+The files have different profile identifiers, UUIDs and generated removal
+passwords. Supplying `--removal-password` deliberately reuses the operator's
+chosen password; no independence of credentials is claimed in that case.
+Without `--separate-layers`, the original single-profile output is preserved.
+
+The ID and HTTPS update URL are validated before generating force-installation
+policy, including for imported Python builders. Syntax validation is **not**
+proof of publication. With no extension ID, no blanket extension block or
+force-installation request is emitted, so a development copy can still load.
+Never apply the blanket-block profile against an unpublished extension: it can
+block the unpacked copy while the managed copy fails to install.
+
+Profiles contain their removal password in plain text, even when it is not
+printed. Outputs are owner-readable (0600), but the owner can still read them.
+Keep them off the protected user's accessible storage, out of source control,
+and escrow the original secret before installation. Re-running the generator
+creates a new secret; it does not recover an installed profile's password.
+
+## Verify real behavior before calling it protected
+
+On each intended browser/version:
+
+1. Open the effective policy page (`chrome://policy`, `edge://policy`, or the
+   browser's supported equivalent). Reload policy and check each requested
+   key's value, scope, source and status. Unknown/ignored/error keys are failures.
+2. Verify the **published ID** is installed by policy, runs in the intended
+   profiles, cannot be disabled/removed by the ordinary daily account, and
+   reconnects to the correct app. Test update delivery and restart as well.
+3. Verify private/guest/new-profile restrictions actually prevent the intended
+   bypass, or explicitly validate extension permission in the retained modes.
+4. Test known-safe fixtures for domain/text filtering and any enabled visual
+   inspection. Include unreadable cross-origin media and failure states;
+   an uninspectable frame must never be described as verified safe.
+5. Confirm the independent DNS profile still operates after removing the app
+   in that **test deployment**, and that removing one test profile leaves the
+   other in place. Do not perform destructive tests on a user's real setup.
+
+Google recommends a staged deployment and checking actual policy application,
+not merely the profile file. [Deployment verification](https://support.google.com/chrome/a/answer/9020078?hl=en).
+For Edge, consult its own [force-installation policy requirements](https://learn.microsoft.com/en-us/deployedge/microsoft-edge-policies/extensioninstallforcelist),
+including its accepted update source and management prerequisites.
+
+Hisn's Protected Setup and `macos/verify_enforcement.sh` provide read-only
+evidence about the controls they implement. They are supplementary diagnostics,
+not certification of every fork/window or visual accuracy. The shell verifier
+now inventories the eleven configured native-linked browsers, including the
+Chrome channels, but not every additional policy candidate. An observed
+managed preference is not proof that the browser accepted it.
+
+## Remaining limits
+
+Helium/Brave/other fork policy delivery and update-source acceptance require a
+live managed test; this change does not install or certify those policies.
+Safari does not use Chromium native-host or extension-management controls.
+iOS/iPadOS Safari needs its separately authorized extension and Apple controls.
+
+DNS cannot identify a sexual clip inside an otherwise allowed encrypted site.
+Visual models have false positives/negatives and cannot read every protected
+or cross-origin image/video. A running-app guard does not survive losing all
+app execution on its own. Administrator actions, Recovery, alternate tunnels,
+unsupported apps/browsers and other devices remain separate risks. No layer or
+combination here makes Hisn universally undeletable or guarantees zero adult
+content.

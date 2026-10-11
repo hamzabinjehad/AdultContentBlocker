@@ -1,0 +1,21 @@
+{
+  "name": "hisn-local-visual-engine",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Build-only dependencies for Hisn's bundled on-device visual engine",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "@tensorflow/tfjs": "4.22.0",
+    "@tensorflow/tfjs-backend-wasm": "4.22.0",
+    "@tensorflow/tfjs-backend-webgpu": "4.22.0",
+    "@vladmandic/human": "3.3.6",
+    "buffer": "6.0.3",
+    "nsfwjs": "4.4.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.11"
+  }
+}

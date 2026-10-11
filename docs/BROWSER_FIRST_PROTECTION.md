@@ -20,17 +20,47 @@ individual posts.
 - Scoring is local and heuristic, using the shared normalizer and signed seed
   vocabulary. There is no server-side browsing or content upload.
 
+## Optional local visual checking
+
+The extension now bundles an experimental, opt-in local image/video classifier.
+Enable **Content options → Local visual checks · beta** to check readable images
+and sampled video frames independently from the text scorer. The matching adult
+media is hidden and a flagged video paused, without treating its entire service
+as adult-only. Normal videos remain available; inaccessible media is not silently
+hidden or called safe.
+
+**Person blur** is a separate viewing preference, off by default. It blurs the
+whole image/video when a visible face matches the selected all/female/male
+estimate. This is face-based estimation, not full-body coverage, identity
+recognition or an adult-content verdict. Estimates can be wrong or miss faces.
+The real all-faces mode blurred a benign astronaut fixture. Female/male
+preferences did not match that sample confidently enough to blur it; that known
+miss and broader estimation accuracy remain unresolved.
+
+Code, model weights and notices are packaged locally; Hisn does not upload or
+persist the inspected media. The broker accepts bounded captures, not arbitrary
+remote media URLs. See [the implementation and remaining verification gates](VISUAL_PROTECTION_PLAN.md)
+for provenance, licenses and runtime limitations.
+
 Continuous means rechecking while the permitted page and extension run, not
-reading every pixel before it can be displayed. Textless images/video, inaccessible
-frames, closed shadow content on unsupported browsers and unsupported feed
-layouts remain gaps. Worker startup, bounded retries and classification take
-time; content can be visible before a verdict. Legitimate discussion can be
-misclassified. No visual image/video classifier is implemented.
+reading every pixel before it can be displayed. Textless media can now receive
+an additional visual verdict when enabled and readable, but inaccessible frames,
+protected media, missed sampled moments, closed shadow content on unsupported
+browsers and unsupported layouts remain gaps. Worker startup, bounded retries
+and classification take time; content can be visible before a verdict.
+Legitimate discussion and harmless media can be misclassified.
+
+The adaptive **Protection layers** interface reports domain, text, visual,
+private-window and optional app reinforcement separately. The browser baseline
+does not require an app connection. Dark/light colors follow the browser's
+reported preference; Arabic/English and RTL remain available.
 
 ## Mac setup
 
-Use a supported Chromium browser with Hisn connected and page-text checking
-enabled. In **Blocking Rules**, the browser-first guide offers an optional path:
+Use a supported Chromium browser with page-text checking enabled; connection to
+Hisn adds app policy and browser guarding but is not required for the standalone
+baseline. Optionally enable the experimental visual checks in the extension's
+settings. In **Blocking Rules**, the browser-first guide offers an optional path:
 select the native app under **Add app**, save it, and use its website instead.
 Do not block the service's domain if its website should remain available.
 
@@ -40,11 +70,19 @@ content, or revisit established flows. The development app's ad-hoc signature
 is not proof of an eligible, active system filter. Browser guarding and its
 recovery countdown are separate from text classification.
 
+During an app-managed commitment, Chromium's selected visual preferences can
+be strengthened but not weakened through the extension settings. They remain
+browser-owned and are not synchronized to the phone. An ordinary extension can
+still be removed; optional managed installation needs explicit consent, a real
+published update source and verification in each browser. See
+[managed layers and guard limits](CHROME_ENFORCEMENT.md).
+
 ## iPhone and iPad setup
 
 The universal app contains **Hisn Text**, a separate Safari Web Extension.
-It uses canonical scanner/scorer JavaScript packaged from the same repository;
-the existing **Hisn 1–4** declarative domain blockers remain intact.
+It uses canonical scanner/scorer JavaScript and the optional local visual engine
+packaged from the same repository; the existing **Hisn 1–4** declarative domain
+blockers remain intact.
 
 Enable Hisn Text in Safari's extension settings and explicitly grant access to
 the websites to be checked. Reload previously open tabs. Verify profiles and
@@ -52,6 +90,13 @@ private browsing separately. The app's three-layer configuration assessment
 does **not** verify Hisn Text's website permissions or a successful text block;
 the guide labels that access unverified. Apple requires permission for a web
 extension to read and change a website. [Apple's permission guidance](https://developer.apple.com/documentation/safariservices/managing-safari-web-extension-permissions).
+
+Hisn Text's own Safari panel/options offer visual checking and face-based media
+blurring. Both start off. These preferences are stored by the Safari extension,
+not synchronized with or locked by the native app's commitment. Safari uses the
+shared engine in a nonpersistent background page, not Chromium offscreen/native
+messaging APIs. Its visual build target is Safari 18; the native app's lower OS
+deployment target does not establish older visual-runtime compatibility.
 
 If the person chooses the browser-first path, use Hisn's activity picker to
 select **only the native app**, then **Always block** and confirm. Selecting
@@ -82,3 +127,13 @@ Use synthetic fixtures, not live adult content or user browsing history:
    four domain blockers still work independently.
 6. Test intentional domain/strict rules and commitment app-selection restrictions
    separately. Preserve essential communication and recovery access.
+7. With visual opt-in, run the actual packaged engine on benign image/video
+   fixtures and verify normal video stays usable. Exercise route/source/seek
+   changes, tab closure, cancellation, loading failure and inaccessible pixels.
+   Separately verify positive face-blurring behavior; mocked scores cannot prove
+   detection. Use an appropriately handled benchmark for adult-detection quality.
+
+The isolated Helium benign image/video smoke test is not proof of live X
+coverage, all-browser behavior, targeted face accuracy or real-device Safari.
+Package/message-contract checks and an unsigned simulator-target build likewise
+do not close those acceptance gates.

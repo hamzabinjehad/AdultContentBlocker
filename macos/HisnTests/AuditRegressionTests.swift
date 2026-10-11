@@ -139,6 +139,24 @@ final class AuditRegressionTests: XCTestCase {
                        && FileManager.default.fileExists(atPath: dir.appendingPathComponent("policy.a.json").path))
     }
 
+    func testExactProcessCheckInsTravelThroughAuthorityWithoutChangingPolicy() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("hisn-audit-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let service = PolicyService(store: PolicyStore(directory: dir), clock: { self.now })
+        let request = PolicyRequest.checkIn(browser: "net.imput.helium", processID: 101)
+        XCTAssertEqual(try JSONDecoder().decode(PolicyRequest.self, from: JSONEncoder().encode(request)), request)
+        XCTAssertTrue(service.handle(request).accepted)
+        let status = service.status()
+        XCTAssertEqual(status.checkIns?["net.imput.helium"], now)
+        XCTAssertEqual(status.checkIns?["process:101:net.imput.helium"], now)
+        XCTAssertNil(status.checkIns?["process:202:net.imput.helium"])
+        XCTAssertEqual(status.record.revision, 0)
+        let legacy = Data(#"{"checkIn":{"browser":"net.imput.helium"}}"#.utf8)
+        XCTAssertEqual(try JSONDecoder().decode(PolicyRequest.self, from: legacy), .checkIn(browser: "net.imput.helium"))
+        XCTAssertTrue(service.handle(.checkIn(browser: "net.imput.helium", processID: -1)).accepted)
+        XCTAssertNil(service.status().checkIns?["process:-1:net.imput.helium"])
+    }
+
     // 10 — a record written before a field existed still decodes.
     func testARecordFromAnOlderBuildStillDecodes() throws {
         let old = #"{"lock":{"deadline":800000000,"mode":"strict","startedAt":700000000},"allowlist":["a.example"],"revision":3,"inspection":{"text":true}}"#

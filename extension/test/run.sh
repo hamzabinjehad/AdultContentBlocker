@@ -30,7 +30,7 @@ fail=0
 # because none imports it — and for as long as that lasted the block page
 # ran no script at all: no reason, no timer, no report buttons.
 echo "── syntax: every script the extension ships"
-for f in ../background.js ../popup.js ../options.js ../blocked.js ../lib/*.js ../lib/locale/*.js; do
+for f in ../background.js ../popup.js ../options.js ../blocked.js ../lib/*.js ../lib/locale/*.js ../visual/{broker,decisions,engine,offscreen,queue}.js; do
   # checkModuleSyntax takes SOURCE, not a path — readFile it first.
   "$JSC" -e "checkModuleSyntax(readFile('$f'))" >/dev/null || { echo "  syntax error: $f" >&2; fail=1; }
 done

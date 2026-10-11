@@ -42,6 +42,149 @@ final class BrowserGuardPolicyTests: XCTestCase {
         XCTAssertEqual(P.checkIn(browser: id, authority: [id: stale], local: now), stale)
     }
 
+    func testHealthySiblingProcessCannotVerifyAnUnprotectedInstance() throws {
+        let id = "net.imput.helium"
+        let key = try XCTUnwrap(BrowserCheckInIdentity.key(browser: id, processID: 101))
+        let authority = [id: now, key: now]
+        XCTAssertEqual(P.checkIn(browser: id, processID: 101, authority: authority, local: nil), now)
+        XCTAssertNil(P.checkIn(browser: id, processID: 202, authority: authority, local: now))
+        XCTAssertNil(P.checkIn(browser: id, processID: 202, authority: [id: now], local: now))
+        XCTAssertNil(P.checkIn(browser: id, processID: 0, authority: nil, local: now))
+        XCTAssertEqual(P.checkIn(browser: id, processID: 202, authority: nil, local: now), now)
+    }
+
+    func testConcurrentHealthyProcessCannotResetRecoveryInEitherObservationOrder() {
+        let id = "net.imput.helium"
+        for healthyFirst in [true, false] {
+            var session = P.Session()
+            session.setRunningInstances([id: ["healthy", "missing"]])
+            for elapsed in [0.0, 20, 55, 60, 65] {
+                let time = now.addingTimeInterval(elapsed)
+                let healthy = {
+                    _ = session.graceStart(browser: id, now: time, notBefore: self.now, instance: "healthy")
+                    session.observe(.ok, browser: id, at: time, verifiedConnection: true, instance: "healthy")
+                }
+                if healthyFirst { healthy() }
+                let start = session.graceStart(browser: id, now: time, notBefore: now, instance: "missing")
+                let decision = P.verdict(coverage: .needsExtension, lastSeen: nil, now: time,
+                    graceStart: start, firstViolation: session.firstViolation(browser: id), recentlyClosed: false)
+                XCTAssertEqual(decision, elapsed < 60
+                    ? .warn(.extensionSilent, closeAt: now.addingTimeInterval(60)) : .close(.extensionSilent))
+                session.observe(decision, browser: id, at: time, instance: "missing")
+                if !healthyFirst { healthy() }
+                XCTAssertEqual(session.firstViolation(browser: id), now)
+            }
+        }
+    }
+
+    func testHealthySiblingCannotClearStoppedOffenderButVerifiedRepairCan() {
+        let id = "net.imput.helium"
+        var session = P.Session()
+        session.setRunningInstances([id: ["healthy", "missing"]])
+        _ = session.graceStart(browser: id, now: now, notBefore: now, instance: "healthy")
+        session.observe(.ok, browser: id, at: now, verifiedConnection: true, instance: "healthy")
+        session.observe(.warn(.extensionSilent, closeAt: now.addingTimeInterval(60)),
+            browser: id, at: now, instance: "missing")
+        session.setRunningInstances([id: ["healthy"]])
+        session.observe(.ok, browser: id, at: now.addingTimeInterval(55),
+            verifiedConnection: true, instance: "healthy")
+        XCTAssertEqual(session.firstViolation(browser: id), now)
+        session.setRunningInstances([id: ["healthy", "relaunched"]])
+        let grace = session.graceStart(browser: id, now: now.addingTimeInterval(60),
+            notBefore: now, instance: "relaunched")
+        XCTAssertEqual(P.verdict(coverage: .needsExtension, lastSeen: nil,
+            now: now.addingTimeInterval(60), graceStart: grace,
+            firstViolation: session.firstViolation(browser: id), recentlyClosed: false), .close(.extensionSilent))
+        session.setRunningInstances([id: ["repaired"]])
+        session.observe(.ok, browser: id, at: now.addingTimeInterval(70),
+            verifiedConnection: true, instance: "repaired")
+        XCTAssertFalse(session.hasUnresolvedWarning(browser: id))
+    }
+
+    func testRepairingStaggeredOffenderCannotExtendSiblingsVisibleDeadline() {
+        let id = "net.imput.helium"
+        var session = P.Session()
+        session.setRunningInstances([id: ["first", "second"]])
+        _ = session.graceStart(browser: id, now: now, notBefore: now, instance: "first")
+        session.observe(.warn(.extensionSilent, closeAt: now.addingTimeInterval(60)),
+            browser: id, at: now, instance: "first")
+        let later = now.addingTimeInterval(30)
+        let start = session.graceStart(browser: id, now: later, notBefore: now, instance: "second")
+        let inherited = P.verdict(coverage: .needsExtension, lastSeen: nil, now: later,
+            graceStart: start, firstViolation: session.firstViolation(browser: id), recentlyClosed: false)
+        XCTAssertEqual(inherited, .warn(.extensionSilent, closeAt: now.addingTimeInterval(60)))
+        session.observe(inherited, browser: id, at: later, instance: "second")
+        session.observe(.ok, browser: id, at: now.addingTimeInterval(40),
+            verifiedConnection: true, instance: "first")
+        XCTAssertEqual(session.firstViolation(browser: id), now)
+        XCTAssertEqual(P.verdict(coverage: .needsExtension, lastSeen: nil,
+            now: now.addingTimeInterval(60), graceStart: start,
+            firstViolation: session.firstViolation(browser: id), recentlyClosed: false), .close(.extensionSilent))
+    }
+
+    func testWrongProcessCannotCancelForceClosureAndPidReuseNeedsFreshEvidence() throws {
+        let id = "net.imput.helium"
+        let authority = [try XCTUnwrap(BrowserCheckInIdentity.key(browser: id, processID: 101)): now]
+        let wrong = P.checkIn(browser: id, processID: 202, authority: authority, local: now)
+        XCTAssertTrue(P.shouldForceClose(active: true, coverage: .needsExtension, lastSeen: wrong, now: now))
+        let own = P.checkIn(browser: id, processID: 101, authority: authority, local: nil)
+        XCTAssertFalse(P.shouldForceClose(active: true, coverage: .needsExtension, lastSeen: own, now: now))
+        XCTAssertNil(P.instanceCheckIn(lastSeen: own, launchedAt: now.addingTimeInterval(1)))
+    }
+
+    func testConcurrentRelaunchAfterClosureGetsRepeatWarningWithoutRenewingLongGrace() {
+        let id = "net.imput.helium"
+        var session = P.Session()
+        session.setRunningInstances([id: ["healthy", "missing"]])
+        _ = session.graceStart(browser: id, now: now, notBefore: now, instance: "healthy")
+        session.observe(.ok, browser: id, at: now, verifiedConnection: true, instance: "healthy")
+        session.observe(.warn(.extensionSilent, closeAt: now.addingTimeInterval(60)),
+            browser: id, at: now, instance: "missing")
+        session.observe(.close(.extensionSilent), browser: id, at: now.addingTimeInterval(60), instance: "missing")
+        session.setRunningInstances([id: ["healthy"]])
+        session.observe(.ok, browser: id, at: now.addingTimeInterval(61),
+            verifiedConnection: true, instance: "healthy")
+        XCTAssertTrue(session.hasUnresolvedWarning(browser: id))
+        session.setRunningInstances([id: ["healthy", "restarted"]])
+        let returned = now.addingTimeInterval(65)
+        let grace = session.graceStart(browser: id, now: returned, notBefore: now, instance: "restarted")
+        XCTAssertEqual(grace, now)
+        XCTAssertEqual(P.verdict(coverage: .needsExtension, lastSeen: nil, now: returned,
+            graceStart: grace, firstViolation: session.firstViolation(browser: id), recentlyClosed: true),
+            .warn(.extensionSilent, closeAt: returned.addingTimeInterval(5)))
+        session.observe(.warn(.extensionSilent, closeAt: returned.addingTimeInterval(5)),
+            browser: id, at: returned, instance: "restarted")
+        session.observe(.ok, browser: id, at: returned, verifiedConnection: true, instance: "healthy")
+        XCTAssertEqual(session.firstViolation(browser: id), returned)
+    }
+
+    func testHistoricalClosureCannotEraseNewWarningAfterRepairAndRestart() {
+        let id = "net.imput.helium"
+        var session = P.Session()
+        session.setRunningInstances([id: ["healthy", "offender"]])
+        _ = session.graceStart(browser: id, now: now, notBefore: now, instance: "healthy")
+        session.observe(.ok, browser: id, at: now, verifiedConnection: true, instance: "healthy")
+        session.observe(.warn(.extensionSilent, closeAt: now.addingTimeInterval(60)),
+            browser: id, at: now, instance: "offender")
+        session.observe(.close(.extensionSilent), browser: id, at: now.addingTimeInterval(60), instance: "offender")
+        session.observe(.ok, browser: id, at: now.addingTimeInterval(65),
+            verifiedConnection: true, instance: "offender")
+        XCTAssertFalse(session.hasUnresolvedWarning(browser: id))
+        let lostAgain = now.addingTimeInterval(160)
+        session.observe(.warn(.extensionSilent, closeAt: lostAgain.addingTimeInterval(60)),
+            browser: id, at: lostAgain, instance: "offender")
+        session.setRunningInstances([id: ["healthy", "restarted"]])
+        let restarted = now.addingTimeInterval(200)
+        let grace = session.graceStart(browser: id, now: restarted, notBefore: now, instance: "restarted")
+        XCTAssertEqual(session.firstViolation(browser: id), lostAgain)
+        XCTAssertEqual(P.verdict(coverage: .needsExtension, lastSeen: nil, now: restarted,
+            graceStart: grace, firstViolation: session.firstViolation(browser: id), recentlyClosed: false),
+            .warn(.extensionSilent, closeAt: now.addingTimeInterval(220)))
+        XCTAssertEqual(P.verdict(coverage: .needsExtension, lastSeen: nil, now: now.addingTimeInterval(220),
+            graceStart: grace, firstViolation: session.firstViolation(browser: id), recentlyClosed: false),
+            .close(.extensionSilent))
+    }
+
     func testBrowserRestartDoesNotResetItsInitialGrace() {
         var session = P.Session()
         let id = "net.imput.helium"
@@ -475,6 +618,31 @@ final class BrowserGuardPolicyTests: XCTestCase {
 
 /// The per-browser heartbeat the bridge writes and the guard reads.
 final class ExtensionPresenceTests: XCTestCase {
+
+    func testProcessStampsAreSeparateAndLegacyStampCannotFillTheGap() {
+        let name = TestNamespace.make()
+        defer { TestNamespace.dispose(name) }
+        let d = UserDefaults(suiteName: name)
+        let t = Date(timeIntervalSince1970: 1_800_000_000)
+        let id = "net.imput.helium"
+        ExtensionPresence.record(browser: id, processID: 101, at: t, in: d)
+        XCTAssertEqual(ExtensionPresence.lastSeen(browser: id, processID: 101, in: d), t)
+        XCTAssertNil(ExtensionPresence.lastSeen(browser: id, processID: 202, in: d))
+        XCTAssertNil(ExtensionPresence.lastSeen(browser: id, processID: 0, in: d))
+        ExtensionPresence.record(browser: id, at: t.addingTimeInterval(1), in: d)
+        XCTAssertEqual(ExtensionPresence.lastSeen(browser: id, in: d), t.addingTimeInterval(1))
+        XCTAssertEqual(ExtensionPresence.lastSeen(browser: id, processID: 101, in: d), t)
+        XCTAssertNil(ExtensionPresence.lastSeen(browser: id, processID: 202, in: d))
+    }
+
+    func testProcessIdentityRejectsMalformedBrowserNamesAndInvalidPids() {
+        for id in ["", ".net", "net..browser", "process:1:browser", "browser/name", String(repeating: "a", count: 256)] {
+            XCTAssertNil(BrowserCheckInIdentity.key(browser: id, processID: 101))
+        }
+        XCTAssertNil(BrowserCheckInIdentity.key(browser: "net.imput.helium", processID: -1))
+        XCTAssertEqual(BrowserCheckInIdentity.key(browser: "net.imput.helium", processID: 101),
+            "process:101:net.imput.helium")
+    }
 
     func testRecordsOverallAndPerBrowser() {
         let name = TestNamespace.make()

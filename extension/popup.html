@@ -1,18 +1,24 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Hisn</title><link rel="stylesheet" href="ui.css"></head>
 <body class="popup">
-  <header><div class="brand"><img src="icons/icon-48.png" width="30" height="30" alt="">Hisn</div><button type="button" class="lang-switch" id="langSwitch" lang="ar">العربية</button></header>
-  <p class="connection-badge" id="connectionBadge" data-i18n="popup.checking">Checking…</p>
-  <section class="block" aria-live="polite">
-    <div class="head"><span class="dot unknown" id="pDot" aria-hidden="true"></span><h2 id="pHead" data-i18n="popup.checkingStatus">Checking status…</h2></div>
-    <p class="detail" id="pDetail"></p>
-  </section>
-  <section class="block" id="lockBlock"><div class="head"><span data-icon="lock" aria-hidden="true"></span><h2 id="lHead">&nbsp;</h2></div><p class="detail" id="lDetail"></p></section>
-  <div id="notices"></div><div id="incognito" class="notice" hidden></div>
+  <header><div class="brand"><img src="icons/icon-48.png" width="30" height="30" alt=""><span data-i18n="brand.name">Hisn</span></div><button type="button" class="lang-switch" id="langSwitch" lang="ar">العربية</button></header>
+  <main class="popup-scroll">
+  <div class="popup-intro"><h1 data-i18n="popup.layers">Protection layers</h1><p class="detail" data-i18n="popup.layersDetail">Browser protection works without the app.</p></div>
+  <section class="browser-status" aria-live="polite"><div class="head"><span class="dot unknown" id="pDot" aria-hidden="true"></span><h2 id="pHead" data-i18n="popup.checkingStatus">Checking status…</h2></div><p class="detail" id="pDetail"></p></section>
+  <ul class="layer-checklist" aria-label="Protection layers" data-i18n-aria-label="popup.layers">
+    <li><span class="layer-indicator unknown" id="domainIndicator" aria-hidden="true"><span data-icon="shield-check"></span></span><div><h2 data-i18n="popup.layer.domains">Site blocking</h2><p class="detail" id="domainStatus"></p></div><button type="button" class="layer-link" data-view="rules" data-i18n-aria-label="popup.editSites"><span data-icon="settings" aria-hidden="true"></span></button></li>
+    <li><span class="layer-indicator unknown" id="textIndicator" aria-hidden="true"><span data-icon="shield-check"></span></span><div><h2 data-i18n="popup.layer.text">Page-text checks</h2><p class="detail" id="textStatus"></p></div><button type="button" class="layer-link" data-view="settings" data-i18n-aria-label="popup.editChecks"><span data-icon="settings" aria-hidden="true"></span></button></li>
+    <li><span class="layer-indicator unknown" id="privateIndicator" aria-hidden="true"><span data-icon="shield-check"></span></span><div><h2 data-i18n="opt.layer.private">Private windows</h2><p class="detail" id="privateStatus" data-i18n="opt.coverage.unknown">Not checked</p></div><button type="button" class="layer-link" id="privateSettings" data-i18n-aria-label="incog.button"><span data-icon="settings" aria-hidden="true"></span></button></li>
+    <li><span class="layer-indicator unknown" id="appIndicator" aria-hidden="true"><span data-icon="shield-check"></span></span><div><h2 data-i18n="details.app">Hisn app</h2><p class="detail connection-badge" id="connectionBadge" data-i18n="popup.checking">Checking…</p></div><span class="layer-optional" data-i18n="popup.optional">Optional</span></li>
+    <li><span class="layer-indicator unknown" id="visualIndicator" aria-hidden="true"><span data-icon="shield-check"></span></span><div><h2 data-i18n="visual.title">Visual checks</h2><p class="detail" id="visualStatus" data-i18n="visual.status.checking">Not checked</p></div><button type="button" class="layer-link" data-view="settings" data-i18n-aria-label="visual.manage"><span data-icon="settings" aria-hidden="true"></span></button></li>
+  </ul>
+  <section class="commitment-summary" id="lockBlock"><div class="head"><span data-icon="lock" aria-hidden="true"></span><h2 id="lHead">&nbsp;</h2></div><p class="detail" id="lDetail"></p></section>
+  <div id="notices"></div><details id="incognito" class="notice" hidden><summary data-i18n="incog.title">Not active in private windows yet.</summary><div id="incognitoGuide"></div></details>
   <details><summary data-i18n="popup.details">Details</summary><dl id="details"></dl></details>
+  </main>
   <nav class="actions" data-i18n-aria-label="popup.shortcuts">
     <button type="button" id="openSettings"><span data-icon="settings" aria-hidden="true"></span><span data-i18n="popup.manage">Manage protection</span></button>
-    <button type="button" class="secondary" id="checkConnection" data-i18n-title="popup.checkConnection" data-i18n-aria-label="popup.checkConnection"><span data-icon="refresh-cw" aria-hidden="true"></span></button>
+    <button type="button" class="secondary" id="checkConnection" data-i18n-title="popup.checkConnection" data-i18n-aria-label="popup.checkConnection"><span data-icon="refresh-cw" aria-hidden="true"></span><span id="connectionAction" data-i18n="popup.connectApp">Connect Hisn app</span></button>
   </nav>
   <p class="detail" id="connectionMessage" role="status"></p><p class="privacy-note" data-i18n="privacy.onDevice">Content checks stay on your device.</p>
   <script type="module" src="popup.js"></script>

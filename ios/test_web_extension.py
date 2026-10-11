@@ -71,26 +71,98 @@ class SafariWebExtensionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary)
             metadata = scanner.stage(output)
-            self.assertEqual(set(metadata["resources"]), set(scanner.RESOURCES) | {"seed/terms.json"})
+            visual = scanner.verified_visual_resources()
+            self.assertEqual(set(metadata["resources"]), set(scanner.RESOURCES) | {"seed/terms.json"} | set(visual))
             for name, entry in metadata["resources"].items():
                 raw = (output / name).read_bytes()
                 self.assertGreater(len(raw), 0)
                 self.assertEqual(len(raw), entry["bytes"])
                 self.assertEqual(hashlib.sha256(raw).hexdigest(), entry["sha256"])
-                source = scanner.RESOURCES.get(name, "seed/terms.json")
+                source = scanner.RESOURCES.get(name, f"extension/{name}" if name.startswith("visual/") else "seed/terms.json")
                 self.assertEqual(raw, (scanner.ROOT / source).read_bytes())
             self.assertFalse((output / "rules").exists())
             self.assertFalse((output / "public_key.hex").exists())
+            self.assertFalse((output / "visual/node_modules").exists())
+            self.assertFalse((output / "visual/engine.js").exists())
+            self.assertFalse((output / "visual/offscreen.html").exists())
+            self.assertFalse((output / "visual/package.json").exists())
 
     def test_manifest_is_minimal_static_mv3_scanner_without_chrome_policies(self):
         manifest = json.loads((scanner.ROOT / scanner.RESOURCES["manifest.json"]).read_text())
         self.assertEqual(manifest["manifest_version"], 3)
-        self.assertEqual(manifest["background"], {"service_worker": "background.js", "type": "module"})
-        self.assertEqual(manifest["content_scripts"][0]["js"], ["content/feed.js", "content/scan.js"])
+        self.assertEqual(manifest["background"], {"page": "background.html", "persistent": False})
+        self.assertEqual(manifest["content_scripts"][0]["js"],
+                         ["content/feed.js", "content/scan.js", "visual/capture.js", "content/visual.js"])
         self.assertEqual(manifest["content_scripts"][0]["run_at"], "document_start")
         self.assertNotIn("key", manifest)
         self.assertNotIn("declarative_net_request", manifest)
         self.assertNotIn("nativeMessaging", manifest.get("permissions", []))
+        self.assertNotIn("offscreen", manifest.get("permissions", []))
+        self.assertEqual(manifest["permissions"], ["storage"])
+        self.assertEqual(manifest["action"]["default_popup"], "options.html")
+        background = (scanner.ROOT / scanner.RESOURCES["background.html"]).read_text()
+        self.assertIn('type="module" src="background.js"', background)
+
+    def visual_fixture(self, root):
+        folder = root / "extension/visual"
+        folder.mkdir(parents=True)
+        artifacts = {}
+        for name in scanner.VISUAL_ASSETS:
+            raw = (json.dumps({"weightsManifest": [{"paths": [Path(name).stem + ".bin"]}]}).encode()
+                   if name in {"models/blazeface.json", "models/gender.json"} else b"fixture visual data")
+            destination = folder / name
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_bytes(raw)
+            if name in scanner.VISUAL_ASSETS:
+                artifacts[name] = {"sha256": hashlib.sha256(raw).hexdigest(), "bytes": len(raw)}
+        metadata = {"schema": 1, "revision": "a" * 40, "artifacts": artifacts}
+        (folder / "assets.json").write_text(json.dumps(metadata))
+        return folder, metadata
+
+    def test_visual_asset_hash_drift_is_rejected(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            folder, _ = self.visual_fixture(root)
+            self.assertIn("visual/engine.bundle.js", scanner.verified_visual_resources(root))
+            (folder / "models/gender.bin").write_bytes(b"changed model")
+            with self.assertRaises(Rejected): scanner.verified_visual_resources(root)
+
+    def test_visual_inventory_cannot_add_build_dependencies_or_paths(self):
+        for key in ("../../outside.js", "node_modules/package/index.js", "models/remote.bin"):
+            with self.subTest(key=key), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                folder, metadata = self.visual_fixture(root)
+                metadata["artifacts"][key] = {"bytes": 1, "sha256": "0" * 64}
+                (folder / "assets.json").write_text(json.dumps(metadata))
+                with self.assertRaises(Rejected): scanner.verified_visual_resources(root)
+
+    def test_visual_model_manifest_cannot_fetch_unbundled_shards(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            folder, metadata = self.visual_fixture(root)
+            raw = json.dumps({"weightsManifest": [{"paths": ["https://example.com/model.bin"]}]}).encode()
+            (folder / "models/blazeface.json").write_bytes(raw)
+            metadata["artifacts"]["models/blazeface.json"] = {
+                "bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()}
+            (folder / "assets.json").write_text(json.dumps(metadata))
+            with self.assertRaises(Rejected): scanner.verified_visual_resources(root)
+
+    def test_visual_notices_and_verified_build_are_required(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            folder, _ = self.visual_fixture(root)
+            (folder / "notices/nsfwjs-LICENSE.txt").unlink()
+            with self.assertRaises((Rejected, FileNotFoundError)): scanner.verified_visual_resources(root)
+
+    def test_safari_options_document_scope_and_opt_in(self):
+        html = (scanner.ROOT / scanner.RESOURCES["options.html"]).read_text()
+        self.assertIn('id="inspectVisual" disabled', html)
+        self.assertNotIn('id="inspectVisual" checked', html)
+        self.assertIn("separate from the app commitment", html)
+        self.assertIn("unreadable is not the same as safe", html)
+        self.assertIn("Face detection is not whole-body detection", html)
+        css = (scanner.ROOT / scanner.RESOURCES["options.css"]).read_text()
+        self.assertIn("prefers-color-scheme:dark", css)
 
     def test_safari_bridge_runtime_contract_with_javascriptcore(self):
         jsc = Path("/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc")

@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "revision": "bc66dc53bac03c96d35a7e6daaf717e72f3985f5",
+  "dependencies": {
+    "@tensorflow/tfjs": "4.22.0",
+    "@tensorflow/tfjs-backend-wasm": "4.22.0",
+    "@tensorflow/tfjs-backend-webgpu": "4.22.0",
+    "@vladmandic/human": "3.3.6",
+    "buffer": "6.0.3",
+    "nsfwjs": "4.4.0"
+  },
+  "artifacts": {
+    "models/blazeface.json": {
+      "url": "https://raw.githubusercontent.com/vladmandic/human-models/bc66dc53bac03c96d35a7e6daaf717e72f3985f5/models/blazeface.json",
+      "bytes": 79038,
+      "sha256": "cd7bbfc078270572beb39f9e5ae67aadbd50b5e67cff37e6d4f6b3ea39312e5f"
+    },
+    "models/blazeface.bin": {
+      "url": "https://raw.githubusercontent.com/vladmandic/human-models/bc66dc53bac03c96d35a7e6daaf717e72f3985f5/models/blazeface.bin",
+      "bytes": 538928,
+      "sha256": "dc9a97fdc50bc43216554bdd69aa3e7b9361a519ee7bdd996a2f69a98a6f9b72"
+    },
+    "models/gender.json": {
+      "url": "https://raw.githubusercontent.com/vladmandic/human-models/bc66dc53bac03c96d35a7e6daaf717e72f3985f5/models/gender.json",
+      "bytes": 29973,
+      "sha256": "630b7041bc424803fb1bbc1a88c7d20368a36a77f33cb38e7823091aafa0ca7c"
+    },
+    "models/gender.bin": {
+      "url": "https://raw.githubusercontent.com/vladmandic/human-models/bc66dc53bac03c96d35a7e6daaf717e72f3985f5/models/gender.bin",
+      "bytes": 201808,
+      "sha256": "c4fc03f3f6dd2d5aecb23b0e17259741718ad891f35ac6a75338f52f8305d05d"
+    },
+    "notices/human-models-MIT.txt": {
+      "url": "https://raw.githubusercontent.com/vladmandic/human-models/bc66dc53bac03c96d35a7e6daaf717e72f3985f5/LICENSE",
+      "bytes": 1072,
+      "sha256": "7374547e92f50989ae440189fd677bafc66ab5749b6507d84a058c207df5b2f6"
+    },
+    "notices/face-classification-MIT.txt": {
+      "url": "https://raw.githubusercontent.com/oarriaga/face_classification/master/LICENSE",
+      "bytes": 1064,
+      "sha256": "032cdce3f236ea4b7d23a63a00ee9f476d01947fba2443d885599c1ad4e5dece"
+    },
+    "notices/mediapipe-Apache-2.0.txt": {
+      "url": "https://raw.githubusercontent.com/google-ai-edge/mediapipe/v0.10.21/LICENSE",
+      "bytes": 12331,
+      "sha256": "8707eef0533987efc5b155d64761eeb6e20793f50b9bd1a68dad1cf4719d0ed8"
+    },
+    "notices/tensorflowjs-Apache-2.0.txt": {
+      "url": "https://raw.githubusercontent.com/tensorflow/tfjs/tfjs-v4.22.0/LICENSE",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    "notices/nsfwjs-LICENSE.txt": {
+      "bytes": 1075,
+      "sha256": "2f7fe40b4f0d97020f0a0dc2214d637471f6204e565eb83e9fd414f0e5287d94",
+      "source": "nsfwjs package license"
+    },
+    "notices/@vladmandic-human-LICENSE.txt": {
+      "bytes": 1067,
+      "sha256": "9a3442b79acaf4fbc7c2e07b7e2d8f84af9bb3871bf08a69d80304ab00640e9a",
+      "source": "@vladmandic/human package license"
+    },
+    "notices/buffer-LICENSE.txt": {
+      "bytes": 1106,
+      "sha256": "06bafa45fdad2579ba0e43b0c9b2c6290287c99c4203c300254a462b38a307f6",
+      "source": "buffer package license"
+    },
+    "engine.bundle.js": {
+      "bytes": 5516373,
+      "sha256": "f1f406558738703dbe64b2f404f379fba5865cc46153c78f16fe7ac2cacce051",
+      "source": "engine.js; pinned pnpm-lock.yaml; NSFWJS MobileNetV2 weights embedded from nsfwjs@4.4.0"
+    },
+    "engine.bundle.js.LEGAL.txt": {
+      "bytes": 108712,
+      "sha256": "cc135977b3a99e49a7f20eb1b3b87c9ce0de8566562890b00feea7e8f1363da0",
+      "source": "esbuild linked dependency notices"
+    }
+  }
+}

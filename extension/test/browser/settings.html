@@ -20,6 +20,7 @@ try {
     const mock = `<script>
       window.fixture = ${JSON.stringify(fixture)};
       window.writes = 0;
+      window.reads = 0;
       window.writeDelay = 0;
       window.rejectWrite = false;
       window.workerUnavailable = false;
@@ -29,7 +30,8 @@ try {
                    set: async () => {} } },
         runtime: { sendMessage(msg, cb) {
           if (workerUnavailable) return cb({ok:false,reason:'unavailable'});
-          if (msg.type === 'getState') return cb(structuredClone(fixture));
+          if (msg.type === 'getState') { reads++; return cb(structuredClone(fixture)); }
+          if (msg.type === 'getVisualStatus') return cb({state:'disabled',available:true,supportedPersonModes:['off','all','female','male']});
           if (msg.type === 'forceSync') return cb({ok:false});
           if (msg.type === 'update') {
             writes++;
@@ -45,6 +47,10 @@ try {
     f.srcdoc = source.replace('<head>', `<head><base href="${new URL('../../options.html', location.href).href}">${mock}`);
     document.getElementById("frames").append(f);
     await new Promise((resolve) => f.onload = resolve);
+    // Real-timer CI must wait for the module's first worker request rather
+    // than assuming a cold browser can initialize every import in 100ms.
+    for (let attempt = 0; attempt < 50 && !f.contentWindow.reads; attempt++) await pause();
+    if (!f.contentWindow.reads) throw new Error("settings module did not initialize within 5 seconds");
     await pause();
     return f;
   }
@@ -176,7 +182,7 @@ try {
   const a2 = arFrame.contentDocument;
   check(a2.documentElement.dir === "rtl" && a2.documentElement.lang === "ar", "Arabic page is right-to-left");
   check(a2.getElementById("modeTitle").textContent === "حماية المتصفح فقط", "Arabic status text");
-  check(a2.querySelector("h1").textContent === "نظرة عامة", "Arabic static text");
+  check(a2.querySelector("h1").textContent === "طبقات الحماية" && a2.querySelector('#settings h1').textContent === 'خيارات المحتوى', "Arabic static text");
   a2.querySelector('a[href="#rules"]').click(); await pause();
   check(!a2.getElementById("rules").hidden, "Arabic navigation opens the rules view");
   check(a2.getElementById("custom").dir === "ltr", "domain fields stay left-to-right");
@@ -184,6 +190,24 @@ try {
   arFrame.style.width = "390px";
   await pause();
   check(a2.documentElement.scrollWidth <= arFrame.contentWindow.innerWidth, "narrow Arabic page has no horizontal overflow");
+  const visualFrame = await frame(false), v = visualFrame.contentDocument, vw = visualFrame.contentWindow;
+  check(!v.getElementById("saveVisual"), "autosaved visual preferences have no dead save button");
+  v.getElementById("inspectVisual").checked = true;
+  v.getElementById("inspectVisual").dispatchEvent(new Event("change")); await pause();
+  check(vw.fixture.inspectVisual === true && v.getElementById("inspectVisual").checked,
+    "visual toggle saves through worker and retains its confirmed value");
+  check(v.getElementById("msgVisual").textContent.length > 0 && !v.getElementById("msgVisual").classList.contains("error"),
+    "visual autosave has success feedback");
+  vw.rejectWrite = true;
+  v.getElementById("personBlur").value = "all";
+  v.getElementById("personBlur").dispatchEvent(new Event("change")); await pause();
+  check(v.getElementById("personBlur").value === "off" && v.getElementById("msgVisual").classList.contains("error"),
+    "failed visual save restores confirmed preference and keeps its error after status refresh");
+  vw.rejectWrite = false;
+  v.getElementById("personBlur").value = "all";
+  v.getElementById("personBlur").dispatchEvent(new Event("change")); await pause();
+  check(vw.fixture.personBlur === "all" && !v.getElementById("msgVisual").classList.contains("error"),
+    "visual preference retry clears the old save error");
   document.getElementById("summary").dataset.result = "pass";
 } catch (error) {
   results.push(`FAIL ${error.stack}`);

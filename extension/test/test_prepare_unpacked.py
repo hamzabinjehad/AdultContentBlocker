@@ -60,7 +60,10 @@ class PrepareUnpackedTests(unittest.TestCase):
                     "__MACOSX/resource", "._background.js", ".DS_Store", "test/check.js",
                     "eval/corpus.json", "keys/private.key", "secret.pem", "secret.p12",
                     "secret.pfx", "private.key", "package.sh", "check_package.py",
-                    "prepare_unpacked.py", "tools/generate.py", "build.crx", ".credentials/token"]
+                    "prepare_unpacked.py", "tools/generate.py", "build.crx", ".credentials/token",
+                    "visual/engine.js", "visual/build.mjs", "visual/package.json",
+                    "visual/pnpm-lock.yaml", "visual/test/queue.test.js",
+                    "visual/node_modules/library/index.js"]
         for name in excluded:
             self.write(name)
         before = {p.relative_to(self.source).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
@@ -75,6 +78,100 @@ class PrepareUnpackedTests(unittest.TestCase):
                  for p in self.source.rglob("*") if p.is_file()}
         self.assertEqual(before, after)
         self.assert_no_staging()
+
+    def visual_fixture(self):
+        """Small local assets exercise the build contract, not inference."""
+        for name in helper.VISUAL_REQUIRED:
+            if name not in self.runtime:
+                self.runtime[name] = b"fixture runtime"
+                self.write(name, self.runtime[name])
+        self.runtime["visual/offscreen.html"] = b'<script type="module" src="./offscreen.js"></script>'
+        self.write("visual/offscreen.html", self.runtime["visual/offscreen.html"])
+        self.runtime["visual/engine.bundle.js"] = b'export const fixture = true;'
+        self.write("visual/engine.bundle.js", self.runtime["visual/engine.bundle.js"])
+        for model in ("blazeface", "gender"):
+            name = f"visual/models/{model}.json"
+            self.runtime[name] = json.dumps({"weightsManifest": [{"paths": [f"{model}.bin"]}]}).encode()
+            self.write(name, self.runtime[name])
+            shard = f"visual/models/{model}.bin"
+            self.runtime[shard] = b"model fixture"
+            self.write(shard, self.runtime[shard])
+        artifacts = {}
+        for name, data in self.runtime.items():
+            if name.startswith("visual/") and name != "visual/assets.json":
+                artifacts[name.removeprefix("visual/")] = {
+                    "bytes": len(data), "sha256": hashlib.sha256(data).hexdigest()}
+        self.runtime["visual/assets.json"] = json.dumps({"schema": 1, "artifacts": artifacts}).encode()
+        self.write("visual/assets.json", self.runtime["visual/assets.json"])
+
+    def test_dependency_symlinks_in_excluded_directory_are_not_traversed(self):
+        outside = self.root / "outside.js"
+        outside.write_bytes(b"dependency cache")
+        cache = self.source / "visual/node_modules/library"
+        cache.parent.mkdir(parents=True)
+        cache.symlink_to(outside)
+        helper.prepare(self.output, self.source)
+        self.assertFalse((self.output / "visual/node_modules").exists())
+        self.assertTrue(cache.is_symlink())
+
+    def test_visual_runtime_models_and_notices_are_retained_byte_identically(self):
+        self.visual_fixture()
+        helper.prepare(self.output, self.source)
+        actual = {p.relative_to(self.output).as_posix(): p.read_bytes()
+                  for p in self.output.rglob("*") if p.is_file()}
+        self.assertEqual(actual, self.runtime)
+
+    def test_visual_runtime_requires_every_bundled_component(self):
+        self.visual_fixture()
+        for name in helper.VISUAL_REQUIRED:
+            with self.subTest(name=name):
+                original = (self.source / name).read_bytes()
+                (self.source / name).unlink()
+                with self.assertRaisesRegex(helper.PreparationError, "missing bundled visual resource"):
+                    helper.prepare(self.output, self.source)
+                self.write(name, original)
+                self.assert_no_output()
+
+    def test_visual_manifest_permission_requires_runtime_when_all_assets_missing(self):
+        self.manifest["permissions"] = ["offscreen"]
+        self.write("manifest.json", json.dumps(self.manifest).encode())
+        with self.assertRaisesRegex(helper.PreparationError, "missing bundled visual resource"):
+            helper.prepare(self.output, self.source)
+        self.assert_no_output()
+
+    def test_visual_artifact_corruption_prevents_output(self):
+        self.visual_fixture()
+        self.write("visual/engine.bundle.js", b'export const fixture = false;')
+        with self.assertRaisesRegex(helper.PreparationError, "differs from recorded build"):
+            helper.prepare(self.output, self.source)
+        self.assert_no_output()
+
+    def test_visual_model_shards_need_recorded_checksums(self):
+        self.visual_fixture()
+        manifest = json.loads((self.source / "visual/assets.json").read_bytes())
+        del manifest["artifacts"]["models/gender.bin"]
+        self.write("visual/assets.json", json.dumps(manifest).encode())
+        with self.assertRaisesRegex(helper.PreparationError, "no checksum for: models/gender.bin"):
+            helper.prepare(self.output, self.source)
+        self.assert_no_output()
+
+    def test_visual_build_rejects_escaping_artifact_paths(self):
+        self.visual_fixture()
+        manifest = json.loads((self.source / "visual/assets.json").read_bytes())
+        manifest["artifacts"]["../outside.js"] = {"bytes": 1, "sha256": "0" * 64}
+        self.write("visual/assets.json", json.dumps(manifest).encode())
+        with self.assertRaisesRegex(helper.PreparationError, "escapes bundle"):
+            helper.prepare(self.output, self.source)
+        self.assert_no_output()
+
+    def test_visual_build_rejects_unsupported_manifest_schema(self):
+        self.visual_fixture()
+        manifest = json.loads((self.source / "visual/assets.json").read_bytes())
+        manifest["schema"] = 2
+        self.write("visual/assets.json", json.dumps(manifest).encode())
+        with self.assertRaisesRegex(helper.PreparationError, "schema 1"):
+            helper.prepare(self.output, self.source)
+        self.assert_no_output()
 
     def assert_no_staging(self):
         self.assertEqual(list(self.output.parent.glob(".hisn-unpacked-*")), [])

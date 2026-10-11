@@ -112,7 +112,22 @@ public enum PolicyRequest: Codable, Equatable {
     case setGuardAllowed([String])
     /// The bridge: this browser's extension just checked in. Held in memory
     /// only, never written down — it is evidence of liveness, not policy.
-    case checkIn(browser: String)
+    case checkIn(browser: String, processID: Int32? = nil)
+}
+
+/// A native-host check-in belongs to its OS-resolved browser process. Bundle
+/// stamps are kept for older status readers, but cannot verify another process.
+public enum BrowserCheckInIdentity {
+    public static func key(browser: String, processID: Int32) -> String? {
+        guard processID > 0, !browser.isEmpty, browser.utf8.count <= 255,
+              browser.split(separator: ".", omittingEmptySubsequences: false)
+                .allSatisfy({ !$0.isEmpty }),
+              browser.utf8.allSatisfy({ byte in
+                  (65...90).contains(byte) || (97...122).contains(byte) ||
+                    (48...57).contains(byte) || byte == 45 || byte == 46
+              }) else { return nil }
+        return "process:\(processID):\(browser)"
+    }
 }
 
 /// What the filter is actually doing, reported by the filter itself.
@@ -144,7 +159,7 @@ public struct PolicyStatus: Codable, Equatable {
     /// The authority's trusted time when it answered.
     public var now: Date
     public var health: FilterHealth
-    /// When each browser's extension last checked in through the bridge —
+    /// When each browser bundle and exact process last checked in through the bridge —
     /// over the code-signed channel, so unlike the app's defaults it cannot
     /// be forged to keep the browser guard quiet. Optional so an older
     /// filter's reply still decodes.
@@ -472,10 +487,14 @@ public final class PolicyService: @unchecked Sendable {
     }
 
     public func handle(_ request: PolicyRequest) -> PolicyResponse {
-        if case let .checkIn(browser) = request {
+        if case let .checkIn(browser, processID) = request {
             lock.withLockUnchecked {
                 if checkIns.count > 64 { checkIns.removeAll() }
-                checkIns[browser] = clock()
+                let now = clock()
+                checkIns[browser] = now
+                if let processID, let key = BrowserCheckInIdentity.key(browser: browser, processID: processID) {
+                    checkIns[key] = now
+                }
             }
             return PolicyResponse(accepted: true, refusal: nil, status: status())
         }

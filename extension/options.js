@@ -26,6 +26,7 @@ import { send } from "./lib/messages.js";
 import { describeStatus } from "./lib/status.js";
 import { renderIcons } from "./lib/icons.js";
 import { siteEditor } from "./lib/site-editor.js";
+import { describeVisual } from "./lib/visual-status.js";
 import { connectionStatus, connectionFeedback, parseDomains, settingsError, restrictionsActive } from "./lib/settings.js";
 import { initLanguage, t, setLanguage, resolveLanguage, savePreference, translatePage, appLanguage } from "./lib/i18n.js";
 
@@ -58,13 +59,15 @@ let saving = false;
 const siteEditors = new Map();
 let privateCoverage;
 let overviewSignature;
+let visualEngine;
 chrome.extension?.isAllowedIncognitoAccess?.((allowed) => {
   privateCoverage = allowed;
   renderOverview();
 });
 function renderOverview() {
   const s = describeStatus(current, { version: chrome.runtime.getManifest?.().version });
-  const signature = JSON.stringify([s, privateCoverage, current?.inspectText, current?.failClosed]);
+  const visual = describeVisual(visualEngine, current);
+  const signature = JSON.stringify([s, privateCoverage, current?.inspectText, current?.failClosed, visual, current?.personBlur]);
   if (signature === overviewSignature) return;
   overviewSignature = signature;
   $("protectionDot").className = `dot ${s.protection.level}`;
@@ -76,6 +79,8 @@ function renderOverview() {
     : current?.appPresent ? t("opt.lockHint.managed") : t("opt.lockHint.browser");
   $("domainLayer").textContent = $("searchLayer").textContent = current ? t("details.on") : t("opt.coverage.unknown");
   $("textLayer").textContent = !current ? t("opt.coverage.unknown") : current.inspectText !== false || restrictionsActive(current) ? t("details.on") : t("details.off");
+  $("visualLayer").textContent = visual.text;
+  $("personLayer").textContent = current?.personBlur && current.personBlur !== "off" ? visual.text : t("details.off");
   $("privateLayer").textContent = t(privateCoverage === undefined ? "opt.coverage.unknown" : privateCoverage ? "details.on" : "opt.coverage.notEnabled");
   $("privateHint").hidden = privateCoverage !== false;
   $("statusDetails").replaceChildren(...s.details.flatMap(([key, value]) => {
@@ -356,7 +361,50 @@ function showState(state, fill = false) {
   renderReported(state);
   renderDisputed(state);
   updateDrafts();
+  renderVisualSettings();
 }
+
+function renderVisualSettings() {
+  const visual = describeVisual(visualEngine, current);
+  $("visualEngineStatus").textContent = visual.text;
+  $("visualEngineStatus").className = `visual-status ${visual.level}`;
+  $("inspectVisual").checked = current?.inspectVisual === true;
+  $("personBlur").value = current?.personBlur ?? "off";
+  $("inspectVisual").disabled = !current || !visual.available || saving ||
+    (restrictionsActive(current) && current.inspectVisual === true);
+  $("personBlur").disabled = !current || !visual.available || saving;
+  const covered = { off: [], female: ["female"], male: ["male"], all: ["female", "male"] };
+  for (const option of $("personBlur").options) {
+    const supported = visualEngine?.supportedPersonModes;
+    option.disabled = (Array.isArray(supported) && !supported.includes(option.value)) ||
+      (current && restrictionsActive(current) && (covered[current.personBlur ?? "off"] ?? []).some(group => !covered[option.value].includes(group)));
+  }
+  $("visualLockHint").hidden = !current || !restrictionsActive(current);
+}
+async function refreshVisualStatus() {
+  visualEngine = await send({ type: "getVisualStatus" });
+  renderVisualSettings();
+  renderOverview();
+}
+for (const id of ["inspectVisual", "personBlur"]) $(id).addEventListener("change", async () => {
+  if (saving || !current) return;
+  const patch = { [id]: id === "inspectVisual" ? $(id).checked : $(id).value };
+  $("msgVisual").textContent = t("opt.saving");
+  $("msgVisual").className = "msg";
+  saving = true;
+  renderVisualSettings();
+  const reply = await send({ type: "update", patch });
+  saving = false;
+  if (reply.ok) { showState(reply.state); $("msgVisual").textContent = t("opt.saved"); }
+  else {
+    renderVisualSettings();
+    $("msgVisual").className = "msg error";
+    $("msgVisual").textContent = settingsError(reply);
+  }
+  await refreshVisualStatus();
+});
+refreshVisualStatus();
+setInterval(() => { if (current?.inspectVisual || current?.personBlur && current.personBlur !== "off") refreshVisualStatus(); }, 5000);
 
 function fillFields(state) {
   $("custom").value = (state.customBlocks || []).join("\n");

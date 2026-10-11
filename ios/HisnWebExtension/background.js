@@ -1,15 +1,82 @@
 /** Safari-specific bridge; the DOM scanner and scorer are canonical shared JS.
  * Nothing here persists page text, hosts, hits, or browsing timestamps. Safari
- * may suspend this nonpersistent worker; scanners retry and show unavailable
+ * may suspend this nonpersistent background page; scanners retry and show unavailable
  * states, rather than interpreting a missing response as a clean verdict.
  */
 import { buildIndex, scorePage, isExempt } from "./lib/score.js";
+import { handleVisualMessage, getVisualStatus, disableVisualEngine, cancelVisualTab } from "./visual/broker.js";
+import { visualPreferences, PERSON_MODES } from "./visual/decisions.js";
 import "./content/feed.js";
 
 const PAGE_KEYS = ["url", "title", "meta", "heading", "body", "alt"];
 const ITEM_KEYS = ["body", "alt"];
 const SENSITIVITY = 50;
 let indexPromise;
+
+const VISUAL_CONTENT_MESSAGES = ["getVisualSettings", "inspectVisualMedia", "cancelVisualMedia"];
+const VISUAL_PAGE_MESSAGES = ["getVisualStatus", "saveVisualSettings"];
+
+/** Only the extension's own options page may mutate preferences or read engine
+ * status. Content scripts may submit bounded captures, never policy values.
+ * HTTP(S) sender checks are kept here even though the shared broker also
+ * validates tab/frame ownership. Nothing accepts messages from a webpage.
+ */
+export function checkedVisualRequest(message, sender, api) {
+  if (!message || typeof message !== "object" || Array.isArray(message)
+      || !api.runtime.id || sender?.id !== api.runtime.id) return false;
+  if (VISUAL_PAGE_MESSAGES.includes(message.type)
+      || (message.type === "getVisualSettings" && !sender.tab)) {
+    return !sender.tab && sender.url === api.runtime.getURL("options.html");
+  }
+  if (!VISUAL_CONTENT_MESSAGES.includes(message.type)
+      || !Number.isInteger(sender?.tab?.id) || sender.tab.id < 0
+      || !Number.isInteger(sender.frameId) || sender.frameId < 0
+      || typeof sender.url !== "string" || sender.url.length > 32_768) return false;
+  try { return ["http:", "https:"].includes(new URL(sender.url).protocol); }
+  catch { return false; }
+}
+
+export function checkedVisualPatch(patch) {
+  if (!patch || typeof patch !== "object" || Array.isArray(patch)
+      || Object.keys(patch).length === 0
+      || Object.keys(patch).some(key => !["inspectVisual", "personBlur"].includes(key))
+      || ("inspectVisual" in patch && typeof patch.inspectVisual !== "boolean")
+      || ("personBlur" in patch && !PERSON_MODES.includes(patch.personBlur))) return null;
+  return { ...patch };
+}
+
+async function savedVisualPreferences(api) {
+  const stored = await api.storage.local.get("state");
+  return visualPreferences(stored.state);
+}
+
+export function visualMessageHandler(api, dependencies = {}) {
+  const inspect = dependencies.inspect ?? handleVisualMessage;
+  const status = dependencies.status ?? getVisualStatus;
+  const disable = dependencies.disable ?? disableVisualEngine;
+  return (message, sender, respond) => {
+    if (!checkedVisualRequest(message, sender, api)) return false;
+    (async () => {
+      try {
+        const preferences = await savedVisualPreferences(api);
+        if (message.type === "getVisualSettings") respond(preferences);
+        else if (message.type === "saveVisualSettings") {
+          const patch = checkedVisualPatch(message.patch);
+          if (!patch) { respond({ error: "invalid-settings" }); return; }
+          const next = { ...preferences, ...patch };
+          await api.storage.local.set({ state: next });
+          if (!next.inspectVisual && next.personBlur === 'off') await disable();
+          respond({ settings: next });
+        } else if (message.type === "getVisualStatus") {
+          respond(await status(preferences));
+        } else respond(await inspect(message, sender, preferences));
+      } catch {
+        respond({ state: "unavailable", available: false, reason: "visual-runtime-unavailable" });
+      }
+    })();
+    return true;
+  };
+}
 
 export function checkedRequest(message, sender, extensionID) {
   if (!message || typeof message !== "object" || Array.isArray(message)
@@ -100,4 +167,11 @@ export function messageHandler(api, getIndex = () => bundledIndex(api)) {
 }
 
 const api = globalThis.browser ?? globalThis.chrome;
-if (api?.runtime?.onMessage) api.runtime.onMessage.addListener(messageHandler(api));
+if (api?.runtime?.onMessage) {
+  api.runtime.onMessage.addListener(messageHandler(api));
+  api.runtime.onMessage.addListener(visualMessageHandler(api));
+}
+api?.tabs?.onRemoved?.addListener(tabId => { cancelVisualTab(tabId).catch(() => {}); });
+api?.tabs?.onUpdated?.addListener((tabId, change) => {
+  if (change.status === 'loading') cancelVisualTab(tabId).catch(() => {});
+});

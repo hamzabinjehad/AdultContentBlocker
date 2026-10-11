@@ -45,21 +45,16 @@ while [[ $# -gt 0 ]]; do
 done
 
 STAGE="$(mktemp -d)"
+# macOS commonly exposes its temporary directory through the /var symlink.
+# Resolve only our freshly created staging directory before safe-copy checks.
+STAGE="$(cd "$STAGE" && pwd -P)"
 trap 'rm -rf "$STAGE"' EXIT
 BUILD="$STAGE/extension"
-mkdir -p "$BUILD"
 
-# Copy the whole extension, then remove what must not ship. Copy-then-prune
-# rather than an allowlist: a new source file is included by default, which is
-# the safe direction — a forgotten allowlist entry ships a broken extension,
-# a forgotten prune ships a harmless extra file.
-cp -R "$EXT_DIR"/. "$BUILD"/
-rm -rf "$BUILD/test" "$BUILD/eval" "$BUILD/keys" "$BUILD/package.sh" "$BUILD/check_package.py" "$BUILD/prepare_unpacked.py"
-# `_metadata/` is Chrome's own indexed-ruleset cache, written into the
-# directory whenever the extension is loaded unpacked. Names starting with
-# `_` are reserved by Chrome and the store rejects a package that carries one.
-rm -rf "$BUILD/_metadata"
-find "$BUILD" \( -name "*.pem" -o -name ".DS_Store" \) -delete
+# Reuse the unpacked-copy inventory: retain runtime files by default but never
+# traverse dependency caches or copy browser metadata, keys, or build sources.
+# Model checksums and local runtime dependencies are checked before staging.
+python3 "$EXT_DIR/prepare_unpacked.py" --out "$BUILD"
 
 # Store-clean the manifest: drop `key` and every `_comment_*`.
 python3 - "$BUILD/manifest.json" <<'PY'
@@ -87,6 +82,7 @@ mkdir -p "$(dirname "$OUT")"
 OUT="$(cd "$(dirname "$OUT")" && pwd)/$(basename "$OUT")"
 rm -f "$OUT"
 ( cd "$BUILD" && zip -qr -X "$OUT" . )
+python3 "$EXT_DIR/check_package.py" "$OUT"
 
 echo "wrote $OUT"
 echo "  version:   $VERSION"

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stage a small Safari text-scanner package after verifying the signed terms.
+"""Stage a Safari scanner after verifying signed terms and bundled visual assets.
 
 Canonical JS is copied only into generated build products, never maintained as
 a source fork. No downloads, keys, browser activation or user data are involved.
@@ -21,15 +21,74 @@ from network.publish import (Rejected, load_key, read_small, validate_manifest,
 RESOURCES = {
     "manifest.json": "ios/HisnWebExtension/manifest.json",
     "background.js": "ios/HisnWebExtension/background.js",
+    "background.html": "ios/HisnWebExtension/background.html",
+    "options.html": "ios/HisnWebExtension/options.html",
+    "options.js": "ios/HisnWebExtension/options.js",
+    "options.css": "ios/HisnWebExtension/options.css",
     "blocked.html": "ios/HisnWebExtension/blocked.html",
     "blocked.js": "ios/HisnWebExtension/blocked.js",
     "content/scan.js": "extension/content/scan.js",
     "content/feed.js": "extension/content/feed.js",
+    "content/visual.js": "extension/content/visual.js",
+    "visual/capture.js": "extension/visual/capture.js",
+    "visual/broker.js": "extension/visual/broker.js",
+    "visual/decisions.js": "extension/visual/decisions.js",
+    "visual/queue.js": "extension/visual/queue.js",
     "lib/score.js": "extension/lib/score.js",
     "lib/normalize.js": "extension/lib/normalize.js",
     "icons/icon-32.png": "extension/icons/icon-32.png",
     "icons/icon-128.png": "extension/icons/icon-128.png",
 }
+
+# Fixed runtime allowlist: model-manifest data can never introduce paths, build
+# dependencies or external runtime downloads into the Safari extension bundle.
+VISUAL_ASSETS = frozenset({
+    "engine.bundle.js", "models/blazeface.json", "models/blazeface.bin",
+    "models/gender.json", "models/gender.bin", "notices/human-models-MIT.txt",
+    "notices/face-classification-MIT.txt", "notices/mediapipe-Apache-2.0.txt",
+    "notices/tensorflowjs-Apache-2.0.txt",
+    "notices/nsfwjs-LICENSE.txt", "notices/@vladmandic-human-LICENSE.txt",
+    "notices/buffer-LICENSE.txt", "engine.bundle.js.LEGAL.txt",
+})
+VISUAL_MAX_BYTES = 32 * 1024 * 1024
+
+
+def verified_visual_resources(repo: Path = ROOT) -> dict[str, bytes]:
+    """Verify the generated, pinned build assets; not an accuracy certification.
+
+    Unlike signed blocklist terms, visual/assets.json is repository build
+    metadata. Hash checks detect staging drift, not malicious source changes.
+    """
+    visual = repo / "extension/visual"
+    metadata_raw = read_small(visual / "assets.json")
+    try:
+        metadata = json.loads(metadata_raw)
+    except (ValueError, UnicodeError) as error:
+        raise Rejected("invalid visual build metadata") from error
+    if (not isinstance(metadata, dict) or metadata.get("schema") != 1
+            or not isinstance(metadata.get("revision"), str)
+            or len(metadata["revision"]) != 40
+            or any(c not in "0123456789abcdef" for c in metadata["revision"])
+            or not isinstance(metadata.get("artifacts"), dict)
+            or set(metadata["artifacts"]) != VISUAL_ASSETS):
+        raise Rejected("unexpected visual build asset inventory")
+    result = {"visual/assets.json": metadata_raw}
+    for name, entry in metadata["artifacts"].items():
+        raw = read_small(visual / name, VISUAL_MAX_BYTES)
+        if (not raw or not isinstance(entry, dict)
+                or type(entry.get("bytes")) is not int or len(raw) != entry["bytes"]
+                or hashlib.sha256(raw).hexdigest() != entry.get("sha256")):
+            raise Rejected(f"visual asset hash or byte count mismatch: {name}")
+        result[f"visual/{name}"] = raw
+    for model in ("blazeface", "gender"):
+        try:
+            graph = json.loads(result[f"visual/models/{model}.json"])
+            paths = [name for group in graph["weightsManifest"] for name in group["paths"]]
+        except (ValueError, UnicodeError, KeyError, TypeError) as error:
+            raise Rejected("malformed bundled model manifest") from error
+        if paths != [f"{model}.bin"]:
+            raise Rejected("unexpected visual model shard path")
+    return result
 
 
 def verified_terms(repo: Path = ROOT) -> tuple[bytes, int]:
@@ -74,6 +133,7 @@ def stage(output: Path, repo: Path = ROOT) -> dict:
     # Verify every source before emitting any files. Never recursively include
     # development tests, signing inputs, Chrome policy or native-host machinery.
     contents = {name: read_small(repo / source) for name, source in RESOURCES.items()}
+    contents.update(verified_visual_resources(repo))
     contents["seed/terms.json"] = terms
     output.mkdir(parents=True, exist_ok=True)
     for name, raw in contents.items():
@@ -92,7 +152,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     stage(args.output)
-    print("Verified and staged Hisn Text Safari scanner (no activation)")
+    print("Verified and staged Hisn Safari text and optional visual scanner (no activation)")
 
 
 if __name__ == "__main__":

@@ -23,9 +23,9 @@ globalThis.chrome = {
     },
   },
   scripting: {
-    getRegisteredContentScripts: async () => registeredScripts,
-    registerContentScripts: async (scripts) => { registeredScripts = scripts; registrations++; },
-    unregisterContentScripts: async () => { registeredScripts = []; },
+    getRegisteredContentScripts: async ({ ids } = {}) => registeredScripts.filter(script => !ids || ids.includes(script.id)),
+    registerContentScripts: async (scripts) => { registeredScripts.push(...scripts); registrations++; },
+    unregisterContentScripts: async ({ ids } = {}) => { registeredScripts = registeredScripts.filter(script => ids && !ids.includes(script.id)); },
   },
   tabs: { query: async () => [] },
   runtime: {
@@ -113,6 +113,10 @@ check(alarms.get("listUpdate")?.periodInMinutes === 360,
 state = { ...DEFAULT_STATE };
 check(!(await message({ type: "forceSync" })).ok, "missing native app is tolerated");
 check(!state.failClosed && !state.appPresent, "fresh browser-only install does not lock down");
+check(["blocklist", "keywords", "safesearch", "paths", "web_protection"].every((id) => enabled.includes(id)),
+      "actual worker keeps all baseline layers when native app is absent");
+check(registeredScripts.some((script) => script.id === "hisn-scan"),
+      "actual worker keeps text scanning registered without native app");
 let r = await message({ type: "update", patch: { customBlocks: ["example.com"], customTerms: ["GAMBLING"] } });
 check(r.ok && state.customTerms[0] === "gambling", "standalone saves normalized terms through real worker");
 check(enabled.includes("blocklist") && enabled.includes("keywords") && enabled.includes("safesearch")
@@ -135,6 +139,10 @@ state.lockUntil = Date.now() + 100000;
 state.lastHeartbeat = Date.now() - 600000;
 await message({ type: "forceSync" });
 check(state.failClosed, "app loss during lock fails closed");
+check(["blocklist", "keywords", "safesearch", "paths", "web_protection"].every((id) => enabled.includes(id))
+      && registeredScripts.some((script) => script.id === "hisn-scan")
+      && dynamic.some((rule) => rule.condition.urlFilter === "*"),
+      "app removal during commitment retains baseline, text scanner and restrictive policy together");
 state.lockUntil = 0;
 check(!(await message({ type: "update", patch: { textAllow: ["other.example"] } })).ok, "fail-closed still guards corrections");
 // Settings changes rebuild only the policy rules; a downloaded generation's
@@ -161,6 +169,8 @@ check(state.lastHeartbeat === recoveredHeartbeat, "an absent authority cannot re
 nativeReply = { lockUntil: 0, mode: "off", allowlist: [], customBlocks: [] };
 check((await message({ type: "forceSync" })).ok && !state.failClosed && state.lockUntil === 0,
       "a fresh authoritative unlocked reply can end restrictive recovery");
+check(["blocklist", "keywords", "safesearch", "paths", "web_protection"].every((id) => enabled.includes(id)),
+      "confirmed unlock releases the commitment but never turns off baseline blocking");
 
 // Failed durable expiry uses a transport-only hold, including standard mode.
 // Local text exemptions cannot relax a lock the authority still holds.
@@ -262,5 +272,29 @@ for (const sender of [PAGE, { ...FEED, frameId: 1 }, { ...FEED, url: "https://x.
 check((await message({ type: "scoreFeedItem", zones: {} }, OPTIONS)).reason === "forbidden-sender",
       "extension settings page cannot impersonate feed content frame");
 check(termsFetches === 1, "same worker vocabulary cached across individual item scores");
+
+state = { ...DEFAULT_STATE };
+r = await message({ type: 'update', patch: { inspectVisual: true, personBlur: 'female' } });
+check(r.ok && registeredScripts.some(script => script.id === 'hisn-visual'
+  && script.js.join(',') === 'visual/capture.js,content/visual.js'), 'visual opt-in registers capture before scanner');
+check(registeredScripts.some(script => script.id === 'hisn-scan'), 'visual registration never replaces text registration');
+r = await message({ type: 'update', patch: { inspectText: false } });
+check(r.ok && !registeredScripts.some(script => script.id === 'hisn-scan')
+  && registeredScripts.some(script => script.id === 'hisn-visual'), 'text off leaves independent visual registration');
+state.lockUntil = Date.now() + 60000;
+for (const patch of [{ inspectVisual: false }, { personBlur: 'off' }, { personBlur: 'male' }]) {
+  r = await message({ type: 'update', patch });
+  check(!r.ok && r.reason === 'locked', 'worker rejects visual weakening during commitment');
+}
+check((await message({ type: 'update', patch: { personBlur: 'all' } })).ok, 'worker permits strengthening person coverage');
+r = await message({ type: 'getVisualSettings' }, PAGE);
+check(r.inspectVisual === true && r.personBlur === 'all' && r.lockUntil === undefined, 'content receives only visual preferences');
+check((await message({ type: 'getVisualStatus' }, PAGE)).reason === 'forbidden-sender', 'content cannot inspect engine privileged channel');
+check((await message({ type: 'inspectVisualMedia', id: 'x', width: 1, height: 1, rgba: 'AAAAAA==' }, OPTIONS)).reason === 'forbidden-sender', 'options cannot impersonate content capture');
+check((await message({ type: 'inspectVisualMedia', id: 'x', width: 1, height: 1, rgba: 'AAAAAA==' }, PAGE)).state === 'unavailable', 'unsupported engine never returns clean');
+state.lockUntil = 0;
+check((await message({ type: 'update', patch: { inspectVisual: false, personBlur: 'off' } })).ok, 'unlocked user can disable visual beta');
+check(!registeredScripts.some(script => script.id === 'hisn-visual')
+  && ['blocklist', 'keywords', 'safesearch', 'paths', 'web_protection'].every(id => enabled.includes(id)), 'visual off keeps baseline enforcement');
 
 print(`${checks}/${checks} production worker checks passed`);

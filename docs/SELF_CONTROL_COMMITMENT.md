@@ -75,12 +75,28 @@ switch extends that behavior outside a commitment with explicit confirmation.
 It is off by default; disabling it does not disable the guard inside a lock.
 The UI does not offer turning an enabled requirement off during a lock.
 
-Supported Chromium browsers need their own extension heartbeat. A missing or
+Supported Chromium browser processes need their own extension heartbeat. A missing or
 stale heartbeat produces a visible warning followed by a termination request.
 Known unsupported browsers, including Safari and Firefox, receive the same
 first one-minute warning. There is no automatic Safari exemption. A known active filter
 authority's empty check-in record no longer falls back to editable app defaults;
 that fallback remains only when no authority answers.
+
+The bridge resolves its parent process from the operating system, not from an
+extension-supplied PID. It records separate bundle and positive process-ID
+check-ins; only the exact process key is consumed by runtime guarding and its
+delayed force-close recheck. Bundle stamps remain for legacy connection-status
+rows, not process assurance. Existing launch-date checks reject stamps from a
+previous process that reused a PID. Concurrent instances cannot erase each
+other's warnings or renew startup grace by alternating healthy observations.
+A stopped unverified offender's deadline is retained even while its healthy
+sibling keeps checking in. A newly verified repair can clear unresolved history.
+
+Upgrade the app, embedded bridge and signed filter as one compatible build.
+An older filter reporting only bundle keys cannot verify a process to the new
+guard; do not mix versions and assume the absence of a crash proves protection.
+The tests drive isolated stores and synthetic process identities; they do not
+prove Helium's native-host parent identity or real closure on the installed Mac.
 
 The Mac runtime also reads supported Chromium browsers' standard `Default` and
 `Profile *` preferences off the main thread. Two consistent readings at least
@@ -134,8 +150,8 @@ browser. Known browsers, including Safari and its preview, cannot use saved app
 allowances to bypass extension checks. Explicitly trusted unknown apps stay open
 to handle non-browser false positives; the UI names that bypass and only offers
 trust before a lock. A custom browser granted this exception is still a bypass.
-Separate Screen Time or network settings do not satisfy the extension requirement. A heartbeat is browser-bundle evidence,
-not proof that every profile or private window is protected. Standard-profile
+Separate Screen Time or network settings do not satisfy the extension requirement. A process heartbeat
+is not proof that every profile or private window inside it is protected. Standard-profile
 checks improve known removal detection; custom profile paths, guest/private
 windows and unreadable profiles remain unverified and can remain bypasses.
 Force-quitting

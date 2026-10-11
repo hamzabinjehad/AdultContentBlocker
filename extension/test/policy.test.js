@@ -16,7 +16,7 @@
 
 import {
   decide, policyRules, isLocked, effectiveStrict, shouldFailClosed, tabsToBlock,
-  validatePatch, bridgePatch, canonicalHost,
+  validatePatch, bridgePatch, canonicalHost, visualPolicyWeakens,
   HEARTBEAT_GRACE_MS, RULE_DOWNLOADED_BASE, PRIORITY_LIST, PRIORITY_HAND,
   PRIORITY_CATCHALL, PRIORITY_PLUMBING, PRIORITY_KEYWORDS, RESOURCE_TYPES,
 } from "../lib/policy.js";
@@ -33,6 +33,21 @@ function eq(actual, expected, label) {
 
 const base = { mode: "blocklist", lockUntil: 0, allowlist: [], customBlocks: [],
                failClosed: false, appPresent: false, lastHeartbeat: 0 };
+
+eq(validatePatch({ inspectVisual: true, personBlur: "female" }),
+   { ok: true, patch: { inspectVisual: true, personBlur: "female" } }, "visual preferences have a narrow schema");
+check(!validatePatch({ personBlur: "pornographic-women" }).ok, "gender is not an adult-content category");
+check(!validatePatch({ inspectVisual: 1 }).ok, "visual activation must be an explicit boolean");
+for (const before of ["off", "female", "male", "all"]) {
+  for (const after of ["off", "female", "male", "all"]) {
+    const weakens = before !== "off" && before !== after && after !== "all";
+    check(visualPolicyWeakens({ personBlur: before }, { personBlur: after }) === weakens,
+          `person preference ${before} -> ${after} respects commitment coverage`);
+  }
+}
+check(visualPolicyWeakens({ inspectVisual: true }, { inspectVisual: false }), "cannot turn adult visual checks off mid-lock");
+check(!visualPolicyWeakens({ inspectVisual: false }, { inspectVisual: true }), "can strengthen visual protection mid-lock");
+check(!visualPolicyWeakens({ inspectVisual: true, personBlur: "all" }, { customTerms: ["fixture"] }), "unrelated patch does not weaken visuals");
 
 // ── the shared fixture ─────────────────────────────────────────────────────
 const fixture = JSON.parse(readFile("../../blocklist/terms/policy_cases.json"));

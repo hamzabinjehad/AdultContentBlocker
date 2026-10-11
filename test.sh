@@ -53,7 +53,7 @@ suite_release() {
     python3 -m unittest discover -s macos/release -p 'test_*.py'
     bash macos/release/release.sh --check
     bash -n macos/release/release.sh macos/release/installer/preinstall \
-        macos/release/installer/postinstall macos/install_native_host.sh macos/install.sh \
+        macos/release/installer/postinstall macos/install_native_host.sh macos/install.sh macos/install_update.sh \
         script/build_and_run.sh
 }
 

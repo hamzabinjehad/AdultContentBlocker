@@ -33,7 +33,7 @@ and [`docs/LAUNCH.md`](docs/LAUNCH.md) is what stands between that and publishin
 blocklist/       list pipeline: fetch → merge → sign, keyword layer, seed bundle  (Python)
 network/         capability planning + verified DNS-rule publication             (Python)
 profile/         .mobileconfig generator: DNS, DoH, Private Relay                (Python)
-extension/       Chrome/Edge MV3 extension                                       (JS)
+extension/       Chromium MV3 extension + opt-in local visual engine             (JS)
 macos/           the app + content filter                                        (Swift)
 ios/             universal iPhone/iPad app, Safari blockers + optional family DNS (Swift)
 ipados/          iPad-specific documentation; shares the ios/ target
@@ -46,9 +46,12 @@ partner/         the accountability partner's page: key, and signed approvals   
 The new iPhone/iPad development version is documented in [`ios/README.md`](ios/README.md).
 See [`docs/APPLE_PLATFORMS.md`](docs/APPLE_PLATFORMS.md) for platform boundaries.
 It shares the signed core list, not macOS privileges: Safari domain protection,
-an independently enabled Safari text-scanning extension and optional family DNS
-are implemented; all-app content scanning and Mac/phone sync are not. A signed
-real-device build is required before relying on phone enforcement.
+an independently enabled Safari text-scanning extension with experimental
+opt-in local visual checks, and optional family DNS are implemented. All-app
+content scanning and Mac/phone settings sync are not. The visual runtime targets
+Safari 18; a lower native-app deployment target does not prove compatibility.
+A signed real-device build and acceptance checks are required before relying on
+phone enforcement.
 See [browser-first mixed-content protection](docs/BROWSER_FIRST_PROTECTION.md)
 for individual X/Twitter post checking and optional native-app restrictions.
 
@@ -81,14 +84,17 @@ suite names allow a narrower run. A suite whose toolchain is missing fails rathe
 | Layer | Closes | Defeated by |
 |---|---|---|
 | Network DNS (administrator setup) | Listed hosts on devices using the resolver | Outside DNS, tunnels, another network, gateway reset |
-| Browser extension | Known domains and scanned page content in supported browsers | Another browser, disabling the extension, classification misses |
+| Browser extension | Known domains, page text and opt-in readable image/video samples in supported browsers | Another browser, removal/disablement, unreadable media, classification misses |
 | Configuration profile | Supported DNS, Private Relay, and browser settings | A tunnel; an administrator removing the profile |
 | Content filter (system extension) | Host/application decisions on new Mac flows | Provider loss, established flows, unidentified destinations outside strict mode, recovery/admin changes |
 | Accountability partner | Ordinary user loosening an active policy | Guardian authority or recovery; a separate unprotected device |
 | Browser guard (in the app) | Warns/closes disconnected browsers and repeatedly confirmed off standard profiles during locks or outside-lock opt-in | Force-quitting Hisn, explicitly trusted unknown apps, unreadable/custom profiles, guest/private windows, admin changes |
 
-The load-bearing layers are the bottom two. The top two are convenience and
-defence in depth — they are not what makes this work.
+These layers address different gaps and need independent checks. A browser
+model cannot replace a device/network control, while DNS and socket decisions
+cannot classify every encrypted post. No combination guarantees all-content
+coverage or prevents a device owner with administrator/recovery access from
+undoing protections.
 
 Mac **Blocking Rules → Browser protection** has an optional **Keep browser
 protection on** switch, off by default with explicit confirmation. Active locks
@@ -99,6 +105,12 @@ exceptions. An unrepaired relaunch cannot renew the warning. Check-ins are
 scheduled every thirty seconds; detection is periodic, not instantaneous.
 This is best-effort process closure while Hisn runs, not an immediate traffic
 block or uninstall prohibition.
+Native check-ins now identify the OS-resolved launching browser process. A
+separate healthy Helium process cannot verify an unconnected one or cancel its
+warning. Upgrade the app, embedded bridge and signed filter together; older
+bundle-only check-ins do not satisfy the new guard. This is still not proof of
+every profile/private window inside one process, nor a signed-device acceptance
+record.
 See [browser-removal behavior and limits](docs/SELF_CONTROL_COMMITMENT.md#browser-extension-removal-and-disconnection).
 
 The installed Mac app starts at login for the protected account and keeps
@@ -193,7 +205,7 @@ it with the accountability partner; the user must never see it.
 ### Extension
 
 Prepare a clean local copy with
-`python3 extension/prepare_unpacked.py --out dist/hisn-unpacked-chrome-1.0.2`,
+`python3 extension/prepare_unpacked.py --out dist/hisn-unpacked-chrome-1.1.0`,
 then choose that folder in **Load unpacked** at `chrome://extensions`. Use a
 fresh output name per browser or update; the tool excludes generated `_metadata`
 caches without changing the pinned identity or overwriting a live folder.
@@ -203,11 +215,54 @@ Ed25519 in WebCrypto. `rules/*.json` and `seed/terms.json` are placed by
 
 For X/Twitter, text checking hides individual signalled tweet articles,
 including descriptions attached to the article itself, and pauses their media.
-Ordinary articles remain available. This is text-based filtering, not visual
-video detection: media without useful text and viewers outside tweet articles
-can still be missed. After installing a new unpacked copy, reload existing
+Ordinary articles remain available. Text scanning alone cannot classify media
+without useful descriptions or every viewer layout. After installing a new
+unpacked copy, reload existing
 X/Twitter tabs so they use its scanner. The iPhone/iPad Safari extension packages
 the same scanner; updating source files alone does not update an installed app.
+
+**Content options → Local visual checks · beta** adds an experimental, opt-in
+image/video classifier. Bundled models inspect readable images and sampled video
+frames locally, without media uploads or stored browsing results. A matching
+adult-media verdict hides that media and pauses a flagged video; normal videos
+remain available. Separate **Person blur** preferences blur the whole media
+when a visible face matches an all/female/male estimate. This is not full-body
+recognition, an identity determination or a pornography verdict. Both visual
+features start off; model failures and inaccessible media are not verified safe.
+During an app-managed commitment, Chromium visual preferences can strengthen
+but not weaken through the settings. Safari's visual preferences are independent
+and are not locked by the native app commitment.
+
+The new **Protection layers** popup/options distinguish standalone browser
+filtering from optional app reinforcement, with Arabic/English, RTL and
+automatic dark/light colors. A disconnected app does not disable the browser
+baseline; missing private-window or website permissions remain visible.
+
+Pinned libraries/model assets, provenance hashes and license notices are
+packaged under `extension/visual/`; no HaramBlur code was copied. To rebuild
+these assets after editing the engine:
+
+```bash
+cd extension/visual
+pnpm install --frozen-lockfile
+pnpm build
+```
+
+That build obtains model assets; installed runtime does not fetch code or
+weights from the Internet. Clean-unpacked and upload-ZIP packaging validate the
+recorded runtime/model assets and exclude build dependencies and reserved
+browser caches. Hash checks are not a separately signed model update or an
+accuracy certification.
+
+An isolated Helium smoke test ran the real model on a benign image and ordinary
+video, which stayed usable; all-faces mode also blurred a benign astronaut image.
+Female/male preferences missed that sample at their confidence threshold.
+Specific-appearance estimation, broader adult-detection accuracy and signed
+physical-device Safari operation remain unverified. A compiled app or model-ready
+label does not close those gaps. See
+[visual implementation and release gates](docs/VISUAL_PROTECTION_PLAN.md) and
+[managed installation limits](docs/CHROME_ENFORCEMENT.md). Ordinary unpacked
+extensions remain removable; this change does not publish or force-install one.
 
 Its ID is pinned by the `"key"` in `manifest.json` (see
 `extension/keys/README.md`), so it loads as
@@ -246,38 +301,31 @@ macOS refuses to activate one from a DerivedData path.
 
 ### Native messaging host
 
-The browser extension gets the lock state from the app, not from its own
-storage, over Chrome native messaging — and that link needs a manifest that
-nothing creates on its own. Skip it and `background.js`'s `pollNative()` fails
-on every single attempt, forever; the extension has no other way to learn a
-lock exists, so it just sits in `mode: "off"` no matter what the app records.
-Nothing crashes and nothing logs an error anywhere visible — the popup simply
-always says "Unlocked". (If a lock was already recorded before the link broke,
-the failure looks different: after five minutes of silence the extension
-correctly reads the silence as tampering and fails closed to strict mode
-instead — so "blocking everything" and "blocking nothing" are the same missing
-manifest, depending only on whether it ever worked.)
+The browser extension receives app-managed lock state over native messaging.
+Without a matching host manifest and working bridge, it cannot learn a new app
+lock or provide a verified app connection. Independent bundled browser rules
+and browser-owned visual preferences still work. If an active app lock was
+already recorded before the link broke, the existing policy watchdog can fail
+closed to strict mode after prolonged silence; that is separate from visual
+classification. The protection-layer UI distinguishes a missing app link from
+the standalone baseline.
 
-The manifest is written for **every Chromium-family browser** the profile
-force-installs the extension on — Chrome, Edge, Brave, Vivaldi, Opera, Arc,
-Chromium and Helium — not just Chrome and Edge. Those two lists must stay
-aligned: a browser the profile force-installs the extension on but the app
-never links is one where the extension is present and mute. Helium
-(`net.imput.helium`) is the case that made this concrete — it is the one
-non-Safari browser installed on the target machine, so leaving it out meant the
-only real browser in use had a force-installed extension that could never reach
-the lock clock. `NativeMessagingInstaller.browsers` and
+The manifest installer has eleven configured browser targets: Chrome
+Stable/Beta/Dev/Canary, Edge, Brave, Vivaldi, Opera, Arc, Chromium and Helium —
+not every Chromium fork. The profile generator also includes additional policy
+candidates without native links; do not assume those browsers gain app
+reinforcement merely because their policy names are generated. Native-link and
+managed-policy acceptance must be verified separately in the actual browser.
+Helium (`net.imput.helium`) has its own configured native-host path; it is not
+covered by Chrome's path merely because it is Chromium-based.
+`NativeMessagingInstaller.browsers` and
 `install_native_host.sh`'s `TARGETS` carry the same set, cross-checked by a test.
 
 There are two ways this gets installed, and they are not redundant:
 
 * **The app writes a user-scope copy on every launch** —
-  `macos/Hisn/NativeMessagingInstaller.swift` — so the extension works at all
-  for anyone who just builds and runs the app, which given no onboarding step
-  forces the alternative below, is nearly everyone. This is what makes the
-  default path actually function; before it existed, nothing ever wrote this
-  file and the browser extension never blocked anything, ever, regardless of
-  what lock the app itself enforced.
+  `macos/Hisn/NativeMessagingInstaller.swift`. This connects the app's lock state
+  to a configured browser; it is not a prerequisite for standalone filtering.
 
 * **`install_native_host.sh`, run once with `sudo`, writes a system-scope copy**
   to `/Library` instead:
@@ -324,17 +372,19 @@ at all — that swap is a complete bypass rather than a small loosening.
 ## Setup that actually holds
 
 Software alone tops out well short of "unbreakable", because the person owns the
-machine. The configuration that closes the remaining gaps is procedural:
+machine. Optional, explicitly consented hardening can reduce easy bypasses:
 
 1. The person uses a **standard (non-admin) account**.
 2. A **second person holds the admin password** and the profile removal
    password. Generate both; the user never sees either.
-3. **iOS is set up at the same time.** A locked Mac beside an unlocked phone is
-   theatre.
+3. **Set up and verify each used device.** A protected Mac does not protect a
+   separate phone; iOS has different permissions and enforcement limits.
 
-Steps 1 and 2 are what upgrade this from "annoying to bypass" to "cannot be
-bypassed alone". Everything in `macos/` is built to make them the default rather
-than an advanced option.
+Steps 1 and 2 strengthen ordinary-user removal resistance when the actual
+policies and signed filter are active. They do not establish complete coverage,
+prevent recovery/administrator overrides or make the app undeletable. They are
+optional setups, not silent account changes or a condition for trying the
+standalone browser extension.
 
 ---
 
@@ -344,6 +394,11 @@ This deliberately does **not** fork SelfControl. SelfControl is GPL-3.0, which
 would require publishing any derivative under the same terms — incompatible
 with a closed paid tier. The Swift here is original work built on Apple's
 NetworkExtension framework, so you are free to license it as you choose.
+
+The bundled visual runtime includes third-party libraries and model assets with
+their own licenses. Preserve `extension/visual/notices/`, the linked dependency
+notices and artifact provenance when redistributing. The original Hisn
+integration does not copy HaramBlur's AGPL code.
 
 Upstream blocklists carry their own licences (MIT, GPL-3.0, Unlicense) and are
 recorded per-source in `blocklist/sources.json`. You redistribute the merged
