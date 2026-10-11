@@ -9,10 +9,14 @@ account, extension settings or native host. A crash/timeout is always a failure.
 from __future__ import annotations
 
 import argparse
+import errno
 import http.server
 import json
+import os
 from pathlib import Path
 import secrets
+import signal
+import socketserver
 import subprocess
 import sys
 import tempfile
@@ -23,6 +27,43 @@ from urllib.parse import quote, urlsplit
 ROOT = Path(__file__).resolve().parents[2]
 HARNESS_ROOT = Path(__file__).resolve().parent
 MAX_REPORT_BYTES = 64 * 1024
+
+
+class HarnessScratch(tempfile.TemporaryDirectory):
+    def cleanup(self):
+        # A just-terminated Chromium helper can complete a final profile write
+        # during removal. Retry only that known race, on this exact fresh test
+        # directory; unexpected errors and a persistent race still fail QA.
+        for attempt in range(20):
+            try:
+                super().cleanup()
+                return
+            except OSError as error:
+                if error.errno != errno.ENOTEMPTY or attempt == 19:
+                    raise
+                time.sleep(0.05)
+
+
+def stop_test_browser(process):
+    """Stop only the isolated process group created by this harness."""
+    if os.name == "posix":
+        try:
+            os.killpg(process.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+    elif process.poll() is None:
+        process.terminate()
+    try:
+        process.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait(timeout=5)
+    # Parent exit alone does not guarantee renderer/network helpers stopped.
+    if os.name == "posix":
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
 
 
 class Verdict:
@@ -106,7 +147,17 @@ def make_server(root, harness):
             self.send_response(204)
             self.end_headers()
 
-    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    class LoopbackServer(http.server.ThreadingHTTPServer):
+        def server_bind(self):
+            # HTTPServer resolves getfqdn() while binding, although this test
+            # only serves a numeric loopback address. Some hosted macOS
+            # resolvers stall that unnecessary lookup before the run's timer
+            # can start. Bind directly and never depend on DNS for local QA.
+            socketserver.TCPServer.server_bind(self)
+            self.server_name = "127.0.0.1"
+            self.server_port = self.server_address[1]
+
+    server = LoopbackServer(("127.0.0.1", 0), Handler)
     server.daemon_threads = True
     return server, verdict, endpoint, harness_path
 
@@ -121,7 +172,7 @@ def run_harness(browser, harness, timeout=45, linux=None):
     failure = ""
     process = None
     try:
-        with tempfile.TemporaryDirectory(prefix="hisn-browser-harness-") as directory:
+        with HarnessScratch(prefix="hisn-browser-harness-") as directory:
             scratch = Path(directory)
             flags = [str(browser), "--headless=new", "--disable-gpu", "--no-first-run",
                      "--no-default-browser-check", "--disable-background-networking",
@@ -133,7 +184,7 @@ def run_harness(browser, harness, timeout=45, linux=None):
             flags.append(f"http://127.0.0.1:{server.server_address[1]}" + quote(harness_path))
             log_path = scratch / "browser.log"
             with log_path.open("wb") as log:
-                process = subprocess.Popen(flags, stdout=log, stderr=log)
+                process = subprocess.Popen(flags, stdout=log, stderr=log, start_new_session=True)
                 while not verdict.ready.wait(0.1):
                     if process.poll() is not None:
                         failure = f"browser exited ({process.returncode}) without a verdict"
@@ -141,13 +192,7 @@ def run_harness(browser, harness, timeout=45, linux=None):
                     if time.monotonic() - started >= timeout:
                         failure = f"no verdict within {timeout:g} seconds"
                         break
-                if process.poll() is None:
-                    process.terminate()
-                    try:
-                        process.wait(timeout=5)
-                    except subprocess.TimeoutExpired:
-                        process.kill()
-                        process.wait(timeout=5)
+                stop_test_browser(process)
             result = verdict.result
             if result:
                 for line in result["text"].splitlines():
@@ -161,8 +206,7 @@ def run_harness(browser, harness, timeout=45, linux=None):
             return 0
     finally:
         if process is not None and process.poll() is None:
-            process.kill()
-            process.wait(timeout=5)
+            stop_test_browser(process)
         server.shutdown()
         server.server_close()
         thread.join(timeout=5)

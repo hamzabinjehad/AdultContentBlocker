@@ -57,6 +57,7 @@ import json, sys
 path = sys.argv[1]
 manifest = json.load(open(path))
 manifest.pop("key", None)  # No access to the user's real native bridge.
+manifest["permissions"] = [p for p in manifest["permissions"] if p != "nativeMessaging"]
 manifest["background"]["service_worker"] = "scan-worker.js"
 with open(path, "w") as output:
     json.dump(manifest, output)
@@ -85,14 +86,22 @@ feed = """<!doctype html><meta charset=utf-8><meta name=viewport content="width=
 const results = [], adult = "ADULT_FIXTURE";
 const byId = (id) => document.getElementById(id);
 const withheld = (id) => getComputedStyle(byId(id)).opacity === '0';
+// Opacity also shields a pending request: do not mistake it for a completed
+// adult verdict, or begin the churn check while worker replies still mutate.
+const finalNotice = (node) => node?.hasAttribute('data-hisn-feed-notice')
+  && node.textContent.startsWith('Hisn hid this post');
+const blocked = (id) => withheld(id) && finalNotice(byId(id).previousSibling)
+  && byId(id).style.getPropertyValue('max-height') === '0px';
+const settled = () => Array.from(document.querySelectorAll('[data-hisn-feed-notice]')).every(finalNotice);
 function check(ok, label) { results.push({ok, label}); }
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 async function waitFor(predicate) {
-  for (let i = 0; i < 140; i++) { if (predicate()) return true; await pause(50); }
-  return false;
+  const deadline = performance.now() + 7000;
+  while (performance.now() < deadline) { if (predicate()) return true; await pause(50); }
+  return predicate();
 }
 (async () => {
-  check(await waitFor(() => withheld('bad') && withheld('caption') && withheld('rootcaption') && !withheld('safe') && !withheld('medical')),
+  check(await waitFor(() => blocked('bad') && blocked('caption') && blocked('rootcaption') && !withheld('safe') && !withheld('medical')),
         'signalled tweet/root/descendant captions hidden; ordinary and medical/script-payload posts stay usable');
   check(byId('bad').querySelector('video').paused, 'media in hidden article remains paused');
   check(byId('rootcaption').querySelector('video').paused && byId('rootcaption').inert,
@@ -102,7 +111,7 @@ async function waitFor(predicate) {
   byId('rootcaption').setAttribute('aria-label', 'Video: weather forecast');
   check(await waitFor(() => !withheld('rootcaption')), 'root label mutation releases safe article without body change');
   byId('rootcaption').setAttribute('aria-label', adult);
-  check(await waitFor(() => withheld('rootcaption')), 'root label mutation invalidates clean verdict without body change');
+  check(await waitFor(() => blocked('rootcaption')), 'root label mutation invalidates clean verdict without body change');
   check(byId('bad').getAttribute('aria-hidden') === 'true' && byId('safe').getAttribute('aria-hidden') !== 'true',
         'blocked article inaccessible; benign article accessibility preserved');
   check(byId('bad').inert && !byId('safe').inert, 'blocked item inert for keyboard navigation; ordinary item usable');
@@ -118,7 +127,7 @@ async function waitFor(predicate) {
   byId('bad').querySelector('p').textContent = 'Fresh gardening notes from a recycled tweet node.';
   check(await waitFor(() => !withheld('bad')), 'recycled clean item gets fresh verdict and is released');
   byId('caption').style.removeProperty('opacity');
-  check(await waitFor(() => withheld('caption')), 'page cannot reveal withheld item by stripping its opacity');
+  check(await waitFor(() => blocked('caption')), 'page cannot reveal withheld item by stripping its opacity');
   byId('caption').querySelector('img').alt = 'Weather chart';
   check(await waitFor(() => !withheld('caption')), 'caption attribute change receives fresh clean verdict');
   for (let i = 0; i < 20; i++) {
@@ -127,19 +136,25 @@ async function waitFor(predicate) {
     article.innerHTML = '<p data-testid=tweetText>' + (i === 10 ? adult : 'Safe gardening update ' + i) + '</p>';
     document.querySelector('main').append(article); await pause(30);
   }
-  check(await waitFor(() => withheld('scroll10') && !withheld('scroll19')),
+  check(await waitFor(() => blocked('scroll10') && !withheld('scroll19')),
         'continuous infinite-scroll content checked without waiting for entire page to settle');
-  check(await waitFor(() => withheld('policy')), 'trusted policy change rechecks unchanged feed item');
+  check(await waitFor(() => blocked('policy')), 'trusted policy change rechecks unchanged feed item');
+  check(await waitFor(settled), 'worker verdicts finish before checking settled-feed mutation churn');
   let churn = 0;
   const observer = new MutationObserver((events) => { churn += events.length; });
   observer.observe(document.querySelector('main'), {childList:true, subtree:true, attributes:true, characterData:true});
   await pause(350); observer.disconnect();
-  check(churn < 20, 'settled feed does not loop on scanner-owned style/notice mutations');
+  check(churn < 20, 'settled feed does not loop on scanner-owned style/notice mutations (' + churn + ' mutations)');
   const summary = document.createElement('pre'); summary.id = 'feed-summary';
   summary.style.whiteSpace = 'pre-wrap'; summary.style.overflowWrap = 'anywhere';
   summary.textContent = JSON.stringify(results); document.body.append(summary);
+  await fetch('/__hisn_feed_results', {method:'POST', body:JSON.stringify(results)});
   document.title = results.every((r) => r.ok) ? 'HISN FEED PASS' : 'HISN FEED FAIL';
-})().catch(() => { document.title = 'HISN FEED FAIL'; });
+})().catch((error) => {
+  results.push({ok:false,label:'fixture exception: ' + String(error)});
+  document.title = 'HISN FEED FAIL';
+  fetch('/__hisn_feed_results', {method:'POST', body:JSON.stringify(results)}).catch(() => {});
+});
 </script></body>""".replace("ADULT_FIXTURE", adult)
 pages = {
     "shadow": f"""<!doctype html><title>Article</title><body><p>Recipes and gardening notes.</p>
@@ -166,6 +181,19 @@ class H(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+    def do_POST(self):
+        if self.path != "/__hisn_feed_results":
+            self.send_error(404)
+            return
+        size = int(self.headers.get("Content-Length", "0"))
+        if not 0 < size <= 64 * 1024:
+            self.send_error(413)
+            return
+        results = json.loads(self.rfile.read(size))
+        with open(f"{work}/feed-results.jsonl", "a") as output:
+            output.write(json.dumps({"host":self.headers.get("Host", ""),"results":results}) + "\n")
+        self.send_response(204)
+        self.end_headers()
     def log_message(self, *a): pass
 CTX = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 CTX.load_cert_chain(f"{work}/cert.pem", f"{work}/key.pem")
@@ -255,6 +283,15 @@ n=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1]).get("blocked",0))
 
 [ "$fail" -eq 0 ] && echo "scan-live: PASS" || {
     echo "tabs: $v"
+    if [ -s "$WORK/feed-results.jsonl" ]; then
+        python3 - "$WORK/feed-results.jsonl" <<'PY'
+import json, sys
+for line in open(sys.argv[1]):
+    report = json.loads(line)
+    for result in report["results"]:
+        print(f"  {'ok' if result['ok'] else 'FAIL'} {report['host']}: {result['label']}")
+PY
+    fi
     echo "--- the browser ($BROWSER), last lines:"; tail -15 "$WORK/browser.log" | sed 's/^/    /'
     echo "scan-live: FAIL"; exit 1; }
 

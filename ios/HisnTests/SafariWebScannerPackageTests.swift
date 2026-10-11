@@ -28,9 +28,22 @@ final class SafariWebScannerPackageTests: XCTestCase {
         XCTAssertEqual(metadata["schema"] as? Int, 1)
         XCTAssertGreaterThan(try XCTUnwrap(metadata["version"] as? Int), 0)
         let resources = try XCTUnwrap(metadata["resources"] as? [String: [String: Any]])
-        let expected: Set<String> = ["manifest.json", "background.js", "blocked.html", "blocked.js",
-                                     "content/scan.js", "content/feed.js", "lib/score.js", "lib/normalize.js",
-                                     "seed/terms.json", "icons/icon-32.png", "icons/icon-128.png"]
+        // This exact allowlist includes the shared opt-in visual runtime, not
+        // build dependencies, Chrome policies, a native host or remote models.
+        let expected: Set<String> = [
+            "manifest.json", "background.js", "background.html", "blocked.html", "blocked.js",
+            "options.html", "options.js", "options.css",
+            "content/scan.js", "content/feed.js", "content/visual.js", "lib/score.js", "lib/normalize.js",
+            "seed/terms.json", "icons/icon-32.png", "icons/icon-128.png",
+            "visual/capture.js", "visual/broker.js", "visual/decisions.js", "visual/queue.js",
+            "visual/assets.json", "visual/engine.bundle.js", "visual/engine.bundle.js.LEGAL.txt",
+            "visual/models/blazeface.json", "visual/models/blazeface.bin",
+            "visual/models/gender.json", "visual/models/gender.bin",
+            "visual/notices/human-models-MIT.txt", "visual/notices/face-classification-MIT.txt",
+            "visual/notices/mediapipe-Apache-2.0.txt", "visual/notices/tensorflowjs-Apache-2.0.txt",
+            "visual/notices/nsfwjs-LICENSE.txt", "visual/notices/@vladmandic-human-LICENSE.txt",
+            "visual/notices/buffer-LICENSE.txt"
+        ]
         XCTAssertEqual(Set(resources.keys), expected)
         for (name, entry) in resources {
             let raw = try Data(contentsOf: scannerURL.appendingPathComponent(name))
@@ -50,17 +63,41 @@ final class SafariWebScannerPackageTests: XCTestCase {
         XCTAssertEqual(manifest["name"] as? String, "Hisn Text")
         XCTAssertNil(manifest["key"])
         XCTAssertNil(manifest["declarative_net_request"])
-        XCTAssertNil(manifest["permissions"])
+        XCTAssertEqual(manifest["permissions"] as? [String], ["storage"])
+        XCTAssertEqual(manifest["host_permissions"] as? [String], ["http://*/*", "https://*/*"])
         let background = try XCTUnwrap(manifest["background"] as? [String: Any])
-        XCTAssertEqual(background["service_worker"] as? String, "background.js")
-        XCTAssertEqual(background["type"] as? String, "module")
+        XCTAssertEqual(Set(background.keys), ["page", "persistent"])
+        XCTAssertEqual(background["page"] as? String, "background.html")
+        XCTAssertEqual(background["persistent"] as? Bool, false)
+        let backgroundPage = try String(contentsOf: scannerURL.appendingPathComponent("background.html"),
+                                        encoding: .utf8)
+        XCTAssertTrue(backgroundPage.contains("type=\"module\" src=\"background.js\""))
+        let options = try XCTUnwrap(manifest["options_ui"] as? [String: Any])
+        XCTAssertEqual(options["page"] as? String, "options.html")
+        let action = try XCTUnwrap(manifest["action"] as? [String: Any])
+        XCTAssertEqual(action["default_popup"] as? String, "options.html")
         let scripts = try XCTUnwrap(manifest["content_scripts"] as? [[String: Any]])
         XCTAssertEqual(scripts.count, 1)
         let script = try XCTUnwrap(scripts.first)
-        XCTAssertEqual(script["js"] as? [String], ["content/feed.js", "content/scan.js"])
+        XCTAssertEqual(script["js"] as? [String],
+                       ["content/feed.js", "content/scan.js", "visual/capture.js", "content/visual.js"])
         XCTAssertEqual(script["matches"] as? [String], ["http://*/*", "https://*/*"])
         XCTAssertEqual(script["run_at"] as? String, "document_start")
         XCTAssertEqual(script["all_frames"] as? Bool, true)
+    }
+
+    func testVisualModelsReferenceOnlyTheirBundledWeightShards() throws {
+        let metadata = try json("visual/assets.json")
+        XCTAssertEqual(metadata["schema"] as? Int, 1)
+        let revision = try XCTUnwrap(metadata["revision"] as? String)
+        XCTAssertEqual(revision.count, 40)
+        XCTAssertTrue(revision.allSatisfy { "0123456789abcdef".contains($0) })
+        for model in ["blazeface", "gender"] {
+            let graph = try json("visual/models/\(model).json")
+            let groups = try XCTUnwrap(graph["weightsManifest"] as? [[String: Any]])
+            let paths = try groups.flatMap { try XCTUnwrap($0["paths"] as? [String]) }
+            XCTAssertEqual(paths, ["\(model).bin"], model)
+        }
     }
 
     private func jsonPlist(at url: URL) throws -> [String: Any] {

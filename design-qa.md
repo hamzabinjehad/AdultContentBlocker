@@ -138,3 +138,21 @@ The protected-account-preserving installer now stages and verifies before
 stopping the app, retains the old bundle and agent, and attempts rollback on
 failure. Local ad-hoc signing is not a Developer ID release or an activated
 system network filter.
+
+Integration follow-up exposed hosted-runner differences: unnecessary loopback
+DNS resolution and isolated Chromium helpers still writing during cleanup.
+The runner now avoids DNS and stops only its own test process group. The 43
+extension Python tests passed locally, including cleanup/timeout regressions.
+Live X and Twitter fixtures now wait for completed verdicts rather than pending
+opacity and report individual assertions; both passed 19/19 with zero settled
+mutation churn locally. The original Twitter CI failure was not locally
+reproduced, so GitHub rerun remains necessary evidence.
+
+The local Mac update subsequently succeeded through the ordinary administrator
+prompt. The installed bundle reports 1.1.1/build 2 and passes strict signature
+verification; the login-agent bytes remained unchanged and its app runs under
+the original protected account. The previous app and agent were retained in a
+root-owned backup. Helium's system native-host manifest points to the installed
+bridge. The user confirmed 1.1.1 in both Helium and the ChatGPT browser; automatic
+control of their real extension UIs was not available. No DNS/profile or
+commitment reset was performed, and no signed Hisn system filter was activated.
