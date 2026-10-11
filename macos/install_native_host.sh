@@ -10,6 +10,7 @@
 # in the UI explains.
 #
 #   sudo ./install_native_host.sh --extension-id <chrome-web-store-id>
+#   ./install_native_host.sh --user --print-targets  # read-only inventory
 #
 # System scope (the default) writes to /Library, which needs administrator
 # rights to install *and to remove*. That is the point: under the setup this
@@ -23,41 +24,56 @@ APP_PATH="/Applications/Hisn.app"
 EXTENSION_IDS=()
 SCOPE="system"
 PRINT_MANIFEST=0
+PRINT_TARGETS=0
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --app-path)     APP_PATH="$2"; shift 2 ;;
-        --extension-id) EXTENSION_IDS+=("$2"); shift 2 ;;   # repeatable: unpacked + store
+        --app-path|--extension-id)
+            if [[ $# -lt 2 || "$2" == --* || -z "$2" ]]; then
+                echo "error: $1 requires a value" >&2
+                exit 2
+            fi
+            if [[ "$1" == --app-path ]]; then APP_PATH="$2";
+            else EXTENSION_IDS+=("$2"); fi   # repeatable: unpacked + store
+            shift 2 ;;
         --user)         SCOPE="user"; shift ;;
         --print-manifest) PRINT_MANIFEST=1; shift ;;
+        --print-targets) PRINT_TARGETS=1; shift ;;
         -h|--help)      sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *)              echo "unknown argument: $1" >&2; exit 2 ;;
     esac
 done
 
-if [[ ${#EXTENSION_IDS[@]} -eq 0 ]]; then
+if [[ "$APP_PATH" != /* ]]; then
+    echo "error: --app-path must be an absolute path" >&2
+    exit 2
+fi
+
+if [[ ${#EXTENSION_IDS[@]} -eq 0 && "$PRINT_TARGETS" -eq 0 ]]; then
     echo "error: --extension-id is required (the Chrome Web Store id; repeat for several)" >&2
     exit 2
 fi
-for id in "${EXTENSION_IDS[@]}"; do
-    [[ "$id" =~ ^[a-p]{32}$ ]] || { echo "error: not an extension id: $id" >&2; exit 2; }
-done
+# macOS's Bash 3 treats an empty array expansion as unset under nounset.
+# Inventory-only mode intentionally has no extension IDs.
+if [[ ${#EXTENSION_IDS[@]} -gt 0 ]]; then
+    for id in "${EXTENSION_IDS[@]}"; do
+        [[ "$id" =~ ^[a-p]{32}$ ]] || { echo "error: not an extension id: $id" >&2; exit 2; }
+    done
+fi
 
 BRIDGE="$APP_PATH/Contents/MacOS/HisnBridge"
-if [[ ! -x "$BRIDGE" ]]; then
+if [[ ! -x "$BRIDGE" && "$PRINT_TARGETS" -eq 0 ]]; then
     echo "error: no bridge executable at $BRIDGE" >&2
     echo "       build the app first, or pass --app-path" >&2
     exit 1
 fi
 
-# The whole Chromium family, not just Chrome and Edge. The profile
-# force-installs the extension on every one of these (see CHROMIUM_FAMILY in
-# profile/make_profile.py); this writes the link the installed extension needs
-# to reach the app. Covering only Chrome/Edge left the one non-Safari browser
-# the user actually runs — Helium — force-installed but unable to talk to the
-# lock clock. Chrome and Edge are the two branded directories Chromium
-# special-cases; every other fork resolves its system host dir to
-# /Library/Application Support/<product>/NativeMessagingHosts. These must stay
+# Configured native-host destinations, not a claim that all Chromium forks
+# support Hisn or accept managed force-installation. This list mirrors
+# NATIVE_LINKED_BROWSER_IDS in profile/make_profile.py. The additional policy
+# candidates have no native registration here. Chrome channels share a system
+# destination but have separate user-data directories. Fork paths follow their
+# configured product directory and still need live acceptance checks. These must stay
 # byte-for-byte identical to NativeMessagingInstaller.browsers — a test asserts
 # each systemDir appears here (testSystemPathsMatchTheShellInstaller).
 if [[ "$SCOPE" == "system" ]]; then
@@ -74,6 +90,9 @@ if [[ "$SCOPE" == "system" ]]; then
 else
     TARGETS=(
         "$HOME/Library/Application Support/Google/Chrome/NativeMessagingHosts"
+        "$HOME/Library/Application Support/Google/Chrome Beta/NativeMessagingHosts"
+        "$HOME/Library/Application Support/Google/Chrome Dev/NativeMessagingHosts"
+        "$HOME/Library/Application Support/Google/Chrome Canary/NativeMessagingHosts"
         "$HOME/Library/Application Support/Microsoft Edge/NativeMessagingHosts"
         "$HOME/Library/Application Support/BraveSoftware/Brave-Browser/NativeMessagingHosts"
         "$HOME/Library/Application Support/Vivaldi/NativeMessagingHosts"
@@ -82,6 +101,13 @@ else
         "$HOME/Library/Application Support/Chromium/NativeMessagingHosts"
         "$HOME/Library/Application Support/net.imput.helium/NativeMessagingHosts"
     )
+fi
+
+# Read-only destination inventory for setup planning and regression tests.
+# Chrome's release channels intentionally share one system target above.
+if [[ "$PRINT_TARGETS" -eq 1 ]]; then
+    printf '%s\n' "${TARGETS[@]}"
+    exit 0
 fi
 
 # `allowed_origins` is the whole access-control story for a native messaging
@@ -125,4 +151,5 @@ done
 
 echo
 echo "Restart the browser, then confirm the link is up: the extension's popup"
-echo "should show the lock state rather than falling back to strict."
+echo "should report the app connection. Registration is not proof that every"
+echo "profile, private window or browser policy is protected."

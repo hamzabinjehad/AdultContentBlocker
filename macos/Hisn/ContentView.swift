@@ -79,9 +79,6 @@ struct ContentView: View {
         .frame(minWidth: 720, minHeight: 500)
         .task {
             guard !AppDelegate.isHostingTests else { return }
-            if !CommandLine.arguments.contains("--background") {
-                AppNavigation.shared.markSetupSeen()
-            }
             await filter.reassertIfNeeded()
         }
     }
@@ -157,6 +154,7 @@ private struct SaveRow: View {
 private struct OverviewPage: View {
     @ObservedObject var lock: LockManager
     @ObservedObject var filter: FilterController
+    @ObservedObject private var sync = FilterSync.shared
     let goTo: (ContentView.Page) -> Void
 
     @State private var busy: StatusAction?
@@ -184,8 +182,19 @@ private struct OverviewPage: View {
     /// extension heartbeat and the filter's domain count are never more than a
     /// second stale here without any extra plumbing.
     private var protection: ProtectionStatus {
-        ProtectionStatus(ProtectionEvidence.current(filter: filter.availability,
-                                                      authority: FilterSync.shared.status))
+        ProtectionStatus(protectionEvidence)
+    }
+
+    private var protectionEvidence: ProtectionEvidence {
+        ProtectionEvidence.current(filter: filter.availability, authority: sync.status)
+    }
+
+    private var laptopReadiness: LaptopSetupReadiness {
+        LaptopSetupReadiness(protection: protectionEvidence,
+            checklist: readingSetup ? nil : setup,
+            requireOutsideLock: guardian.requireOutsideLock,
+            browserWarning: !guardian.alerts.isEmpty,
+            hasAppExceptions: !guardian.allowed.isEmpty)
     }
 
     private var lockStatus: LockStatus {
@@ -215,6 +224,13 @@ private struct OverviewPage: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             protectionCard
+            Card {
+                TimelineView(.periodic(from: .now, by: 10)) { _ in
+                    LaptopSetupStatusView(readiness: laptopReadiness) { issue in
+                        goTo(issue == .browserGuard || issue == .appExceptions ? .rules : .setup)
+                    }
+                }
+            }
             if clockAssessment != .consistent {
                 Label("Device time could not be confirmed. Check automatic date and time. Your saved commitment deadline has not changed.",
                       systemImage: "clock.badge.exclamationmark")
@@ -294,10 +310,14 @@ private struct OverviewPage: View {
         guard !readingSetup, !AppDelegate.isHostingTests else { return }
         readingSetup = true
         defer { readingSetup = false }
-        let running = protection.layers.first?.ok ?? false
-        setup = await Task.detached {
-            SetupChecklist(SetupEvidence.current(systemFilterRunning: running))
+        let running = LaptopSetupReadiness.filterIsReady(protectionEvidence)
+        var evidence = await Task.detached {
+            SetupEvidence.current(systemFilterRunning: running)
         }.value
+        // Never certify the filter from the pre-scan snapshot or from a
+        // restrictive recovery state that intentionally reports a live layer.
+        evidence.systemFilterRunning = LaptopSetupReadiness.filterIsReady(protectionEvidence)
+        setup = SetupChecklist(evidence)
     }
 
     private var protectionCard: some View {
@@ -510,6 +530,8 @@ private struct BrowserSetupHelp: View {
 /// password handed over), so there is nothing to observe live.
 struct SetupPage: View {
     @ObservedObject var filter: FilterController
+    @ObservedObject private var sync = FilterSync.shared
+    @ObservedObject private var guardian = BrowserGuard.shared
     let goTo: (ContentView.Page) -> Void
 
     @State private var checklist: SetupChecklist?
@@ -524,6 +546,18 @@ struct SetupPage: View {
     private var protectedSetup: ProtectedSetup? {
         checklist.map { ProtectedSetup(checklist: $0, administratorConfirmed: administratorConfirmed,
                                        recoveryConfirmed: recoveryConfirmed) }
+    }
+
+    private var protectionEvidence: ProtectionEvidence {
+        ProtectionEvidence.current(filter: filter.availability, authority: sync.status)
+    }
+
+    private var laptopReadiness: LaptopSetupReadiness {
+        LaptopSetupReadiness(protection: protectionEvidence,
+            checklist: checking ? nil : checklist,
+            requireOutsideLock: guardian.requireOutsideLock,
+            browserWarning: !guardian.alerts.isEmpty,
+            hasAppExceptions: !guardian.allowed.isEmpty)
     }
 
     init(filter: FilterController, goTo: @escaping (ContentView.Page) -> Void,
@@ -547,14 +581,18 @@ struct SetupPage: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
-            NetworkSetupGuide()
-            Divider()
+            Card {
+                TimelineView(.periodic(from: .now, by: 10)) { _ in
+                    LaptopSetupStatusView(readiness: laptopReadiness, review: reviewSetupIssue)
+                }
+            }
             PageSection(title: "Protected Setup") {
                 if let setup = protectedSetup {
-                    Label(setup.isComplete ? "Protected setup checks passed" : "Protection needs attention",
-                          systemImage: setup.isComplete ? "checkmark.shield" : "exclamationmark.shield")
+                    let complete = setup.isComplete && laptopReadiness.isReady
+                    Label(complete ? "Protected setup checks passed" : "Protection needs attention",
+                          systemImage: complete ? "checkmark.shield" : "exclamationmark.shield")
                         .font(.headline)
-                        .foregroundStyle(setup.isComplete ? Color.green : Color.primary)
+                        .foregroundStyle(complete ? Color.green : Color.primary)
                     ProgressView(value: Double(setup.doneCount), total: Double(setup.totalCount))
                     Text(String(localized: "\(setup.doneCount) of \(setup.totalCount) steps done."))
                         .font(.callout.weight(.medium))
@@ -622,6 +660,8 @@ struct SetupPage: View {
                 }
                     .disabled(checking)
             }
+            Divider()
+            NetworkSetupGuide()
         }
         .task { await refresh() }
         // Most steps happen outside the app — a command in Terminal, a
@@ -717,19 +757,27 @@ struct SetupPage: View {
         }
     }
 
+    private func reviewSetupIssue(_ issue: LaptopSetupReadiness.Issue) {
+        switch issue {
+        case .browserGuard, .appExceptions:
+            goTo(.rules)
+        case .browserProfiles, .browserConnection, .browserWarning:
+            showBrowserHelp = true
+        case .signedBuild, .filter, .policy, .installation:
+            expandedStages.insert(.installation)
+        }
+    }
+
     private func refresh() async {
         guard !checking, !AppDelegate.isHostingTests else { return }
         checking = true
         defer { checking = false }
         await filter.refresh()
         await FilterSync.shared.sync()
-        let running = ProtectionStatus(ProtectionEvidence.current(filter: filter.availability,
-                                                                    authority: FilterSync.shared.status))
-            .layers.first?.ok ?? false
+        let running = LaptopSetupReadiness.filterIsReady(protectionEvidence)
         var evidence = await Task.detached { SetupEvidence.current(systemFilterRunning: running) }.value
         // The filter can change while disk/DNS evidence is being collected.
-        evidence.systemFilterRunning = ProtectionStatus(ProtectionEvidence.current(filter: filter.availability,
-            authority: FilterSync.shared.status)).layers.first?.ok ?? false
+        evidence.systemFilterRunning = LaptopSetupReadiness.filterIsReady(protectionEvidence)
         checklist = SetupChecklist(evidence)
         lastChecked = Date()
     }
@@ -1217,6 +1265,8 @@ private struct RulesPage: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            BrowserFirstGuide()
+            Divider()
             SiteListsSection(isLocked: isLocked)
             Divider()
             UserBlocksSection(isLocked: isLocked)
@@ -1598,11 +1648,12 @@ struct BrowsersSection: View {
     var body: some View {
         PageSection(title: "Browser protection",
                 subtitle: """
-                    During a lock, Hisn closes supported browsers that lose their \
-                    extension connection and other non-exempt browsers. Safari \
-                    and browsers you previously allowed stay open.
+                    While browser protection is active, losing the extension \
+                    connection starts a visible one-minute recovery countdown. \
+                    Restore protection or the browser closes. Safari and other \
+                    unsupported browsers also close.
                     """) {
-            Toggle("Require the extension outside a lock", isOn: Binding(
+            Toggle("Keep browser protection on", isOn: Binding(
                 get: { guardian.requireOutsideLock },
                 set: { enabled in
                     if enabled { confirmOutsideLock = true }
@@ -1610,7 +1661,7 @@ struct BrowsersSection: View {
                 }))
                 .toggleStyle(.switch)
                 .disabled(isLocked && guardian.requireOutsideLock)
-            Text("Opt-in: also close unprotected browsers when no lock is active. Off by default.")
+            Text("Opt-in: keep requiring the extension after a lock ends. Off by default; active locks always require it.")
                 .font(.callout).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             if isLocked && guardian.requireOutsideLock {
@@ -1618,12 +1669,12 @@ struct BrowsersSection: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
             Text("""
-                This guard works only while Hisn is running. Hisn checks supported \
-                browsers' standard Default/Profile folders; custom paths, guest \
-                and private windows are not verified. Safari and allowed exceptions \
-                remain exempt; force-quitting Hisn or administrator changes can \
-                bypass it. Safari's exemption is not verified protection: configure \
-                Screen Time and network layers separately.
+                Hisn stays in the background when its window closes; the separately \
+                installed login agent restarts it after a crash or force-quit. \
+                Detection is periodic, not instant. Standard Default/Profile folders \
+                are checked; custom paths, guest and private windows are unverified. \
+                Explicitly trusted unknown apps bypass extension checks. Administrator \
+                changes can bypass the guard. Save work before enabling it.
                 """)
                 .font(.callout).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -1647,8 +1698,9 @@ struct BrowsersSection: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     Spacer()
-                    if c.coverage == .uncovered || c.coverage == .allowedByUser {
-                        Toggle("Allow this browser", isOn: Binding(
+                    if BrowserGuardPolicy.canAllowException(bundleID: c.bundleID,
+                        linked: Set(NativeMessagingInstaller.browsers.map(\.bundleID))) {
+                        Toggle("Trust this app without extension checks", isOn: Binding(
                             get: { c.coverage == .allowedByUser },
                             set: { allow in
                                 do { try guardian.setAllowed(c.bundleID, allow) }
@@ -1671,11 +1723,12 @@ struct BrowsersSection: View {
             Button("Cancel", role: .cancel) { }
         } message: {
             Text("""
-                Hisn may close browsers that do not have a connected extension, \
-                or have Hisn removed or disabled in a standard profile, even \
-                without an active lock. Save any work first. Safari and your allowed \
-                exceptions stay open. You can turn this off when no lock is running. \
-                This does not make Hisn or the extension unremovable.
+                Hisn will also guard browsers when no lock is running. Once lost \
+                protection is detected, you have one minute to restore the extension \
+                before closure; an unresolved relaunch gets only five seconds. \
+                Unsupported browsers, including Safari, also close. Save your work. \
+                Unknown apps you explicitly trust stay open without checks. You can \
+                turn this off outside a lock. It does not prevent uninstalling Hisn.
                 """)
         }
     }
@@ -1718,7 +1771,7 @@ struct BrowsersSection: View {
     private func describe(_ coverage: BrowserGuardPolicy.Coverage) -> String {
         switch coverage {
         case .exempt:
-            return String(localized: "Left open — configure Screen Time and network protection separately; this exemption does not verify them.")
+            return String(localized: "Link router only — left open because it hands links to a browser and does not render pages.")
         case .needsExtension:
             return String(localized: """
                 Closed while browser guarding is active if its extension stops \
@@ -1727,7 +1780,7 @@ struct BrowsersSection: View {
         case .uncovered:
             return String(localized: "No Hisn protection inside — closed while browser guarding is active.")
         case .allowedByUser:
-            return String(localized: "You allowed it. It stays open without extension checks.")
+            return String(localized: "Trusted app exception — stays open without extension checks. Only use this for a non-browser app.")
         }
     }
 }
@@ -1891,7 +1944,7 @@ private struct SettingsPage: View {
                 Toggle(isOn: $settings.text) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Check the words on a page")
-                        Text("Reads the page itself, so it catches explicit content on an ordinary site. Chrome and Edge only.")
+                        Text("Checks changing page text in supported Chromium browsers with Hisn connected. Detected X/Twitter posts are hidden individually; other sites use page-level checking. Images and videos without meaningful text can be missed.")
                             .font(.callout).foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }

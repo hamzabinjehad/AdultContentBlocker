@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Report which protection layers are ACTUALLY enforced on this Mac, right now.
+# Report read-only evidence for configured Hisn protection layers on this Mac.
 #
 #     macos/verify_enforcement.sh
 #
@@ -13,10 +13,10 @@
 # is still an administrator. Every one of those is silent when absent — the
 # machine looks protected and is not.
 #
-# It checks these across every Chromium browser actually installed, not just
-# Chrome. On a machine whose only non-Safari browser is Helium, a Chrome-only
-# check reads "enforced" off a browser nobody runs while the real one is wide
-# open — the exact false sense of safety this script exists to kill.
+# It checks installed browsers in the eleven-entry native-link catalog, not
+# every Chromium fork. Managed preferences are evidence of configuration, not
+# proof that the browser accepted those policies. Verify its effective policy
+# page and behavior before calling a deployment enforced.
 #
 # Incognito is the sharp example. The extension is `spanning`, so it CAN run in a
 # private window — but the browser keeps it off there until the user turns on
@@ -26,14 +26,13 @@
 # window is a bypass of the whole page-text layer, and nothing anywhere says so.
 # This script says so.
 #
-# The browser link is the other silent one. The extension learns the lock state
-# only over native messaging; with no host manifest the extension is installed
-# and mute (see NativeMessagingInstaller). This checks that a manifest exists for
-# each installed Chromium browser, at user or system scope.
+# The extension learns app commitment state over native messaging. Missing
+# hosts remove that additional app link, not all browser-only protection. File
+# presence alone does not prove a working bridge or protected private windows.
 #
 # Read-only. It changes nothing, needs no sudo, and is safe to run any time —
-# it is a mirror, not a switch. Exit status is 0 only if every critical control
-# is enforced, so the second person can run it to confirm a setup actually took.
+# it is a mirror, not a switch. Exit status 0 means this script found no missing
+# critical evidence; it is not certification of policy acceptance or coverage.
 set -uo pipefail
 
 RED=$'\033[31m'; GRN=$'\033[32m'; YEL=$'\033[33m'; DIM=$'\033[2m'; OFF=$'\033[0m'
@@ -43,17 +42,19 @@ ME="${SUDO_USER:-$(id -un)}"
 critical_open=0
 warnings=0
 
-# The Chromium browsers this product knows how to lock, as
-#   display name | managed-preferences domain (bundle id) | product dir
+# The configured native-link catalog, as
+#   display name | managed-preferences domain | product dir
 # The domain is where a configuration profile lands the browser's policy; the
 # product dir (under ~/Library/Application Support) is both the browser's
 # presence marker and where its native-messaging host manifest lives. This is
-# the same family NativeMessagingInstaller.browsers and CHROMIUM_FAMILY carry —
-# they must stay aligned, or a browser is locked in one place and open in the
-# other. A browser is only checked when its product dir exists: an absent
-# browser is not a hole.
+# the same subset as NativeMessagingInstaller.browsers and
+# NATIVE_LINKED_BROWSER_IDS, not the wider CHROMIUM_FAMILY policy candidates.
+# Detection below retains its existing Spotlight/product-directory behavior.
 CHROMIUM_BROWSERS="\
 Chrome|com.google.Chrome|Google/Chrome
+Chrome Beta|com.google.Chrome.beta|Google/Chrome Beta
+Chrome Dev|com.google.Chrome.dev|Google/Chrome Dev
+Chrome Canary|com.google.Chrome.canary|Google/Chrome Canary
 Edge|com.microsoft.Edge|Microsoft Edge
 Brave|com.brave.Browser|BraveSoftware/Brave-Browser
 Vivaldi|com.vivaldi.Vivaldi|Vivaldi
@@ -67,7 +68,7 @@ Helium|net.imput.helium|net.imput.helium"
 # (matches NativeMessagingInstaller.Browser.fork and install_native_host.sh).
 nm_system_dir() {
     case "$1" in
-        Chrome) echo "/Library/Google/Chrome/NativeMessagingHosts" ;;
+        Chrome|"Chrome Beta"|"Chrome Dev"|"Chrome Canary") echo "/Library/Google/Chrome/NativeMessagingHosts" ;;
         Edge)   echo "/Library/Microsoft/Edge/NativeMessagingHosts" ;;
         *)      echo "/Library/Application Support/$2/NativeMessagingHosts" ;;
     esac
@@ -86,7 +87,7 @@ browser_installed() {   # product-dir policy-domain -> is the browser installed?
     [ -d "$HOME/Library/Application Support/$1" ]
 }
 
-ok()   { printf "  ${GRN}● enforced${OFF}  %-22s ${DIM}%s${OFF}\n" "$1" "$2"; }
+ok()   { printf "  ${GRN}● observed${OFF}  %-22s ${DIM}%s${OFF}\n" "$1" "$2"; }
 open() { printf "  ${RED}○ OPEN${OFF}      %-22s ${DIM}%s${OFF}\n" "$1" "$2"; critical_open=1; }
 warn() { printf "  ${YEL}◐ partial${OFF}   %-22s ${DIM}%s${OFF}\n" "$1" "$2"; warnings=1; }
 
@@ -98,9 +99,10 @@ managed_pref() {   # domain key  -> value from device- or user-scope managed pre
     return 1
 }
 
-echo "Enforcement on this Mac — $(date '+%Y-%m-%d %H:%M')"
+echo "Protection evidence on this Mac — $(date '+%Y-%m-%d %H:%M')"
 echo "================================================"
 echo "Daily user: $ME"
+echo "Scope: configured native-link browsers; preference presence is not effective-policy proof."
 echo
 
 # ---- the load-bearing fact: is the user an administrator? -------------------
@@ -206,9 +208,27 @@ fi
 # One pass over the family: for each browser that is actually installed, is
 # incognito disabled, is DoH locked off, and does a native-messaging host exist?
 # Aggregated so the output stays short but still names the browser that is open.
-# The ids the app admits, from the one list install.sh also reads.
-EXT_IDS="$(grep -oE '"[a-p]{32}"' "$(dirname "$0")/Hisn/NativeMessagingInstaller.swift" 2>/dev/null | tr -d '"' | tr '\n' ' ')"
-[ -n "$EXT_IDS" ] || EXT_IDS="hfhaffbmoeepcdolgejeidkgaoapcjig"
+# Prefer the installed app's exact admitted IDs; use the source plist only when
+# no installed plist exists. Grepping Swift comments silently misses store IDs.
+# An invalid/empty installed list must remain unknown, not claim repository IDs.
+EXT_IDS="$(python3 - "/Applications/Hisn.app/Contents/Info.plist" "$(dirname "$0")/Hisn/Info.plist" <<'IDS' 2>/dev/null || true
+import pathlib, plistlib, re, sys
+for candidate in sys.argv[1:]:
+    path = pathlib.Path(candidate)
+    if not path.exists():
+        continue
+    try:
+        data = plistlib.loads(path.read_bytes())
+        values = data.get("HisnExtensionIDs", [])
+        if not isinstance(values, list):
+            values = []
+        ids = {value for value in values if isinstance(value, str) and re.fullmatch(r"[a-p]{32}", value)}
+        print(" ".join(sorted(ids)))
+    except Exception:
+        pass
+    break
+IDS
+)"
 incog_open=""; doh_open=""; guest_open=""; safe_open=""; link_missing=""; ext_off=""; browsers_present=0
 while IFS='|' read -r name domain product; do
     [ -n "$name" ] || continue
@@ -226,18 +246,21 @@ while IFS='|' read -r name domain product; do
     [ "$(managed_pref "$domain" ForceGoogleSafeSearch || echo "")" = "1" ] \
         || safe_open="$safe_open $name"
 
-    # Is the Hisn extension installed AND switched on in EVERY profile of this
-    # browser? Read from the browser's own profile state — the one-click
-    # "disable" on the extensions page leaves every file above in place — and
-    # per profile, because a second profile without the extension is the
-    # whole browser without it: "on" once used to mean "on in any one".
+    # Read enabled-state evidence from discovered Default/Profile * directories.
+    # This is not live execution, policy-install provenance, custom-data-dir or
+    # guest/private-window coverage. No discovered profile must remain unknown,
+    # rather than passing the all-profiles check vacuously.
     ext_state=$(python3 - "$HOME/Library/Application Support/$product" "$EXT_IDS" <<'PY' 2>/dev/null || echo "unknown"
 import json, sys, pathlib
 root, ids = pathlib.Path(sys.argv[1]), set(sys.argv[2].split())
-off = []
+if not ids:
+    print("unknown")
+    sys.exit(0)
+off, checked = [], 0
 for profile in sorted(list(root.glob("Default")) + list(root.glob("Profile *"))):
     if not (profile / "Preferences").exists():
         continue
+    checked += 1
     settings, name = {}, profile.name
     for f in ("Preferences", "Secure Preferences"):
         try: d = json.loads((profile / f).read_text())
@@ -248,7 +271,7 @@ for profile in sorted(list(root.glob("Default")) + list(root.glob("Profile *")))
              for i in ids & settings.keys())
     if not on:
         off.append(name.replace(" ", "_"))
-print("on" if not off else "off:" + ",".join(off))
+print("unknown" if not checked else ("on" if not off else "off:" + ",".join(off)))
 PY
 )
     [ "$ext_state" = "on" ] || ext_off="$ext_off $name($ext_state)"
@@ -267,44 +290,43 @@ $CHROMIUM_BROWSERS
 EOF
 
 if [ "$browsers_present" -eq 0 ]; then
-    warn "chromium browsers" "none installed — only Safari matters on this Mac"
+    warn "chromium browsers" "no configured native-link browser detected — other browsers/apps are not inventoried"
 else
     if [ -z "$incog_open" ]; then
-        ok "browser incognito" "disabled by policy on every installed browser"
+        ok "browser incognito" "disable preference present for each detected catalog browser; verify actual policy"
     else
-        open "browser incognito" "AVAILABLE on:$incog_open — page-text layer is bypassed there"
+        open "browser incognito" "disable preference missing on:$incog_open — verify private-window protection"
     fi
 
     if [ -z "$doh_open" ]; then
-        ok "browser DoH" "off on every installed browser"
+        ok "browser DoH" "off preference present for each detected catalog browser; verify actual policy"
     else
         open "browser DoH" "not locked on:$doh_open — a DoH toggle bypasses the hosts file"
     fi
 
     if [ -z "$guest_open" ]; then
-        ok "guest / new profiles" "disabled on every installed browser"
+        ok "guest / new profiles" "disable preferences present for each detected catalog browser"
     else
-        open "guest / new profiles" "available on:$guest_open — a guest window runs no extension"
+        open "guest / new profiles" "disable preferences missing on:$guest_open — verify actual guest/profile behavior"
     fi
 
     if [ -z "$safe_open" ]; then
-        ok "SafeSearch policy" "forced on every installed browser"
+        ok "SafeSearch policy" "requested preference present for each detected catalog browser"
     else
         warn "SafeSearch policy" "not forced on:$safe_open — the extension still rewrites searches"
     fi
 
     if [ -z "$ext_off" ]; then
-        ok "Hisn extension" "installed and switched on in every profile of every installed browser"
+        ok "Hisn extension" "enabled-state evidence in each discovered standard profile; not a live/private-window check"
     else
-        open "Hisn extension" "not running in:$ext_off — no page-text checking there"
+        open "Hisn extension" "enabled-state evidence missing/unknown in:$ext_off"
     fi
 
-    # A missing link is fail-closed during an active lock (the extension reads
-    # silence as tampering and goes strict), so it is a partial, not a bypass —
-    # but it means custom allow/block lists never reach that browser, and with
-    # no lock ever recorded the page-text layer there is simply off.
+    # A missing link prevents app synchronization. Sustained native loss can
+    # fail closed after an app lock was recorded; standalone layers remain.
+    # Manifest presence alone still needs a live native-message acceptance test.
     if [ -z "$link_missing" ]; then
-        ok "extension link" "native-messaging host present on every installed browser"
+        ok "extension link" "host file present for each detected catalog browser; verify the live app connection"
     else
         warn "extension link" "no host on:$link_missing — extension there cannot reach the app (run install_native_host.sh or launch the app)"
     fi
@@ -321,20 +343,20 @@ fi
 
 relay=$(managed_pref com.apple.applicationaccess allowCloudPrivateRelay || echo "")
 if [ "$relay" = "0" ]; then
-    ok "iCloud Private Relay" "disabled — Safari DNS cannot tunnel past the filter"
+    ok "iCloud Private Relay" "disable preference present; verify effective restriction"
 else
     open "iCloud Private Relay" "not disabled — Safari can tunnel DNS past /etc/hosts"
 fi
 
-# ---- system-level content filter (browser-agnostic, VPN-proof) -------------
+# ---- system-level content filter activation evidence -----------------------
 # systemextensionsctl may be gated in some contexts; treat inability to read as
 # unknown rather than as enforced.
 if command -v systemextensionsctl >/dev/null 2>&1; then
     sysext=$(systemextensionsctl list 2>/dev/null | grep -i "hisn" || true)
     if echo "$sysext" | grep -qi "activated enabled"; then
-        ok "system filter" "active — every app and browser, VPN-proof"
+        ok "system filter" "Hisn system extension reported activated/enabled; filtering and tunnel coverage need live tests"
     else
-        warn "system filter" "not active — needs Apple's \$99 entitlement to run"
+        warn "system filter" "not reported active — check authorization, signing and Network Extension entitlement"
     fi
 else
     warn "system filter" "could not query system extensions"
@@ -342,13 +364,15 @@ fi
 
 echo
 if [ "$critical_open" -eq 0 ] && [ "$warnings" -eq 0 ]; then
-    echo "${GRN}All critical controls enforced.${OFF}"
+    echo "${GRN}No critical evidence is missing from this script's scope.${OFF}"
+    echo "Confirm effective browser policy and real filtering; this is not universal coverage certification."
     exit 0
 elif [ "$critical_open" -eq 0 ]; then
-    echo "${YEL}Critical controls enforced; see partials above.${OFF}"
+    echo "${YEL}No critical evidence is missing; see partial/unknown rows above.${OFF}"
+    echo "Confirm effective browser policy and real filtering separately."
     exit 0
 else
-    echo "${RED}One or more critical controls are OPEN.${OFF} A lock is only as"
-    echo "real as its weakest open row above. See docs/CHROME_ENFORCEMENT.md."
+    echo "${RED}One or more critical checks lack evidence.${OFF}"
+    echo "See docs/CHROME_ENFORCEMENT.md for verification and remaining limits."
     exit 1
 fi

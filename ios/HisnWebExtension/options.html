@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hisn Web Protection</title><link rel="stylesheet" href="options.css"></head>
+<body><main>
+  <header><img src="icons/icon-32.png" width="32" height="32" alt=""><div><h1 id="title">Protection layers</h1><p id="subtitle">Hisn for Safari</p></div></header>
+  <section aria-labelledby="textTitle"><div class="row"><h2 id="textTitle">Text checking</h2><span class="badge" id="textBadge">Included</span></div><p id="textDetail">Checks page text and individual X posts on-device. Allow Hisn to access the websites you want it to protect in Safari settings.</p></section>
+  <section aria-labelledby="visualTitle">
+    <h2 id="visualTitle">Experimental visual checks</h2>
+    <label class="row control"><span id="adultLabel">Hide media flagged as adult</span><input type="checkbox" id="inspectVisual" disabled></label>
+    <label class="control" for="personBlur" id="personLabel">Blur media with detected faces</label>
+    <select id="personBlur" disabled>
+      <option value="off" id="modeOff">Off</option><option value="all" id="modeAll">Any detected face</option>
+      <option value="female" id="modeFemale">Estimated female faces</option><option value="male" id="modeMale">Estimated male faces</option>
+    </select>
+    <p id="faceDetail">Face detection is not whole-body detection. Appearance estimates can be wrong and are not adult-content labels. When a face matches, the whole image or video is blurred.</p>
+    <p id="engineStatus" role="status" aria-live="polite">Visual checks are off.</p>
+  </section>
+  <section aria-labelledby="limitsTitle"><h2 id="limitsTitle">Know the limits</h2><p id="limitsDetail">Only readable images and sampled video frames on permitted Safari webpages can be checked. Protected or cross-origin media may be unreadable; unreadable is not the same as safe. Normal videos are not hidden by default.</p><p id="privacyDetail">Models are bundled. Images and frames are processed on this device, never uploaded or saved by Hisn.</p><p id="commitmentDetail">These Safari visual settings are separate from the app commitment. Safari can disable the extension; this page does not prevent removal or claim system-wide protection.</p></section>
+  <p id="saveStatus" role="status" aria-live="polite"></p>
+</main><script type="module" src="options.js"></script></body></html>

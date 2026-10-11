@@ -8,26 +8,16 @@ final class AppNavigation: ObservableObject {
     static let shared = AppNavigation()
     @Published var page: ContentView.Page? = AppNavigation.firstPage()
 
-    private static let seenSetupKey = "hisn.openedOnSetup"
-
-    /// The very first window opens on Setup: someone who has just installed
-    /// Hisn needs the list of what is left, not a status saying most of it is
-    /// missing. Every later window opens on the Overview.
+    /// Each new process starts on Setup until fresh checks can be displayed.
+    /// A historical visit (or success) is not evidence about this session.
+    /// Explicit navigation remains available, including settings and recovery.
     static func firstPage(defaults: UserDefaults = .standard,
                           hostingTests: Bool = AppDelegate.isHostingTests) -> ContentView.Page {
-        guard !hostingTests, !defaults.bool(forKey: seenSetupKey) else { return .overview }
-        return .setup
-    }
-
-    func markSetupSeen() {
-        guard !AppDelegate.isHostingTests else { return }
-        UserDefaults.standard.set(true, forKey: Self.seenSetupKey)
+        hostingTests ? .overview : .setup
     }
 
     func open(_ page: ContentView.Page) {
-        self.page = page == .overview && !UserDefaults.standard.bool(forKey: Self.seenSetupKey)
-            ? .setup : page
-        markSetupSeen()
+        self.page = page
     }
 }
 

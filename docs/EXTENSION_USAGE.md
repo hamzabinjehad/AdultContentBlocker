@@ -2,8 +2,14 @@
 
 ## Without the macOS app
 
-Load `extension/` as an unpacked extension in a supported Chromium browser,
-or install the published extension when available. Open the Hisn popup and
+Prepare a clean, browser-specific unpacked folder with
+`python3 extension/prepare_unpacked.py --out dist/hisn-unpacked-chrome-1.0.1`,
+then select that folder in **Load unpacked** in a supported Chromium browser.
+Use a fresh output name for another browser or update; existing folders are
+never overwritten. This excludes generated `_metadata` caches while preserving
+the local extension ID. See [setup](SETUP.md#step-2--the-browser-extension) if
+the browser rejects a reserved filename. Alternatively, install the published
+extension when available. Open the Hisn popup and
 choose **Settings**. The bundled domain rules and page-text checking work
 without a native app connection. Verified list updates run in the extension.
 

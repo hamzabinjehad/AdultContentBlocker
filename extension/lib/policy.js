@@ -433,8 +433,22 @@ export const USER_FIELDS = Object.freeze({
   customTerms:     { kind: "terms" },
   ignoreTerms:     { kind: "terms" },
   inspectText:     { kind: "bool" },
+  inspectVisual:   { kind: "bool" },
+  personBlur:      { kind: "enum", values: ["off", "all", "female", "male"] },
   textSensitivity: { kind: "int", min: 0, max: 100 },
 });
+
+/** Visual options are browser-owned, but cannot weaken a running commitment.
+ * Person preferences are independent of adult classification: neither a
+ * predicted woman nor a predicted man is an adult-content verdict. */
+export function visualPolicyWeakens(state, patch) {
+  if (patch.inspectVisual === false && state.inspectVisual === true) return true;
+  if (!Object.prototype.hasOwnProperty.call(patch, "personBlur")) return false;
+  const groups = { off: [], female: ["female"], male: ["male"], all: ["female", "male"] };
+  const before = groups[state.personBlur ?? "off"] ?? [];
+  const after = groups[patch.personBlur] ?? [];
+  return before.some((group) => !after.includes(group));
+}
 
 const MAX_LIST = 5000;
 const MAX_TERM = 100;

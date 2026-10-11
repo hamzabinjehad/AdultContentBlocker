@@ -143,8 +143,8 @@ public struct SetupChecklist: Equatable {
         let missing = e.browsers.filter { !$0.extensionOffIn.isEmpty }
         if e.browsers.isEmpty {
             steps.append(Step(id: .browsers, title: String(localized: "Browser extension"),
-                              detail: String(localized: "No Chromium browser is installed. Safari is covered by the other layers."),
-                              state: .done, action: nil))
+                              detail: String(localized: "No supported browser is installed. Connect Hisn in a supported browser; Safari has no verified Hisn page scanner on this Mac."),
+                              state: .todo, action: .browserHelp))
         } else if e.browsers.contains(where: { !$0.profilesChecked }) {
             let names = e.browsers.filter { !$0.profilesChecked }.map(\.name).formatted(.list(type: .and))
             steps.append(Step(id: .browsers, title: String(localized: "Browser extension"),

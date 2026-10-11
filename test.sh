@@ -37,6 +37,8 @@ suite_python() {
         | tee /dev/stderr | grep -q "^OK" )
     echo "── python: verified network publication"
     python3 -m unittest discover -s network -p 'test_*.py'
+    echo "── python: clean unpacked extension staging"
+    python3 -m unittest discover -s extension/test -p 'test_*.py'
     echo "── python: mobile Safari rules"
     python3 -m unittest discover -s ios -p 'test_*.py'
 }
@@ -51,11 +53,13 @@ suite_release() {
     python3 -m unittest discover -s macos/release -p 'test_*.py'
     bash macos/release/release.sh --check
     bash -n macos/release/release.sh macos/release/installer/preinstall \
-        macos/release/installer/postinstall macos/install_native_host.sh macos/install.sh \
+        macos/release/installer/postinstall macos/install_native_host.sh macos/install.sh macos/install_update.sh \
         script/build_and_run.sh
 }
 
 suite_extension() {
+    echo "── extension: unpacked-load regression checks"
+    python3 -m unittest discover -s extension/test -p 'test_*.py'
     echo "── extension: unit"
     extension/test/run.sh
     echo "── extension: package"

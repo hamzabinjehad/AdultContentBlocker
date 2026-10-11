@@ -4,6 +4,7 @@ import SafariServices
 import FamilyControls
 import Combine
 import ManagedSettings
+import CryptoKit
 
 @MainActor
 final class ProtectionController: ObservableObject {
@@ -15,6 +16,9 @@ final class ProtectionController: ObservableObject {
     @Published private(set) var errorKey: String?
     @Published private(set) var listCount = 0
     @Published private(set) var listVersion = 0
+    @Published private(set) var listIntegrityVerified = false
+    private var listChecked = false
+    private let resourceBundleURL: URL
     @Published private(set) var removal: MobileProtectionPolicy.RemovalState = .notRequested
     private var removalEvidence = MobileProtectionPolicy.RemovalEvidence()
     private var authorizationObservation: AnyCancellable?
@@ -34,7 +38,9 @@ final class ProtectionController: ObservableObject {
     private var screenTimeChosenForCommitment = false
 
     init(commitmentStore: CommitmentPersistence? = nil, readinessHistory: ReadinessHistory? = nil,
+         resourceBundleURL: URL = Bundle.main.bundleURL,
          clockSource: @escaping () -> (wall: Date, uptime: TimeInterval) = { (Date(), CommitmentClock.continuousTime) }) {
+        self.resourceBundleURL = resourceBundleURL
         self.clockSource = clockSource
         let sample = clockSource()
         clockMonitor = CommitmentClock(wallAnchor: sample.wall, uptimeAnchor: sample.uptime)
@@ -49,8 +55,7 @@ final class ProtectionController: ObservableObject {
         updateClock()
         ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
             .sink { [weak self] _ in self?.updateClock() }
-        if let url = Bundle.main.url(forResource: "rules-metadata", withExtension: "json"),
-           let data = try? Data(contentsOf: url),
+        if let data = try? Data(contentsOf: resourceBundleURL.appendingPathComponent("rules-metadata.json")),
            let metadata = try? JSONDecoder().decode(Metadata.self, from: data) {
             listCount = metadata.count; listVersion = metadata.version
         }
@@ -178,7 +183,15 @@ final class ProtectionController: ObservableObject {
     }
 
     var safariConfigured: Bool {
-        MobileProtectionPolicy.safariConfigurationReady(enabled: safari, lastReload: safariReloads)
+        listIntegrityVerified && listCount > 0 && listVersion > 0 &&
+            MobileProtectionPolicy.safariConfigurationReady(enabled: safari, lastReload: safariReloads)
+    }
+
+    var setupAssessment: MobileProtectionPolicy.SetupAssessment {
+        MobileProtectionPolicy.setupAssessment(checked: checkedAt != nil, busy: busy,
+            listVerified: listIntegrityVerified, listCount: listCount, listVersion: listVersion,
+            safari: safari, lastReload: safariReloads, screenTime: screenTimeConfigured, dns: dns,
+            storageHealthy: commitmentStorageHealthy && historyStorageHealthy)
     }
 
     /// Configuration readback only; never a claim that every route is blocked.
@@ -231,6 +244,19 @@ final class ProtectionController: ObservableObject {
     private func readState() async {
         updateClock()
         loadCommitment()
+        if !listChecked {
+            // Immutable bundled resources need one integrity check per launch,
+            // off the UI actor. Enabled Safari switches alone do not prove that
+            // usable, nonempty rules shipped with this app.
+            let bundleURL = resourceBundleURL
+            let result = await Task.detached(priority: .utility) {
+                Self.checkBundledList(at: bundleURL)
+            }.value
+            listCount = result.count
+            listVersion = result.version
+            listIntegrityVerified = result.verified
+            listChecked = true
+        }
         readScreenTimeState()
         #if !targetEnvironment(simulator)
         observeAuthorization(AuthorizationCenter.shared.authorizationStatus)
@@ -306,5 +332,33 @@ final class ProtectionController: ObservableObject {
         if reloads.contains(false) { errorKey = "safari.failed" }
     }
 
-    private struct Metadata: Decodable { let count: Int; let version: Int }
+    nonisolated static func checkBundledList(at bundleURL: URL) -> (count: Int, version: Int, verified: Bool) {
+        guard let data = try? Data(contentsOf: bundleURL.appendingPathComponent("rules-metadata.json")),
+              let summary = try? JSONDecoder().decode(Metadata.self, from: data),
+              summary.parts == MobileProtectionPolicy.blockerIdentifiers.count else { return (0, 0, false) }
+        var parts: [MobileProtectionPolicy.SafariListPart] = []
+        for part in 1...MobileProtectionPolicy.blockerIdentifiers.count {
+            let directory = bundleURL.appendingPathComponent("PlugIns/Hisn\(part).appex")
+            let rulesURL = directory.appendingPathComponent("rules").appendingPathExtension("json")
+            guard let raw = try? Data(contentsOf: rulesURL, options: .mappedIfSafe),
+                  let metadata = try? Data(contentsOf: directory.appendingPathComponent("rules-metadata.json")),
+                  let info = try? JSONDecoder().decode(PartMetadata.self, from: metadata),
+                  let rules = try? JSONSerialization.jsonObject(with: raw) as? [[String: Any]] else {
+                return (summary.count, summary.version, false)
+            }
+            let digest = SHA256.hash(data: raw).map { String(format: "%02x", $0) }.joined()
+            let blockingRules = rules.allSatisfy { rule in
+                let trigger = rule["trigger"] as? [String: Any]
+                let action = rule["action"] as? [String: Any]
+                return (trigger?["url-filter"] as? String)?.isEmpty == false && action?["type"] as? String == "block"
+            }
+            parts.append(.init(count: info.count, version: info.version,
+                integrityMatches: digest == info.sha256 && rules.count == info.count && blockingRules))
+        }
+        return (summary.count, summary.version,
+            MobileProtectionPolicy.safariListReady(count: summary.count, version: summary.version, parts: parts))
+    }
+
+    private struct Metadata: Decodable { let count: Int; let version: Int; let parts: Int }
+    private struct PartMetadata: Decodable { let count: Int; let version: Int; let sha256: String }
 }

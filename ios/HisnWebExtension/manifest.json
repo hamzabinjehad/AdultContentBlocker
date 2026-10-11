@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Hisn Text",
+  "version": "1.1.1",
+  "description": "On-device text checking with optional experimental visual checks. Normal X posts and videos remain available unless flagged.",
+  "icons": {"32": "icons/icon-32.png", "128": "icons/icon-128.png"},
+  "host_permissions": ["http://*/*", "https://*/*"],
+  "permissions": ["storage"],
+  "background": {"page": "background.html", "persistent": false},
+  "content_scripts": [{
+    "matches": ["http://*/*", "https://*/*"],
+    "js": ["content/feed.js", "content/scan.js", "visual/capture.js", "content/visual.js"],
+    "run_at": "document_start",
+    "all_frames": true
+  }],
+  "web_accessible_resources": [{
+    "resources": ["blocked.html", "blocked.js"],
+    "matches": ["http://*/*", "https://*/*"]
+  }],
+  "options_ui": {"page": "options.html", "open_in_tab": true},
+  "action": {"default_title": "Hisn Web Protection", "default_popup": "options.html"},
+  "content_security_policy": {"extension_pages": "script-src 'self'; object-src 'self'"}
+}

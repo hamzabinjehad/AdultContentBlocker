@@ -2,10 +2,10 @@
 """
 Hisn hardening profile generator.
 
-Produces a signed-ready macOS .mobileconfig that closes the network-level
-bypasses a blocklist alone cannot touch: encrypted DNS overrides, iCloud
-Private Relay, per-browser DNS-over-HTTPS, private browsing, and casual removal
-of the profile itself.
+Produces an unsigned macOS .mobileconfig with independent network and browser
+policy controls. Generating a payload does not install it, prove that a browser
+accepts it, or make a device impossible to bypass. Test effective policy before
+describing a deployment as enforced.
 
     python3 make_profile.py --doh https://dns.hisn.app/dns-query \\
                             --out ../dist/hisn-hardening.mobileconfig
@@ -27,13 +27,17 @@ hold the removal password. See docs/THREAT_MODEL.md.
 from __future__ import annotations
 
 import argparse
+import copy
+import ipaddress
 import os
 import plistlib
+import re
 import secrets
 import string
 import sys
 import uuid
 from pathlib import Path
+from urllib.parse import urlparse
 
 ORG = "Hisn"
 ID_PREFIX = "app.hisn.profile"
@@ -95,14 +99,13 @@ def payload(ptype: str, identifier: str, name: str, description: str, **extra) -
 
 def p_dns(doh_url: str, addresses: list[str], supervised: bool) -> dict:
     """
-    Force all DNS through our DoH resolver.
+    Configure system DNS to use a filtering DoH resolver.
 
     com.apple.dnsSettings.managed — macOS 11.0+, manual install allowed.
 
-    ProhibitDisablement is honoured on SUPERVISED devices only. We still emit
-    it when supervision is available; on an unsupervised Mac the setting is
-    accepted but not enforced, so the socket-level content filter in the app
-    remains the load-bearing control.
+    ProhibitDisablement requires supervision. It is omitted unless requested;
+    an unsupervised profile is not proof of non-disableable DNS. Applications,
+    tunnels and other networks can need additional verified protections.
     """
     dns: dict = {"DNSProtocol": "HTTPS", "ServerURL": doh_url}
     if addresses:
@@ -113,7 +116,7 @@ def p_dns(doh_url: str, addresses: list[str], supervised: bool) -> dict:
     return payload(
         "com.apple.dnsSettings.managed", "dns",
         "Encrypted DNS",
-        "Routes all DNS through the Hisn filtering resolver over HTTPS.",
+        "Configures system DNS to use a filtering resolver over HTTPS. Does not inspect individual encrypted posts or videos.",
         DNSSettings=dns,
     )
 
@@ -231,16 +234,13 @@ CHROMIUM_INCOGNITO_BLOCK = {"IncognitoModeAvailability": 1}   # 1 = disabled
 
 
 def chromium_extension_policy(extension_id: str, update_url: str) -> dict:
-    """Force-install our extension and block every other one — for ANY Chromium.
+    """Request managed installation on browsers that accept these policies.
 
-    Force-installed means no Remove or Disable button; `"*": blocked` stops a
-    proxy/"unblock" extension being added to route around it. Emitted only when
-    an id is given, and only satisfiable once the extension is actually
-    published (force-install pulls from an update URL, not a local folder) — the
-    same caveat `docs/CHROME_ENFORCEMENT.md` states. Shared so Helium and the
-    other forks the user actually runs get the same non-removable treatment as
-    Chrome, not just DNS locks.
+    Publication, effective policy and removal behavior must be verified on each
+    target browser. The candidate catalog is not evidence of universal fork
+    support. Omitting the ID preserves unpacked-development installation.
     """
+    validate_extension_source(extension_id, update_url)
     return {
         "ExtensionInstallForcelist": [f"{extension_id};{update_url}"],
         "ExtensionSettings": {
@@ -271,17 +271,10 @@ def p_chrome(extension_id: str, update_url: str,
                    "Locks Chrome DNS, proxy, and extension settings.", **policy)
 
 
-# Every Chromium fork reads the SAME policy keys, just under its own bundle
-# identifier. Naming only Chrome and Edge left the obvious escape open: install
-# Brave, turn on its built-in DNS-over-HTTPS, and every DNS-layer control on
-# this Mac — the hosts file, the managed resolver, all of it — is bypassed,
-# because the browser stopped asking the system to resolve anything.
-#
-# These are the Chromium browsers a person actually reaches for. It is not a
-# complete list and cannot be: a fork published tomorrow needs adding here. That
-# is the structural weakness of naming browsers one at a time, and the reason
-# the socket-level filter — which never asks which browser it is — is the layer
-# that actually closes this row of the threat model.
+# Candidate Chromium policy domains. Forks can change their policy engine,
+# branding, update services and supported keys. A matching payload or compiled
+# policy name alone is not proof that policy is accepted and enforced. Keep
+# targets selectable and require effective-policy checks for each deployment.
 CHROMIUM_FAMILY = [
     ("com.brave.Browser", "brave", "Brave"),
     ("com.vivaldi.Vivaldi", "vivaldi", "Vivaldi"),
@@ -292,8 +285,8 @@ CHROMIUM_FAMILY = [
     ("com.google.Chrome.beta", "chrome-beta", "Chrome Beta"),
     ("com.google.Chrome.dev", "chrome-dev", "Chrome Dev"),
     ("com.google.Chrome.canary", "chrome-canary", "Chrome Canary"),
-    # The newer Chromium browsers. Each ships its own DoH client and reads the
-    # same policy keys under its own bundle id.
+    # Additional candidates; no native-host registration or deployment proof
+    # is implied for these products.
     ("com.operasoftware.OperaGX", "opera-gx", "Opera GX"),
     ("org.chromium.Thorium", "thorium", "Thorium"),
     ("ru.yandex.desktop.yandex-browser", "yandex", "Yandex Browser"),
@@ -302,18 +295,64 @@ CHROMIUM_FAMILY = [
     ("com.openai.atlas", "atlas", "ChatGPT Atlas"),
 ]
 
+# App/native-host support is narrower than the policy-candidate catalog above.
+# These domains have an explicit matching native registration in Swift and the
+# shell installer. Edge's policy domain is not its macOS application bundle ID.
+# More policy payloads are not evidence that a fork accepts them in practice.
+NATIVE_LINKED_BROWSER_IDS = {
+    "com.google.Chrome", "com.google.Chrome.beta", "com.google.Chrome.dev",
+    "com.google.Chrome.canary", "com.microsoft.Edge", "com.brave.Browser",
+    "com.vivaldi.Vivaldi", "com.operasoftware.Opera", "company.thebrowser.Browser",
+    "org.chromium.Chromium", "net.imput.helium",
+}
+BROWSER_POLICY_IDS = {"com.google.Chrome", "com.microsoft.Edge", "org.mozilla.firefox",
+                      *(entry[0] for entry in CHROMIUM_FAMILY)}
+
+
+def validate_extension_source(extension_id: str, update_url: str) -> None:
+    """Validate packaging inputs, not publication or effective policy.
+
+    A malformed ID or a non-HTTPS/credential-bearing URL must never create a
+    blanket extension block while the promised forced extension cannot load.
+    A syntactically valid ID still needs a real published, accepted update feed.
+    """
+    if not extension_id:
+        return
+    if not re.fullmatch(r"[a-p]{32}", extension_id):
+        raise ValueError("extension ID must contain exactly 32 letters a–p")
+    if ("\\" in update_url or
+            any(character.isspace() or ord(character) < 32 or ord(character) == 127
+                for character in update_url)):
+        raise ValueError("extension update URL must not contain whitespace, backslashes or control characters")
+    try:
+        parsed = urlparse(update_url)
+        # Accessing port also rejects malformed/non-numeric/out-of-range ports.
+        parsed.port
+        valid = (parsed.scheme == "https" and parsed.hostname
+                 and parsed.username is None and parsed.password is None
+                 and not parsed.fragment)
+        if valid:
+            hostname = parsed.hostname.rstrip(".")
+            try:
+                ipaddress.ip_address(hostname)
+            except ValueError:
+                ascii_hostname = hostname.encode("idna").decode("ascii")
+                valid = (len(ascii_hostname) <= 253 and
+                         all(re.fullmatch(r"[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?", label)
+                             for label in ascii_hostname.split(".")))
+    except (ValueError, UnicodeError):
+        valid = False
+    if not valid:
+        raise ValueError("extension update URL must be HTTPS, without credentials or a fragment")
+
 
 def p_chromium_family(extension_id: str = "", update_url: str = "",
                       lock_devtools: bool = True,
                       block_incognito: bool = True) -> list[dict]:
-    """DNS and proxy locks for every Chromium fork we know the id of.
+    """Emit requested controls for known candidate Chromium policy domains.
 
-    With the same force-install policy as Chrome when an id is given. This used
-    to be omitted on the theory that nobody runs the extension in a fork — false
-    for the fork the user actually runs (Helium). Without it the extension is
-    removable on that browser, which is the whole thing the profile is meant to
-    prevent. The publish caveat is identical to Chrome's, so an id is passed
-    only when there is something to force-install.
+    Each browser still needs an accepted update source and effective-policy
+    verification. These artifacts are not installation or enforcement proof.
     """
     out = []
     for bundle_id, slug, name in CHROMIUM_FAMILY:
@@ -410,6 +449,7 @@ def resolver_is_reachable(doh_url: str) -> bool:
 
 
 def build(args: argparse.Namespace) -> tuple[dict, str]:
+    validate_extension_source(args.extension_id, args.update_url)
     removal_password = args.removal_password or gen_password()
 
     payloads = [
@@ -430,6 +470,13 @@ def build(args: argparse.Namespace) -> tuple[dict, str]:
     ]
     if args.lock_settings:
         payloads.append(p_system_settings())
+    selected = set(getattr(args, "browsers", None) or [])
+    unknown = selected - BROWSER_POLICY_IDS
+    if unknown:
+        raise ValueError("unknown browser policy domains: " + ", ".join(sorted(unknown)))
+    if selected:
+        payloads = [p for p in payloads
+                    if p["PayloadType"] not in BROWSER_POLICY_IDS or p["PayloadType"] in selected]
 
     profile = {
         "PayloadType": "Configuration",
@@ -438,9 +485,10 @@ def build(args: argparse.Namespace) -> tuple[dict, str]:
         "PayloadUUID": new_uuid(),
         "PayloadDisplayName": args.display_name,
         "PayloadDescription": (
-            "Hisn content protection. This profile is intentionally difficult "
-            "to remove. Removal requires the removal password held by your "
-            "accountability partner."
+            "Hisn content protection. Installation is voluntary and separate "
+            "from the app. Keep the removal password in your chosen recovery "
+            "or escrow process; removal protection depends on platform and "
+            "administrator/management permissions."
         ),
         "PayloadOrganization": ORG,
         "PayloadScope": "System",
@@ -448,6 +496,39 @@ def build(args: argparse.Namespace) -> tuple[dict, str]:
         "PayloadContent": payloads,
     }
     return profile, removal_password
+
+
+def build_layers(args: argparse.Namespace) -> list[tuple[str, dict, str]]:
+    """Generate two independently removable artifacts; never install either.
+
+    Network protection contains no app or extension dependency. Browser policy
+    lives in a second profile so removing one layer does not remove the other.
+    Generated passwords differ; an explicitly supplied escrow password is
+    reused only at the operator's request. Preserve the old single profile path.
+    """
+    combined, network_password = build(args)
+    layers = []
+    network_types = {"com.apple.dnsSettings.managed", "com.apple.applicationaccess"}
+    for slug, title in (("network", "Network Protection"), ("browsers", "Browser Protection")):
+        password = (network_password if slug == "network" else
+                    (args.removal_password or gen_password()))
+        layer = copy.deepcopy(combined)
+        content = []
+        for p in layer["PayloadContent"]:
+            if p["PayloadType"] == "com.apple.profileRemovalPassword":
+                continue
+            belongs = p["PayloadType"] in network_types
+            if belongs == (slug == "network"):
+                p["PayloadIdentifier"] = p["PayloadIdentifier"].replace(ID_PREFIX, f"{ID_PREFIX}.{slug}", 1)
+                content.append(p)
+        removal = p_removal_password(password)
+        removal["PayloadIdentifier"] = f"{ID_PREFIX}.{slug}.removalpw"
+        content.append(removal)
+        layer.update(PayloadIdentifier=f"{ID_PREFIX}.{slug}", PayloadUUID=new_uuid(),
+                     PayloadDisplayName=f"{args.display_name} — {title}", PayloadContent=content,
+                     PayloadDescription=f"Hisn {title.lower()}. Installed and removed separately from the app and the other profile. Recovery requires your escrowed removal password and applicable administrator/management permissions.")
+        layers.append((slug, layer, password))
+    return layers
 
 
 def main() -> int:
@@ -470,6 +551,11 @@ def main() -> int:
                     help="Chrome Web Store ID of the Hisn extension.")
     ap.add_argument("--update-url",
                     default="https://clients2.google.com/service/update2/crx")
+    ap.add_argument("--browser", dest="browsers", action="append",
+                    choices=sorted(BROWSER_POLICY_IDS),
+                    help="Emit policy for this browser domain only; repeat for several. Default keeps the existing full candidate catalog; effective policy must still be verified.")
+    ap.add_argument("--separate-layers", action="store_true",
+                    help="Write separate network and browser profiles instead of one combined file. Does not install or apply them; each can remain after the app or the other profile is removed.")
     ap.add_argument("--display-name", default="Hisn Content Protection")
     ap.add_argument("--supervised", action="store_true",
                     help="Emit supervision-only keys (ProhibitDisablement).")
@@ -494,6 +580,10 @@ def main() -> int:
                     help="Print the removal password to stdout. Do NOT do this "
                          "on the end user's machine.")
     args = ap.parse_args()
+    try:
+        validate_extension_source(args.extension_id, args.update_url)
+    except ValueError as error:
+        ap.error(str(error))
 
     # Resolve the preset, letting explicit flags override either half.
     preset = RESOLVERS[args.resolver]
@@ -511,13 +601,17 @@ def main() -> int:
         if not args.allow_unreachable_resolver:
             return 1
 
-    profile, removal_password = build(args)
-
     out = Path(args.out)
-    write_private(out, plistlib.dumps(profile, fmt=plistlib.FMT_XML))
-
-    print(f"wrote {out}  ({out.stat().st_size:,} bytes, "
-          f"{len(profile['PayloadContent'])} payloads)", file=sys.stderr)
+    artifacts = (build_layers(args) if args.separate_layers else
+                 [("combined", *build(args))])
+    for slug, profile, removal_password in artifacts:
+        target = (out.with_name(f"{out.stem}-{slug}{out.suffix}")
+                  if args.separate_layers else out)
+        write_private(target, plistlib.dumps(profile, fmt=plistlib.FMT_XML))
+        print(f"wrote {target}  ({target.stat().st_size:,} bytes, "
+              f"{len(profile['PayloadContent'])} payloads)", file=sys.stderr)
+        if args.print_password:
+            print(f"{slug}: {removal_password}" if args.separate_layers else removal_password)
     print(f"resolver: {args.doh}  ({', '.join(args.dns_addresses)})",
           file=sys.stderr)
 
@@ -530,22 +624,23 @@ def main() -> int:
     # is not" failure the threat model rates worst.
     print("\nSafari note: the Chrome/Edge/Firefox payloads do nothing on a "
           "Mac that only runs Safari. What covers Safari here is the system "
-          "DNS payload and the Private Relay switch — both real, both "
-          "defeated by a VPN. The socket-level content filter is the only "
-          "layer that closes that, and it needs a paid Apple Developer team.",
+          "DNS payload and the Private Relay restriction. DNS cannot classify "
+          "individual encrypted posts/videos and tunnels can bypass it. A "
+          "separately authorized, signed network filter can add protection; "
+          "these generated files do not prove that filter is installed or effective.",
           file=sys.stderr)
 
-    if args.print_password:
-        print(removal_password)
-    else:
-        print("Removal password generated but NOT printed. Re-run with "
-              "--print-password to escrow it, or pass --removal-password to "
-              "supply one from your escrow service.", file=sys.stderr)
+    if not args.print_password:
+        print("Removal password generated but NOT printed. It is stored in "
+              "plain text inside the owner-readable output profile; escrow "
+              "that original secret before installation. Re-running generates "
+              "a new secret and does not recover an already installed profile's password.",
+              file=sys.stderr)
 
     if not args.supervised:
         print("\nNOTE: unsupervised build. ProhibitDisablement was omitted "
-              "because macOS ignores it without supervision. The socket-level "
-              "content filter is doing the real work in this configuration.",
+              "because it requires supervision. No profile or network filter "
+              "was installed by this command. Verify effective protection separately.",
               file=sys.stderr)
     return 0
 

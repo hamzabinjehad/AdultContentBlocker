@@ -31,6 +31,14 @@ runner, for example `platform=iOS Simulator,name=iPhone 17 Pro`.
   159,768 domains; increasing capacity requires explicit additional targets.
 - Domain requests and descendant hostnames are matched with host boundaries.
   Safari applies rules without reporting visited sites to Hisn.
+- A separate **Hisn Text** Safari Web Extension uses the shared on-device text
+  scorer and scanner. It hides detected X/Twitter posts individually and uses
+  page-level checking on other sites. It must be enabled and granted website
+  access separately; its access is explicitly unverified in Hisn's guide.
+  Its own settings add opt-in, experimental local visual checking and optional
+  blurring of media with detected faces (all or estimated female/male faces).
+  Normal videos stay available by default. The whole matching image/video is
+  blurred; this is not whole-body recognition or an identity determination.
 - Optional encrypted Cloudflare Family DNS configuration, including IPv4 and
   IPv6 resolver addresses. This uses **Cloudflare categories**, not Hisn's list.
 - Actual DNS enabled-state readback and separate Safari state for each part.
@@ -53,7 +61,8 @@ shipping a new seed requires rebuilding and redistributing the app.
 
 ## Activate on a real device
 
-1. Set your Apple development team on the app and all four Safari targets.
+1. Set your Apple development team on the app, all four Safari domain targets,
+   and the separate Hisn Text target.
    Keep extension bundle IDs prefixed by the app ID. If changing the app ID,
    also change `shared/apple/MobileProtectionPolicy.swift` and the generator.
 2. Enable the app's **Network Extensions → DNS Settings** signing capability.
@@ -64,6 +73,12 @@ shipping a new seed requires rebuilding and redistributing the app.
    **not** verify real-device DNS activation.
 4. In Safari settings, enable **Hisn 1**, **Hisn 2**, **Hisn 3**, **Hisn 4**.
    Reload the rules from Hisn, then return to the protection tab and check state.
+   To add text checking, separately enable **Hisn Text**, grant access to each
+   wanted website, reload existing tabs and test profiles/private browsing.
+   The existing three-layer setup assessment does not certify these permissions.
+   Open Hisn Text's Safari toolbar panel or extension options to opt into visual
+   checking. These settings are stored in Safari, not synchronized with or
+   locked by the native app commitment.
 5. Optional: choose **Prepare family DNS**, accept Apple's permission dialog,
    then explicitly select **Hisn Family DNS** in system DNS settings. Return to
    Hisn; a saved-but-disabled configuration remains visibly incomplete.
@@ -89,11 +104,42 @@ below is optional and only appropriate for genuine child-device use.
 See [the shared self-control design](../docs/SELF_CONTROL_COMMITMENT.md) for
 actual enforcement layers, clock/persistence limits and real-device tests.
 
-Safari blocking does not read page text, scan images, filter non-Safari apps,
-or shield apps. DNS can be bypassed by alternate DNS, tunnels, Private Relay or
+The four Safari domain blockers do not read page text. Hisn Text separately
+checks permitted Safari pages. Its optional visual models inspect readable
+images and bounded, sampled video frames locally. They cannot inspect every
+frame, protected media, unreadable cross-origin pixels, other apps or every
+feed layout; a missing or failed verdict never means the media was safe.
+Content can appear before a verdict, and classification/face estimates can be
+wrong. Models and license notices are bundled; media is not uploaded or
+persisted. For optional native-app blocking while
+keeping its website available, select only the app, not its domain or an
+overlapping category. See [browser-first setup and tests](../docs/BROWSER_FIRST_PROTECTION.md).
+DNS can be bypassed by alternate DNS, tunnels, Private Relay or
 configuration removal; enabling it is not VPN-proof enforcement. There is no
 macOS system-extension installer on iOS, no hidden router setup, no phone/Mac
 settings synchronization, and no promise of undeletable or 100% protection.
+
+### Safari visual adapter verification
+
+Safari uses a Manifest V3 nonpersistent background page, with the shared local
+engine in its document context; it does not request Chrome's offscreen or
+native-messaging permissions. The package build verifies the signed text terms
+and a fixed allowlist of hashed visual-model/runtime assets before writing any
+generated resources. Visual build metadata detects resource drift; it is not a
+separately signed model update or an accuracy guarantee. No executable code or
+model weights are fetched from the Internet at runtime.
+
+The Python package tests and JavaScriptCore message-contract tests cover staged
+resources, sender ownership, local preference validation and unavailable states.
+They do **not** demonstrate real iPhone/iPad Safari activation, visual-model
+performance, website permission coverage, battery use or classification
+accuracy. Those need a provisioned physical-device test before release.
+
+**العربية:** في إعدادات إضافة «Hisn Text» يمكن تفعيل الفحص البصري التجريبي
+وتمويه الوسائط التي تحتوي على وجوه مكتشفة. هذه الإعدادات مستقلة عن التزام
+التطبيق ولا تمنع تعطيل الإضافة. كشف الوجوه ليس كشفًا لكامل الجسم، وقد يخطئ
+التصنيف أو تقدير المظهر. الوسائط غير القابلة للقراءة لا تُعد آمنة. لم يتم
+التحقق هنا من تشغيل النماذج على آيفون أو آيباد فعلي.
 
 ## Selected app restrictions
 
@@ -194,3 +240,13 @@ authority boundary fixtures and Arabic/English key parity. Hosted iOS tests
 cover actual bundled integrity/counts, DNS configuration classification, partial
 Safari state, WebKit compilation and layouts at phone/tablet widths. Device
 signing and real Safari/DNS behavior still require a provisioned physical device.
+# Current protection setup checks
+
+Overview and Setup now show a live, non-persisted configuration assessment.
+It requires nonempty bundled Safari parts with matching hashes, counts and
+versions, all four Safari blockers enabled, Hisn Screen Time readback, and
+matching enabled Family DNS before reporting all three layer configurations
+verified. A saved-but-disabled DNS configuration, revoked permission, failed
+reload, empty rules or unreadable commitment/history remains incomplete.
+These checks do not activate settings silently or establish device-wide
+blocking, all-content coverage, VPN resistance or app-removal prevention.

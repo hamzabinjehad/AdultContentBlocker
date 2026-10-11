@@ -25,6 +25,7 @@ Stdlib only, so CI can run it on any runner.
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 from html.parser import HTMLParser
 import json
 import posixpath
@@ -34,6 +35,10 @@ import zipfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
+_PREPARER_SPEC = importlib.util.spec_from_file_location(
+    "hisn_prepare_for_package_check", Path(__file__).with_name("prepare_unpacked.py"))
+_PREPARER = importlib.util.module_from_spec(_PREPARER_SPEC)
+_PREPARER_SPEC.loader.exec_module(_PREPARER)
 
 # Files whose packaged bytes must equal the repo's. Their provenance is the
 # signed seed manifest; see blocklist/seed.py.
@@ -46,8 +51,9 @@ PINNED = (
 # Built-in policy is generated from maintained source, not the signed seed.
 BUILT_IN = ("rules/web_protection.json", "rules/safesearch.json", "lib/web-protection.js")
 
-FORBIDDEN_PREFIXES = ("test/", "eval/", "keys/", "_metadata/")
-FORBIDDEN_SUFFIXES = (".pem", ".DS_Store", "package.sh", "check_package.py")
+FORBIDDEN_PREFIXES = ("test/", "eval/", "keys/", "_metadata/", "visual/node_modules/", "visual/test/", "node_modules/")
+FORBIDDEN_SUFFIXES = (".pem", ".DS_Store", "package.sh", "check_package.py", "prepare_unpacked.py", "build.mjs", "pnpm-lock.yaml", "package.json")
+FORBIDDEN_FILES = _PREPARER.VISUAL_BUILD_FILES
 
 
 class PageAssets(HTMLParser):
@@ -67,7 +73,7 @@ def check(zip_path: Path, repo: Path = REPO) -> list[str]:
         names = set(zf.namelist())
 
         for n in sorted(names):
-            if n.startswith(FORBIDDEN_PREFIXES) or n.endswith(FORBIDDEN_SUFFIXES):
+            if n.startswith(FORBIDDEN_PREFIXES) or n.endswith(FORBIDDEN_SUFFIXES) or n in FORBIDDEN_FILES:
                 problems.append(f"forbidden file shipped: {n}")
 
         if "manifest.json" not in names:
@@ -78,6 +84,12 @@ def check(zip_path: Path, repo: Path = REPO) -> list[str]:
         except ValueError as exc:
             problems.append(f"manifest.json is not valid JSON: {exc}")
             return problems
+
+        try:
+            _PREPARER.validate_visual_assets(zf.read, names,
+                                             enabled="offscreen" in manifest.get("permissions", []))
+        except _PREPARER.PreparationError as exc:
+            problems.append(str(exc))
 
         for k in manifest:
             if k == "key":

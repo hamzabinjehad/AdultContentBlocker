@@ -11,6 +11,9 @@
 #             has to replace the tab itself;
 #   clean   — an ordinary page, which must be left alone.
 #   policy  — unchanged content rechecked after a trusted settings update.
+#   x/twitter — signalled tweet/root/descendant captions withheld, benign posts stay usable;
+#              continuous additions, DOM recycling and policy rechecks use the
+#              real service-worker scorer without whole-tab redirects.
 #
 # Each is opened in its own tab; the browser's DevTools endpoint then says
 # which tabs ended on the block page.
@@ -32,6 +35,7 @@ BROWSER="$(find_chromium)"
 [ -n "$BROWSER" ] || { echo "no Chromium that loads unpacked extensions — set CHROME" >&2; exit 1; }
 
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/hisn-scan-live.XXXXXX")"
+WORK="$(cd "$WORK" && pwd -P)"
 # Linux (CI): Ubuntu 24.04 forbids the unprivileged user namespaces Chrome's
 # sandbox needs, and a small /dev/shm crashes renderers. The pages are local
 # and ours, so the sandbox buys nothing here.
@@ -46,13 +50,14 @@ cleanup() {
 }
 trap cleanup EXIT
 
-rsync -a --exclude test --exclude _metadata --exclude keys "$EXT/" "$WORK/ext/"
+python3 "$EXT/prepare_unpacked.py" --out "$WORK/ext" >/dev/null
 cp "$HERE/scan-worker.js" "$HERE/scan-setup.html" "$HERE/scan-setup.js" "$WORK/ext/"
 python3 - "$WORK/ext/manifest.json" <<'PY'
 import json, sys
 path = sys.argv[1]
 manifest = json.load(open(path))
 manifest.pop("key", None)  # No access to the user's real native bridge.
+manifest["permissions"] = [p for p in manifest["permissions"] if p != "nativeMessaging"]
 manifest["background"]["service_worker"] = "scan-worker.js"
 with open(path, "w") as output:
     json.dump(manifest, output)
@@ -68,6 +73,89 @@ adult = ("Watch free adult videos in HD. Thousands of adult movies added daily. 
          "Categories: anal sex, big tits, blowjob, amateur. Free porn, hardcore porn videos, "
          "xxx porn tube, nude girls, naked sex videos.")
 shy = " ".join("­".join(word) for word in adult.split())
+feed = """<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Mixed feed fixture</title><body>
+<main><h1>Gardening feed</h1>
+<article data-testid=tweet id=safe aria-label="Video: planting tomatoes"><p data-testid=tweetText>How to grow tomatoes on a balcony.</p><video controls></video></article>
+<article data-testid=tweet id=bad><p data-testid=tweetText>ADULT_FIXTURE</p><video></video></article>
+<article data-testid=tweet id=caption><p data-testid=tweetText>Today's weather.</p><img alt="ADULT_FIXTURE"></article>
+<article data-testid=tweet id=rootcaption aria-label="ADULT_FIXTURE"><p data-testid=tweetText>Today's weather.</p><video></video></article>
+<article data-testid=tweet id=medical><p data-testid=tweetText>Medical education and clinical reproductive health.</p>
+<span hidden>ADULT_FIXTURE</span><script type=application/json>{"payload":"ADULT_FIXTURE"}</script></article>
+<article data-testid=tweet id=policy><p data-testid=tweetText>gardenfixture</p></article>
+</main><script>
+const results = [], adult = "ADULT_FIXTURE";
+const byId = (id) => document.getElementById(id);
+const withheld = (id) => getComputedStyle(byId(id)).opacity === '0';
+// Opacity also shields a pending request: do not mistake it for a completed
+// adult verdict, or begin the churn check while worker replies still mutate.
+const finalNotice = (node) => node?.hasAttribute('data-hisn-feed-notice')
+  && node.textContent.startsWith('Hisn hid this post');
+const blocked = (id) => withheld(id) && finalNotice(byId(id).previousSibling)
+  && byId(id).style.getPropertyValue('max-height') === '0px';
+const settled = () => Array.from(document.querySelectorAll('[data-hisn-feed-notice]')).every(finalNotice);
+function check(ok, label) { results.push({ok, label}); }
+const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+async function waitFor(predicate) {
+  const deadline = performance.now() + 7000;
+  while (performance.now() < deadline) { if (predicate()) return true; await pause(50); }
+  return predicate();
+}
+(async () => {
+  check(await waitFor(() => blocked('bad') && blocked('caption') && blocked('rootcaption') && !withheld('safe') && !withheld('medical')),
+        'signalled tweet/root/descendant captions hidden; ordinary and medical/script-payload posts stay usable');
+  check(byId('bad').querySelector('video').paused, 'media in hidden article remains paused');
+  check(byId('rootcaption').querySelector('video').paused && byId('rootcaption').inert,
+        'root-only description withholds and pauses that video article');
+  check(!byId('safe').inert && byId('safe').querySelector('video').controls,
+        'ordinary labelled video remains visible with controls accessible');
+  byId('rootcaption').setAttribute('aria-label', 'Video: weather forecast');
+  check(await waitFor(() => !withheld('rootcaption')), 'root label mutation releases safe article without body change');
+  byId('rootcaption').setAttribute('aria-label', adult);
+  check(await waitFor(() => blocked('rootcaption')), 'root label mutation invalidates clean verdict without body change');
+  check(byId('bad').getAttribute('aria-hidden') === 'true' && byId('safe').getAttribute('aria-hidden') !== 'true',
+        'blocked article inaccessible; benign article accessibility preserved');
+  check(byId('bad').inert && !byId('safe').inert, 'blocked item inert for keyboard navigation; ordinary item usable');
+  const link = document.createElement('a'); link.href = '#blocked-item'; link.textContent = 'Open fixture';
+  byId('bad').append(link); link.focus();
+  check(document.activeElement !== link, 'keyboard focus cannot enter hidden article');
+  byId('bad').inert = false;
+  check(await waitFor(() => byId('bad').inert), 'page cannot remove keyboard shielding from blocked item');
+  check(byId('bad').getBoundingClientRect().height <= 1, 'blocked media-sized article collapses to its notice');
+  const notices = document.querySelectorAll('[data-hisn-feed-notice]');
+  check(notices.length >= 2 && Array.from(notices).every((n) => !n.querySelector('button,a')),
+        'generic local notices have no instant reveal controls');
+  byId('bad').querySelector('p').textContent = 'Fresh gardening notes from a recycled tweet node.';
+  check(await waitFor(() => !withheld('bad')), 'recycled clean item gets fresh verdict and is released');
+  byId('caption').style.removeProperty('opacity');
+  check(await waitFor(() => blocked('caption')), 'page cannot reveal withheld item by stripping its opacity');
+  byId('caption').querySelector('img').alt = 'Weather chart';
+  check(await waitFor(() => !withheld('caption')), 'caption attribute change receives fresh clean verdict');
+  for (let i = 0; i < 20; i++) {
+    const article = document.createElement('article'); article.dataset.testid = 'tweet';
+    article.id = 'scroll' + i;
+    article.innerHTML = '<p data-testid=tweetText>' + (i === 10 ? adult : 'Safe gardening update ' + i) + '</p>';
+    document.querySelector('main').append(article); await pause(30);
+  }
+  check(await waitFor(() => blocked('scroll10') && !withheld('scroll19')),
+        'continuous infinite-scroll content checked without waiting for entire page to settle');
+  check(await waitFor(() => blocked('policy')), 'trusted policy change rechecks unchanged feed item');
+  check(await waitFor(settled), 'worker verdicts finish before checking settled-feed mutation churn');
+  let churn = 0;
+  const observer = new MutationObserver((events) => { churn += events.length; });
+  observer.observe(document.querySelector('main'), {childList:true, subtree:true, attributes:true, characterData:true});
+  await pause(350); observer.disconnect();
+  check(churn < 20, 'settled feed does not loop on scanner-owned style/notice mutations (' + churn + ' mutations)');
+  const summary = document.createElement('pre'); summary.id = 'feed-summary';
+  summary.style.whiteSpace = 'pre-wrap'; summary.style.overflowWrap = 'anywhere';
+  summary.textContent = JSON.stringify(results); document.body.append(summary);
+  await fetch('/__hisn_feed_results', {method:'POST', body:JSON.stringify(results)});
+  document.title = results.every((r) => r.ok) ? 'HISN FEED PASS' : 'HISN FEED FAIL';
+})().catch((error) => {
+  results.push({ok:false,label:'fixture exception: ' + String(error)});
+  document.title = 'HISN FEED FAIL';
+  fetch('/__hisn_feed_results', {method:'POST', body:JSON.stringify(results)}).catch(() => {});
+});
+</script></body>""".replace("ADULT_FIXTURE", adult)
 pages = {
     "shadow": f"""<!doctype html><title>Article</title><body><p>Recipes and gardening notes.</p>
 <div id=host></div><script>
@@ -81,6 +169,8 @@ if (window.navigation) navigation.addEventListener('navigate', (e) => e.preventD
     "clean": """<!doctype html><title>Gardening</title><body><p>How to grow tomatoes on a
 balcony: choose a sunny spot, water in the morning, and feed every two weeks.</p></body>""",
     "policy": "<!doctype html><title>gardenfixture</title><body><p>Gardening notes.</p></body>",
+    "x": feed,
+    "twitter": feed,
 }
 class H(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
@@ -91,6 +181,19 @@ class H(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+    def do_POST(self):
+        if self.path != "/__hisn_feed_results":
+            self.send_error(404)
+            return
+        size = int(self.headers.get("Content-Length", "0"))
+        if not 0 < size <= 64 * 1024:
+            self.send_error(413)
+            return
+        results = json.loads(self.rfile.read(size))
+        with open(f"{work}/feed-results.jsonl", "a") as output:
+            output.write(json.dumps({"host":self.headers.get("Host", ""),"results":results}) + "\n")
+        self.send_response(204)
+        self.end_headers()
     def log_message(self, *a): pass
 CTX = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 CTX.load_cert_chain(f"{work}/cert.pem", f"{work}/key.pem")
@@ -127,7 +230,7 @@ DEVTOOLS=9$((RANDOM % 900 + 100))
     --use-mock-keychain --password-store=basic ${LINUX_FLAGS[@]+"${LINUX_FLAGS[@]}"} \
     --user-data-dir="$WORK/profile" --remote-debugging-port="$DEVTOOLS" \
     --load-extension="$WORK/ext" --disable-extensions-except="$WORK/ext" \
-    --host-resolver-rules="MAP *.hisn.test 127.0.0.1:$PORT" --ignore-certificate-errors \
+    --host-resolver-rules="MAP *.hisn.test 127.0.0.1:$PORT, MAP x.com 127.0.0.1:$PORT, MAP twitter.com 127.0.0.1:$PORT" --ignore-certificate-errors \
     about:blank > "$WORK/browser.log" 2>&1 &
 BROWSER_PID=$!
 
@@ -137,6 +240,9 @@ sleep 2   # let the worker install and register the scanner
 
 for page in shadow shy cancel clean policy; do
     curl -s -X PUT "http://127.0.0.1:$DEVTOOLS/json/new?https://$page.hisn.test/" > /dev/null
+done
+for host in x.com twitter.com; do
+    curl -s -X PUT "http://127.0.0.1:$DEVTOOLS/json/new?https://$host/home" > /dev/null
 done
 
 verdicts() {
@@ -149,11 +255,13 @@ for t in json.load(sys.stdin):
     if "blocked.html" in u: seen.setdefault("blocked", 0); seen["blocked"] += 1
     for p in ("shadow", "shy", "cancel", "clean", "policy"):
         if f"://{p}.hisn.test" in u: seen[p] = "open"
+    for p in ("x.com", "twitter.com"):
+        if f"://{p}/home" in u: seen[p] = t.get("title", "open")
 print(json.dumps(seen))'
 }
-for _ in $(seq 60); do
+for _ in $(seq 100); do
     v="$(verdicts)"
-    python3 -c 'import json,sys; v=json.loads(sys.argv[1]); sys.exit(0 if v.get("blocked",0)>=4 else 1)' "$v" && break
+    python3 -c 'import json,sys; v=json.loads(sys.argv[1]); sys.exit(0 if v.get("blocked",0)>=4 and all(v.get(p)=="HISN FEED PASS" for p in ("x.com","twitter.com")) else 1)' "$v" && break
     sleep 0.25
 done
 v="$(verdicts)"
@@ -168,10 +276,28 @@ check shy    gone "soft-hyphen-split words are read and blocked"
 check cancel gone "a page that cancels its navigation is replaced by the worker"
 check clean  open "an ordinary page is left alone"
 check policy gone "adding a custom word rechecks an unchanged open page through the real worker"
+check x.com "HISN FEED PASS" "granular X feed scanning keeps the tab and ordinary posts usable"
+check twitter.com "HISN FEED PASS" "granular Twitter alias uses the same real-worker item path"
 n=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1]).get("blocked",0))' "$v")
 [ "$n" = "4" ] && echo "  ok   four block pages" || { echo "  FAIL expected 4 block pages, saw $n"; fail=1; }
 
 [ "$fail" -eq 0 ] && echo "scan-live: PASS" || {
     echo "tabs: $v"
+    if [ -s "$WORK/feed-results.jsonl" ]; then
+        python3 - "$WORK/feed-results.jsonl" <<'PY'
+import json, sys
+for line in open(sys.argv[1]):
+    report = json.loads(line)
+    for result in report["results"]:
+        print(f"  {'ok' if result['ok'] else 'FAIL'} {report['host']}: {result['label']}")
+PY
+    fi
     echo "--- the browser ($BROWSER), last lines:"; tail -15 "$WORK/browser.log" | sed 's/^/    /'
     echo "scan-live: FAIL"; exit 1; }
+
+# Optional local QA hook, before the isolated browser is cleaned up. The hook
+# receives only this test's DevTools port and scratch directory; normal CI has
+# no added runtime dependency. Never point it at the user's browser profile.
+if [ -n "${HISN_SCAN_LIVE_EVIDENCE_SCRIPT:-}" ]; then
+    "$HISN_SCAN_LIVE_EVIDENCE_SCRIPT" "$DEVTOOLS" "$WORK"
+fi

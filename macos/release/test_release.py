@@ -124,15 +124,12 @@ class ReleaseTests(unittest.TestCase):
         # never the build, install, or launchctl operations. Unconditional
         # KeepAlive would repeatedly launch Hisn in every other Mac account,
         # where --for-user deliberately exits successfully without protecting.
-        install_source = (release.ROOT / "install.sh").read_text()
-        install_start = install_source.index('cat > "$AGENT_TMP" <<PLIST\n')
-        install_end = install_source.index('\nPLIST\n', install_start) + len('\nPLIST\n')
         package_source = (release.ROOT / "release/installer/postinstall").read_text()
         package_start = package_source.index('/usr/libexec/PlistBuddy -c "Add :Label')
         package_end = package_source.index('plutil -lint "$TEMP_AGENT"', package_start)
         user_name = pwd.getpwuid(os.getuid()).pw_name
         generators = {
-            "developer installer": install_source[install_start:install_end],
+            "developer installer": 'source "$INSTALL_HELPER"; write_agent',
             "package installer": package_source[package_start:package_end],
         }
         with tempfile.TemporaryDirectory() as directory:
@@ -141,7 +138,8 @@ class ReleaseTests(unittest.TestCase):
                     destination = Path(directory) / f"{name}.plist"
                     environment = dict(os.environ, APP="/Applications/Hisn.app",
                                        LABEL="app.hisn.agent", USER_NAME=user_name,
-                                       AGENT_TMP=str(destination), TEMP_AGENT=str(destination))
+                                       AGENT_TMP=str(destination), TEMP_AGENT=str(destination),
+                                       INSTALL_HELPER=str(release.ROOT / "install_update.sh"))
                     subprocess.run(["bash", "-euc", generator], env=environment,
                                    check=True, capture_output=True, text=True)
                     agent = release.read_plist(destination)

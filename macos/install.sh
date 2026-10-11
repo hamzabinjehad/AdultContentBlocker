@@ -5,6 +5,8 @@
 #     macos/install.sh                  # build, install to /Applications, keep it running
 #     macos/install.sh --team ABCDE12345  # sign with your Apple team (the system
 #                                         # filter needs the paid program's entitlements)
+#     macos/install.sh --built-app /absolute/path/Hisn.app  # install a tested build;
+#                                         # skips all builds, also under an admin prompt
 #     macos/install.sh --hosts          # also merge the blocklist into /etc/hosts (sudo)
 #     macos/install.sh --profile        # also build the hardening profile and open it
 #     macos/install.sh --profile -- --allow-devtools   # pass options to make_profile.py
@@ -31,10 +33,11 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 REPO="$(pwd)"
 
-TEAM=""; HOSTS=0; PROFILE=0; REMOVE_AGENT=0; PROFILE_ARGS=()
+TEAM=""; HOSTS=0; PROFILE=0; REMOVE_AGENT=0; BUILT=""; PROFILE_ARGS=()
 while [ $# -gt 0 ]; do
     case "$1" in
         --team)          TEAM="${2:?--team needs your Apple team id}"; shift 2 ;;
+        --built-app)     BUILT="${2:?--built-app needs an absolute app path}"; shift 2 ;;
         --hosts)         HOSTS=1; shift ;;
         --profile)       PROFILE=1; shift ;;
         --remove-agent)  REMOVE_AGENT=1; shift ;;
@@ -64,83 +67,43 @@ fi
 step() { printf "\n\033[1m── %s\033[0m\n" "$1"; }
 
 # ---- 1. build ---------------------------------------------------------------
-step "Building Hisn (Release)"
-BUILD="${TMPDIR:-/tmp}/hisn-build"
-SIGN=(CODE_SIGNING_ALLOWED=NO)
-if [ -n "$TEAM" ]; then
-    SIGN=(DEVELOPMENT_TEAM="$TEAM" CODE_SIGN_STYLE=Automatic -allowProvisioningUpdates)
+if [ -z "$BUILT" ]; then
+    [ "$EUID" -ne 0 ] || { echo "Build as your normal account first, then install with --built-app." >&2; exit 1; }
+    step "Building Hisn (Release)"
+    BUILD="$(mktemp -d "${TMPDIR:-/tmp}/hisn-build.XXXXXX")"
+    SIGN=(CODE_SIGNING_ALLOWED=NO)
+    if [ -n "$TEAM" ]; then
+        SIGN=(DEVELOPMENT_TEAM="$TEAM" CODE_SIGN_STYLE=Automatic -allowProvisioningUpdates)
+    else
+        echo "No --team: building a local ad-hoc app, not a signed system filter."
+        echo "The system filter needs Apple Developer Program entitlements."
+    fi
+    xcodebuild -project macos/Hisn.xcodeproj -scheme Hisn -configuration Release \
+        -derivedDataPath "$BUILD" build "${SIGN[@]}" 2>&1 \
+        | tee "$BUILD.log" | grep -E "error:|\*\* BUILD" || true
+    grep -q "\*\* BUILD SUCCEEDED \*\*" "$BUILD.log" || { echo "build failed — see $BUILD.log" >&2; exit 1; }
+    BUILT="$BUILD/Build/Products/Release/Hisn.app"
+    if [ -z "$TEAM" ]; then
+        # Seal the local bundle so the installer can verify the staged copy.
+        # Ad-hoc signing grants no Network Extension entitlement or notarization.
+        codesign --force --sign - "$BUILT/Contents/MacOS/HisnBridge"
+        codesign --force --sign - "$BUILT/Contents/Library/SystemExtensions/HisnFilter.systemextension"
+        codesign --force --sign - "$BUILT"
+    fi
 else
-    echo "No --team: building unsigned. Everything runs except the system filter,"
-    echo "which needs the paid Apple Developer Program's entitlements."
+    [[ "$BUILT" = /* && -z "$TEAM" ]] || { echo "--built-app requires an absolute app path and cannot be combined with --team." >&2; exit 2; }
 fi
-xcodebuild -project macos/Hisn.xcodeproj -scheme Hisn -configuration Release \
-    -derivedDataPath "$BUILD" build "${SIGN[@]}" 2>&1 \
-    | tee "$BUILD.log" | grep -E "error:|\*\* BUILD" || true
-grep -q "\*\* BUILD SUCCEEDED \*\*" "$BUILD.log" || { echo "build failed — see $BUILD.log" >&2; exit 1; }
-BUILT="$BUILD/Build/Products/Release/Hisn.app"
 
 # ---- 2. install -------------------------------------------------------------
 # The password first, before anything is stopped: an install interrupted at
 # the prompt used to leave the app quit and its agent unloaded.
-sudo -v || { echo "the install needs an administrator's password" >&2; exit 1; }
-step "Installing to $APP, owned by the system (asks for your password)"
-launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null || true
-if pgrep -xq Hisn; then
-    # A running lock refuses an ordinary Quit, by design. Replacing the app
-    # while it runs is safe: the lock lives on disk and in the filter.
-    pkill -x Hisn || true
-    sleep 1
+step "Updating Hisn with a recoverable backup, preserving the protected account"
+if [ "$EUID" -eq 0 ]; then
+    /bin/bash "$REPO/macos/install_update.sh" "$BUILT"
+else
+    sudo -v || { echo "the install needs an administrator's password" >&2; exit 1; }
+    sudo /bin/bash "$REPO/macos/install_update.sh" "$BUILT"
 fi
-STAGE="$(mktemp -d /Applications/.hisn-install.XXXXXX 2>/dev/null)" \
-    || { echo "cannot write to /Applications — run this as an administrator" >&2; exit 1; }
-# A half-finished copy must not stay behind in /Applications.
-trap 'sudo rm -rf "$STAGE" 2>/dev/null || rm -rf "$STAGE"' EXIT
-ditto "$BUILT" "$STAGE/Hisn.app"
-# Owned by root, writable by no one else. Copied as the person running this,
-# the bundle stayed theirs after the account split — and the admin-owned
-# browser link in /Library runs Contents/MacOS/HisnBridge, so a standard user
-# could still replace that one file with a program answering "no lock". The
-# same goes for every other file in the bundle. Updating Hisn now needs an
-# administrator, like everything else the lock stands on.
-sudo chown -R root:wheel "$STAGE/Hisn.app"
-sudo chmod -R go-w "$STAGE/Hisn.app"
-sudo rm -rf "$APP"
-sudo mv "$STAGE/Hisn.app" "$APP"
-rmdir "$STAGE"
-trap - EXIT
-echo "installed $(defaults read "$APP/Contents/Info" CFBundleShortVersionString 2>/dev/null || echo "") at $APP"
-
-# ---- 3. keep it running ------------------------------------------------------
-step "LaunchAgent: keep Hisn running in the background after login"
-rm -f "$USER_AGENT"
-AGENT_TMP="$(mktemp "${TMPDIR:-/tmp}/hisn-agent.XXXXXX")"
-# /Library/LaunchAgents loads for every account that logs in — the partner's
-# administrator account too — so the agent names whose session it is for, and
-# the app quits quietly anywhere else (--for-user).
-cat > "$AGENT_TMP" <<PLIST
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key><string>$LABEL</string>
-    <key>ProgramArguments</key>
-    <array><string>$APP/Contents/MacOS/Hisn</string><string>--background</string><string>--for-user</string><string>$(id -un)</string></array>
-    <key>RunAtLoad</key><true/>
-    <!-- Hisn keeps ordinary Quit in the background. Relaunch a non-zero exit
-         after a crash or force-quit; an exit 0 in another account must stop
-         here because this agent is loaded in every signed-in account. -->
-    <key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>
-    <key>ThrottleInterval</key><integer>10</integer>
-    <key>LimitLoadToSessionType</key><string>Aqua</string>
-    <key>ProcessType</key><string>Interactive</string>
-</dict>
-</plist>
-PLIST
-plutil -lint "$AGENT_TMP" >/dev/null
-sudo install -o root -g wheel -m 644 "$AGENT_TMP" "$AGENT"
-rm -f "$AGENT_TMP"
-launchctl bootstrap "$DOMAIN" "$AGENT"
-echo "loaded $LABEL (from $AGENT, owned by root)"
 
 # ---- 4. first launch ----------------------------------------------------------
 step "Registering the browser link"

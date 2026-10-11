@@ -5,10 +5,11 @@
 #     extension/test/browser/run.sh            # uses Google Chrome / Chromium if found
 #     CHROME=/path/to/chrome extension/test/browser/run.sh
 #
-# The harness writes its result into the DOM; --dump-dom prints the DOM after
+# The harness writes its result into the DOM; on macOS --dump-dom prints it after
 # the page has run under --virtual-time-budget, which fast-forwards timers so
 # the sixteen virtual seconds the scenarios need take about one real one. No
-# driver, no Node, no dependency — the browser is the whole toolchain.
+# driver, no Node, no dependency — the browser is the whole toolchain. Linux
+# uses a stdlib-only loopback runner with real timers and the same verdict.
 #
 # A missing browser is a FAILURE, not a skip: "the browser tests passed" must
 # mean they ran.
@@ -36,16 +37,18 @@ if [ -z "$CHROME_BIN" ]; then
     exit 1
 fi
 
+# Linux's file:// virtual-time dump can report no verdict even though Chrome
+# exits successfully. Real timers on loopback HTTP exercise the actual page;
+# a missing verdict now fails CI rather than looking like a successful skip.
+if [ "$(uname)" = "Linux" ] || [ "${HISN_HARNESS_REALTIME:-}" = "1" ]; then
+    python3 "$HERE/run_live.py" --browser "$CHROME_BIN" --harness "$HARNESS"
+    exit $?
+fi
+
 # Templates with X's: GNU mktemp (Linux CI) refuses a bare prefix.
 OUT="$(mktemp "${TMPDIR:-/tmp}/hisn-harness.XXXXXX")"
 ERR="$(mktemp "${TMPDIR:-/tmp}/hisn-harness-err.XXXXXX")"
 PROFILE="$(mktemp -d "${TMPDIR:-/tmp}/hisn-harness-profile.XXXXXX")"
-# Linux (CI): Ubuntu 24.04 forbids the unprivileged user namespaces Chrome's
-# sandbox needs, and a small /dev/shm crashes renderers. The pages are local
-# and ours, so the sandbox buys nothing here.
-LINUX_FLAGS=()
-if [ "$(uname)" = "Linux" ]; then LINUX_FLAGS=(--no-sandbox --disable-dev-shm-usage); fi
-
 trap 'rm -rf "$PROFILE" "$OUT" "$ERR"' EXIT
 
 SCREENSHOT_ARGS=("--window-size=1280,1050")
@@ -54,7 +57,7 @@ if [ -n "${SCREENSHOT:-}" ]; then SCREENSHOT_ARGS+=("--screenshot=$SCREENSHOT");
 # (a CI runner), Chrome otherwise asks the Keychain for its storage key and
 # can wait on a prompt no one will answer.
 "$CHROME_BIN" --headless=new --disable-gpu --no-first-run --no-default-browser-check \
-    --use-mock-keychain --password-store=basic ${LINUX_FLAGS[@]+"${LINUX_FLAGS[@]}"} \
+    --use-mock-keychain --password-store=basic \
     --user-data-dir="$PROFILE" \
     --allow-file-access-from-files \
     --virtual-time-budget=40000 \
@@ -62,11 +65,9 @@ if [ -n "${SCREENSHOT:-}" ]; then SCREENSHOT_ARGS+=("--screenshot=$SCREENSHOT");
 BROWSER_PID=$!
 # Some Chromium variants keep background services alive after dumping the DOM.
 # Bound our isolated test process, and use its completed DOM as the verdict.
-# 30 seconds is ample where virtual time fast-forwards (about one, on a Mac);
-# on the Linux CI runner the first run dumped nothing within 30, so there it
-# waits a minute — and every verdict says how long it took.
+# 30 seconds is ample where virtual time fast-forwards (about one, on a Mac).
+# Every verdict says how long it took.
 WAIT_TENTHS=300
-[ "$(uname)" = "Linux" ] && WAIT_TENTHS=600
 STARTED=$SECONDS
 for ((attempt=0; attempt<WAIT_TENTHS; attempt++)); do
     kill -0 "$BROWSER_PID" 2>/dev/null || break
@@ -92,17 +93,6 @@ fi
 if grep -q 'data-result="fail"' "$OUT"; then
     echo "browser harness: FAIL" >&2
     exit 1
-fi
-# On the Linux CI runner a page opened from file:// has not finished at all —
-# its timers ride on virtual time, which fast-forwards on a Mac and, it seems,
-# not there. A page that never finishes is not a failing page, so there it is
-# a warning; a page that finishes and fails still fails everywhere. The same
-# extension runs in a real browser on that runner through dnr.sh and
-# scan_live.sh, which are not excused.
-if [ "$(uname)" = "Linux" ] && [ -n "${CI:-}" ]; then
-    echo "browser harness: no verdict after $((SECONDS - STARTED))s — skipped on the Linux runner"
-    echo "::warning title=browser: $HARNESS not run::the page did not finish on the Linux runner (virtual time); it runs in full on macOS"
-    exit 0
 fi
 echo "browser harness: no verdict after $((SECONDS - STARTED))s — the page did not finish (is the virtual time budget enough?)" >&2
 # What the browser said, so a machine where it never started (CI) is not a

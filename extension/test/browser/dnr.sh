@@ -42,6 +42,9 @@ BROWSER="$(find_chromium)"
 [ -n "$BROWSER" ] || { echo "no Chromium that loads unpacked extensions — set CHROME" >&2; exit 1; }
 
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/hisn-dnr.XXXXXX")"
+# Canonicalize macOS /var or /tmp aliases before the preparation tool's
+# deliberate symlink-path checks. This is our own fresh test directory.
+WORK="$(cd "$WORK" && pwd -P)"
 # Linux (CI): Ubuntu 24.04 forbids the unprivileged user namespaces Chrome's
 # sandbox needs, and a small /dev/shm crashes renderers. The pages are local
 # and ours, so the sandbox buys nothing here.
@@ -55,8 +58,9 @@ cleanup() { [ -n "$SERVER_PID" ] && { kill "$SERVER_PID"; wait "$SERVER_PID"; } 
             sleep 0.2; rm -rf "$WORK" 2>/dev/null || true; }
 trap cleanup EXIT
 
-# A copy, so the browser's _metadata cache never lands in the source tree.
-rsync -a --exclude test --exclude _metadata --exclude keys "$EXT/" "$WORK/ext/"
+# Exercise the same clean-copy path used by Load unpacked, even when the
+# source has a cache from a different browser. Never mutate that source/cache.
+python3 "$EXT/prepare_unpacked.py" --out "$WORK/ext" >/dev/null
 cp "$HERE/dnr-setup.html" "$HERE/dnr-setup.js" "$HERE/dnr-worker.js" "$WORK/ext/"
 python3 - "$WORK/ext/manifest.json" <<'PY'
 import json, sys

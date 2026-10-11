@@ -1,7 +1,7 @@
 import Foundation
 
 /// Registers `HisnBridge` as a native messaging host for every Chromium-family
-/// browser the profile force-installs the extension on — Chrome, Edge, Brave,
+/// browser with a configured native link — Chrome (including Beta/Dev/Canary), Edge, Brave,
 /// Vivaldi, Opera, Arc, Chromium and Helium — at user-scope, only when nobody
 /// has already set it up at system-scope. Covering only Chrome and Edge left
 /// the extension mute on Helium, the one non-Safari browser the user runs.
@@ -13,7 +13,7 @@ import Foundation
 /// host already exists at a fixed, browser-specific location before the call
 /// is made. Nothing creates that file on its own, so a fresh install of both
 /// halves talks to nobody, forever, and the browser extension sits in
-/// `mode: "off"` no matter what lock the app thinks is running.
+/// browser-only mode, without the additional app commitment layer.
 ///
 /// `macos/install_native_host.sh` already solves this the hardened way: run
 /// with `sudo`, it writes to `/Library`, which needs an administrator to
@@ -88,15 +88,11 @@ public enum NativeMessagingInstaller {
     /// where these go is exactly the kind of drift that made the embed-path bug
     /// this file also fixes invisible for as long as it was.
     ///
-    /// This list mirrors the profile's `CHROMIUM_FAMILY` in `make_profile.py`:
-    /// the profile force-installs the extension on these browsers, and this
-    /// writes the link that lets the extension, once installed, actually reach
-    /// the app. The two lists drifting apart is a silent hole — the earlier
-    /// version covered only Chrome and Edge, so on the one non-Safari browser
-    /// the user actually runs (Helium) the extension was force-installed by the
-    /// profile and then had no channel to the lock clock at all: it sat in
-    /// `mode: "off"`, or, if a lock had ever been recorded, failed closed to
-    /// strict after five minutes of silence, for a reason nothing surfaced.
+    /// This list mirrors the profile's `NATIVE_LINKED_BROWSER_IDS` in `make_profile.py`.
+    /// It configures the link an installed extension can use to reach the app;
+    /// it does not prove that a fork accepts managed policy or that every
+    /// profile/private window checks in. Unregistered policy candidates remain
+    /// distinct from browsers with a configured native link.
     struct Browser {
         let name: String
         /// Absolute; admin-writable only. For Chromium forks this is derived
@@ -111,6 +107,12 @@ public enum NativeMessagingInstaller {
         /// The app's bundle identifier — what `BrowserGuard` sees running and
         /// what the bridge records when this browser's extension checks in.
         let bundleID: String
+
+        /// Edge's macOS policy domain differs from its application bundle ID.
+        /// Never guess policy delivery from a display name or an app ID.
+        var policyDomain: String {
+            bundleID == "com.microsoft.edgemac" ? "com.microsoft.Edge" : bundleID
+        }
 
         /// A Chromium fork: the system-wide host directory is
         /// `/Library/Application Support/<productDir>/NativeMessagingHosts`,
@@ -145,6 +147,21 @@ public enum NativeMessagingInstaller {
                systemDir: "/Library/Google/Chrome/NativeMessagingHosts",
                userSupportDir: "Google/Chrome",
                bundleID: "com.google.Chrome"),
+        // Google-branded channels share a system host folder, but not their
+        // user-data folders. Chromium's documented channel paths and
+        // chrome_paths.cc distinguish these two scopes explicitly.
+        Browser(name: "Chrome Beta",
+               systemDir: "/Library/Google/Chrome/NativeMessagingHosts",
+               userSupportDir: "Google/Chrome Beta",
+               bundleID: "com.google.Chrome.beta"),
+        Browser(name: "Chrome Dev",
+               systemDir: "/Library/Google/Chrome/NativeMessagingHosts",
+               userSupportDir: "Google/Chrome Dev",
+               bundleID: "com.google.Chrome.dev"),
+        Browser(name: "Chrome Canary",
+               systemDir: "/Library/Google/Chrome/NativeMessagingHosts",
+               userSupportDir: "Google/Chrome Canary",
+               bundleID: "com.google.Chrome.canary"),
         Browser(name: "Edge",
                systemDir: "/Library/Microsoft/Edge/NativeMessagingHosts",
                userSupportDir: "Microsoft Edge",

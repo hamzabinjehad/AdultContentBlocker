@@ -1,0 +1,3 @@
+# Preserve esbuild's vendored shader/template strings exactly; their trailing
+# spaces are generated runtime data, not hand-authored source formatting.
+extension/visual/engine.bundle.js -whitespace linguist-generated=true

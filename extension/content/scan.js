@@ -205,6 +205,13 @@
     };
     const now = deps.now ?? (() => Date.now());
     const isTop = deps.isTop ?? (win.top === win);
+    // A mixed-content feed must not accumulate signals across unrelated posts
+    // and navigate the entire service away for one item. The granular scanner
+    // starts even before tweet articles mount, so document_start cannot race
+    // the initial feed render into the old whole-page verdict path.
+    if (isTop && globalThis.HisnFeed?.isSupportedLocation(loc)) {
+      return globalThis.HisnFeed.createScanner(deps);
+    }
     const send = deps.send
       ?? ((zones) => globalThis.chrome.runtime.sendMessage({ type: "scoreText", zones }));
     const blockPageURL = deps.blockPageURL

@@ -76,16 +76,51 @@ and runs the verifier. Hisn stays in the background when you close its window
 or use Quit, with or without an active lock. Open the window again from the
 menu bar or Applications. It runs while the protected Mac account is signed
 in; logout, restart and shutdown are allowed. Sleep pauses its work, which
-resumes when the Mac wakes. The app is also the **browser guard**, which closes
-any browser Hisn is not running inside
-(`BrowserGuard.swift`) — review *Blocking Rules › Browsers during a lock*
-before your first lock, and allow any app there that opens web links without
-being a browser.
+resumes when the Mac wakes. The app is also the **browser guard**. While a lock is active, or
+**Blocking Rules → Browser protection → Keep browser protection on** is enabled,
+a browser without a verified extension connection gets a visible one-minute
+recovery countdown, followed by a termination request if protection does not
+return. Supported browsers also close for repeatedly confirmed removal or
+disablement in a standard profile. Safari and other known unsupported browsers
+have no automatic exemption and cannot be trusted as app exceptions; use a
+supported browser with Hisn connected. You may explicitly trust an unknown
+non-browser app that only registers for web links, before a lock. A custom
+browser granted that exception can bypass checks, so review exceptions carefully.
+
+**Keep browser protection on** requires confirmation and is off by default.
+It cannot be switched off during a lock. Detection is periodic: check-ins are
+scheduled every thirty seconds and become stale after ninety seconds; the
+one-minute countdown starts on detection, not at the exact moment of removal.
+A refusing browser may be force-closed after ten additional seconds, with fresh
+connection, consent and recovery-deadline checks. Reopening an unrepaired browser
+does not restart the countdown; after closure its repeat warning is five seconds.
+Sleep/wake gets a visible recovery window. Standard-profile checks do not verify
+custom paths, guest/private windows or unreadable preferences.
 
 The agent is scoped to the account that ran the installer. It exits cleanly
 in other accounts, so they do not run a second guard. An administrator can
 remove automatic startup using `macos/install.sh --remove-agent` before
 uninstalling the app.
+
+### Installed is not the same as protection working
+
+Every new Mac app process begins on Setup. The laptop-protection card is
+derived from current filter and browser evidence; merely opening this page
+does not finish setup. It requires a live filter with a nonempty verified list
+and healthy saved policy, administrator-protected installation files, verified
+detected standard profiles, a recent browser connection, and **Keep browser
+protection on** explicitly enabled. Current warnings and trusted app exceptions
+leave these checks incomplete. Rules, Settings, and recovery remain accessible.
+
+The card does not enable anything by itself. Follow the filter approval flow,
+connect the extension, and review Browser protection in Blocking Rules. The
+development build cannot activate the filter; its setup control explains the
+properly signed release requirement instead of offering an unusable button.
+Hosts-only blocking is partial even with a connected extension. Passing these
+configuration/liveness checks is not an end-to-end acceptance test: verify
+supported flows, tunnels, essential services, and outage behavior separately.
+The additional administrator and trusted-person confirmations remain distinct
+from functional protection checks.
 
 **In Arabic:** *Settings › Language › العربية*, then **Restart now** — the
 window mirrors right-to-left and numbers stay in Latin digits, as in the
@@ -98,11 +133,28 @@ The extension is the only layer that reads page **text** — it is what catches
 adult content on a new domain or inside a general site, and where the Arabic
 vocabulary lives. Until it is on the Chrome Web Store, load it unpacked:
 
-1. Open `helium://extensions` (or `chrome://extensions`), switch on
-   **Developer mode**, **Load unpacked**, and pick this repository's
-   `extension/` folder. It loads with the pinned id
+1. Prepare a fresh browser-specific load folder from the repository root:
+
+   ```bash
+   python3 extension/prepare_unpacked.py --out dist/hisn-unpacked-chrome-1.0.1
+   ```
+
+   Choose a new output name for another browser or update. The tool refuses to
+   overwrite a folder a browser may already be using, leaves source untouched,
+   and excludes browser-generated caches. Do not use an extracted Web Store ZIP
+   for this step: store packaging removes the local identity key.
+2. Open `helium://extensions` (or `chrome://extensions`), switch on
+   **Developer mode**, **Load unpacked**, and pick the newly prepared
+   `dist/hisn-unpacked-chrome-1.0.1/` folder. It loads with the pinned id
    `hfhaffbmoeepcdolgejeidkgaoapcjig`.
-2. The Hisn popup should say **App connected** within a minute.
+3. The Hisn popup should say **App connected** within a minute.
+
+If loading a previously used folder fails with **Cannot load extension with
+file or directory name _metadata**, that is a browser-generated rules cache,
+not a reason to remove the manifest's `key` or weaken protection. Prepare a
+fresh folder as above and select it. Avoid sharing one unpacked directory
+between different browsers. A browser can create its own cache after loading;
+the staging tool never removes it or rewrites an already-used folder.
 
 Unpacked, it can be switched off on that page — which is exactly what the
 browser guard answers during a lock. Making it un-removable needs the store
@@ -172,8 +224,9 @@ disabled** — the enforceable way to close the incognito bypass
 
 System Settings › Screen Time › Content & Privacy › **Limit Adult Websites**,
 and a Screen Time passcode the partner sets and keeps. This is Apple's lock,
-and Hisn sits under it (`docs/POSITIONING.md`): Safari is covered by it, and
-the guard leaves Safari open for that reason.
+and Hisn can complement it (`docs/POSITIONING.md`). This is a separate layer:
+Hisn cannot infer verified Safari protection from those settings. While browser
+guarding is active, Safari still closes because it has no supported Hisn extension.
 
 ## Step 7 — the phone, at the same time
 
