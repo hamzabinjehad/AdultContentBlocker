@@ -81,7 +81,7 @@ stop_installed_app() {
     local pid executable
     # Do not stop another account's app, a test host, or an unrelated build.
     for pid in $(/usr/bin/pgrep -x -u "$USER_ID" Hisn || true); do
-        executable="$(/bin/ps -p "$pid" -o comm= | /usr/bin/sed 's/^ *//')"
+        executable="$(/bin/ps -p "$pid" -o comm= | /usr/bin/sed 's/^ *//' || true)"
         [[ "$executable" = "$APP/Contents/MacOS/Hisn" ]] || continue
         /bin/kill -TERM "$pid" 2>/dev/null || true
     done
@@ -196,9 +196,12 @@ for attempt in 1 2 3 4 5; do
     /bin/sleep 1
 done
 [[ "$RUNNING" = 0 ]] || fail "The old installed app did not stop; keeping the previous app."
-if [[ -d "$APP" ]]; then /bin/mv "$APP" "$BACKUP/Hisn.app"; OLD_MOVED=1; fi
-/bin/mv "$STAGE/Hisn.app" "$APP"
+if [[ -d "$APP" ]]; then
+    OLD_MOVED=1
+    /bin/mv "$APP" "$BACKUP/Hisn.app"
+fi
 NEW_MOVED=1
+/bin/mv "$STAGE/Hisn.app" "$APP"
 if [[ ! -f "$AGENT" ]]; then
     AGENT_CREATED=1
     /usr/bin/install -o root -g wheel -m 644 "$TEMP_AGENT" "$AGENT"
