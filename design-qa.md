@@ -156,3 +156,64 @@ root-owned backup. Helium's system native-host manifest points to the installed
 bridge. The user confirmed 1.1.1 in both Helium and the ChatGPT browser; automatic
 control of their real extension UIs was not available. No DNS/profile or
 commitment reset was performed, and no signed Hisn system filter was activated.
+
+## Version 1.1.2 follow-up
+
+The popup now uses a 480 × 600 CSS viewport, a single primary full-page action,
+and a compact connection action. Short/narrow viewports still use document
+scrolling. Visual preferences have their own page and four native radio-card
+choices. English/Arabic, automatic dark/light and guarded autosave are retained.
+The native Mac interface is wider; iPhone/iPad setup uses numbered Safari steps
+and an expandable diagnostics section. Safari settings have a responsive card
+layout, 44px touch targets, independent adult checks and appearance preferences,
+and bounded request/retry behavior. Native semantic colors/navigation guidance
+informed these UI changes; protection-policy behavior was not redesigned.
+
+Twenty checks passed with the real extension worker in an isolated visible
+Helium profile. Evidence is in `dist/qa-ui-1.1.2-final/`: English/Arabic dark/light
+popup and visual-page screenshots, 390/320px narrow and 200 × 280 compact views,
+plus `evidence.json`. This is an actual extension page in a tab, not proof of
+the browser's toolbar-bubble behavior. No personal profile, native host, account
+or current protection preferences were used.
+
+The face engine now pads instead of stretching portrait/landscape input; source
+boxes and probability distributions are validated. Adult-positive results
+survive optional face failure. Media lifecycle tests cover unloaded captures,
+picture/srcset candidates, distinct streams, video resize and periodic image
+resampling. Full extension unit tests passed, including 45 decisions/queue, 36
+scanner and 12 canonical engine checks. The Python/seed/release suites also
+passed. Twenty-one mobile Python tests include the production Safari-controller
+contract; timed-out load/save, late reply and recovery cases pass.
+
+An isolated real-engine comparison on a benign face fixture detected faces in
+square, portrait and landscape captures without an adult false block or page
+errors. This is not a representative accuracy benchmark. The female-specific
+preference still missed that example at the unchanged threshold. Original
+temporary face-test and Safari-layout screenshots were not retained after the
+session transition; the report must not treat those paths as durable artifacts.
+The retained desktop screenshots and committed regression tests remain available.
+
+The final UI review is retained in `dist/qa-ui-1.1.2-desktop-and-safari/`:
+32 checks passed, including 20 desktop real-worker checks and 12 Safari layout
+fixture checks. The Safari fixture uses the actual options files with a mocked
+bridge in a separate browser without the desktop extension. Five phone/iPad
+layouts (280/375/1024px, EN/light and AR/dark) fit without horizontal overflow
+and retained 44px targets. This is not physical Safari detection evidence.
+
+Mac versioned tests passed 452/452 and exported Arabic coverage passed for all
+480 strings. The universal iOS Simulator build and all 72 hosted tests passed,
+including Safari resource/contract checks. The new QA-only Simulator was removed
+after testing; no personal simulator or physical device was modified. The Mac
+Release bundle built and was sealed/strictly verified with local ad-hoc signing.
+An early Mac runner attempt lost its log because its custom scratch directory
+was absent; the retained complete rerun passed.
+
+The live-feed test initially timed out without final X/Twitter verdicts. Its
+fresh test profile now uses foreground-like timer/rendering flags for concurrent
+fixture tabs. Live X/Twitter and ordinary pages subsequently passed; production
+browser flags, policies and text thresholds were not changed. Background-page
+timing remains a real-world limit rather than a universal performance claim.
+
+Physical Safari operation, an adult-media benchmark, battery/CPU measurements,
+protected media and complete removal resistance remain release gates. Source
+version 1.1.2/build 3 and installation/CI status must be verified separately.

@@ -1,4 +1,5 @@
 import hashlib
+from html.parser import HTMLParser
 import json
 from pathlib import Path
 import subprocess
@@ -163,6 +164,47 @@ class SafariWebExtensionTests(unittest.TestCase):
         self.assertIn("Face detection is not whole-body detection", html)
         css = (scanner.ROOT / scanner.RESOURCES["options.css"]).read_text()
         self.assertIn("prefers-color-scheme:dark", css)
+        self.assertIn("min-height:44px", css)
+        self.assertIn("@media (min-width:760px)", css)
+        self.assertIn("[dir=rtl]", css)
+        self.assertNotIn("min-width:280px", css)
+
+    def test_safari_options_keep_accessible_separate_opt_in_controls(self):
+        class Document(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.ids, self.radios, self.labels, self.controls = [], [], [], {}
+
+            def handle_starttag(self, tag, attrs):
+                attrs = dict(attrs)
+                if "id" in attrs:
+                    self.ids.append(attrs["id"])
+                    self.controls[attrs["id"]] = (tag, attrs)
+                if tag == "input" and attrs.get("name") == "personBlur":
+                    self.radios.append(attrs)
+                if tag == "label" and "for" in attrs:
+                    self.labels.append(attrs["for"])
+
+        document = Document()
+        html = (scanner.ROOT / scanner.RESOURCES["options.html"]).read_text()
+        document.feed(html)
+        self.assertEqual(len(document.ids), len(set(document.ids)))
+        self.assertEqual([radio["value"] for radio in document.radios], ["off", "female", "male", "all"])
+        self.assertTrue(all("disabled" in radio and "checked" not in radio for radio in document.radios))
+        self.assertEqual(document.controls["personBlur"][0], "fieldset")
+        self.assertEqual(document.controls["personBlur"][1]["aria-describedby"], "faceDetail")
+        self.assertIn("inspectVisual", document.labels)
+        self.assertIn("disabled", document.controls["inspectVisual"][1])
+        for control in ["language", "openSettings", "retrySettings"]:
+            self.assertEqual(document.controls[control][1]["type"], "button")
+        self.assertIn("hidden", document.controls["openSettings"][1])
+        self.assertIn("hidden", document.controls["retrySettings"][1])
+        self.assertIn("not an adult-content label", html)
+        self.assertIn("These choices do not grant website access", html)
+        self.assertIn("does not inspect other apps or every iPhone/iPad browser", html)
+        for status in ["engineStatus", "saveStatus"]:
+            self.assertEqual(document.controls[status][1]["role"], "status")
+            self.assertEqual(document.controls[status][1]["aria-live"], "polite")
 
     def test_safari_bridge_runtime_contract_with_javascriptcore(self):
         jsc = Path("/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc")

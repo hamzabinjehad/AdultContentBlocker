@@ -1,20 +1,72 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Hisn Web Protection</title><link rel="stylesheet" href="options.css"></head>
-<body><main>
-  <header><img src="icons/icon-32.png" width="32" height="32" alt=""><div><h1 id="title">Protection layers</h1><p id="subtitle">Hisn for Safari</p></div></header>
-  <section aria-labelledby="textTitle"><div class="row"><h2 id="textTitle">Text checking</h2><span class="badge" id="textBadge">Included</span></div><p id="textDetail">Checks page text and individual X posts on-device. Allow Hisn to access the websites you want it to protect in Safari settings.</p></section>
-  <section aria-labelledby="visualTitle">
-    <h2 id="visualTitle">Experimental visual checks</h2>
-    <label class="row control"><span id="adultLabel">Hide media flagged as adult</span><input type="checkbox" id="inspectVisual" disabled></label>
-    <label class="control" for="personBlur" id="personLabel">Blur media with detected faces</label>
-    <select id="personBlur" disabled>
-      <option value="off" id="modeOff">Off</option><option value="all" id="modeAll">Any detected face</option>
-      <option value="female" id="modeFemale">Estimated female faces</option><option value="male" id="modeMale">Estimated male faces</option>
-    </select>
-    <p id="faceDetail">Face detection is not whole-body detection. Appearance estimates can be wrong and are not adult-content labels. When a face matches, the whole image or video is blurred.</p>
-    <p id="engineStatus" role="status" aria-live="polite">Visual checks are off.</p>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Hisn Web Protection</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+<main>
+  <header class="page-header">
+    <div class="brand"><img src="icons/icon-128.png" width="48" height="48" alt=""><div><span class="brand-name">Hisn</span><p id="subtitle">Hisn for Safari</p></div></div>
+    <button class="secondary-button" id="language" type="button" lang="ar">العربية</button>
+  </header>
+
+  <div class="page-intro">
+    <p class="eyebrow" id="introLabel">Your browser protection</p>
+    <h1 id="title">Protection layers</h1>
+    <p id="introDetail">Choose what Hisn checks and what you prefer to blur. Each layer has its own job.</p>
+    <button class="secondary-button open-settings" id="openSettings" type="button" hidden>Open full settings</button>
+  </div>
+
+  <section class="card permission-card" aria-labelledby="permissionsTitle">
+    <div class="card-heading"><h2 id="permissionsTitle">Allow access in Safari</h2><span class="badge" id="permissionsBadge">Required</span></div>
+    <p id="permissionsDetail">Hisn can check only the Safari websites you allow. These choices do not grant website access.</p>
+    <details><summary id="permissionsStepsTitle">How to enable website protection</summary><ol><li id="permissionsStepOne">In Safari, open the Extensions menu and enable Hisn Text.</li><li id="permissionsStepTwo">In Settings → Apps → Safari → Extensions → Hisn Text, review website access and choose Allow for the sites you want protected.</li><li id="permissionsStepThree">Review access for your Safari profile and Private Browsing too. Return to the webpage after changing access.</li></ol></details>
   </section>
-  <section aria-labelledby="limitsTitle"><h2 id="limitsTitle">Know the limits</h2><p id="limitsDetail">Only readable images and sampled video frames on permitted Safari webpages can be checked. Protected or cross-origin media may be unreadable; unreadable is not the same as safe. Normal videos are not hidden by default.</p><p id="privacyDetail">Models are bundled. Images and frames are processed on this device, never uploaded or saved by Hisn.</p><p id="commitmentDetail">These Safari visual settings are separate from the app commitment. Safari can disable the extension; this page does not prevent removal or claim system-wide protection.</p></section>
-  <p id="saveStatus" role="status" aria-live="polite"></p>
-</main><script type="module" src="options.js"></script></body></html>
+
+  <div class="protection-grid">
+    <section class="card text-card" aria-labelledby="textTitle">
+      <div class="card-heading"><h2 id="textTitle">Text checking</h2><span class="badge" id="textBadge">Included</span></div>
+      <p id="textDetail">Checks page text and individual X posts on-device. Text checks are separate from the optional visual choices below.</p>
+    </section>
+
+    <section class="card adult-card" aria-labelledby="visualTitle">
+      <div class="card-heading"><h2 id="visualTitle">Adult-media checks</h2><span class="badge neutral" id="visualBadge">Experimental</span></div>
+      <p id="adultDetail">Checks readable images and sampled video frames for adult content. This does not depend on a person’s appearance.</p>
+      <label class="switch-row" for="inspectVisual"><span><span class="control-title" id="adultLabel">Hide media flagged as adult</span><span class="control-note" id="adultState">Off</span></span><span class="switch"><input type="checkbox" id="inspectVisual" disabled><span class="switch-track" aria-hidden="true"></span></span></label>
+    </section>
+
+    <section class="card person-card" aria-labelledby="personTitle">
+      <div class="card-heading"><h2 id="personTitle">Person blur</h2><span class="badge neutral" id="personBadge">Optional</span></div>
+      <p id="personDetail">A personal viewing preference, not an adult-content label. A matching detected face blurs the whole image or video.</p>
+      <fieldset id="personBlur" aria-describedby="faceDetail"><legend id="personLabel">Choose who to blur</legend>
+        <div class="mode-grid">
+          <label class="mode-option"><input type="radio" name="personBlur" value="off" disabled><span><span class="control-title" id="modeOff">Off</span><span class="control-note" id="modeOffDetail">No person blur</span></span></label>
+          <label class="mode-option"><input type="radio" name="personBlur" value="female" disabled><span><span class="control-title" id="modeFemale">Women</span><span class="control-note" id="modeFemaleDetail">Estimated face appearance</span></span></label>
+          <label class="mode-option"><input type="radio" name="personBlur" value="male" disabled><span><span class="control-title" id="modeMale">Men</span><span class="control-note" id="modeMaleDetail">Estimated face appearance</span></span></label>
+          <label class="mode-option"><input type="radio" name="personBlur" value="all" disabled><span><span class="control-title" id="modeAll">All people</span><span class="control-note" id="modeAllDetail">Any detected face</span></span></label>
+        </div>
+      </fieldset>
+      <p class="notice" id="faceDetail">Face detection is not whole-body detection. Women/men are appearance estimates, can be wrong, and may miss people. They do not identify a person’s gender or whether content is adult.</p>
+    </section>
+  </div>
+
+  <section class="card status-card" aria-labelledby="statusTitle">
+    <div class="card-heading"><h2 id="statusTitle">Visual checker status</h2><span class="status-dot" id="statusDot" data-state="waiting" aria-hidden="true"></span></div>
+    <p id="engineStatus" role="status" aria-live="polite">Loading saved choices…</p>
+    <p id="statusDetail">A ready model is not proof that every image or video was checked. Protected or cross-origin media may be unreadable; unreadable is not the same as safe.</p>
+  </section>
+
+  <details class="card limits-card"><summary id="limitsTitle">Coverage, privacy and limitations</summary><div class="details-content">
+    <p id="limitsDetail">Only readable images and sampled video frames on permitted Safari webpages can be checked. Some frames can be missed. Normal videos are not hidden by default. This extension does not inspect other apps or every iPhone/iPad browser.</p>
+    <p id="privacyDetail">Models are bundled. Images and frames are processed on this device, never uploaded or saved by Hisn.</p>
+    <p id="commitmentDetail">These Safari visual settings are separate from the app commitment. Safari can disable the extension; this page does not prevent removal or claim system-wide protection.</p>
+  </div></details>
+
+  <footer class="save-area"><p id="saveHint">Changes save on this device.</p><p id="saveStatus" role="status" aria-live="polite"></p><button class="secondary-button" id="retrySettings" type="button" hidden>Retry loading settings</button></footer>
+</main>
+<script type="module" src="options.js"></script>
+</body>
+</html>

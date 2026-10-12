@@ -42,6 +42,7 @@
     // video already classified adult. Keep that source withheld until it is
     // replaced or adult filtering is deliberately disabled while unlocked.
     if (!(record.hidden && prefs.inspectVisual && record.blockedSource === source(record.node))) restore(record);
+    record.source = source(record.node);
     record.signature = null;
     if (withheld.has(record.node) && !record.hidden) release(record);
   }
@@ -85,13 +86,13 @@
         media.set(node, suspended);
         continue;
       }
-      const record = { node, generation: 0, signature: null, request: null,
+      const record = { node, source: source(node), generation: 0, signature: null, request: null,
         filter: node.style.getPropertyValue('filter'), filterPriority: node.style.getPropertyPriority('filter'),
         visibility: node.style.getPropertyValue('visibility'), visibilityPriority: node.style.getPropertyPriority('visibility'), hidden: false, blockedSource: null, listeners: [] };
       media.set(node, record);
       // Existing listener references die with the DOM node. Route/source/seek
       // changes invalidate late results rather than applying an old verdict.
-      for (const event of ['load', 'loadeddata', 'seeking', 'emptied']) {
+      for (const event of ['load', 'loadeddata', 'loadedmetadata', 'resize', 'seeking', 'emptied']) {
         const handler = () => invalidate(record);
         record.listeners.push([event, handler]); node.addEventListener(event, handler);
       }
@@ -114,9 +115,14 @@
     for (let count = 0; count < records.length; count++) {
       const record = records[(cursor++) % records.length], node = record.node;
       if (!visible(node)) continue;
-      if (record.hidden && record.blockedSource !== source(node)) invalidate(record);
+      // currentSrc covers <picture>/srcset choices; srcObject must be compared
+      // by identity because distinct MediaStreams stringify identically.
+      if (record.source !== source(node)) invalidate(record);
       const video = node.tagName === 'VIDEO';
-      const signature = `${source(node)}:${video ? Math.floor(node.currentTime / 2) : `${node.naturalWidth}:${node.naturalHeight}`}`;
+      // Images can animate or be updated behind an unchanged URL. Periodic
+      // bounded rechecks improve that coverage; they are not every-frame scans.
+      const signature = `${source(node)}:${video ? Math.floor(node.currentTime / 2)
+        : `${node.naturalWidth}:${node.naturalHeight}:${Math.floor(Date.now() / 10000)}`}`;
       if (record.hidden && prefs.inspectVisual && record.blockedSource === source(node)) {
         node.style.setProperty('visibility', 'hidden', 'important');
         if (video) node.pause();
@@ -126,7 +132,13 @@
       const route = location.href, generation = record.generation, capturedSource = source(node);
       const capture = globalThis.HisnVisualCapture.capture(node);
       record.signature = signature;
-      if (capture.state) { node.dataset.hisnVisual = 'unknown'; continue; }
+      if (capture.state) {
+        node.dataset.hisnVisual = 'unknown';
+        // A player can become readable without moving to a new sample bucket
+        // (paused videos and lazy images in particular). Retry transient load.
+        if (capture.reason === 'media-not-ready') record.signature = null;
+        continue;
+      }
       busy = true;
       const id = `v_${crypto.randomUUID().replaceAll('-', '')}`;
       record.request = id;

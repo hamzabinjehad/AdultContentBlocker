@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Hisn Text",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "On-device text checking with optional experimental visual checks. Normal X posts and videos remain available unless flagged.",
   "icons": {"32": "icons/icon-32.png", "128": "icons/icon-128.png"},
   "host_permissions": ["http://*/*", "https://*/*"],

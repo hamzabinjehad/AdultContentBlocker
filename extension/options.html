@@ -7,6 +7,7 @@
 <nav data-i18n-aria-label="opt.navLabel">
 <a href="#overview"><span data-icon="shield-check" aria-hidden="true"></span><span data-i18n="opt.nav.overview">Overview</span></a>
 <a href="#rules"><span data-icon="list" aria-hidden="true"></span><span data-i18n="opt.nav.rules">Blocking Rules</span></a>
+<a href="#media"><span data-icon="eye" aria-hidden="true"></span><span data-i18n="visual.title">Visual checks</span></a>
 <a href="#lock"><span data-icon="lock" aria-hidden="true"></span><span data-i18n="opt.nav.lock">Lock</span></a>
 <a href="#settings"><span data-icon="settings" aria-hidden="true"></span><span data-i18n="opt.nav.settings">Settings</span></a>
 </nav>
@@ -29,6 +30,10 @@
 </section>
 
 <h2 data-i18n="opt.layers">Browser protection</h2>
+<div class="dashboard-shortcuts">
+<a href="#media"><span data-icon="eye" aria-hidden="true"></span><div><strong data-i18n="visual.manage">Manage visual checks</strong><span data-i18n="visual.shortcutDetail">Adult-media checks and your person-blur preference</span></div><span data-icon="arrow-up-right" aria-hidden="true"></span></a>
+<a href="#rules"><span data-icon="list" aria-hidden="true"></span><div><strong data-i18n="popup.editSites">Manage blocked sites</strong><span data-i18n="visual.rulesDetail">Blocked sites, allowed sites, and blocking mode</span></div><span data-icon="arrow-up-right" aria-hidden="true"></span></a>
+</div>
 <ul class="protection-layers">
 <li><span data-i18n="opt.layer.domains">Domain and address blocking</span><span id="domainLayer"></span></li>
 <li><span data-i18n="opt.layer.search">SafeSearch and restricted viewers</span><span id="searchLayer"></span></li>
@@ -95,18 +100,6 @@
 <div class="msg" id="msgChecks" role="status"></div>
 </fieldset>
 
-<fieldset id="visualSettings"><legend data-i18n="visual.localModels">Local visual checks · beta</legend>
-<p class="hint" data-i18n="visual.betaHint">Optional, experimental checks. They can miss content or blur harmless media. They are not a guarantee, and cannot read every video or image.</p>
-<div class="visual-row"><div><h3 id="visualHeading" data-i18n="visual.title">Visual checks</h3><p id="visualHint" data-i18n="visual.inspectHint">Check accessible images and sampled video frames for adult content on this device.</p></div><input class="toggle" type="checkbox" id="inspectVisual" aria-labelledby="visualHeading" aria-describedby="visualHint"></div>
-<div class="visual-row"><div><h3 id="personHeading" data-i18n="visual.personTitle">Person blur</h3><p data-i18n="visual.personHint">An optional viewing preference, separate from adult-content classification. Face-based predictions can be wrong or miss people.</p></div><span data-icon="shield-check" aria-hidden="true"></span>
-<div class="visual-controls person-mode"><label for="personBlur" data-i18n="visual.personChoose">Blur preference</label><select id="personBlur"><option value="off" data-i18n="details.off">off</option><option value="all" data-i18n="visual.personAll">All detected people</option><option value="female" data-i18n="visual.personFemale">Predicted women</option><option value="male" data-i18n="visual.personMale">Predicted men</option></select></div></div>
-<p class="visual-status" id="visualEngineStatus" role="status" data-i18n="visual.status.checking">Not checked</p>
-<p class="hint" data-i18n="visual.autosave">Visual preferences save automatically. Matching media is blurred as a whole; detection currently uses visible faces, not full bodies.</p>
-<p class="hint" id="visualLockHint" hidden data-i18n="visual.lockHint">During a commitment you can strengthen these settings, but cannot turn them off or reduce them.</p>
-<p class="hint" data-i18n="visual.privacy">No media uploads, face identities, or camera access. Inaccessible media is not verified safe; normal videos remain available.</p>
-<div class="msg" id="msgVisual" role="status"></div>
-</fieldset>
-
 <fieldset><legend data-i18n="opt.terms.legend">Your content words</legend>
 <p class="hint" data-i18n="opt.terms.hint">Up to 200 words or phrases, one per line, with 4–100 characters each. These add to page-text scoring; common words can also block ordinary pages. Page-text checking must be active.</p>
 <textarea id="customTerms" aria-label="Custom content words" data-i18n-aria-label="opt.terms.aria" data-i18n-placeholder="opt.terms.placeholder" placeholder="gambling&#10;betting odds"></textarea>
@@ -132,6 +125,32 @@
 <div class="chips" id="disputed"></div>
 <div class="msg" id="msgDisputed" role="status"></div>
 </fieldset>
+</section>
+<section class="page-view" id="media" hidden aria-labelledby="mediaHeading">
+<div class="page-heading"><div><h1 id="mediaHeading" data-i18n="visual.title">Visual checks</h1><p class="detail section-subtitle" data-i18n="visual.pageSubtitle">Choose what you want to keep out of images and videos.</p></div><span class="beta-badge" data-i18n="visual.beta">Beta</span></div>
+<p class="visual-status" id="visualEngineStatus" role="status" data-i18n="visual.status.checking">Not checked</p>
+<fieldset id="visualSettings" class="media-settings"><legend class="visually-hidden" data-i18n="visual.localModels">Local visual checks · beta</legend>
+<div class="visual-row"><div><h2 id="visualHeading" data-i18n="visual.adultTitle">Adult-media checks</h2><p id="visualHint" data-i18n="visual.inspectHint">Check accessible images and sampled video frames for adult content on this device.</p></div><label class="toggle-target"><input class="toggle" type="checkbox" id="inspectVisual" aria-labelledby="visualHeading" aria-describedby="visualHint"></label></div>
+<div class="visual-row person-card"><div><h2 id="personHeading" data-i18n="visual.personTitle">Person blur</h2><p id="personHint" data-i18n="visual.personHint">An optional viewing preference, separate from adult-content classification. Face-based predictions can be wrong or miss people.</p></div><span data-icon="eye" aria-hidden="true"></span>
+<div class="visual-controls">
+<select id="personBlur" hidden><option value="off" data-i18n="details.off">off</option><option value="all" data-i18n="visual.personAll">All detected faces</option><option value="female" data-i18n="visual.personFemale">Predicted women</option><option value="male" data-i18n="visual.personMale">Predicted men</option></select>
+<fieldset class="person-targets" aria-describedby="personHint"><legend data-i18n="visual.personChoose">Blur preference</legend>
+<label><input type="radio" name="personChoice" value="off"><span><strong data-i18n="visual.targetOff">Off</strong><small data-i18n="visual.targetOffDetail">No person blur</small></span></label>
+<label><input type="radio" name="personChoice" value="female"><span><strong data-i18n="visual.targetFemale">Women</strong><small data-i18n="visual.targetFemaleDetail">Female-appearance estimate</small></span></label>
+<label><input type="radio" name="personChoice" value="male"><span><strong data-i18n="visual.targetMale">Men</strong><small data-i18n="visual.targetMaleDetail">Male-appearance estimate</small></span></label>
+<label><input type="radio" name="personChoice" value="all"><span><strong data-i18n="visual.targetAll">Everyone</strong><small data-i18n="visual.targetAllDetail">Any detected face</small></span></label>
+</fieldset>
+</div></div>
+<p class="hint" data-i18n="visual.autosave">Visual preferences save automatically. Matching media is blurred as a whole; detection currently uses visible faces, not full bodies.</p>
+<p class="notice" id="visualLockHint" hidden data-i18n="visual.lockHint">During a commitment you can strengthen these settings, but cannot turn them off or reduce them.</p>
+<div class="msg" id="msgVisual" role="status"></div>
+</fieldset>
+<details class="coverage-details"><summary data-i18n="visual.coverage">Where visual checks work</summary><div>
+<p data-i18n="visual.permissionHint">Runs on permitted web pages, including changing feeds. Set Hisn's site access to all sites in your browser's extension settings. Browser settings pages are not scannable.</p>
+<p data-i18n="visual.betaHint">Optional, experimental checks. They can miss content or blur harmless media. They are not a guarantee, and cannot read every video or image.</p>
+<p data-i18n="visual.privacy">No media uploads, face identities, or camera access. Inaccessible media is not verified safe; normal videos remain available.</p>
+<button type="button" class="secondary" id="siteAccessSettings" data-i18n="incog.button">Open extension settings</button>
+</div></details>
 </section>
 <div class="save-bar" id="saveBar" hidden>
 <div><strong id="draftCount"></strong><p class="msg" id="saveMessage" role="status"></p></div>

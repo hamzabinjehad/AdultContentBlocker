@@ -77,7 +77,7 @@ def main() -> None:
     })
     base = {"SDKROOT": "iphoneos", "IPHONEOS_DEPLOYMENT_TARGET": "16.0", "SWIFT_VERSION": "5.0",
             "TARGETED_DEVICE_FAMILY": q("1,2"), "CODE_SIGN_STYLE": "Automatic",
-            "DEVELOPMENT_TEAM": '""', "CURRENT_PROJECT_VERSION": "2", "MARKETING_VERSION": "1.1.1",
+            "DEVELOPMENT_TEAM": '""', "CURRENT_PROJECT_VERSION": "3", "MARKETING_VERSION": "1.1.2",
             "CLANG_ENABLE_MODULES": "YES", "CLANG_ENABLE_OBJC_ARC": "YES",
             "ENABLE_USER_SCRIPT_SANDBOXING": "NO", "SUPPORTED_PLATFORMS": q("iphoneos iphonesimulator"),
             "SUPPORTS_MACCATALYST": "NO", "PRODUCT_NAME": q("$(TARGET_NAME)"),

@@ -46,7 +46,8 @@ function render(state) {
 
   document.getElementById("pDot").className = `dot ${s.protection.level}`;
   document.getElementById("pHead").textContent = s.protection.headline;
-  document.getElementById("pDetail").textContent = s.protection.detail;
+  document.getElementById("pDetail").textContent = state && !state.appPresent
+    ? t("popup.browserOnlySummary") : s.protection.detail;
   const textActive = state && (state.inspectText !== false || restrictionsActive(state));
   const layers = [
     ["domain", state ? "active" : "unknown", state ? t("popup.worksAlone") : t("opt.coverage.unknown")],
@@ -63,6 +64,9 @@ function render(state) {
 
   document.getElementById("lHead").textContent = s.lock.headline;
   document.getElementById("lDetail").textContent = s.lock.detail;
+  // An inactive lock's explanation remains in full-page settings. Reserve the
+  // small popup for actionable status without hiding an active/unknown lock.
+  document.getElementById("lockBlock").hidden = !!state && !restrictionsActive(state);
 
   const notices = document.getElementById("notices");
   notices.replaceChildren(...s.notices.map((n) => {

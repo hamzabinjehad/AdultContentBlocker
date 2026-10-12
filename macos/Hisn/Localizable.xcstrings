@@ -3528,6 +3528,16 @@
         }
       }
     },
+    "Open the Hisn extension, choose Manage protection, then Visual checks. Adult-media checks and person blur are separate choices, saved in that browser." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افتح إضافة حصن، واختر «إدارة الحماية» ثم «الفحص البصري». فحص الوسائط الإباحية وتمويه الأشخاص خياران منفصلان يُحفظان في ذلك المتصفح."
+          }
+        }
+      }
+    },
     "Open the model's Connectivity or network setup page and look for Static DNS fields. Linksys firmware and product families differ; use the official model documentation to locate the fields." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -3729,6 +3739,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "مفتاح الشريك مُعدّ · %@"
+          }
+        }
+      }
+    },
+    "Person blur uses detected faces and can be off, all people, women or men. The women and men options estimate appearance; they do not identify a person or mean their image is adult content." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يعتمد تمويه الأشخاص على الوجوه المكتشفة، ويمكن إيقافه أو اختيار جميع الأشخاص أو النساء أو الرجال. يقدّر خيارا النساء والرجال المظهر، ولا يحددان هوية الشخص أو يعنيان أن صورته محتوى إباحي."
           }
         }
       }
@@ -4222,16 +4242,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "يعمل: كل التطبيقات، ولا تتجاوزه أي VPN."
-          }
-        }
-      }
-    },
-    "Safari and Firefox are covered by the system filter only; the extension does not run there." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "يغطي مرشّح النظام وحده Safari وFirefox؛ الإضافة لا تعمل فيهما."
           }
         }
       }
@@ -4814,6 +4824,16 @@
         }
       }
     },
+    "The app does not verify visual-check settings. Accessible images and sampled video frames can be checked locally; unreadable media and missed detections remain possible." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يتحقق التطبيق من إعدادات الفحص البصري. يمكن فحص الصور وإطارات الفيديو المتاحة محليًا؛ تبقى الوسائط غير القابلة للقراءة والحالات التي لم تُكتشف ممكنة."
+          }
+        }
+      }
+    },
     "The content filter could not start: %@" : {
       "localizations" : {
         "ar" : {
@@ -5033,6 +5053,7 @@
       }
     },
     "The system filter covers every app on this Mac. The browser extension adds page-text checking inside Chrome, Edge and other Chromium browsers. This app has already registered itself with those browsers; what remains is the extension." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -5523,6 +5544,16 @@
         }
       }
     },
+    "Visual checks" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الفحص البصري"
+          }
+        }
+      }
+    },
     "Waiting for your approval in System Settings" : {
       "localizations" : {
         "ar" : {
@@ -5549,6 +5580,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ما الذي لا يستطيع فحص النصوص اكتشافه"
+          }
+        }
+      }
+    },
+    "When enabled, the system filter also checks Safari and Firefox connections; this extension does not run in those browsers." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عند تفعيله، يفحص فلتر النظام اتصالات سفاري وفايرفوكس أيضًا؛ لا تعمل هذه الإضافة في هذين المتصفحين."
+          }
+        }
+      }
+    },
+    "When enabled, the system filter checks network hostnames across this Mac. The extension separately checks webpage content in supported Chromium browsers, including Chrome, Brave and Helium." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عند تفعيله، يفحص فلتر النظام أسماء نطاقات الاتصال على هذا الماك. تفحص الإضافة محتوى صفحات الويب بشكل منفصل في متصفحات كروميوم المدعومة، ومنها كروم وبريف وهيليوم."
           }
         }
       }

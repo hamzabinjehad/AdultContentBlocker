@@ -1,4 +1,5 @@
-import { validateCapture, visualPreferences, adultDecision, faceDetections, personDecision } from '../visual/decisions.js';
+import { validateCapture, visualPreferences, adultDecision, appearancePrediction, faceDetections,
+  personDecision, squareFrame, unpadFaces } from '../visual/decisions.js';
 import { LocalInferenceQueue } from '../visual/queue.js';
 let checks = 0;
 const check = (ok, label) => { checks++; if (!ok) throw new Error(label); };
@@ -19,6 +20,24 @@ const detectorOnly = faceDetections({ face: [{ faceScore: 0, boxScore: .95, scor
 check(personDecision(detectorOnly, [], 'all', 100, 100).blur, 'detector confidence used when face mesh is disabled');
 check(faceDetections({ error: 'inference failed', face: [] }) === null, 'detector error is unknown, not no-face verdict');
 check(faceDetections({}) === null, 'missing detector output is unknown');
+check(faceDetections({ face: [null] }) === null, 'malformed face output is unknown without throwing');
+check(faceDetections({ face: [{ boxScore: 1.5, box: face.box }] }) === null, 'out-of-range detector score rejected');
+check(faceDetections({ face: [{ boxScore: .9, box: [10, 10, -4, 40] }] }) === null, 'invalid detector box rejected');
+check(appearancePrediction([.92, .08]).gender === 'female', 'packaged appearance model female output index preserved');
+check(appearancePrediction([.09, .91]).gender === 'male', 'packaged appearance model male output index preserved');
+for (const invalid of [[NaN, .1], [1.1, -.1], [.9, .9], [.8], null]) {
+  check(appearancePrediction(invalid) === null, 'invalid appearance output cannot become a confident match');
+}
+const portrait = squareFrame(101, 224), landscape = squareFrame(224, 101);
+check(portrait.edge === 224 && portrait.x === 61 && portrait.y === 0, 'portrait capture letterboxed without stretching and odd remainder retained');
+check(landscape.edge === 224 && landscape.y === 61 && landscape.x === 0, 'landscape capture letterboxed without stretching');
+check(squareFrame(385, 224) === null && squareFrame(0, 100) === null, 'letterbox dimensions stay inside capture budget');
+const remapped = unpadFaces([{ ...face, box: [51, 10, 40, 40] }], portrait, 101, 224);
+const remappedRegion = personDecision(remapped, [], 'all', 101, 224).regions[0];
+check(remappedRegion.x === 0 && Math.abs(remappedRegion.width - 30 / 101) < 1e-9, 'letterbox face coordinates clip the actual overlapping width');
+check(unpadFaces([{ ...face, box: [0, 0, 20, 20] }], portrait, 101, 224).length === 0, 'a detection wholly inside padding is not a person in the image');
+check(personDecision([{ ...face, box: [-10, -10, 40, 40] }], [], 'all', 100, 100).regions[0].width === .3,
+  'partially clipped boxes do not overstate their visible region');
 check(personDecision([face], [], 'all', 100, 100).blur, 'visible confident face matches all');
 check(personDecision([face], [], 'female', 100, 100).blur, 'chosen appearance estimate can match');
 check(!personDecision([face], [], 'male', 100, 100).blur, 'other appearance is not hidden');
