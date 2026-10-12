@@ -36,6 +36,8 @@ try {
   const solo = await frame(base), s = solo.contentDocument;
   check(s.getElementById("pHead").textContent === "Protection active", "standalone protection status");
   check(s.getElementById("lHead").textContent === "No active lock", "protection and lock are separate");
+  check(s.getElementById("lockBlock").hidden, "inactive lock explanation does not crowd the popup");
+  check(s.querySelector('#visualIndicator').closest('li').querySelector('[data-view="media"]'), "visual shortcut opens its dedicated page");
   s.getElementById("checkConnection").click(); await pause();
   check(s.getElementById("connectionMessage").textContent.includes("No connection"), "connection failure gives useful feedback");
   solo.contentWindow.syncDelay = 300;
@@ -61,6 +63,8 @@ try {
   check(failed.contentDocument.getElementById("pHead").textContent === "Status unavailable", "a worker error never looks like active protection");
   const old = await frame({...base,appPresent:true,lastHeartbeat:1});
   check(old.contentDocument.getElementById("pDot").classList.contains("partial"), "stale app is reported as partial protection");
+  const locked = await frame({...base,lockUntil:Date.now()+60000});
+  check(!locked.contentDocument.getElementById("lockBlock").hidden, "active commitment stays visible in the popup");
   const ar = await frame(base,"ar",false), a = ar.contentDocument;
   check(a.documentElement.dir === "rtl", "Arabic popup mirrors");
   check(!a.getElementById("incognito").hidden, "private-window gap is visible");
@@ -94,6 +98,11 @@ try {
     const main = d.querySelector(".popup-scroll"), firstLayer = d.querySelector(".layer-checklist li");
     check(normal.contentWindow.getComputedStyle(main).overflowY === "auto" && main.clientHeight >= firstLayer.clientHeight, `${language}: normal popup keeps its usable layer scroll`);
     check(d.getElementById("checkConnection").getBoundingClientRect().bottom <= normal.contentWindow.innerHeight, `${language}: normal popup keeps actions visible`);
+    const spacious = await frame(base, language, true, {width:480,height:600}), sd = spacious.contentDocument;
+    check(sd.body.getBoundingClientRect().width === 480 && sd.documentElement.scrollWidth <= 480, `${language}: wider popup fits its intended viewport`);
+    const action = sd.getElementById("openSettings").getBoundingClientRect();
+    check(action.height >= 44 && action.bottom <= 600, `${language}: full-page action has a comfortable visible target`);
+    check(spacious.contentWindow.getComputedStyle(sd.getElementById("connectionAction")).position === "absolute", `${language}: reconnect label remains accessible without crowding the main action`);
   }
   document.getElementById("summary").dataset.result = "pass";
 } catch (error) {

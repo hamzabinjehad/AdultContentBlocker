@@ -1,5 +1,7 @@
 // Bundled Lucide icon paths (ISC license, see icons.LICENSE). No remote scripts.
 const paths = {
+  "eye": ['M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12', 'M15 12a3 3 0 1 0-6 0 3 3 0 0 0 6 0'],
+  "arrow-up-right": ['M7 17 17 7', 'M7 7h10v10'],
   "plus": ['M12 5v14', 'M5 12h14'],
   "trash-2": ['M3 6h18', 'M19 6v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6', 'M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2', 'M10 11v6', 'M14 11v6'],
   "shield-check": ['M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z', 'm9 12 2 2 4-4'],

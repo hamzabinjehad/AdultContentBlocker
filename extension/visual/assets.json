@@ -66,8 +66,8 @@
       "source": "buffer package license"
     },
     "engine.bundle.js": {
-      "bytes": 5516373,
-      "sha256": "f1f406558738703dbe64b2f404f379fba5865cc46153c78f16fe7ac2cacce051",
+      "bytes": 5517363,
+      "sha256": "e8193c875f3d8e0990b85fbaabec70ad21887c76e8939ce6c5ca269def7f4ec2",
       "source": "engine.js; pinned pnpm-lock.yaml; NSFWJS MobileNetV2 weights embedded from nsfwjs@4.4.0"
     },
     "engine.bundle.js.LEGAL.txt": {

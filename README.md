@@ -52,6 +52,8 @@ content scanning and Mac/phone settings sync are not. The visual runtime targets
 Safari 18; a lower native-app deployment target does not prove compatibility.
 A signed real-device build and acceptance checks are required before relying on
 phone enforcement.
+The latest interface and visual-check iteration is described in
+[Hisn 1.1.2](docs/UPDATE_1_1_2.md), including reload steps and remaining limits.
 See [browser-first mixed-content protection](docs/BROWSER_FIRST_PROTECTION.md)
 for individual X/Twitter post checking and optional native-app restrictions.
 

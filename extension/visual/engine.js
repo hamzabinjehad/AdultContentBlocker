@@ -2,7 +2,8 @@ import * as tf from '@tensorflow/tfjs';
 import { load as loadNSFW } from 'nsfwjs/core';
 import { MobileNetV2Model } from 'nsfwjs/models/mobilenet_v2';
 import Human from '@vladmandic/human';
-import { adultDecision, faceDetections, personDecision, visualPreferences, PERSON_MODES, validateCapture } from './decisions.js';
+import { adultDecision, appearancePrediction, faceDetections, personDecision, squareFrame, unpadFaces,
+  visualPreferences, PERSON_MODES, validateCapture } from './decisions.js';
 import { LocalInferenceQueue } from './queue.js';
 
 export function createVisualEngine({ baseURL, backend = 'webgl' } = {}) {
@@ -42,7 +43,7 @@ export function createVisualEngine({ baseURL, backend = 'webgl' } = {}) {
           filter: { enabled: false, return: false }, gesture: { enabled: false },
           face: { enabled: true,
             detector: { modelPath: 'blazeface.json', maxDetected: 10, minConfidence: 0.60,
-              rotation: false, return: false, skipFrames: 0, skipTime: 0 },
+              square: false, rotation: false, return: false, skipFrames: 0, skipTime: 0 },
             mesh: { enabled: false }, attention: { enabled: false }, iris: { enabled: false },
             description: { enabled: false }, emotion: { enabled: false },
             antispoof: { enabled: false }, liveness: { enabled: false }, gear: { enabled: false } },
@@ -68,11 +69,15 @@ export function createVisualEngine({ baseURL, backend = 'webgl' } = {}) {
     if (!validateCapture(capture)) return { state: 'unknown', reason: 'invalid-capture' };
     const prefs = visualPreferences(preferences);
     if (!prefs.inspectVisual && prefs.personBlur === 'off') return { state: 'disabled' };
-    await prepare(prefs);
+    try { await prepare(prefs); } catch (error) {
+      // Independent layers: a missing face asset must not throw away an adult
+      // classifier that already loaded. A clean partial result is still unknown.
+      if (!prefs.inspectVisual || !adult) throw error;
+    }
     if (!selected.inspectVisual && selected.personBlur === 'off') return { state: 'disabled' };
     const bytes = Uint8Array.from(atob(capture.rgba), char => char.charCodeAt(0));
     if (bytes.length !== capture.width * capture.height * 4) return { state: 'unknown', reason: 'invalid-capture' };
-    let tensor;
+    let tensor, faceTensor;
     try {
       tensor = tf.tidy(() => tf.tensor3d(bytes, [capture.height, capture.width, 4], 'int32').slice([0, 0, 0], [-1, -1, 3]));
       let adultResult = { block: false, scores: null, inspected: false };
@@ -81,24 +86,38 @@ export function createVisualEngine({ baseURL, backend = 'webgl' } = {}) {
         const decision = adultDecision(await adult.classify(tensor, 5));
         if (!decision) return { state: 'unknown', reason: 'invalid-model-output' };
         adultResult = { ...decision, inspected: true };
+        // A positive adult verdict is sufficient. An optional face model error
+        // must never undo this independent blocking layer.
+        if (decision.block) return { state: 'ready', adult: adultResult,
+          persons: { ...persons, state: 'not-inspected' } };
       }
       if (prefs.personBlur !== 'off') {
-        const result = await human.detect(tensor);
+        if (!human || (['female', 'male'].includes(prefs.personBlur) && !gender)) {
+          return { state: 'unknown', reason: 'model-load-failed', adult: adultResult };
+        }
+        const frame = squareFrame(capture.width, capture.height);
+        faceTensor = tf.tidy(() => tf.pad(tensor, [[frame.y, frame.edge - capture.height - frame.y],
+          [frame.x, frame.edge - capture.width - frame.x], [0, 0]]));
+        // Human's default detector resizes to a square. Our own letterbox keeps
+        // face proportions without depending on its square-coordinate path.
+        const result = await human.detect(faceTensor);
         // The detector is deliberately face-only; no embeddings, age, race or
         // face identity models are loaded. This is not a full-body guarantee.
         const faces = faceDetections(result);
         if (!faces) return { state: 'unknown', reason: 'invalid-face-output' };
         if (gender && ['female', 'male'].includes(prefs.personBlur)) {
           for (const face of faces) {
-            const prediction = await predictGender(tensor, face.box, capture.width, capture.height, gender);
+            const prediction = await predictGender(faceTensor, face.box, frame.edge, frame.edge, gender);
             Object.assign(face, prediction);
           }
         }
-        persons = personDecision(faces, [], prefs.personBlur, capture.width, capture.height);
+        persons = personDecision(unpadFaces(faces, frame, capture.width, capture.height), [],
+          prefs.personBlur, capture.width, capture.height);
       }
       return { state: 'ready', adult: adultResult, persons };
     } finally {
       bytes.fill(0);
+      faceTensor?.dispose();
       tensor?.dispose();
     }
   }
@@ -134,13 +153,11 @@ async function predictGender(image, box, width, height, model) {
     input = tf.tidy(() => {
       const crop = tf.image.cropAndResize(image.toFloat().expandDims(0), [[y1, x1, y2, x2]], [0], [64, 64]);
       // Same 64x64 greyscale and [-1,1] normalization as the Oarriaga model.
-      const gray = crop.mul(tf.tensor1d([0.299, 0.587, 0.114])).sum(3, true);
+      const gray = crop.mul(tf.tensor1d([0.2989, 0.5870, 0.1140])).sum(3, true);
       return gray.div(127.5).sub(1);
     });
     output = model.execute(input);
     const probabilities = await output.data();
-    if (probabilities.length !== 2 || !Array.from(probabilities).every(Number.isFinite)) return {};
-    const index = probabilities[1] > probabilities[0] ? 1 : 0;
-    return { gender: index === 0 ? 'female' : 'male', genderScore: probabilities[index] };
+    return appearancePrediction(probabilities) ?? {};
   } finally { input?.dispose(); output?.dispose(); }
 }

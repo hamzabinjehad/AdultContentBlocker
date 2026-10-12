@@ -70,7 +70,7 @@ struct ContentView: View {
                 }
                 // A comfortable reading measure, left-aligned in a wide window
                 // rather than stretched across it.
-                .frame(maxWidth: 620, alignment: .leading)
+                .frame(maxWidth: 740, alignment: .leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(28)
             }
@@ -482,36 +482,43 @@ private struct BrowserSetupHelp: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Connect a browser").font(.title3.weight(.semibold))
-            Text("""
-                 The system filter covers every app on this Mac. The browser \
-                 extension adds page-text checking inside Chrome, Edge and \
-                 other Chromium browsers. This app has already registered \
-                 itself with those browsers; what remains is the extension.
-                 """)
-                .font(.callout).foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            VStack(alignment: .leading, spacing: 8) {
-                step(1, """
-                        Install the Hisn Protection extension in the browser, \
-                        or ask whoever set up this Mac to install it for you.
-                        """)
-                step(2, "Open any web page. The extension contacts this app within a minute.")
-                step(3, "Come back here — the Browser extension row reads Connected once it has.")
-            }
-            ForEach(NativeMessagingInstaller.storeURLs, id: \.self) { url in
-                Link(destination: url) {
-                    Label("Get browser extension", systemImage: "arrow.up.right.square")
+        VStack(alignment: .leading, spacing: 0) {
+            Label("Connect a browser", systemImage: "puzzlepiece.extension")
+                .font(.title2.weight(.semibold))
+                .padding(.bottom, 18)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    Text("When enabled, the system filter checks network hostnames across this Mac. The extension separately checks webpage content in supported Chromium browsers, including Chrome, Brave and Helium.")
+                        .font(.callout).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Card {
+                        VStack(alignment: .leading, spacing: 14) {
+                            step(1, """
+                                    Install the Hisn Protection extension in the browser, \
+                                    or ask whoever set up this Mac to install it for you.
+                                    """)
+                            step(2, "Open any web page. The extension contacts this app within a minute.")
+                            step(3, "Come back here — the Browser extension row reads Connected once it has.")
+                        }
+                    }
+                    ForEach(NativeMessagingInstaller.storeURLs, id: \.self) { url in
+                        Link(destination: url) {
+                            Label("Get browser extension", systemImage: "arrow.up.right.square")
+                        }
+                    }
+                    ExtensionVisualGuidance()
+                    Text("When enabled, the system filter also checks Safari and Firefox connections; this extension does not run in those browsers.")
+                        .font(.caption).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.trailing, 6)
             }
-            Text("Safari and Firefox are covered by the system filter only; the extension does not run there.")
-                .font(.caption).foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            HStack { Spacer(); Button("Done") { dismiss() }.keyboardShortcut(.defaultAction) }
+            Divider().padding(.vertical, 16)
+            HStack { Spacer(); Button("Done") { dismiss() }.keyboardShortcut(.defaultAction).controlSize(.large) }
         }
-        .padding(22)
-        .frame(width: 440)
+        .padding(24)
+        .frame(width: 560, height: 590)
     }
 
     private func step(_ n: Int, _ text: LocalizedStringKey) -> some View {
@@ -519,6 +526,27 @@ private struct BrowserSetupHelp: View {
             Text(verbatim: "\(n).").font(.callout.weight(.semibold)).monospacedDigit()
             Text(text).font(.callout).fixedSize(horizontal: false, vertical: true)
         }
+    }
+}
+
+/// Browser-owned preferences must not be presented as controls the native app
+/// can read or change. Keep a discoverable, honest route to the extension UI.
+private struct ExtensionVisualGuidance: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("Visual checks", systemImage: "eye")
+                .font(.headline)
+            Text("Open the Hisn extension, choose Manage protection, then Visual checks. Adult-media checks and person blur are separate choices, saved in that browser.")
+                .font(.callout).fixedSize(horizontal: false, vertical: true)
+            Text("Person blur uses detected faces and can be off, all people, women or men. The women and men options estimate appearance; they do not identify a person or mean their image is adult content.")
+                .font(.callout).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("The app does not verify visual-check settings. Accessible images and sampled video frames can be checked locally; unreadable media and missed detections remain possible.")
+                .font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("settings.extensionVisualGuidance")
     }
 }
 
@@ -1925,6 +1953,7 @@ private struct SettingsPage: View {
     @State private var saved = Inspection.Settings.default
     @State private var message: String?
     @State private var isError = false
+    @State private var showBrowserHelp = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 30) {
@@ -1981,6 +2010,16 @@ private struct SettingsPage: View {
 
             Divider()
 
+            Card {
+                VStack(alignment: .leading, spacing: 14) {
+                    ExtensionVisualGuidance()
+                    Button("How to connect a browser") { showBrowserHelp = true }
+                        .controlSize(.large)
+                }
+            }
+
+            Divider()
+
             PartnerSection(isLocked: isLocked)
 
             Divider()
@@ -1992,6 +2031,7 @@ private struct SettingsPage: View {
             DetailsSection()
         }
         .onAppear(perform: load)
+        .sheet(isPresented: $showBrowserHelp) { BrowserSetupHelp() }
     }
 
     private func load() {

@@ -50,7 +50,7 @@ struct MobileRootView: View {
             CommitmentSection(protection: protection)
             Section {
                 VStack(alignment: .leading, spacing: 12) {
-                    Image(systemName: "shield.lefthalf.filled").font(.largeTitle).foregroundStyle(.teal)
+                    Image(systemName: "shield.lefthalf.filled").font(.largeTitle).foregroundStyle(.blue)
                     Text("overview.title").font(.title2.bold())
                     Text("overview.body").foregroundStyle(.secondary)
                 }.padding(.vertical, 12)
@@ -72,6 +72,13 @@ struct MobileRootView: View {
                     .disabled(protection.busy)
                 if protection.busy { ProgressView("working") }
             }
+            Section("browserfirst.quickTitle") {
+                Label("browserfirst.quickBody", systemImage: "puzzlepiece.extension")
+                    .font(.callout)
+                Button("browserfirst.openSetup") { selectedTab = 1 }
+                Text("browserfirst.unverified")
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
             safariParts
             removalSection
             Section("list.title") {
@@ -81,6 +88,7 @@ struct MobileRootView: View {
             }
             errorRow
         }
+        .listStyle(.insetGrouped)
         .refreshable { await protection.refresh() }
     }
 
@@ -117,6 +125,7 @@ struct MobileRootView: View {
             removalSection
             errorRow
         }
+        .listStyle(.insetGrouped)
     }
 
     private var verifiedSetup: some View {
@@ -214,21 +223,23 @@ struct MobileRootView: View {
 
     private var safariParts: some View {
         Section("safari.parts") {
-            ForEach(0..<MobileProtectionPolicy.blockerIdentifiers.count, id: \.self) { index in
-                HStack {
-                    Text(verbatim: "Hisn \(index + 1)")
-                    Spacer()
-                    let state = MobileProtectionPolicy.safariPartState(enabled: protection.safari[index],
-                        lastReload: protection.safariReloads[index])
-                    switch state {
-                    case .enabled: Label("part.enabled", systemImage: "checkmark.circle")
-                    case .disabled: Label("part.disabled", systemImage: "circle")
-                    case .unknown: Label("status.unknown", systemImage: "questionmark.circle")
-                    case .reloadFailed: Label("part.failed", systemImage: "exclamationmark.triangle")
+            DisclosureGroup("safari.parts.details") {
+                ForEach(0..<MobileProtectionPolicy.blockerIdentifiers.count, id: \.self) { index in
+                    HStack {
+                        Text(verbatim: "Hisn \(index + 1)")
+                        Spacer()
+                        let state = MobileProtectionPolicy.safariPartState(enabled: protection.safari[index],
+                            lastReload: protection.safariReloads[index])
+                        switch state {
+                        case .enabled: Label("part.enabled", systemImage: "checkmark.circle")
+                        case .disabled: Label("part.disabled", systemImage: "circle")
+                        case .unknown: Label("status.unknown", systemImage: "questionmark.circle")
+                        case .reloadFailed: Label("part.failed", systemImage: "exclamationmark.triangle")
+                        }
                     }
+                    .font(.subheadline)
+                    .accessibilityElement(children: .combine)
                 }
-                .font(.subheadline)
-                .accessibilityElement(children: .combine)
             }
         }
     }
@@ -241,6 +252,14 @@ struct MobileRootView: View {
                     Text(verbatim: "العربية").tag("ar")
                     Text(verbatim: "English").tag("en")
                 }
+            }
+            Section("browserfirst.visual.title") {
+                Text("browserfirst.visual.body").font(.callout)
+                Text("browserfirst.visual.appearance")
+                    .font(.footnote).foregroundStyle(.secondary)
+                Text("browserfirst.visual.unverified")
+                    .font(.footnote).foregroundStyle(.secondary)
+                Button("browserfirst.openSetup") { selectedTab = 1 }
             }
             Section("privacy.title") { Text("privacy.body") }
             Section("coverage.title") { Text("coverage.body") }

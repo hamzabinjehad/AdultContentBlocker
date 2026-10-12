@@ -34,8 +34,8 @@ const { preference: languagePreference } = await initLanguage();
 const $ = (id) => document.getElementById(id);
 renderIcons();
 $("rules").append($("reportSettings"), $("disputedFs"));
-const views = ["overview", "rules", "lock", "settings"];
-const legacyViews = { mode: "overview", modeSettings: "rules", siteSettings: "rules", reportSettings: "rules", contentSettings: "settings" };
+const views = ["overview", "rules", "media", "lock", "settings"];
+const legacyViews = { mode: "overview", modeSettings: "rules", siteSettings: "rules", reportSettings: "rules", contentSettings: "settings", visualSettings: "media" };
 function showView() {
   const hash = location.hash.slice(1);
   const view = views.includes(hash) ? hash : legacyViews[hash] || "overview";
@@ -48,7 +48,7 @@ function showView() {
   $(view).scrollTo(0, 0);
 }
 window.addEventListener("hashchange", showView);
-for (const link of document.querySelectorAll(".sidebar nav a")) link.addEventListener("click", (event) => {
+for (const link of document.querySelectorAll(".sidebar nav a, .dashboard-shortcuts a")) link.addEventListener("click", (event) => {
   event.preventDefault();
   location.hash = link.hash;
   showView();
@@ -379,8 +379,22 @@ function renderVisualSettings() {
     option.disabled = (Array.isArray(supported) && !supported.includes(option.value)) ||
       (current && restrictionsActive(current) && (covered[current.personBlur ?? "off"] ?? []).some(group => !covered[option.value].includes(group)));
   }
+  for (const radio of document.querySelectorAll('[name="personChoice"]')) {
+    radio.checked = radio.value === $("personBlur").value;
+    radio.disabled = $("personBlur").disabled || [...$("personBlur").options].find(option => option.value === radio.value).disabled;
+  }
   $("visualLockHint").hidden = !current || !restrictionsActive(current);
 }
+for (const radio of document.querySelectorAll('[name="personChoice"]')) radio.addEventListener("change", () => {
+  if (!radio.checked || radio.disabled) return;
+  $("personBlur").value = radio.value;
+  $("personBlur").dispatchEvent(new Event("change"));
+});
+$("siteAccessSettings").addEventListener("click", () => {
+  // The browser owns site-access consent; this action cannot grant permission.
+  try { chrome.tabs?.create?.({ url: `chrome://extensions/?id=${chrome.runtime.id}` }, () => void chrome.runtime.lastError); }
+  catch { /* The written manual steps remain available. */ }
+});
 async function refreshVisualStatus() {
   visualEngine = await send({ type: "getVisualStatus" });
   renderVisualSettings();
@@ -421,6 +435,7 @@ async function save(patch, messageID, buttonID) {
   saving = true;
   for (const id of [...fields, ...saves]) $(id).disabled = true;
   updateDrafts();
+  renderVisualSettings();
   $(messageID).className = "msg";
   $(messageID).textContent = t("opt.saving");
   const r = await send({ type: "update", patch });
@@ -451,6 +466,7 @@ async function save(patch, messageID, buttonID) {
   saving = false;
   for (const id of [...fields, ...saves]) $(id).disabled = !current || !!current.appPresent;
   updateDrafts();
+  renderVisualSettings();
   if (!r.ok && r.field) {
     const section = sections.find(item => Object.values(item.controls).includes(r.field));
     const id = section && Object.keys(section.controls).find(id => section.controls[id] === r.field);

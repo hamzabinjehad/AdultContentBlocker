@@ -226,7 +226,11 @@ DEVTOOLS=9$((RANDOM % 900 + 100))
 # --use-mock-keychain / --password-store=basic: on a Mac nobody is sitting at
 # (a CI runner), Chrome otherwise asks the Keychain for its storage key and
 # can wait on a prompt no one will answer.
+# Multiple fixture tabs must get foreground-like timer budgets. These flags
+# affect only this fresh test profile; they do not change the user's browser.
 "$BROWSER" --headless=new --disable-gpu --no-first-run --no-default-browser-check \
+    --disable-background-timer-throttling --disable-renderer-backgrounding \
+    --disable-backgrounding-occluded-windows \
     --use-mock-keychain --password-store=basic ${LINUX_FLAGS[@]+"${LINUX_FLAGS[@]}"} \
     --user-data-dir="$WORK/profile" --remote-debugging-port="$DEVTOOLS" \
     --load-extension="$WORK/ext" --disable-extensions-except="$WORK/ext" \

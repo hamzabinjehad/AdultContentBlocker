@@ -47,7 +47,36 @@ export function adultDecision(predictions) {
 // Mesh is intentionally disabled here, so its faceScore is always zero.
 export function faceDetections(result) {
   if (result?.error || !Array.isArray(result?.face)) return null;
-  return result.face.map(face => ({ faceScore: face.boxScore ?? face.score, box: face.box }));
+  const faces = [];
+  for (const face of result.face) {
+    const score = face?.boxScore ?? face?.score;
+    if (!Number.isFinite(score) || score < 0 || score > 1 || !validBox(face?.box)) return null;
+    faces.push({ faceScore: score, box: face.box });
+  }
+  return faces;
+}
+
+// Pad, do not stretch, portrait and landscape captures for the square detector.
+// Keeping this geometry outside TensorFlow makes its coordinate contract testable.
+export function squareFrame(width, height) {
+  if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1
+      || width > MAX_EDGE || height > MAX_EDGE) return null;
+  const edge = Math.max(width, height);
+  return { edge, x: Math.floor((edge - width) / 2), y: Math.floor((edge - height) / 2) };
+}
+
+export function unpadFaces(faces, frame, width, height) {
+  return faces.map(face => ({ ...face, box: [face.box[0] - frame.x, face.box[1] - frame.y,
+    face.box[2], face.box[3]] })).filter(face => normalizedRegion(face.box, width, height));
+}
+
+export function appearancePrediction(probabilities) {
+  if (!probabilities || probabilities.length !== 2) return null;
+  const values = Array.from(probabilities);
+  if (!values.every(value => Number.isFinite(value) && value >= 0 && value <= 1)
+      || Math.abs(values[0] + values[1] - 1) > 0.02) return null;
+  const index = values[1] > values[0] ? 1 : 0;
+  return { gender: index === 0 ? 'female' : 'male', genderScore: values[index] };
 }
 
 export function personDecision(faces, bodies, mode, width, height) {
@@ -70,10 +99,14 @@ export function personDecision(faces, bodies, mode, width, height) {
 }
 
 function normalizedRegion(box, width, height) {
-  if (!Array.isArray(box) || box.length !== 4 || !box.every(Number.isFinite) || width < 1 || height < 1) return null;
-  const x = Math.max(0, Math.min(1, box[0] / width));
-  const y = Math.max(0, Math.min(1, box[1] / height));
-  const w = Math.max(0, Math.min(1 - x, box[2] / width));
-  const h = Math.max(0, Math.min(1 - y, box[3] / height));
+  if (!validBox(box) || !Number.isFinite(width) || !Number.isFinite(height) || width < 1 || height < 1) return null;
+  const x = Math.max(0, Math.min(width, box[0])) / width;
+  const y = Math.max(0, Math.min(height, box[1])) / height;
+  const w = Math.max(0, Math.min(width, box[0] + box[2]) / width - x);
+  const h = Math.max(0, Math.min(height, box[1] + box[3]) / height - y);
   return w > 0 && h > 0 ? { x, y, width: w, height: h } : null;
+}
+
+function validBox(box) {
+  return Array.isArray(box) && box.length === 4 && box.every(Number.isFinite) && box[2] > 0 && box[3] > 0;
 }

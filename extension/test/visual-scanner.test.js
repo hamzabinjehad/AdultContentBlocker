@@ -4,7 +4,7 @@ const check = (ok, label) => { checks++; if (!ok) throw new Error(label); };
 const flush = async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); };
 function harness() {
   const values = new Map(), events = new Map(), documentEvents = new Map(), timers = new Map();
-  let inspect = [], stored = { inspectVisual: true, personBlur: 'off' }, change, tick, discover, id = 0;
+  let inspect = [], stored = { inspectVisual: true, personBlur: 'off' }, change, tick, discover, id = 0, capture;
   const node = { tagName: 'VIDEO', currentSrc: 'https://fixture.example/a.webm', currentTime: 0,
     videoWidth: 224, videoHeight: 224, isConnected: true, dataset: {}, paused: false,
     style: { getPropertyValue: key => values.get(key)?.[0] ?? '', getPropertyPriority: key => values.get(key)?.[1] ?? '',
@@ -26,7 +26,7 @@ function harness() {
   globalThis.clearInterval = () => {};
   globalThis.setTimeout = fn => { timers.set(++id, fn); return id; };
   globalThis.clearTimeout = key => timers.delete(key);
-  globalThis.HisnVisualCapture = { capture: () => ({ width: 1, height: 1, rgba: 'AAAAAA==' }) };
+  globalThis.HisnVisualCapture = { capture: () => capture ?? ({ width: 1, height: 1, rgba: 'AAAAAA==' }) };
   globalThis.chrome = { runtime: { sendMessage: async message => {
     if (message.type === 'getVisualSettings') return stored;
     if (message.type === 'cancelVisualMedia') return { state: 'unknown' };
@@ -49,6 +49,7 @@ function harness() {
       return { node: added, values: properties, events: listeners };
     },
     tick: async () => { tick(); await flush(); },
+    capture(next) { capture = next; },
     set(next) { stored = { ...stored, ...next }; change({ state: { newValue: stored } }, 'local'); },
     async resolve(index, adult = false) { inspect[index].resolve({ state: 'ready', adult: { block: adult }, persons: { blur: false } }); await flush(); },
     stop() { globalThis.__hisnVisualScanner.stop(); },
@@ -64,13 +65,13 @@ function harness() {
   check(h.values.get('visibility')?.[0] === 'hidden', 'cache eviction never reveals offscreen known adult media');
   h.node.paused = false; h.events.get('playing')();
   check(h.node.paused, 'evicted known adult video still cannot start playing');
-  check(h.inspect.length === 2 && next.events.size === 5, 'bounded feed cache admits newly visible media');
+  check(h.inspect.length === 2 && next.events.size === 7, 'bounded feed cache admits newly visible media');
   await h.resolve(1);
   h.node.offscreen = false; h.discover(); await h.tick();
   check(h.inspect.length === 2 && h.values.get('visibility')?.[0] === 'hidden', 'returning flagged source reuses its latch without a clean-frame unhide');
   h.node.offscreen = true;
   h.set({ inspectVisual: false, personBlur: 'off' });
-  check(!h.values.has('visibility') && h.events.size === 5, 'explicit opt-out restores a known source still held in active cache');
+  check(!h.values.has('visibility') && h.events.size === 7, 'explicit opt-out restores a known source still held in active cache');
   h.stop();
 }
 {
@@ -106,7 +107,7 @@ function harness() {
   const extra = [];
   for (let i = 1; i < 140; i++) extra.push(h.addNode());
   h.discover();
-  check(h.events.size + extra.reduce((count, item) => count + item.events.size, 0) === 128 * 5,
+  check(h.events.size + extra.reduce((count, item) => count + item.events.size, 0) === 128 * 7,
     'active scan cache installs listeners for at most 128 nodes');
   check(h.nodes.slice(128).every(node => !node.dataset.hisnVisual) && h.nodes[128].style.getPropertyValue('visibility') === '', 'cache limit never hides unclassified later posts');
   h.node.isConnected = false; h.discover();
@@ -165,6 +166,57 @@ function harness() {
   await h.resolve(1, true);
   h.set({ lastHeartbeat: 1234 });
   check(h.values.get('visibility')?.[0] === 'hidden', 'unrelated heartbeat never reveals media');
+  h.stop();
+}
+{
+  const h = harness(); await flush();
+  h.capture({ state: 'unknown', reason: 'media-not-ready' }); await h.tick();
+  check(h.inspect.length === 0 && h.node.dataset.hisnVisual === 'unknown', 'unloaded media is unknown, not clean or blocked');
+  h.capture(null); await h.tick(); await h.resolve(0);
+  check(h.inspect.length === 1 && h.node.dataset.hisnVisual === 'checked', 'paused video retries readiness without needing playback or a load event');
+  h.stop();
+}
+{
+  const h = harness(); h.node.srcObject = {}; await flush(); await h.tick(); await h.resolve(0);
+  h.node.srcObject = {}; await h.tick();
+  check(h.inspect.length === 2, 'distinct MediaStream identities cannot reuse an unchanged string signature');
+  await h.resolve(1); h.stop();
+}
+{
+  const h = harness(); h.node.tagName = 'IMG'; h.node.naturalWidth = h.node.naturalHeight = 224;
+  await flush(); await h.tick();
+  h.node.currentSrc = 'https://fixture.example/picture-2x.png'; await h.resolve(0, true);
+  check(!h.values.has('visibility'), 'late verdict for a replaced picture/srcset candidate is discarded');
+  await h.tick(); await h.resolve(1);
+  check(h.inspect.length === 2 && h.node.dataset.hisnVisual === 'checked', 'picture/srcset change is rechecked without a DOM mutation event');
+  h.stop();
+}
+{
+  const h = harness(); await flush(); await h.tick();
+  h.events.get('resize')(); await h.resolve(0, true);
+  check(!h.values.has('visibility'), 'late verdict invalidated after decoded video dimensions change');
+  await h.tick(); await h.resolve(1);
+  check(h.inspect.length === 2 && !h.node.paused, 'resized harmless video is available after an independent recheck');
+  h.stop();
+}
+{
+  const originalNow = Date.now;
+  let now = 1000; Date.now = () => now;
+  try {
+    const h = harness(); h.node.tagName = 'IMG'; h.node.naturalWidth = h.node.naturalHeight = 224;
+    await flush(); await h.tick(); await h.resolve(0);
+    await h.tick(); check(h.inspect.length === 1, 'unchanged images do not create an inference flood');
+    now = 11000; await h.tick(); await h.resolve(1, true);
+    check(h.inspect.length === 2 && h.values.get('visibility')?.[0] === 'hidden',
+      'unchanged-URL animation or refreshed image receives a bounded later sample');
+    h.stop();
+  } finally { Date.now = originalNow; }
+}
+{
+  const h = harness(); await flush(); h.capture({ state: 'unknown', reason: 'inaccessible-pixels' });
+  await h.tick(); await h.tick();
+  check(h.inspect.length === 0 && !h.values.has('visibility') && !h.node.paused,
+    'unreadable protected or cross-origin video remains unknown without blanket hiding or inference flood');
   h.stop();
 }
 print(`  ${checks}/${checks} visual scanner lifecycle checks passed`);
