@@ -103,6 +103,15 @@ suite_browser() {
     check "browser: settings page" extension/test/browser/run.sh settings.html || rc=1
     echo "── extension: the popup, English and Arabic"
     check "browser: popup" extension/test/browser/run.sh popup.html || rc=1
+    check "browser: visual pre-display gate" extension/test/browser/run.sh visual-gate.html || rc=1
+    check "browser: visual admission and gallery fairness" extension/test/browser/run.sh visual-admission.html || rc=1
+    check "browser: face effects" extension/test/browser/run.sh visual-effects.html || rc=1
+    check "browser: face presentation integration" extension/test/browser/run.sh visual-face-integration.html || rc=1
+    check "browser: ordinary video playback monitoring" env HISN_HARNESS_REALTIME=1 extension/test/browser/run.sh visual-playback.html || rc=1
+    check "browser: exact-capture cache with real SHA-256" env HISN_HARNESS_REALTIME=1 extension/test/browser/run.sh visual-cache.html || rc=1
+    check "browser: real cross-origin image reload and pixel binding" env HISN_HARNESS_REALTIME=1 extension/test/browser/run.sh visual-cors.html || rc=1
+    check "browser: bundled visual models on CPU" env HISN_HARNESS_REALTIME=1 extension/test/browser/run.sh visual-real-engine.html || rc=1
+    check "browser: X player and visual-layer compatibility" extension/test/browser/run.sh feed-compatibility.html || rc=1
     echo "── extension: the block page, English and Arabic"
     check "browser: block page" extension/test/browser/run.sh blocked.html || rc=1
     echo "── extension: network rules in a real browser (SafeSearch, blocklist)"

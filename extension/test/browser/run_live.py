@@ -17,16 +17,30 @@ from pathlib import Path
 import secrets
 import signal
 import socketserver
+import struct
 import subprocess
 import sys
 import tempfile
 import threading
 import time
 from urllib.parse import quote, urlsplit
+import zlib
 
 ROOT = Path(__file__).resolve().parents[2]
 HARNESS_ROOT = Path(__file__).resolve().parent
 MAX_REPORT_BYTES = 64 * 1024
+
+
+def fixture_png(rgb):
+    """Tiny deterministic PNG bytes for the test-only varying-origin route."""
+    def chunk(kind, body):
+        return (struct.pack(">I", len(body)) + kind + body
+                + struct.pack(">I", zlib.crc32(kind + body)))
+
+    row = b"\0" + bytes(rgb) * 32
+    return (b"\x89PNG\r\n\x1a\n"
+            + chunk(b"IHDR", struct.pack(">IIBBBBB", 32, 32, 8, 2, 0, 0, 0))
+            + chunk(b"IDAT", zlib.compress(row * 32)) + chunk(b"IEND", b""))
 
 
 class HarnessScratch(tempfile.TemporaryDirectory):
@@ -120,7 +134,28 @@ def make_server(root, harness):
             pass
 
         def do_GET(self):
-            if urlsplit(self.path).path != harness_path:
+            request_path = urlsplit(self.path).path
+            # Dedicated test-only routes model readable/denied image servers.
+            # The varying route returns different pixels for anonymous CORS
+            # and opaque image requests. Ordinary resources retain no-CORS
+            # headers; no production permission is changed.
+            if request_path in ("/__hisn_fixture_cors/allowed.png", "/__hisn_fixture_cors/denied.png",
+                                "/__hisn_fixture_cors/varying.png"):
+                varying = request_path == "/__hisn_fixture_cors/varying.png"
+                body = (fixture_png((0, 255, 0) if self.headers.get("Origin") else (255, 0, 0))
+                        if varying else (root / "icons/icon-32.png").read_bytes())
+                self.send_response(200)
+                self.send_header("Content-Type", "image/png")
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "no-store")
+                if request_path == "/__hisn_fixture_cors/allowed.png" or varying:
+                    self.send_header("Access-Control-Allow-Origin", "*")
+                if varying:
+                    self.send_header("Vary", "Origin")
+                self.end_headers()
+                self.wfile.write(body)
+                return
+            if request_path != harness_path:
                 return super().do_GET()
             body = harness.read_bytes() + injected
             self.send_response(200)
@@ -148,6 +183,11 @@ def make_server(root, harness):
             self.end_headers()
 
     class LoopbackServer(http.server.ThreadingHTTPServer):
+        # Two-origin image fixtures open Chromium's parallel connection pools.
+        # Keep their short burst from overflowing the stdlib's five-slot
+        # listen backlog; this does not relax verdict or CORS checks.
+        request_queue_size = 32
+
         def server_bind(self):
             # HTTPServer resolves getfqdn() while binding, although this test
             # only serves a numeric loopback address. Some hosted macOS

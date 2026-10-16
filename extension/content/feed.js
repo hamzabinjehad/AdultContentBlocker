@@ -25,6 +25,9 @@
   const REPLY_TIMEOUT_MS = 5_000;
   const RECONNECT_MS = 30_000;
   const POLL_MS = 1_000;
+  const CONTROL_LABEL_SELECTOR = 'button, [role="button"], [role="slider"], [role="progressbar"], a[href$="/analytics"], a[href*="/analytics?"]';
+  const CONTROL_SELECTOR = `${CONTROL_LABEL_SELECTOR}, [data-testid="videoPlayer"]`;
+  const BODY_IGNORED_SELECTOR = `${CONTROL_SELECTOR}, script, style, template, noscript`;
   const OBSERVER_OPTIONS = { childList: true, subtree: true, characterData: true,
     attributes: true, attributeFilter: ["alt", "aria-label", "hidden", "style", "class", "data-testid", "href", "inert"] };
 
@@ -40,19 +43,52 @@
     // Equality, not a compact hash: a collision must not reuse a clean verdict.
     return JSON.stringify([identity, zones.body || "", zones.alt || ""]);
   }
-  function isRendered(el, root, win) {
+  function visuallyWithheld(el, win) {
+    const kind = el.tagName === "IMG" ? "images" : el.tagName === "VIDEO" ? "videos" : null;
+    const root = el.ownerDocument?.documentElement || win.document?.documentElement;
+    const state = el.getAttribute("data-hisn-visual"), visibility = el.style?.getPropertyValue("visibility");
+    // The visual layer intentionally withholds unverified media. Its CSS must
+    // not make an unchanged caption disappear from the independent text check.
+    // Still honour author-hidden elements and all hidden/display:none ancestors.
+    return kind && !(visibility === "hidden" && !["adult-hidden", "person-hidden"].includes(state))
+      && root && typeof root.getAttribute("data-hisn-visual-gate") === "string"
+      && root.getAttribute("data-hisn-visual-gate") !== "off"
+      && root.getAttribute(`data-hisn-visual-${kind}`) !== "off"
+      && state !== "checked";
+  }
+  function isRendered(el, root, win, allowVisualWithholding = false) {
     for (let n = el; n; n = n.parentElement) {
       if (n.hidden) return false;
       const style = win.getComputedStyle?.(n);
-      if (style?.display === "none" || style?.visibility === "hidden" || style?.visibility === "collapse") return false;
+      if (style?.display === "none" || style?.visibility === "collapse") return false;
+      if (style?.visibility === "hidden" && !(allowVisualWithholding && n === el && visuallyWithheld(n, win))) return false;
       if (n === root) break;
     }
     return true;
   }
+  function collectBodyText(item, win) {
+    // X updates player clocks, progress labels, and action counts during normal
+    // playback. Those controls are not post content: including them repeatedly
+    // invalidates a clean verdict and pauses the same ordinary video again.
+    const chunks = [], stack = [item];
+    while (stack.length) {
+      const node = stack.pop();
+      if (node.nodeType === 3) { chunks.push(node.nodeValue || ""); continue; }
+      if (node !== item && (node.matches?.(BODY_IGNORED_SELECTOR) || !isRendered(node, item, win))) continue;
+      if (!node.childNodes || !node.querySelector?.(BODY_IGNORED_SELECTOR)) {
+        const text = node.innerText || "";
+        const inline = /^(inline|contents)/.test(win.getComputedStyle?.(node)?.display || "");
+        chunks.push(inline ? text : `\n${text}\n`);
+      } else {
+        for (let i = node.childNodes.length - 1; i >= 0; i--) stack.push(node.childNodes[i]);
+      }
+    }
+    return boundedText(chunks.join("").replace(/\s+/g, " ").trim());
+  }
   function collectItemZones(item, win) {
     // innerText respects author-hidden nodes and excludes script/style payloads.
     // Our opacity withholding preserves rendering/layout and therefore innerText.
-    const body = boundedText(item.innerText || "");
+    const body = collectBodyText(item, win);
     const captions = [];
     // querySelectorAll excludes the article itself. X may attach a media/post
     // description directly to that root, not a descendant img or control.
@@ -72,7 +108,11 @@
       for (let i = nodes.length - Math.floor(remaining / 2); i < nodes.length; i++) selected.push(nodes[i]);
     }
     for (const el of selected) {
-      if (!isRendered(el, item, win)) continue;
+      // A button's changing "Pause"/"Play"/elapsed-time labels must not turn
+      // ordinary playback into a new text verdict. Keep actual media captions.
+      if (!el.getAttribute("alt") && el.tagName !== "VIDEO"
+        && (el.matches?.(CONTROL_LABEL_SELECTOR) || el.closest?.(CONTROL_LABEL_SELECTOR))) continue;
+      if (!isRendered(el, item, win, true)) continue;
       const text = el.getAttribute("alt") || el.getAttribute("aria-label");
       if (text) captions.push(boundedText(text, 2_000));
     }
@@ -109,7 +149,7 @@
 
     function pauseMedia(item) {
       for (const media of item.querySelectorAll("video, audio")) {
-        try { media.pause(); } catch { /* an uninitialised media element */ }
+        try { if (media.paused !== true) media.pause(); } catch { /* an uninitialised media element */ }
       }
     }
     function setNotice(record, status) {

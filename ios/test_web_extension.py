@@ -93,8 +93,9 @@ class SafariWebExtensionTests(unittest.TestCase):
         self.assertEqual(manifest["manifest_version"], 3)
         self.assertEqual(manifest["background"], {"page": "background.html", "persistent": False})
         self.assertEqual(manifest["content_scripts"][0]["js"],
-                         ["content/feed.js", "content/scan.js", "visual/capture.js", "content/visual.js"])
+                         ["content/feed.js", "content/scan.js", "visual/capture.js", "content/visual-effects.js", "content/visual.js"])
         self.assertEqual(manifest["content_scripts"][0]["run_at"], "document_start")
+        self.assertEqual(manifest["content_scripts"][0]["css"], ["content/visual-gate.css"])
         self.assertNotIn("key", manifest)
         self.assertNotIn("declarative_net_request", manifest)
         self.assertNotIn("nativeMessaging", manifest.get("permissions", []))

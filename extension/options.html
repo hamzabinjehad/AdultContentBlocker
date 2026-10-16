@@ -21,6 +21,9 @@
 <section class="status-section" aria-live="polite">
 <div class="head"><span class="dot unknown" id="protectionDot" aria-hidden="true"></span><h2 id="protectionTitle" data-i18n="popup.checkingStatus">Checking status…</h2></div>
 <p class="detail" id="protectionDetail"></p><div id="protectionNotices"></div>
+<div class="field-actions"><button type="button" class="secondary" id="repairProtection" aria-describedby="repairHint"><span data-icon="refresh-cw" aria-hidden="true"></span><span data-i18n="repair.action">Repair browser protection</span></button></div>
+<p class="detail" id="repairHint" data-i18n="repair.hint">Rechecks your saved browser protection. Does not change your settings or require the Hisn app.</p>
+<p class="detail" id="repairMessage" role="status"></p>
 </section>
 <section class="mode" id="mode" aria-label="App connection" data-i18n-aria-label="opt.appConnection">
 <strong id="modeTitle" data-i18n="connection.checking">Checking connection…</strong>
@@ -142,6 +145,12 @@
 </fieldset>
 </div></div>
 <p class="hint" data-i18n="visual.autosave">Visual preferences save automatically. Matching media is blurred as a whole; detection currently uses visible faces, not full bodies.</p>
+<div class="presentation-settings">
+<label for="personRegion" data-i18n="visual.region">Protected area</label><select id="personRegion"><option value="full" data-i18n="visual.regionFull">Whole image or video</option><option value="faces" data-i18n="visual.regionFaces">Faces only · supported images</option></select>
+<label for="personEffect" data-i18n="visual.effect">Effect</label><select id="personEffect"><option value="solid" data-i18n="visual.effectSolid">Solid black mask</option><option value="blur" data-i18n="visual.effectBlur">Strong blur</option></select>
+<label for="personMedia" data-i18n="visual.media">Apply person protection to</label><select id="personMedia"><option value="both" data-i18n="visual.mediaBoth">Images and videos</option><option value="images" data-i18n="visual.mediaImages">Images only</option><option value="videos" data-i18n="visual.mediaVideos">Videos only</option></select>
+<p class="hint" data-i18n="visual.presentationHint">These choices affect person protection, not adult-media blocking. Face-only is experimental for supported still images. Videos and unsupported image layouts fall back to whole-media protection.</p>
+</div>
 <p class="notice" id="visualLockHint" hidden data-i18n="visual.lockHint">During a commitment you can strengthen these settings, but cannot turn them off or reduce them.</p>
 <div class="msg" id="msgVisual" role="status"></div>
 </fieldset>

@@ -1,5 +1,10 @@
 // Decisions consume actual model outputs. No text, skin-colour, or identity heuristic.
 export const PERSON_MODES = Object.freeze(['off', 'all', 'female', 'male']);
+export function presentationPreferences(state = {}) {
+  return {personRegion:['full','faces'].includes(state.personRegion) ? state.personRegion : 'full',
+    personEffect:['solid','blur'].includes(state.personEffect) ? state.personEffect : 'solid',
+    personMedia:['both','images','videos'].includes(state.personMedia) ? state.personMedia : 'both'};
+}
 export const MAX_EDGE = 384;
 export const MAX_RGBA_BYTES = MAX_EDGE * MAX_EDGE * 4;
 const CLASSES = ['Porn', 'Hentai', 'Sexy', 'Neutral', 'Drawing'];
@@ -75,6 +80,9 @@ export function appearancePrediction(probabilities) {
   const values = Array.from(probabilities);
   if (!values.every(value => Number.isFinite(value) && value >= 0 && value <= 1)
       || Math.abs(values[0] + values[1] - 1) > 0.02) return null;
+  // A tied output does not express a selected appearance. Leave this unknown
+  // rather than inventing a female estimate from the model's output order.
+  if (Math.abs(values[0] - values[1]) < 0.000001) return null;
   const index = values[1] > values[0] ? 1 : 0;
   return { gender: index === 0 ? 'female' : 'male', genderScore: values[index] };
 }
@@ -84,7 +92,14 @@ export function personDecision(faces, bodies, mode, width, height) {
   if (!PERSON_MODES.includes(mode) || mode === 'off') return { blur: false, mode: 'off', regions, estimated: true };
   for (const face of Array.isArray(faces) ? faces : []) {
     if (!Number.isFinite(face.faceScore) || face.faceScore < 0.60) continue;
-    if (mode !== 'all' && (face.gender !== mode || !Number.isFinite(face.genderScore) || face.genderScore < 0.80)) continue;
+    // A weak estimate in either direction is not evidence that a face falls
+    // outside the selected preference. Withhold uncertain faces too, without
+    // asserting their gender. Only a confident opposite estimate is excluded.
+    // This recall-biased policy can also hide unintended faces, as disclosed
+    // beside the opt-in controls. It is not a full-body/identity guarantee.
+    if (mode !== 'all' && (!['female', 'male'].includes(face.gender) || !Number.isFinite(face.genderScore)
+        || face.genderScore < 0.50 || face.genderScore > 1
+        || (face.gender !== mode && face.genderScore >= 0.80))) continue;
     const region = normalizedRegion(face.box, width, height);
     if (region) regions.push(region);
   }

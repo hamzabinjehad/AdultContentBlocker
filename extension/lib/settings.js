@@ -1,5 +1,6 @@
 import { canonicalHost, isLocked, HEARTBEAT_GRACE_MS } from "./policy.js";
 import { t } from "./i18n.js";
+import { describeEnforcement } from "./status.js";
 
 // The app owns these fields after its first successful connection. A missing
 // heartbeat never silently transfers authority back to the browser.
@@ -26,7 +27,8 @@ export function connectionStatus(state, now = Date.now()) {
   };
   // `fresh` is the fact; the words are for the reader. The popup used to
   // compare the TITLE text to decide its badge, which a translation breaks.
-  const fresh = now - (state.lastHeartbeat || 0) < HEARTBEAT_GRACE_MS;
+  const fresh = state.bridgeConnection?.status !== "unavailable"
+    && now - (state.lastHeartbeat || 0) < HEARTBEAT_GRACE_MS;
   return {
     title: fresh ? t("connection.managed") : t("connection.waitingApp"), managed: true, fresh,
     detail: fresh ? t("connection.managed.detail") : t("connection.waiting.detail"),
@@ -37,8 +39,22 @@ export function connectionStatus(state, now = Date.now()) {
 // Only claim a successful sync after reading back fresh, app-managed state.
 export function connectionFeedback(result, state, now = Date.now()) {
   if (!state || state.ok === false || result?.reason === "unavailable") return t("conn.unavailable");
+  if ((result?.connected || result?.ok) && connectionStatus(state, now).fresh
+      && describeEnforcement(state).status !== "applied") return t("conn.enforcementFailed");
+  if (result?.reason === "enforcement-failed") return t("status.repair.detail");
+  if (result?.reason === "authority-unreachable") return t("conn.authorityUnavailable");
+  if (result?.reason === "native-malformed") return t("conn.malformed");
+  if (result?.reason === "native-timeout") return t("conn.nativeTimeout");
   if (result?.ok && connectionStatus(state, now).fresh) return t("conn.synced");
   return t(state.appPresent ? "connection.waiting.detail" : "conn.none");
+}
+
+// A successful command and a fresh configuration readback are both required.
+// An old green receipt alone cannot turn a timed-out repair into success.
+export function repairFeedback(result, state) {
+  if (!state || state.ok === false || !result || result.reason === "unavailable") return t("repair.unverified");
+  if (result.ok === true && describeEnforcement(state).status === "applied") return t("repair.verified");
+  return t("repair.failed");
 }
 
 export function parseDomains(text) {
@@ -58,6 +74,7 @@ export function settingsError(result) {
   if (result?.reason === "app-required") return t("err.appRequired");
   if (result?.reason === "locked") return t("err.locked");
   if (result?.reason === "unavailable") return t("err.unavailable");
+  if (result?.reason === "enforcement-failed") return t("err.enforcementFailed");
   return t("err.generic");
 }
 

@@ -1,0 +1,60 @@
+<!doctype html><meta charset="utf-8"><title>Hisn visual gate lifecycle</title>
+<pre id="summary" data-result="pending">Running…</pre><div id="frames"></div>
+<script type="module">
+const results=[];
+const check=(ok,label)=>{results.push(`${ok?'ok':'FAIL'} ${label}`);if(!ok)throw Error(label)};
+const wait=async fn=>{for(let i=0;i<200;i++){if(fn())return;await new Promise(r=>setTimeout(r,10))}throw Error('Fixture did not reach expected state')};
+try{
+ const frame=document.createElement('iframe');frame.style.cssText='width:720px;height:600px';
+ const base=new URL('../../',location.href).href;
+ frame.srcdoc=`<html><head><base href="${base}"><link rel="stylesheet" href="content/visual-gate.css">
+ <style>img{width:64px;height:64px;margin:2px}body{margin:0}</style></head><body>
+ ${Array.from({length:50},(_,i)=>`<img src="data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="red"/></svg>')}#${i}" alt="fixture">`).join('')}
+ <script>window.jobs=[];window.chrome={runtime:{sendMessage:m=>{
+ if(m.type==='getVisualSettings')return new Promise(r=>window.settingsReply=r);
+ if(m.type==='cancelVisualMedia')return Promise.resolve({});
+ return new Promise(r=>jobs.push({message:m,reply:r}));}},storage:{onChanged:{addListener:f=>window.change=f}}};
+ window.HisnVisualCapture={capture:()=>({width:1,height:1,rgba:'AAAAAA=='})};<\/script>
+ <script src="content/visual.js"><\/script></body></html>`;
+ document.getElementById('frames').append(frame);
+ await new Promise(r=>frame.onload=r);
+ const w=frame.contentWindow,d=frame.contentDocument,images=[...d.querySelectorAll('img')];
+ const hidden=n=>w.getComputedStyle(n).visibility==='hidden';
+ check(images.length===50&&images.every(hidden),'all 50 fixture images hidden while startup preferences are pending');
+ const firstSettingsReply=w.settingsReply;
+ firstSettingsReply({ok:false});
+ await wait(()=>w.settingsReply!==firstSettingsReply);
+ check(images.every(hidden)&&w.jobs.length===0,'startup settings failure keeps media hidden and retries without inference');
+ w.settingsReply({inspectVisual:false,personBlur:'off'});
+ await wait(()=>d.documentElement.getAttribute('data-hisn-visual-gate')==='off');
+ check(images.every(n=>!hidden(n))&&w.jobs.length===0,'confirmed initial disabled preference releases startup gate without loading models');
+ w.change({state:{newValue:{inspectVisual:false,personBlur:'female'}}},'local');
+ await wait(()=>w.jobs.length===1);
+ check(images.every(hidden),'all queued images remain hidden before any model result');
+ w.jobs[0].reply({state:'ready',persons:{blur:true}});
+ await wait(()=>images[0].dataset.hisnVisual==='person-hidden');
+ check(hidden(images[0]),'matching person image stays fully hidden');
+ await wait(()=>w.jobs.length===2);
+ w.jobs[1].reply({state:'ready',persons:{blur:false}});
+ await wait(()=>images[1].dataset.hisnVisual==='checked');
+ check(!hidden(images[1]),'only a confirmed non-match is revealed');
+ await wait(()=>w.jobs.length===3);
+ w.jobs[2].reply({state:'ready'});
+ await wait(()=>images[2].dataset.hisnVisual==='unknown');
+ check(hidden(images[2]),'malformed ready reply does not reveal media');
+ await wait(()=>w.jobs.length===4);
+ check(images.slice(3).every(hidden),'a failed result does not expose or stall the remaining queue');
+ images[1].src='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"/>');
+ await wait(()=>images[1].dataset.hisnVisual!=='checked');
+ check(hidden(images[1]),'source replacement revokes previous reveal permission');
+ w.change({state:{newValue:{inspectVisual:false,personBlur:'off'}}},'local');
+ check(images.every(n=>!hidden(n)),'confirmed opt-out restores images, including pending and matched media');
+ w.change({state:{newValue:{inspectVisual:false,personBlur:'male'}}},'local');
+ check(images.every(hidden),'enabling another person mode withholds images until rechecked');
+ w.__hisnVisualScanner.stop();
+ check(images.every(n=>!hidden(n)),'scanner stop releases the gate and owned hiding');
+ check(w.jobs.length<50,'test uses delayed simulated model responses, not an accuracy benchmark');
+ document.getElementById('summary').dataset.result='pass';
+}catch(e){results.push(`FAIL ${e.stack}`);document.getElementById('summary').dataset.result='fail'}
+document.getElementById('summary').textContent=results.join('\n');
+</script>

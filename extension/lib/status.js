@@ -29,6 +29,27 @@ export function formatWhen(ms, locale = uiLocale()) {
   }).format(new Date(ms));
 }
 
+/** A browser API receipt confirms installation, not traffic or classification. */
+export function describeEnforcement(state) {
+  const receipt = state?.enforcement;
+  const current = receipt?.version === 1 && Number.isSafeInteger(state.desiredRevision)
+    && receipt.desiredRevision === state.desiredRevision;
+  const complete = receipt?.layers?.domains === "applied" && receipt?.layers?.search === "applied"
+    && ["applied", "off"].includes(receipt?.layers?.text) && ["applied", "off"].includes(receipt?.layers?.visual);
+  const status = current && receipt.status === "failed" ? "failed"
+    : current && complete && receipt.status === "applied"
+      && receipt.appliedRevision === state.desiredRevision
+      && state.appliedRevision === state.desiredRevision ? "applied" : "pending";
+  const layers = {};
+  for (const name of ["domains", "search", "text", "visual"]) {
+    const applied = receipt?.version === 1 && status !== "pending" && receipt.layers?.[name] === "applied";
+    const off = receipt?.version === 1 && status !== "pending" && receipt.layers?.[name] === "off";
+    layers[name] = { level: applied ? "active" : status === "failed" ? "partial" : "unknown",
+      text: t(applied ? "details.on" : off ? "details.off" : status === "failed" ? "enforcement.failed" : "enforcement.pending") };
+  }
+  return { status, layers };
+}
+
 /**
  * @param state   the reply to `getState`, or nullish when there was none
  * @param opts    { now, version, formatWhen }
@@ -57,16 +78,21 @@ export function describeStatus(state, opts = {}) {
   }
 
   const locked = isLocked(state, now);
-  const appFresh = state.appPresent
+  const appFresh = state.appPresent && state.bridgeConnection?.status !== "unavailable"
     && now - (state.lastHeartbeat || 0) < HEARTBEAT_GRACE_MS;
   const notices = [];
+  const enforcement = describeEnforcement(state);
 
   // ── protection ──────────────────────────────────────────────────────────
-  // The two bundled rulesets are unconditional (see applyRules), so this
-  // browser is always at least baseline-protected once the worker is alive.
-  // What varies is whether the app half is there and answering.
+  // Stored intent or a heartbeat alone is not proof Chrome installed it.
+  // Only the current rule/scanner receipt permits the active headline.
   let protection;
-  if (!state.appPresent) {
+  if (enforcement.status === "pending") {
+    protection = { level: "unknown", headline: t("status.applying"), detail: t("status.applying.detail") };
+  } else if (enforcement.status === "failed") {
+    protection = { level: "partial", headline: t("status.repair"), detail: t("status.repair.detail") };
+    notices.push({ kind: "warn", text: t("status.repair.notice") });
+  } else if (!state.appPresent) {
     protection = {
       level: "active",
       headline: t("status.active"),
@@ -115,14 +141,19 @@ export function describeStatus(state, opts = {}) {
   // Report what is ENFORCED, not what was downloaded. A version number
   // climbing while no rules are installed is precisely the "looks healthy,
   // blocks nothing" state the threat model rates worse than being switched off.
-  const rules = state.rulesApplied || 0;
+  const rules = state.enforcement?.downloadedRules?.domains || 0;
+  const listVerified = rules === state.rulesApplied && (state.enforcement?.downloadedRules?.keywords || 0) === (state.keywordRulesApplied || 0);
   const details = [
-    [t("details.blockList"), rules ? t("details.blockListValue", state.listVersion, rules)
-                                     : t("details.bundledOnly")],
-    [t("details.mode"), effectiveStrict(state) ? t("mode.strict") : t("mode.standard")],
-    [t("details.pageText"), state.inspectText === false && !locked && !state.failClosed
-      ? t("details.off")
-      : t("details.onSensitivity", state.textSensitivity ?? 50)],
+    [t("details.enforcement"), t(enforcement.status === "applied" ? "enforcement.applied"
+      : enforcement.status === "failed" ? "enforcement.failed" : "enforcement.pending")],
+    [t("details.blockList"), enforcement.layers.domains.level !== "active" ? enforcement.layers.domains.text
+      : rules ? listVerified ? t("details.blockListValue", state.enforcement.downloadedRules.listVersion, rules)
+        : t("details.downloadedCount", rules) : t("details.bundledOnly")],
+    [t("details.mode"), enforcement.layers.domains.level === "active"
+      ? effectiveStrict(state) ? t("mode.strict") : t("mode.standard")
+      : t("details.requestedValue", effectiveStrict(state) ? t("mode.strict") : t("mode.standard"))],
+    [t("details.pageText"), enforcement.layers.text.level === "active"
+      ? t("details.onSensitivity", state.textSensitivity ?? 50) : enforcement.layers.text.text],
     [t("details.app"), !state.appPresent ? t("details.notConnected")
       : appFresh ? t("details.connected")
       : t("details.lastHeard", when(state.lastHeartbeat || 0))],

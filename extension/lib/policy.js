@@ -435,6 +435,9 @@ export const USER_FIELDS = Object.freeze({
   inspectText:     { kind: "bool" },
   inspectVisual:   { kind: "bool" },
   personBlur:      { kind: "enum", values: ["off", "all", "female", "male"] },
+  personRegion:    { kind: "enum", values: ["full", "faces"] },
+  personEffect:    { kind: "enum", values: ["solid", "blur"] },
+  personMedia:     { kind: "enum", values: ["both", "images", "videos"] },
   textSensitivity: { kind: "int", min: 0, max: 100 },
 });
 
@@ -443,6 +446,12 @@ export const USER_FIELDS = Object.freeze({
  * predicted woman nor a predicted man is an adult-content verdict. */
 export function visualPolicyWeakens(state, patch) {
   if (patch.inspectVisual === false && state.inspectVisual === true) return true;
+  if (state.personBlur && state.personBlur !== 'off') {
+    if ((state.personRegion ?? 'full') === 'full' && patch.personRegion === 'faces') return true;
+    if ((state.personEffect ?? 'solid') === 'solid' && patch.personEffect === 'blur') return true;
+    const media = {both:['images','videos'],images:['images'],videos:['videos']};
+    if (patch.personMedia && (media[state.personMedia ?? 'both'] ?? media.both).some(kind=>!media[patch.personMedia]?.includes(kind))) return true;
+  }
   if (!Object.prototype.hasOwnProperty.call(patch, "personBlur")) return false;
   const groups = { off: [], female: ["female"], male: ["male"], all: ["female", "male"] };
   const before = groups[state.personBlur ?? "off"] ?? [];

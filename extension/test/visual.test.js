@@ -1,9 +1,17 @@
 import { validateCapture, visualPreferences, adultDecision, appearancePrediction, faceDetections,
   personDecision, squareFrame, unpadFaces } from '../visual/decisions.js';
 import { LocalInferenceQueue } from '../visual/queue.js';
+import {visualPolicyWeakens,validatePatch} from '../lib/policy.js';
 let checks = 0;
 const check = (ok, label) => { checks++; if (!ok) throw new Error(label); };
 const scores = values => ['Porn', 'Hentai', 'Sexy', 'Neutral', 'Drawing'].map((className, index) => ({ className, probability: values[index] }));
+const lockedPerson={personBlur:'female',personRegion:'full',personEffect:'solid',personMedia:'both'};
+check(visualPolicyWeakens(lockedPerson,{personRegion:'faces'}),'a commitment cannot shrink full protection to faces');
+check(visualPolicyWeakens(lockedPerson,{personEffect:'blur'}),'a commitment cannot replace opaque protection with blur');
+check(visualPolicyWeakens(lockedPerson,{personMedia:'images'}),'a commitment cannot remove video coverage');
+check(visualPolicyWeakens({...lockedPerson,personMedia:'images'},{personMedia:'videos'}),'switching scope cannot silently discard image protection');
+check(!visualPolicyWeakens({...lockedPerson,personRegion:'faces',personMedia:'images'},{personRegion:'full',personMedia:'both'}),'widening area and media scope is a strengthening');
+check(!visualPolicyWeakens({...lockedPerson,personEffect:'blur'},{personEffect:'solid'}),'a commitment can strengthen blur to an opaque mask');
 check(validateCapture({ id: 'one', width: 1, height: 1, rgba: 'AAAAAA==' }), 'bounded RGBA accepted');
 for (const bad of [{ width: 385 }, { height: -1 }, { width: 1.2 }, { rgba: 'data:' }, { id: '../path' }]) {
   check(!validateCapture({ id: 'one', width: 1, height: 1, rgba: 'AAAAAA==', ...bad }), 'malformed capture rejected');
@@ -25,6 +33,8 @@ check(faceDetections({ face: [{ boxScore: 1.5, box: face.box }] }) === null, 'ou
 check(faceDetections({ face: [{ boxScore: .9, box: [10, 10, -4, 40] }] }) === null, 'invalid detector box rejected');
 check(appearancePrediction([.92, .08]).gender === 'female', 'packaged appearance model female output index preserved');
 check(appearancePrediction([.09, .91]).gender === 'male', 'packaged appearance model male output index preserved');
+check(appearancePrediction([.5, .5]) === null, 'a tied appearance output is unknown rather than an invented selected estimate');
+check(appearancePrediction([.5000001, .5]) === null, 'near-tied numeric noise cannot invent a selected estimate');
 for (const invalid of [[NaN, .1], [1.1, -.1], [.9, .9], [.8], null]) {
   check(appearancePrediction(invalid) === null, 'invalid appearance output cannot become a confident match');
 }
@@ -42,6 +52,19 @@ check(personDecision([face], [], 'all', 100, 100).blur, 'visible confident face 
 check(personDecision([face], [], 'female', 100, 100).blur, 'chosen appearance estimate can match');
 check(!personDecision([face], [], 'male', 100, 100).blur, 'other appearance is not hidden');
 check(!personDecision([{ ...face, genderScore: .4 }], [], 'female', 100, 100).blur, 'low-confidence appearance not asserted');
+for (const probability of [.51, .543, .568, .674, .735, .799]) {
+  check(personDecision([{ ...face, genderScore: probability }], [], 'female', 100, 100).blur,
+    'selected leading estimate is not discarded by the former 80-percent cutoff');
+  check(personDecision([{ ...face, gender: 'male', genderScore: probability }], [], 'female', 100, 100).blur,
+    'an uncertain opposite estimate is withheld without claiming it is a selected gender');
+  check(personDecision([{ ...face, gender: 'male', genderScore: probability }], [], 'male', 100, 100).blur,
+    'male preference receives the same wider recall as female preference');
+}
+check(!personDecision([{...face, genderScore: NaN}], [], 'female', 100, 100).blur, 'non-finite appearance confidence never masks a face');
+check(!personDecision([{...face, gender:'male',genderScore:.80}], [], 'female', 100, 100).blur,
+  'a confident opposite estimate can remain outside the selected preference');
+check(!personDecision([{...face, gender:'male',genderScore:1.5}], [], 'female', 100, 100).blur,
+  'out-of-range confidence is not evidence of a valid face preference match');
 check(!personDecision([{ ...face, faceScore: .1 }], [], 'all', 100, 100).blur, 'low-confidence face not asserted');
 check(!personDecision([face], [], 'off', 100, 100).blur, 'person preferences opt-in');
 let finish, calls = 0, now = 0;

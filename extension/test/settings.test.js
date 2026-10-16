@@ -1,9 +1,11 @@
-import { parseDomains, settingsAccess, connectionStatus, connectionFeedback, restrictionsActive } from "../lib/settings.js";
+import { parseDomains, settingsAccess, connectionStatus, connectionFeedback, repairFeedback, restrictionsActive, settingsError } from "../lib/settings.js";
 
 let checks = 0;
 function check(ok, label) { checks++; if (!ok) throw new Error(label); }
 const solo = { appPresent: false, lockUntil: 0, failClosed: false };
-const managed = { ...solo, appPresent: true, lastHeartbeat: 1000 };
+const managed = { ...solo, appPresent: true, lastHeartbeat: 1000, desiredRevision:1,appliedRevision:1,
+  enforcement:{version:1,status:"applied",desiredRevision:1,appliedRevision:1,
+    layers:{domains:"applied",search:"applied",text:"applied",visual:"off"}} };
 const parsed = parseDomains("https://www.example.com/path\nexample.com\nbad domain\n-invalid.com\n\n");
 check(parsed.domains.join() === "example.com", "normalize and deduplicate domains");
 check(parsed.invalid.join() === "3,4", "identify invalid lines rather than silently discarding them");
@@ -25,4 +27,19 @@ check(connectionFeedback({ok:false}, solo).includes("No connection"), "standalon
 check(connectionFeedback({ok:false}, managed).includes("remain app-managed"), "managed reconnect preserves ownership guidance");
 check(connectionFeedback({ok:true}, {ok:false}).includes("could not be verified"), "missing readback is not success");
 check(connectionFeedback({ok:false,reason:"unavailable"}, solo).includes("could not be verified"), "worker outage is not missing-app evidence");
+check(connectionFeedback({ok:false,connected:true,reason:"enforcement-failed"},
+  {...managed,enforcement:{status:"failed"}},2000).includes("App connected"), "browser enforcement failure retains connection evidence");
+check(settingsError({reason:"enforcement-failed"}).includes("stored"), "failed application is not reported as an unsaved setting");
+check(connectionFeedback({ok:true,connected:true},{...managed,enforcement:undefined},2000).includes("could not be confirmed"),
+      "a positive native reply cannot certify browser application without a receipt");
+check(!connectionStatus({...managed,bridgeConnection:{status:"unavailable"}},2000).fresh,
+      "an explicit native failure is visible even before the trusted heartbeat grace period ends");
+check(connectionFeedback({ok:false,reason:"authority-unreachable"},managed,2000).includes("lock authority"),
+      "authority outage has a distinct repair explanation without transferring ownership");
+check(repairFeedback({ok:true}, managed).includes("configuration verified"), "successful repair needs verified configuration readback, not native connectivity");
+check(repairFeedback({ok:true}, {...managed, appPresent:false}).includes("configuration verified"), "standalone browser repair does not require the app");
+check(repairFeedback({ok:false,reason:"unavailable"}, managed).includes("did not confirm"), "timeout cannot use an old applied receipt to claim repair succeeded");
+check(repairFeedback({ok:true}, {...managed,enforcement:undefined}).includes("could not be fully verified"), "positive command cannot replace a missing receipt");
+check(repairFeedback({ok:true}, {ok:false}).includes("did not confirm"), "missing post-repair readback is unverified");
+check(repairFeedback({ok:false,reason:"enforcement-failed"}, managed).includes("unchanged"), "failed repair explains that saved choices and lock were not reset");
 print(`${checks}/${checks} settings checks passed`);

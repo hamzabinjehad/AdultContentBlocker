@@ -1,6 +1,6 @@
 /* App-style surfaces. All assets are bundled; no remote UI requests. */
-:root{color-scheme:light dark;--bg:#fff;--sidebar:#f6f8fb;--fg:#222226;--muted:#68686f;--line:#e1e4e9;--accent:#0069e4;--accent-ink:#fff;--soft:#eaf2ff;--card:#f7f8fa;--warn:#a35c00;--good:#15934c;--good-soft:#edf8f0;--warn-soft:#fff6e8}
-@media(prefers-color-scheme:dark){:root{--bg:#202124;--sidebar:#242529;--fg:#f0f0f3;--muted:#b0b0b8;--line:#3d3f45;--accent:#75b6ff;--accent-ink:#15151a;--soft:#2a384d;--card:#25272b;--warn:#edb451;--good:#63cc92;--good-soft:#232f2a;--warn-soft:#342d23}}
+:root{color-scheme:light dark;--bg:#f5f7fb;--sidebar:#fff;--fg:#17212f;--muted:#5f6b7a;--line:#dce3ed;--accent:#0866d8;--accent-ink:#fff;--soft:#e8f1ff;--card:#fff;--warn:#935200;--good:#087c40;--good-soft:#edf8f1;--warn-soft:#fff5e6}
+@media(prefers-color-scheme:dark){:root{--bg:#11151c;--sidebar:#171d27;--fg:#edf3fc;--muted:#aab6c8;--line:#303b4e;--accent:#8cbfff;--accent-ink:#10223a;--soft:#24354e;--card:#1b2330;--warn:#f0bb66;--good:#76d6a4;--good-soft:#1b302b;--warn-soft:#352e22}}
 *{box-sizing:border-box;letter-spacing:0}
 [hidden]{display:none!important}
 .visually-hidden{position:absolute!important;width:1px;height:1px;padding:0!important;margin:-1px!important;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0!important}
@@ -20,10 +20,10 @@ a{color:var(--accent);text-underline-offset:3px}
 .brand .icon{width:25px;height:28px;color:var(--accent)}
 .hint,.detail,.sub,.privacy-note{color:var(--muted);font-size:13px}
 .privacy-note{font-size:12px;margin-top:24px;padding-top:16px;border-top:1px solid var(--line)}
-.settings-shell{display:grid;grid-template-columns:210px minmax(0,1fr);height:100dvh;min-height:0}
+.settings-shell{display:grid;grid-template-columns:230px minmax(0,1fr);height:100dvh;min-height:0}
 .sidebar{background:var(--sidebar);padding:28px 18px;border-inline-end:1px solid var(--line);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:28px}
 .sidebar nav{display:grid;gap:4px}
-.sidebar nav a{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;text-decoration:none;color:var(--fg);font-size:13px}
+.sidebar nav a{display:flex;align-items:center;gap:12px;min-height:44px;padding:10px 12px;border-radius:12px;text-decoration:none;color:var(--fg);font-size:14px}
 .sidebar nav a[aria-current=page]{background:var(--soft);color:var(--accent);font-weight:600}
 .sidebar nav a:hover{background:var(--soft)}
 .sidebar .privacy-note{margin-top:auto}
@@ -32,7 +32,7 @@ a{color:var(--accent);text-underline-offset:3px}
 .settings .page-view{flex:1;min-height:0;overflow:auto;padding:3px 5px 12px;scrollbar-gutter:stable}
 .mode{padding:0 0 20px;border-bottom:1px solid var(--line);margin-bottom:22px}
 .mode strong{font-size:15px}.mode button{margin-top:6px}
-.settings fieldset{min-width:0;border:0;border-top:1px solid var(--line);padding:18px 0 0;margin:22px 0 0}
+.settings fieldset{min-width:0;border:1px solid var(--line);border-radius:16px;background:var(--card);padding:18px;margin:22px 0 0}
 .settings legend{padding:0 12px 0 0;color:var(--fg)}
 .settings textarea{width:100%;min-height:130px;border:1px solid var(--line);border-radius:6px;padding:10px;background:var(--bg);color:var(--fg);font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;resize:vertical}
 textarea:disabled{background:var(--card);color:var(--muted)}
@@ -88,23 +88,32 @@ button.icon-button{background:transparent;color:var(--muted);width:34px;min-widt
 dt{color:var(--muted)}dd{margin:0;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
 .protection-layers{list-style:none;margin:0;padding:0}.protection-layers li{display:flex;justify-content:space-between;gap:16px;border-bottom:1px solid var(--line);padding:11px 0;font-size:13px}.protection-layers span:last-child{color:var(--muted);text-align:end}
 .connection-badge{font-size:12px;color:var(--muted);margin:12px 0 16px}
+/* Give Chromium an intrinsic document width. Clamping only the body to its
+   initially tiny viewport creates an auto-size feedback loop in real popups. */
+html.popup-root{width:480px;height:600px}
+.popup-root body.popup{width:100%;max-width:none}
 body.popup{width:480px;max-width:100vw;height:600px;max-height:100vh;padding:16px 20px;overflow:hidden;display:flex;flex-direction:column}
 .popup header,.popup .actions,.popup .privacy-note,.popup #connectionMessage{flex:none}
 .popup-scroll{min-height:0;flex:1;overflow:auto;scrollbar-gutter:stable}
 .popup header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--line)}
 .popup .brand{font-size:22px}.popup .brand img{width:30px;height:30px}
 .popup .lang-switch{background:transparent;border-color:var(--line);color:var(--fg);font-size:13px;min-height:40px;border-radius:10px}
-.popup-intro{padding:16px 0 12px}.popup-intro h1{font-size:23px;line-height:1.25;margin:0 0 4px}.popup-intro .detail{margin:0}
+.popup-intro{padding:10px 0 6px}.popup-intro h2{font-size:14px;line-height:1.25;margin:0 0 4px}.popup-intro .detail{margin:0}
 .popup .detail{font-size:12px;line-height:1.55;margin:4px 0 0}
-.browser-status{padding:12px 14px;border-radius:12px;background:var(--good-soft);border:1px solid var(--line);margin-bottom:8px}.browser-status h2{font-size:14px}.browser-status .detail{font-size:12px}
+.browser-status{display:grid;grid-template-columns:36px minmax(0,1fr);align-items:start;gap:12px;padding:14px;border-radius:16px;background:var(--card);border:1px solid var(--line);margin:12px 0 0}.browser-status h1{font-size:18px;line-height:1.3;margin:0}.browser-status .detail{font-size:12px}
+.status-symbol{display:grid;place-items:center;width:36px;height:40px;border-radius:12px;background:var(--soft);color:var(--accent)}.status-symbol .icon{width:24px;height:24px}.status-copy{min-width:0}
 .browser-status:has(.unknown){background:var(--card)}.browser-status:has(.partial){background:var(--warn-soft)}
-.layer-checklist{list-style:none;margin:0;padding:0}
-.layer-checklist li{display:flex;align-items:center;gap:12px;min-height:58px;border-bottom:1px solid var(--line);padding:8px 2px}
+.layer-checklist{list-style:none;margin:0;padding:0 12px;background:var(--card);border:1px solid var(--line);border-radius:14px}
+.layer-checklist li{display:flex;align-items:center;gap:12px;min-height:58px;border-bottom:1px solid var(--line);padding:8px 0}
+.layer-checklist li:last-child{border-bottom:0}
 .layer-checklist li>div{flex:1;min-width:0}.layer-checklist h2{font-size:14px;margin:0;line-height:1.35}
 .layer-indicator{display:flex;align-items:center;justify-content:center;width:23px;height:23px;flex:none;border:1.6px solid var(--muted);border-radius:50%;color:var(--muted)}
 .layer-indicator .icon{width:16px;height:16px}.layer-indicator.unknown .icon{visibility:hidden}
 .layer-indicator.active{background:var(--good);color:var(--bg);border-color:var(--good)}.layer-indicator.partial{color:var(--warn);border-color:var(--warn)}
 button.layer-link{background:transparent;color:var(--muted);min-height:44px;width:44px;padding:10px;border-radius:10px}.layer-optional{font-size:11px;color:var(--muted)}
+button.layer-link:hover{background:var(--card);color:var(--fg)}
+.popup :is(button,summary,a,select,input):focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){.popup *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 .popup .connection-badge{margin:4px 0 0}.commitment-summary{padding:13px 0;margin-top:8px}.commitment-summary h2{font-size:13px}
 .popup .notice{background:var(--warn-soft);border:0;border-radius:8px;padding:11px 12px;margin:8px 0}.popup .notice summary{color:var(--warn);font-weight:600}
 .popup .actions{display:grid;grid-template-columns:minmax(0,1fr) 48px;gap:10px;margin-top:12px;background:var(--bg)}
@@ -113,6 +122,24 @@ button.layer-link{background:transparent;color:var(--muted);min-height:44px;widt
 .popup dl{display:grid;grid-template-columns:1fr 1.4fr;gap:7px;margin-bottom:0}
 .popup .privacy-note{font-size:11px;margin:12px 0 0;padding-top:10px;text-align:center}
 .popup #connectionMessage:empty{display:none}
+.protection-repair{margin:8px 0 12px}.protection-repair>button{width:100%}
+#repairProtection{min-height:44px;white-space:normal}
+#repairMessage:empty{display:none}
+.settings #overview>.status-section{padding:18px;border:1px solid var(--line);border-radius:14px;background:var(--card);margin-bottom:16px}
+.settings #overview>.mode{padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--bg)}
+@media(prefers-contrast:more){:root{--line:currentColor}.layer-indicator{border-width:2px}button.secondary{border-width:2px}}
+.presentation-settings{display:grid;gap:8px;margin-top:20px}.presentation-settings label{font-weight:600;font-size:13px}.presentation-settings select{width:100%;min-height:44px}.presentation-settings .hint{margin-top:8px}
+@media(min-width:401px){
+  .popup-intro{padding:10px 0 6px}
+  /* The status card already explains standalone/connected protection. */
+  .popup-intro>.detail{display:none}
+  .layer-checklist li{min-height:54px;padding-block:6px}
+}
+.popup-editor{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px;padding-top:8px}
+.popup-editor-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none}
+.popup-editor-actions button{min-height:44px}
+.popup-editor iframe{width:100%;flex:1;min-height:0;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.popup-editing>.popup-scroll,.popup-editing>.actions,.popup-editing>.privacy-note,.popup-editing>#connectionMessage,.popup-editing header .lang-switch{display:none}
 /* Browser zoom reduces a popup's CSS viewport. Keep the chosen text size, but
    switch to one document scroll before fixed controls squeeze the layers away. */
 @media(max-height:500px),(max-width:320px){
@@ -155,3 +182,50 @@ body.blocked{min-height:100vh;display:grid;place-items:center;padding:24px}
 .blocked .report{border-top:1px solid var(--line);margin-top:24px;padding-top:16px}.blocked .report-hint,.blocked .report-status{font-size:13px}
 .blocked .matched .w{margin:3px;border-color:var(--line);background:var(--card);color:var(--fg)}.blocked .matched .w.done{text-decoration:line-through}.blocked .report-status{overflow-wrap:anywhere}
 @media(max-width:600px){.settings-shell{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}.sidebar{position:static;height:auto;padding:16px;border-inline-end:0;border-bottom:1px solid var(--line);gap:16px}.sidebar nav{display:flex;flex-wrap:wrap}.sidebar nav a{gap:6px;font-size:12px;padding:7px}.sidebar .privacy-note{display:none}.lang-pick{display:flex;align-items:center}.settings main{padding:24px 13px 16px}.status-details{grid-template-columns:1fr 1.5fr}}
+/* Reuse the full guarded editor in the toolbar popup, with a compact tab strip. */
+body.popup.popup-editing{height:600px;max-height:100vh;min-height:0;overflow:hidden}
+.popup-embedded .settings-shell{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
+.popup-embedded .sidebar{position:static;height:auto;padding:8px;border:0;border-bottom:1px solid var(--line);gap:4px}
+.popup-embedded .sidebar>.brand,.popup-embedded .sidebar>.privacy-note{display:none}
+.popup-embedded .sidebar nav{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:4px;padding:3px}
+.popup-embedded .sidebar nav a{min-height:44px;white-space:nowrap;flex:none;padding:7px 9px}
+.popup-embedded .lang-pick{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0}
+.popup-embedded .lang-pick select{min-height:36px}
+.popup-embedded main{padding:14px 9px 8px}
+.popup-embedded .save-bar{padding:8px;margin-top:8px}
+.popup-embedded .save-bar button{min-height:44px}
+.popup-embedded .page-view{scrollbar-gutter:auto}
+@media(max-height:500px),(max-width:320px){
+  body.popup.popup-editing{height:auto;max-height:none;min-height:600px;overflow:auto}
+  .popup-editing .popup-editor{flex:none;height:500px}
+}
+@media(max-width:320px){
+  body.popup.popup-editing{padding:12px}
+  .popup-embedded main{padding:10px 6px 6px}
+  .popup-embedded .visual-row{padding:10px}
+  .popup-embedded .person-targets label{padding:10px;gap:8px}
+}
+/* Narrow browser-owned bubbles must not reserve icon/action columns at the
+   expense of the text. Stack the action below a comfortably wide text cell. */
+@media(max-width:400px){
+  body.popup{padding:12px}
+  .layer-checklist li{display:grid;grid-template-columns:24px minmax(0,1fr);gap:6px 10px;padding:12px 0;align-items:start}
+  .layer-checklist li>.layer-indicator{grid-column:1;grid-row:1;margin-top:3px}
+  .layer-checklist li>div{grid-column:2;grid-row:1}
+  .layer-checklist li>.layer-link,.layer-checklist li>.layer-optional{grid-column:2;grid-row:2;justify-self:end}
+  .layer-checklist h2,.layer-checklist .detail{overflow-wrap:break-word;word-break:normal}
+  .popup .actions{grid-template-columns:minmax(0,1fr)}
+  .popup #checkConnection{width:100%}
+  .popup #connectionAction{position:static!important;width:auto;height:auto;margin:0;overflow:visible;clip-path:none;white-space:normal}
+  .popup .actions button{flex-wrap:wrap}
+  .popup dl{grid-template-columns:minmax(0,1fr)}
+  .popup dd{margin:0 0 8px;overflow-wrap:anywhere}
+}
+@media(max-width:180px){
+  .layer-checklist li{grid-template-columns:minmax(0,1fr)}
+  .layer-checklist li>.layer-indicator{display:none}
+  .layer-checklist li>div,.layer-checklist li>.layer-link,.layer-checklist li>.layer-optional{grid-column:1}
+  .popup .brand{font-size:20px;gap:6px}.popup .brand img{width:22px;height:22px}
+  .popup .lang-switch{max-width:100%;padding-inline:8px}
+  .popup .actions button{padding-inline:8px}
+}

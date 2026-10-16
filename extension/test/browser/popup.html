@@ -5,7 +5,8 @@ const results = [];
 const check = (ok, label) => { results.push(`${ok ? "ok" : "FAIL"} ${label}`); if (!ok) throw new Error(label); };
 const pause = () => new Promise((resolve) => setTimeout(resolve, 100));
 try {
-  const source = await (await fetch("../../popup.html")).text();
+  // Forced tiny iframe previews do not exercise Chromium's popup auto-sizing.
+  const source = (await (await fetch("../../popup.html")).text()).replace('class="popup-root"', '');
   async function frame(state, language = "en", privateAccess = true, viewport = {width:360,height:650}) {
     const f = document.createElement("iframe");
     const mock = `<script>
@@ -13,17 +14,28 @@ try {
       window.workerUnavailable = false;
       window.syncDelay = 0;
       window.syncCalls = 0;
+      window.syncReply = {ok:false};
+      window.repairDelay = 0;
+      window.repairCalls = 0;
+      window.repairReply = {ok:true};
       window.close = () => {};
       window.chrome = {
         storage: { local: { get: async () => ({uiLanguage:${JSON.stringify(language)}}),set:async()=>{} }, onChanged:{addListener(){}} },
         extension: { isAllowedIncognitoAccess: cb => cb(${privateAccess}) },
-        runtime: { getManifest:()=>({version:'1.0.0'}), openOptionsPage:()=>opened++,
+        runtime: { getManifest:()=>({version:'1.0.0'}), getURL:()=> 'about:blank', openOptionsPage:()=>opened++,
           sendMessage(msg, cb) {
             if (workerUnavailable) throw new Error('Worker unavailable');
             if (msg.type === 'getState') return cb(${JSON.stringify(state)});
             if (msg.type === 'getVisualStatus') return cb({state:'disabled',available:true});
-            syncCalls++;
-            setTimeout(() => cb({ok:false}), syncDelay);
+            if (msg.type === 'forceSync') {
+              syncCalls++;
+              return setTimeout(() => cb(syncReply), syncDelay);
+            }
+            if (msg.type === 'repairProtection') {
+              repairCalls++;
+              return setTimeout(() => cb(repairReply), repairDelay);
+            }
+            cb({ok:false,reason:'unexpected-message'});
           } }
       };
     <\/script>`;
@@ -32,12 +44,45 @@ try {
     document.getElementById("frames").append(f);
     await new Promise((resolve) => f.onload = resolve); await pause(); return f;
   }
-  const base = {appPresent:false,inspectText:true,mode:"blocklist",lockUntil:0};
+  // Pure UI fixture. Real-worker QA obtains receipts from the worker itself.
+  const base = {appPresent:false,inspectText:true,mode:"blocklist",lockUntil:0,
+    desiredRevision:1,appliedRevision:1,enforcement:{version:1,status:"applied",desiredRevision:1,appliedRevision:1,
+      layers:{domains:"applied",search:"applied",text:"applied",visual:"off"},downloadedRules:{domains:0,keywords:0,listVersion:0}}};
   const solo = await frame(base), s = solo.contentDocument;
   check(s.getElementById("pHead").textContent === "Protection active", "standalone protection status");
   check(s.getElementById("lHead").textContent === "No active lock", "protection and lock are separate");
   check(s.getElementById("lockBlock").hidden, "inactive lock explanation does not crowd the popup");
   check(s.querySelector('#visualIndicator').closest('li').querySelector('[data-view="media"]'), "visual shortcut opens its dedicated page");
+  check(!s.getElementById("protectionDetails").open, "healthy popup keeps advanced repair details collapsed");
+  const repairButton = s.getElementById("repairProtection"), repairMessage = s.getElementById("repairMessage");
+  const syncBeforeRepair = solo.contentWindow.syncCalls;
+  repairButton.click(); await pause();
+  check(repairMessage.textContent.includes("configuration verified"), "independent repair reports verified browser configuration readback");
+  check(solo.contentWindow.repairCalls === 1 && solo.contentWindow.syncCalls === syncBeforeRepair,
+    "browser repair does not request a native connection check");
+  solo.contentWindow.repairDelay = 300;
+  const repairsBeforeDoubleClick = solo.contentWindow.repairCalls;
+  repairButton.querySelector("span").dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  check(repairButton.disabled && repairButton.getAttribute("aria-busy") === "true", "repair communicates its pending state on the entire button");
+  repairButton.querySelector("span").dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  check(solo.contentWindow.repairCalls === repairsBeforeDoubleClick + 1, "repair cannot queue duplicate requests through its icon");
+  await new Promise(resolve => setTimeout(resolve, 400));
+  check(!repairButton.disabled && !repairButton.hasAttribute("aria-busy"), "repair becomes available again after completion");
+  solo.contentWindow.repairDelay = 0;
+  solo.contentWindow.repairReply = {ok:false,reason:"unavailable"};
+  repairButton.click(); await pause();
+  check(repairMessage.textContent.includes("did not confirm") && !repairMessage.textContent.includes("configuration verified"),
+    "missing repair acknowledgement cannot reuse an old applied receipt as success");
+  solo.contentWindow.workerUnavailable = true;
+  repairButton.click(); await pause();
+  check(repairMessage.textContent.includes("did not confirm") && s.getElementById("pHead").textContent === "Status unavailable",
+    "repair outage has honest unavailable protection status");
+  solo.contentWindow.workerUnavailable = false;
+  solo.contentWindow.repairReply = {ok:true};
+  repairButton.click(); await pause();
+  check(repairMessage.textContent.includes("configuration verified") && s.getElementById("pHead").textContent === "Protection active",
+    "repair can recover after a worker outage without requiring the app");
+  check(solo.contentWindow.syncCalls === syncBeforeRepair, "repair success, retries and outages stay separate from native syncing");
   s.getElementById("checkConnection").click(); await pause();
   check(s.getElementById("connectionMessage").textContent.includes("No connection"), "connection failure gives useful feedback");
   solo.contentWindow.syncDelay = 300;
@@ -57,14 +102,42 @@ try {
   reconnect.click(); await pause();
   check(s.getElementById("pHead").textContent === "Protection active", "retry recovers after worker failure");
   s.getElementById("openSettings").click();
-  check(solo.contentWindow.opened === 1, "settings shortcut responds");
+  check(solo.contentWindow.opened === 0 && !s.getElementById('popupEditor').hidden, "settings open inside the popup, without creating a full page");
+  check(s.getElementById('settingsFrame').getAttribute('src').endsWith('?popup=1#overview'), "popup uses the shared settings controller");
+  s.getElementById('backToStatus').click();
+  check(s.getElementById('popupEditor').hidden && s.getElementById('settingsFrame').hasAttribute('src'), "back preserves the settings document and its drafts");
+  s.querySelector('[data-view="media"]').click();
+  check(!s.getElementById('popupEditor').hidden && solo.contentWindow.opened === 0, "visual shortcut stays inside the popup");
+  s.getElementById('backToStatus').click();
   check(s.documentElement.scrollWidth <= solo.contentWindow.innerWidth, "popup does not overflow");
   const failed = await frame({ok:false,reason:"internal-error"});
   check(failed.contentDocument.getElementById("pHead").textContent === "Status unavailable", "a worker error never looks like active protection");
+  const pending = await frame({...base,enforcement:undefined}), pd = pending.contentDocument;
+  check(pd.getElementById('pHead').textContent === 'Checking browser protection'
+    && !pd.getElementById('domainIndicator').classList.contains('active'), 'stored desired settings never certify domain readiness');
+  const repair = await frame({...base,appPresent:true,lastHeartbeat:Date.now(),desiredRevision:2,
+    enforcement:{version:1,status:'failed',desiredRevision:2,appliedRevision:1,
+      layers:{domains:'applied',search:'applied'},failure:{code:'text-registration-readback'}}}), rd = repair.contentDocument;
+  check(rd.getElementById('pHead').textContent === 'Protection needs repair'
+    && rd.getElementById('domainIndicator').classList.contains('active')
+    && !rd.getElementById('textIndicator').classList.contains('active'), 'scanner readback failure keeps verified domains visible without claiming full protection');
+  check(rd.getElementById("protectionDetails").open, "verified enforcement failure exposes the repair action without extra discovery");
+  repair.contentWindow.syncReply = {ok:false,connected:true,reason:'enforcement-failed'};
+  rd.getElementById('checkConnection').click(); await pause();
+  check(rd.getElementById('connectionBadge').textContent === 'App connected'
+    && rd.getElementById('connectionMessage').textContent.includes('App connected'), 'failed browser application retains honest native connectivity in the popup');
+  const domainFailure = await frame({...base,enforcement:{version:1,status:'failed',desiredRevision:1,appliedRevision:0,
+    layers:{},failure:{code:'rules-readback'}}});
+  check(!domainFailure.contentDocument.getElementById('domainIndicator').classList.contains('active'), 'DNR readback rejection never shows domain protection as ready');
   const old = await frame({...base,appPresent:true,lastHeartbeat:1});
   check(old.contentDocument.getElementById("pDot").classList.contains("partial"), "stale app is reported as partial protection");
   const locked = await frame({...base,lockUntil:Date.now()+60000});
   check(!locked.contentDocument.getElementById("lockBlock").hidden, "active commitment stays visible in the popup");
+  const lockedHeading = locked.contentDocument.getElementById("lHead").textContent;
+  locked.contentDocument.getElementById("repairProtection").click(); await pause();
+  check(!locked.contentDocument.getElementById("lockBlock").hidden
+    && locked.contentDocument.getElementById("lHead").textContent === lockedHeading,
+    "browser repair does not dismiss or shorten the displayed commitment");
   const ar = await frame(base,"ar",false), a = ar.contentDocument;
   check(a.documentElement.dir === "rtl", "Arabic popup mirrors");
   check(!a.getElementById("incognito").hidden, "private-window gap is visible");
@@ -76,13 +149,15 @@ try {
     const f = await frame(base, language, false, viewport), d = f.contentDocument, w = f.contentWindow;
     const main = d.querySelector(".popup-scroll"), firstLayer = d.querySelector(".layer-checklist li");
     check(d.documentElement.scrollWidth <= w.innerWidth, `${language} ${viewport.width}×${viewport.height}: popup fits horizontally`);
+    check(firstLayer.querySelector('div').getBoundingClientRect().width >= Math.min(110, viewport.width - 24), `${language} ${viewport.width}px: layer text keeps a readable column instead of single letters`);
     check(main.clientHeight > 0 && main.clientHeight >= firstLayer.clientHeight, `${language} ${viewport.width}×${viewport.height}: protection layers never collapse`);
     check(w.getComputedStyle(main).overflowY === "visible", `${language} ${viewport.width}×${viewport.height}: one document scroll instead of a trapped inner scroll`);
     const scrolling = d.scrollingElement;
     firstLayer.scrollIntoView({block:"start"});
     let rect = firstLayer.getBoundingClientRect();
     check(rect.top >= -1 && rect.top < w.innerHeight, `${language} ${viewport.width}×${viewport.height}: first protection layer is reachable`);
-    for (const id of ["langSwitch", "openSettings", "checkConnection"]) {
+    d.getElementById("protectionDetails").open = true;
+    for (const id of ["langSwitch", "openSettings", "checkConnection", "repairProtection"]) {
       const button = d.getElementById(id);
       button.scrollIntoView({block:"nearest"});
       rect = button.getBoundingClientRect();
@@ -94,6 +169,7 @@ try {
     await checkCompactPopup(language, {width:200,height:280});
     await checkCompactPopup(language, {width:400,height:280});
     await checkCompactPopup(language, {width:200,height:650});
+    await checkCompactPopup(language, {width:160,height:650});
     const normal = await frame(base, language, false, {width:400,height:600}), d = normal.contentDocument;
     const main = d.querySelector(".popup-scroll"), firstLayer = d.querySelector(".layer-checklist li");
     check(normal.contentWindow.getComputedStyle(main).overflowY === "auto" && main.clientHeight >= firstLayer.clientHeight, `${language}: normal popup keeps its usable layer scroll`);
@@ -102,6 +178,9 @@ try {
     check(sd.body.getBoundingClientRect().width === 480 && sd.documentElement.scrollWidth <= 480, `${language}: wider popup fits its intended viewport`);
     const action = sd.getElementById("openSettings").getBoundingClientRect();
     check(action.height >= 44 && action.bottom <= 600, `${language}: full-page action has a comfortable visible target`);
+    sd.getElementById("protectionDetails").open = true;
+    check(sd.getElementById("repairProtection").getBoundingClientRect().height >= 44,
+      `${language}: repair keeps a comfortable touch target`);
     check(spacious.contentWindow.getComputedStyle(sd.getElementById("connectionAction")).position === "absolute", `${language}: reconnect label remains accessible without crowding the main action`);
   }
   document.getElementById("summary").dataset.result = "pass";

@@ -1,0 +1,72 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Hisn packaged visual engine smoke test</title>
+<pre id="summary" data-result="pending">Loading the packaged engine…</pre>
+<script type="module">
+// This is a real-model startup/inference smoke test, not a classification
+// accuracy benchmark. It uses only a synthetic flat green capture and the
+// exact engine bundle and assets shipped with the extension.
+const summary = document.getElementById('summary');
+const results = [];
+let failed = false;
+const check = (condition, label) => {
+  results.push(`${condition ? 'ok' : 'FAIL'} ${label}`);
+  if (!condition) failed = true;
+};
+const realFetch = window.fetch.bind(window);
+const requests = [];
+window.fetch = (input, init) => {
+  const url = new URL(typeof input === 'string' || input instanceof URL ? input : input.url, location.href);
+  requests.push(url.href);
+  if (url.origin !== location.origin) throw new Error('External fetch forbidden by local model smoke test');
+  return realFetch(input, init);
+};
+try {
+  const { createVisualEngine } = await import('../../visual/engine.bundle.js');
+  check(typeof createVisualEngine === 'function', 'the shipped engine bundle imports successfully');
+  const engine = createVisualEngine({ baseURL: new URL('../../visual/', location.href).href, backend: 'cpu' });
+  const bytes = new Uint8Array(64 * 64 * 4);
+  for (let i = 0; i < bytes.length; i += 4) {
+    bytes[i + 1] = 128;
+    bytes[i + 3] = 255;
+  }
+  const capture = { id: 'real-model-green', width: 64, height: 64,
+    rgba: btoa(String.fromCharCode(...bytes)) };
+  bytes.fill(0);
+  for (const [name, preferences] of [
+    ['adult', { inspectVisual: true, personBlur: 'off' }],
+    ['all-faces', { inspectVisual: false, personBlur: 'all' }],
+    ['female-faces', { inspectVisual: false, personBlur: 'female' }],
+    ['male-faces', { inspectVisual: false, personBlur: 'male' }],
+  ]) {
+    const started = performance.now();
+    try {
+      const result = await engine.inspect(`real-${name}`, capture, preferences);
+      const status = engine.status(preferences);
+      results.push(`${name}: ${JSON.stringify({ result, status, milliseconds: Math.round(performance.now() - started) })}`);
+      check(result?.state === 'ready', `${name} inference returns an explicit ready result`);
+      check(status.state === 'ready' && status.backend === 'cpu', `${name} reports a loaded CPU backend and required models`);
+      if (preferences.inspectVisual) {
+        check(typeof result?.adult?.block === 'boolean' && result.adult.inspected === true,
+          'adult classification returns an actually inspected boolean verdict');
+        check(result?.adult?.block === false, 'synthetic flat green is not classified as adult content');
+      } else {
+        check(typeof result?.persons?.blur === 'boolean' && Array.isArray(result.persons.regions),
+          `${name} returns a boolean face verdict and bounded regions`);
+        check(result?.persons?.blur === false, `${name} does not invent a face in synthetic flat green`);
+      }
+    } catch (error) {
+      failed = true;
+      results.push(`FAIL ${name}: ${error.stack || error}; status=${JSON.stringify(engine.status(preferences))}`);
+    }
+  }
+  check(requests.every(url => new URL(url).origin === location.origin), 'all intercepted model fetches stay on loopback');
+  results.push(`local model requests: ${requests.map(url => new URL(url).pathname).join(', ') || '(embedded weights only)'}`);
+  engine.disable();
+} catch (error) {
+  failed = true;
+  results.push(`FAIL ${error.stack || error}`);
+}
+summary.textContent = results.join('\n');
+summary.dataset.result = failed ? 'fail' : 'pass';
+</script>

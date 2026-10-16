@@ -1,0 +1,236 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Hisn video playback lifecycle</title>
+<pre id="summary" data-result="pending">Running…</pre>
+<p>Real local canvas-stream decoding, capture, and feed text checking, with simulated verdicts.
+  Buffering and seeking events are dispatched explicitly because the local stream cannot seek or buffer over a network.</p>
+<div id="frames"></div>
+<script type="module">
+const results = [];
+const check = (ok, label) => {
+  results.push(`${ok ? 'ok' : 'FAIL'} ${label}`);
+  if (!ok) throw Error(label);
+};
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+let w;
+try {
+  const frame = document.createElement('iframe');
+  frame.style.cssText = 'width:720px;height:360px';
+  const base = new URL('../../', location.href).href;
+  frame.srcdoc = `<html><head><base href="${base}">
+    <link rel="stylesheet" href="content/visual-gate.css">
+    <style>body{margin:0}video{width:256px;height:192px}canvas{display:none}</style>
+    </head><body><article data-testid="tweet">
+    <div data-testid="tweetText">Gardening notes from a sunny afternoon</div>
+    <div data-testid="videoPlayer"><video muted playsinline aria-label="Video: a kitten playing in a garden"></video>
+    <span id="clock">0:00</span><button aria-label="Pause video">Pause</button>
+    <div role="slider" aria-label="Video progress 0 seconds" aria-valuenow="0"></div></div>
+    <a href="/fixture/status/1">Post</a></article><canvas width="64" height="48"></canvas>
+    <script>
+    window.jobs=[];window.cancellations=[];window.streams=[];window.playingEvents=0;
+    window.textScores=[];window.pauseCalls=0;window.controlChanges=0;
+    window.chrome={runtime:{sendMessage:message=>{
+      if(message.type==='getVisualSettings')return new Promise(resolve=>window.settingsReply=resolve);
+      if(message.type==='cancelVisualMedia'){
+        cancellations.push(message.id);
+        const job=jobs.find(job=>job.id===message.id);
+        if(job&&!job.settled){job.cancelled=true;job.reply({state:'unknown',reason:'cancelled'});}
+        return Promise.resolve({});
+      }
+      if(message.type!=='inspectVisualMedia')return Promise.reject(Error('Unexpected fixture message'));
+      // Inspect synthetic pixel dimensions/content without retaining the frame bytes.
+      const bytes=atob(message.rgba),green=bytes.charCodeAt(1)>bytes.charCodeAt(0)&&bytes.charCodeAt(1)>bytes.charCodeAt(2);
+      return new Promise(resolve=>{
+        const job={id:message.id,kind:message.mediaKind,width:message.width,height:message.height,
+          pixelBytes:bytes.length,green,settled:false,cancelled:false,
+          reply:result=>{if(!job.settled){job.settled=true;resolve(result);}}};
+        jobs.push(job);
+      });
+    }},storage:{onChanged:{addListener:listener=>window.change=listener}}};
+    window.video=document.querySelector('video');
+    const nativePause=video.pause.bind(video);
+    video.pause=()=>{pauseCalls++;return nativePause();};
+    video.addEventListener('playing',()=>playingEvents++);
+    const canvas=document.querySelector('canvas'),context=canvas.getContext('2d');
+    function paint(){context.fillStyle='rgb(32,160,80)';context.fillRect(0,0,64,48);}
+    paint();window.paintTimer=setInterval(paint,50);
+    window.replaceStream=async()=>{
+      const stream=canvas.captureStream(20);streams.push(stream);video.srcObject=stream;await video.play();
+    };
+    window.startFixture=async()=>{
+      await replaceStream();
+      const scanner=document.createElement('script');scanner.src='content/visual.js';
+      scanner.onload=()=>window.scannerLoaded=true;document.body.append(scanner);
+    };
+    window.startTextScanner=()=>{
+      window.textScanner=HisnFeed.createScanner({doc:document,win:window,
+        loc:{protocol:'https:',hostname:'x.com',href:'https://x.com/home'},
+        send:async zones=>{
+          textScores.push({body:zones.body,alt:zones.alt});
+          return {enabled:true,block:zones.body.includes('fixtureadult')||zones.alt.includes('fixtureadult')};
+        }});
+      textScanner.start();
+    };
+    window.startControls=()=>{
+      const clock=document.getElementById('clock'),button=document.querySelector('button'),slider=document.querySelector('[role="slider"]');
+      window.controlTimer=setInterval(()=>{
+        controlChanges++;
+        clock.textContent='0:'+String(controlChanges).padStart(2,'0');
+        button.textContent=controlChanges%2?'Pause':'Play';
+        button.setAttribute('aria-label',button.textContent+' video');
+        slider.setAttribute('aria-label','Video progress '+controlChanges+' seconds');
+        slider.setAttribute('aria-valuenow',String(controlChanges));
+      },80);
+    };
+    window.cleanup=()=>{
+      window.textScanner?.stop();window.__hisnVisualScanner?.stop();clearInterval(paintTimer);clearInterval(window.controlTimer);
+      for(const stream of streams)for(const track of stream.getTracks())track.stop();
+    };
+    <\/script><script src="content/feed.js"><\/script>
+    <script src="visual/capture.js" onload="startFixture().catch(error=>window.fixtureError=error.stack)"><\/script>
+    </body></html>`;
+  document.getElementById('frames').append(frame);
+  w = frame.contentWindow;
+  const wait = async (predicate, label, limit = 6500) => {
+    const deadline = performance.now() + limit;
+    while (performance.now() < deadline) {
+      if (w.fixtureError) throw Error(w.fixtureError);
+      if (predicate()) return;
+      await delay(10);
+    }
+    throw Error(`Timed out: ${label}; state=${w.video?.dataset.hisnVisual}; jobs=${w.jobs?.length}; cancelled=${w.cancellations?.length}`);
+  };
+  await wait(() => w.scannerLoaded && w.settingsReply, 'local video decoded and scanner loaded');
+  const video = w.video;
+  const hidden = () => w.getComputedStyle(video).visibility === 'hidden';
+  const nextJob = async after => {
+    await wait(() => w.jobs.slice(after).some(job => !job.settled), 'next real captured frame');
+    return w.jobs.slice(after).find(job => !job.settled);
+  };
+  const clean = {state:'ready',adult:{block:false},persons:{blur:false}};
+  const acceptClean = async job => {
+    job.reply(clean);
+    await wait(() => video.dataset.hisnVisual === 'checked' && !hidden(), 'clean verdict reveals video');
+    await delay(30);
+  };
+  check(video.videoWidth === 64 && video.videoHeight === 48 && !video.paused,
+    'synthetic local MediaStream has real decoded video dimensions and is playing');
+  check(hidden() && w.jobs.length === 0, 'startup preferences keep the video hidden before any inference');
+  w.settingsReply({inspectVisual:true,personBlur:'off'});
+  const initial = await nextJob(0);
+  check(initial.kind === 'video' && initial.width === 64 && initial.height === 48
+    && initial.pixelBytes === 64 * 48 * 4 && initial.green,
+    'canonical capture reads the actual benign decoded green pixels');
+  await delay(250);
+  check(hidden() && video.dataset.hisnVisual === 'pending', 'first source stays hidden during a delayed initial verdict');
+  await acceptClean(initial);
+  check(!hidden() && !video.paused, 'initial verified clean video is visible and keeps playing');
+
+  // Start text checking before the manual resume: its initial pending state
+  // intentionally pauses media, and a clean result must not autoplay it.
+  w.startTextScanner();
+  await wait(() => w.textScanner.stats.verdicts === 1, 'initial feed text verdict');
+  check(w.textScores.length === 1 && w.textScores[0].body.includes('Gardening notes')
+    && w.textScores[0].alt === 'Video: a kitten playing in a garden' && video.paused,
+    'real feed scanner checks the post and video caption once, with its initial pause preceding manual playback');
+  let jobCount = w.jobs.length;
+  let playingEvents = w.playingEvents;
+  video.pause();
+  await video.play();
+  await wait(() => w.playingEvents > playingEvents, 'native resumed playing event');
+  check(video.dataset.hisnVisual === 'checked' && !hidden() && !video.paused && w.jobs.length === jobCount,
+    'native pause and resume preserve the clean verdict for an unchanged sample');
+
+  const textRequestsBeforeControls = w.textScores.length;
+  const pausesBeforeControls = w.pauseCalls;
+  const timeBeforeControls = video.currentTime;
+  w.startControls();
+  const repeat = await nextJob(jobCount);
+  const playbackTime = video.currentTime;
+  const cancellations = w.cancellations.length;
+  check(video.dataset.hisnVisual === 'checked' && !hidden() && !video.paused,
+    'natural playback crossing the two-second sample boundary stays visible during periodic inference');
+  await delay(250);
+  check(video.currentTime > playbackTime && !hidden() && !video.paused,
+    'actual playback advances while a later inference reply is delayed');
+  check(w.controlChanges > 2 && w.textScores.length === textRequestsBeforeControls
+    && w.pauseCalls === pausesBeforeControls && video.currentTime > timeBeforeControls && !video.paused,
+    'changing actual player clocks, buttons, and sliders during routine visual checks adds no text scores or pause calls');
+  playingEvents = w.playingEvents;
+  video.pause();
+  await video.play();
+  await wait(() => w.playingEvents > playingEvents, 'native resume during inference');
+  video.dispatchEvent(new w.Event('waiting'));
+  video.dispatchEvent(new w.Event('playing'));
+  await delay(50);
+  check(!repeat.cancelled && !repeat.settled && w.cancellations.length === cancellations
+    && video.dataset.hisnVisual === 'checked' && !hidden() && !video.paused,
+    'native resume and simulated buffer recovery preserve the in-flight periodic check');
+  await acceptClean(repeat);
+
+  const stableTextRequests = w.textScores.length;
+  const stablePauseCalls = w.pauseCalls;
+  jobCount = w.jobs.length;
+  await w.replaceStream();
+  await wait(() => video.dataset.hisnVisual === 'pending' && hidden(), 'new stream revokes prior reveal');
+  const replacement = await nextJob(jobCount);
+  await delay(150);
+  check(hidden() && video.dataset.hisnVisual === 'pending', 'actual source replacement is hidden while independently checked');
+  await acceptClean(replacement);
+
+  jobCount = w.jobs.length;
+  // MediaStreams are not seekable: exercise the canonical seek listener explicitly.
+  video.dispatchEvent(new w.Event('seeking'));
+  check(hidden() && video.dataset.hisnVisual === 'pending', 'simulated seek revokes prior reveal before rechecking');
+  await acceptClean(await nextJob(jobCount));
+
+  jobCount = w.jobs.length;
+  w.change({state:{newValue:{inspectVisual:true,personBlur:'all'}}}, 'local');
+  check(hidden() && video.dataset.hisnVisual === 'pending', 'stronger person policy hides an existing clean video until rechecked');
+  await acceptClean(await nextJob(jobCount));
+
+  jobCount = w.jobs.length;
+  const unavailable = await nextJob(jobCount);
+  check(!hidden() && video.dataset.hisnVisual === 'checked', 'a later periodic check starts from a retained clean verdict');
+  unavailable.reply({state:'unknown',reason:'fixture-inference-unavailable'});
+  await wait(() => video.dataset.hisnVisual === 'unknown', 'later unknown verdict');
+  check(hidden() && video.dataset.hisnVisualReason === 'fixture-inference-unavailable',
+    'an unknown later result withdraws reveal permission and retains its explicit reason');
+  jobCount = w.jobs.length;
+  const recovered = await nextJob(jobCount);
+  check(hidden(), 'unknown recovery remains hidden before a verified result');
+  await acceptClean(recovered);
+  check(w.textScores.length === stableTextRequests && w.pauseCalls === stablePauseCalls && !video.paused,
+    'source, seek, policy, and unknown visual gating do not remove the unchanged caption from the independent feed verdict');
+
+  jobCount = w.jobs.length;
+  const positive = await nextJob(jobCount);
+  check(!hidden() && !video.paused, 'verified video remains usable before the delayed positive repeat verdict');
+  positive.reply({state:'ready',adult:{block:true},persons:{blur:false}});
+  await wait(() => video.dataset.hisnVisual === 'adult-hidden' && video.paused, 'positive result hides and pauses');
+  check(hidden() && video.paused, 'adult-positive later verdict immediately hides and pauses the source');
+  jobCount = w.jobs.length;
+  await video.play().catch(() => {});
+  video.dispatchEvent(new w.Event('seeking'));
+  w.change({state:{newValue:{inspectVisual:true,personBlur:'all',personRegion:'faces'}}}, 'local');
+  await delay(250);
+  check(hidden() && video.paused && video.dataset.hisnVisual === 'adult-hidden' && w.jobs.length === jobCount,
+    'adult latch survives playback restart, simulated seek, and a person presentation change without a clean-frame reveal');
+  const previousTextScores = w.textScores.length;
+  video.setAttribute('aria-label', 'fixtureadult');
+  await wait(() => w.textScores.length === previousTextScores + 1
+    && w.document.querySelector('article').style.getPropertyValue('opacity') === '0'
+    && w.document.querySelector('[data-hisn-feed-notice]')?.textContent.includes('Hisn hid this post'),
+    'changed adult caption receives an actual feed blocked verdict');
+  check(w.textScores.at(-1).alt === 'fixtureadult' && video.paused,
+    'a changed adult-marker media caption is still text-checked and blocks its article while the visual latch stays paused');
+  results.push('Scope: real MediaStream decoding, native playback/resume, natural sample timing, CSS, canvas capture, and feed scanning with a simulated X location; verdicts and buffer/seek events are simulated. No live X, model accuracy, cross-origin playback, or physical Safari claim.');
+  document.getElementById('summary').dataset.result = 'pass';
+} catch (error) {
+  results.push(`FAIL ${error.stack}`);
+  document.getElementById('summary').dataset.result = 'fail';
+} finally {
+  w?.cleanup?.();
+  document.getElementById('summary').textContent = results.join('\n');
+}
+</script>

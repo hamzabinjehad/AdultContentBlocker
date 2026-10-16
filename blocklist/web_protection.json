@@ -3,5 +3,8 @@
     "yandex.com", "www.yandex.com", "yandex.ru", "www.yandex.ru",
     "ya.ru", "www.ya.ru", "yandex.com.tr", "www.yandex.com.tr"
   ],
-  "blockedViewerDomains": ["nitter.net", "xcancel.com", "sotwe.com", "twstalker.com"]
+  "blockedViewerDomains": [
+    "nitter.net", "xcancel.com", "sotwe.com", "twstalker.com",
+    "twitterviewer.net", "twitee.co", "xxcancel.com", "twitter-viewer.com"
+  ]
 }

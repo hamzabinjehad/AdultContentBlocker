@@ -74,8 +74,53 @@ class BrowserRunnerTests(unittest.TestCase):
         try:
             self.assertEqual(server.server_name, "127.0.0.1")
             self.assertEqual(server.server_port, server.server_address[1])
+            self.assertGreaterEqual(server.request_queue_size, 12)
         finally:
             server.server_close()
+
+    def test_only_explicit_cors_image_fixture_grants_cross_origin_pixels(self):
+        server, _, _, _ = runner.make_server(runner.ROOT, runner.HARNESS_ROOT / "popup.html")
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        base = f"http://127.0.0.1:{server.server_address[1]}"
+        expected = (runner.ROOT / "icons/icon-32.png").read_bytes()
+        try:
+            for path, allowed in (("/__hisn_fixture_cors/allowed.png", True),
+                                  ("/__hisn_fixture_cors/denied.png", False),
+                                  ("/icons/icon-32.png", False)):
+                with urlopen(base + path, timeout=5) as response:
+                    self.assertEqual(response.status, 200)
+                    self.assertEqual(response.headers.get_content_type(), "image/png")
+                    self.assertEqual(response.read(), expected)
+                    self.assertEqual(response.headers.get("Access-Control-Allow-Origin"),
+                                     "*" if allowed else None)
+            with self.assertRaises(HTTPError) as failure:
+                urlopen(base + "/__hisn_fixture_cors/not-an-image.png", timeout=5)
+            self.assertEqual(failure.exception.code, 404)
+            failure.exception.close()
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=5)
+
+    def test_varying_fixture_serves_different_pixels_for_the_same_url(self):
+        server, _, _, _ = runner.make_server(runner.ROOT, runner.HARNESS_ROOT / "popup.html")
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        url = f"http://127.0.0.1:{server.server_address[1]}/__hisn_fixture_cors/varying.png"
+        try:
+            for origin, expected in ((None, (255, 0, 0)), ("http://127.0.0.1:12345", (0, 255, 0))):
+                headers = {"Origin": origin} if origin else {}
+                with urlopen(Request(url, headers=headers), timeout=5) as response:
+                    self.assertEqual(response.read(), runner.fixture_png(expected))
+                    self.assertEqual(response.headers.get("Access-Control-Allow-Origin"), "*")
+                    self.assertEqual(response.headers.get("Vary"), "Origin")
+                    self.assertEqual(response.headers.get("Cache-Control"), "no-store")
+            self.assertNotEqual(runner.fixture_png((255, 0, 0)), runner.fixture_png((0, 255, 0)))
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=5)
 
     def test_scratch_retries_only_bounded_directory_not_empty_race(self):
         scratch = runner.HarnessScratch()

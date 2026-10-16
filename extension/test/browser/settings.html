@@ -16,6 +16,8 @@ try {
       appPresent: managed, mode: "blocklist", lockUntil: 0, lastHeartbeat: Date.now(),
       failClosed: false, customBlocks: ["example.com"], allowlist: [], customTerms: [],
       textAllow: [], ignoreTerms: [], disputed: [], inspectText: true, textSensitivity: 50,
+      desiredRevision:1,appliedRevision:1,enforcement:{version:1,status:"applied",desiredRevision:1,appliedRevision:1,
+        layers:{domains:"applied",search:"applied",text:"applied",visual:"off"},downloadedRules:{domains:0,keywords:0,listVersion:0}},
     };
     const mock = `<script>
       window.fixture = ${JSON.stringify(fixture)};
@@ -24,6 +26,10 @@ try {
       window.writeDelay = 0;
       window.rejectWrite = false;
       window.workerUnavailable = false;
+      window.syncCalls = 0;
+      window.repairCalls = 0;
+      window.repairDelay = 0;
+      window.repairReply = {ok:true};
       window.changeHandlers = [];
       window.chrome = { storage: { onChanged: { addListener(fn) { changeHandlers.push(fn); } },
           local: { get: async () => (${JSON.stringify(uiLanguage ?? null)} ? { uiLanguage: ${JSON.stringify(uiLanguage ?? null)} } : {}),
@@ -32,7 +38,11 @@ try {
           if (workerUnavailable) return cb({ok:false,reason:'unavailable'});
           if (msg.type === 'getState') { reads++; return cb(structuredClone(fixture)); }
           if (msg.type === 'getVisualStatus') return cb({state:'disabled',available:true,supportedPersonModes:['off','all','female','male']});
-          if (msg.type === 'forceSync') return cb({ok:false});
+          if (msg.type === 'forceSync') { syncCalls++; return cb({ok:false}); }
+          if (msg.type === 'repairProtection') {
+            repairCalls++;
+            return setTimeout(() => cb(repairReply), repairDelay);
+          }
           if (msg.type === 'update') {
             writes++;
             return setTimeout(() => {
@@ -59,6 +69,8 @@ try {
   check(s.getElementById("modeTitle").textContent === "Browser-only protection", "standalone identity");
   check(!s.getElementById("custom").disabled, "standalone fields editable");
   check(!s.getElementById("overview").hidden && s.getElementById("rules").hidden, "overview is the first screen");
+  check(s.getElementById("repairProtection").getBoundingClientRect().height >= 44,
+    "overview repair has a comfortable touch target");
   s.querySelector('a[href="#rules"]').click(); await pause();
   check(!s.getElementById("rules").hidden && s.getElementById("overview").hidden, "navigation opens Blocking Rules");
   check(s.querySelector('a[href="#rules"]').getAttribute("aria-current") === "page", "navigation exposes the selected view");
@@ -84,6 +96,37 @@ try {
   s.querySelector('a[href="#settings"]').click(); await pause();
   s.querySelector('a[href="#rules"]').click(); await pause();
   check(s.getElementById("allow").value === "unsaved.example", "navigation preserves unsaved drafts");
+  const repair = s.getElementById("repairProtection"), repairMessage = s.getElementById("repairMessage");
+  const syncBeforeRepair = w.syncCalls, writesBeforeRepair = w.writes;
+  repair.click(); await pause();
+  check(repairMessage.textContent.includes("configuration verified") && s.getElementById("allow").value === "unsaved.example",
+    "successful browser repair preserves unsaved site drafts");
+  check(w.repairCalls === 1 && w.syncCalls === syncBeforeRepair && w.writes === writesBeforeRepair,
+    "browser repair neither syncs the native app nor saves policy drafts");
+  w.repairDelay = 300;
+  const repairsBeforeDoubleClick = w.repairCalls;
+  repair.click();
+  check(repair.disabled && repair.getAttribute("aria-busy") === "true", "settings repair exposes its pending state");
+  repair.dispatchEvent(new MouseEvent("click", {bubbles:true}));
+  check(w.repairCalls === repairsBeforeDoubleClick + 1, "settings repair cannot queue duplicate requests");
+  await new Promise(resolve => setTimeout(resolve, 400));
+  check(!repair.disabled && !repair.hasAttribute("aria-busy"), "settings repair restores its action after completion");
+  w.repairDelay = 0;
+  w.repairReply = {ok:false,reason:"unavailable"};
+  repair.click(); await pause();
+  check(repairMessage.textContent.includes("did not confirm") && !repairMessage.textContent.includes("configuration verified"),
+    "settings repair cannot claim success from an old receipt after missing acknowledgement");
+  w.workerUnavailable = true;
+  repair.click(); await pause();
+  check(repairMessage.textContent.includes("did not confirm") && s.getElementById("allow").value === "unsaved.example",
+    "repair worker outage leaves the unsaved draft intact");
+  w.workerUnavailable = false;
+  w.repairReply = {ok:true};
+  repair.click(); await pause();
+  check(repairMessage.textContent.includes("configuration verified") && s.getElementById("allow").value === "unsaved.example",
+    "repair recovery still recognizes and preserves a draft created before the outage");
+  check(w.syncCalls === syncBeforeRepair && w.writes === writesBeforeRepair,
+    "repair retries and outage recovery never poll native or commit browser drafts");
   w.workerUnavailable = true;
   s.getElementById("checkConnection").click(); await pause();
   check(s.getElementById("connectionMessage").textContent.includes("could not be verified"), "worker outage is distinct from a missing app");
@@ -166,6 +209,13 @@ try {
   check(entry.disabled && s.querySelector("#rules .managed-notice").hidden === false && s.getElementById("saveBar").hidden, "app ownership is reflected by the site editor and save bar");
   const app = await frame(true), a = app.contentDocument;
   check(a.getElementById("blockingMode").disabled && a.getElementById("saveChecks").disabled, "managed controls read-only on load");
+  const managedSyncCalls = app.contentWindow.syncCalls, managedWrites = app.contentWindow.writes;
+  a.getElementById("repairProtection").click(); await pause();
+  check(a.getElementById("custom").disabled && a.getElementById("custom").value === "example.com"
+    && app.contentWindow.fixture.appPresent === true,
+    "browser repair preserves app ownership and app-managed values");
+  check(app.contentWindow.syncCalls === managedSyncCalls && app.contentWindow.writes === managedWrites,
+    "managed browser repair is still independent of native checks and policy writes");
   a.getElementById("checkConnection").click(); await pause();
   check(a.getElementById("custom").disabled, "connection failure never grants local policy ownership");
   check(a.getElementById("connectionMessage").textContent.includes("remain app-managed"), "connection error explains retained app ownership");

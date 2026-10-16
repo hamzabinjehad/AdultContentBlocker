@@ -350,7 +350,11 @@ export const WEB_PROTECTION_RULES = [
         "nitter.net",
         "xcancel.com",
         "sotwe.com",
-        "twstalker.com"
+        "twstalker.com",
+        "twitterviewer.net",
+        "twitee.co",
+        "xxcancel.com",
+        "twitter-viewer.com"
       ],
       "resourceTypes": [
         "main_frame",
@@ -369,7 +373,11 @@ export const WEB_PROTECTION_RULES = [
         "nitter.net",
         "xcancel.com",
         "sotwe.com",
-        "twstalker.com"
+        "twstalker.com",
+        "twitterviewer.net",
+        "twitee.co",
+        "xxcancel.com",
+        "twitter-viewer.com"
       ],
       "resourceTypes": [
         "script",

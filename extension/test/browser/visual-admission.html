@@ -1,0 +1,76 @@
+<!doctype html><meta charset="utf-8"><title>Hisn visual admission and fairness</title>
+<pre id="summary" data-result="pending">Running…</pre><div id="frames"></div>
+<script type="module">
+const results=[];
+const check=(ok,label)=>{results.push(`${ok?'ok':'FAIL'} ${label}`);if(!ok)throw Error(label)};
+const wait=async fn=>{for(let i=0;i<1500;i++){if(fn())return;await new Promise(r=>setTimeout(r,10))}throw Error('Fixture did not reach expected state')};
+try {
+ const frame=document.createElement('iframe');frame.style.cssText='width:1100px;height:900px';
+ const base=new URL('../../',location.href).href;
+ const picture='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="green"/></svg>');
+ frame.srcdoc=`<html><head><base href="${base}"><link rel="stylesheet" href="content/visual-gate.css">
+ <style>body{margin:0}#gallery{display:grid;grid-template-columns:repeat(20,52px);grid-auto-rows:52px}img,video{width:48px;height:48px}canvas{display:none}</style></head><body>
+ <div id="gallery">${Array.from({length:240},(_,i)=>`<img data-index="${i}" style="width:${[16,32,48][i%3]}px;height:${[16,32,48][i%3]}px" src="${picture}#${i}" alt="fixture ${i}">`).join('')}</div>
+ <video id="supported" muted playsinline></video><video id="unreadable"></video><img id="zero" style="width:0;height:0" src="${picture}">
+ <script>window.jobs=[];window.chrome={runtime:{sendMessage:m=>{
+ if(m.type==='getVisualSettings')return new Promise(r=>window.settingsReply=r);
+ if(m.type==='cancelVisualMedia')return Promise.resolve({});
+ return new Promise(r=>jobs.push({id:m.id,kind:m.mediaKind,reply:r}));}},storage:{onChanged:{addListener:f=>window.change=f}}};<\/script>
+ <script src="visual/capture.js"><\/script><script>
+ const realCapture=HisnVisualCapture.capture;
+ window.HisnVisualCapture={capture:node=>node.id==='supported'?realCapture(node):node.id==='unreadable'||node.dataset.index==='1'
+ ?{state:'unknown',reason:'inaccessible-pixels'}:{width:1,height:1,rgba:'AAAAAA=='}};
+ const canvas=document.createElement('canvas');canvas.width=canvas.height=64;document.body.append(canvas);
+ const ctx=canvas.getContext('2d');ctx.fillStyle='green';ctx.fillRect(0,0,64,64);
+ const video=document.getElementById('supported');video.srcObject=canvas.captureStream(10);window.videoReady=video.play();
+ <\/script><script src="content/visual.js"><\/script></body></html>`;
+ document.getElementById('frames').append(frame);
+ await new Promise(r=>frame.onload=r);
+ const w=frame.contentWindow,d=frame.contentDocument,images=[...d.querySelectorAll('#gallery img')];
+ const hidden=node=>w.getComputedStyle(node).visibility==='hidden';
+ check(images.length===240&&images.every(hidden),'computed CSS withholds all 240 simultaneously visible images before preferences resolve');
+ await w.videoReady;
+ w.settingsReply({inspectVisual:true,personBlur:'off'});
+ let replies=0;
+ await wait(()=>w.jobs.length>0);
+ // Inspection verdicts are deterministic fixture responses, not a model
+ // accuracy benchmark. Real canvas capture is used for the ordinary video.
+ const drain=setInterval(()=>{
+   while(replies<w.jobs.length){const job=w.jobs[replies];job.reply({state:'ready',adult:{block:replies===238},persons:{blur:false}});replies++;}
+ },1);
+ await wait(()=>images.every(node=>['checked','adult-hidden','unknown'].includes(node.dataset.hisnVisual))
+   &&d.getElementById('supported').dataset.hisnVisual==='checked'
+   &&d.getElementById('unreadable').dataset.hisnVisual==='unknown');
+ clearInterval(drain);
+ check(images.filter(node=>node.dataset.hisnVisual==='checked').every(node=>!hidden(node)),
+   'verified images beyond the first 128 active slots are visible by computed CSS');
+ check([16,32,48].every(size=>images.some(node=>w.getComputedStyle(node).width===size+'px'&&node.dataset.hisnVisual==='checked'&&!hidden(node))),
+   '16/32/48px selected media follows the same verified admission policy');
+ const adult=images.find(node=>node.dataset.hisnVisual==='adult-hidden');
+ check(adult&&hidden(adult)&&Number(adult.dataset.index)>128,'a late-gallery adult-positive image remains withheld');
+ check(hidden(images[1])&&images[1].dataset.hisnVisualReason==='inaccessible-pixels',
+   'an unreadable image has an explicit reason and no computed-CSS reveal');
+ const unsupported=d.getElementById('unreadable');
+ check(hidden(unsupported)&&unsupported.dataset.hisnVisualReason==='inaccessible-pixels',
+   'a simulated unreadable video remains unknown without a false clean result');
+ const zero=d.getElementById('zero');
+ check(zero.dataset.hisnVisual==='unknown'&&zero.dataset.hisnVisualReason==='zero-area'&&hidden(zero),
+   'zero-area media has an explicit withheld unknown state');
+ const supported=d.getElementById('supported');
+ check(!hidden(supported)&&!supported.paused&&w.jobs.some(job=>job.kind==='video'),
+   'a normal local MediaStream video passes real canvas capture and remains usable after verification');
+ const jobsBefore=w.jobs.length;
+ adult.remove();await new Promise(r=>setTimeout(r,0));d.getElementById('gallery').append(adult);
+ await new Promise(r=>setTimeout(r,30));
+ check(hidden(adult)&&adult.dataset.hisnVisual==='adult-hidden'&&w.jobs.length===jobsBefore,
+   'retired adult withholding survives detachment and reinsertion without rescanning');
+ const safe=images[238];safe.src=picture+'#replacement';
+ await wait(()=>safe.dataset.hisnVisual==='pending');
+ check(hidden(safe),'source replacement revokes a weak retained clean verdict before a new result');
+ w.change({state:{newValue:{inspectVisual:false,personBlur:'off'}}},'local');
+ check(images.every(node=>!hidden(node))&&!hidden(unsupported),'confirmed opt-out releases connected pending, unknown and adult media');
+ w.__hisnVisualScanner.stop();supported.srcObject.getTracks().forEach(track=>track.stop());
+ document.getElementById('summary').dataset.result='pass';
+}catch(e){results.push(`FAIL ${e.stack}`);document.getElementById('summary').dataset.result='fail'}
+document.getElementById('summary').textContent=results.join('\n');
+</script>

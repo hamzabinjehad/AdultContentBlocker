@@ -1,0 +1,32 @@
+<!doctype html><meta charset="utf-8"><title>Hisn person presentation integration</title>
+<pre id="summary" data-result="pending">Running…</pre><div id="frames"></div>
+<script type="module">
+const results=[],check=(ok,label)=>{results.push(`${ok?'ok':'FAIL'} ${label}`);if(!ok)throw Error(label)};
+async function wait(fn){for(let i=0;i<250;i++){if(fn())return;await new Promise(r=>setTimeout(r,10));}throw Error('Fixture timed out');}
+try{
+ const base=new URL('../../',location.href).href;
+ const f=document.createElement('iframe');f.style.cssText='width:640px;height:450px';
+ const image='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="160"><rect width="200" height="160" fill="steelblue"/></svg>');
+ f.srcdoc=`<html><head><base href="${base}"><link rel="stylesheet" href="content/visual-gate.css"><style>img,video{width:200px;height:160px;object-fit:fill}</style></head><body><img src="${image}"><video></video>
+ <script>window.settings={inspectVisual:false,personBlur:'female',personRegion:'faces',personEffect:'solid',personMedia:'images'};window.kinds=[];
+ window.chrome={runtime:{sendMessage:async m=>{if(m.type==='getVisualSettings')return settings;if(m.type==='cancelVisualMedia')return {};kinds.push(m.mediaKind);return {state:'ready',adult:{block:settings.inspectVisual&&m.mediaKind==='image'},persons:{blur:true,regions:[{x:.2,y:.2,width:.3,height:.3}]}};}},storage:{onChanged:{addListener:f=>window.changed=f}}};
+ window.HisnVisualCapture={capture:()=>({width:1,height:1,rgba:'AAAAAA=='})};<\/script>
+ <script src="content/visual-effects.js"><\/script><script src="content/visual.js"><\/script></body></html>`;
+ document.getElementById('frames').append(f);await new Promise(r=>f.onload=r);
+ const w=f.contentWindow,d=f.contentDocument,img=d.querySelector('img'),video=d.querySelector('video');
+ await wait(()=>img.dataset.hisnVisual==='checked');
+ check(w.getComputedStyle(img).filter.includes('url(')&&w.getComputedStyle(img).visibility!=='hidden','confirmed face-only image uses a local face filter before reveal');
+ check(w.kinds.length===1&&w.kinds[0]==='image'&&w.getComputedStyle(video).visibility!=='hidden','images-only person preference neither scans nor masks excluded video');
+ w.settings={...w.settings,personMedia:'videos'};w.changed({state:{newValue:w.settings}},'local');
+ await wait(()=>video.dataset.hisnVisual==='person-hidden');
+ check(!img.style.filter&&w.getComputedStyle(img).visibility!=='hidden','changing media scope removes the old image effect');
+ check(w.getComputedStyle(video).visibility==='hidden','face-only video request falls back to whole-media protection');
+ w.settings={...w.settings,inspectVisual:true};w.changed({state:{newValue:w.settings}},'local');
+ await wait(()=>img.dataset.hisnVisual==='adult-hidden');
+ check(w.getComputedStyle(img).visibility==='hidden','adult verdict always fully hides media, despite face-only and videos-only person choices');
+ w.__hisnVisualScanner.stop();
+ check(!d.querySelector('filter')&&!img.style.filter,'stop cleans face filter resources and styles');
+ document.getElementById('summary').dataset.result='pass';
+}catch(e){results.push(`FAIL ${e.stack}`);document.getElementById('summary').dataset.result='fail'}
+document.getElementById('summary').textContent=results.join('\n');
+</script>
