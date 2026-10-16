@@ -22,7 +22,10 @@ import { isLocked, effectiveStrict, shouldFailClosed, policyRules, tabsToBlock, 
   from "./lib/policy.js";
 import { createLock } from "./lib/serial.js";
 import { settingsAccess, restrictionsActive } from "./lib/settings.js";
-import { planGeneration, downloadedRuleIds, GENERATION_ARTIFACTS } from "./lib/generation.js";
+import { describeEnforcement } from "./lib/status.js";
+import { createToolbarStatus } from "./lib/toolbar-status.js";
+import { resolveLanguage } from "./lib/i18n.js";
+import { planGeneration, downloadedRuleIds, GENERATION_ARTIFACTS, RULE_DOWNLOADED_KEYWORDS_BASE } from "./lib/generation.js";
 import { handleVisualMessage, getVisualStatus, disableVisualEngine, cancelVisualTab } from "./visual/broker.js";
 
 const NATIVE_HOST = "app.hisn.bridge";
@@ -42,6 +45,20 @@ const RULESET_WEB_PROTECTION = "web_protection";
 // "nsfw" in a Reddit community's name. Kept out of the keyword list, which
 // matches every site.
 const RULESET_PATHS = "paths";
+const BASELINE_RULESETS = [RULESET_BLOCKLIST, RULESET_KEYWORDS, RULESET_SAFESEARCH, RULESET_PATHS, RULESET_WEB_PROTECTION];
+const TEXT_SCANNER = { id: "hisn-scan", js: ["content/feed.js", "content/scan.js"], matches: ["<all_urls>"] };
+const VISUAL_SCANNER = { id: "hisn-visual", js: ["visual/capture.js", "content/visual-effects.js", "content/visual.js"],
+  css: ["content/visual-gate.css"], matches: ["<all_urls>"] };
+// A receipt from a previous worker is historical evidence. This worker must
+// read Chrome's rules and registrations before presenting it as current.
+const WORKER_SESSION = `${Date.now()}-${Math.random()}`;
+const toolbarStatus = createToolbarStatus(chrome.action);
+const browserLanguage = () => {
+  try { return chrome.i18n?.getUILanguage?.() ?? "en"; } catch { return "en"; }
+};
+let toolbarLanguage = resolveLanguage("auto", browserLanguage());
+// UI writes are deliberately not awaited by rule application or native IPC.
+void toolbarStatus.update(undefined, toolbarLanguage);
 
 // Rule ids, priorities and the grace period live in lib/policy.js with the
 // rules themselves, so the tests evaluate exactly what Chrome is given.
@@ -59,6 +76,9 @@ const DEFAULT_STATE = {
   keywordRulesApplied: 0,   // downloaded keyword rules, same rule
   lastListUpdate: 0,        // epoch ms of the last generation installed
   lastHeartbeat: 0,
+  desiredRevision: 0,
+  appliedRevision: 0,
+  enforcement: null,        // versioned browser API receipt, not stored intent
   failClosed: false,        // true once we lost the native app mid-lock
   inspectText: true,        // page-text scoring
   inspectVisual: false,    // explicit opt-in; model quality is not universal coverage
@@ -101,8 +121,32 @@ const DEFAULT_STATE = {
 // --------------------------------------------------------------------------
 
 async function getState() {
-  const stored = await chrome.storage.local.get("state");
-  return { ...DEFAULT_STATE, ...(stored.state || {}) };
+  const stored = await chrome.storage.local.get(["state", "uiLanguage", "appLanguage"]);
+  toolbarLanguage = resolveLanguage(stored.uiLanguage, browserLanguage(), stored.appLanguage);
+  const state = { ...DEFAULT_STATE, ...(stored.state || {}) };
+  const receipt = state.enforcement;
+  if (!receipt || receipt.version !== 1 || receipt.worker !== WORKER_SESSION
+      || receipt.policyKey !== desiredPolicyKey(state)) {
+    state.enforcement = { version: 1, status: "pending", desiredRevision: state.desiredRevision,
+      appliedRevision: state.appliedRevision, layers: {} };
+  }
+  refreshToolbar(state);
+  return state;
+}
+
+function refreshToolbar(state) {
+  const receipt = state.enforcement;
+  const current = receipt?.version === 1 && receipt.worker === WORKER_SESSION
+    && receipt.policyKey === desiredPolicyKey(state);
+  // The toolbar cannot promote an historical receipt or mere model readiness.
+  void toolbarStatus.update(current ? state : { ...state, enforcement: undefined }, toolbarLanguage);
+}
+
+function desiredPolicyKey(state) {
+  return JSON.stringify([state.mode, state.lockUntil, state.failClosed, state.allowlist, state.customBlocks,
+    state.customTerms, state.inspectText, state.textSensitivity, state.textAllow, state.ignoreTerms,
+    state.inspectVisual, state.personBlur, state.personRegion, state.personEffect, state.personMedia,
+    state.listVersion, state.rulesApplied, state.keywordRulesApplied]);
 }
 
 /**
@@ -115,8 +159,15 @@ async function getState() {
 const transaction = createLock();
 
 async function setState(patch) {
-  const next = { ...(await getState()), ...patch };
+  const previous = await getState();
+  const next = { ...previous, ...patch };
+  if (desiredPolicyKey(next) !== desiredPolicyKey(previous)) {
+    next.desiredRevision = (previous.desiredRevision || 0) + 1;
+    next.enforcement = { version: 1, status: "pending", desiredRevision: next.desiredRevision,
+      appliedRevision: previous.appliedRevision, layers: {} };
+  }
   await chrome.storage.local.set({ state: next });
+  refreshToolbar(next);
   return next;
 }
 
@@ -133,54 +184,118 @@ async function setState(patch) {
 
 async function applyRules(state) {
   const dynamic = policyRules(state);
+  const receipt = { version: 1, status: "pending", worker: WORKER_SESSION,
+    policyKey: desiredPolicyKey(state), desiredRevision: state.desiredRevision || 0,
+    appliedRevision: state.appliedRevision || 0, checkedAt: 0, layers: {} };
+  await setState({ enforcement: receipt });
+  let phase = "baseline-rulesets";
+  let previousPolicy;
+  let replacedPolicy = false;
+  try {
+    // Baseline protection is unconditional: neither an absent app nor an
+    // unlocked browser is a request to disable its independent rulesets.
+    await chrome.declarativeNetRequest.updateEnabledRulesets({ enableRulesetIds: BASELINE_RULESETS });
+    phase = "ruleset-readback";
+    const baseline = await chrome.declarativeNetRequest.getEnabledRulesets();
+    if (BASELINE_RULESETS.some(id => !baseline.includes(id))) throw new Error("baseline ruleset readback mismatch");
+    phase = "policy-snapshot";
+    const existing = await chrome.declarativeNetRequest.getDynamicRules();
+    previousPolicy = existing.filter(rule => rule.id < RULE_DOWNLOADED_BASE);
+    if (canonicalRules(previousPolicy) === canonicalRules(dynamic) && !baseline.includes(RULESET_LOCKDOWN)) {
+      receipt.layers.domains = receipt.layers.search = "applied";
+    }
+    // Complete scanner repair and readback before replacing stricter rules.
+    // A missing registration must not create a transient relaxed unlock.
+    phase = "text-scanner";
+    await syncTextScanning(state);
+    phase = "visual-scanner";
+    await syncVisualScanning(state);
+    phase = "scanner-readback";
+    const scripts = await chrome.scripting.getRegisteredContentScripts({ ids: [TEXT_SCANNER.id, VISUAL_SCANNER.id] });
+    for (const [layer, expected, wanted] of [
+      ["text", TEXT_SCANNER, state.inspectText || state.failClosed || isLocked(state)],
+      ["visual", VISUAL_SCANNER, state.inspectVisual === true || (state.personBlur && state.personBlur !== "off")],
+    ]) {
+      const actual = scripts.find(script => script.id === expected.id);
+      if (wanted ? !scannerRegistrationMatches(actual, expected) : !!actual) {
+        phase = `${layer}-registration-readback`;
+        throw new Error("scanner registration readback mismatch");
+      }
+      receipt.layers[layer] = wanted ? "applied" : "off";
+    }
+    // Only replace owned policy ids. Downloaded rules retain their separate
+    // band, so lock/settings changes cannot wipe the signed blocklist.
+    phase = "dynamic-rules";
+    await chrome.declarativeNetRequest.updateDynamicRules({
+      removeRuleIds: previousPolicy.map(rule => rule.id), addRules: dynamic,
+    });
+    replacedPolicy = true;
+    phase = "rules-readback";
+    const actualRules = await chrome.declarativeNetRequest.getDynamicRules();
+    if (canonicalRules(actualRules.filter(rule => rule.id < RULE_DOWNLOADED_BASE)) !== canonicalRules(dynamic)) {
+      throw new Error("policy rule readback mismatch");
+    }
+    receipt.downloadedRules = {
+      domains: actualRules.filter(rule => rule.id >= RULE_DOWNLOADED_BASE && rule.id < RULE_DOWNLOADED_KEYWORDS_BASE).length,
+      keywords: actualRules.filter(rule => rule.id >= RULE_DOWNLOADED_KEYWORDS_BASE).length,
+      listVersion: state.listVersion,
+    };
+    phase = "downloaded-rules-readback";
+    if ((state.rulesApplied || state.keywordRulesApplied) &&
+        (receipt.downloadedRules.domains !== state.rulesApplied || receipt.downloadedRules.keywords !== state.keywordRulesApplied)) {
+      throw new Error("downloaded rule count readback mismatch");
+    }
+    // Chrome persists static ruleset enablement. Retire its legacy catch-all
+    // only after the dynamic replacement and registrations are verified.
+    phase = "ruleset-retirement";
+    await chrome.declarativeNetRequest.updateEnabledRulesets({ enableRulesetIds: BASELINE_RULESETS,
+      disableRulesetIds: [RULESET_LOCKDOWN] });
+    phase = "ruleset-readback";
+    const enabled = await chrome.declarativeNetRequest.getEnabledRulesets();
+    if (BASELINE_RULESETS.some(id => !enabled.includes(id)) || enabled.includes(RULESET_LOCKDOWN)) {
+      throw new Error("enabled ruleset readback mismatch");
+    }
+    receipt.layers.domains = receipt.layers.search = "applied";
+    phase = "open-tabs";
+    await enforceOpenTabs(state);
+    receipt.status = "applied";
+    receipt.appliedRevision = receipt.desiredRevision;
+    receipt.checkedAt = Date.now();
+    await setState({ appliedRevision: receipt.appliedRevision, enforcement: receipt });
+    console.info("[hisn] rules applied", { mode: state.mode, strict: effectiveStrict(state),
+      failClosed: state.failClosed, locked: isLocked(state), dynamicRules: dynamic.length });
+  } catch (error) {
+    // An authoritative unlock may be valid even though its browser repair
+    // failed. Keep a previously installed strict catch-all until a later
+    // complete application succeeds. Do not roll back a tightening.
+    if (previousPolicy?.some(rule => rule.action.type === "block" && rule.condition.urlFilter === "*")
+        && !dynamic.some(rule => rule.action.type === "block" && rule.condition.urlFilter === "*")) {
+      try {
+        if (replacedPolicy) {
+          const currentRules = await chrome.declarativeNetRequest.getDynamicRules();
+          await chrome.declarativeNetRequest.updateDynamicRules({
+            removeRuleIds: currentRules.filter(rule => rule.id < RULE_DOWNLOADED_BASE).map(rule => rule.id),
+            addRules: previousPolicy,
+          });
+        }
+        receipt.retainedStrict = true;
+        receipt.layers.domains = "pending";
+      } catch { receipt.strictRecoveryUnconfirmed = true; }
+    }
+    receipt.status = "failed";
+    receipt.failure = { code: phase, at: Date.now() };
+    await setState({ enforcement: receipt });
+    error.enforcementFailure = phase;
+    throw error;
+  }
+}
 
-  // Clear only the ids this function owns. Removing every dynamic rule here
-  // would also delete the downloaded blocklist, so every lock state change
-  // would silently unblock 148k domains until the next successful update.
-  const existing = await chrome.declarativeNetRequest.getDynamicRules();
-  await chrome.declarativeNetRequest.updateDynamicRules({
-    removeRuleIds: existing
-      .filter((r) => r.id < RULE_DOWNLOADED_BASE)
-      .map((r) => r.id),
-    addRules: dynamic,
-  });
-
-  // ── BASELINE PROTECTION IS UNCONDITIONAL ─────────────────────────────────
-  // These two rulesets are never disabled. Not when unlocked, not when the
-  // native app is absent, not on a fresh install.
-  //
-  // This used to be gated on `state.mode !== "off" || isLocked(state)`, and
-  // that gate was inverted in a way that made the extension useless on its own:
-  // `DEFAULT_STATE.mode` is "off", so a newly installed extension with no lock
-  // running — which is every install, before any lock is ever started —
-  // DISABLED the 148k-domain blocklist and blocked precisely nothing. The
-  // product's whole premise is a blocklist that is always there; a lock makes
-  // it stricter and unremovable, it is not the switch that turns it on.
-  //
-  // Anyone tempted to re-add a condition here should note what the two states
-  // actually mean: "no lock" means the person has not committed to a period
-  // yet, and "no app" means they installed only the browser half. Neither is a
-  // request to stop filtering.
-  await chrome.declarativeNetRequest.updateEnabledRulesets({
-    enableRulesetIds: [RULESET_BLOCKLIST, RULESET_KEYWORDS, RULESET_SAFESEARCH, RULESET_PATHS, RULESET_WEB_PROTECTION],
-    // Chrome retains enabled static rulesets across worker/browser restarts.
-    // The legacy static catch-all must not outlive its Strict policy. Strict
-    // enforcement is now entirely dynamic (including allowlist carve-outs),
-    // and those rules were installed successfully above before this removal.
-    disableRulesetIds: [RULESET_LOCKDOWN],
-  });
-
-  await syncTextScanning(state);
-  await syncVisualScanning(state);
-  await enforceOpenTabs(state);
-
-  console.info("[hisn] rules applied", {
-    mode: state.mode,
-    strict: effectiveStrict(state),
-    failClosed: state.failClosed,
-    locked: isLocked(state),
-    dynamicRules: dynamic.length,
-  });
+// Chrome may return object keys/rules in a different order. Compare the full
+// owned policy contract rather than treating an acknowledged write as proof.
+function canonicalRules(rules) {
+  const canonical = value => Array.isArray(value) ? value.map(canonical)
+    : value && typeof value === "object" ? Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])])) : value;
+  return JSON.stringify(rules.slice().sort((a, b) => a.id - b.id).map(canonical));
 }
 
 /**
@@ -294,6 +409,21 @@ async function getTermIndex(customTerms = [], ignoreTerms = []) {
  * means Chrome re-registers it before the worker wakes on a cold start, so
  * there is no window where pages load unscanned while the worker spins up.
  */
+// Matching file names alone is not proof of scanning coverage. A persisted
+// registration can still omit frames/sites, run after first paint, or execute
+// in the page's MAIN world. Repair the complete owned registration contract.
+function scannerRegistrationMatches(current, expected) {
+  if (!current || current.id !== expected.id) return false;
+  for (const key of ['js','css','matches']) {
+    if (JSON.stringify(current[key] || []) !== JSON.stringify(expected[key] || [])) return false;
+  }
+  return current.runAt === 'document_start' && current.allFrames === true
+    && current.matchOriginAsFallback === true && current.persistAcrossSessions === true
+    && (current.world === undefined || current.world === 'ISOLATED')
+    && !(current.excludeMatches || []).length
+    && !(current.includeGlobs || []).length && !(current.excludeGlobs || []).length;
+}
+
 async function syncTextScanning(state) {
   const wanted = state.inspectText || state.failClosed || isLocked(state);
   const existing = await chrome.scripting.getRegisteredContentScripts({
@@ -306,8 +436,8 @@ async function syncTextScanning(state) {
     }
     return;
   }
-  const scannerFiles = ["content/feed.js", "content/scan.js"];
-  if (existing.length && JSON.stringify(existing[0].js) === JSON.stringify(scannerFiles)) return;
+  const scannerFiles = TEXT_SCANNER.js;
+  if (scannerRegistrationMatches(existing[0], TEXT_SCANNER)) return;
   // A registered script survives updates. Migrate older registrations that
   // lack the granular feed dependency before accepting newly opened pages.
   if (existing.length) await chrome.scripting.unregisterContentScripts({ ids: ["hisn-scan"] });
@@ -340,7 +470,8 @@ async function syncVisualScanning(state) {
   const id = "hisn-visual";
   const wanted = state.inspectVisual === true || (state.personBlur && state.personBlur !== "off");
   const existing = await chrome.scripting.getRegisteredContentScripts({ ids: [id] }).catch(() => []);
-  const files = ["visual/capture.js", "content/visual.js"];
+  const files = VISUAL_SCANNER.js;
+  const css = VISUAL_SCANNER.css;
   if (!wanted) {
     await disableVisualEngine();
     if (existing.some((script) => script.id === id)) {
@@ -349,18 +480,22 @@ async function syncVisualScanning(state) {
     return;
   }
   const current = existing.find((script) => script.id === id);
-  if (!current || JSON.stringify(current.js) !== JSON.stringify(files)) {
+  if (!scannerRegistrationMatches(current, VISUAL_SCANNER)) {
     if (current) await chrome.scripting.unregisterContentScripts({ ids: [id] });
     await chrome.scripting.registerContentScripts([{
-      id, matches: ["<all_urls>"], js: files, runAt: "document_start",
+      id, matches: ["<all_urls>"], js: files, css, runAt: "document_start",
       allFrames: true, matchOriginAsFallback: true, persistAcrossSessions: true,
     }]);
   }
   let tabs = [];
   try { tabs = await chrome.tabs.query({ url: ["http://*/*", "https://*/*"] }); } catch { return; }
-  await Promise.all(tabs.map((tab) => chrome.scripting.executeScript({
-    target: { tabId: tab.id, allFrames: true }, files,
-  }).catch(() => {})));
+  await Promise.all(tabs.map(async (tab) => {
+    const target = { tabId: tab.id, allFrames: true };
+    try {
+      await chrome.scripting.insertCSS({target,files:css});
+      await chrome.scripting.executeScript({target,files});
+    } catch { /* A closed or unpermitted tab cannot be injected. */ }
+  }));
 }
 
 /** Run the scanner in every open web page now. It starts once per frame
@@ -613,13 +748,30 @@ function withTimeout(promise, ms, what) {
 }
 
 async function pollNative() {
+  let reply;
   try {
-    const reply = await withTimeout(
+    reply = await withTimeout(
       chrome.runtime.sendNativeMessage(NATIVE_HOST, { type: "getLockState" }),
       NATIVE_TIMEOUT_MS, "native host");
     if (!reply || !Number.isFinite(reply.lockUntil)) {
       throw new Error("malformed reply");
     }
+  } catch (err) {
+    const reason = reply?.reason === "authority-unreachable" ? "authority-unreachable"
+      : /timed out/.test(err?.message || "") ? "native-timeout"
+      : /malformed reply/.test(err?.message || "") ? "native-malformed"
+      : "native-unavailable";
+    console.warn("[hisn] native host unreachable:", err?.message ?? err);
+    await setState({ bridgeConnection: { version: 1, status: "unavailable", reason, checkedAt: Date.now() } });
+    try { await handleNativeLoss(); } catch (repairError) {
+      return { ok: false, connected: false, reason: "enforcement-failed", nativeReason: reason };
+    }
+    return { ok: false, connected: false, reason };
+  }
+  // A valid authoritative reply proves connectivity even when applying its
+  // settings fails. Preserve that lock/ownership and report the repair failure
+  // independently; do not relabel it as native loss or standalone operation.
+  try {
     // Build the patch by PRESENCE, not by defaulting.
     //
     // The obvious version — `allowlist: reply.allowlist ?? []` — has a trap in
@@ -640,6 +792,7 @@ async function pollNative() {
       lastHeartbeat: Date.now(),
       failClosed: false,
       appPresent: true,
+      bridgeConnection: { version: 1, status: "connected", checkedAt: Date.now() },
     };
     const state = await setState(patch);
     // The Mac app's language, which pages set to Automatic follow
@@ -649,11 +802,10 @@ async function pollNative() {
       chrome.storage.local.set({ appLanguage: reply.appLanguage }).catch(() => {});
     }
     await applyRules(state);
-    return true;
+    return { ok: true, connected: true };
   } catch (err) {
-    console.warn("[hisn] native host unreachable:", err?.message ?? err);
-    await handleNativeLoss();
-    return false;
+    console.warn("[hisn] authoritative browser settings could not be applied:", err?.message ?? err);
+    return { ok: false, connected: true, reason: "enforcement-failed" };
   }
 }
 
@@ -840,6 +992,7 @@ async function installGeneration({ plan, version }) {
     keywordRulesApplied: applied.keywordRules,
     lastListUpdate: Date.now(),
   });
+  await applyRules(await getState());
   console.info("[hisn] generation v%d applied — %d domain rules, %d keyword rules, %d terms",
     version, applied.rules, applied.keywordRules, plan.terms.terms.length);
 }
@@ -933,7 +1086,7 @@ async function guardedUpdate(rawPatch) {
   }
   const next = await setState(patch);
   await applyRules(next);
-  return { ok: true, state: next };
+  return { ok: true, state: await getState() };
 }
 
 // --------------------------------------------------------------------------
@@ -976,13 +1129,19 @@ async function ensureAlarms() {
  * event after thirty idle seconds, and each poll launches the bridge process.
  */
 const BOOT_POLL_AFTER_MS = 30 * 1000;
+async function restoreWorkerProtection() {
+  // Connectivity is not proof that browser rules or scanner registrations
+  // survived disable/re-enable. Repair enforcement before waiting for IPC.
+  await transaction(async () => applyRules(await getState()));
+  const state = await getState();
+  if (Date.now() - (state.lastHeartbeat || 0) > BOOT_POLL_AFTER_MS) {
+    await transaction(pollNative);
+  }
+}
 const booted = (async () => {
   try {
     await ensureAlarms();
-    const state = await getState();
-    if (Date.now() - (state.lastHeartbeat || 0) > BOOT_POLL_AFTER_MS) {
-      await transaction(pollNative);
-    }
+    await restoreWorkerProtection();
   } catch (err) {
     console.warn("[hisn] worker start-up check failed:", err?.message ?? err);
   }
@@ -1024,7 +1183,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
  * frame in a tab.
  */
 const PAGE_MESSAGES = new Set(["getState", "update", "forceSync", "reportWrongBlock",
-                               "reportWrongWord", "resolveDisputed", "getVisualStatus"]);
+                               "reportWrongWord", "resolveDisputed", "getVisualStatus", "repairProtection"]);
 
 function fromExtensionPage(sender) {
   return sender?.id === chrome.runtime.id
@@ -1057,7 +1216,8 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         break;
       case "getVisualSettings": {
         const state = await getState();
-        sendResponse({ inspectVisual: state.inspectVisual === true, personBlur: state.personBlur ?? "off" });
+        sendResponse({ inspectVisual: state.inspectVisual === true, personBlur: state.personBlur ?? "off",
+          personRegion:state.personRegion ?? 'full',personEffect:state.personEffect ?? 'solid',personMedia:state.personMedia ?? 'both' });
         break;
       }
       case "getVisualStatus":
@@ -1071,7 +1231,23 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         sendResponse(await transaction(() => guardedUpdate(msg.patch || {})));
         break;
       case "forceSync":
-        sendResponse({ ok: await transaction(pollNative) });
+        sendResponse(await transaction(pollNative));
+        break;
+      case "repairProtection":
+        // A browser-only repair reasserts the policy already held here. It
+        // neither authors settings nor asks the app to refresh its authority.
+        // Refuse a settings-shaped request rather than silently applying or
+        // appearing to accept a patch through this independent repair path.
+        if (Object.keys(msg).some(key => key !== "type")) {
+          sendResponse({ ok: false, reason: "invalid-request" });
+          break;
+        }
+        sendResponse(await transaction(async () => {
+          await applyRules(await getState());
+          const state = await getState();
+          return describeEnforcement(state).status === "applied"
+            ? { ok: true, state } : { ok: false, reason: "enforcement-failed", state };
+        }));
         break;
       case "scoreText":
         sendResponse(await scoreText(msg.zones || {}, _sender));
@@ -1093,7 +1269,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     }
   })().catch((err) => {
     console.error("[hisn] message failed:", msg?.type, err?.message ?? err);
-    sendResponse({ ok: false, reason: "internal-error" });
+    sendResponse({ ok: false, reason: err?.enforcementFailure ? "enforcement-failed" : "internal-error" });
   });
   return true; // async response
 });
@@ -1103,5 +1279,5 @@ chrome.tabs.onUpdated?.addListener((tabId, change) => {
   if (change.status === 'loading') cancelVisualTab(tabId).catch(() => {});
 });
 
-export { applyRules, guardedUpdate, DEFAULT_STATE, resolveDisputed, ensureAlarms, booted, ALARMS,
-         senderAllowed, ensureBlocked, syncVisualScanning };
+export { applyRules, guardedUpdate, DEFAULT_STATE, resolveDisputed, ensureAlarms, restoreWorkerProtection, booted, ALARMS,
+         senderAllowed, ensureBlocked, syncVisualScanning, toolbarStatus };

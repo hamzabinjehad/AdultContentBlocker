@@ -42,7 +42,7 @@ export function createVisualEngine({ baseURL, backend = 'webgl' } = {}) {
           async: false, warmup: 'none', skipAllowed: false, cacheSensitivity: 0,
           filter: { enabled: false, return: false }, gesture: { enabled: false },
           face: { enabled: true,
-            detector: { modelPath: 'blazeface.json', maxDetected: 10, minConfidence: 0.60,
+            detector: { modelPath: 'blazeface.json', maxDetected: 10, minConfidence: 0.60, iouThreshold: 0.30,
               square: false, rotation: false, return: false, skipFrames: 0, skipTime: 0 },
             mesh: { enabled: false }, attention: { enabled: false }, iris: { enabled: false },
             description: { enabled: false }, emotion: { enabled: false },
@@ -108,6 +108,7 @@ export function createVisualEngine({ baseURL, backend = 'webgl' } = {}) {
         if (gender && ['female', 'male'].includes(prefs.personBlur)) {
           for (const face of faces) {
             const prediction = await predictGender(faceTensor, face.box, frame.edge, frame.edge, gender);
+            if (!prediction) return { state: 'unknown', reason: 'invalid-appearance-output', adult: adultResult };
             Object.assign(face, prediction);
           }
         }
@@ -142,7 +143,7 @@ export function createVisualEngine({ baseURL, backend = 'webgl' } = {}) {
 }
 
 async function predictGender(image, box, width, height, model) {
-  if (!Array.isArray(box) || box.length !== 4 || !box.every(Number.isFinite)) return {};
+  if (!Array.isArray(box) || box.length !== 4 || !box.every(Number.isFinite)) return null;
   const x1 = Math.max(0, Math.min(1, box[0] / width));
   const y1 = Math.max(0, Math.min(1, box[1] / height));
   const x2 = Math.max(x1, Math.min(1, (box[0] + box[2]) / width));
@@ -158,6 +159,6 @@ async function predictGender(image, box, width, height, model) {
     });
     output = model.execute(input);
     const probabilities = await output.data();
-    return appearancePrediction(probabilities) ?? {};
+    return appearancePrediction(probabilities);
   } finally { input?.dispose(); output?.dispose(); }
 }

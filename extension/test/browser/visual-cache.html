@@ -1,0 +1,157 @@
+<!doctype html><meta charset="utf-8"><title>Hisn exact-pixel verdict cache tests</title>
+<pre id="summary" data-result="pending">Running…</pre>
+<p>Local synthetic RGBA frames only. Tests cache reuse, not model accuracy or video coverage.</p>
+<script type="module">
+// A dedicated worker exercises the actual Chromium broker path without a DOM,
+// real models, third-party code, native host or personal extension settings.
+// Only offscreen transport is simulated; SHA-256 is the browser's WebCrypto.
+const brokerURL = new URL("../../visual/broker.js", import.meta.url).href;
+const source = `
+const results = [];
+function check(ok, label) {
+  results.push((ok ? 'ok ' : 'FAIL ') + label);
+  if (!ok) throw new Error(label);
+}
+let engineCalls = 0, hashCalls = 0, storageWrites = 0, exists = false;
+let digestGate;
+let replyMode = 'ready';
+const realDigest = crypto.subtle.digest.bind(crypto.subtle);
+crypto.subtle.digest = async (...args) => {
+  hashCalls++;
+  const gate = digestGate;
+  digestGate = undefined;
+  const value = await realDigest(...args);
+  if (gate) { gate.started(); await gate.resume; }
+  return value;
+};
+function holdNextDigest() {
+  let started, release;
+  const began = new Promise(resolve => { started = resolve; });
+  const resume = new Promise(resolve => { release = resolve; });
+  digestGate = {started,resume};
+  return {began,release};
+}
+const write = () => { storageWrites++; throw new Error('Verdicts must stay in memory'); };
+globalThis.chrome = {
+  runtime: {
+    id: 'hisn', getURL: path => 'chrome-extension://hisn/' + path,
+    sendMessage: async message => {
+      if (message.operation !== 'inspect') return {state:'ready'};
+      engineCalls++;
+      check(!('url' in message.capture) && !('src' in message.capture), 'capture transport contains pixels, not a browsing URL');
+      if (replyMode === 'unknown') return {state:'unknown',reason:'inaccessible-pixels'};
+      if (replyMode === 'incomplete') return {state:'ready',adult:{block:false}};
+      return {state:'ready',adult:{block:replyMode === 'blocked',inspected:true},
+        persons:{blur:false,mode:message.preferences.personBlur,regions:[],estimated:true}};
+    },
+  },
+  offscreen: {
+    hasDocument: async () => exists,
+    createDocument: async () => { exists = true; },
+    closeDocument: async () => { exists = false; },
+  },
+  storage: {local:{set:write},session:{set:write},sync:{set:write}},
+};
+try {
+  const digest = await crypto.subtle.digest('SHA-256', new Uint8Array());
+  check([...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2,'0')).join('')
+    === 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+    'actual browser SHA-256 matches its known empty-input digest');
+  const {handleVisualMessage,disableVisualEngine} = await import(${JSON.stringify(brokerURL)});
+  const sender = {id:'hisn',tab:{id:17},frameId:0};
+  let sequence = 0;
+  const policy = {inspectVisual:true,personBlur:'off',desiredRevision:1,
+    personRegion:'full',personEffect:'solid',personMedia:'both'};
+  const inspect = (rgba='AAAAAA==',state=policy,geometry={width:1,height:1}) =>
+    handleVisualMessage({type:'inspectVisualMedia',id:'frame_' + ++sequence,
+      ...geometry,rgba,mediaKind:'image'},sender,state);
+  const countBeforeGallery = engineCalls;
+  let allReady = true;
+  for (let index = 0; index < 50; index++) {
+    const result = await inspect();
+    allReady &&= result.state === 'ready' && result.adult?.block === false;
+  }
+  check(allReady, 'all fifty duplicate synthetic captures receive a complete ready verdict');
+  check(engineCalls === countBeforeGallery + 1, 'fifty sequential identical pixel captures need only one engine inspection');
+  check(hashCalls >= 51, 'reuse still hashes each submitted capture with real WebCrypto rather than trusting media identifiers');
+  let before = engineCalls;
+  await inspect('AAAAAQ==');
+  check(engineCalls === before + 1, 'one changed RGBA byte cannot reuse the previous pixel verdict');
+  before = engineCalls;
+  await inspect('AAAAAAAAAAA=',policy,{width:2,height:1});
+  check(engineCalls === before + 1, 'different capture dimensions require a new verdict');
+  before = engineCalls;
+  await inspect('AAAAAA==',{...policy,desiredRevision:2});
+  check(engineCalls === before + 1, 'a new desired policy revision invalidates a prior pixel verdict');
+  const personPolicy = {...policy,desiredRevision:2,personBlur:'all'};
+  before = engineCalls;
+  await inspect('AAAAAA==',personPolicy);
+  check(engineCalls === before + 1, 'changed person-detection preference cannot borrow the old policy verdict');
+  before = engineCalls;
+  await inspect('AAAAAA==',{...personPolicy,personEffect:'blur'});
+  check(engineCalls === before + 1, 'changed presentation policy is isolated from the previous cache context');
+  replyMode = 'unknown';
+  before = engineCalls;
+  const unknownFirst = await inspect('AAAAAg==');
+  const unknownSecond = await inspect('AAAAAg==');
+  check(unknownFirst.state === 'unknown' && unknownSecond.state === 'unknown' && engineCalls === before + 2,
+    'unknown captures are inspected again instead of being cached as safe');
+  replyMode = 'incomplete';
+  before = engineCalls;
+  await inspect('AAAAAw=='); await inspect('AAAAAw==');
+  check(engineCalls === before + 2, 'incomplete ready replies are not promoted into reusable clean verdicts');
+  replyMode = 'blocked';
+  before = engineCalls;
+  const blockedFirst = await inspect('AAAABA==');
+  const blockedSecond = await inspect('AAAABA==');
+  check(blockedFirst.adult?.block === true && blockedSecond.adult?.block === true && engineCalls === before + 1,
+    'a cached positive adult verdict remains blocked rather than becoming a clean hit');
+  replyMode = 'ready';
+  let gate = holdNextDigest();
+  before = engineCalls;
+  const cancelledDuringHash = inspect('AAAABQ==');
+  const cancelledID = 'frame_' + sequence;
+  await gate.began;
+  await handleVisualMessage({type:'cancelVisualMedia',id:cancelledID},sender,policy);
+  gate.release();
+  const cancelledResult = await cancelledDuringHash;
+  check(cancelledResult.reason === 'cancelled' && engineCalls === before,
+    'media cancellation during actual asynchronous hashing cannot wake inference or return a clean hit');
+  gate = holdNextDigest();
+  before = engineCalls;
+  const disabledDuringHash = inspect('AAAABg==');
+  await gate.began;
+  await disableVisualEngine();
+  gate.release();
+  const disabledResult = await disabledDuringHash;
+  check(disabledResult.reason === 'cancelled' && engineCalls === before && !exists,
+    'opt-out during actual asynchronous hashing cannot create a late engine context');
+  await disableVisualEngine();
+  before = engineCalls;
+  await inspect('AAAABA==');
+  check(engineCalls === before + 1, 'opting out clears cached verdicts before later opted-in work');
+  check(storageWrites === 0, 'no capture, digest or verdict was written to extension storage');
+  await disableVisualEngine();
+  postMessage({status:'pass',text:results.join('\\n')});
+} catch (error) {
+  results.push('FAIL ' + (error.stack || error.message));
+  postMessage({status:'fail',text:results.join('\\n')});
+}
+`;
+const url = URL.createObjectURL(new Blob([source], {type:"text/javascript"}));
+const worker = new Worker(url, {type:"module"});
+const summary = document.getElementById("summary");
+let finished = false;
+const finish = (status, text) => {
+  if (finished) return;
+  finished = true;
+  clearTimeout(deadline);
+  worker.terminate();
+  URL.revokeObjectURL(url);
+  summary.dataset.result = status;
+  summary.textContent = text;
+};
+const deadline = setTimeout(() => finish("fail", "FAIL cache worker did not report a verdict before its deadline"), 30000);
+worker.onmessage = ({data}) => finish(data.status, data.text);
+worker.onerror = event => finish("fail", `FAIL cache worker: ${event.message}`);
+</script>

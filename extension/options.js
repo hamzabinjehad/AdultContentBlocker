@@ -23,15 +23,18 @@
  */
 
 import { send } from "./lib/messages.js";
-import { describeStatus } from "./lib/status.js";
+import {visualPolicyWeakens} from './lib/policy.js';
+import { describeStatus, describeEnforcement } from "./lib/status.js";
 import { renderIcons } from "./lib/icons.js";
 import { siteEditor } from "./lib/site-editor.js";
 import { describeVisual } from "./lib/visual-status.js";
-import { connectionStatus, connectionFeedback, parseDomains, settingsError, restrictionsActive } from "./lib/settings.js";
+import { connectionStatus, connectionFeedback, repairFeedback, parseDomains, settingsError, restrictionsActive } from "./lib/settings.js";
 import { initLanguage, t, setLanguage, resolveLanguage, savePreference, translatePage, appLanguage } from "./lib/i18n.js";
 
 const { preference: languagePreference } = await initLanguage();
 const $ = (id) => document.getElementById(id);
+// Compact presentation only; the worker and all saving/lock guards are shared.
+if (new URLSearchParams(location.search).get("popup") === "1") document.body.classList.add("popup-embedded");
 renderIcons();
 $("rules").append($("reportSettings"), $("disputedFs"));
 const views = ["overview", "rules", "media", "lock", "settings"];
@@ -55,6 +58,7 @@ for (const link of document.querySelectorAll(".sidebar nav a, .dashboard-shortcu
 });
 showView();
 let current = null;
+let stateUnavailable = false;
 let saving = false;
 const siteEditors = new Map();
 let privateCoverage;
@@ -65,9 +69,12 @@ chrome.extension?.isAllowedIncognitoAccess?.((allowed) => {
   renderOverview();
 });
 function renderOverview() {
-  const s = describeStatus(current, { version: chrome.runtime.getManifest?.().version });
-  const visual = describeVisual(visualEngine, current);
-  const signature = JSON.stringify([s, privateCoverage, current?.inspectText, current?.failClosed, visual, current?.personBlur]);
+  // Keep the saved baseline for drafts while reporting an unavailable worker.
+  const shown = stateUnavailable ? null : current;
+  const s = describeStatus(shown, { version: chrome.runtime.getManifest?.().version });
+  const visual = describeVisual(visualEngine, shown);
+  const enforcement = describeEnforcement(shown);
+  const signature = JSON.stringify([s, privateCoverage, shown?.inspectText, shown?.failClosed, visual, shown?.personBlur]);
   if (signature === overviewSignature) return;
   overviewSignature = signature;
   $("protectionDot").className = `dot ${s.protection.level}`;
@@ -75,12 +82,13 @@ function renderOverview() {
   $("protectionDetail").textContent = s.protection.detail;
   $("lockTitle").textContent = s.lock.headline;
   $("lockDetail").textContent = s.lock.detail;
-  $("lockNotice").textContent = current && restrictionsActive(current) ? t("opt.lockHint.active")
-    : current?.appPresent ? t("opt.lockHint.managed") : t("opt.lockHint.browser");
-  $("domainLayer").textContent = $("searchLayer").textContent = current ? t("details.on") : t("opt.coverage.unknown");
-  $("textLayer").textContent = !current ? t("opt.coverage.unknown") : current.inspectText !== false || restrictionsActive(current) ? t("details.on") : t("details.off");
+  $("lockNotice").textContent = shown && restrictionsActive(shown) ? t("opt.lockHint.active")
+    : shown?.appPresent ? t("opt.lockHint.managed") : t("opt.lockHint.browser");
+  $("domainLayer").textContent = enforcement.layers.domains.text;
+  $("searchLayer").textContent = enforcement.layers.search.text;
+  $("textLayer").textContent = enforcement.layers.text.text;
   $("visualLayer").textContent = visual.text;
-  $("personLayer").textContent = current?.personBlur && current.personBlur !== "off" ? visual.text : t("details.off");
+  $("personLayer").textContent = shown?.personBlur && shown.personBlur !== "off" ? visual.text : t("details.off");
   $("privateLayer").textContent = t(privateCoverage === undefined ? "opt.coverage.unknown" : privateCoverage ? "details.on" : "opt.coverage.notEnabled");
   $("privateHint").hidden = privateCoverage !== false;
   $("statusDetails").replaceChildren(...s.details.flatMap(([key, value]) => {
@@ -215,6 +223,8 @@ $("discardAll").onclick = () => {
 window.addEventListener("beforeunload", (event) => {
   if (sections.some(isDirty)) { event.preventDefault(); event.returnValue = ""; }
 });
+// Same-origin popup parent uses this only to warn before opening a new page.
+window.hasUnsavedSettings = () => saving || sections.some(isDirty);
 
 /**
  * The false-positive corrections the user made from block pages: words they
@@ -334,13 +344,14 @@ async function init() {
 }
 
 function renderConnection() {
-  const connection = connectionStatus(current);
+  const connection = connectionStatus(stateUnavailable ? null : current);
   $("mode").className = `mode ${connection.managed ? "managed" : "standalone"}`;
   $("modeTitle").textContent = connection.title;
   $("modeDetail").textContent = connection.detail;
 }
 
-function showState(state, fill = false) {
+function showState(state, fill = false, verified = true) {
+  if (verified) stateUnavailable = false;
   const drafts = new Set(sections.filter(isDirty));
   current = state;
   previousRestrictions = restrictionsActive(state);
@@ -365,7 +376,7 @@ function showState(state, fill = false) {
 }
 
 function renderVisualSettings() {
-  const visual = describeVisual(visualEngine, current);
+  const visual = describeVisual(visualEngine, stateUnavailable ? null : current);
   $("visualEngineStatus").textContent = visual.text;
   $("visualEngineStatus").className = `visual-status ${visual.level}`;
   $("inspectVisual").checked = current?.inspectVisual === true;
@@ -384,6 +395,11 @@ function renderVisualSettings() {
     radio.disabled = $("personBlur").disabled || [...$("personBlur").options].find(option => option.value === radio.value).disabled;
   }
   $("visualLockHint").hidden = !current || !restrictionsActive(current);
+  for (const [id,fallback] of [['personRegion','full'],['personEffect','solid'],['personMedia','both']]) {
+    $(id).value=current?.[id]??fallback;
+    for(const option of $(id).options) option.disabled=!!current&&restrictionsActive(current)&&visualPolicyWeakens(current,{[id]:option.value});
+    $(id).disabled=!current||!visual.available||saving;
+  }
 }
 for (const radio of document.querySelectorAll('[name="personChoice"]')) radio.addEventListener("change", () => {
   if (!radio.checked || radio.disabled) return;
@@ -400,7 +416,7 @@ async function refreshVisualStatus() {
   renderVisualSettings();
   renderOverview();
 }
-for (const id of ["inspectVisual", "personBlur"]) $(id).addEventListener("change", async () => {
+for (const id of ["inspectVisual", "personBlur", "personRegion", "personEffect", "personMedia"]) $(id).addEventListener("change", async () => {
   if (saving || !current) return;
   const patch = { [id]: id === "inspectVisual" ? $(id).checked : $(id).value };
   $("msgVisual").textContent = t("opt.saving");
@@ -533,12 +549,40 @@ $("checkConnection").onclick = async () => {
   if (state && state.ok !== false) showState(state, !!state.appPresent);
   $("checkConnection").disabled = false;
 };
+$("repairProtection").onclick = async () => {
+  const button = $("repairProtection");
+  if (button.disabled) return;
+  button.disabled = true;
+  button.setAttribute("aria-busy", "true");
+  $("repairMessage").textContent = t("repair.checking");
+  try {
+    const result = await send({ type: "repairProtection" });
+    const state = await send({ type: "getState" });
+    $("repairMessage").textContent = repairFeedback(result, state);
+    // This does not save drafts or transfer app-owned fields to the browser.
+    if (state && state.ok !== false) showState(state, !!state.appPresent);
+    else { stateUnavailable = true; renderOverview(); }
+    void refreshVisualStatus();
+  } finally {
+    button.disabled = false;
+    button.removeAttribute("aria-busy");
+  }
+};
 // Reflect a native connection that happens while Settings is open. Preserve
 // drafts for browser-only edits; app-owned values are always shown read-only.
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "local" && changes.state?.newValue) {
     const state = changes.state.newValue;
     showState(state, !!state.appPresent);
+  }
+  if (area === "local" && changes.uiLanguage) {
+    initLanguage().then(({ preference }) => {
+      $("uiLanguage").value = preference === "ar" || preference === "en" ? preference : "auto";
+      translatePage(document);
+      $("repairMessage").textContent = $("repairProtection").disabled ? t("repair.checking") : "";
+      overviewSignature = undefined;
+      if (current) showState(current, false, false);
+    });
   }
 });
 for (const id of [...fields, ...saves]) $(id).disabled = true;
@@ -549,13 +593,14 @@ updateDrafts();
 $("uiLanguage").value = languagePreference === "ar" || languagePreference === "en"
   ? languagePreference : "auto";
 $("uiLanguage").onchange = async () => {
-  for (const el of document.querySelectorAll(".msg, #connectionMessage")) el.textContent = "";
+  for (const el of document.querySelectorAll(".msg, #connectionMessage, #repairMessage")) el.textContent = "";
   const preference = $("uiLanguage").value;
   await savePreference(preference).catch(() => {});
   setLanguage(resolveLanguage(preference, chrome.i18n?.getUILanguage?.() ?? navigator.language,
                               await appLanguage()));
   translatePage(document);
+  $("repairMessage").textContent = $("repairProtection").disabled ? t("repair.checking") : "";
   overviewSignature = undefined;
-  if (current) showState(current);
+  if (current) showState(current, false, false);
 };
 init();

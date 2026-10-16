@@ -32,7 +32,7 @@ SKIP_SUFFIXES = {".py", ".pyc", ".sh", ".pem", ".key", ".p12", ".pfx", ".crx", "
                  ".mobileprovision", ".provisionprofile"}
 REQUIRED_DYNAMIC = ("content/feed.js", "content/scan.js", "seed/terms.json")
 VISUAL_REQUIRED = (
-    "content/visual.js", "visual/capture.js", "visual/broker.js", "visual/offscreen.html",
+    "content/visual.js", "content/visual-effects.js", "content/visual-gate.css", "visual/capture.js", "visual/broker.js", "visual/verdict-cache.js", "visual/offscreen.html",
     "visual/offscreen.js", "visual/engine.bundle.js", "visual/engine.bundle.js.LEGAL.txt", "visual/assets.json",
     "visual/models/blazeface.json", "visual/models/gender.json",
     "visual/notices/human-models-MIT.txt", "visual/notices/face-classification-MIT.txt",

@@ -11,7 +11,8 @@ async function run() {
     inspectText: false,
     allowlist: ["google.com", "bing.com", "duckduckgo.com", "youtube.com", "search.brave.com",
       "yandex.com", "yandex.ru", "ya.ru", "yandex.com.tr", "nitter.net", "xcancel.com",
-      "sotwe.com", "twstalker.com"],
+      "sotwe.com", "twstalker.com", "twitterviewer.net", "twitee.co", "xxcancel.com",
+      "twitter-viewer.com"],
     customBlocks: ["cn.bing.com", "safe.search.brave.com"],
   } });
   if (!response.ok) throw new Error(JSON.stringify(response));

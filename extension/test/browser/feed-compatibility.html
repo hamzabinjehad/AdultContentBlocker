@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en" data-hisn-visual-gate="on" data-hisn-visual-images="on" data-hisn-visual-videos="on">
+<meta charset="utf-8">
+<title>X feed compatibility fixture</title>
+<link rel="stylesheet" href="../../content/visual-gate.css">
+<style>body{font:16px system-ui;max-width:650px;margin:24px auto}article{padding:16px;border:1px solid #bbb;margin:12px 0}img,video{width:120px;height:80px}pre{white-space:pre-wrap}</style>
+<h1>Local X feed compatibility</h1>
+<article data-testid="tweet" id="ordinary">
+  <a href="/fixture/status/1">Local fixture</a>
+  <div data-testid="tweetText">Gardening: planting tomatoes.</div>
+  <img id="caption" alt="Tomatoes growing in a garden" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='80'%3E%3Crect width='120' height='80' fill='green'/%3E%3C/svg%3E">
+  <img hidden alt="fixtureadult">
+  <img style="visibility:hidden" alt="fixtureadult">
+  <div hidden>fixtureadult</div>
+  <div style="display:none">fixtureadult</div>
+  <div style="visibility:hidden">fixtureadult</div>
+  <script type="application/json" style="display:block">{"unrenderedPayload":"fixtureadult"}</script>
+  <template>fixtureadult</template>
+  <noscript>fixtureadult</noscript>
+  <div data-testid="videoPlayer">
+    <video muted aria-label="Gardening video"></video>
+    <span id="clock">0:01 / 1:00</span>
+    <button id="play" aria-label="Pause">Pause</button>
+    <div id="progress" role="slider" aria-label="Video progress 1 second">1</div>
+  </div>
+  <button id="likes" aria-label="4 likes">4</button>
+  <a id="views" href="/fixture/status/1/analytics" aria-label="10 views">10</a>
+</article>
+<article data-testid="tweet" id="warning">
+  <a href="/fixture/status/2">Local fixture</a>
+  <div data-testid="tweetText">This media may contain sensitive material.</div>
+  <video muted aria-label="Embedded video"></video>
+</article>
+<article data-testid="tweet" id="adult">
+  <a href="/fixture/status/3">Local fixture</a>
+  <div data-testid="tweetText">fixtureadult</div>
+  <video muted></video>
+</article>
+<pre id="summary" data-result="pending">Running local checks…</pre>
+<script src="../../content/feed.js"></script>
+<script>
+(async () => {
+  const checks = [], sent = [], playback = new Map();
+  const check = (ok, label) => { checks.push({ ok, label }); if (!ok) throw Error(label); };
+  const settle = () => new Promise(resolve => setTimeout(resolve, 35));
+  const ordinary = document.querySelector('#ordinary'), adult = document.querySelector('#adult');
+  const caption = document.querySelector('#caption'), player = ordinary.querySelector('video');
+  const hidden = node => node.style.getPropertyValue('opacity') === '0';
+  for (const media of document.querySelectorAll('video')) {
+    const state = { paused: true, pauses: 0 }; playback.set(media, state);
+    Object.defineProperty(media, 'paused', { get: () => state.paused });
+    media.pause = () => { state.paused = true; state.pauses++; };
+  }
+  const scanner = HisnFeed.createScanner({ doc: document, win: window,
+    loc: { protocol: 'https:', hostname: 'x.com', href: 'https://x.com/home' },
+    send: async zones => { sent.push(zones); return { enabled: true, block: /fixtureadult/.test(zones.body + zones.alt) }; }
+  });
+  try {
+    scanner.start(); await settle();
+    check(!hidden(ordinary) && !hidden(document.querySelector('#warning')) && hidden(adult),
+      'Ordinary posts/videos and a generic sensitive warning remain usable; explicit adult post stays hidden');
+    check(sent.filter(zones => zones.body.includes('Gardening:')).every(zones => !zones.body.includes('fixtureadult')),
+      'Player-control extraction excludes author-hidden text and script/template payloads');
+    check(getComputedStyle(caption).visibility === 'hidden' && sent.some(zones => zones.alt.includes(caption.alt)),
+      'Visual withholding keeps real image alt in the text verdict; author-hidden alt is excluded');
+    const count = sent.length, state = playback.get(player);
+    state.paused = false; player.dispatchEvent(new Event('play', { bubbles: true }));
+    const pauses = state.pauses;
+    for (let i = 2; i < 7; i++) {
+      document.querySelector('#clock').textContent = `0:0${i} / 1:00`;
+      document.querySelector('#progress').setAttribute('aria-label', `Video progress ${i} seconds`);
+      document.querySelector('#progress').textContent = String(i);
+      document.querySelector('#likes').setAttribute('aria-label', `${i + 3} likes`);
+      document.querySelector('#likes').textContent = String(i + 3);
+      document.querySelector('#views').setAttribute('aria-label', `${i * 10} views`);
+      document.querySelector('#views').textContent = String(i * 10);
+      document.querySelector('#play').setAttribute('aria-label', i % 2 ? 'Play' : 'Pause');
+      caption.dataset.hisnVisual = i % 2 ? 'checked' : 'pending';
+      await settle();
+    }
+    await new Promise(resolve => setTimeout(resolve, 1100));
+    check(sent.length === count && !hidden(ordinary) && !state.paused && state.pauses === pauses,
+      'Player clocks, controls, engagement updates, and visual rechecks do not hide or pause a clean video');
+    caption.dataset.hisnVisual = 'pending'; caption.alt = 'fixtureadult'; await settle();
+    check(hidden(ordinary) && state.paused && state.pauses === pauses + 1,
+      'Actual adult caption changes still hide and pause the affected video while the gate is pending');
+    const blockedPauses = state.pauses; await new Promise(resolve => setTimeout(resolve, 1100));
+    check(state.pauses === blockedPauses, 'Polling a blocked video does not call pause repeatedly');
+    state.paused = false; player.dispatchEvent(new Event('play', { bubbles: true }));
+    check(state.paused && state.pauses === blockedPauses + 1, 'A fresh play attempt in a blocked article is paused');
+    caption.alt = 'Tomatoes growing in a garden';
+    ordinary.querySelector('a').href = '/fixture/status/4'; await settle();
+    check(!hidden(ordinary) && !ordinary.inert, 'A recycled clean post restores display and keyboard access');
+    window.feedCompatibilityResult = { ok: true, checks, requests: sent.length };
+  } catch (error) {
+    window.feedCompatibilityResult = { ok: false, checks, error: String(error.stack || error) };
+  } finally {
+    scanner.stop();
+    const summary = document.querySelector('#summary');
+    summary.dataset.result = window.feedCompatibilityResult.ok ? 'pass' : 'fail';
+    summary.textContent = checks.map(({ ok, label }) => `${ok ? 'ok' : 'FAIL'} ${label}`).join('\n')
+      + (window.feedCompatibilityResult.error ? `\nFAIL ${window.feedCompatibilityResult.error}` : '');
+    document.title = `${window.feedCompatibilityResult.ok ? 'PASS' : 'FAIL'} X feed compatibility fixture`;
+  }
+})();
+</script>
+</html>

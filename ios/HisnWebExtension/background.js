@@ -5,7 +5,7 @@
  */
 import { buildIndex, scorePage, isExempt } from "./lib/score.js";
 import { handleVisualMessage, getVisualStatus, disableVisualEngine, cancelVisualTab } from "./visual/broker.js";
-import { visualPreferences, PERSON_MODES } from "./visual/decisions.js";
+import { visualPreferences, presentationPreferences, PERSON_MODES } from "./visual/decisions.js";
 import "./content/feed.js";
 
 const PAGE_KEYS = ["url", "title", "meta", "heading", "body", "alt"];
@@ -39,15 +39,18 @@ export function checkedVisualRequest(message, sender, api) {
 export function checkedVisualPatch(patch) {
   if (!patch || typeof patch !== "object" || Array.isArray(patch)
       || Object.keys(patch).length === 0
-      || Object.keys(patch).some(key => !["inspectVisual", "personBlur"].includes(key))
+      || Object.keys(patch).some(key => !["inspectVisual", "personBlur", "personRegion", "personEffect", "personMedia"].includes(key))
       || ("inspectVisual" in patch && typeof patch.inspectVisual !== "boolean")
-      || ("personBlur" in patch && !PERSON_MODES.includes(patch.personBlur))) return null;
+      || ("personBlur" in patch && !PERSON_MODES.includes(patch.personBlur))
+      || ("personRegion" in patch && !['full','faces'].includes(patch.personRegion))
+      || ("personEffect" in patch && !['solid','blur'].includes(patch.personEffect))
+      || ("personMedia" in patch && !['both','images','videos'].includes(patch.personMedia))) return null;
   return { ...patch };
 }
 
 async function savedVisualPreferences(api) {
   const stored = await api.storage.local.get("state");
-  return visualPreferences(stored.state);
+  return {...visualPreferences(stored.state),...presentationPreferences(stored.state)};
 }
 
 export function visualMessageHandler(api, dependencies = {}) {

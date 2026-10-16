@@ -173,6 +173,81 @@ await (async () => {
 })();
 
 await (async () => {
+  const post = item("Gardening", ["Planting tomatoes"]), h = harness([post]);
+  const root = element({ "data-hisn-visual-gate": "on", "data-hisn-visual-images": "on" });
+  const caption = post.captions[0]; caption.tagName = "IMG";
+  caption.ownerDocument = { documentElement: root }; caption.visibility = "hidden";
+  h.scanner.start(); await flush();
+  check(h.messages[0].alt === "Planting tomatoes", "visual gate withholding does not erase a media caption from text checking");
+  const requests = h.messages.length, pauses = post.media.pauses;
+  post.media.paused = false;
+  caption.visibility = "visible"; caption.setAttribute("data-hisn-visual", "checked"); h.mutate(); await flush();
+  caption.visibility = "hidden"; caption.setAttribute("data-hisn-visual", "pending"); h.mutate(); await h.clock.advance(1000);
+  check(h.messages.length === requests && post.media.pauses === pauses && !post.media.paused && !hidden(post),
+    "visual frame rechecks do not rescore or freeze an unchanged ordinary post/video");
+  caption.attrs.alt = "fixtureadult"; h.mutate(); await flush();
+  check(hidden(post) && post.media.paused, "changed adult caption remains checked while its image is visually withheld");
+  h.scanner.stop();
+  caption.hidden = true;
+  check(F.collectItemZones(post, { getComputedStyle: (el) => ({ display: "block", visibility: el.visibility || "visible" }) }).alt === "",
+    "visual withholding never bypasses the author's hidden attribute");
+  caption.hidden = false; caption.parentElement = { visibility: "hidden", parentElement: post };
+  check(F.collectItemZones(post, { getComputedStyle: (el) => ({ display: "block", visibility: el.visibility || "visible" }) }).alt === "",
+    "visual withholding never bypasses an author-hidden ancestor");
+  caption.parentElement = post; root.setAttribute("data-hisn-visual-gate", "off");
+  check(F.collectItemZones(post, { getComputedStyle: (el) => ({ display: "block", visibility: el.visibility || "visible" }) }).alt === "",
+    "author-hidden media caption stays excluded when the visual gate is off");
+  root.setAttribute("data-hisn-visual-gate", "on"); caption.style.setProperty("visibility", "hidden");
+  check(F.collectItemZones(post, { getComputedStyle: (el) => ({ display: "block", visibility: el.visibility || "visible" }) }).alt === "",
+    "visual gate keeps an author-owned inline visibility:hidden caption excluded");
+})();
+
+await (async () => {
+  const post = item("Garden update 0:01 4 likes"), h = harness([post]);
+  const copy = Object.assign(element(), { innerText: "Garden update", parentElement: post });
+  const player = Object.assign(element({ "data-testid": "videoPlayer" }), { innerText: "0:01", parentElement: post,
+    matches: () => true });
+  const action = Object.assign(element({ role: "button", "aria-label": "4 likes" }), { innerText: "4", parentElement: post,
+    matches: () => true });
+  const progress = Object.assign(element({ role: "slider", "aria-label": "Video progress 1 second" }), { parentElement: player,
+    matches: () => true });
+  const script = Object.assign(element(), { innerText: "fixtureadult", parentElement: post,
+    matches: (selector) => selector.includes("script") });
+  const concealed = Object.assign(element(), { innerText: "fixtureadult", display: "none", parentElement: post });
+  const views = Object.assign(element({ href: "/fixture/status/1/analytics", "aria-label": "10 views" }), {
+    innerText: "10", parentElement: post, matches: (selector) => selector.includes("/analytics") });
+  post.childNodes = [copy, player, action, script, concealed, views]; post.captions = [action, progress, views];
+  post.querySelector = (selector) => selector.includes('/status/') ? post.link : player;
+  h.scanner.start(); await flush();
+  check(h.messages[0].body === "Garden update" && h.messages[0].alt === "",
+    "player clock, progress aria, action counters, script payload, and hidden copy are excluded from post content");
+  const requests = h.messages.length, pauses = post.media.pauses;
+  post.media.paused = false;
+  for (let i = 2; i < 8; i++) {
+    player.innerText = `0:0${i}`; action.innerText = `${i}`;
+    action.attrs["aria-label"] = `${i} likes`; progress.attrs["aria-label"] = `Video progress ${i} seconds`;
+    views.innerText = `${i * 10}`; views.attrs["aria-label"] = `${i * 10} views`;
+    h.mutate(); await flush();
+  }
+  check(h.messages.length === requests && post.media.pauses === pauses && !post.media.paused,
+    "live player clocks and engagement controls cannot repeatedly hide/pause a clean video");
+  copy.innerText = "fixtureadult"; h.mutate(); await flush();
+  check(hidden(post) && post.media.paused && h.messages.length === requests + 1,
+    "real post-copy changes still invalidate the verdict despite excluded controls");
+  h.scanner.stop();
+})();
+
+await (async () => {
+  const post = item("fixtureadult"), h = harness([post]); h.scanner.start(); await flush();
+  const pauses = post.media.pauses;
+  for (let i = 0; i < 5; i++) { h.mutate(); await h.clock.advance(1000); }
+  check(post.media.pauses === pauses, "already paused withheld media is not paused again on every poll or owned mutation");
+  post.media.paused = false; h.play(post.media);
+  check(post.media.paused && post.media.pauses === pauses + 1, "a fresh play attempt in a blocked post is still paused");
+  h.scanner.stop();
+})();
+
+await (async () => {
   const caption = item("Today's weather"), safe = item("Gardening notes");
   caption.setAttribute("aria-label", "fixtureadult");
   safe.setAttribute("aria-label", "Video: planting tomatoes");

@@ -1,0 +1,40 @@
+<!doctype html><meta charset="utf-8"><title>Hisn face-effect rendering fixture</title>
+<pre id="summary" data-result="pending">Running…</pre>
+<p>Rendering fixture with simulated face coordinates, not detection accuracy.</p>
+<div id="samples" style="display:flex;gap:24px;flex-wrap:wrap"></div>
+<script src="../../content/visual-effects.js"></script>
+<script type="module">
+const results=[],check=(ok,label)=>{results.push(`${ok?'ok':'FAIL'} ${label}`);if(!ok)throw Error(label)};
+try{
+ const source='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="160"><rect width="200" height="160" fill="steelblue"/><rect x="40" y="32" width="60" height="48" fill="gold"/><circle cx="55" cy="45" r="5"/><circle cx="85" cy="45" r="5"/></svg>');
+ const regions=[{x:.2,y:.2,width:.3,height:.3}];
+ async function image(label){const box=document.createElement('div'),title=document.createElement('p'),node=document.createElement('img');title.textContent=label;node.src=source;node.style.cssText='width:200px;height:160px;object-fit:fill';box.append(title,node);document.getElementById('samples').append(box);await node.decode();return node;}
+ const original=await image('Original synthetic fixture');
+ const solid=await image('Face-only black mask');
+ const effect=HisnVisualEffects.apply(solid,regions,{personRegion:'faces',personEffect:'solid'});
+ check(!!effect && getComputedStyle(solid).filter.includes('url('),'face-only mask attaches a native local SVG filter');
+ check(document.querySelectorAll('feFlood').length===1 && document.querySelector('feFlood').getAttribute('width') < .5,'mask uses bounded face coordinates rather than whole-image coverage');
+ effect.dispose();check(!solid.style.filter && !document.querySelector('filter'),'dispose restores the original style and removes mask resources');
+ HisnVisualEffects.apply(solid,regions,{personRegion:'faces',personEffect:'solid'});
+ const blurred=await image('Face-only strong blur');
+ HisnVisualEffects.apply(blurred,regions,{personRegion:'faces',personEffect:'blur'});
+ check(!!document.querySelector('feGaussianBlur'),'face-only blur uses the protected-region filter');
+ const fallback=await image('Cropped face mask');fallback.style.cssText='width:200px;height:200px;object-fit:cover;object-position:50% 50%';
+ const cropped=HisnVisualEffects.apply(fallback,regions,{personRegion:'faces',personEffect:'solid'});
+ const lastFlood=()=>[...document.querySelectorAll('feFlood')].at(-1);
+ check(!!cropped&&Math.abs(Number(lastFlood().getAttribute('x'))-.08)<.001,'cover maps the face through the centered crop');
+ fallback.style.width='240px';check(!cropped.valid(),'a changed image size invalidates the previous mask');cropped.dispose();
+ fallback.style.cssText='width:200px;height:200px;object-fit:contain;object-position:50% 50%';
+ const contained=HisnVisualEffects.apply(fallback,regions,{personRegion:'faces',personEffect:'solid'});
+ check(!!contained&&Math.abs(Number(lastFlood().getAttribute('y'))-.2312)<.001,'contain maps the face through letterboxing');contained.dispose();
+ fallback.style.objectPosition='10px 20px';
+ check(HisnVisualEffects.apply(fallback,regions,{personRegion:'faces',personEffect:'solid'})===null,'unsupported position requests whole-media fallback');
+ fallback.style.filter='grayscale(1)';
+ const full=HisnVisualEffects.apply(fallback,regions,{personRegion:'full',personEffect:'blur'});
+ check(fallback.style.filter.includes('grayscale')&&fallback.style.filter.includes('blur(24px)'),'whole blur preserves an existing site filter');
+ full.dispose();check(fallback.style.filter==='grayscale(1)','whole effect cleanup preserves original styles');
+ check(HisnVisualEffects.apply(original,[{x:NaN,y:0,width:1,height:1}],{personRegion:'faces',personEffect:'solid'})===null,'invalid region cannot reveal a partially protected image');
+ document.getElementById('summary').dataset.result='pass';
+}catch(e){results.push(`FAIL ${e.stack}`);document.getElementById('summary').dataset.result='fail'}
+document.getElementById('summary').textContent=results.join('\n');
+</script>

@@ -7,15 +7,31 @@ import path from 'node:path';
 const root = path.dirname(fileURLToPath(import.meta.url));
 const revision = 'bc66dc53bac03c96d35a7e6daaf717e72f3985f5';
 const base = `https://raw.githubusercontent.com/vladmandic/human-models/${revision}/`;
+const offline = process.argv.includes('--offline');
+if (process.argv.slice(2).some(argument => argument !== '--offline')) throw new Error('Unknown build argument');
+const recorded = offline ? JSON.parse(await readFile(path.join(root, 'assets.json'), 'utf8')) : null;
+if (offline && (recorded?.schema !== 1 || recorded.revision !== revision)) throw new Error('Offline asset revision mismatch');
 await mkdir(path.join(root, 'models'), { recursive: true });
 await mkdir(path.join(root, 'notices'), { recursive: true });
 const artifacts = {};
 async function obtain(name, url) {
-  const result = await fetch(url, { signal: AbortSignal.timeout(30000) });
-  if (!result.ok) throw new Error(`Required asset ${name}: HTTP ${result.status}`);
-  const data = Buffer.from(await result.arrayBuffer());
+  let data;
+  if (offline) {
+    // Algorithm-only updates reuse the exact recorded local assets. Never
+    // silently fetch newer weights or notices while rebuilding the engine.
+    data = await readFile(path.join(root, name));
+    const expected = recorded.artifacts?.[name];
+    if (expected?.url !== url || expected.bytes !== data.length
+        || expected.sha256 !== createHash('sha256').update(data).digest('hex')) {
+      throw new Error(`Offline asset differs from recorded build: ${name}`);
+    }
+  } else {
+    const result = await fetch(url, { signal: AbortSignal.timeout(30000) });
+    if (!result.ok) throw new Error(`Required asset ${name}: HTTP ${result.status}`);
+    data = Buffer.from(await result.arrayBuffer());
+  }
   if (!data.length || data.length > 15000000) throw new Error(`Invalid asset size ${name}`);
-  await writeFile(path.join(root, name), data);
+  if (!offline) await writeFile(path.join(root, name), data);
   artifacts[name] = { url, bytes: data.length, sha256: createHash('sha256').update(data).digest('hex') };
   return data;
 }

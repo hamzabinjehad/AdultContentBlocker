@@ -1,10 +1,17 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Hisn</title><link rel="stylesheet" href="ui.css"></head>
+<html lang="en" class="popup-root"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Hisn</title><link rel="stylesheet" href="ui.css"></head>
 <body class="popup">
   <header><div class="brand"><img src="icons/icon-48.png" width="30" height="30" alt=""><span data-i18n="brand.name">Hisn</span></div><button type="button" class="lang-switch" id="langSwitch" lang="ar">العربية</button></header>
+  <section class="popup-editor" id="popupEditor" hidden aria-label="Protection settings" data-i18n-aria-label="popup.manage">
+    <nav class="popup-editor-actions">
+      <button type="button" class="secondary" id="backToStatus" data-i18n="popup.back">Back</button>
+      <button type="button" class="secondary" id="openFullSettings" data-i18n="popup.fullPage">Open full page</button>
+    </nav>
+    <iframe id="settingsFrame" title="Protection settings" data-i18n-title="popup.manage"></iframe>
+  </section>
   <main class="popup-scroll">
-  <div class="popup-intro"><h1 data-i18n="popup.layers">Protection layers</h1><p class="detail" data-i18n="popup.layersDetail">Browser protection works without the app.</p></div>
-  <section class="browser-status" aria-live="polite"><div class="head"><span class="dot unknown" id="pDot" aria-hidden="true"></span><h2 id="pHead" data-i18n="popup.checkingStatus">Checking status…</h2></div><p class="detail" id="pDetail"></p></section>
+  <section class="browser-status" aria-live="polite"><div class="status-symbol" aria-hidden="true"><span data-icon="shield-check"></span></div><div class="status-copy"><div class="head"><span class="dot unknown" id="pDot" aria-hidden="true"></span><h1 id="pHead" data-i18n="popup.checkingStatus">Checking status…</h1></div><p class="detail" id="pDetail"></p></div></section>
+  <div class="popup-intro"><h2 data-i18n="popup.layers">Protection layers</h2><p class="detail" data-i18n="popup.layersDetail">Browser protection works without the app.</p></div>
   <ul class="layer-checklist" aria-label="Protection layers" data-i18n-aria-label="popup.layers">
     <li><span class="layer-indicator unknown" id="domainIndicator" aria-hidden="true"><span data-icon="shield-check"></span></span><div><h2 data-i18n="popup.layer.domains">Site blocking</h2><p class="detail" id="domainStatus"></p></div><button type="button" class="layer-link" data-view="rules" data-i18n-aria-label="popup.editSites"><span data-icon="settings" aria-hidden="true"></span></button></li>
     <li><span class="layer-indicator unknown" id="textIndicator" aria-hidden="true"><span data-icon="shield-check"></span></span><div><h2 data-i18n="popup.layer.text">Page-text checks</h2><p class="detail" id="textStatus"></p></div><button type="button" class="layer-link" data-view="settings" data-i18n-aria-label="popup.editChecks"><span data-icon="settings" aria-hidden="true"></span></button></li>
@@ -14,7 +21,13 @@
   </ul>
   <section class="commitment-summary" id="lockBlock"><div class="head"><span data-icon="lock" aria-hidden="true"></span><h2 id="lHead">&nbsp;</h2></div><p class="detail" id="lDetail"></p></section>
   <div id="notices"></div><details id="incognito" class="notice" hidden><summary data-i18n="incog.title">Not active in private windows yet.</summary><div id="incognitoGuide"></div></details>
-  <details><summary data-i18n="popup.details">Details</summary><dl id="details"></dl></details>
+  <details id="protectionDetails"><summary data-i18n="popup.details">Details</summary><dl id="details"></dl>
+    <section class="protection-repair">
+      <button type="button" class="secondary" id="repairProtection" aria-describedby="repairHint"><span data-icon="refresh-cw" aria-hidden="true"></span><span data-i18n="repair.action">Repair browser protection</span></button>
+      <p class="detail" id="repairHint" data-i18n="repair.hint">Rechecks your saved browser protection. Does not change your settings or require the Hisn app.</p>
+      <p class="detail" id="repairMessage" role="status"></p>
+    </section>
+  </details>
   </main>
   <nav class="actions" data-i18n-aria-label="popup.shortcuts">
     <button type="button" id="openSettings"><span data-icon="settings" aria-hidden="true"></span><span data-i18n="popup.manage">Manage protection</span></button>

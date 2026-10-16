@@ -3,7 +3,7 @@ import Foundation
 
 enum WebProtectionPolicy {
     static let searchHosts: Set<String> = ["yandex.com", "www.yandex.com", "yandex.ru", "www.yandex.ru", "ya.ru", "www.ya.ru", "yandex.com.tr", "www.yandex.com.tr"]
-    static let viewerDomains: Set<String> = ["nitter.net", "xcancel.com", "sotwe.com", "twstalker.com"]
+    static let viewerDomains: Set<String> = ["nitter.net", "xcancel.com", "sotwe.com", "twstalker.com", "twitterviewer.net", "twitee.co", "xxcancel.com", "twitter-viewer.com"]
 
     static func isBlocked(_ raw: String) -> Bool {
         let host = raw.trimmingCharacters(in: .whitespacesAndNewlines)

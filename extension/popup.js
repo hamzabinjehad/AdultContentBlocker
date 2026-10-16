@@ -1,21 +1,17 @@
 /**
- * Popup — status only.
- *
- * There are intentionally NO controls here that weaken anything. Anything
- * that can turn protection off from a one-click popup is the first thing a
- * person reaches for at 2am. Starting a lock happens in the native app;
- * ending one happens when the timer expires or an accountability partner
- * approves it. The one button opens the options page, which has its own
- * guards.
+ * Popup — status and embedded settings, using the same options controller.
+ * Native-owned fields and commitment restrictions remain enforced by the
+ * service worker, not a second, weaker popup implementation. Native locks
+ * still start/end through the app's existing workflow.
  *
  * What to SAY is decided in lib/status.js, where the tests can see it. This
  * file only puts the words on the page.
  */
 
-import { describeStatus } from "./lib/status.js";
+import { describeStatus, describeEnforcement } from "./lib/status.js";
 import { renderIcons } from "./lib/icons.js";
 import { send } from "./lib/messages.js";
-import { connectionStatus, connectionFeedback } from "./lib/settings.js";
+import { connectionStatus, connectionFeedback, repairFeedback } from "./lib/settings.js";
 import { restrictionsActive } from "./lib/settings.js";
 import { describeVisual } from "./lib/visual-status.js";
 import { initLanguage, t, language, setLanguage, savePreference, translatePage } from "./lib/i18n.js";
@@ -37,6 +33,8 @@ function render(state) {
   const s = describeStatus(state, { version });
   const connection = connectionStatus(state);
   const visual = describeVisual(visualEngine, state);
+  const enforcement = describeEnforcement(state);
+  if (enforcement.status === "failed") document.getElementById("protectionDetails").open = true;
   const signature = JSON.stringify([s, connection, privateCoverage, visual, state?.inspectText]);
   if (signature === lastRender) return;
   lastRender = signature;
@@ -46,12 +44,13 @@ function render(state) {
 
   document.getElementById("pDot").className = `dot ${s.protection.level}`;
   document.getElementById("pHead").textContent = s.protection.headline;
-  document.getElementById("pDetail").textContent = state && !state.appPresent
+  document.getElementById("pDetail").textContent = state && !state.appPresent && enforcement.status === "applied"
     ? t("popup.browserOnlySummary") : s.protection.detail;
-  const textActive = state && (state.inspectText !== false || restrictionsActive(state));
   const layers = [
-    ["domain", state ? "active" : "unknown", state ? t("popup.worksAlone") : t("opt.coverage.unknown")],
-    ["text", textActive ? "active" : "unknown", !state ? t("opt.coverage.unknown") : textActive ? t("popup.checksAllowedPages") : t("details.off")],
+    ["domain", enforcement.layers.domains.level, enforcement.layers.domains.level === "active"
+      ? t("popup.worksAlone") : enforcement.layers.domains.text],
+    ["text", enforcement.layers.text.level, enforcement.layers.text.level === "active"
+      ? t("popup.checksAllowedPages") : enforcement.layers.text.text],
     ["private", privateCoverage ? "active" : privateCoverage === false ? "partial" : "unknown", t(privateCoverage === undefined ? "opt.coverage.unknown" : privateCoverage ? "details.on" : "popup.permissionNeeded")],
     ["app", state && connection.fresh ? "active" : state?.appPresent ? "partial" : "unknown", null],
     ["visual", visual.level, visual.text],
@@ -152,20 +151,37 @@ function openDetailsPage() {
   }
 }
 
-document.getElementById("openSettings").addEventListener("click", () => {
+const settingsFrame = document.getElementById("settingsFrame");
+function openEmbeddedSettings(view = "overview") {
+  const allowed = ["overview", "rules", "media", "lock", "settings"];
+  if (!allowed.includes(view)) view = "overview";
+  if (!settingsFrame.hasAttribute("src")) {
+    const url = chrome.runtime.getURL?.("options.html") || new URL("options.html", document.baseURI).href;
+    settingsFrame.src = `${url}?popup=1#${view}`;
+  } else {
+    // Keep the existing document and its drafts when returning to status.
+    try { settingsFrame.contentWindow.location.hash = view; } catch { /* Keep its current view. */ }
+  }
+  document.getElementById("popupEditor").hidden = false;
+  document.body.classList.add("popup-editing");
+  document.getElementById("backToStatus").focus();
+}
+document.getElementById("openSettings").addEventListener("click", () => openEmbeddedSettings());
+document.getElementById("backToStatus").addEventListener("click", () => {
+  document.getElementById("popupEditor").hidden = true;
+  document.body.classList.remove("popup-editing");
+  document.getElementById("openSettings").focus();
+});
+document.getElementById("openFullSettings").addEventListener("click", () => {
+  // Browser popups are ephemeral. Do not silently discard a draft on pop-out.
+  try {
+    if (settingsFrame.contentWindow.hasUnsavedSettings?.() && !window.confirm(t("popup.draftWarning"))) return;
+  } catch { return; }
   chrome.runtime.openOptionsPage?.();
-  window.close();
 });
 document.getElementById("privateSettings").addEventListener("click", openDetailsPage);
 for (const button of document.querySelectorAll("[data-view]")) button.addEventListener("click", () => {
-  // Direct section links are helpful, but fall back to the browser's options
-  // opener when it does not allow creating tabs from an action popup.
-  try {
-    if (chrome.tabs?.create && chrome.runtime.getURL) {
-      chrome.tabs.create({ url: chrome.runtime.getURL(`options.html#${button.dataset.view}`) }, () => void chrome.runtime.lastError);
-    } else chrome.runtime.openOptionsPage?.();
-    window.close();
-  } catch { chrome.runtime.openOptionsPage?.(); }
+  openEmbeddedSettings(button.dataset.view);
 });
 
 async function refreshVisualStatus() {
@@ -191,8 +207,36 @@ document.getElementById("checkConnection").addEventListener("click", async (even
   button.disabled = false;
   refreshVisualStatus();
 });
+document.getElementById("repairProtection").addEventListener("click", async (event) => {
+  const button = event.currentTarget, message = document.getElementById("repairMessage");
+  if (button.disabled) return;
+  button.disabled = true;
+  button.setAttribute("aria-busy", "true");
+  message.textContent = t("repair.checking");
+  try {
+    const result = await send({ type: "repairProtection" });
+    // Read current state after queued writes; the command's snapshot may be old.
+    const state = await send({ type: "getState" });
+    message.textContent = repairFeedback(result, state);
+    render(state?.ok === false ? undefined : state);
+    void refreshVisualStatus();
+  } finally {
+    button.disabled = false;
+    button.removeAttribute("aria-busy");
+  }
+});
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "local" && changes.state?.newValue) render(changes.state.newValue);
+  if (area === "local" && changes.uiLanguage) {
+    initLanguage().then(() => {
+      translatePage(document);
+      document.getElementById("repairMessage").textContent = document.getElementById("repairProtection").disabled ? t("repair.checking") : "";
+      lastRender = undefined;
+      labelSwitch();
+      render(lastState);
+      checkIncognitoAccess();
+    });
+  }
 });
 
 // The page opens saying "Checking status…" and stays there until the worker
@@ -215,6 +259,7 @@ langSwitch.addEventListener("click", async () => {
   setLanguage(next);
   await savePreference(next).catch(() => {});
   translatePage(document);
+  document.getElementById("repairMessage").textContent = document.getElementById("repairProtection").disabled ? t("repair.checking") : "";
   lastRender = undefined;
   labelSwitch();
   if (lastState !== undefined) render(lastState);

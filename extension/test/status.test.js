@@ -7,7 +7,7 @@
  * prevent, and the first test here is the one that would have caught it.
  */
 
-import { describeStatus } from "../lib/status.js";
+import { describeStatus, describeEnforcement } from "../lib/status.js";
 import { HEARTBEAT_GRACE_MS } from "../lib/policy.js";
 
 let failures = 0, checks = 0;
@@ -25,6 +25,10 @@ const base = {
   mode: "off", lockUntil: 0, appPresent: false, lastHeartbeat: 0,
   failClosed: false, listVersion: 0, rulesApplied: 0,
   inspectText: true, textSensitivity: 50,
+  desiredRevision: 1, appliedRevision: 1,
+  enforcement: { version: 1, status: "applied", desiredRevision: 1, appliedRevision: 1,
+    layers: { domains: "applied", search: "applied", text: "applied", visual: "off" },
+    downloadedRules: { domains: 0, keywords: 0, listVersion: 0 } },
 };
 
 // ── no reply is not a status ───────────────────────────────────────────────
@@ -57,7 +61,8 @@ for (const missing of [undefined, null, "", 0, { ok: false, reason: "internal-er
 // ── with the app, connected ───────────────────────────────────────────────
 {
   const s = describe({ ...base, appPresent: true, lastHeartbeat: NOW - 30_000,
-                       mode: "blocklist", listVersion: 42, rulesApplied: 148_000 });
+                       mode: "blocklist", listVersion: 42, rulesApplied: 148_000,
+                       enforcement: { ...base.enforcement, downloadedRules: { domains: 148_000, keywords: 0, listVersion: 42 } } });
   check(s.protection.level === "active", "connected: active");
   check(/connected/.test(s.protection.detail), "connected: says so");
   check(s.lock.headline === "No active lock", "connected, unlocked: no lock line");
@@ -111,13 +116,33 @@ for (const missing of [undefined, null, "", 0, { ok: false, reason: "internal-er
 
 // ── details ────────────────────────────────────────────────────────────────
 {
-  const off = describe({ ...base, inspectText: false });
+  const off = describe({ ...base, inspectText: false, enforcement: { ...base.enforcement,
+    layers: { ...base.enforcement.layers, text: "off" } } });
   check(off.details.find(([k]) => k === "Page-text check")[1] === "off", "text check off");
   const on = describe({ ...base, inspectText: true, textSensitivity: 80 });
   check(on.details.find(([k]) => k === "Page-text check")[1] === "on · sensitivity 80",
         "text check on with sensitivity");
   const v = describe(base, { version: "1.2.3" });
   check(v.details.find(([k]) => k === "Extension version")[1] === "1.2.3", "version row");
+}
+
+// Neither desired state nor a fresh native heartbeat certifies installation.
+for (const enforcement of [undefined, { version: 1, status: "pending" },
+  { ...base.enforcement, appliedRevision: 0 }, { ...base.enforcement, layers: {} }, { ...base.enforcement, version: 2 }]) {
+  const state = { ...base, appPresent: true, lastHeartbeat: NOW, enforcement };
+  const s = describe(state);
+  check(s.protection.level === "unknown" && /Checking/.test(s.protection.headline), "missing/stale receipt never produces fully active protection");
+  check(describeEnforcement(state).layers.domains.level !== "active", "domain readiness requires an applied receipt");
+}
+{
+  const state = { ...base, appPresent: true, lastHeartbeat: NOW, desiredRevision: 2,
+    enforcement: { version: 1, status: "failed", desiredRevision: 2, appliedRevision: 1,
+      layers: { domains: "applied", search: "applied" }, failure: { code: "text-registration-readback" } } };
+  const s = describe(state);
+  check(s.protection.level === "partial" && /repair/.test(s.protection.headline), "scanner rejection with fresh app is partial and actionable");
+  check(describeEnforcement(state).layers.domains.level === "active", "verified independent domain layer remains visible after scanner failure");
+  check(describeEnforcement(state).layers.text.level !== "active", "failed text layer is not reported ready from stored intent");
+  check(s.details.find(([key]) => key === "Hisn app")[1] === "connected", "enforcement failure does not relabel valid native connection");
 }
 
 print(`  ${checks - failures}/${checks} checks passed`);

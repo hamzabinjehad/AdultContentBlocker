@@ -1,0 +1,9 @@
+/* Registered at document_start for opted-in Chromium visual protection.
+   Safari resolves its preferences before releasing this startup gate.
+   Selected media of every nonzero size is checked; small thumbnails are not
+   exempt. Pending/unknown (including zero-area and unreadable media) remains
+   withheld until a verified result or an explicit applicable opt-out. */
+html:not([data-hisn-visual-gate="off"]):not([data-hisn-visual-images="off"]) img:not([data-hisn-visual="checked"]),
+html:not([data-hisn-visual-gate="off"]):not([data-hisn-visual-videos="off"]) video:not([data-hisn-visual="checked"]){
+  visibility:hidden!important;
+}

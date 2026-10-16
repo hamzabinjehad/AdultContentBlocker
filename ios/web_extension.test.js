@@ -84,7 +84,11 @@ async function optionsContract() {
       check(preferences.personBlur === value && root.modes.filter(input => input.checked).length === 1
         && mode.checked && preferences.inspectVisual, "Face preference saves without disabling adult-media checking");
     }
-    check(patches.every(patch => Object.keys(patch).length === 1 && ["inspectVisual", "personBlur"].includes(Object.keys(patch)[0])), "Controls never send website permissions or app-policy changes");
+    for (const [key,value] of [['personRegion','faces'],['personEffect','blur'],['personMedia','images']]) {
+      get(key).value=value;get(key).emit('change');await flush();
+      check(preferences[key]===value&&get(key).value===value&&preferences.inspectVisual,'Safari presentation choice saves without changing adult protection');
+    }
+    check(patches.every(patch => Object.keys(patch).length === 1 && ["inspectVisual", "personBlur", "personRegion", "personEffect", "personMedia"].includes(Object.keys(patch)[0])), "Controls never send website permissions or app-policy changes");
     failSave = true; adult.checked = false; adult.emit("change"); await flush();
     check(adult.checked && preferences.inspectVisual && get("saveStatus").dataset.state === "failed", "Failed save restores confirmed UI without claiming successful persistence");
     await controller.refreshStatus();
@@ -186,7 +190,7 @@ async function main() {
   check(!checkedVisualRequest({ type: "saveVisualSettings" }, { ...options, url: api.runtime.getURL("blocked.html") }, api),
     "Another extension page cannot mutate preferences");
   for (const patch of [null, [], {}, { inspectVisual: 1 }, { personBlur: "unknown" },
-    { inspectVisual: true, allowlist: ["x.com"] }, { inspectVisual: "true" }]) {
+    { inspectVisual: true, allowlist: ["x.com"] }, { inspectVisual: "true" }, {personRegion:'body'}, {personEffect:'none'}, {personMedia:'all'}]) {
     check(checkedVisualPatch(patch) === null, "Malformed visual settings rejected");
   }
   check(checkedVisualPatch({ inspectVisual: true, personBlur: "female" })?.personBlur === "female", "Valid opt-in visual preferences accepted");

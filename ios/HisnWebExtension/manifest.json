@@ -9,7 +9,8 @@
   "background": {"page": "background.html", "persistent": false},
   "content_scripts": [{
     "matches": ["http://*/*", "https://*/*"],
-    "js": ["content/feed.js", "content/scan.js", "visual/capture.js", "content/visual.js"],
+    "js": ["content/feed.js", "content/scan.js", "visual/capture.js", "content/visual-effects.js", "content/visual.js"],
+    "css": ["content/visual-gate.css"],
     "run_at": "document_start",
     "all_frames": true
   }],

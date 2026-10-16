@@ -1,0 +1,140 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Hisn real two-origin image binding</title>
+<pre id="summary" data-result="pending">Running real image CORS binding checks…</pre>
+<div id="frames"></div>
+<script type="module">
+const results = [];
+const check = (condition, label) => {
+  results.push(`${condition ? 'ok' : 'FAIL'} ${label}`);
+  if (!condition) throw new Error(label);
+};
+const wait = async condition => {
+  for (let i = 0; i < 1500; i++) {
+    if (condition()) return;
+    await new Promise(resolve => setTimeout(resolve, 10));
+  }
+  throw new Error('Two-origin fixture did not reach the expected state');
+};
+let frame;
+try {
+  check(location.hostname === '127.0.0.1', 'fixture runs through the numeric loopback HTTP runner');
+  const origin = `http://localhost:${location.port}`;
+  const allowed = `${origin}/__hisn_fixture_cors/allowed.png`;
+  const denied = `${origin}/__hisn_fixture_cors/denied.png`;
+  const varying = `${origin}/__hisn_fixture_cors/varying.png`;
+  check(new URL(allowed).origin !== location.origin, 'the image server has a genuinely different origin');
+  const base = new URL('../../', location.href).href;
+  frame = document.createElement('iframe');
+  frame.style.cssText = 'width:720px;height:360px';
+  frame.srcdoc = `<html><head><base href="${base}">
+    <link rel="stylesheet" href="content/visual-gate.css">
+    <style>body{margin:0}img{width:64px;height:64px;margin:4px}</style></head><body>
+    <img id="positive" src="${allowed}?positive" alt="synthetic positive-verdict fixture">
+    <img id="clean" src="${allowed}?clean" alt="synthetic clean-verdict fixture">
+    <img id="denied" src="${denied}" alt="server does not grant CORS">
+    <img id="varying" src="${varying}" alt="same URL has different anonymous pixels">
+    <img id="author" src="${allowed}?author" alt="author changes CORS preference">
+    <script>window.fixtureErrors=[];addEventListener('error',event=>fixtureErrors.push(event.message||event.target?.src||'resource error'),true);
+    window.jobs=[];window.chrome={runtime:{sendMessage:message=>{
+      if(message.type==='getVisualSettings')return new Promise(resolve=>window.settingsReply=resolve);
+      if(message.type==='cancelVisualMedia')return Promise.resolve({});
+      if(message.type!=='inspectVisualMedia')return Promise.resolve({});
+      const captured=window.lastCapture;
+      const actual=captured&&window.directCapture(captured.node);
+      return new Promise(resolve=>jobs.push({message,reply:resolve,node:captured?.node,
+        bound:!!captured&&captured.rgba===message.rgba&&actual?.rgba===message.rgba,
+        crossOrigin:captured?.node.crossOrigin,source:captured?.node.currentSrc}));
+    }},storage:{onChanged:{addListener:listener=>window.settingsChange=listener}}};
+    window.browser=window.chrome;<\/script>
+    <script src="visual/capture.js"><\/script>
+    <script>window.directCapture=HisnVisualCapture.capture;
+      HisnVisualCapture.capture=(node,...args)=>{const value=directCapture(node,...args);
+        if(value?.rgba)window.lastCapture={node,rgba:value.rgba};return value;};<\/script>
+    <script src="content/visual.js" onload="window.scannerLoaded=true" onerror="fixtureErrors.push('scanner script load failed')"><\/script>
+    <script>window.afterScanner=true;<\/script></body></html>`;
+  const loaded = new Promise(resolve => { frame.onload = resolve; });
+  document.getElementById('frames').append(frame);
+  await loaded;
+  await wait(() => frame.contentWindow.afterScanner && frame.contentDocument.querySelectorAll('img').length === 5
+    && [...frame.contentDocument.querySelectorAll('img')].every(node => node.complete && node.naturalWidth === 32));
+  const win = frame.contentWindow;
+  const doc = frame.contentDocument;
+  const images = [...doc.querySelectorAll('img')];
+  const byId = id => doc.getElementById(id);
+  const hidden = node => win.getComputedStyle(node).visibility === 'hidden';
+  const originals = new Map(images.map(node => [node, node.currentSrc]));
+  check(images.every(node => node.complete && node.naturalWidth === 32),
+    'all image fixtures supply real decoded PNG pixels initially');
+  check(images.every(hidden), 'real gate CSS withholds images before settings and model verdicts');
+  check(images.every(node => node.crossOrigin === null), 'the webpage did not opt its images into CORS');
+  check(images.every(node => win.directCapture(node).reason === 'inaccessible-pixels'),
+    'real ordinary image requests taint canvas, including the server that grants CORS');
+
+  let cursor = 0;
+  const answerCycle = async () => {
+    const expected = new Set(['positive', 'clean', 'varying', 'author']);
+    for (let i = 0; i < 4; i++) {
+      await wait(() => win.jobs.length > cursor);
+      const job = win.jobs[cursor++];
+      check(expected.delete(job.node?.id), `one model inspection owns the actual ${job.node?.id || 'missing'} DOM image`);
+      check(job.bound && job.crossOrigin === 'anonymous' && job.message.mediaKind === 'image',
+        `model pixels equal actual anonymous DOM pixels for ${job.node.id}`);
+      check(job.source === originals.get(job.node) && hidden(job.node),
+        `source URL stays unchanged and ${job.node.id} stays hidden until its verdict`);
+      if (job.node.id === 'varying') {
+        const bytes = win.atob(job.message.rgba);
+        check(bytes.length === 32 * 32 * 4 && [...bytes.slice(0, 4)].map(c => c.charCodeAt(0)).join(',') === '0,255,0,255',
+          'same-URL request variation is bound to the real reloaded green image, not the original opaque red image');
+      }
+      job.reply({ state: 'ready', adult: { block: job.node.id === 'positive' }, persons: { blur: false } });
+    }
+    await wait(() => byId('positive').dataset.hisnVisual === 'adult-hidden'
+      && ['clean', 'varying', 'author'].every(id => byId(id).dataset.hisnVisual === 'checked')
+      && byId('denied').dataset.hisnVisual === 'unknown');
+    check(hidden(byId('positive')), 'a synthetic adult-positive verdict remains hidden after actual-image CORS reload');
+    check(['clean', 'varying', 'author'].every(id => !hidden(byId(id))),
+      'verified clean real cross-origin images are visible through the actual gate CSS');
+    check(hidden(byId('denied')) && !!byId('denied').dataset.hisnVisualReason,
+      'a server that denies CORS remains explicitly unknown and hidden');
+    check(win.jobs.length === cursor, 'unreadable image pixels are never invented or sent to the model');
+    const actual = win.directCapture(byId('varying'));
+    const inspected = win.jobs.slice(0, cursor).reverse().find(job => job.node.id === 'varying');
+    check(actual.rgba === inspected.message.rgba && byId('varying').currentSrc === originals.get(byId('varying')),
+      'the visible varying image still has precisely the pixels inspected by the model');
+  };
+  check(typeof win.settingsReply === 'function' && win.scannerLoaded && typeof win.__hisnVisualScanner === 'object',
+    'scanner initializes successfully before protection settings are supplied');
+  win.settingsReply({ inspectVisual: true, personBlur: 'off' });
+  await answerCycle();
+
+  byId('author').setAttribute('crossorigin', 'use-credentials');
+  await new Promise(resolve => setTimeout(resolve, 30));
+  win.settingsChange({ state: { newValue: { inspectVisual: false, personBlur: 'off' } } }, 'local');
+  await wait(() => doc.documentElement.getAttribute('data-hisn-visual-gate') === 'off');
+  check(['positive', 'clean', 'denied', 'varying'].every(id => byId(id).getAttribute('crossorigin') === null),
+    'explicit visual opt-out restores only the scanner-owned CORS attributes');
+  check(byId('author').getAttribute('crossorigin') === 'use-credentials',
+    'opt-out does not overwrite a later author-owned CORS change');
+
+  byId('author').removeAttribute('crossorigin');
+  await wait(() => images.every(node => node.complete && node.naturalWidth === 32));
+  win.settingsChange({ state: { newValue: { inspectVisual: true, personBlur: 'off' } } }, 'local');
+  await answerCycle();
+  win.__hisnVisualScanner.stop();
+  check(images.every(node => node.getAttribute('crossorigin') === null),
+    'scanner stop restores the original CORS attributes after a fresh protected session');
+  check(images.every(node => node.src === originals.get(node)), 'neither recovery nor restoration replaces webpage image URLs');
+  results.push(`${results.filter(line => line.startsWith('ok ')).length} real two-origin checks passed.`);
+  results.push('Model verdicts are deterministic fixture responses; DOM pixels, changing responses, CORS enforcement and gate CSS are real.');
+  document.getElementById('summary').dataset.result = 'pass';
+} catch (error) {
+  results.push(`FAIL ${error.stack || error}`);
+  results.push(JSON.stringify({errors:frame?.contentWindow?.fixtureErrors,after:frame?.contentWindow?.afterScanner,
+    images:[...(frame?.contentDocument?.querySelectorAll('img')||[])].map(node=>({id:node.id,width:node.naturalWidth,
+      complete:node.complete,mode:node.crossOrigin,state:node.dataset.hisnVisual,reason:node.dataset.hisnVisualReason}))}));
+  frame?.contentWindow?.__hisnVisualScanner?.stop();
+  document.getElementById('summary').dataset.result = 'fail';
+}
+document.getElementById('summary').textContent = results.join('\n');
+</script>
