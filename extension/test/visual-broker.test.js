@@ -15,6 +15,16 @@ const expire = delay => {
 let checks = 0;
 const check = (ok, label) => { checks++; if (!ok) throw new Error(label); };
 const flush = async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); };
+// Promise-job scheduling differs between the hosted and desktop JSC versions.
+// Wait for an observed transport milestone before exercising transport races;
+// a fixed number of microtasks is not proof that fingerprinting has finished.
+const until = async (condition, label) => {
+  for (let turn = 0; turn < 200; turn++) {
+    if (condition()) return;
+    await Promise.resolve();
+  }
+  throw new Error(`Broker fixture did not reach ${label}`);
+};
 const enabled = { inspectVisual: true, personBlur: 'off' };
 const sender = (tabId = 17, frameId = 0) => ({ id: 'hisn', tab: { id: tabId }, frameId });
 const capture = (id = 'frame') => ({ type: 'inspectVisualMedia', id, width: 1, height: 1, rgba: 'AAAAAA==' });
@@ -46,6 +56,7 @@ function harness() {
     },
   };
   return { calls, ready: () => finishCreation(), fail: () => failCreation(),
+    transport: (count = 1) => until(() => calls.pending.length >= count, `${count} inspection transport(s)`),
     closeExternally: () => { documentExists = false; },
     holdClosure: () => { holdClosure = true; },
     finishClosure: () => { holdClosure = false; finishClosure(); },
@@ -85,19 +96,35 @@ function harness() {
   await disableVisualEngine();
 }
 {
+  // Exercise the setup barrier with actual asynchronous fingerprint work,
+  // even in JSC shells without WebCrypto/TextEncoder. This stub is not a
+  // SHA-256 test; the real-WebCrypto browser fixture covers that separately.
+  const originalCrypto = globalThis.crypto, originalEncoder = globalThis.TextEncoder;
+  let hashes = 0;
+  globalThis.TextEncoder = class { encode(value) { return Uint8Array.from(value, char => char.charCodeAt(0)); } };
+  globalThis.crypto = { subtle: { digest: async () => {
+    hashes++;
+    for (let turn = 0; turn < 24; turn++) await Promise.resolve();
+    return new Uint8Array(32).buffer;
+  } } };
   const h = harness(), first = handleVisualMessage(capture('first'), sender(17), enabled);
   await flush(); h.ready(); await flush();
   const second = handleVisualMessage(capture('second'), sender(18), enabled); await flush();
+  await h.transport(2);
   await cancelVisualTab(17); h.resolve(0); h.resolve(1);
   check((await first).reason === 'cancelled', 'late ready results cannot survive cancellation of their tab');
   check((await second).state === 'ready', 'cancelling one tab preserves unrelated tab requests');
   const third = handleVisualMessage(capture('third'), sender(18), enabled); await flush();
+  await h.transport(3);
   await disableVisualEngine(); h.resolve(2);
   check((await third).reason === 'cancelled', 'opt-out discards late ready results already in transport');
+  check(hashes === 3, 'transport race setup observes readiness after delayed fingerprinting, not a fixed microtask budget');
+  globalThis.crypto = originalCrypto; globalThis.TextEncoder = originalEncoder;
 }
 {
   const h = harness(), inspection = handleVisualMessage(capture(), sender(), enabled); await flush();
   h.ready(); await flush();
+  await h.transport();
   const before = h.calls.create;
   h.closeExternally(); await cancelVisualTab(17);
   await handleVisualMessage({ type: 'cancelVisualMedia', id: 'frame' }, sender(), {});
@@ -108,7 +135,7 @@ function harness() {
   const h = harness(), inspection = handleVisualMessage(capture(), sender(), enabled); await flush();
   const cancellation = handleVisualMessage({ type: 'cancelVisualMedia', id: 'frame' }, { ...sender(), id: 'other-extension' }, {});
   check((await cancellation).reason === 'forbidden-sender', 'another extension cannot cancel authenticated media');
-  h.ready(); await flush(); h.resolve();
+  h.ready(); await h.transport(); h.resolve();
   check((await inspection).state === 'ready', 'forbidden cancellation leaves legitimate inspection alone');
   await disableVisualEngine();
 }
@@ -127,13 +154,14 @@ function harness() {
   const h = harness(), stalled = handleVisualMessage(capture('stalled'), sender(17), enabled);
   await flush(); h.ready(); await flush();
   const sibling = handleVisualMessage(capture('sibling'), sender(18), enabled); await flush();
+  await h.transport(2);
   expire(VISUAL_RESPONSE_TIMEOUT_MS); await flush();
   check((await stalled).reason === 'inference-timeout', 'a stalled transport has a bounded failed verdict, never clean');
   check((await sibling).reason === 'cancelled', 'retiring a context invalidates sibling in-flight verdicts');
   check(h.calls.close === 1, 'one stalled generation closes exactly one isolated engine context');
   const fresh = handleVisualMessage(capture('fresh'), sender(19), enabled); await flush();
   check(h.calls.create === 2, 'subsequent opted-in work creates a fresh context after confirmed destruction');
-  h.ready(); await flush(); h.resolve(2);
+  h.ready(); await h.transport(3); h.resolve(2);
   check((await fresh).state === 'ready', 'another tab can progress after engine recovery');
   h.resolve(0); h.resolve(1); await flush();
   check(timers.size === 0, 'retired and completed requests release watchdog timers');
@@ -141,7 +169,7 @@ function harness() {
 }
 {
   const h = harness(), stalled = handleVisualMessage(capture('closing'), sender(17), enabled);
-  await flush(); h.ready(); await flush(); h.holdClosure();
+  await flush(); h.ready(); await h.transport(); h.holdClosure();
   expire(VISUAL_RESPONSE_TIMEOUT_MS); await flush();
   check((await stalled).reason === 'inference-timeout', 'timeout is reported while cleanup remains pending');
   const replacement = handleVisualMessage(capture('replacement'), sender(18), enabled); await flush();
@@ -151,13 +179,13 @@ function harness() {
     'unconfirmed context destruction remains failed, not permission to launch parallel models');
   h.finishClosure(); await flush();
   const fresh = handleVisualMessage(capture('after-close'), sender(19), enabled); await flush();
-  h.ready(); await flush(); h.resolve(1);
+  h.ready(); await h.transport(2); h.resolve(1);
   check((await fresh).state === 'ready', 'a late confirmed cleanup permits later opted-in recovery');
   h.resolve(0); await disableVisualEngine();
 }
 {
   const h = harness(), stalled = handleVisualMessage(capture('retire'), sender(17), enabled);
-  await flush(); h.ready(); await flush(); h.holdClosure();
+  await flush(); h.ready(); await h.transport(); h.holdClosure();
   expire(VISUAL_RESPONSE_TIMEOUT_MS); await flush(); await stalled;
   const waiting = handleVisualMessage(capture('opted-out'), sender(18), enabled); await flush();
   const disable = disableVisualEngine(); await flush();
