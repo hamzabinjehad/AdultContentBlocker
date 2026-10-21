@@ -40,6 +40,8 @@ struct AppUsageConfiguration: Codable {
     static let group = "group.app.hisn.mobile"
     static let key = "appUsageConfiguration"
     static let reachedKey = "appUsageReachedDay"
+    static let reachedMirrorKey = "appUsageReachedDay.mirror"
+    enum BudgetMarkerFailure: Error { case corrupt, writeFailed }
     static let activity = "hisn.selected.daily"
     static let event = "hisn.selected.budget"
     static func day(_ date: Date = Date()) -> String {
@@ -50,6 +52,53 @@ struct AppUsageConfiguration: Codable {
     /// preserve a reached budget, but yesterday's marker must not block today.
     static func budgetReached(mode: Mode, reachedDay: String?, today: String = day()) -> Bool {
         mode == .dailyBudget && reachedDay == today
+    }
+    /// Read the raw objects so damaged marker data is not mistaken for a new
+    /// unrestricted day. Either valid local copy can survive accidental loss;
+    /// this is redundancy, not authenticated or trusted-clock persistence.
+    static func reachedDay(_ defaults: UserDefaults) throws -> String? {
+        let objects = [defaults.object(forKey: reachedKey), defaults.object(forKey: reachedMirrorKey)]
+        if objects.allSatisfy({ $0 == nil }) { return nil }
+        let values = objects.compactMap { object -> (String, [Int])? in
+            guard let raw = object as? String, let components = checkedDay(raw) else { return nil }
+            return (raw, components)
+        }
+        guard let latest = values.max(by: { $0.1.lexicographicallyPrecedes($1.1) }) else {
+            throw BudgetMarkerFailure.corrupt
+        }
+        return latest.0
+    }
+    static func budgetReached(mode: Mode, defaults: UserDefaults, today: String = day()) throws -> Bool {
+        guard mode == .dailyBudget else { return false }
+        return budgetReached(mode: mode, reachedDay: try reachedDay(defaults), today: today)
+    }
+    static func markBudgetReached(_ defaults: UserDefaults, today: String = day()) throws {
+        guard checkedDay(today) != nil else { throw BudgetMarkerFailure.corrupt }
+        for key in [reachedMirrorKey, reachedKey] {
+            defaults.set(today, forKey: key)
+            guard defaults.object(forKey: key) as? String == today else { throw BudgetMarkerFailure.writeFailed }
+        }
+    }
+    static func clearBudgetMarker(_ defaults: UserDefaults) throws {
+        for key in [reachedKey, reachedMirrorKey] {
+            defaults.removeObject(forKey: key)
+            guard defaults.object(forKey: key) == nil else { throw BudgetMarkerFailure.writeFailed }
+        }
+    }
+    private static func checkedDay(_ raw: String) -> [Int]? {
+        let fields = raw.split(separator: "-", omittingEmptySubsequences: false)
+        guard fields.count == 3,
+              fields.allSatisfy({ !$0.isEmpty && $0.allSatisfy({ $0.isASCII && $0.isNumber }) }),
+              let year = Int(fields[0]), let month = Int(fields[1]), let date = Int(fields[2]),
+              (1...9999).contains(year), (1...13).contains(month), (1...31).contains(date),
+              raw == "\(year)-\(month)-\(date)" else { return nil }
+        // Use the same calendar that produced day(); do not break a saved
+        // shield just because the person uses a non-Gregorian calendar.
+        let calendar = Calendar.current
+        let parts = DateComponents(year: year, month: month, day: date)
+        guard let instant = calendar.date(from: parts),
+              calendar.dateComponents([.year, .month, .day], from: instant) == parts else { return nil }
+        return [year, month, date]
     }
     static func ruleStore(_ defaults: UserDefaults) -> MirroredRuleStore {
         MirroredRuleStore(key: key, storage: DefaultsRuleStorage(defaults: defaults)) { data in

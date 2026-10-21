@@ -1,6 +1,6 @@
 // Short-lived, in-memory reuse of an identical decoded capture. Entries contain
 // a SHA-256 digest and bounded verdict fields, never source URLs or frame bytes.
-const MAX_ENTRIES = 32;
+const MAX_ENTRIES = 128;
 const MAX_AGE_MS = 30000;
 
 async function sha256(value) {

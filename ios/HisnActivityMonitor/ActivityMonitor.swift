@@ -9,8 +9,9 @@ final class ActivityMonitor: DeviceActivityMonitor {
               let defaults = UserDefaults(suiteName: AppUsageConfiguration.group),
               let config = AppUsageConfiguration.read(defaults), config.mode == .dailyBudget else { return }
         // A registration callback in the same day must not clear an already reached budget.
-        if AppUsageConfiguration.budgetReached(mode: config.mode,
-            reachedDay: defaults.string(forKey: AppUsageConfiguration.reachedKey)) {
+        // Unreadable evidence must not clear a previously applied OS shield.
+        guard let reached = try? AppUsageConfiguration.budgetReached(mode: config.mode, defaults: defaults) else { return }
+        if reached {
             config.shield(budget)
         } else {
             budget.clearAllSettings()
@@ -20,7 +21,9 @@ final class ActivityMonitor: DeviceActivityMonitor {
         guard event.rawValue == AppUsageConfiguration.event, activity.rawValue == AppUsageConfiguration.activity,
               let defaults = UserDefaults(suiteName: AppUsageConfiguration.group),
               let config = AppUsageConfiguration.read(defaults), config.mode == .dailyBudget else { return }
-        defaults.set(AppUsageConfiguration.day(), forKey: AppUsageConfiguration.reachedKey)
+        // The threshold callback still applies its shield if persistence fails.
+        // Refresh/registration will not clear it based on unreadable markers.
+        try? AppUsageConfiguration.markBudgetReached(defaults)
         config.shield(budget)
     }
 }

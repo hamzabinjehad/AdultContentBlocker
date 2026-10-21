@@ -7,6 +7,10 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
   if (sender.id !== chrome.runtime.id || sender.tab || sender.url !== chrome.runtime.getURL('background.js')) return false;
   (async () => {
     if (message.operation === 'inspect') return instance.inspect(message.key, message.capture, message.preferences);
+    if (message.operation === 'prepare') {
+      await instance.prepare(message.preferences);
+      return instance.status(message.preferences);
+    }
     if (message.operation === 'cancel') { instance.cancel(message.key); return { state: 'unknown', reason: 'cancelled' }; }
     if (message.operation === 'cancelPrefix') { instance.cancelPrefix(message.prefix); return { state: 'unknown', reason: 'cancelled' }; }
     if (message.operation === 'status') return instance.status(message.preferences);

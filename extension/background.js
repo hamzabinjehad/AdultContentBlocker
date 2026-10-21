@@ -26,7 +26,7 @@ import { describeEnforcement } from "./lib/status.js";
 import { createToolbarStatus } from "./lib/toolbar-status.js";
 import { resolveLanguage } from "./lib/i18n.js";
 import { planGeneration, downloadedRuleIds, GENERATION_ARTIFACTS, RULE_DOWNLOADED_KEYWORDS_BASE } from "./lib/generation.js";
-import { handleVisualMessage, getVisualStatus, disableVisualEngine, cancelVisualTab } from "./visual/broker.js";
+import { handleVisualMessage, getVisualStatus, prepareVisualEngine, disableVisualEngine, cancelVisualTab } from "./visual/broker.js";
 
 const NATIVE_HOST = "app.hisn.bridge";
 const LIST_BASE = "https://raw.githubusercontent.com/hamzabinjehad/AdultContentBlocker/lists";
@@ -479,6 +479,9 @@ async function syncVisualScanning(state) {
     }
     return;
   }
+  // Prepare only the opted-in local models, without delaying rule application
+  // or waiting for a webpage to submit its first image. No media is captured.
+  void prepareVisualEngine(state);
   const current = existing.find((script) => script.id === id);
   if (!scannerRegistrationMatches(current, VISUAL_SCANNER)) {
     if (current) await chrome.scripting.unregisterContentScripts({ ids: [id] });

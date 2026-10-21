@@ -80,7 +80,13 @@ stale heartbeat produces a visible warning followed by a termination request.
 Known unsupported browsers, including Safari and Firefox, receive the same
 first one-minute warning. There is no automatic Safari exemption. A known active filter
 authority's empty check-in record no longer falls back to editable app defaults;
-that fallback remains only when no authority answers.
+that fallback remains only when there is no live authority and no previously
+confirmed authority lock remembered by this app process. During a remembered
+locked-authority outage, the guard treats check-ins as authoritative-empty and
+starts its existing recovery warning instead of trusting editable local stamps.
+App exceptions likewise remain the intersection of the local set and the last
+confirmed locked authority set. A confirmed unlock clears this session-local
+constraint; missing IPC does not. Cached constraints never mark filtering live.
 
 The bridge resolves its parent process from the operating system, not from an
 extension-supplied PID. It records separate bundle and positive process-ID
@@ -138,6 +144,20 @@ or coverage recovers. A previous process's heartbeat does not verify a relaunche
 browser instance. These are recovery allowances, not immediate denial of traffic.
 The minute begins when loss is detected, not necessarily when the extension is
 deleted; Chrome explicitly permits delayed alarms.
+
+The Mac Browser protection screen now shows each detected running browser process
+separately, its last verified reply, current connection evidence and the actual
+warning deadline or closure request. Installed but closed browsers are labelled
+as not running. The same sampled process-specific authority and profile evidence
+drives both enforcement and the live status; a healthy sibling cannot turn a
+warning green. Confirmed standard-profile loss is shown even if another profile
+still replies. The screen keeps observing when guarding is off, but observation
+alone never starts a countdown or closes a browser. “Check status now” reads the
+current evidence; it does not claim to send a fresh challenge to the extension.
+The monitor and authority reconciliation both run in common run-loop modes so
+ordinary menu tracking pauses neither connection checks nor their authority
+snapshot refresh. Sleep, OS stalls and delayed browser alarms still prevent real-time
+guarantees. This process guard is Mac-only, not an iOS browser-termination feature.
 
 Unverified browser restarts do not reset either initial grace or a warning
 countdown. A previously verified healthy browser may receive one fresh startup
@@ -263,7 +283,13 @@ when the saved daily threshold marker matches today. This restores configuration
 without restarting monitoring or resetting usage counters. A prior-day marker
 does not reapply a shield, and the app does not infer that a limit was reached
 when the OS callback was never received. Day markers depend on the local calendar;
-this is not trusted-clock or time-zone tamper protection.
+this is not trusted-clock or time-zone tamper protection. The reached-day marker
+now has two validated local copies: either surviving copy can preserve the
+same-day shield. If existing marker data is damaged and no valid copy remains,
+the monitor does not take its clear-shield branch, and the app reports invalid
+rule storage. Reads do not restart counters or overwrite a newer monitor write.
+Both copies being removed still loses evidence; this is redundancy, not an
+authenticated storage or deletion lock.
 
 Router exports accept manually reviewed hostnames, not opaque Apple tokens or
 guessed app-server mappings. AdGuard Home rules have no usage timer. Importing

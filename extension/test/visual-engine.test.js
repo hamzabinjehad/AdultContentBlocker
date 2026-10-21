@@ -1,6 +1,6 @@
 // Exercise the canonical engine factory with model transports mocked. Numeric
 // model quality is tested separately with the real bundled engine in Helium.
-import { adultDecision, appearancePrediction, faceDetections, personDecision,
+import { adultDecision, appearancePrediction, needsAppearanceConfirmation, confirmAppearance, faceDetections, personDecision,
   squareFrame, unpadFaces, visualPreferences, PERSON_MODES, validateCapture } from '../visual/decisions.js';
 import { LocalInferenceQueue } from '../visual/queue.js';
 let checks = 0;
@@ -10,8 +10,9 @@ const canonical = readFile('../visual/engine.js').replace(/^import[\s\S]*?;\n/gm
 const sourceFactory = (dependencies) => Function(...Object.keys(dependencies), canonical + '\nreturn createVisualEngine;')(...Object.values(dependencies));
 const classes = ['Porn', 'Hentai', 'Sexy', 'Neutral', 'Drawing'];
 const capture = (width = 1, height = 1) => ({ id: 'test', width, height, rgba: btoa('\0'.repeat(width * height * 4)) });
-function harness({ explicit = false, failedFaceLoad = false, malformedFaces = false, probabilities = [.92, .08] } = {}) {
-  const calls = { adult: 0, face: 0, gender: 0, disposed: 0, pads: [], faceShape: null, config: null };
+function harness({ explicit = false, failedFaceLoad = false, malformedFaces = false, probabilities = [.92, .08], mirroredProbabilities = probabilities, holdFaceLoad = false } = {}) {
+  let finishFaceLoad;
+  const calls = { adult: 0, face: 0, gender: 0, genderLoads: 0, disposed: 0, pads: [], reverses: [], faceShape: null, config: null };
   class Tensor {
     constructor(shape, data = null) { this.shape = shape; this.values = data; }
     slice(_begin, size) { return new Tensor(this.shape.map((edge, index) => size[index] < 0 ? edge : size[index])); }
@@ -27,13 +28,14 @@ function harness({ explicit = false, failedFaceLoad = false, malformedFaces = fa
   const tf = { setBackend: async () => true, getBackend: () => 'cpu', ready: async () => {},
     tidy: fn => fn(), tensor3d: (_bytes, shape) => new Tensor(shape), tensor1d: values => new Tensor([values.length]),
     pad: (image, pads) => { calls.pads.push(pads); return new Tensor(image.shape.map((edge, index) => edge + pads[index][0] + pads[index][1])); },
+    reverse: (image, axes) => { calls.reverses.push({ shape: image.shape, axes }); return new Tensor(image.shape); },
     image: { cropAndResize: () => new Tensor([1, 64, 64, 3]) },
-    loadGraphModel: async () => ({ execute: () => { calls.gender++; return new Tensor([1, 2], probabilities); } }),
+    loadGraphModel: async () => { calls.genderLoads++; return { execute: () => { calls.gender++; return new Tensor([1, 2], calls.gender === 1 ? probabilities : mirroredProbabilities); } }; },
   };
   class Human {
     constructor(config) { calls.config = config; }
     models = { stats: () => ({ modelStats: [{ name: 'blazeface', loaded: !failedFaceLoad, sizeLoadedWeights: failedFaceLoad ? 0 : 2000 }] }) };
-    async load() {}
+    async load() { if (holdFaceLoad) await new Promise(resolve => { finishFaceLoad = resolve; }); }
     async detect(image) {
       calls.face++; calls.faceShape = image.shape;
       return { face: malformedFaces ? [null] : [{ boxScore: .95, box: [51, 10, 40, 40] }] };
@@ -44,9 +46,21 @@ function harness({ explicit = false, failedFaceLoad = false, malformedFaces = fa
     return classes.map((className, index) => ({ className, probability: scores[index] }));
   } });
   const createVisualEngine = sourceFactory({ tf, Human, loadNSFW, MobileNetV2Model: {},
-    adultDecision, appearancePrediction, faceDetections, personDecision, squareFrame, unpadFaces,
+    adultDecision, appearancePrediction, needsAppearanceConfirmation, confirmAppearance, faceDetections, personDecision, squareFrame, unpadFaces,
     visualPreferences, PERSON_MODES, validateCapture, LocalInferenceQueue });
-  return { engine: createVisualEngine({ baseURL: 'https://local.test/', backend: 'cpu' }), calls };
+  return { engine: createVisualEngine({ baseURL: 'https://local.test/', backend: 'cpu' }), calls,
+    finishFaceLoad: () => finishFaceLoad() };
+}
+{
+  const h = harness({holdFaceLoad:true});
+  const first = h.engine.prepare({personBlur:'female'}), waiting = h.engine.prepare({personBlur:'female'});
+  for (let i=0;i<20;i++) await Promise.resolve();
+  h.engine.disable(); h.finishFaceLoad(); await Promise.all([first,waiting]);
+  check(h.engine.status().state === 'disabled' && h.calls.genderLoads === 0,
+    'opt-out fences an in-flight preload and a second waiter instead of reviving old preferences');
+  await h.engine.prepare({personBlur:'female'});
+  check(h.engine.status().state === 'ready' && h.calls.genderLoads === 1 && h.calls.face === 0,
+    'a later explicit opt-in can prepare missing local models without inspecting a dummy frame');
 }
 {
   const h = harness();
@@ -108,6 +122,30 @@ for (const [name, probabilities, mode] of [
   const h = harness({probabilities:[.05,.95]});
   const result = await h.engine.inspect('confident-opposite', capture(101,224), {personBlur:'female'});
   check(result.state === 'ready' && !result.persons.blur, 'a confident opposite estimate is not silently relabeled as the selected appearance');
+  check(h.calls.gender === 2 && h.calls.face === 1 && h.calls.reverses.length === 1,
+    'excluding a face requires two classifier views, without a second detector');
+  check(h.calls.reverses[0].shape.join(',') === '1,64,64,1' && h.calls.reverses[0].axes.join(',') === '2',
+    'confirmation mirrors the normalized crop horizontally, never the full frame or channel axis');
+  check(h.calls.disposed === 6, 'both appearance views, outputs and original frame tensors are released');
+}
+for (const [mode, primary, mirrored] of [
+  ['female', [.10141637,.89858365], [.85631639,.14368361]],
+  ['male', [.91,.09], [.13,.87]],
+  ['female', [.1,.9], [.3,.7]],
+]) {
+  const h = harness({probabilities:primary, mirroredProbabilities:mirrored});
+  const result = await h.engine.inspect('conflicting-views-'+mode, capture(101,224), {inspectVisual:true,personBlur:mode});
+  check(result.state === 'ready' && result.persons.blur && !result.adult.block && h.calls.gender === 2,
+    'a disagreeing or uncertain mirrored estimate cannot exclude a face from the selected preference');
+  check(result.persons.regions[0].x === 0 && h.calls.disposed === 6,
+    'confirmation preserves original-source face coordinates and releases all tensors');
+}
+for (const malformed of [[.5,.5], [.9,.9], [NaN,.9], []]) {
+  const h = harness({probabilities:[.05,.95], mirroredProbabilities:malformed});
+  const result = await h.engine.inspect('bad-confirmation', capture(101,224), {inspectVisual:true,personBlur:'female'});
+  check(result.state === 'unknown' && result.reason === 'invalid-appearance-output'
+    && result.adult.inspected && !result.adult.block && h.calls.disposed === 6,
+    'invalid confirmation stays unknown and cannot certify a clean partial result');
 }
 {
   const h = harness({probabilities:[.5,.5]});

@@ -6,6 +6,7 @@ let recovery;
 let pendingRecoveryClose;
 let recoveryBlocked = false;
 let localStalled = false;
+let preparation;
 export const VISUAL_RESPONSE_TIMEOUT_MS = 45000;
 export const VISUAL_HASH_TIMEOUT_MS = 1000;
 export const MAX_VISUAL_PENDING_REQUESTS = 12;
@@ -102,6 +103,16 @@ async function relay(operation, payload = {}) {
   let ticket = operation === 'inspect' ? verdictCache.begin(payload.cachePolicy) : null, fingerprint;
   const cancellation = new Promise(resolve => { request.resolveCancel = resolve; });
   requests.add(request);
+  function identified(result) {
+    if (!result || typeof result !== 'object') return result;
+    // Only the broker's bounded SHA-256 of these exact decoded pixels and
+    // policy can identify a repeat. Never trust an engine-supplied identity or
+    // let a canceled/stale policy ticket attach one to a late reply.
+    const { captureKey: _ignored, ...reply } = result;
+    if (operation === 'inspect' && result.state === 'ready' && !request.cancelled
+        && verdictCache.current(ticket) && /^[a-f0-9]{64}$/.test(fingerprint ?? '')) reply.captureKey = fingerprint;
+    return reply;
+  }
   try {
     let result, instance;
     if (typeof document !== 'undefined') {
@@ -117,16 +128,18 @@ async function relay(operation, payload = {}) {
       ]), VISUAL_HASH_TIMEOUT_MS).catch(() => null);
       if (request.cancelled) return cancelled();
       const cached = verdictCache.get(ticket, fingerprint);
-      if (cached) return cached;
+      if (cached) return identified(cached);
     }
     const work = instance ? operation === 'inspect'
-      ? instance.inspect(payload.key, payload.capture, payload.preferences) : instance.status(payload.preferences)
+      ? instance.inspect(payload.key, payload.capture, payload.preferences)
+      : operation === 'prepare' ? instance.prepare(payload.preferences).then(() => instance.status(payload.preferences))
+      : instance.status(payload.preferences)
       : api().runtime.sendMessage({ target: 'hisn-visual-engine', operation, ...payload });
-    result = operation === 'inspect'
+    result = ['inspect', 'prepare'].includes(operation)
       ? await bounded(Promise.race([work, cancellation]), VISUAL_RESPONSE_TIMEOUT_MS,
         () => { if (!request.cancelled) recoverStalledEngine(request); }) : await work;
     if (!request.cancelled && operation === 'inspect') verdictCache.put(ticket, fingerprint, result, payload.preferences);
-    return request.cancelled ? cancelled() : result;
+    return request.cancelled ? cancelled() : identified(result);
   } catch (error) {
     if (request.cancelled && error?.message === 'inference-timeout') return cancelled();
     throw error;
@@ -150,6 +163,7 @@ async function existingOffscreen() {
 // Disable without waking/creating a model context. Chromium closes the private
 // document and its frames; Safari cancels queued work in the existing page.
 export async function disableVisualEngine() {
+  preparation = undefined;
   verdictCache.clear();
   cancelRequests();
   if (typeof document !== 'undefined') {
@@ -157,6 +171,20 @@ export async function disableVisualEngine() {
   } else if (await existingOffscreen()) {
     await api().offscreen.closeDocument();
   }
+}
+// Only the trusted background reconciliation calls this after opt-in. Status
+// requests never call prepare: opening a popup does not opt into models.
+export function prepareVisualEngine(state = {}) {
+  if (!supported() || !enabled(state)) return Promise.resolve(disabled());
+  const policy = JSON.stringify(cachePolicy(state));
+  if (preparation?.policy === policy) return preparation.promise;
+  cancelRequests(request => request.operation === 'prepare');
+  const current = { policy };
+  current.promise = relay('prepare', { preferences: visualPreferences(state) })
+    .catch(() => ({ state: 'failed', reason: 'engine-unreachable' }))
+    .finally(() => { if (preparation === current) preparation = undefined; });
+  preparation = current;
+  return current.promise;
 }
 export async function cancelVisualTab(tabId) {
   if (!Number.isInteger(tabId) || tabId < 0) return;

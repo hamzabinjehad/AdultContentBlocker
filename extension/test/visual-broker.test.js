@@ -1,6 +1,6 @@
 // Exercise the actual broker with deterministic offscreen creation/transport.
 // No models, native host, real browser profile, or external media are needed.
-import { getVisualStatus, handleVisualMessage, disableVisualEngine, cancelVisualTab,
+import { getVisualStatus, prepareVisualEngine, handleVisualMessage, disableVisualEngine, cancelVisualTab,
   VISUAL_RESPONSE_TIMEOUT_MS, VISUAL_HASH_TIMEOUT_MS, MAX_VISUAL_PENDING_REQUESTS,
   MAX_VISUAL_FRAME_PENDING_REQUESTS } from '../visual/broker.js';
 let timerID = 0;
@@ -28,16 +28,17 @@ const until = async (condition, label) => {
 const enabled = { inspectVisual: true, personBlur: 'off' };
 const sender = (tabId = 17, frameId = 0) => ({ id: 'hisn', tab: { id: tabId }, frameId });
 const capture = (id = 'frame') => ({ type: 'inspectVisualMedia', id, width: 1, height: 1, rgba: 'AAAAAA==' });
-function harness() {
+function harness({holdPreparation=false} = {}) {
   let documentExists = false, finishCreation, failCreation;
-  const calls = { create: 0, close: 0, has: 0, sent: [], pending: [] };
+  const calls = { create: 0, close: 0, has: 0, sent: [], pending: [], preparations: [] };
   let holdClosure = false, finishClosure;
   globalThis.chrome = {
     runtime: { id: 'hisn', getURL: path => `chrome-extension://hisn/${path}`,
       sendMessage: async message => {
         calls.sent.push(message);
+        if (message.operation === 'prepare' && holdPreparation) return new Promise(resolve => calls.preparations.push(resolve));
         if (message.operation === 'inspect') return new Promise(resolve => calls.pending.push({ message, resolve }));
-        return { state: message.operation === 'status' ? 'ready' : 'unknown', reason: 'cancelled' };
+        return { state: ['status','prepare'].includes(message.operation) ? 'ready' : 'unknown', reason: 'cancelled' };
       } },
     offscreen: {
       hasDocument: async () => { calls.has++; return documentExists; },
@@ -63,12 +64,48 @@ function harness() {
     resolve: (index = 0, result = { state: 'ready', adult: { block: false } }) => calls.pending[index].resolve(result) };
 }
 {
+  const h=harness({holdPreparation:true}), pending=prepareVisualEngine(enabled);
+  await flush(); h.ready(); await until(()=>h.calls.preparations.length===1,'active model preparation');
+  await disableVisualEngine();
+  check((await pending).reason==='cancelled' && h.calls.close===1,
+    'opt-out cancels an active model preload and destroys only its existing context');
+  h.calls.preparations[0]({state:'ready'}); await flush();
+  check(h.calls.create===1 && timers.size===0, 'a late preload response cannot recreate the model context or retain its watchdog');
+}
+{
+  const h=harness(), first=prepareVisualEngine(enabled);
+  await flush();
+  const next=prepareVisualEngine({inspectVisual:false,personBlur:'female'});
+  await flush(); h.ready();
+  check((await first).reason==='cancelled' && (await next).state==='ready'
+    && h.calls.sent.length===1 && h.calls.sent[0].preferences.personBlur==='female',
+    'a changed pending preparation uses only the latest opted-in model preferences');
+  await disableVisualEngine();
+}
+{
   const h = harness();
   check((await getVisualStatus()).state === 'disabled', 'default status does not opt into models');
+  check((await prepareVisualEngine()).state === 'disabled', 'preparation does not opt into models without selected protection');
   check((await handleVisualMessage(capture(), sender(), {})).state === 'disabled', 'default media request does not opt into models');
   await disableVisualEngine(); await cancelVisualTab(17);
   await handleVisualMessage({ type: 'cancelVisualMedia', id: 'frame' }, sender(), {});
   check(h.calls.create === 0 && h.calls.sent.length === 0, 'disabled cleanup never wakes a model context');
+}
+{
+  const h = harness(), first = prepareVisualEngine(enabled), duplicate = prepareVisualEngine({...enabled});
+  check(first === duplicate, 'concurrent preparation under the same policy shares one promise');
+  await flush(); check(h.calls.create === 1, 'opt-in preloads in exactly one private model context without a capture');
+  h.ready();
+  check((await first).state === 'ready' && h.calls.sent.length === 1
+    && h.calls.sent[0].operation === 'prepare' && !h.calls.sent[0].capture,
+    'preparation loads only opted-in models and transports no webpage pixels');
+  await disableVisualEngine();
+}
+{
+  const h = harness(), pending = prepareVisualEngine(enabled); await flush();
+  const disable = disableVisualEngine(); await flush(); h.ready(); await disable;
+  check((await pending).reason === 'cancelled' && h.calls.sent.length === 0 && h.calls.close === 1,
+    'opt-out during preload creation prevents late model work and closes the context');
 }
 {
   const h = harness(), status = getVisualStatus(enabled); await flush();
@@ -112,8 +149,10 @@ function harness() {
   const second = handleVisualMessage(capture('second'), sender(18), enabled); await flush();
   await h.transport(2);
   await cancelVisualTab(17); h.resolve(0); h.resolve(1);
-  check((await first).reason === 'cancelled', 'late ready results cannot survive cancellation of their tab');
-  check((await second).state === 'ready', 'cancelling one tab preserves unrelated tab requests');
+  check((await first).reason === 'cancelled' && (await first).captureKey === undefined,
+    'late ready results cannot survive cancellation of their tab or retain a capture identity');
+  check((await second).state === 'ready' && /^[a-f0-9]{64}$/.test((await second).captureKey),
+    'cancelling one tab preserves an unrelated current reply and its capture identity');
   const third = handleVisualMessage(capture('third'), sender(18), enabled); await flush();
   await h.transport(3);
   await disableVisualEngine(); h.resolve(2);

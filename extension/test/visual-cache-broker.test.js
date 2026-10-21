@@ -17,9 +17,9 @@ function expire(delay) {
   for (const [id, timer] of [...timers]) if (timer.delay === delay) { timers.delete(id); timer.run(); }
 }
 
-function harness({ holdHashes = false } = {}) {
+function harness({ holdHashes = false, holdResults = false } = {}) {
   let exists = false;
-  const calls = { inspect: 0, hashes: 0, create: 0, hashJobs: [] }, keys = new Map();
+  const calls = { inspect: 0, hashes: 0, create: 0, hashJobs: [], resultJobs: [] }, keys = new Map();
   // All input strings in this fixture are ASCII. Production uses TextEncoder.
   globalThis.TextEncoder = class { encode(text) { return Uint8Array.from(text, character => character.charCodeAt(0)); } };
   globalThis.crypto = { subtle: { digest: async (_algorithm, bytes) => {
@@ -35,28 +35,36 @@ function harness({ holdHashes = false } = {}) {
       sendMessage: async message => {
         if (message.operation !== 'inspect') return { state: 'unknown', reason: 'cancelled' };
         calls.inspect++;
-        return { state: 'ready', adult: { block: false, inspected: true },
+        const result = { state: 'ready', adult: { block: false, inspected: true }, captureKey: 'f'.repeat(64),
           persons: { blur: false, mode: message.preferences.personBlur, regions: [], estimated: true } };
+        return holdResults ? new Promise(resolve => calls.resultJobs.push(reply => resolve(reply ?? result))) : result;
       } },
     offscreen: { hasDocument: async () => exists,
       createDocument: async () => { calls.create++; exists = true; },
       closeDocument: async () => { exists = false; } },
   };
   return { calls, vanish: () => { exists = false; },
+    finishResults: async result => { for (const finish of calls.resultJobs.splice(0)) finish(result); await flush(); },
     finishHashes: async () => { for (const finish of calls.hashJobs.splice(0)) finish(); await flush(); } };
 }
 
 {
   const h = harness();
+  let originalKey;
   for (let index = 0; index < 50; index++) {
     const result = await handleVisualMessage(capture(`duplicate_${index}`), sender(), policy);
     check(result.state === 'ready' && result.adult.block === false, 'duplicate capture receives a complete result');
+    if (!index) originalKey = result.captureKey;
+    check(/^[a-f0-9]{64}$/.test(result.captureKey) && result.captureKey === originalKey
+      && result.captureKey !== 'f'.repeat(64), 'fresh and cached replies identify exact pixels with only the broker fingerprint');
   }
   check(h.calls.inspect === 1 && h.calls.hashes === 50, 'broker hashes each duplicate but avoids forty-nine redundant inference calls');
-  await handleVisualMessage(capture('changed_pixel', 'AAAAAQ=='), sender(), policy);
+  const changedPixel = await handleVisualMessage(capture('changed_pixel', 'AAAAAQ=='), sender(), policy);
   check(h.calls.inspect === 2, 'a changed pixel requires independent inference');
-  await handleVisualMessage(capture('changed_policy'), sender(), { ...policy, desiredRevision: 2 });
+  check(changedPixel.captureKey !== originalKey, 'a changed decoded pixel receives a different capture identity');
+  const changedPolicy = await handleVisualMessage(capture('changed_policy'), sender(), { ...policy, desiredRevision: 2 });
   check(h.calls.inspect === 3, 'a changed policy revision cannot reuse the old result');
+  check(changedPolicy.captureKey !== originalKey, 'a changed policy receives a different capture identity');
   h.vanish();
   await handleVisualMessage(capture('recreated_engine'), sender(), { ...policy, desiredRevision: 2 });
   check(h.calls.inspect === 4 && h.calls.create === 2, 'new context creation invalidates cached results from a vanished engine');
@@ -98,11 +106,31 @@ function harness({ holdHashes = false } = {}) {
   const h = harness({ holdHashes: true });
   const slow = handleVisualMessage(capture('slow_hash'), sender(), policy); await flush();
   expire(VISUAL_HASH_TIMEOUT_MS); await flush();
-  check((await slow).state === 'ready' && h.calls.inspect === 1, 'hash deadline falls back to uncached inference, not an unknown or safe guess');
+  const result = await slow;
+  check(result.state === 'ready' && h.calls.inspect === 1, 'hash deadline falls back to uncached inference, not an unknown or safe guess');
+  check(result.captureKey === undefined, 'a missing fingerprint cannot inherit an engine-supplied capture identity');
   await h.finishHashes();
   const again = handleVisualMessage(capture('after_slow_hash'), sender(), policy); await flush();
   await h.finishHashes();
   check((await again).state === 'ready' && h.calls.inspect === 2, 'a digest completing after its deadline cannot cache the prior fallback result');
+  await disableVisualEngine();
+}
+{
+  const h = harness({ holdResults: true });
+  const stale = handleVisualMessage(capture('old_policy'), sender(), policy); await flush();
+  const current = handleVisualMessage(capture('new_policy'), sender(), { ...policy, desiredRevision: 2 }); await flush();
+  check(h.calls.inspect === 2, 'changed-policy fixture reaches both independent inference requests');
+  await h.finishResults();
+  check((await stale).state === 'ready' && (await stale).captureKey === undefined,
+    'a late ready reply from a stale policy ticket cannot carry a capture identity');
+  check(/^[a-f0-9]{64}$/.test((await current).captureKey), 'the current policy reply still receives its bounded identity');
+  const cached = handleVisualMessage(capture('cached_current'), sender(), { ...policy, desiredRevision: 2 }); await flush();
+  check(h.calls.inspect === 2, 'an identical current-policy capture is served from cache');
+  check((await cached).captureKey === (await current).captureKey, 'a cache hit retains the current broker-generated capture identity');
+  // Change bytes to avoid the previously cached clean reply in this fixture.
+  const failed = handleVisualMessage(capture('failed', 'AAAAAg=='), sender(), { ...policy, desiredRevision: 2 }); await flush();
+  await h.finishResults({ state: 'unknown', reason: 'fixture-unknown', captureKey: 'f'.repeat(64) });
+  check((await failed).captureKey === undefined, 'unknown replies cannot carry any capture identity');
   await disableVisualEngine();
 }
 

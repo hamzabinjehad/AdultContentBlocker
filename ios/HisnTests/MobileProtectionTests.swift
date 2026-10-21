@@ -216,6 +216,75 @@ final class MobileProtectionTests: XCTestCase {
         XCTAssertFalse(C.budgetReached(mode: .dailyBudget, reachedDay: "corrupt", today: "2026-10-4"))
         XCTAssertFalse(C.budgetReached(mode: .always, reachedDay: "2026-10-4", today: "2026-10-4"))
     }
+    func testReachedBudgetMirrorSurvivesLossOrDamageOfOneCopy() throws {
+        typealias C = AppUsageConfiguration
+        let name = "hisn.mobile.budget.tests." + UUID().uuidString
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
+        defer { defaults.removePersistentDomain(forName: name) }
+        try C.markBudgetReached(defaults, today: "2026-10-13")
+        XCTAssertEqual(defaults.object(forKey: C.reachedKey) as? String, "2026-10-13")
+        XCTAssertEqual(defaults.object(forKey: C.reachedMirrorKey) as? String, "2026-10-13")
+        defaults.removeObject(forKey: C.reachedKey)
+        XCTAssertTrue(try C.budgetReached(mode: .dailyBudget, defaults: defaults, today: "2026-10-13"))
+        defaults.set(["wrong": "type"], forKey: C.reachedKey)
+        XCTAssertTrue(try C.budgetReached(mode: .dailyBudget, defaults: defaults, today: "2026-10-13"))
+        try C.markBudgetReached(defaults, today: "2026-10-13")
+        defaults.set("damaged", forKey: C.reachedMirrorKey)
+        XCTAssertEqual(try C.reachedDay(defaults), "2026-10-13")
+    }
+    func testReachedBudgetDamagedEvidenceIsNotAnUnrestrictedDay() throws {
+        typealias C = AppUsageConfiguration
+        let name = "hisn.mobile.budget.tests." + UUID().uuidString
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
+        defer { defaults.removePersistentDomain(forName: name) }
+        XCTAssertFalse(try C.budgetReached(mode: .dailyBudget, defaults: defaults, today: "2026-10-13"))
+        defaults.set(Data("not-a-day".utf8), forKey: C.reachedKey)
+        XCTAssertThrowsError(try C.reachedDay(defaults))
+        XCTAssertThrowsError(try C.budgetReached(mode: .dailyBudget, defaults: defaults, today: "2026-10-13"))
+        XCTAssertNil(try? C.budgetReached(mode: .dailyBudget, defaults: defaults, today: "2026-10-13"),
+            "Monitor must not take its clear-shield branch on unreadable evidence")
+        XCTAssertFalse(try C.budgetReached(mode: .always, defaults: defaults, today: "2026-10-13"),
+            "An unused budget marker must not interfere with the stronger always-block layer")
+    }
+    func testReachedBudgetLegacyMarkerAndPartialNewDayWriteArePreserved() throws {
+        typealias C = AppUsageConfiguration
+        let name = "hisn.mobile.budget.tests." + UUID().uuidString
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
+        defer { defaults.removePersistentDomain(forName: name) }
+        defaults.set("2026-10-9", forKey: C.reachedKey)
+        XCTAssertTrue(try C.budgetReached(mode: .dailyBudget, defaults: defaults, today: "2026-10-9"))
+        defaults.set("2026-10-13", forKey: C.reachedMirrorKey)
+        XCTAssertEqual(try C.reachedDay(defaults), "2026-10-13")
+        XCTAssertTrue(try C.budgetReached(mode: .dailyBudget, defaults: defaults, today: "2026-10-13"))
+        XCTAssertFalse(try C.budgetReached(mode: .dailyBudget, defaults: defaults, today: "2026-10-14"))
+        XCTAssertEqual(defaults.object(forKey: C.reachedKey) as? String, "2026-10-9",
+            "Reading must not write stale data over the monitor's newer marker")
+    }
+    func testReachedBudgetRejectsMalformedOrImpossibleDays() throws {
+        typealias C = AppUsageConfiguration
+        let name = "hisn.mobile.budget.tests." + UUID().uuidString
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
+        defer { defaults.removePersistentDomain(forName: name) }
+        for invalid in ["", "2026-2-29", "2026-4-31", "2026-13-1", "2026-0-1", "0-1-1",
+                        "2026-01-1", "2026-1-01", "2026-1-1 ", "2026-1-1-extra", "２０２６-1-1"] {
+            defaults.set(invalid, forKey: C.reachedKey)
+            XCTAssertThrowsError(try C.reachedDay(defaults), invalid)
+            XCTAssertThrowsError(try C.markBudgetReached(defaults, today: invalid), invalid)
+        }
+        try C.markBudgetReached(defaults, today: "2024-2-29")
+        XCTAssertEqual(try C.reachedDay(defaults), "2024-2-29")
+    }
+    func testExplicitRuleRemovalClearsBothBudgetMarkers() throws {
+        typealias C = AppUsageConfiguration
+        let name = "hisn.mobile.budget.tests." + UUID().uuidString
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
+        defer { defaults.removePersistentDomain(forName: name) }
+        try C.markBudgetReached(defaults, today: "2026-10-13")
+        try C.clearBudgetMarker(defaults)
+        XCTAssertNil(defaults.object(forKey: C.reachedKey))
+        XCTAssertNil(defaults.object(forKey: C.reachedMirrorKey))
+        XCTAssertNil(try C.reachedDay(defaults))
+    }
     func testAppIntegritySeparatesMissingPermissionFromStoppedMonitoring() {
         typealias C = AppUsageConfiguration
         XCTAssertEqual(C.health(storageAvailable: false, hasSavedData: false, valid: false,

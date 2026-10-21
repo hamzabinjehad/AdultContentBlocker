@@ -64,6 +64,11 @@ function harness() {
       if (key === undefined) return false;
       const fn = timers.get(key); timers.delete(key); delays.delete(key); fn(); await flush(); return true;
     },
+    viewport: async () => {
+      const key = [...timers.keys()].find(key => delays.get(key) === 50);
+      if (key === undefined) return false;
+      const fn = timers.get(key); timers.delete(key); delays.delete(key); fn(); await flush(); return true;
+    },
     timeout: async () => {
       const key = [...timers.keys()].find(key => delays.get(key) === 20000);
       check(key !== undefined, 'an outstanding inspection has a bounded deadline');
@@ -77,6 +82,25 @@ function harness() {
     stop() { globalThis.__hisnVisualScanner.stop(); Date.now = originalNow; },
   };
 }
+async function faceHarness() {
+  const h = harness(), originalEffects = globalThis.HisnVisualEffects;
+  const effects = { applied: 0, disposed: 0, layout: 0 };
+  h.node.tagName = 'IMG'; h.node.naturalWidth = h.node.naturalHeight = 224;
+  globalThis.HisnVisualEffects = { apply(node) {
+    effects.applied++;
+    const layout = effects.layout, value = 'fixture-face-mask';
+    node.style.setProperty('filter', value, 'important');
+    return { valid: () => layout === effects.layout && node.style.getPropertyValue('filter') === value,
+      dispose() { effects.disposed++; if (node.style.getPropertyValue('filter') === value) node.style.removeProperty('filter'); } };
+  } };
+  await flush();
+  h.set({ personBlur: 'female', personRegion: 'faces', personEffect: 'solid' });
+  const stop = h.stop;
+  h.stop = () => { stop(); globalThis.HisnVisualEffects = originalEffects; };
+  return { ...h, effects };
+}
+const faceResult = (blur, captureKey = 'a'.repeat(64), adult = false) => ({ state: 'ready', captureKey,
+  adult: { block: adult }, persons: { blur, regions: blur ? [{ x: .1, y: .1, width: .2, height: .2 }] : [] } });
 {
   const h = harness(); await flush();
   globalThis.crypto = {getRandomValues: values => values.fill(7)};
@@ -516,6 +540,118 @@ function harness() {
   const h = harness(); h.capture({state:'unknown',reason:'inaccessible-pixels'}); await flush(); await h.tick();
   check(h.node.attributeWrites===0 && h.node.dataset.hisnVisual==='unknown' && h.inspect.length===0,
     'unreadable videos are not mutated or falsely certified by the image retry');
+  h.stop();
+}
+{
+  const h = await faceHarness(); await h.tick(); await h.reply(0, faceResult(true));
+  check(h.effects.applied === 1 && h.node.dataset.hisnVisual === 'checked', 'a positive still-image result installs a face mask');
+  h.advance(10000); await h.tick(); await h.reply(1, faceResult(false));
+  check(h.effects.disposed === 0 && h.values.get('filter')?.[0] === 'fixture-face-mask'
+    && h.node.dataset.hisnVisual === 'checked', 'an identical-pixel clean resample preserves its earlier positive face mask');
+  h.advance(10000); await h.tick(); await h.reply(2, {state:'unknown',reason:'fixture-unknown',captureKey:'a'.repeat(64)});
+  check(h.node.dataset.hisnVisual === 'unknown' && h.effects.disposed === 0,
+    'an unknown resample cannot release withholding even when it claims an identical capture key');
+  h.advance(1000); await h.tick(); await h.reply(3, faceResult(false));
+  check(h.node.dataset.hisnVisual === 'checked' && h.effects.disposed === 0,
+    'a verified identical-pixel retry can recover without losing the positive face mask');
+  h.advance(10000); await h.tick(); await h.reply(4, faceResult(false, 'b'.repeat(64)));
+  check(h.effects.disposed === 1 && !h.values.has('filter') && h.node.dataset.hisnVisual === 'checked',
+    'changed decoded pixels receive the independent clean verdict rather than an old face mask');
+  h.stop();
+}
+{
+  const h = await faceHarness(); await h.tick(); await h.reply(0, faceResult(true));
+  h.advance(10000); await h.tick(); await h.reply(1, faceResult(false, 'a'.repeat(64), true));
+  check(h.effects.disposed === 1 && h.node.dataset.hisnVisual === 'adult-hidden'
+    && h.values.get('visibility')?.[0] === 'hidden', 'an independent adult-positive result overrides identical-pixel face-mask retention');
+  h.stop();
+}
+for (const kind of ['geometry', 'policy', 'route', 'source', 'cors']) {
+  const h = await faceHarness(); await h.tick(); await h.reply(0, faceResult(true));
+  if (kind === 'geometry') { h.effects.layout++; h.discover(); }
+  if (kind === 'policy') h.set({ personBlur: 'male' });
+  if (kind === 'route') { location.href = 'https://fixture.example/another-route'; h.discover(); }
+  if (kind === 'source') { h.node.currentSrc = 'https://fixture.example/another-image.png'; h.discover(); }
+  if (kind === 'cors') { h.node.setAttribute('crossorigin', 'anonymous'); h.discover(); }
+  check(h.effects.disposed === 1 && h.node.dataset.hisnVisual === 'pending', `${kind} changes immediately revoke an old face mask and reveal permission`);
+  await h.tick(); await h.reply(1, faceResult(false));
+  check(!h.values.has('filter') && h.node.dataset.hisnVisual === 'checked',
+    `${kind} changes cannot reuse the prior mask even with a repeated capture identity`);
+  h.stop();
+}
+for (const key of [undefined, null, 'not-a-digest', 'a'.repeat(65), 'A'.repeat(64)]) {
+  const h = await faceHarness(); await h.tick(); await h.reply(0, faceResult(true));
+  h.advance(10000); await h.tick();
+  const result = faceResult(false); result.captureKey = key;
+  await h.reply(1, result);
+  check(h.effects.disposed === 1 && !h.values.has('filter'), 'missing or malformed capture identities cannot retain an earlier face mask');
+  h.stop();
+}
+{
+  const h = await faceHarness(); await h.tick(); await h.reply(0, faceResult(true));
+  h.advance(10000); await h.tick();
+  h.node.currentSrc = 'https://fixture.example/replaced-during-inference.png';
+  await h.reply(1, faceResult(false));
+  check(h.effects.disposed === 0 && h.values.get('filter')?.[0] === 'fixture-face-mask',
+    'a stale clean reply cannot dispose a previous mask before source invalidation');
+  h.discover(); await h.tick(); await h.reply(2, faceResult(false));
+  check(h.effects.disposed === 1 && !h.values.has('filter'), 'the independently checked replacement cannot inherit a stale source mask');
+  h.stop();
+}
+{
+  const h = harness(); h.node.tagName='IMG'; h.node.naturalWidth=h.node.naturalHeight=224;
+  const second = h.addNode(); await flush();
+  await h.tick(); await h.resolve(0); await h.pump(); await h.resolve(1);
+  h.advance(10000); await h.tick();
+  const fresh = h.addNode(); h.capture(node=>({width:1,height:1,rgba:node===fresh.node?'AQAAAA==':'AAAAAA=='}));
+  h.discover(); await h.tick();
+  check(h.inspect.length===3, 'image preparation never starts another model request while one is pending');
+  await h.resolve(2); await h.pump();
+  check(h.inspect[3].message.rgba==='AQAAAA==' && second.node.dataset.hisnVisual==='checked',
+    'a newly visible unchecked image precedes a routine recheck already waiting in the active map');
+  await h.resolve(3); h.stop();
+}
+{
+  const h = harness(); h.node.tagName='IMG'; h.node.naturalWidth=h.node.naturalHeight=224;
+  const others=Array.from({length:5},()=>h.addNode());
+  const authored=h.addNode(); authored.node.setAttribute('crossorigin','use-credentials');
+  let probes=0;
+  globalThis.HisnVisualCapture.probe=node=>{probes++;return node===h.node?{state:'readable'}:{state:'unknown',reason:'inaccessible-pixels'};};
+  await flush(); await h.tick();
+  check(probes===4 && h.inspect.length===1, 'preparation probes at most four new images before a single inference');
+  check(others.slice(0,3).every(x=>x.node.getAttribute('crossorigin')==='anonymous'
+    && x.node.dataset.hisnVisual==='unknown'), 'parallel same-node reloads remain withheld and never become readable-probe clean verdicts');
+  await h.tick();
+  check(h.inspect.length===1 && others.every(x=>x.node.getAttribute('crossorigin')==='anonymous'),
+    'remaining eligible image reloads can begin while the first model request is busy');
+  check(authored.node.getAttribute('crossorigin')==='use-credentials', 'readiness preparation preserves an authored credential mode');
+  await h.resolve(0); h.stop();
+}
+{
+  const h=harness(); h.node.offscreen=true; await flush(); await h.tick();
+  check(h.inspect.length===0, 'offscreen media does not consume model work');
+  h.node.offscreen=false; h.documentEvents.get('scroll')(); h.documentEvents.get('scroll')();
+  check(await h.viewport(), 'scroll schedules one bounded viewport refresh');
+  await h.pump();
+  check(h.inspect.length===1 && h.node.dataset.hisnVisual==='pending', 'scroll admits a newly visible image before the next one-second interval without revealing it');
+  await h.resolve(0); h.documentEvents.get('scroll')(); h.stop();
+  check(!await h.viewport(), 'scanner shutdown cancels a pending viewport refresh');
+}
+{
+  const h=harness(); document.hidden=true; await flush(); await h.tick();
+  document.hidden=false; h.documentEvents.get('visibilitychange')(); await h.pump();
+  check(h.inspect.length===1, 'returning to a tab queues its pending first check immediately');
+  await h.resolve(0); h.stop();
+}
+{
+  const h=harness(); await flush(); await h.tick(); await h.resolve(0);
+  h.node.currentTime=2;
+  for(let i=0;i<8;i++){const fresh=h.addNode();fresh.node.tagName='IMG';fresh.node.naturalWidth=fresh.node.naturalHeight=224;}
+  h.capture(node=>({width:1,height:1,rgba:node===h.node?'AAAAAA==':'AQAAAA=='}));
+  h.discover();
+  for(let i=1;i<=5;i++){await h.tick();await h.resolve(i);}
+  check(h.inspect.slice(1,6).some(job=>job.message.mediaKind==='video'),
+    'continuous first-image work reserves a monitoring slot for an already-playing video within four new checks');
   h.stop();
 }
 print(`  ${checks}/${checks} visual scanner lifecycle checks passed`);

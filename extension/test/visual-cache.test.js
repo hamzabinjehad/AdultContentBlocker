@@ -45,12 +45,25 @@ function harness(options = {}) {
 }
 {
   const h = harness({ limit: 200, ttlMs: 90000 });
-  for (let i = 1; i <= 40; i++) check(h.cache.put(h.ticket, hex(i), clean, prefs), 'bounded complete verdict can be retained');
-  check(h.cache.entries.size === 32 && !h.cache.get(h.ticket, hex(1)), 'caller cannot raise the thirty-two-entry upper bound');
-  h.cache.get(h.ticket, hex(9)); h.cache.put(h.ticket, hex(41), clean, prefs);
-  check(h.cache.get(h.ticket, hex(9)) !== null && h.cache.get(h.ticket, hex(10)) === null, 'recently used results survive least-recently-used eviction');
+  for (let i = 1; i <= 140; i++) check(h.cache.put(h.ticket, hex(i), clean, prefs), 'bounded complete verdict can be retained');
+  check(h.cache.entries.size === 128 && !h.cache.get(h.ticket, hex(1)), 'caller cannot raise the 128-entry upper bound');
+  h.cache.get(h.ticket, hex(13)); h.cache.put(h.ticket, hex(141), clean, prefs);
+  check(h.cache.get(h.ticket, hex(13)) !== null && h.cache.get(h.ticket, hex(14)) === null, 'recently used results survive least-recently-used eviction');
   h.advance(30000);
-  check(h.cache.get(h.ticket, hex(9)) === null, 'caller cannot extend the thirty-second reuse limit');
+  check(h.cache.get(h.ticket, hex(13)) === null, 'caller cannot extend the thirty-second reuse limit');
+}
+for (const count of [10,50,100]) {
+  for (const limit of [32,128]) {
+    const h = harness({limit}); let inspections = 0;
+    for (let round=0;round<2;round++) for (let index=0;index<count;index++) {
+      const frame = {...capture,rgba:btoa(String.fromCharCode(index,0,0,255))};
+      const key = await h.cache.fingerprint(frame,h.ticket,prefs,'image');
+      if (!h.cache.get(h.ticket,key)) { inspections++; h.cache.put(h.ticket,key,clean,prefs); }
+    }
+    check(inspections === (limit >= count ? count : count*2),
+      `${count}-image repeated gallery avoids inference only when its exact-pixel verdicts fit the bounded cache`);
+    check(h.cache.entries.size <= limit, 'gallery reuse never exceeds its memory limit');
+  }
 }
 {
   const h = harness(), key = await h.cache.fingerprint(capture, h.ticket, prefs, 'image');

@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct MobileRootView: View {
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @ObservedObject var protection: ProtectionController
     @Binding var language: String
     private enum Confirmation { case dns, guardian }
@@ -15,6 +16,22 @@ struct MobileRootView: View {
     }
 
     var body: some View {
+        Group {
+        if horizontalSizeClass == .regular {
+            NavigationSplitView {
+                List(selection: Binding<Int?>(get: { selectedTab }, set: { if let value = $0 { selectedTab = value } })) {
+                    Label("tab.protection", systemImage: "shield.lefthalf.filled").tag(0)
+                    Label("tab.setup", systemImage: "checklist").tag(1)
+                    Label("tab.settings", systemImage: "gearshape").tag(2)
+                }.navigationTitle("app.name")
+            } detail: {
+                NavigationStack {
+                    if selectedTab == 0 { overview.navigationTitle("tab.protection") }
+                    else if selectedTab == 1 { setup.navigationTitle("tab.setup") }
+                    else { settings.navigationTitle("tab.settings") }
+                }
+            }
+        } else {
         TabView(selection: $selectedTab) {
             NavigationStack { overview.navigationTitle("app.name") }
                 .tabItem { Label("tab.protection", systemImage: "shield.lefthalf.filled") }
@@ -25,6 +42,8 @@ struct MobileRootView: View {
             NavigationStack { settings.navigationTitle("tab.settings") }
                 .tabItem { Label("tab.settings", systemImage: "gearshape") }
                 .tag(2)
+        }
+        }
         }
         .alert(confirmation == .guardian ? "removal.consent.title" : "dns.consent.title",
                isPresented: Binding(get: { confirmation != nil }, set: { if !$0 { confirmation = nil } }),
@@ -46,15 +65,6 @@ struct MobileRootView: View {
     private var overview: some View {
         List {
             verifiedSetup
-            readiness
-            CommitmentSection(protection: protection)
-            Section {
-                VStack(alignment: .leading, spacing: 12) {
-                    Image(systemName: "shield.lefthalf.filled").font(.largeTitle).foregroundStyle(.blue)
-                    Text("overview.title").font(.title2.bold())
-                    Text("overview.body").foregroundStyle(.secondary)
-                }.padding(.vertical, 12)
-            }
             Section("status.title") {
                 LabeledContent("dns.title") { Text(dnsLabel).foregroundStyle(.secondary) }
                 LabeledContent("safari.title") {
@@ -63,21 +73,25 @@ struct MobileRootView: View {
                 Text(MobileProtectionPolicy.safariConfigurationReady(enabled: protection.safari,
                     lastReload: protection.safariReloads) ? "safari.enabled" : "safari.partial")
                     .font(.footnote).foregroundStyle(.secondary)
-                Button("setup.continue") { selectedTab = 1 }
                 if let date = protection.checkedAt {
                     LabeledContent("status.checked") { Text(date, style: .time) }
                         .font(.footnote).foregroundStyle(.secondary)
                 }
-                Button("status.refresh") { Task { await protection.refresh() } }
-                    .disabled(protection.busy)
-                if protection.busy { ProgressView("working") }
             }
+            CommitmentSection(protection: protection)
+            readiness
             Section("browserfirst.quickTitle") {
                 Label("browserfirst.quickBody", systemImage: "puzzlepiece.extension")
                     .font(.callout)
                 Button("browserfirst.openSetup") { selectedTab = 1 }
                 Text("browserfirst.unverified")
                     .font(.footnote).foregroundStyle(.secondary)
+            }
+            Section {
+                DisclosureGroup("overview.details") {
+                    Text("overview.body").foregroundStyle(.secondary)
+                    Button("setup.continue") { selectedTab = 1 }
+                }
             }
             safariParts
             removalSection
@@ -89,7 +103,11 @@ struct MobileRootView: View {
             errorRow
         }
         .listStyle(.insetGrouped)
+        .environment(\.defaultMinListRowHeight, 48)
         .refreshable { await protection.refresh() }
+        .frame(maxWidth: horizontalSizeClass == .regular ? 860 : .infinity)
+        .frame(maxWidth: .infinity)
+        .background(Color(uiColor: .systemGroupedBackground))
     }
 
     private var setup: some View {
@@ -126,13 +144,18 @@ struct MobileRootView: View {
             errorRow
         }
         .listStyle(.insetGrouped)
+        .environment(\.defaultMinListRowHeight, 48)
+        .frame(maxWidth: horizontalSizeClass == .regular ? 860 : .infinity)
+        .frame(maxWidth: .infinity)
+        .background(Color(uiColor: .systemGroupedBackground))
     }
 
     private var verifiedSetup: some View {
         let assessment = protection.setupAssessment
         return Section("setup.status.title") {
             setupStatusLabel(assessment.state)
-                .font(.headline)
+                .font(.title2.bold())
+                .accessibilityAddTraits(.isHeader)
                 .foregroundStyle(assessment.state == .configured ? Color.teal : Color.orange)
                 .accessibilityIdentifier("setup.currentAssessment")
             Text("setup.status.scope").font(.footnote).foregroundStyle(.secondary)
@@ -144,6 +167,10 @@ struct MobileRootView: View {
                     .font(.callout)
             }
             if assessment.state == .checking { ProgressView("working") }
+            if let date = protection.checkedAt {
+                LabeledContent("status.checked") { Text(date, style: .time) }
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
             Button("status.refresh") { Task { await protection.refresh() } }
                 .disabled(protection.busy)
             if assessment.state == .needsSetup, selectedTab != 1 {
@@ -217,6 +244,11 @@ struct MobileRootView: View {
             Button("removal.request") { confirmation = .guardian }.disabled(protection.busy)
             Text("removal.manual").font(.footnote).foregroundStyle(.secondary)
             Text("removal.recovery").font(.footnote).foregroundStyle(.secondary)
+            DisclosureGroup("removal.setup.title") {
+                Text("removal.setup.mobile").font(.callout).foregroundStyle(.secondary)
+                Button("status.refresh") { Task { await protection.refresh() } }
+                    .disabled(protection.busy)
+            }
             Link("removal.guide", destination: URL(string: "https://support.apple.com/en-gb/105121")!)
         }
     }

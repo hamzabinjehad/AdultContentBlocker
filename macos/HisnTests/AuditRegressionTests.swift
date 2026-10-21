@@ -152,9 +152,17 @@ final class AuditRegressionTests: XCTestCase {
         XCTAssertNil(status.checkIns?["process:202:net.imput.helium"])
         XCTAssertEqual(status.record.revision, 0)
         let legacy = Data(#"{"checkIn":{"browser":"net.imput.helium"}}"#.utf8)
-        XCTAssertEqual(try JSONDecoder().decode(PolicyRequest.self, from: legacy), .checkIn(browser: "net.imput.helium"))
-        XCTAssertTrue(service.handle(.checkIn(browser: "net.imput.helium", processID: -1)).accepted)
-        XCTAssertNil(service.status().checkIns?["process:-1:net.imput.helium"])
+        let legacyRequest = try JSONDecoder().decode(PolicyRequest.self, from: legacy)
+        XCTAssertEqual(legacyRequest, .checkIn(browser: "net.imput.helium"))
+        XCTAssertTrue(service.handle(legacyRequest).accepted, "an absent legacy PID remains supported")
+        for processID: Int32 in [-1, 0] {
+            let rejected = service.handle(.checkIn(browser: "net.imput.helium", processID: processID))
+            XCTAssertFalse(rejected.accepted, "a supplied invalid PID is not a legacy request")
+            XCTAssertNotNil(rejected.refusal)
+            XCTAssertEqual(rejected.status.checkIns, status.checkIns,
+                           "a refused identity must not add or refresh any heartbeat")
+            XCTAssertEqual(rejected.status.record, status.record, "check-ins never change policy")
+        }
     }
 
     // 10 — a record written before a field existed still decodes.

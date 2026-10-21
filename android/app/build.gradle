@@ -1,0 +1,45 @@
+plugins { id 'com.android.application' }
+
+def repoRoot = rootProject.projectDir.parentFile
+def seedManifest = new groovy.json.JsonSlurper().parse(new File(repoRoot, 'seed/manifest.json'))
+def seedDigest = seedManifest.artifacts['domains_core.txt'].sha256
+def termsDigest = seedManifest.artifacts['terms.json'].sha256
+if (!(seedDigest ==~ /[0-9a-f]{64}/)) throw new GradleException('Invalid domain seed digest')
+if (!(termsDigest ==~ /[0-9a-f]{64}/)) throw new GradleException('Invalid terms seed digest')
+def verifySeed = tasks.register('verifyAndroidSeed', Exec) {
+    workingDir repoRoot
+    commandLine 'python3', 'blocklist/seed.py', 'verify'
+}
+def copySeed = tasks.register('copyVerifiedAndroidSeed', Sync) {
+    dependsOn verifySeed
+    from(new File(repoRoot, 'seed')) { include 'domains_core.txt', 'terms.json' }
+    into layout.buildDirectory.dir('generated/verifiedSeed')
+}
+
+android {
+    namespace 'app.hisn.android'
+    compileSdk 37
+
+    defaultConfig {
+        applicationId 'app.hisn.android'
+        minSdk 26
+        targetSdk 36
+        versionCode 9
+        versionName '0.4.4'
+        testInstrumentationRunner 'app.hisn.android.CoreDeviceTestRunner'
+        buildConfigField 'String', 'DOMAIN_SEED_SHA256', '"' + seedDigest + '"'
+        buildConfigField 'int', 'DOMAIN_SEED_COUNT', seedManifest.core_domain_count.toString()
+        buildConfigField 'int', 'DOMAIN_SEED_VERSION', seedManifest.version.toString()
+        buildConfigField 'String', 'TERMS_SEED_SHA256', '"' + termsDigest + '"'
+    }
+
+    sourceSets.main.java.srcDir '../core/src/main/java'
+    sourceSets.main.assets.srcDir layout.buildDirectory.dir('generated/verifiedSeed').get().asFile
+    buildFeatures { buildConfig true }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+tasks.named('preBuild').configure { dependsOn copySeed }

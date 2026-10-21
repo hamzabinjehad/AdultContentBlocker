@@ -10,6 +10,10 @@ this exists next to Screen Time, and what it should and should not try to be.
 Every design decision in this repo is downstream of that document, and several
 of them look wrong until you know which bypass they close.
 
+For UI/UX work across the apps and extension, follow the
+[Apple HIG-informed design guide](docs/DESIGN_GUIDE.md). It defines shared
+principles, platform-specific layouts and a visual/accessibility review checklist.
+
 For the network-first protection roadmap and current limits, see
 [`docs/NETWORK_FIRST_PROTECTION.md`](docs/NETWORK_FIRST_PROTECTION.md).
 The app starts setup with a guide for any router's capabilities. The
@@ -36,12 +40,18 @@ profile/         .mobileconfig generator: DNS, DoH, Private Relay               
 extension/       Chromium MV3 extension + opt-in local visual engine             (JS)
 macos/           the app + content filter                                        (Swift)
 ios/             universal iPhone/iPad app, Safari blockers + optional family DNS (Swift)
+android/         experimental DNS and selected-app/text protection                (Java)
 ipados/          iPad-specific documentation; shares the ios/ target
 shared/apple/   portable Apple-platform configuration and protection-state code
 seed/            signed starter list + keyword layer, bundled into the filter
 partner/         the accountability partner's page: key, and signed approvals    (HTML)
 .github/         CI on every PR; daily signed rebuild and publish                 (Actions)
 ```
+
+The [Android development preview](android/README.md) has its own consent,
+setup guide and verification record. It is not a port of macOS privileges and
+does not implement Android visual filtering, always-on coverage or uninstall
+prevention. See [Android release gates](docs/ANDROID_IMPLEMENTATION_STATUS.md).
 
 The new iPhone/iPad development version is documented in [`ios/README.md`](ios/README.md).
 See [`docs/APPLE_PLATFORMS.md`](docs/APPLE_PLATFORMS.md) for platform boundaries.
@@ -54,6 +64,14 @@ A signed real-device build and acceptance checks are required before relying on
 phone enforcement.
 The latest interface and visual-check iteration is described in
 [Hisn 1.1.2](docs/UPDATE_1_1_2.md), including reload steps and remaining limits.
+The local [popup-settings follow-up](docs/POPUP_SETTINGS.md) brings the guarded
+editor into the toolbar popup, without requiring a separate tab.
+The local [visual hide-first follow-up](docs/VISUAL_HIDE_FIRST_RESEARCH.md)
+withholds supported media while opted-in checks are pending or unverified.
+Unreadable harmless media can remain hidden; detection is not guaranteed.
+The local [person-presentation options](docs/PERSON_PRESENTATION.md) add supported
+face-only image masks, strong blur/opaque effects, and separate person media
+scope. Video face tracking remains a whole-media fallback.
 See [browser-first mixed-content protection](docs/BROWSER_FIRST_PROTECTION.md)
 for individual X/Twitter post checking and optional native-app restrictions.
 

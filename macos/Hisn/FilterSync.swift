@@ -37,7 +37,7 @@ public final class FilterSync: ObservableObject {
 
     public func start() {
         guard timer == nil, FilterLink.shared.isConfigured else { return }
-        timer = Timer.scheduledTimer(withTimeInterval: 20, repeats: true) { _ in
+        let reconciliation = Timer(timeInterval: 20, repeats: true) { _ in
             Task { @MainActor in
                 await FilterSync.shared.sync()
                 // Reconciliation has released its guard before activation can
@@ -45,6 +45,11 @@ public final class FilterSync: ObservableObject {
                 await FilterController.shared.reassertIfNeeded()
             }
         }
+        // BrowserGuard also runs while menus track. Its authority snapshot
+        // must keep refreshing in those modes, or healthy check-ins could
+        // look stale solely because the app's UI is being used.
+        RunLoop.main.add(reconciliation, forMode: .common)
+        timer = reconciliation
         Task { await sync() }
     }
 
@@ -60,7 +65,7 @@ public final class FilterSync: ObservableObject {
             status = nil
             return
         }
-        lockEvidence.observe(locked: latest.isLocked)
+        lockEvidence.observe(locked: latest.isLocked, guardAllowed: latest.record.guardAllowed)
 
         // The partner key FIRST, while the authority may still be unlocked. A
         // first lock is what turns the filter on, and a key sent after the lock
@@ -133,12 +138,26 @@ public final class FilterSync: ObservableObject {
             BrowserGuard.shared.replaceAllowed(Set(merged.guardAllowed))
         }
         status = latest
-        lockEvidence.observe(locked: latest.isLocked)
+        lockEvidence.observe(locked: latest.isLocked, guardAllowed: latest.record.guardAllowed)
     }
 
     /// Whether the filter's authority says a lock is running — by its own
     /// clock, which a key in the user's defaults cannot move.
     public var authorityLocked: Bool { lockEvidence.locked }
+
+    /// An IPC outage must not turn editable app exceptions into permission to
+    /// bypass a remembered authority lock. This cached policy constrains the
+    /// guard only; it is not evidence that the provider is currently running.
+    func effectiveGuardAllowed(local: Set<String>) -> Set<String> {
+        lockEvidence.effectiveGuardAllowed(local: local)
+    }
+
+    /// Losing a previously confirmed locked authority must not authenticate
+    /// user-editable heartbeat defaults. An empty authoritative set starts the
+    /// guard's existing recovery warning; it never borrows cached freshness.
+    var guardCheckIns: [String: Date]? {
+        lockEvidence.effectiveGuardCheckIns(live: status?.checkIns)
+    }
 
     /// Kick a sync without waiting for it — for call sites that just saved.
     public nonisolated static func soon() {
@@ -152,9 +171,30 @@ public final class FilterSync: ObservableObject {
 /// this cached lock as evidence that traffic is being filtered.
 struct AuthorityLockEvidence {
     private(set) var locked = false
+    private var guardAllowed: Set<String>?
 
-    mutating func observe(locked: Bool?) {
-        if let locked { self.locked = locked }
+    mutating func observe(locked: Bool?, guardAllowed: [String]? = nil) {
+        guard let locked else { return }
+        self.locked = locked
+        if !locked {
+            self.guardAllowed = nil
+        } else if let guardAllowed {
+            self.guardAllowed = Set(guardAllowed)
+        }
+    }
+
+    /// Local removals still tighten immediately. A missing allow-set during a
+    /// confirmed lock cannot invent exceptions; only a confirmed unlocked
+    /// verdict removes this session-local constraint.
+    func effectiveGuardAllowed(local: Set<String>) -> Set<String> {
+        locked ? local.intersection(guardAllowed ?? []) : local
+    }
+
+    /// Preserve local fallback for installations with no remembered authority
+    /// lock. Live replies are consumed directly, never retained as liveness.
+    func effectiveGuardCheckIns(live: [String: Date]?) -> [String: Date]? {
+        if let live { return live }
+        return locked ? [:] : nil
     }
 }
 

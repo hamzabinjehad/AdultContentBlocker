@@ -34,6 +34,15 @@ final class SetupChecklistTests: XCTestCase {
                         .accounts, .systemFilter])
     }
 
+    func testRemovalProtectionNeedsAnInstalledBrowserAndBothVerifiedLayers() {
+        XCTAssertEqual(step(SetupChecklist(evidence(browsers: [])), .extensionManagement).state, .todo)
+        for browser in [BrowserSetup(name: "Chrome", extensionManaged: true),
+                        BrowserSetup(name: "Chrome", nativeLinkProtected: true)] {
+            XCTAssertEqual(step(SetupChecklist(evidence(browsers: [browser])), .extensionManagement).state, .todo)
+        }
+        XCTAssertEqual(step(SetupChecklist(evidence(browsers: [lockedHelium])), .extensionManagement).state, .done)
+    }
+
     func testAFreshMacHasEverythingLeftAndSaysWhatToDo() {
         let c = SetupChecklist(evidence(browsers: [BrowserSetup(name: "Helium", extensionOffIn: ["Default"])]))
         XCTAssertEqual(c.doneCount, 0)
@@ -190,12 +199,283 @@ final class SetupChecklistTests: XCTestCase {
         XCTAssertEqual(SetupEvidence.appFilesProtected(bundle: bundle.path), false)
     }
 
+    // MARK: - Login-agent configuration (injected, never installed)
+
+    private var installedAgent: [String: Any] {
+        ["Label": "app.hisn.agent",
+         "ProgramArguments": ["/Applications/Hisn.app/Contents/MacOS/Hisn", "--background", "--for-user", "daily"],
+         "RunAtLoad": true, "KeepAlive": ["SuccessfulExit": false],
+         "ThrottleInterval": 10, "LimitLoadToSessionType": "Aqua", "ProcessType": "Interactive"]
+    }
+
+    private func protectedAgentAttributes(size: Int) -> [FileAttributeKey: Any] {
+        [.type: FileAttributeType.typeRegular, .ownerAccountName: "root", .ownerAccountID: 0,
+         .posixPermissions: 0o644, .size: size]
+    }
+
+    private func agentMatches(_ plist: Any, user: String = "daily", writable: Bool = false,
+                              format: PropertyListSerialization.PropertyListFormat = .xml,
+                              attributes: ([FileAttributeKey: Any]) -> [FileAttributeKey: Any] = { $0 }) throws -> Bool {
+        let data = try PropertyListSerialization.data(fromPropertyList: plist, format: format, options: 0)
+        return SetupEvidence.launchAgentConfigurationIsProtected(data,
+            attributes: attributes(protectedAgentAttributes(size: data.count)),
+            writable: writable, user: user)
+    }
+
+    func testOnlyMatchingProtectedAgentConfigurationsPassInXMLAndBinary() throws {
+        XCTAssertTrue(try agentMatches(installedAgent))
+        XCTAssertTrue(try agentMatches(installedAgent, format: .binary))
+        XCTAssertFalse(try agentMatches(installedAgent, user: "another-account"))
+        XCTAssertFalse(try agentMatches(installedAgent, user: ""))
+    }
+
+    func testRootOwnershipAloneDoesNotProtectTheAgent() throws {
+        for key in [FileAttributeKey.ownerAccountName, .ownerAccountID, .posixPermissions, .size, .type] {
+            XCTAssertFalse(try agentMatches(installedAgent, attributes: { attributes in
+                var copy = attributes; copy.removeValue(forKey: key); return copy
+            }), "missing \(key.rawValue) is not verified")
+        }
+        XCTAssertFalse(try agentMatches(installedAgent, attributes: { attributes in
+            var copy = attributes; copy[.ownerAccountName] = "daily"; return copy
+        }))
+        XCTAssertFalse(try agentMatches(installedAgent, attributes: { attributes in
+            var copy = attributes; copy[.ownerAccountID] = 501; return copy
+        }))
+        for mode in [0o664, 0o646, 0o666, 0o777] {
+            XCTAssertFalse(try agentMatches(installedAgent, attributes: { attributes in
+                var copy = attributes; copy[.posixPermissions] = mode; return copy
+            }), "mode \(String(mode, radix: 8))")
+        }
+        XCTAssertFalse(try agentMatches(installedAgent, writable: true), "ACL/current-user writability also fails")
+        XCTAssertTrue(try agentMatches(installedAgent, attributes: { attributes in
+            var copy = attributes; copy[.posixPermissions] = 0o600; return copy
+        }))
+    }
+
+    func testAgentSymlinksAndNonRegularFilesNeverPass() throws {
+        for type in [FileAttributeType.typeSymbolicLink, .typeDirectory, .typeSocket] {
+            XCTAssertFalse(try agentMatches(installedAgent, attributes: { attributes in
+                var copy = attributes; copy[.type] = type; return copy
+            }))
+        }
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("hisn-agent-link-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let file = root.appendingPathComponent("actual.plist")
+        let link = root.appendingPathComponent("agent.plist")
+        try PropertyListSerialization.data(fromPropertyList: installedAgent, format: .xml, options: 0).write(to: file)
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: file)
+        let actual = try FileManager.default.attributesOfItem(atPath: link.path)
+        XCTAssertEqual(actual[.type] as? FileAttributeType, .typeSymbolicLink,
+                       "the production metadata read must describe the link, not its target")
+    }
+
+    func testAgentIdentityAndProgramArgumentsMustBeExact() throws {
+        var wrong = installedAgent
+        wrong["Label"] = "app.unrelated.agent"
+        XCTAssertFalse(try agentMatches(wrong))
+        let arguments = installedAgent["ProgramArguments"] as! [String]
+        for index in arguments.indices {
+            var changed = arguments; changed[index] = "wrong"
+            wrong = installedAgent; wrong["ProgramArguments"] = changed
+            XCTAssertFalse(try agentMatches(wrong), "argument \(index)")
+        }
+        for changed in [Array(arguments.dropLast()), arguments + ["--extra"], ["/usr/bin/true"]] {
+            wrong = installedAgent; wrong["ProgramArguments"] = changed
+            XCTAssertFalse(try agentMatches(wrong))
+        }
+        for key in ["Program", "BundleProgram"] {
+            wrong = installedAgent; wrong[key] = "/usr/bin/true"
+            XCTAssertFalse(try agentMatches(wrong), "\(key) can override the executable")
+        }
+    }
+
+    func testAgentStartupAndFailureRecoveryRequireRealPlistBooleans() throws {
+        for value in [false, 1, "true"] as [Any] {
+            var wrong = installedAgent; wrong["RunAtLoad"] = value
+            XCTAssertFalse(try agentMatches(wrong))
+        }
+        var wrong = installedAgent; wrong.removeValue(forKey: "RunAtLoad")
+        XCTAssertFalse(try agentMatches(wrong))
+        for value in [false, true, [String: Any](), ["SuccessfulExit": true],
+                      ["SuccessfulExit": 0], ["NetworkState": true],
+                      ["SuccessfulExit": false, "NetworkState": true]] as [Any] {
+            wrong = installedAgent; wrong["KeepAlive"] = value
+            XCTAssertFalse(try agentMatches(wrong), "only the known account-safe recovery configuration passes")
+        }
+        wrong = installedAgent; wrong.removeValue(forKey: "KeepAlive")
+        XCTAssertFalse(try agentMatches(wrong))
+    }
+
+    func testAgentStartupOverridesAndUnboundedRecoveryDelayAreRejected() throws {
+        for key in ["Disabled", "LaunchOnlyOnce"] {
+            var wrong = installedAgent; wrong[key] = true
+            XCTAssertFalse(try agentMatches(wrong))
+            wrong[key] = 0
+            XCTAssertFalse(try agentMatches(wrong))
+            wrong[key] = false
+            XCTAssertTrue(try agentMatches(wrong))
+        }
+        var wrong = installedAgent; wrong["UserName"] = "other"
+        XCTAssertFalse(try agentMatches(wrong))
+        wrong = installedAgent; wrong["LimitLoadToSessionType"] = "Background"
+        XCTAssertFalse(try agentMatches(wrong))
+        for value in [0, 61, 10.5, true, "10"] as [Any] {
+            wrong = installedAgent; wrong["ThrottleInterval"] = value
+            XCTAssertFalse(try agentMatches(wrong))
+        }
+    }
+
+    func testMalformedOversizedAndChangingAgentFilesAreNotVerified() throws {
+        for data in [Data(), Data("not a plist".utf8), Data(repeating: 0, count: 65_537)] {
+            XCTAssertFalse(SetupEvidence.launchAgentConfigurationIsProtected(data,
+                attributes: protectedAgentAttributes(size: data.count), writable: false, user: "daily"))
+        }
+        XCTAssertFalse(try agentMatches(["not", "a", "dictionary"]))
+        XCTAssertFalse(try agentMatches(installedAgent, attributes: { attributes in
+            var copy = attributes; copy[.size] = (attributes[.size] as! Int) + 1; return copy
+        }), "a changed file size cannot certify the earlier snapshot")
+    }
+
+    func testInjectedBundlePathDoesNotReadOrRequireAnInstalledApp() throws {
+        var plist = installedAgent
+        plist["ProgramArguments"] = ["/tmp/fixture/Hisn.app/Contents/MacOS/Hisn", "--background", "--for-user", "daily"]
+        let data = try PropertyListSerialization.data(fromPropertyList: plist, format: .binary, options: 0)
+        XCTAssertFalse(try agentMatches(plist), "the default installed path is still required")
+        XCTAssertTrue(SetupEvidence.launchAgentConfigurationIsProtected(data,
+            attributes: protectedAgentAttributes(size: data.count), writable: false,
+            bundle: "/tmp/fixture/Hisn.app", user: "daily"))
+    }
+
     func testEdgeKeepsItsPolicyUnderItsOwnDomain() {
         XCTAssertEqual(SetupEvidence.policyDomain("com.microsoft.edgemac"), "com.microsoft.Edge")
         XCTAssertEqual(SetupEvidence.policyDomain("net.imput.helium"), "net.imput.helium")
     }
 
     // MARK: - Browser profiles
+
+    private func browserProfileRoot(_ profiles: [String: [String: Data]]) throws -> URL {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("hisn-setup-profiles-\(UUID().uuidString)")
+        addTeardownBlock { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        for (folder, files) in profiles {
+            let directory = root.appendingPathComponent(folder)
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            for (file, data) in files { try data.write(to: directory.appendingPathComponent(file)) }
+        }
+        return root
+    }
+
+    private func browserPreferences(_ entries: [String: Any], name: String? = nil) throws -> Data {
+        var preferences: [String: Any] = ["extensions": ["settings": entries]]
+        if let name { preferences["profile"] = ["name": name] }
+        return try JSONSerialization.data(withJSONObject: preferences)
+    }
+
+    func testModernEnablementUsesTheRuntimeInterpretation() throws {
+        let id = "hfhaffbmoeepcdolgejeidkgaoapcjig"
+        let root = try browserProfileRoot([
+            "Default": ["Preferences": browserPreferences([id: ["disable_reasons": [Int](), "location": 7]], name: "Work")],
+            "Profile 1": ["Secure Preferences": browserPreferences([id: ["disable_reasons": 0, "location": 9]], name: "Personal")]
+        ])
+        let setup = SetupEvidence.inspectBrowserProfiles(in: root, ids: [id])
+        XCTAssertTrue(setup.checked)
+        XCTAssertEqual(setup.missing, [])
+        XCTAssertEqual(BrowserProfileEvidence.inspect(root: root, ids: [id]).profiles.map(\.state),
+                       [.noExplicitLoss, .noExplicitLoss])
+        let managed = SetupEvidence.inspectBrowserProfiles(in: root, ids: [id], requireManaged: true)
+        XCTAssertTrue(managed.checked)
+        XCTAssertEqual(managed.missing, [], "modern policy installs need no legacy state key")
+    }
+
+    func testSetupStillRequiresAPolicyInstallLocationForManagedProtection() throws {
+        let id = "hfhaffbmoeepcdolgejeidkgaoapcjig"
+        let entries: [Any] = [["state": 1], ["state": 1, "location": 4],
+                             ["disable_reasons": 0, "location": true]]
+        for entry in entries {
+            let root = try browserProfileRoot([
+                "Default": ["Preferences": browserPreferences([id: entry], name: "Local copy")]
+            ])
+            let regular = SetupEvidence.inspectBrowserProfiles(in: root, ids: [id])
+            XCTAssertTrue(regular.checked)
+            XCTAssertEqual(regular.missing, [])
+            let managed = SetupEvidence.inspectBrowserProfiles(in: root, ids: [id], requireManaged: true)
+            XCTAssertFalse(managed.checked)
+            XCTAssertEqual(managed.missing, ["Local copy"])
+        }
+        XCTAssertEqual(BrowserProfileEvidence.entryState(["disable_reasons": 0, "location": 7.0],
+                                                         requireManaged: true), .unconfirmed)
+    }
+
+    func testConflictingOrCorruptSourcesCannotCertifySetup() throws {
+        let id = "hfhaffbmoeepcdolgejeidkgaoapcjig"
+        let healthy = try browserPreferences([id: ["state": 1]], name: "Work")
+        for secure in [try browserPreferences([id: ["state": 0]]), Data("not-json".utf8)] {
+            let root = try browserProfileRoot([
+                "Default": ["Preferences": healthy, "Secure Preferences": secure]
+            ])
+            let result = SetupEvidence.inspectBrowserProfiles(in: root, ids: [id])
+            XCTAssertFalse(result.checked)
+            XCTAssertEqual(result.missing, ["Work"])
+            XCTAssertEqual(BrowserProfileEvidence.inspect(root: root, ids: [id]).profiles.first?.state,
+                           .unconfirmed)
+        }
+    }
+
+    func testModernDisablementAndMalformedRecordsRemainMissing() throws {
+        let id = "hfhaffbmoeepcdolgejeidkgaoapcjig"
+        let disabledRoot = try browserProfileRoot([
+            "Default": ["Preferences": browserPreferences([id: ["disable_reasons": [1]]], name: "Disabled")]
+        ])
+        let disabled = SetupEvidence.inspectBrowserProfiles(in: disabledRoot, ids: [id])
+        XCTAssertTrue(disabled.checked)
+        XCTAssertEqual(disabled.missing, ["Disabled"])
+        for entry: [String: Any] in [["state": true], ["disable_reasons": false],
+                                     ["state": 1, "disable_reasons": ["unknown"]], ["location": 7]] {
+            let root = try browserProfileRoot([
+                "Default": ["Preferences": browserPreferences([id: entry])]
+            ])
+            let result = SetupEvidence.inspectBrowserProfiles(in: root, ids: [id])
+            XCTAssertFalse(result.checked)
+            XCTAssertEqual(result.missing, ["Default"])
+        }
+    }
+
+    func testAlternativeAcceptedEnabledCopyCanCertifySetup() throws {
+        let root = try browserProfileRoot([
+            "Default": ["Preferences": browserPreferences([
+                "old-copy": ["state": 0], "published-copy": ["disable_reasons": 0, "location": 7]])]
+        ])
+        let result = SetupEvidence.inspectBrowserProfiles(in: root, ids: ["old-copy", "published-copy"])
+        XCTAssertTrue(result.checked)
+        XCTAssertEqual(result.missing, [])
+    }
+
+    func testSetupSharesTheTotalPreferencesReadBudget() throws {
+        let id = "hfhaffbmoeepcdolgejeidkgaoapcjig"
+        let preferences = try browserPreferences([id: ["state": 1]])
+        let root = try browserProfileRoot([
+            "Default": ["Preferences": preferences], "Profile 1": ["Preferences": preferences]
+        ])
+        let exhausted = SetupEvidence.inspectBrowserProfiles(in: root, ids: [id], maximumBytes: preferences.count)
+        XCTAssertFalse(exhausted.checked)
+        XCTAssertEqual(exhausted.missing, ["Profile 1"])
+        let oversized = SetupEvidence.inspectBrowserProfiles(in: root, ids: [id], maximumBytes: preferences.count - 1)
+        XCTAssertFalse(oversized.checked)
+        XCTAssertEqual(oversized.missing, ["Default", "Profile 1"])
+        XCTAssertFalse(SetupEvidence.inspectBrowserProfiles(in: root, ids: [id], maximumBytes: 0).checked)
+        XCTAssertFalse(SetupEvidence.inspectBrowserProfiles(in: root, ids: []).checked)
+    }
+
+    func testSetupBoundsTheNumberOfProfilesItChecks() throws {
+        var profiles: [String: [String: Data]] = [:]
+        for index in 0...256 { profiles["Profile \(index)"] = [:] }
+        let root = try browserProfileRoot(profiles)
+        let result = SetupEvidence.inspectBrowserProfiles(in: root, ids: ["hisn-copy"])
+        XCTAssertFalse(result.checked)
+        XCTAssertEqual(result.missing, [], "an oversized enumeration is unknown rather than verified")
+    }
 
     /// Every profile must run the extension: a second profile without it is
     /// the whole browser without it.

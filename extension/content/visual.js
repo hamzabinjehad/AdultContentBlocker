@@ -13,6 +13,8 @@
   const retained = new WeakMap();
   let prefs = { inspectVisual: false, personBlur: 'off' }, busy = false, stopped = false, policyRevision = 0, admissionCursor = 0;
   let pumpTimer;
+  let viewportTimer;
+  let freshStreak = 0;
   let requestSequence = 0;
   function requestId() {
     try {
@@ -52,6 +54,8 @@
   };
   const signature = node => node.tagName === 'VIDEO' ? Math.floor(node.currentTime / 2)
     : `${node.naturalWidth}:${node.naturalHeight}:${Math.floor(Date.now() / 10000)}`;
+  const captureKey = result => typeof result?.captureKey === 'string' && /^[a-f0-9]{64}$/.test(result.captureKey)
+    ? result.captureKey : null;
   function mark(record, state, reason) {
     record.state = state; record.reason = reason || null;
     if (record.node.dataset.hisnVisual !== state) record.node.dataset.hisnVisual = state;
@@ -63,6 +67,7 @@
   function restore(record) {
     const { node } = record;
     record.effect?.dispose(); record.effect = null;
+    record.effectIdentity = null;
     if (node.style.getPropertyValue('filter') === 'blur(24px)') {
       if (record.filter) node.style.setProperty('filter', record.filter, record.filterPriority);
       else node.style.removeProperty('filter');
@@ -119,6 +124,7 @@
     record.route = location.href;
     record.signature = null;
     record.retryAt = 0; record.failures = 0;
+    record.preparedSource = null;
     if (!held(record) && applies(record.node)) mark(record, 'pending', 'awaiting-check');
     queuePass();
   }
@@ -239,10 +245,32 @@
     }
     invalidate(record);
   }
+  function prepareImages() {
+    if (typeof globalThis.HisnVisualCapture.probe !== 'function') return;
+    let prepared = 0;
+    for (const record of media.values()) {
+      const node = record.node, url = source(node);
+      if (node.tagName !== 'IMG' || record.request || record.signature !== null
+          || record.retryAt > Date.now() || record.preparedSource === url || corsMode(node) !== null
+          || !visible(node) || !applies(node) || !(node.naturalWidth > 0 && node.naturalHeight > 0)) continue;
+      if (prepared++ === 4) break;
+      record.preparedSource = url;
+      let result;
+      try { result = globalThis.HisnVisualCapture.probe(node); } catch { continue; }
+      if (result?.reason === 'inaccessible-pixels' && retryImageMode(record)) unknown(record, 'awaiting-image-reload');
+    }
+  }
   async function pass() {
-    if (stopped || busy || document.hidden || !active()) return;
+    if (stopped || document.hidden || !active()) return;
     discover();
-    const records = [...media.values()];
+    prepareImages();
+    if (busy) return;
+    // Favor fresh visible items, but reserve a video-monitoring slot after four
+    // first checks so continuous scrolling cannot starve a playing source.
+    // The inference engine itself remains strictly serialized.
+    const priority = record => record.signature === null ? 0
+      : freshStreak >= 4 && record.node.tagName === 'VIDEO' ? -1 : 1;
+    const records = [...media.values()].sort((a,b) => priority(a) - priority(b));
     for (const record of records) {
       const node = record.node;
       if (!visible(node) || !applies(node)) continue;
@@ -254,6 +282,7 @@
       // Images can animate or be updated behind an unchanged URL. Periodic
       // bounded rechecks improve that coverage; they are not every-frame scans.
       const sample = signature(node);
+      const firstCheck = record.signature === null;
       if (held(record)) {
         node.style.setProperty('visibility', 'hidden', 'important');
         if (video) node.pause();
@@ -281,6 +310,7 @@
         continue;
       }
       busy = true;
+      freshStreak = firstCheck ? Math.min(4, freshStreak + 1) : 0;
       let id;
       let timeout;
       const current = () => !stopped && node.isConnected && generation === record.generation
@@ -308,6 +338,18 @@
           continue;
         }
         record.retryAt = 0; record.failures = 0;
+        const key = captureKey(result), identity = record.effectIdentity;
+        // An occasional later false negative must not remove a positive face
+        // mask from identical still-image pixels. This is not a URL latch:
+        // changed pixels, policy, route, source or mask geometry require an
+        // independent verdict. Unknown results never reach this branch.
+        if (!adultPositive && personApplies(node) && result.persons?.blur === false
+            && node.tagName === 'IMG' && prefs.personRegion === 'faces' && key && identity?.key === key
+            && identity.source === capturedSource && identity.policyRevision === policyRevision
+            && identity.route === route && record.effect?.valid?.() === true) {
+          mark(record, 'checked');
+          continue;
+        }
         restore(record);
         if (prefs.inspectVisual && result.adult?.block === true) {
           record.hidden = true;
@@ -319,7 +361,11 @@
         } else if (personApplies(node) && result.persons?.blur === true) {
           const effect=globalThis.HisnVisualEffects?.apply(node,result.persons.regions,prefs);
           if (effect) {
-            record.effect=effect; mark(record, 'checked');
+            record.effect=effect;
+            if (node.tagName === 'IMG' && prefs.personRegion === 'faces' && key) {
+              record.effectIdentity = { key, source: capturedSource, policyRevision, route };
+            }
+            mark(record, 'checked');
             continue;
           }
           record.hidden = true;
@@ -424,9 +470,16 @@
     }, true);
   }
   document.addEventListener('DOMContentLoaded', observe, { once: true });
-  document.addEventListener('visibilitychange', () => { if (document.hidden) for (const record of media.values()) cancel(record); });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) for (const record of media.values()) cancel(record);
+    else queuePass();
+  });
   addEventListener('pagehide', () => { for (const record of media.values()) cancel(record); });
   addEventListener('resize', () => { discover(); queuePass(); });
+  addEventListener('scroll', () => {
+    if (stopped || viewportTimer !== undefined) return;
+    viewportTimer = setTimeout(() => { viewportTimer = undefined; queuePass(); }, 50);
+  }, { capture: true, passive: true });
   globalThis.__hisnVisualScanner = { stop() {
     if (stopped) return;
     stopped = true;
@@ -434,6 +487,7 @@
     document.documentElement?.setAttribute?.('data-hisn-visual-gate', 'off');
     clearInterval(timer); observer.disconnect();
     clearTimeout(pumpTimer); pumpTimer = undefined;
+    clearTimeout(viewportTimer); viewportTimer = undefined;
     for (const record of media.values()) release(record);
     for (const node of document.querySelectorAll('img,video')) {
       const record = retained.get(node);

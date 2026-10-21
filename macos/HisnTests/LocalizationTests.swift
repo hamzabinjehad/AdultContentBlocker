@@ -7,6 +7,19 @@ import XCTest
 /// it; these prove the build actually carries them — that the catalog was
 /// compiled into `ar.lproj` and that Arabic's plural forms choose right.
 final class LocalizationTests: XCTestCase {
+    func testLiveBrowserConnectionStatesShipArabic() throws {
+        let ar = try arabic()
+        XCTAssertEqual(ar.localizedString(forKey: "browser.live.title", value: nil, table: nil),
+                       "المتصفحات المفتوحة · حالة الاتصال")
+        XCTAssertEqual(ar.localizedString(forKey: "browser.live.waiting", value: nil, table: nil),
+                       "بانتظار رد موثّق من الإضافة")
+        XCTAssertEqual(ar.localizedString(forKey: "browser.live.observationOnly", value: nil, table: nil),
+                       "عرض الحالة فقط: حراسة المتصفح غير مفعّلة، لذلك لن تغلق هذه الفحوص المتصفحات.")
+        let format = ar.localizedString(forKey: "browser.live.countdown %lld", value: nil, table: nil)
+        XCTAssertEqual(String(format: format, locale: Locale(identifier: "ar@numbers=latn"), 60),
+                       "أعد الإضافة أو أغلق هذا المتصفح. سيُغلق خلال 60 ثانية.")
+    }
+
     func testBrowserRequirementConsentShipsArabic() throws {
         let ar = try arabic()
         XCTAssertEqual(ar.localizedString(forKey: "Keep browser protection on", value: nil, table: nil),

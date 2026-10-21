@@ -7,6 +7,7 @@ entitlements. Does not delete existing projects or user Xcode settings.
 from __future__ import annotations
 
 import importlib.util
+import argparse
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -16,13 +17,20 @@ spec.loader.exec_module(writer)
 Project, oid, q = writer.Project, writer.oid, writer.q
 
 
-def main() -> None:
+def main(safari_only: bool = False, domain_only: bool = False,
+         reuse_text_id: bool = False) -> None:
     p = Project()
-    app, tests = "HisnMobile", "HisnMobileTests"
+    app, tests = ("HisnSafari" if safari_only else "HisnMobile"), "HisnMobileTests"
+    project_name = "HisnSafari.xcodeproj" if safari_only else "HisnMobile.xcodeproj"
+    if domain_only and not safari_only:
+        raise SystemExit("--domain-only requires --safari-only")
+    if reuse_text_id and not domain_only:
+        raise SystemExit("--reuse-text-id-for-part-one requires separate --safari-only --domain-only")
+    app_identifier = "app.hisn.safari" if safari_only else "app.hisn.mobile"
     blockers = [f"Hisn{i}" for i in range(1, 5)]
     monitor = "HisnActivityMonitor"
     scanner = "HisnText"
-    names = [app, *blockers, monitor, scanner, tests]
+    names = [app, *blockers, *([] if domain_only else [scanner])] if safari_only else [app, *blockers, monitor, scanner, tests]
     sources = {
         app: ["Hisn/HisnMobileApp.swift", "Hisn/MobileRootView.swift", "Hisn/ProtectionController.swift",
               "Hisn/MobileCommitmentStore.swift", "Hisn/CommitmentSection.swift",
@@ -40,6 +48,10 @@ def main() -> None:
     }
     resources = {app: ["Hisn/en.lproj/Localizable.strings", "Hisn/ar.lproj/Localizable.strings", "Hisn/Assets.xcassets"],
                  tests: ["fixtures/safari_cases.json"]}
+    if safari_only:
+        sources[app] = ["HisnSafariOnly/SafariOnlyApp.swift", "../shared/apple/MobileProtectionPolicy.swift"]
+        sources = {name: sources[name] for name in names}
+        resources = {app: resources[app]}
     paths = sorted(set(sum(sources.values(), []) + sum(resources.values(), [])))
     for path in paths:
         if not (ROOT / path).exists():
@@ -116,10 +128,12 @@ def main() -> None:
                   phase(name, "PBXFrameworksBuildPhase", []),
                   phase(name, "PBXResourcesBuildPhase", [loc, refs["Hisn/Assets.xcassets"]] if name == app else
                         [refs[path] for path in resources.get(name, [])])]
-        extra = {"PRODUCT_BUNDLE_IDENTIFIER": q("app.hisn.mobile" if name == app else
+        extra = {"PRODUCT_BUNDLE_IDENTIFIER": q(app_identifier if name == app else
                  "app.hisn.mobile.tests" if name == tests else "app.hisn.mobile.activity" if name == monitor
-                 else "app.hisn.mobile.HisnText" if name == scanner
-                 else f"app.hisn.mobile.blocker{blockers.index(name) + 1}")}
+                 else f"{app_identifier}.HisnText" if name == scanner
+                 else f"{app_identifier}.blocker{blockers.index(name) + 1}")}
+        if reuse_text_id and name == blockers[0]:
+            extra["PRODUCT_BUNDLE_IDENTIFIER"] = q(f"{app_identifier}.HisnText")
         deps = []
         if name in [app, *blockers]:
             part = 0 if name == app else blockers.index(name) + 1
@@ -131,12 +145,16 @@ def main() -> None:
                 "files": "()", "inputPaths": "()", "outputPaths": "()", "alwaysOutOfDate": "1",
                 "shellPath": "/bin/sh", "shellScript": q(script).replace("\n", "\\n"),
                 "runOnlyForDeploymentPostprocessing": "0"}))
-            extra["INFOPLIST_FILE"] = q("Hisn/Info.plist" if name == app else "HisnBlocker/Info.plist")
+            extra["INFOPLIST_FILE"] = q(("HisnSafariOnly/Info.plist" if safari_only else "Hisn/Info.plist") if name == app else "HisnBlocker/Info.plist")
         if name == app:
-            extra["CODE_SIGN_ENTITLEMENTS"] = "Hisn/Hisn.entitlements"
+            if safari_only:
+                extra["HISN_SAFARI_DOMAIN_ONLY"] = "YES" if domain_only else "NO"
+                extra["HISN_SAFARI_REUSE_TEXT_ID"] = "YES" if reuse_text_id else "NO"
+            if not safari_only:
+                extra["CODE_SIGN_ENTITLEMENTS"] = "Hisn/Hisn.entitlements"
             extra["ASSETCATALOG_COMPILER_APPICON_NAME"] = "AppIcon"
             embedded = []
-            for blocker in [*blockers, monitor, scanner]:
+            for blocker in [name for name in names if name in [*blockers, monitor, scanner]]:
                 embedded.append(p.add(oid("ios-embed", blocker), "PBXBuildFile", {
                     "fileRef": products[blocker], "settings": "{ATTRIBUTES = (RemoveHeadersOnCopy, );}"}))
                 deps.append(dependency(name, blocker))
@@ -177,7 +195,7 @@ def main() -> None:
         "developmentRegion": "en", "knownRegions": "(en, ar, Base)", "hasScannedForEncodings": "0",
         "mainGroup": group, "productRefGroup": product_group, "projectDirPath": '""', "projectRoot": '""',
         "targets": writer.plist_array([oid("ios-target", name) for name in names])})
-    project = ROOT / "HisnMobile.xcodeproj"
+    project = ROOT / project_name
     schemes = project / "xcshareddata/xcschemes"
     schemes.mkdir(parents=True, exist_ok=True)
     (project / "project.pbxproj").write_text(p.render(project_id))
@@ -185,7 +203,7 @@ def main() -> None:
     def reference(name: str) -> str:
         ext = "app" if name == app else "xctest"
         return (f'<BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="{oid("ios-target", name)}" '
-                f'BuildableName="{name}.{ext}" BlueprintName="{name}" ReferencedContainer="container:HisnMobile.xcodeproj"/>')
+                f'BuildableName="{name}.{ext}" BlueprintName="{name}" ReferencedContainer="container:{project_name}"/>')
     scheme = f'''<?xml version="1.0" encoding="UTF-8"?>
 <Scheme LastUpgradeVersion="1600" version="1.7">
  <BuildAction parallelizeBuildables="YES" buildImplicitDependencies="YES"><BuildActionEntries>
@@ -197,9 +215,16 @@ def main() -> None:
  <AnalyzeAction buildConfiguration="Debug"/><ArchiveAction buildConfiguration="Release" revealArchiveInOrganizer="YES"/>
 </Scheme>
 '''
+    if safari_only:
+        scheme = scheme.replace(f'<TestableReference skipped="NO">{reference(tests)}</TestableReference>', '')
     (schemes / f"{app}.xcscheme").write_text(scheme)
-    print("Generated ios/HisnMobile.xcodeproj: universal app, four Safari parts, text scanner, tests")
+    print(f"Generated ios/{project_name}")
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--safari-only", action="store_true", help="Separate Personal Team candidate, no DNS/Family Controls/Device Activity")
+    parser.add_argument("--domain-only", action="store_true", help="Four Safari domain parts only, no text/visual scanner")
+    parser.add_argument("--reuse-text-id-for-part-one", action="store_true", help="Use an existing limited scanner ID for part one; domain-only edition only")
+    args = parser.parse_args()
+    main(args.safari_only, args.domain_only, args.reuse_text_id_for_part_one)

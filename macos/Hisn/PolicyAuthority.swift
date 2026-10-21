@@ -118,14 +118,18 @@ public enum PolicyRequest: Codable, Equatable {
 /// A native-host check-in belongs to its OS-resolved browser process. Bundle
 /// stamps are kept for older status readers, but cannot verify another process.
 public enum BrowserCheckInIdentity {
-    public static func key(browser: String, processID: Int32) -> String? {
-        guard processID > 0, !browser.isEmpty, browser.utf8.count <= 255,
+    public static func isValidBrowser(_ browser: String) -> Bool {
+        !browser.isEmpty && browser.utf8.count <= 255 &&
               browser.split(separator: ".", omittingEmptySubsequences: false)
-                .allSatisfy({ !$0.isEmpty }),
+                .allSatisfy({ !$0.isEmpty }) &&
               browser.utf8.allSatisfy({ byte in
                   (65...90).contains(byte) || (97...122).contains(byte) ||
                     (48...57).contains(byte) || byte == 45 || byte == 46
-              }) else { return nil }
+              })
+    }
+
+    public static func key(browser: String, processID: Int32) -> String? {
+        guard processID > 0, isValidBrowser(browser) else { return nil }
         return "process:\(processID):\(browser)"
     }
 }
@@ -435,6 +439,10 @@ public final class PolicyService: @unchecked Sendable {
     private let lock = OSAllocatedUnfairLock()
     private var record: PolicyRecord
     private var checkIns: [String: Date] = [:]
+    /// Retain evidence well beyond the guard's current heartbeat window.
+    /// Historical PID churn must never evict another process's recent stamp.
+    static let checkInRetention: TimeInterval = 5 * 60
+    static let maximumCheckIns = 4_096
     private var persistenceError: String?
     /// An observed clock must not go backwards even when checkpointing it
     /// fails. Only a successful save advances the persisted checkpoint.
@@ -488,15 +496,32 @@ public final class PolicyService: @unchecked Sendable {
 
     public func handle(_ request: PolicyRequest) -> PolicyResponse {
         if case let .checkIn(browser, processID) = request {
-            lock.withLockUnchecked {
-                if checkIns.count > 64 { checkIns.removeAll() }
-                let now = clock()
-                checkIns[browser] = now
-                if let processID, let key = BrowserCheckInIdentity.key(browser: browser, processID: processID) {
-                    checkIns[key] = now
+            let refusal: String? = lock.withLockUnchecked {
+                guard BrowserCheckInIdentity.isValidBrowser(browser),
+                      processID.map({ BrowserCheckInIdentity.key(browser: browser, processID: $0) != nil }) ?? true
+                else {
+                    return "Invalid browser check-in identity."
                 }
+                let now = clock()
+                guard now.timeIntervalSinceReferenceDate.isFinite else {
+                    return "Browser check-in time is unavailable."
+                }
+                pruneCheckIns(at: now)
+                var keys = [browser]
+                if let processID, let key = BrowserCheckInIdentity.key(browser: browser, processID: processID) {
+                    keys.append(key)
+                }
+                let additions = keys.filter { checkIns[$0] == nil }.count
+                guard checkIns.count + additions <= Self.maximumCheckIns else {
+                    // No fresh evidence is discarded to admit another identity.
+                    // Refuse explicitly; existing identities can still refresh,
+                    // and expired records will make room on the next request.
+                    return "Browser check-in capacity reached. Existing connections remain recorded; retry after old connections expire."
+                }
+                for key in keys { checkIns[key] = now }
+                return nil
             }
-            return PolicyResponse(accepted: true, refusal: nil, status: status())
+            return PolicyResponse(accepted: refusal == nil, refusal: refusal, status: status())
         }
         let result: (PolicyResponse, PolicyRecord?) = lock.withLockUnchecked {
             switch PolicyAuthority.apply(request, to: record, wall: observeNow()) {
@@ -578,8 +603,19 @@ public final class PolicyService: @unchecked Sendable {
     }
 
     private func statusLocked() -> PolicyStatus {
-        PolicyAuthority.status(record, health: health(), checkIns: checkIns,
-                               persistenceError: persistenceError)
+        pruneCheckIns(at: clock())
+        return PolicyAuthority.status(record, health: health(), checkIns: checkIns,
+                                      persistenceError: persistenceError)
+    }
+
+    private func pruneCheckIns(at now: Date) {
+        guard now.timeIntervalSinceReferenceDate.isFinite else { return }
+        checkIns = checkIns.filter { _, stamp in
+            // Bound future stamps too, without converting a clock rollback
+            // into an indefinitely retained connection. The guard continues
+            // to apply its own stricter freshness and clock-skew rules.
+            abs(now.timeIntervalSince(stamp)) <= Self.checkInRetention
+        }
     }
 }
 

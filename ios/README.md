@@ -6,6 +6,11 @@
 
 ## Open and run
 
+For the separately labeled free-development Safari-only candidate, see
+[Hisn Safari limited edition](HisnSafariOnly/README.md). Its installed domain-only
+configuration has no app shields, DNS, text/visual scanner, enforced commitment
+or deletion protection. It does not replace this full app's entitlements.
+
 Open `ios/HisnMobile.xcodeproj`, select the **HisnMobile** scheme, then choose an
 iPhone or iPad simulator. Minimum supported OS: iOS/iPadOS 16.
 

@@ -1,4 +1,4 @@
-import { validateCapture, visualPreferences, adultDecision, appearancePrediction, faceDetections,
+import { validateCapture, visualPreferences, adultDecision, appearancePrediction, needsAppearanceConfirmation, confirmAppearance, faceDetections,
   personDecision, squareFrame, unpadFaces } from '../visual/decisions.js';
 import { LocalInferenceQueue } from '../visual/queue.js';
 import {visualPolicyWeakens,validatePatch} from '../lib/policy.js';
@@ -37,6 +37,30 @@ check(appearancePrediction([.5, .5]) === null, 'a tied appearance output is unkn
 check(appearancePrediction([.5000001, .5]) === null, 'near-tied numeric noise cannot invent a selected estimate');
 for (const invalid of [[NaN, .1], [1.1, -.1], [.9, .9], [.8], null]) {
   check(appearancePrediction(invalid) === null, 'invalid appearance output cannot become a confident match');
+}
+for (const [probabilities, mode, required] of [
+  [[.1,.9], 'female', true], [[.9,.1], 'male', true],
+  [[.2,.8], 'female', true], [[.3,.7], 'female', false],
+  [[.9,.1], 'female', false], [[.1,.9], 'male', false],
+  [[.1,.9], 'all', false], [[.1,.9], 'off', false], [[.5,.5], 'female', false],
+]) check(needsAppearanceConfirmation(appearancePrediction(probabilities), mode) === required,
+  'only a valid confident opposite estimate needs a mirrored exclusion check');
+for (const [primary, mirrored, uncertain] of [
+  [[.1,.9], [.12,.88], false], [[.9,.1], [.82,.18], false],
+  [[.1,.9], [.8,.2], true], [[.9,.1], [.1,.9], true],
+  [[.1,.9], [.21,.79], true], [[.9,.1], [.79,.21], true],
+]) {
+  const result = confirmAppearance(primary, mirrored), original = appearancePrediction(primary);
+  check(result.appearanceUncertain === uncertain && result.gender === original.gender
+    && result.genderScore === original.genderScore,
+    'two-view check records uncertainty without inventing a different gender or confidence');
+  const opposite = original.gender === 'female' ? 'male' : 'female';
+  check(personDecision([{...face,...result}], [], opposite, 100,100).blur === uncertain,
+    'only confident agreeing opposite views are excluded from the chosen preference');
+}
+for (const invalid of [[.5,.5], [NaN,.1], [1.1,-.1], [.9,.9], [.8], null]) {
+  check(confirmAppearance([.1,.9], invalid) === null && confirmAppearance(invalid, [.1,.9]) === null,
+    'both views must be valid and non-tied before a confirmation is usable');
 }
 const portrait = squareFrame(101, 224), landscape = squareFrame(224, 101);
 check(portrait.edge === 224 && portrait.x === 61 && portrait.y === 0, 'portrait capture letterboxed without stretching and odd remainder retained');

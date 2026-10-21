@@ -2,7 +2,7 @@ import * as tf from '@tensorflow/tfjs';
 import { load as loadNSFW } from 'nsfwjs/core';
 import { MobileNetV2Model } from 'nsfwjs/models/mobilenet_v2';
 import Human from '@vladmandic/human';
-import { adultDecision, appearancePrediction, faceDetections, personDecision, squareFrame, unpadFaces,
+import { adultDecision, appearancePrediction, needsAppearanceConfirmation, confirmAppearance, faceDetections, personDecision, squareFrame, unpadFaces,
   visualPreferences, PERSON_MODES, validateCapture } from './decisions.js';
 import { LocalInferenceQueue } from './queue.js';
 
@@ -16,11 +16,13 @@ export function createVisualEngine({ baseURL, backend = 'webgl' } = {}) {
   let currentState = 'loading';
   let failure = null;
   let selected = visualPreferences();
+  let epoch = 0;
 
-  async function prepare(preferences) {
+  async function prepare(preferences, expectedEpoch = epoch) {
+    if (expectedEpoch !== epoch) return;
     selected = visualPreferences(preferences);
     if (!selected.inspectVisual && selected.personBlur === 'off') return;
-    if (loading) { await loading; return prepare(preferences); }
+    if (loading) { await loading; return prepare(preferences, expectedEpoch); }
     const needAdult = selected.inspectVisual && !adult;
     const needHuman = selected.personBlur !== 'off' && !human;
     const needGender = ['female', 'male'].includes(selected.personBlur) && !gender;
@@ -35,7 +37,9 @@ export function createVisualEngine({ baseURL, backend = 'webgl' } = {}) {
         await tf.ready();
       })();
       await backendReady;
+      if (expectedEpoch !== epoch) return;
       if (needAdult) adult = await loadNSFW('MobileNetV2', { modelDefinitions: [MobileNetV2Model] });
+      if (expectedEpoch !== epoch) return;
       if (needHuman) {
         const candidate = new Human({ backend: tf.getBackend(), modelBasePath: `${baseURL}models/`,
           debug: false, cacheModels: false, validateModels: true,
@@ -56,6 +60,7 @@ export function createVisualEngine({ baseURL, backend = 'webgl' } = {}) {
         if (!detector?.loaded || !(detector.sizeLoadedWeights > 0)) throw new Error('face-model-load-failed');
         human = candidate;
       }
+      if (expectedEpoch !== epoch) return;
       if (needGender) gender = await tf.loadGraphModel(`${baseURL}models/gender.json`);
       currentState = 'ready';
     })().catch(() => {
@@ -107,7 +112,7 @@ export function createVisualEngine({ baseURL, backend = 'webgl' } = {}) {
         if (!faces) return { state: 'unknown', reason: 'invalid-face-output' };
         if (gender && ['female', 'male'].includes(prefs.personBlur)) {
           for (const face of faces) {
-            const prediction = await predictGender(faceTensor, face.box, frame.edge, frame.edge, gender);
+            const prediction = await predictGender(faceTensor, face.box, frame.edge, frame.edge, gender, prefs.personBlur);
             if (!prediction) return { state: 'unknown', reason: 'invalid-appearance-output', adult: adultResult };
             Object.assign(face, prediction);
           }
@@ -127,7 +132,7 @@ export function createVisualEngine({ baseURL, backend = 'webgl' } = {}) {
   return {
     inspect: (key, capture, preferences) => queue.submit(key, { capture, preferences }),
     cancel: key => queue.cancel(key), cancelPrefix: prefix => queue.cancelPrefix(prefix),
-    disable: () => { selected = visualPreferences(); queue.cancelAll(); },
+    disable: () => { epoch++; selected = visualPreferences(); queue.cancelAll(); },
     prepare,
     status: (expected = selected) => {
       const required = visualPreferences(expected);
@@ -142,7 +147,7 @@ export function createVisualEngine({ baseURL, backend = 'webgl' } = {}) {
   };
 }
 
-async function predictGender(image, box, width, height, model) {
+async function predictGender(image, box, width, height, model, mode) {
   if (!Array.isArray(box) || box.length !== 4 || !box.every(Number.isFinite)) return null;
   const x1 = Math.max(0, Math.min(1, box[0] / width));
   const y1 = Math.max(0, Math.min(1, box[1] / height));
@@ -150,6 +155,8 @@ async function predictGender(image, box, width, height, model) {
   const y2 = Math.max(y1, Math.min(1, (box[1] + box[3]) / height));
   let input;
   let output;
+  let mirrored;
+  let confirmation;
   try {
     input = tf.tidy(() => {
       const crop = tf.image.cropAndResize(image.toFloat().expandDims(0), [[y1, x1, y2, x2]], [0], [64, 64]);
@@ -159,6 +166,13 @@ async function predictGender(image, box, width, height, model) {
     });
     output = model.execute(input);
     const probabilities = await output.data();
-    return appearancePrediction(probabilities);
-  } finally { input?.dispose(); output?.dispose(); }
+    const prediction = appearancePrediction(probabilities);
+    if (!needsAppearanceConfirmation(prediction, mode)) return prediction;
+    // At most one extra 64x64 classifier pass, only before excluding a face.
+    // No second full-image detector, network request or frame persistence.
+    // Mirroring leaves the original mask coordinates unchanged.
+    mirrored = tf.reverse(input, [2]);
+    confirmation = model.execute(mirrored);
+    return confirmAppearance(probabilities, await confirmation.data());
+  } finally { input?.dispose(); output?.dispose(); mirrored?.dispose(); confirmation?.dispose(); }
 }

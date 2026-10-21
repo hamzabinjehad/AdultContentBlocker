@@ -2,6 +2,9 @@
   if (globalThis.HisnVisualCapture) return;
   const edge = 384;
   function capture(media, doc = document) {
+    // Changing an IMG's CORS mode can temporarily retain an older decoded
+    // bitmap. Never inspect that bitmap while the actual reload is pending.
+    if (media.complete === false) return { state: 'unknown', reason: 'media-not-ready' };
     const width = media.videoWidth || media.naturalWidth;
     const height = media.videoHeight || media.naturalHeight;
     if (!width || !height) return { state: 'unknown', reason: 'media-not-ready' };
@@ -22,5 +25,21 @@
     } catch { return { state: 'unknown', reason: 'inaccessible-pixels' }; }
     finally { canvas.width = canvas.height = 0; }
   }
-  globalThis.HisnVisualCapture = { capture };
+  // A one-pixel same-node probe can start eligible anonymous reloads while a
+  // different image is being inspected. It is never a content/safety verdict.
+  function probe(media, doc = document) {
+    if (media.complete === false) return { state: 'unknown', reason: 'media-not-ready' };
+    if (!(media.naturalWidth > 0 && media.naturalHeight > 0)) return { state: 'unknown', reason: 'media-not-ready' };
+    const canvas = doc.createElement('canvas');
+    canvas.width = canvas.height = 1;
+    try {
+      const context = canvas.getContext('2d', { willReadFrequently: true });
+      if (!context) return { state: 'unknown', reason: 'canvas-unavailable' };
+      context.drawImage(media, 0, 0, 1, 1);
+      context.getImageData(0, 0, 1, 1).data.fill(0);
+      return { state: 'readable' };
+    } catch { return { state: 'unknown', reason: 'inaccessible-pixels' }; }
+    finally { canvas.width = canvas.height = 0; }
+  }
+  globalThis.HisnVisualCapture = { capture, probe };
 })();

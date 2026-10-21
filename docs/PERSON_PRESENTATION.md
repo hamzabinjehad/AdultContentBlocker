@@ -94,3 +94,26 @@ This is still visible-face filtering, not reliable identification of all women
 or men, whole-body recognition, or every-video-frame inspection. The shared
 Safari staging uses the same engine; it does not establish a new physical
 iPhone/iPad installation or runtime test.
+
+## Mirrored exclusion confirmation — extension 1.1.9
+
+A confident opposite estimate is no longer sufficient by itself to exclude a
+face from a selected women/men preference. Only that exclusion path runs one
+additional classifier pass on a horizontally mirrored 64×64 greyscale face
+crop. Both views must agree confidently. A disagreement or weak second view
+is recorded as uncertainty and the face is protected, without relabeling its
+gender or inventing a confidence score. Invalid/tied model output remains
+unknown and withheld. Matching or already-uncertain first views, all-faces
+mode and adult-positive results do not run this extra pass.
+
+The detector, ten-face bound, adult classifier and model weights are unchanged.
+This adds at most one small classifier pass per otherwise-excluded face, not
+another full-image detector or an every-frame video guarantee. It may increase
+latency and unintended masking; it is not evidence of perfect gender detection.
+
+A verified face mask also survives a later clean resample when the broker's
+SHA-256 identity confirms identical decoded pixels and policy, and source,
+route and mask geometry remain unchanged. Changed pixels receive an independent
+verdict; missing hashes never enable this retention. Unknown results remain
+withheld and adult-positive results always take precedence. Only a bounded
+identity/verdict is retained in memory, not raw frames or new persistent data.

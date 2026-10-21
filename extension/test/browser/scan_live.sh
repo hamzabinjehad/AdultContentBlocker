@@ -79,6 +79,9 @@ feed = """<!doctype html><meta charset=utf-8><meta name=viewport content="width=
 <article data-testid=tweet id=bad><p data-testid=tweetText>ADULT_FIXTURE</p><video></video></article>
 <article data-testid=tweet id=caption><p data-testid=tweetText>Today's weather.</p><img alt="ADULT_FIXTURE"></article>
 <article data-testid=tweet id=rootcaption aria-label="ADULT_FIXTURE"><p data-testid=tweetText>Today's weather.</p><video></video></article>
+<article data-testid=tweet id=evasion><p data-testid=tweetText>Watch p0rn now</p><video></video></article>
+<article data-testid=tweet id=evasioncaption><p data-testid=tweetText>Latest update</p><img alt="س.ك.س"></article>
+<article data-testid=tweet id=formchoice><p data-testid=tweetText>Sexe : Femme / Homme / Autre. Créer le compte.</p></article>
 <article data-testid=tweet id=medical><p data-testid=tweetText>Medical education and clinical reproductive health.</p>
 <span hidden>ADULT_FIXTURE</span><script type=application/json>{"payload":"ADULT_FIXTURE"}</script></article>
 <article data-testid=tweet id=policy><p data-testid=tweetText>gardenfixture</p></article>
@@ -104,6 +107,14 @@ async function waitFor(predicate) {
   check(await waitFor(() => blocked('bad') && blocked('caption') && blocked('rootcaption') && !withheld('safe') && !withheld('medical')),
         'signalled tweet/root/descendant captions hidden; ordinary and medical/script-payload posts stay usable');
   check(byId('bad').querySelector('video').paused, 'media in hidden article remains paused');
+  check(await waitFor(() => blocked('evasion') && blocked('evasioncaption') && !withheld('formchoice')),
+        'disguised body and Arabic caption signals block only their items; normal form choice stays usable');
+  byId('evasion').querySelector('p').textContent = 'Ordinary gardening update';
+  check(await waitFor(() => !withheld('evasion')), 'an edited clean item releases its old evasion verdict');
+  byId('evasion').querySelector('p').textContent = 'Watch p.o.r.n now';
+  check(await waitFor(() => blocked('evasion')), 'a dotted evasion edit invalidates a previously clean item');
+  byId('evasion').querySelector('p').textContent = 'Watch pοrn now';
+  check(await waitFor(() => blocked('evasion')), 'a Greek-lookalike evasion remains blocked after a further edit');
   check(byId('rootcaption').querySelector('video').paused && byId('rootcaption').inert,
         'root-only description withholds and pauses that video article');
   check(!byId('safe').inert && byId('safe').querySelector('video').controls,
@@ -139,6 +150,7 @@ async function waitFor(predicate) {
   check(await waitFor(() => blocked('scroll10') && !withheld('scroll19')),
         'continuous infinite-scroll content checked without waiting for entire page to settle');
   check(await waitFor(() => blocked('policy')), 'trusted policy change rechecks unchanged feed item');
+  check(!withheld('formchoice'), 'French form choice stays usable after the trusted sensitivity-80 update');
   check(await waitFor(settled), 'worker verdicts finish before checking settled-feed mutation churn');
   let churn = 0;
   const observer = new MutationObserver((events) => { churn += events.length; });
@@ -168,6 +180,9 @@ if (window.navigation) navigation.addEventListener('navigate', (e) => e.preventD
 </script></body>""",
     "clean": """<!doctype html><title>Gardening</title><body><p>How to grow tomatoes on a
 balcony: choose a sunny spot, water in the morning, and feed every two weeks.</p></body>""",
+    "evasion": "<!doctype html><title>Article</title><body><p>Watch p0rn now</p></body>",
+    "form": "<!doctype html><title>Créer un compte</title><body><p>Sexe : Femme / Homme / Autre. Adresse e-mail.</p></body>",
+    "formcontent": "<!doctype html><title>Article</title><body><p>Sexe : Femme / Homme. Watch porn now.</p></body>",
     "policy": "<!doctype html><title>gardenfixture</title><body><p>Gardening notes.</p></body>",
     "x": feed,
     "twitter": feed,
@@ -242,7 +257,7 @@ tabs() { curl -s "http://127.0.0.1:$DEVTOOLS/json/list" 2>/dev/null || echo "[]"
 for _ in $(seq 100); do [ "$(tabs)" != "[]" ] && break; sleep 0.1; done
 sleep 2   # let the worker install and register the scanner
 
-for page in shadow shy cancel clean policy; do
+for page in shadow shy cancel clean policy evasion form formcontent; do
     curl -s -X PUT "http://127.0.0.1:$DEVTOOLS/json/new?https://$page.hisn.test/" > /dev/null
 done
 for host in x.com twitter.com; do
@@ -257,7 +272,7 @@ for t in json.load(sys.stdin):
     if t.get("type") != "page": continue
     u = t.get("url", "")
     if "blocked.html" in u: seen.setdefault("blocked", 0); seen["blocked"] += 1
-    for p in ("shadow", "shy", "cancel", "clean", "policy"):
+    for p in ("shadow", "shy", "cancel", "clean", "policy", "evasion", "form", "formcontent"):
         if f"://{p}.hisn.test" in u: seen[p] = "open"
     for p in ("x.com", "twitter.com"):
         if f"://{p}/home" in u: seen[p] = t.get("title", "open")
@@ -265,7 +280,7 @@ print(json.dumps(seen))'
 }
 for _ in $(seq 100); do
     v="$(verdicts)"
-    python3 -c 'import json,sys; v=json.loads(sys.argv[1]); sys.exit(0 if v.get("blocked",0)>=4 and all(v.get(p)=="HISN FEED PASS" for p in ("x.com","twitter.com")) else 1)' "$v" && break
+    python3 -c 'import json,sys; v=json.loads(sys.argv[1]); sys.exit(0 if v.get("blocked",0)>=6 and all(v.get(p)=="HISN FEED PASS" for p in ("x.com","twitter.com")) else 1)' "$v" && break
     sleep 0.25
 done
 v="$(verdicts)"
@@ -280,10 +295,13 @@ check shy    gone "soft-hyphen-split words are read and blocked"
 check cancel gone "a page that cancels its navigation is replaced by the worker"
 check clean  open "an ordinary page is left alone"
 check policy gone "adding a custom word rechecks an unchanged open page through the real worker"
+check evasion gone "disguised explicit text blocks through the real worker"
+check form open "a French form stays open after the sensitivity-80 policy update"
+check formcontent gone "a form label cannot exempt other explicit content on the same page"
 check x.com "HISN FEED PASS" "granular X feed scanning keeps the tab and ordinary posts usable"
 check twitter.com "HISN FEED PASS" "granular Twitter alias uses the same real-worker item path"
 n=$(python3 -c 'import json,sys; print(json.loads(sys.argv[1]).get("blocked",0))' "$v")
-[ "$n" = "4" ] && echo "  ok   four block pages" || { echo "  FAIL expected 4 block pages, saw $n"; fail=1; }
+[ "$n" = "6" ] && echo "  ok   six block pages" || { echo "  FAIL expected 6 block pages, saw $n"; fail=1; }
 
 [ "$fail" -eq 0 ] && echo "scan-live: PASS" || {
     echo "tabs: $v"

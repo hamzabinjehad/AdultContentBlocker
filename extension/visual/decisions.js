@@ -8,6 +8,7 @@ export function presentationPreferences(state = {}) {
 export const MAX_EDGE = 384;
 export const MAX_RGBA_BYTES = MAX_EDGE * MAX_EDGE * 4;
 const CLASSES = ['Porn', 'Hentai', 'Sexy', 'Neutral', 'Drawing'];
+const OPPOSITE_CONFIDENCE = 0.80;
 
 export function visualPreferences(state = {}) {
   return { inspectVisual: state.inspectVisual === true,
@@ -87,6 +88,22 @@ export function appearancePrediction(probabilities) {
   return { gender: index === 0 ? 'female' : 'male', genderScore: values[index] };
 }
 
+export function needsAppearanceConfirmation(prediction, mode) {
+  return ['female', 'male'].includes(mode) && ['female', 'male'].includes(prediction?.gender)
+    && prediction.gender !== mode && Number.isFinite(prediction.genderScore)
+    && prediction.genderScore >= OPPOSITE_CONFIDENCE && prediction.genderScore <= 1;
+}
+
+// Appearance estimates are not a person's actual gender. Only exclude a face
+// when original and mirrored crops agree confidently. Preserve the original
+// estimate and explicitly record uncertainty, rather than invent a new label.
+export function confirmAppearance(primary, mirrored) {
+  const first = appearancePrediction(primary), second = appearancePrediction(mirrored);
+  if (!first || !second) return null;
+  return { ...first, appearanceUncertain: first.gender !== second.gender
+    || Math.min(first.genderScore, second.genderScore) < OPPOSITE_CONFIDENCE };
+}
+
 export function personDecision(faces, bodies, mode, width, height) {
   const regions = [];
   if (!PERSON_MODES.includes(mode) || mode === 'off') return { blur: false, mode: 'off', regions, estimated: true };
@@ -99,7 +116,7 @@ export function personDecision(faces, bodies, mode, width, height) {
     // beside the opt-in controls. It is not a full-body/identity guarantee.
     if (mode !== 'all' && (!['female', 'male'].includes(face.gender) || !Number.isFinite(face.genderScore)
         || face.genderScore < 0.50 || face.genderScore > 1
-        || (face.gender !== mode && face.genderScore >= 0.80))) continue;
+        || (face.gender !== mode && face.genderScore >= OPPOSITE_CONFIDENCE && face.appearanceUncertain !== true))) continue;
     const region = normalizedRegion(face.box, width, height);
     if (region) regions.push(region);
   }

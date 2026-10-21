@@ -43,17 +43,48 @@ struct ContentView: View {
             case .settings: return "gearshape"
             }
         }
+        var subtitle: LocalizedStringKey {
+            switch self {
+            case .overview: return "design.page.overview"
+            case .setup: return "design.page.setup"
+            case .rules: return "design.page.rules"
+            case .lock: return "design.page.lock"
+            case .settings: return "design.page.settings"
+            }
+        }
     }
 
     var body: some View {
         NavigationSplitView {
+            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Hisn", systemImage: "shield.lefthalf.filled")
+                    .font(.title2.weight(.bold)).foregroundStyle(Color.accentColor)
+                Text("design.localPrivacy").font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }.padding(20)
             List(Page.allCases, selection: $navigation.page) { p in
                 Label(p.title, systemImage: p.systemImage).tag(p)
             }
             .listStyle(.sidebar)
-            .navigationSplitViewColumnWidth(min: 170, ideal: 190, max: 240)
+            }
+            .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 270)
         } detail: {
             ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                HStack(alignment: .top, spacing: 16) {
+                    Image(systemName: (page ?? .overview).systemImage)
+                        .font(.title2).foregroundStyle(Color.accentColor)
+                        .frame(width: 52, height: 52)
+                        .background(Color.accentColor.opacity(0.1), in: RoundedRectangle(cornerRadius: 16))
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text((page ?? .overview).title).font(.largeTitle.weight(.bold))
+                            .accessibilityAddTraits(.isHeader)
+                        Text((page ?? .overview).subtitle).font(.callout).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
                 Group {
                     switch page ?? .overview {
                     case .overview:
@@ -68,12 +99,14 @@ struct ContentView: View {
                         SettingsPage(isLocked: lock.isLocked)
                     }
                 }
+                }
                 // A comfortable reading measure, left-aligned in a wide window
                 // rather than stretched across it.
-                .frame(maxWidth: 740, alignment: .leading)
+                .frame(maxWidth: 840, alignment: .leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(28)
             }
+            .background(Color(nsColor: .windowBackgroundColor))
             .navigationTitle((page ?? .overview).title)
         }
         .frame(minWidth: 720, minHeight: 500)
@@ -97,6 +130,7 @@ private struct PageSection<Content: View>: View {
         VStack(alignment: .leading, spacing: 10) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(title).font(.title3.weight(.semibold))
+                    .accessibilityAddTraits(.isHeader)
                 if let subtitle {
                     Text(subtitle)
                         .font(.callout)
@@ -118,7 +152,13 @@ private struct Card<Content: View>: View {
         content
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
-            .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 10))
+            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 14))
+            .overlay {
+                RoundedRectangle(cornerRadius: 14)
+                    .strokeBorder(Color(nsColor: .separatorColor), lineWidth: 1)
+                    .accessibilityHidden(true)
+                    .allowsHitTesting(false)
+            }
     }
 }
 
@@ -365,13 +405,14 @@ private struct OverviewPage: View {
                     .font(.callout)
                     .foregroundStyle(layer.state == .problem ? Color.orange : Color.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+                if let action = layer.action {
+                    Button(action.title) { perform(action) }
+                        .disabled(busy != nil || (action == .enableFilter && filter.isEnabling))
+                        .controlSize(.small)
+                        .padding(.top, 6)
+                }
             }
             Spacer()
-            if let action = layer.action {
-                Button(action.title) { perform(action) }
-                    .disabled(busy != nil || (action == .enableFilter && filter.isEnabling))
-                    .controlSize(.small)
-            }
         }
         .accessibilityElement(children: .combine)
     }
@@ -738,6 +779,25 @@ struct SetupPage: View {
                         .padding(.top, 4)
                     }
                     stepAction(step)
+                    if step.id == .extensionManagement {
+                        DisclosureGroup("removal.setup.title") {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text("removal.setup.publish")
+                                Text("removal.setup.consent")
+                                Text("removal.setup.verify")
+                                Text("removal.setup.limit").foregroundStyle(.secondary)
+                                Link("removal.setup.guide", destination: URL(string: "https://support.google.com/chrome/a/answer/7517624?hl=en")!)
+                                Button("Open Device Management") {
+                                    openSystemSettings("com.apple.Profiles-Settings.extension")
+                                }
+                                Button("Check again") { Task { await refresh() } }
+                                    .disabled(checking)
+                            }
+                            .font(.callout)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.top, 8)
+                        }
+                    }
                     if step.id == .systemFilter && step.state != .done {
                         FilterSetupControl(filter: filter)
                     }
@@ -762,9 +822,11 @@ struct SetupPage: View {
         case .enableFilter:
             FilterSetupControl(filter: filter)
         case .deviceManagementSettings:
-            Button("Open Device Management") {
-                openSystemSettings("com.apple.Profiles-Settings.extension")
-            }.controlSize(.small)
+            if step.id != .extensionManagement {
+                Button("Open Device Management") {
+                    openSystemSettings("com.apple.Profiles-Settings.extension")
+                }.controlSize(.small)
+            }
         case .accountsSettings:
             Button("Open Users & Groups") {
                 openSystemSettings("com.apple.Users-Groups-Settings.extension")
@@ -1706,6 +1768,32 @@ struct BrowsersSection: View {
                 """)
                 .font(.callout).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("browser.live.title").font(.headline)
+                    Spacer()
+                    Button("browser.live.refresh") { guardian.tick(); reload() }
+                }
+                Text("browser.live.cadence")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let checked = guardian.lastChecked {
+                    HStack {
+                        Text("browser.live.checked")
+                        Text(checked, style: .time)
+                    }.font(.caption).foregroundStyle(.secondary)
+                }
+                if guardian.connections.isEmpty {
+                    Text("browser.live.none").foregroundStyle(.secondary)
+                }
+                ForEach(guardian.connections) { connection in
+                    connectionRow(connection)
+                }
+                if !isLocked && !guardian.requireOutsideLock {
+                    Text("browser.live.observationOnly")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
             if !guardian.profileIssues.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Standard profile checks").font(.subheadline.weight(.semibold))
@@ -1724,6 +1812,9 @@ struct BrowsersSection: View {
                         Text(describe(c.coverage))
                             .font(.callout).foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
+                        if !guardian.connections.contains(where: { $0.bundleID == c.bundleID }) {
+                            Text("browser.live.notRunning").font(.caption).foregroundStyle(.secondary)
+                        }
                     }
                     Spacer()
                     if BrowserGuardPolicy.canAllowException(bundleID: c.bundleID,
@@ -1746,6 +1837,8 @@ struct BrowsersSection: View {
             }
         }
         .onAppear(perform: reload)
+        .onChange(of: guardian.connections.map(\.id).sorted()) { _ in reload() }
+        .onChange(of: guardian.effectiveAllowed) { _ in reload() }
         .alert("Require browser protection outside a lock?", isPresented: $confirmOutsideLock) {
             Button("Enable requirement") { setOutsideLock(true) }
             Button("Cancel", role: .cancel) { }
@@ -1759,6 +1852,56 @@ struct BrowsersSection: View {
                 turn this off outside a lock. It does not prevent uninstalling Hisn.
                 """)
         }
+    }
+
+    private func connectionRow(_ connection: BrowserGuard.Connection) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack {
+                Text(verbatim: connection.name).font(.body.weight(.semibold))
+                Spacer()
+                Text(verbatim: "PID \(connection.id)")
+                    .font(.caption.monospaced()).foregroundStyle(.secondary)
+            }
+            switch connection.state {
+            case .connected:
+                Label("browser.live.connected", systemImage: "checkmark.shield")
+                    .foregroundStyle(.green)
+            case .awaitingExtension:
+                Label("browser.live.waiting", systemImage: "antenna.radiowaves.left.and.right.slash")
+                    .foregroundStyle(.orange)
+            case .profileUnprotected:
+                Label("browser.live.profileLoss", systemImage: "exclamationmark.shield")
+                    .foregroundStyle(.orange)
+            case .unsupported:
+                Label("browser.live.unsupported", systemImage: "exclamationmark.triangle")
+                    .foregroundStyle(.orange)
+            case .exempt:
+                Label("browser.live.exempt", systemImage: "info.circle")
+                    .foregroundStyle(.secondary)
+            }
+            if let lastSeen = connection.lastSeen {
+                HStack {
+                    Text("browser.live.lastReply")
+                    Text(lastSeen, style: .time)
+                }.font(.caption).foregroundStyle(.secondary)
+            }
+            if let verdict = connection.verdict {
+                switch verdict {
+                case .ok: EmptyView()
+                case let .warn(_, closeAt):
+                    let seconds = max(0, Int(ceil(closeAt.timeIntervalSince(connection.checkedAt))))
+                    Text("browser.live.countdown \(seconds)")
+                        .font(.callout.weight(.medium)).foregroundStyle(.orange)
+                case .close:
+                    Text("browser.live.closing").font(.callout).foregroundStyle(.red)
+                }
+            }
+        }
+        .font(.callout)
+        .fixedSize(horizontal: false, vertical: true)
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 12))
     }
 
     private func profileIssueRow(_ issue: BrowserGuard.ProfileIssue) -> some View {

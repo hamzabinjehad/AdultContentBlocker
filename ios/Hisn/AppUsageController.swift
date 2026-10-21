@@ -33,7 +33,11 @@ import Combine
             configuration = nil; registered = false; health = .unavailable
             errorKey = "apps.failed"; return
         }
-        do { configuration = try AppUsageConfiguration.load(defaults) }
+        let reachedDay: String?
+        do {
+            configuration = try AppUsageConfiguration.load(defaults)
+            reachedDay = configuration?.mode == .dailyBudget ? try AppUsageConfiguration.reachedDay(defaults) : nil
+        }
         catch {
             configuration = nil; registered = false; health = .invalid
             errorKey = "apps.failed"; return
@@ -48,8 +52,7 @@ import Combine
         // restart budget monitoring here, which could reset older OS counters.
         if authorized, let config = configuration {
             if config.mode == .always { config.shield(always) }
-            else if AppUsageConfiguration.budgetReached(mode: config.mode,
-                reachedDay: defaults.string(forKey: AppUsageConfiguration.reachedKey)) {
+            else if AppUsageConfiguration.budgetReached(mode: config.mode, reachedDay: reachedDay) {
                 config.shield(budget)
             }
         }
@@ -62,9 +65,11 @@ import Combine
         let store = AppUsageConfiguration.ruleStore(defaults)
         let previous: AppUsageConfiguration?
         let old: Data?
+        let reachedDay: String?
         do {
             old = try store.load()?.payload
             previous = try AppUsageConfiguration.load(defaults)
+            reachedDay = next.mode == .dailyBudget ? try AppUsageConfiguration.reachedDay(defaults) : nil
         } catch { errorKey = "apps.failed"; health = .invalid; return }
         if previous?.permits(next, committed: commitmentActive) == false {
             errorKey = "apps.locked"; return
@@ -91,8 +96,7 @@ import Combine
                 try DeviceActivityCenter().startMonitoring(.init(AppUsageConfiguration.activity), during: schedule,
                     events: [.init(AppUsageConfiguration.event): event])
                 always.clearAllSettings()
-                if AppUsageConfiguration.budgetReached(mode: next.mode,
-                    reachedDay: defaults.string(forKey: AppUsageConfiguration.reachedKey)) {
+                if AppUsageConfiguration.budgetReached(mode: next.mode, reachedDay: reachedDay) {
                     next.shield(budget)
                 }
             } else {
@@ -120,7 +124,8 @@ import Combine
         catch { errorKey = "apps.failed"; health = .unavailable; return }
         DeviceActivityCenter().stopMonitoring([.init(AppUsageConfiguration.activity)])
         always.clearAllSettings(); budget.clearAllSettings()
-        defaults.removeObject(forKey: AppUsageConfiguration.reachedKey)
+        do { try AppUsageConfiguration.clearBudgetMarker(defaults) }
+        catch { errorKey = "apps.failed"; health = .unavailable; return }
         errorKey = nil
         refresh()
     }

@@ -74,7 +74,9 @@ public struct SetupEvidence: Equatable {
     public var screenTimeAdultFilter: Bool
     public var systemFilterRunning: Bool
     /// /Applications/Hisn.app and its bridge owned by root, the bridge not
-    /// writable by this user. nil when Hisn is not in /Applications.
+    /// writable by this user, and a protected, matching login-agent configuration.
+    /// This is on-disk configuration evidence, not proof launchd has loaded it.
+    /// nil when Hisn is not in /Applications.
     public var appFilesProtected: Bool?
 
     public init(isAdmin: Bool?, hostsEntries: Int?, dnsBypassesBlocked: Bool = true,
@@ -164,12 +166,15 @@ public struct SetupChecklist: Equatable {
         }
 
         let removable = e.browsers.filter { !$0.extensionManaged || !$0.nativeLinkProtected }
+        let managementReady = !e.browsers.isEmpty && removable.isEmpty
         steps.append(Step(id: .extensionManagement, title: String(localized: "Required browser protection"),
-                          detail: removable.isEmpty
+                          detail: e.browsers.isEmpty
+                            ? String(localized: "Connect a supported browser before verifying removal protection.")
+                            : managementReady
                             ? String(localized: "Installed browsers have required Hisn protection and an administrator-protected connection to the app.")
                             : String(localized: "Protection can still be removed or disconnected in \(removable.map(\.name).formatted(.list(type: .and))). Ask the administrator to install the published extension and Hisn protection profile."),
-                          state: removable.isEmpty ? .done : .todo,
-                          action: removable.isEmpty ? nil : .deviceManagementSettings))
+                          state: managementReady ? .done : .todo,
+                          action: managementReady ? nil : .deviceManagementSettings))
 
         // 2. Domains for every app: the hosts file, or the system filter.
         let hostsOK = (e.hostsEntries ?? 0) >= ProtectionEvidence.hostsMinimum
@@ -413,19 +418,89 @@ extension SetupEvidence {
 
     /// Whether the installed bundle and its bridge belong to root and the
     /// bridge cannot be written by this user.
-    /// And the login agent root's too, in /Library/LaunchAgents: one in the
-    /// user's own Library is theirs to delete.
+    /// And a matching, protected login-agent configuration is present: a
+    /// root-owned file alone says nothing about which program it starts or
+    /// whether it restarts after a crash. This does not verify a loaded job.
     static func appFilesProtected(bundle: String = "/Applications/Hisn.app",
                                   agent: String = "/Library/LaunchAgents/app.hisn.agent.plist") -> Bool? {
         let fm = FileManager.default
         let bridge = bundle + "/Contents/MacOS/HisnBridge"
         guard let b = try? fm.attributesOfItem(atPath: bundle),
               let x = try? fm.attributesOfItem(atPath: bridge) else { return nil }
-        let agentOwner = (try? fm.attributesOfItem(atPath: agent))?[.ownerAccountName] as? String
+        let agentProtected: Bool
+        if let attributes = try? fm.attributesOfItem(atPath: agent),
+           launchAgentAttributesAreProtected(attributes, writable: fm.isWritableFile(atPath: agent)),
+           let data = fm.contents(atPath: agent) {
+            agentProtected = launchAgentConfigurationIsProtected(data, attributes: attributes,
+                writable: fm.isWritableFile(atPath: agent), bundle: bundle, user: NSUserName())
+        } else {
+            agentProtected = false
+        }
         return b[.ownerAccountName] as? String == "root"
             && x[.ownerAccountName] as? String == "root"
             && !fm.isWritableFile(atPath: bridge)
-            && agentOwner == "root"
+            && agentProtected
+    }
+
+    /// Pure, injected evidence check: tests never need to alter a real login
+    /// agent or manufacture root-owned files. Only the installer configuration
+    /// that starts this bundle for this account, including failure recovery,
+    /// counts. The file must be regular (not a symlink), protected and bounded.
+    static func launchAgentConfigurationIsProtected(_ data: Data,
+            attributes: [FileAttributeKey: Any], writable: Bool,
+            bundle: String = "/Applications/Hisn.app", user: String) -> Bool {
+        guard launchAgentAttributesAreProtected(attributes, writable: writable),
+              !data.isEmpty, data.count <= 65_536,
+              let size = attributes[.size] as? NSNumber, size.intValue == data.count,
+              let plist = (try? PropertyListSerialization.propertyList(from: data, options: [],
+                    format: nil)) as? [String: Any],
+              !user.isEmpty,
+              plist["Label"] as? String == "app.hisn.agent",
+              plist["ProgramArguments"] as? [String]
+                == [bundle + "/Contents/MacOS/Hisn", "--background", "--for-user", user],
+              plist["Program"] == nil, plist["BundleProgram"] == nil,
+              plistBoolean(plist["RunAtLoad"]) == true,
+              let keepAlive = plist["KeepAlive"] as? [String: Any],
+              keepAlive.count == 1, plistBoolean(keepAlive["SuccessfulExit"]) == false
+        else { return false }
+        // These options can override startup, recovery or the account/session
+        // even when the core program arguments still look right.
+        for key in ["Disabled", "LaunchOnlyOnce"] where plist[key] != nil {
+            guard plistBoolean(plist[key]) == false else { return false }
+        }
+        if let account = plist["UserName"] {
+            guard account as? String == user else { return false }
+        }
+        if let session = plist["LimitLoadToSessionType"] {
+            guard session as? String == "Aqua" else { return false }
+        }
+        if let interval = plist["ThrottleInterval"] {
+            guard let number = interval as? NSNumber,
+                  CFGetTypeID(number) != CFBooleanGetTypeID(),
+                  number.doubleValue.isFinite, number.doubleValue.rounded() == number.doubleValue,
+                  (1...60).contains(number.intValue) else { return false }
+        }
+        return true
+    }
+
+    private static func launchAgentAttributesAreProtected(_ attributes: [FileAttributeKey: Any],
+                                                           writable: Bool) -> Bool {
+        guard attributes[.type] as? FileAttributeType == .typeRegular,
+              attributes[.ownerAccountName] as? String == "root",
+              (attributes[.ownerAccountID] as? NSNumber)?.intValue == 0,
+              let mode = attributes[.posixPermissions] as? NSNumber,
+              mode.intValue >= 0, mode.intValue & 0o022 == 0,
+              let size = attributes[.size] as? NSNumber,
+              (1...65_536).contains(size.intValue), !writable else { return false }
+        return true
+    }
+
+    /// NSNumber's normal Bool cast also accepts integer 0/1; those are not
+    /// boolean plist values and must not certify RunAtLoad/KeepAlive settings.
+    private static func plistBoolean(_ value: Any?) -> Bool? {
+        guard let number = value as? NSNumber,
+              CFGetTypeID(number) == CFBooleanGetTypeID() else { return nil }
+        return number.boolValue
     }
 
     /// Where a configuration profile puts a browser's policy. The bundle id,
@@ -454,55 +529,22 @@ extension SetupEvidence {
     }
 
     /// Profiles of one browser where none of `ids` is installed and switched
-    /// on, by the name the browser shows. A profile is a folder (`Default`,
-    /// `Profile 2`, …) with a `Preferences` file; the extension's state may
-    /// sit in `Preferences` or `Secure Preferences`. Mirrors the check in
-    /// `verify_enforcement.sh`.
+    /// on, by the name the browser shows. The shared reader bounds preferences
+    /// IO and understands both legacy state and modern disable-reason records.
     static func extensionMissing(in root: URL, ids: Set<String>) -> [String] {
         inspectBrowserProfiles(in: root, ids: ids).missing
     }
 
     static func inspectBrowserProfiles(in root: URL, ids: Set<String>,
-                                       requireManaged: Bool = false) -> (checked: Bool, missing: [String]) {
-        let fm = FileManager.default
-        guard let names = try? fm.contentsOfDirectory(atPath: root.path) else { return (false, []) }
-        var off: [String] = []
-        var checked = 0
-        var allReadable = true
-        for folder in names.sorted() where folder == "Default" || folder.hasPrefix("Profile ") {
-            let dir = root.appendingPathComponent(folder)
-            checked += 1
-            var settings: [String: Any] = [:]
-            var shown = folder
-            var readable = false
-            for file in ["Preferences", "Secure Preferences"] {
-                guard let data = fm.contents(atPath: dir.appendingPathComponent(file).path),
-                      let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
-                else { continue }
-                readable = true
-                if let s = (json["extensions"] as? [String: Any])?["settings"] as? [String: Any] {
-                    settings.merge(s) { _, new in new }
-                }
-                if let name = (json["profile"] as? [String: Any])?["name"] as? String, !name.isEmpty {
-                    shown = name
-                }
-            }
-            allReadable = allReadable && readable
-            let on = ids.contains { id in
-                guard let e = settings[id] as? [String: Any] else { return false }
-                if requireManaged {
-                    // Chromium persists ManifestLocation: 7/9 are policy installs;
-                    // an unpacked/user-installed copy is not proof the policy took.
-                    guard let location = e["location"] as? Int, [7, 9].contains(location) else { return false }
-                }
-                let reasons = e["disable_reasons"]
-                if reasons != nil && !(reasons is [Any]) && !(reasons is Int) { return false }
-                let disabled = (reasons as? [Any]).map { !$0.isEmpty } ?? ((reasons as? Int).map { $0 != 0 } ?? false)
-                return !disabled && (e["state"] as? Int) == 1
-            }
-            if !on { off.append(shown) }
-        }
-        return (checked > 0 && allReadable, off)
+                                       requireManaged: Bool = false,
+                                       maximumBytes: Int = 20 * 1024 * 1024) -> (checked: Bool, missing: [String]) {
+        let snapshot = BrowserProfileEvidence.inspect(root: root, ids: ids,
+            maximumBytes: maximumBytes, requireManaged: requireManaged)
+        let checked = snapshot.enumerationVerified
+            && snapshot.profiles.allSatisfy { $0.state != .unconfirmed }
+        let missing = snapshot.profiles.filter { $0.state != .noExplicitLoss }
+            .map { $0.displayName ?? $0.folder }
+        return (checked, missing)
     }
 
     static func extensionIsManaged(ids: Set<String>, settings: Any?, forceList: Any?) -> Bool {

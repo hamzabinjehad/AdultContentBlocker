@@ -36,7 +36,7 @@ const sensitivity = Number(arguments?.[0] ?? 50) || 50;
 //     extension/eval/run.sh 50 /path/to/terms.json
 const termsPath = arguments?.[1] || "../seed/terms.json";
 const index = buildIndex(JSON.parse(readFile(termsPath)));
-const corpus = ["benign", "adult"].flatMap((f) =>
+const corpus = ["benign", "adult", "text-hardening"].flatMap((f) =>
   JSON.parse(readFile(`corpus/${f}.json`)).cases);
 
 const FILLER = ("The committee met on Tuesday to review the quarterly budget and the schedule for the "

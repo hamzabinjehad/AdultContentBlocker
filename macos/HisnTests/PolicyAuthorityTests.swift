@@ -299,6 +299,106 @@ final class PolicyAuthorityTests: XCTestCase {
 
     // MARK: Service
 
+    func testHistoricalPIDChurnDoesNotEraseFreshSiblingConnections() throws {
+        var now = t0
+        let service = PolicyService(store: PolicyStore(directory: scratch()), clock: { now })
+        let chrome = "com.google.Chrome", helium = "net.imput.helium"
+        let chromeKey = try XCTUnwrap(BrowserCheckInIdentity.key(browser: chrome, processID: 101))
+        let heliumKey = try XCTUnwrap(BrowserCheckInIdentity.key(browser: helium, processID: 202))
+        XCTAssertTrue(service.handle(.checkIn(browser: chrome, processID: 101)).accepted)
+        XCTAssertTrue(service.handle(.checkIn(browser: helium, processID: 202)).accepted)
+        now = t0.addingTimeInterval(10)
+        // Restarted hosts leave obsolete PID keys behind. Crossing the old
+        // 64-key boundary must preserve the other two processes' own evidence.
+        for processID: Int32 in 300..<420 {
+            XCTAssertTrue(service.handle(.checkIn(browser: chrome, processID: processID)).accepted)
+        }
+        let stamps = try XCTUnwrap(service.status().checkIns)
+        XCTAssertGreaterThan(stamps.count, 64)
+        XCTAssertEqual(stamps[chromeKey], t0)
+        XCTAssertEqual(stamps[heliumKey], t0)
+        XCTAssertNil(stamps[BrowserCheckInIdentity.key(browser: chrome, processID: 999)!],
+                     "retention must not manufacture evidence for a sibling process")
+    }
+
+    func testExpiredPIDChurnIsPrunedWithoutDroppingCurrentProcesses() throws {
+        var now = t0
+        let service = PolicyService(store: PolicyStore(directory: scratch()), clock: { now })
+        let browser = "com.google.Chrome"
+        for processID: Int32 in 300..<600 {
+            now = t0.addingTimeInterval(Double(processID - 300) * 4)
+            XCTAssertTrue(service.handle(.checkIn(browser: browser, processID: 101)).accepted)
+            XCTAssertTrue(service.handle(.checkIn(browser: browser, processID: 202)).accepted)
+            XCTAssertTrue(service.handle(.checkIn(browser: browser, processID: processID)).accepted)
+        }
+        let stamps = try XCTUnwrap(service.status().checkIns)
+        XCTAssertEqual(stamps[BrowserCheckInIdentity.key(browser: browser, processID: 101)!], now)
+        XCTAssertEqual(stamps[BrowserCheckInIdentity.key(browser: browser, processID: 202)!], now)
+        XCTAssertNil(stamps[BrowserCheckInIdentity.key(browser: browser, processID: 300)!])
+        XCTAssertLessThanOrEqual(stamps.count, Int(PolicyService.checkInRetention / 4) + 4)
+        now = now.addingTimeInterval(PolicyService.checkInRetention + 1)
+        XCTAssertEqual(service.status().checkIns, [:], "status reads also discard expired evidence")
+    }
+
+    func testInvalidBrowserOrPIDDoesNotPublishAnyCheckIn() throws {
+        var now = t0
+        let service = PolicyService(store: PolicyStore(directory: scratch()), clock: { now })
+        XCTAssertTrue(service.handle(.checkIn(browser: "com.google.Chrome", processID: 101)).accepted)
+        let original = service.status().checkIns
+        now = t0.addingTimeInterval(10)
+        for browser in ["", ".", "com..Chrome", "com.google Chrome", "com.example/Chrome",
+                        "process:999:com.google.Chrome", "é", String(repeating: "x", count: 256)] {
+            for processID: Int32? in [nil, 202] {
+                let reply = service.handle(.checkIn(browser: browser, processID: processID))
+                XCTAssertFalse(reply.accepted, browser)
+                XCTAssertNotNil(reply.refusal)
+                XCTAssertEqual(reply.status.checkIns, original)
+            }
+        }
+        for processID: Int32 in [0, -1] {
+            for browser in ["com.google.Chrome", "net.imput.helium"] {
+                let reply = service.handle(.checkIn(browser: browser, processID: processID))
+                XCTAssertFalse(reply.accepted)
+                XCTAssertEqual(reply.status.checkIns, original,
+                               "an invalid process cannot publish or refresh a bundle stamp either")
+            }
+        }
+    }
+
+    func testTrueCapacityOverflowIsExplicitAndPreservesExistingEvidence() throws {
+        var now = t0
+        let service = PolicyService(store: PolicyStore(directory: scratch()), clock: { now })
+        let browser = "com.google.Chrome"
+        for processID in 1..<PolicyService.maximumCheckIns {
+            XCTAssertTrue(service.handle(.checkIn(browser: browser, processID: Int32(processID))).accepted)
+        }
+        let full = try XCTUnwrap(service.status().checkIns)
+        XCTAssertEqual(full.count, PolicyService.maximumCheckIns)
+        let overflow = service.handle(.checkIn(browser: "net.imput.helium", processID: 9999))
+        XCTAssertFalse(overflow.accepted)
+        XCTAssertTrue(try XCTUnwrap(overflow.refusal).contains("capacity"))
+        XCTAssertEqual(overflow.status.checkIns, full, "overflow must not evict healthy identities or partly add a new one")
+        now = t0.addingTimeInterval(1)
+        XCTAssertTrue(service.handle(.checkIn(browser: browser, processID: 1)).accepted,
+                      "existing identities still refresh at capacity")
+        XCTAssertEqual(service.status().checkIns?[BrowserCheckInIdentity.key(browser: browser, processID: 1)!], now)
+        now = t0.addingTimeInterval(PolicyService.checkInRetention + 2)
+        let recovered = service.handle(.checkIn(browser: "net.imput.helium", processID: 9999))
+        XCTAssertTrue(recovered.accepted)
+        XCTAssertEqual(recovered.status.checkIns?.count, 2)
+    }
+
+    func testCheckInRetentionBoundsFutureStampsAfterClockRollback() {
+        var now = t0
+        let service = PolicyService(store: PolicyStore(directory: scratch()), clock: { now })
+        XCTAssertTrue(service.handle(.checkIn(browser: "com.google.Chrome", processID: 101)).accepted)
+        now = t0.addingTimeInterval(-30)
+        XCTAssertEqual(service.status().checkIns?["com.google.Chrome"], t0,
+                       "ordinary clock skew must not erase still-eligible evidence")
+        now = t0.addingTimeInterval(-PolicyService.checkInRetention - 1)
+        XCTAssertEqual(service.status().checkIns, [:], "a rollback cannot retain far-future evidence forever")
+    }
+
     func testServicePersistsAcceptedChangesAndReportsRefusals() {
         let dir = scratch()
         var now = t0

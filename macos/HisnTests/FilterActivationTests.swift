@@ -194,4 +194,118 @@ final class FilterRecoveryTests: XCTestCase {
         evidence.observe(locked: false)
         XCTAssertFalse(evidence.locked, "only a fresh authority reply ends the cached lock")
     }
+
+    func testMissingInitialAuthorityDoesNotInventALockedAllowSet() {
+        var evidence = AuthorityLockEvidence()
+        let local: Set<String> = ["custom.browser"]
+        evidence.observe(locked: nil)
+        XCTAssertEqual(evidence.effectiveGuardAllowed(local: local), local)
+        XCTAssertFalse(evidence.locked)
+    }
+
+    func testLostLockedAuthorityDoesNotAdmitNewLocalBrowserExceptions() {
+        var evidence = AuthorityLockEvidence()
+        evidence.observe(locked: true, guardAllowed: ["trusted.link.app"])
+        evidence.observe(locked: nil)
+        let allowed = evidence.effectiveGuardAllowed(
+            local: ["trusted.link.app", "custom.browser"])
+        XCTAssertEqual(allowed, ["trusted.link.app"])
+        XCTAssertEqual(BrowserGuardPolicy.coverage(bundleID: "custom.browser",
+            linked: [], userAllowed: allowed), .uncovered,
+            "editable defaults must not exempt a custom browser during an IPC outage")
+        XCTAssertTrue(evidence.locked)
+    }
+
+    func testLocalRemovalStillTightensRememberedLockedExceptions() {
+        var evidence = AuthorityLockEvidence()
+        evidence.observe(locked: true, guardAllowed: ["first.app", "second.app"])
+        evidence.observe(locked: nil)
+        XCTAssertEqual(evidence.effectiveGuardAllowed(local: ["second.app"]), ["second.app"])
+        XCTAssertTrue(evidence.effectiveGuardAllowed(local: []).isEmpty)
+    }
+
+    func testConfirmedLockWithoutAllowSetPermitsNoExceptions() {
+        var evidence = AuthorityLockEvidence()
+        evidence.observe(locked: true)
+        XCTAssertTrue(evidence.effectiveGuardAllowed(local: ["custom.browser"]).isEmpty)
+        evidence.observe(locked: nil)
+        XCTAssertTrue(evidence.effectiveGuardAllowed(local: ["custom.browser"]).isEmpty)
+    }
+
+    func testMissingAllowSetDoesNotErasePreviouslyConfirmedLockedExceptions() {
+        var evidence = AuthorityLockEvidence()
+        evidence.observe(locked: true, guardAllowed: ["first.app"])
+        evidence.observe(locked: true)
+        XCTAssertEqual(evidence.effectiveGuardAllowed(local: ["first.app", "second.app"]),
+                       ["first.app"])
+    }
+
+    func testNewLockedAuthorityReplyReplacesItsRememberedAllowSet() {
+        var evidence = AuthorityLockEvidence()
+        evidence.observe(locked: true, guardAllowed: ["first.app", "second.app"])
+        evidence.observe(locked: true, guardAllowed: ["second.app"])
+        XCTAssertEqual(evidence.effectiveGuardAllowed(local: ["first.app", "second.app"]),
+                       ["second.app"])
+        evidence.observe(locked: true, guardAllowed: [])
+        XCTAssertTrue(evidence.effectiveGuardAllowed(local: ["second.app"]).isEmpty)
+    }
+
+    func testOnlyConfirmedUnlockReleasesCachedAuthorityExceptionConstraint() {
+        var evidence = AuthorityLockEvidence()
+        evidence.observe(locked: true, guardAllowed: ["first.app"])
+        evidence.observe(locked: nil, guardAllowed: ["custom.browser"])
+        XCTAssertTrue(evidence.effectiveGuardAllowed(local: ["custom.browser"]).isEmpty,
+                      "an allow-set without an authority verdict cannot release or replace the constraint")
+        evidence.observe(locked: false)
+        XCTAssertEqual(evidence.effectiveGuardAllowed(local: ["custom.browser"]), ["custom.browser"])
+        evidence.observe(locked: true)
+        XCTAssertTrue(evidence.effectiveGuardAllowed(local: ["first.app"]).isEmpty,
+                      "a later lock cannot inherit exceptions from the earlier lock")
+    }
+
+    func testNoRememberedAuthorityLockPreservesLocalHeartbeatFallback() {
+        var evidence = AuthorityLockEvidence()
+        evidence.observe(locked: nil)
+        XCTAssertNil(evidence.effectiveGuardCheckIns(live: nil))
+        let stamp = Date(timeIntervalSince1970: 1_800_000_000)
+        XCTAssertEqual(BrowserGuardPolicy.checkIn(browser: "custom.browser", processID: 42,
+            authority: evidence.effectiveGuardCheckIns(live: nil), local: stamp), stamp)
+    }
+
+    func testLockedAuthorityOutageCannotTrustForgedLocalHeartbeat() {
+        var evidence = AuthorityLockEvidence()
+        evidence.observe(locked: true, guardAllowed: [])
+        evidence.observe(locked: nil)
+        let checkIns = evidence.effectiveGuardCheckIns(live: nil)
+        XCTAssertEqual(checkIns, [:], "missing IPC is authoritative absence, not local fallback")
+        let stamp = Date(timeIntervalSince1970: 1_800_000_000)
+        XCTAssertNil(BrowserGuardPolicy.checkIn(browser: "custom.browser", processID: 42,
+            authority: checkIns, local: stamp))
+        XCTAssertEqual(BrowserGuardPolicy.verdict(coverage: .needsExtension, lastSeen: nil,
+            now: stamp, graceStart: stamp, firstViolation: nil, recentlyClosed: false),
+            .warn(.extensionSilent, closeAt: stamp.addingTimeInterval(BrowserGuardPolicy.warnSilent)),
+            "authority loss keeps the ordinary warning, not an immediate shutdown")
+    }
+
+    func testLiveAuthorityHeartbeatIsNeverCachedAsFreshDuringOutage() {
+        var evidence = AuthorityLockEvidence()
+        evidence.observe(locked: true, guardAllowed: [])
+        let stamp = Date(timeIntervalSince1970: 1_800_000_000)
+        let live = ["browser#42": stamp]
+        XCTAssertEqual(evidence.effectiveGuardCheckIns(live: live), live)
+        XCTAssertEqual(evidence.effectiveGuardCheckIns(live: [:]), [:])
+        XCTAssertEqual(evidence.effectiveGuardCheckIns(live: nil), [:],
+                       "even a just-read positive heartbeat is not cached liveness")
+    }
+
+    func testConfirmedUnlockRestoresLocalHeartbeatFallback() {
+        var evidence = AuthorityLockEvidence()
+        evidence.observe(locked: true, guardAllowed: [])
+        XCTAssertEqual(evidence.effectiveGuardCheckIns(live: nil), [:])
+        evidence.observe(locked: false)
+        XCTAssertNil(evidence.effectiveGuardCheckIns(live: nil))
+        let live = ["browser#42": Date(timeIntervalSince1970: 1_800_000_000)]
+        XCTAssertEqual(evidence.effectiveGuardCheckIns(live: live), live,
+                       "live authority records take precedence even outside its lock")
+    }
 }

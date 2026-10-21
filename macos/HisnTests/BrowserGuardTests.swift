@@ -26,6 +26,53 @@ final class BrowserGuardPolicyTests: XCTestCase {
 
     // MARK: Coverage
 
+    func testLiveStatusDistinguishesHealthySilentAndUnsupportedBrowsers() {
+        XCTAssertEqual(P.connectionState(coverage: .needsExtension, lastSeen: now,
+                                        now: now, profileLoss: false), .connected)
+        XCTAssertEqual(P.connectionState(coverage: .needsExtension, lastSeen: nil,
+                                        now: now, profileLoss: false), .awaitingExtension)
+        XCTAssertEqual(P.connectionState(coverage: .uncovered, lastSeen: now,
+                                        now: now, profileLoss: false), .unsupported)
+        XCTAssertEqual(P.connectionState(coverage: .allowedByUser, lastSeen: nil,
+                                        now: now, profileLoss: false), .exempt)
+    }
+
+    func testLiveStatusNeverHidesConfirmedProfileLossBehindHealthyReply() {
+        XCTAssertEqual(P.connectionState(coverage: .needsExtension, lastSeen: now,
+                                        now: now, profileLoss: true), .profileUnprotected)
+    }
+
+    func testIndependentBrowserRepliesKeepHealthyBrowserOpenThroughoutRecovery() throws {
+        let healthyID = "com.google.Chrome", missingID = "net.imput.helium"
+        let key = try XCTUnwrap(BrowserCheckInIdentity.key(browser: healthyID, processID: 101))
+        for seconds in [0.0, 30, 59, 60, 120] {
+            let time = now.addingTimeInterval(seconds)
+            let authority = [key: time]
+            let healthy = P.checkIn(browser: healthyID, processID: 101, authority: authority, local: nil)
+            let missing = P.checkIn(browser: missingID, processID: 202, authority: authority, local: time)
+            XCTAssertEqual(P.connectionState(coverage: .needsExtension, lastSeen: healthy,
+                                            now: time, profileLoss: false), .connected)
+            XCTAssertEqual(P.verdict(coverage: .needsExtension, lastSeen: healthy, now: time,
+                                    graceStart: now, firstViolation: now, recentlyClosed: false), .ok)
+            XCTAssertNil(missing)
+            let verdict = P.verdict(coverage: .needsExtension, lastSeen: missing, now: time,
+                                    graceStart: now, firstViolation: now, recentlyClosed: false)
+            if seconds < 60 { XCTAssertEqual(verdict, .warn(.extensionSilent, closeAt: now.addingTimeInterval(60))) }
+            else { XCTAssertEqual(verdict, .close(.extensionSilent)) }
+        }
+    }
+
+    func testReplyRestoredBeforeWarningDeadlineCancelsClosureAndUpdatesStatus() {
+        let restored = now.addingTimeInterval(59)
+        XCTAssertEqual(P.verdict(coverage: .needsExtension, lastSeen: restored, now: restored,
+                                graceStart: now, firstViolation: now, recentlyClosed: false), .ok)
+        XCTAssertEqual(P.connectionState(coverage: .needsExtension, lastSeen: restored,
+                                        now: restored, profileLoss: false), .connected)
+        let stale = restored.addingTimeInterval(-P.staleAfter)
+        XCTAssertEqual(P.connectionState(coverage: .needsExtension, lastSeen: stale,
+                                        now: restored, profileLoss: false), .awaitingExtension)
+    }
+
     func testGuardIsOptionalOutsideLocksButAlwaysActiveDuringLocks() {
         XCTAssertFalse(P.isActive(locked: false, requireOutsideLock: false))
         XCTAssertTrue(P.isActive(locked: false, requireOutsideLock: true))

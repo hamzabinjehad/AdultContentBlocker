@@ -66,17 +66,31 @@ try {
     handleVisualMessage({type:'inspectVisualMedia',id:'frame_' + ++sequence,
       ...geometry,rgba,mediaKind:'image'},sender,state);
   const countBeforeGallery = engineCalls;
-  let allReady = true;
+  let allReady = true, allIdentified = true, firstCaptureKey;
   for (let index = 0; index < 50; index++) {
     const result = await inspect();
     allReady &&= result.state === 'ready' && result.adult?.block === false;
+    if (!index) firstCaptureKey = result.captureKey;
+    allIdentified &&= /^[a-f0-9]{64}$/.test(result.captureKey) && result.captureKey === firstCaptureKey;
   }
   check(allReady, 'all fifty duplicate synthetic captures receive a complete ready verdict');
+  check(allIdentified, 'fresh and cached replies carry the same bounded real-SHA-256 capture identity');
   check(engineCalls === countBeforeGallery + 1, 'fifty sequential identical pixel captures need only one engine inspection');
   check(hashCalls >= 51, 'reuse still hashes each submitted capture with real WebCrypto rather than trusting media identifiers');
+  for (const count of [10,50,100]) {
+    const offset=count===10?0:count===50?40:120;
+    const frames=Array.from({length:count},(_,index)=>btoa(String.fromCharCode(offset+index,0,0,255)));
+    let before=engineCalls;
+    for (const frame of frames) await inspect(frame);
+    check(engineCalls===before+count, count+' distinct image pixels each receive their first independent inspection');
+    before=engineCalls;
+    for (const frame of frames) await inspect(frame);
+    check(engineCalls===before, count+' unchanged image pixels reuse complete short-lived verdicts without gallery cache thrashing');
+  }
   let before = engineCalls;
-  await inspect('AAAAAQ==');
+  const changedPixels = await inspect('AAAAAQ==');
   check(engineCalls === before + 1, 'one changed RGBA byte cannot reuse the previous pixel verdict');
+  check(changedPixels.captureKey !== firstCaptureKey, 'one changed RGBA byte also changes its broker capture identity');
   before = engineCalls;
   await inspect('AAAAAAAAAAA=',policy,{width:2,height:1});
   check(engineCalls === before + 1, 'different capture dimensions require a new verdict');
@@ -96,6 +110,8 @@ try {
   const unknownSecond = await inspect('AAAAAg==');
   check(unknownFirst.state === 'unknown' && unknownSecond.state === 'unknown' && engineCalls === before + 2,
     'unknown captures are inspected again instead of being cached as safe');
+  check(unknownFirst.captureKey === undefined && unknownSecond.captureKey === undefined,
+    'unknown replies never carry an identity that could retain a previous presentation');
   replyMode = 'incomplete';
   before = engineCalls;
   await inspect('AAAAAw=='); await inspect('AAAAAw==');

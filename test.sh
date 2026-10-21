@@ -69,7 +69,9 @@ suite_extension() {
     # benign page — medicine, scholarship, news, forms — may be blocked by
     # the shipped vocabulary. Coverage is reported, not gated.
     echo "── extension: evaluation corpus"
-    extension/eval/run.sh | tail -3
+    for sensitivity in 50 80 100; do
+        extension/eval/run.sh "$sensitivity" | tail -3
+    done
 }
 
 # Run one check and pass its output through. On GitHub Actions a failure also

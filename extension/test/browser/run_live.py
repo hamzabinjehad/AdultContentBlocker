@@ -142,6 +142,10 @@ def make_server(root, harness):
             if request_path in ("/__hisn_fixture_cors/allowed.png", "/__hisn_fixture_cors/denied.png",
                                 "/__hisn_fixture_cors/varying.png"):
                 varying = request_path == "/__hisn_fixture_cors/varying.png"
+                if varying and self.headers.get("Origin"):
+                    # Keep the previous decoded bitmap around long enough to
+                    # exercise IMG.complete during a genuine CORS reload.
+                    time.sleep(0.15)
                 body = (fixture_png((0, 255, 0) if self.headers.get("Origin") else (255, 0, 0))
                         if varying else (root / "icons/icon-32.png").read_bytes())
                 self.send_response(200)

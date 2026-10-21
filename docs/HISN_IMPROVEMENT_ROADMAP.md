@@ -4,6 +4,66 @@ Primary user goal: voluntary self-control that remains useful during a moment
 of temptation. Family protection is optional. Preserve the existing Mac
 features and implement corresponding mobile behavior where Apple supports it.
 
+## Current iteration: word blocking and responsiveness — 2026-10-17
+
+This section prioritizes the next work; it does not mark the rest of this
+roadmap complete. Keep existing Mac protection and commitment rules intact.
+
+### Implemented in source in this iteration
+
+- Compile multi-word vocabulary into an exact-token prefix tree once per
+  effective vocabulary. Skip impossible phrase continuations rather than
+  allocating every token-window combination on every page/post check.
+- Fix custom phrases pasted with repeated spaces, tabs or line breaks. Use the
+  same whitespace key for ignoring a phrase, and rebuild the compiled matcher
+  when ignored terms change. Leave the shared Unicode normalisation contract
+  unchanged.
+- Preserve contextual negative terms, overlapping phrases, zone weights,
+  occurrence caps, sensitivity and density thresholds. Do not lower thresholds
+  to manufacture better coverage, and do not change domain/URL filtering.
+- Add regression coverage for the spacing bug and compare complete scores,
+  matched terms and verdicts against the former exhaustive algorithm across
+  the labelled corpus, every shipped multi-word term, and ignored phrases.
+- Follow-through candidate 1.1.11 adds reviewed, whole-token evasion matching
+  for a small set of existing strong terms: digit substitutions, selected
+  lookalike letters and punctuation-separated single letters. Aliases share
+  the canonical occurrence cap and cannot restore ignored/absent/weak terms.
+- Correct the French `sexe` form-choice ambiguity locally, not through a
+  site exemption. Only the seed weight-6 label followed immediately by the
+  reviewed choices is skipped; stronger custom rules and other explicit
+  occurrences still score. General contextual-negative cancellation has not
+  been redesigned.
+
+The shared scorer is used by Chromium and staged into Safari for macOS,
+iPhone and iPad. Source/staging changes are not proof of an installed mobile
+update. No native app, browser-management policy or lock was replaced here.
+
+Validation for the initial optimisation and its follow-through is recorded in
+[the 1.1.11 candidate notes](EXTENSION_1.1.11.md). The original corpus's French
+form false block is now corrected. The expanded 41-case synthetic corpus reports
+0/18 adult misses and 0/23 benign blocks at sensitivity 50, 80 and 100. This is
+a small regression set, not evidence of real-world perfect classification.
+
+### Ordered next work — partial progress, not a completed roadmap
+
+Rows 1–3 build on the fixtures, reviewed aliases and local form correction
+implemented above. Broader context calibration and new site adapters remain
+separate work; the follow-through does not mark these release gates complete.
+
+| Priority | Work | Acceptance gate |
+| --- | --- | --- |
+| 1 | Expand labelled Arabic, English and German fixtures for disguised words: mixed scripts, digit substitutions, separated letters, hashtags and split inline nodes. Add medical, recovery, religious, news and ordinary-post counterexamples first. | Report misses and false blocks separately by language and surface; every existing benign fixture must still pass. Never infer real-world accuracy from this synthetic corpus. |
+| 2 | Implement conservative evasion candidates only for reviewed high-confidence terms. Preserve whole-token boundaries and avoid arbitrary substring matching, recursive Arabic stemming or a global digit-to-letter substitution. | New evasion fixtures block without blocking nationality, place names or benign lookalikes. Bound candidates and page processing; keep the compiler/native normalisation contract synchronized if it changes. |
+| 3 | Improve local context scoring for ambiguous terms. Evaluate nearby contextual evidence rather than letting unrelated negative text elsewhere wash out an explicit post. | Test explicit content plus benign padding, genuine medicine and recovery content, short posts, captions and conflicting metadata. Ship only after reviewing both missed-content and false-block changes. |
+| 4 | Make dynamic text checks incremental. Rescore changed posts/regions, retain bounded in-memory signatures, and measure collection, queue and scoring separately. | Test 10/50/100-post feeds, rapid edits, navigation, caption changes and policy changes. Stale clean verdicts must not survive changed content; ordinary X videos must continue playing. Measure warm and cold p50/p95 on each supported browser before setting a latency claim. |
+| 5 | Add granular adapters for other mixed-content sites only after testing their real DOMs. Explain a block privately in trusted extension UI, without leaking matched text to a webpage or retaining browsing history. | One flagged item does not block an entire normal feed; reused nodes and late captions are rechecked. No raw post text, page capture or inferred personal traits in persistent diagnostics. Existing commitment rules govern any weakening/report workflow. |
+| 6 | Verify the complete release on Chromium, macOS Safari, physical iPhone and iPad; verify extension loss and independent network protection separately. | Browser/profile matrix, sleep/restart, opt-in permissions, connection loss and active-lock tests. Confirm staged files equal tested sources. Installation and GitHub publication are separate explicit release steps, not inferred from passing tests. |
+
+Continue visual detection and network integrity work alongside these gates;
+word checking cannot identify content that has no useful text, inspect every
+encrypted native app, or make an administrator-owned device impossible to bypass.
+Keep setup honest about supported surfaces and independently verified layers.
+
 ## Delivered in this pass
 
 - Standard Chromium-profile runtime evidence reader. Repeated explicit missing

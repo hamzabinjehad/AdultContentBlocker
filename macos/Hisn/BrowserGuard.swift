@@ -197,6 +197,23 @@ public enum BrowserGuardPolicy {
         case close(Reason)
     }
 
+    /// Diagnostics use exactly the enforcement evidence, never a sibling's
+    /// bundle-level heartbeat. Connected does not certify every private tab.
+    public enum ConnectionState: Equatable {
+        case connected, awaitingExtension, profileUnprotected, unsupported, exempt
+    }
+
+    public static func connectionState(coverage: Coverage, lastSeen: Date?,
+                                       now: Date, profileLoss: Bool) -> ConnectionState {
+        switch coverage {
+        case .exempt, .allowedByUser: return .exempt
+        case .uncovered: return .unsupported
+        case .needsExtension:
+            if profileLoss { return .profileUnprotected }
+            return extensionAlive(lastSeen: lastSeen, now: now) ? .connected : .awaitingExtension
+        }
+    }
+
     /// Link routers register for web links only to hand them to a real
     /// browser; they render nothing themselves.
     public static let linkRouters: Set<String> = [
@@ -416,8 +433,20 @@ public final class BrowserGuard: ObservableObject {
         public let enumerationVerified: Bool
     }
 
+    public struct Connection: Identifiable, Equatable {
+        public let id: pid_t
+        public let bundleID: String
+        public let name: String
+        public let state: BrowserGuardPolicy.ConnectionState
+        public let lastSeen: Date?
+        public let checkedAt: Date
+        public let verdict: BrowserGuardPolicy.Verdict?
+    }
+
     @Published public private(set) var alerts: [Alert] = []
     @Published public private(set) var profileIssues: [ProfileIssue] = []
+    @Published public private(set) var connections: [Connection] = []
+    @Published public private(set) var lastChecked: Date?
 
     private var timer: Timer?
     private var started = Date()
@@ -438,6 +467,7 @@ public final class BrowserGuard: ObservableObject {
     private var profileEpoch: UInt64 = 0
     private var schemeCache: [String: Bool] = [:]
     private var panel: NSPanel?
+    private var panelAlertCount = 0
 
     private var defaults: UserDefaults? { UserDefaults(suiteName: LockStore.appGroup) }
 
@@ -471,9 +501,13 @@ public final class BrowserGuard: ObservableObject {
                            object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in self?.tick() }
         }
-        timer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { [weak self] _ in
+        let monitor = Timer(timeInterval: 5, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.tick() }
         }
+        // Menu tracking and drag interactions must not suspend monitoring.
+        // This still is not a real-time guarantee during sleep or OS stalls.
+        RunLoop.main.add(monitor, forMode: .common)
+        timer = monitor
         tick()
     }
 
@@ -484,11 +518,10 @@ public final class BrowserGuard: ObservableObject {
     }
 
     /// What is actually allowed right now: while the filter's authority holds
-    /// a lock, only apps BOTH copies allow — a `defaults write` of the app's
-    /// list mid-lock cannot exempt anything.
+    /// a lock, only apps BOTH copies allow. Keep its last confirmed constraint
+    /// during IPC outages, rather than trusting newly edited local exceptions.
     var effectiveAllowed: Set<String> {
-        guard let status = FilterSync.shared.status, status.isLocked else { return allowed }
-        return allowed.intersection(status.record.guardAllowed)
+        FilterSync.shared.effectiveGuardAllowed(local: allowed)
     }
 
     /// FilterSync's write of the merged list. Not a person's edit, so no lock
@@ -535,7 +568,7 @@ public final class BrowserGuard: ObservableObject {
     /// running now.
     public func candidates() -> [Candidate] {
         let linked = Set(NativeMessagingInstaller.browsers.map(\.bundleID))
-        let allowed = allowed
+        let allowed = effectiveAllowed
         var urls = NSWorkspace.shared.urlsForApplications(
             toOpen: URL(string: "https://example.com")!)
         urls += NSWorkspace.shared.runningApplications.compactMap(\.bundleURL)
@@ -577,12 +610,42 @@ public final class BrowserGuard: ObservableObject {
 
     private var lastTick = Date()
 
+    /// Observe open browsers even when enforcement is not enabled. This is
+    /// read-only: opening the status screen must not grant closure consent.
+    private func runningBrowsers(linked: Set<String>) -> [NSRunningApplication] {
+        let own = Bundle.main.bundleIdentifier
+        return NSWorkspace.shared.runningApplications.filter { app in
+            guard app.activationPolicy != .prohibited, !app.isTerminated else { return false }
+            let id = app.bundleIdentifier ?? app.bundleURL?.path ?? app.executableURL?.path ?? ""
+            return !id.isEmpty && id != own && isBrowser(id: id, bundleURL: app.bundleURL, linked: linked)
+        }
+    }
+
+    private func connection(for app: NSRunningApplication, linked: Set<String>, now: Date,
+                            verdict: BrowserGuardPolicy.Verdict? = nil) -> Connection {
+        let id = app.bundleIdentifier ?? app.bundleURL?.path ?? app.executableURL?.path ?? ""
+        let lastSeen = BrowserGuardPolicy.instanceCheckIn(lastSeen: BrowserGuardPolicy.checkIn(
+            browser: id, processID: app.processIdentifier, authority: FilterSync.shared.guardCheckIns,
+            local: ExtensionPresence.lastSeen(browser: id, processID: app.processIdentifier, in: defaults)),
+            launchedAt: app.launchDate)
+        let state = BrowserGuardPolicy.connectionState(
+            coverage: BrowserGuardPolicy.coverage(bundleID: id, linked: linked, userAllowed: effectiveAllowed),
+            lastSeen: lastSeen, now: now,
+            profileLoss: !(profileChecks[id]?.confirmed(at: now).isEmpty ?? true))
+        return Connection(id: app.processIdentifier, bundleID: id, name: app.localizedName ?? id,
+                          state: state, lastSeen: lastSeen, checkedAt: now, verdict: verdict)
+    }
+
     func tick() {
         // A long gap between ticks is a sleep the wake notification has not
         // been delivered for yet; renew recovery without hiding its warning.
         let wall = Date()
         if wall.timeIntervalSince(lastTick) > 15 { awakeSince = wall }
         lastTick = wall
+
+        let linked = Set(NativeMessagingInstaller.browsers.map(\.bundleID))
+        let applications = runningBrowsers(linked: linked)
+        lastChecked = wall
 
         guard BrowserGuardPolicy.isActive(locked: EffectiveLock.isLocked,
                                           requireOutsideLock: requireOutsideLock) else {
@@ -606,30 +669,26 @@ public final class BrowserGuard: ObservableObject {
                 alerts = []
                 updatePanel()
             }
+            connections = applications.map { connection(for: $0, linked: linked, now: wall) }
             return
         }
         let now = Date()
         if !enforcing { enforcementBegan = now; enforcing = true }
-        let linked = Set(NativeMessagingInstaller.browsers.map(\.bundleID))
         let allowed = effectiveAllowed
-        let own = Bundle.main.bundleIdentifier
         // Check-ins from the filter when it answers (the bridge reports them
-        // over the code-signed channel); the app's defaults — which a loop of
-        // `defaults write` could keep fresh — only when it does not.
-        let authorityCheckIns = FilterSync.shared.status?.checkIns
+        // over the code-signed channel). A remembered locked authority outage
+        // supplies an empty set, not permission to forge local freshness.
+        // Local defaults remain the fallback without such a confirmed lock.
+        let authorityCheckIns = FilterSync.shared.guardCheckIns
         var next: [Alert] = []
         var running = Set<pid_t>()
         var runningLinked = Set<String>()
         var instances: [String: Set<String>] = [:]
+        var nextConnections: [Connection] = []
 
         // Regular AND accessory apps: a browser relaunched as an agent
         // (LSUIElement) still shows web pages. An app with no bundle id is
         // judged by its path.
-        let applications = NSWorkspace.shared.runningApplications.filter { app in
-            guard app.activationPolicy != .prohibited, !app.isTerminated else { return false }
-            let id = app.bundleIdentifier ?? app.bundleURL?.path ?? app.executableURL?.path ?? ""
-            return !id.isEmpty && id != own && isBrowser(id: id, bundleURL: app.bundleURL, linked: linked)
-        }
         var allInstances: [String: Set<String>] = [:]
         for app in applications {
             let id = app.bundleIdentifier ?? app.bundleURL?.path ?? app.executableURL?.path ?? ""
@@ -674,6 +733,12 @@ public final class BrowserGuard: ObservableObject {
             let verifiedConnection = !profileLoss && coverage == .needsExtension &&
                 BrowserGuardPolicy.extensionAlive(lastSeen: lastSeen, now: now)
             session.observe(verdict, browser: id, at: now, verifiedConnection: verifiedConnection, instance: instance)
+            // Publish the same sampled evidence used for this decision, not a
+            // second read that could label a warning as connected.
+            nextConnections.append(Connection(id: pid, bundleID: id, name: name,
+                state: BrowserGuardPolicy.connectionState(coverage: coverage, lastSeen: lastSeen,
+                                                         now: now, profileLoss: profileLoss),
+                lastSeen: lastSeen, checkedAt: now, verdict: verdict))
 
             switch verdict {
             case .ok:
@@ -699,6 +764,7 @@ public final class BrowserGuard: ObservableObject {
         // it here would make terminate/relaunch loops reset the countdown again.
         notified = notified.filter { running.contains($0) }
         profileInstances = instances
+        connections = nextConnections
         scanProfiles(for: runningLinked, at: now)
         if next != alerts {
             alerts = next
@@ -798,7 +864,7 @@ public final class BrowserGuard: ObservableObject {
                 linked: Set(NativeMessagingInstaller.browsers.map(\.bundleID)),
                 userAllowed: self.effectiveAllowed)
             let seen = BrowserGuardPolicy.instanceCheckIn(
-                lastSeen: BrowserGuardPolicy.checkIn(browser: id, processID: pid, authority: FilterSync.shared.status?.checkIns,
+                lastSeen: BrowserGuardPolicy.checkIn(browser: id, processID: pid, authority: FilterSync.shared.guardCheckIns,
                     local: ExtensionPresence.lastSeen(browser: id, processID: pid, in: self.defaults)),
                 launchedAt: launchDate)
             let notBefore = BrowserGuardPolicy.forceRecoveryDeadline(
@@ -856,23 +922,31 @@ public final class BrowserGuard: ObservableObject {
     private func updatePanel() {
         if alerts.isEmpty {
             panel?.orderOut(nil)
+            panelAlertCount = 0
             return
         }
         if panel == nil {
             let p = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 380, height: 150),
-                            styleMask: [.titled, .nonactivatingPanel, .utilityWindow],
+                            styleMask: [.titled, .nonactivatingPanel, .utilityWindow, .resizable],
                             backing: .buffered, defer: false)
             p.title = String(localized: "Hisn")
             p.level = .floating
             p.isFloatingPanel = true
             p.hidesOnDeactivate = false
+            p.contentMinSize = NSSize(width: 380, height: 160)
             p.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             p.contentView = NSHostingView(rootView: GuardAlertView(guardian: self))
             panel = p
         }
+        if let panel, panelAlertCount != alerts.count {
+            let availableHeight = NSScreen.main?.visibleFrame.height ?? 800
+            let height = min(max(176, CGFloat(alerts.count) * 124 + 32), min(440, availableHeight * 0.65))
+            panel.setContentSize(NSSize(width: max(380, panel.frame.width), height: height))
+            panelAlertCount = alerts.count
+        }
         if let panel, !panel.isVisible, let screen = NSScreen.main {
             let frame = screen.visibleFrame
-            panel.setFrameTopLeftPoint(NSPoint(x: frame.maxX - 400, y: frame.maxY - 20))
+            panel.setFrameTopLeftPoint(NSPoint(x: frame.maxX - panel.frame.width - 20, y: frame.maxY - 20))
         }
         panel?.orderFrontRegardless()
     }
@@ -884,7 +958,8 @@ struct GuardAlertView: View {
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
-            VStack(alignment: .leading, spacing: 10) {
+            ScrollView {
+            LazyVStack(alignment: .leading, spacing: 14) {
                 ForEach(guardian.alerts) { alert in
                     VStack(alignment: .leading, spacing: 4) {
                         Label(String(localized: """
@@ -901,7 +976,8 @@ struct GuardAlertView: View {
                 }
             }
             .padding(16)
-            .frame(width: 380, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
     }
 }

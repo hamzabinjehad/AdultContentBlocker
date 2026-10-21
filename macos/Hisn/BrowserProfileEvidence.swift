@@ -1,7 +1,7 @@
 import Foundation
 import CoreFoundation
 
-/// Runtime evidence, deliberately separate from the conservative setup checklist.
+/// Bounded Chromium evidence shared by runtime and the conservative setup checklist.
 /// Reads standard Chromium profiles only; never writes preferences or reads history.
 enum BrowserProfileEvidence {
     enum State: Equatable, Sendable {
@@ -10,6 +10,13 @@ enum BrowserProfileEvidence {
     struct Profile: Equatable, Sendable {
         let folder: String
         let state: State
+        let displayName: String?
+
+        init(folder: String, state: State, displayName: String? = nil) {
+            self.folder = folder
+            self.state = state
+            self.displayName = displayName
+        }
     }
     struct Snapshot: Equatable, Sendable {
         let enumerationVerified: Bool
@@ -59,7 +66,8 @@ enum BrowserProfileEvidence {
         }
     }
 
-    static func inspect(root: URL, ids: Set<String>, maximumBytes: Int = 20 * 1024 * 1024) -> Snapshot {
+    static func inspect(root: URL, ids: Set<String>, maximumBytes: Int = 20 * 1024 * 1024,
+                        requireManaged: Bool = false) -> Snapshot {
         guard !ids.isEmpty, maximumBytes > 0,
               let names = try? FileManager.default.contentsOfDirectory(atPath: root.path)
         else { return .unavailable }
@@ -67,12 +75,15 @@ enum BrowserProfileEvidence {
         guard !folders.isEmpty, folders.count <= 256 else { return .unavailable }
         var remainingBytes = min(maximumBytes, 20 * 1024 * 1024)
         return Snapshot(enumerationVerified: true, profiles: folders.map { folder in
-            Profile(folder: folder, state: inspectProfile(root.appendingPathComponent(folder), ids: ids,
-                                                         remainingBytes: &remainingBytes))
+            var displayName: String?
+            let state = inspectProfile(root.appendingPathComponent(folder), ids: ids,
+                remainingBytes: &remainingBytes, requireManaged: requireManaged, displayName: &displayName)
+            return Profile(folder: folder, state: state, displayName: displayName)
         })
     }
 
-    private static func inspectProfile(_ directory: URL, ids: Set<String>, remainingBytes: inout Int) -> State {
+    private static func inspectProfile(_ directory: URL, ids: Set<String>, remainingBytes: inout Int,
+                                       requireManaged: Bool, displayName: inout String?) -> State {
         let fm = FileManager.default
         guard let files = try? fm.contentsOfDirectory(atPath: directory.path) else { return .unconfirmed }
         var records: [String: [State]] = [:]
@@ -85,6 +96,9 @@ enum BrowserProfileEvidence {
             guard let data = read(url, remainingBytes: &remainingBytes),
                   let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
             else { return .unconfirmed }
+            if let name = (json["profile"] as? [String: Any])?["name"] as? String, !name.isEmpty {
+                displayName = name
+            }
             guard let rawExtensions = json["extensions"] else { continue }
             guard let extensions = rawExtensions as? [String: Any] else { return .unconfirmed }
             guard let rawSettings = extensions["settings"] else { continue }
@@ -92,7 +106,7 @@ enum BrowserProfileEvidence {
             catalogueSeen = true
             for id in ids {
                 if let entry = settings[id] {
-                    records[id, default: []].append(entryState(entry))
+                    records[id, default: []].append(entryState(entry, requireManaged: requireManaged))
                 }
             }
         }
@@ -126,8 +140,14 @@ enum BrowserProfileEvidence {
         return data
     }
 
-    static func entryState(_ raw: Any) -> State {
+    static func entryState(_ raw: Any, requireManaged: Bool = false) -> State {
         guard let entry = raw as? [String: Any], !entry.isEmpty else { return .unconfirmed }
+        if requireManaged {
+            // Setup additionally proves a policy installation. Runtime calls
+            // keep their existing interpretation regardless of install source.
+            guard let rawLocation = entry["location"], let location = integer(rawLocation),
+                  [7, 9].contains(location) else { return .unconfirmed }
+        }
         var state: Int?
         if let rawState = entry["state"] {
             guard let number = integer(rawState), [0, 1].contains(number) else { return .unconfirmed }

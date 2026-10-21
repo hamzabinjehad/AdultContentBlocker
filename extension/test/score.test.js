@@ -193,5 +193,38 @@ check(scorePage(onlyPorn, index, 50).score === before.score,
 check(withoutTerms(index, []) === index,
       "no terms to drop returns the very same index, allocating nothing");
 
+// A custom phrase copied from a wrapped line must match the same words on a
+// page. Both positive and contextual-negative phrases use canonical spacing;
+// ignored phrases must use that same key rather than leaving a stale matcher.
+const spaced = buildIndex({ terms: [{ t: "trigger  phrase\nexample", w: 8 }],
+  negatives: [{ t: "medical\tcontext", w: -8 }] });
+const spacedZones = { body: "trigger phrase example" };
+check(scorePage(spacedZones, spaced).block,
+      "custom phrases with repeated spaces and newlines match rendered words");
+check(scorePage({ body: "trigger phrase example medical context" }, spaced).score === 0,
+      "contextual-negative phrases support tabs too");
+check(!scorePage(spacedZones, withoutTerms(spaced, ["trigger\tphrase example"])).block,
+      "ignoring a phrase uses canonical spacing and removes its matcher");
+check(scorePage(spacedZones, spaced).block,
+      "ignoring a phrase leaves the original matcher unchanged");
+
+// Prefixes, overlapping phrases, and per-zone occurrence caps all matter.
+const overlapping = buildIndex({ terms: [
+  { t: "alpha beta", w: 8 }, { t: "alpha beta gamma", w: 9 },
+  { t: "beta gamma", w: 10 }, { t: "alphabet soup", w: 7 },
+] });
+check(scorePage({ body: "alpha beta gamma" }, overlapping).score === 27,
+      "every overlapping phrase scores, not just the first or longest");
+check(scorePage({ body: "alpha beta" }, overlapping).score === 8,
+      "a shorter terminal phrase matches without its longer continuation");
+check(scorePage({ body: "alpha betamax gamma" }, overlapping).score === 0,
+      "phrase matching never turns into substring matching");
+check(scorePage({ body: "alpha beta ".repeat(20) }, overlapping).score === 24,
+      "repeated phrases retain the three-occurrence cap");
+check(scorePage({ title: "alpha beta", body: "alpha beta" }, overlapping).score === 32,
+      "phrase matching preserves zone weights and independent zone counts");
+check(scorePage({ title: "alpha", body: "beta" }, overlapping).score === 0,
+      "phrases cannot bridge separate zones");
+
 print(`  ${checks - failures}/${checks} checks passed`);
 if (failures) throw new Error(`${failures} check(s) failed`);
