@@ -17,6 +17,7 @@ import java.util.Set;
  * Unlike user-selected literal rules, a word such as "sex" or a single ambiguous
  * seed term does not itself block. A 16-token window needs promotional wording
  * and a reviewed explicit term/strong phrase or two distinct strong signals.
+ * Complete two-word explicit media labels can supply that intent without a verb.
  * Signed negative context subtracts evidence only within eight tokens of that
  * window; distant medical prose cannot cancel a separate promotional cluster.
  * This is not an image classifier or a guarantee of detecting all adult text.
@@ -43,6 +44,15 @@ public final class AdultTextPolicy {
             this.phrase = phrase;
             this.weight = weight;
         }
+    }
+
+    /** Reviewed app-side context, separate from the signed vocabulary asset. */
+    public static List<Rule> reviewedContextRules() {
+        return Collections.unmodifiableList(Arrays.asList(new Rule("porn addiction", -8),
+                new Rule("addiction recovery", -8), new Rule("علاج ادمان الاباحيه", -8),
+                new Rule("porn blocker", -8), new Rule("pornography blocker", -8),
+                new Rule("adult content blocker", -8), new Rule("porn blocking", -8),
+                new Rule("blocking porn", -8), new Rule("حجب الاباحيه", -8), new Rule("حظر الاباحيه", -8)));
     }
 
     private static final Set<String> EXPLICIT = immutableSet("porn", "porno", "pornography",
@@ -105,7 +115,7 @@ public final class AdultTextPolicy {
             throw new IllegalArgumentException("Adult-text sample exceeds inspection limit");
         }
         if (entries.isEmpty()) return false;
-        String normalized = canonical(input);
+        String normalized = canonical(recoverCompactSpellings(Normalizer.normalize(input, Normalizer.Form.NFKC)));
         if (normalized.isEmpty()) return false;
         // NFKC can expand compatibility characters. Bound the normalized work
         // too, rather than permitting large hidden allocation after validation.
@@ -118,6 +128,13 @@ public final class AdultTextPolicy {
         for (int at = 0; at < tokens.length; at++) {
             promotions[at] = isPromotion(tokens[at]);
             anyPromotion |= promotions[at];
+        }
+        // A complete two-word media label is evidence without a call to action.
+        // Do not apply this to substrings of research/recovery prose or generic
+        // "adult" labels; configured strong terms and negative context still score.
+        if (!anyPromotion && explicitMediaLabel(tokens)) {
+            promotions[0] = true;
+            anyPromotion = true;
         }
         // Most UI labels are ordinary navigation or prose. Avoid allocating
         // per-rule scoring buffers and hit lists when no verdict is possible.
@@ -139,6 +156,21 @@ public final class AdultTextPolicy {
             }
         }
         return classifyWindows(hits, starts, promotions);
+    }
+
+    private boolean explicitMediaLabel(String[] tokens) {
+        if (tokens.length != 2) return false;
+        String explicit;
+        if (tokens[1].equals("videos") || tokens[1].equals("video")
+                || tokens[1].equals("photos") || tokens[1].equals("images")) {
+            explicit = tokens[0];
+        } else if (tokens[0].equals("محتوي") || tokens[0].equals("فيديو")
+                || tokens[0].equals("صور")) {
+            explicit = tokens[1];
+        } else return false;
+        Entry entry = singleWords.get(explicit);
+        if (entry == null) entry = variant(explicit);
+        return entry != null && entry.weight >= STRONG_WEIGHT && EXPLICIT.contains(entry.phrase);
     }
 
     private boolean classifyWindows(List<Hit>[] hits, List<Hit>[] starts, boolean[] promotions) {
@@ -202,6 +234,63 @@ public final class AdultTextPolicy {
             if (starts[hit.start] == null) starts[hit.start] = new ArrayList<>();
             starts[hit.start].add(hit);
         }
+    }
+
+    /** Recover only an entire compact run matching a configured strong explicit
+     * term. Never join whitespace, URL separators, unrelated whole words or
+     * substrings of a larger decorated word. Work is linear with 128-char runs. */
+    private String recoverCompactSpellings(String input) {
+        StringBuilder result = null;
+        int copiedUntil = 0;
+        for (int at = 0; at < input.length();) {
+            int point = input.codePointAt(at);
+            if (!compactCharacter(point)) {
+                at += Character.charCount(point); continue;
+            }
+            int start = at;
+            boolean hasJoiner = false;
+            do {
+                hasJoiner |= joiner(input.codePointAt(at));
+                at += Character.charCount(input.codePointAt(at));
+            }
+            while (at < input.length() && compactCharacter(input.codePointAt(at)));
+            Entry recovered = null;
+            if (hasJoiner && at - start <= 128) {
+                int left = start, right = at;
+                while (left < right && joiner(input.charAt(left))) left++;
+                while (right > left && joiner(input.charAt(right - 1))) right--;
+                boolean punctuated = false;
+                StringBuilder candidate = new StringBuilder(right - left);
+                for (int pos = left; pos < right; pos++) {
+                    char value = input.charAt(pos);
+                    if (joiner(value)) punctuated = true;
+                    else candidate.append(value);
+                }
+                if (punctuated) {
+                    String word = canonical(candidate.toString());
+                    recovered = singleWords.get(word);
+                    if (recovered == null) recovered = variant(word);
+                    if (recovered != null && (recovered.weight < STRONG_WEIGHT || !EXPLICIT.contains(recovered.phrase)))
+                        recovered = null;
+                }
+            }
+            if (recovered != null) {
+                if (result == null) result = new StringBuilder(input.length());
+                result.append(input, copiedUntil, start).append(recovered.phrase);
+                copiedUntil = at;
+            }
+        }
+        return result == null ? input : result.append(input, copiedUntil, input.length()).toString();
+    }
+
+    private static boolean joiner(int value) {
+        return value == '.' || value == '-' || value == '_' || value == '*' || value == 0x2022;
+    }
+
+    private static boolean compactCharacter(int point) {
+        int type = Character.getType(point);
+        return Character.isLetterOrDigit(point) || joiner(point) || type == Character.FORMAT
+                || type == Character.NON_SPACING_MARK || type == Character.ENCLOSING_MARK;
     }
 
     private Entry variant(String token) {

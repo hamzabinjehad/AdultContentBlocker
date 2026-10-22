@@ -16,16 +16,36 @@ def copySeed = tasks.register('copyVerifiedAndroidSeed', Sync) {
     into layout.buildDirectory.dir('generated/verifiedSeed')
 }
 
+// Reuse the reviewed, bundled local classifier and preserve its third-party notices.
+def copyVisual = tasks.register('copyAndroidVisual', Sync) {
+    doFirst {
+        def visualRoot = new File(repoRoot, 'extension/visual')
+        def inventory = new groovy.json.JsonSlurper().parse(new File(visualRoot, 'assets.json'))
+        ['engine.bundle.js', 'engine.bundle.js.LEGAL.txt'].each { name ->
+            def artifact = new File(visualRoot, name)
+            def entry = inventory.artifacts[name]
+            def actual = java.security.MessageDigest.getInstance('SHA-256').digest(artifact.bytes).encodeHex().toString()
+            if (entry == null || artifact.length() != entry.bytes || actual != entry.sha256)
+                throw new GradleException('Visual artifact integrity check failed: ' + name)
+        }
+    }
+    from(new File(repoRoot, 'extension/visual')) {
+        include 'engine.bundle.js', 'engine.bundle.js.LEGAL.txt', 'assets.json', 'notices/**'
+    }
+    into layout.buildDirectory.dir('generated/visualAssets/visual')
+}
+
 android {
     namespace 'app.hisn.android'
     compileSdk 37
 
     defaultConfig {
         applicationId 'app.hisn.android'
+        manifestPlaceholders = [hisnAppLabel: '@string/app_name']
         minSdk 26
         targetSdk 36
-        versionCode 9
-        versionName '0.4.4'
+        versionCode 12
+        versionName '0.5.0'
         testInstrumentationRunner 'app.hisn.android.CoreDeviceTestRunner'
         buildConfigField 'String', 'DOMAIN_SEED_SHA256', '"' + seedDigest + '"'
         buildConfigField 'int', 'DOMAIN_SEED_COUNT', seedManifest.core_domain_count.toString()
@@ -35,11 +55,21 @@ android {
 
     sourceSets.main.java.srcDir '../core/src/main/java'
     sourceSets.main.assets.srcDir layout.buildDirectory.dir('generated/verifiedSeed').get().asFile
+    sourceSets.main.assets.srcDir layout.buildDirectory.dir('generated/visualAssets').get().asFile
     buildFeatures { buildConfig true }
+    buildTypes {
+        debug {
+            // Run fixed visual fixtures alongside the owner's app without restarting its services.
+            if (providers.gradleProperty('hisnIsolatedVisualCheck').orNull == 'true') {
+                applicationIdSuffix '.visualcheck'
+                manifestPlaceholders.hisnAppLabel = 'Hisn Visual Test'
+            }
+        }
+    }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
 }
 
-tasks.named('preBuild').configure { dependsOn copySeed }
+tasks.named('preBuild').configure { dependsOn copySeed, copyVisual }

@@ -24,7 +24,8 @@ public final class RestrictionActivity extends Activity {
         title.setGravity(Gravity.CENTER);
         layout.addView(title);
         TextView body = new TextView(this);
-        body.setText(getIntent().getBooleanExtra("schedule", false) ? R.string.restriction_schedule
+        body.setText(getIntent().getBooleanExtra("visual", false) ? R.string.restriction_visual
+                : getIntent().getBooleanExtra("schedule", false) ? R.string.restriction_schedule
                 : getIntent().getBooleanExtra("word", false) ? R.string.restriction_word : R.string.restriction_app);
         body.setTextSize(18);
         body.setGravity(Gravity.CENTER);

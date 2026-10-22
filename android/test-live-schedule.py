@@ -44,6 +44,13 @@ def field(state, name):
     return int(match.group(1))
 
 
+def device_clock():
+    parts = adb("shell", "date", "+%s,%H,%M,%S,%z").strip().split(",")
+    if len(parts) != 5:
+        raise RuntimeError("Cannot read the public device clock for boundary verification")
+    return int(parts[0]), int(parts[1]) * 60 + int(parts[2]), parts[4]
+
+
 # These checks use generated isolated preferences, never a real owner commitment.
 command("schedule-policy-test")
 print("PASS isolated schedule persistence and commitment checks", flush=True)
@@ -53,8 +60,13 @@ try:
     configured = True
     before = command("status")
     start = field(before, "SCHEDULE_START")
+    end = field(before, "SCHEDULE_END")
     interventions = field(before, "SCHEDULE_INTERVENTIONS")
     periodic = field(before, "PERIODIC_INSPECTIONS")
+    initial_clock = device_clock()
+    initial_monotonic = time.monotonic()
+    if (initial_clock[1] - start) % 1440 < (end - start) % 1440:
+        raise RuntimeError("Test preparation already entered the schedule; rerun without clock changes")
     open_fixture()
     time.sleep(2)
     if "GuardFixtureActivity" not in top():
@@ -63,18 +75,31 @@ try:
     print("Leave the static test screen open. No clock/timezone change or new screen event is sent.", flush=True)
     deadline = time.monotonic() + 150
     next_progress = time.monotonic() + 30
+    transition_deadline = None
     while True:
         resumed = top()
         if "app.hisn.android/.RestrictionActivity" in resumed:
             break
         if "GuardFixtureActivity" not in resumed:
-            raise RuntimeError("Schedule test interrupted: the fixture is no longer foreground")
+            # Enforcement intentionally goes HOME before the delayed notice.
+            if transition_deadline is None:
+                transition_deadline = time.monotonic() + 1.5
+            elif time.monotonic() >= transition_deadline:
+                raise RuntimeError("Schedule test interrupted: the fixture is no longer foreground")
+        else:
+            transition_deadline = None
         if time.monotonic() >= deadline:
             raise AssertionError("Schedule did not restrict the static fixture before test deadline")
         if time.monotonic() >= next_progress:
             print("Waiting for actual local-time boundary; fixture remains foreground", flush=True)
             next_progress += 30
         time.sleep(0.4)
+    final_clock = device_clock()
+    if final_clock[2] != initial_clock[2] or abs(
+            (final_clock[0] - initial_clock[0]) - (time.monotonic() - initial_monotonic)) > 5:
+        raise RuntimeError("Device clock/timezone changed; boundary result is inconclusive")
+    if (final_clock[1] - start) % 1440 >= (end - start) % 1440:
+        raise AssertionError("Schedule-specific restriction arrived outside the configured local-time window")
     after = command("status")
     if field(after, "SCHEDULE_INTERVENTIONS") <= interventions or field(after, "PERIODIC_INSPECTIONS") <= periodic:
         raise AssertionError("No schedule-specific periodic enforcement was observed")

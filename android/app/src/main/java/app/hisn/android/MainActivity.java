@@ -29,7 +29,8 @@ import android.widget.Toast;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.Calendar;
+import java.util.Date;
+import java.util.TimeZone;
 import java.time.LocalTime;
 
 import app.hisn.core.WordMatcher;
@@ -44,6 +45,10 @@ import android.view.accessibility.AccessibilityManager;
 public final class MainActivity extends Activity {
     private static final int TEXT_LIMIT = 65536;
     private LinearLayout root;
+    private LinearLayout shell;
+    private final ScrollView[] pages = new ScrollView[3];
+    private final Button[] navigation = new Button[3];
+    private int selectedPage;
     private TextView statusTitle;
     private TextView networkState;
     private TextView networkStats;
@@ -53,6 +58,8 @@ public final class MainActivity extends Activity {
     private TextView adminState;
     private TextView setupState;
     private TextView adultState;
+    private TextView visualState;
+    private Button visualToggle;
     private TextView scheduleState;
     private TextView networkCheckState;
     private Button adultToggle;
@@ -67,20 +74,47 @@ public final class MainActivity extends Activity {
 
     @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        ScrollView scroll = new ScrollView(this);
-        scroll.setFillViewport(true);
-        root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(24), dp(30), dp(24), dp(32));
-        root.setBackgroundColor(Color.rgb(16, 21, 30));
-        scroll.addView(root);
-        setContentView(scroll);
+        shell = new LinearLayout(this);
+        shell.setOrientation(LinearLayout.VERTICAL);
+        shell.setBackgroundColor(Color.rgb(16, 21, 30));
+        shell.setOnApplyWindowInsetsListener((view, insets) -> {
+            if (Build.VERSION.SDK_INT >= 30) {
+                android.graphics.Insets bars = insets.getInsets(android.view.WindowInsets.Type.systemBars()
+                        | android.view.WindowInsets.Type.displayCutout());
+                view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+            } else {
+                view.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(),
+                        insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
+            }
+            return insets;
+        });
+        setContentView(shell);
+        LinearLayout header = new LinearLayout(this);
+        header.setOrientation(LinearLayout.VERTICAL);
+        header.setPadding(dp(24), 0, dp(24), dp(8));
+        shell.addView(header, layout());
+        root = header;
+        heading(R.string.title, 27);
+        paragraph(R.string.subtitle);
+        LinearLayout tabs = new LinearLayout(this);
+        shell.addView(tabs, layout());
+        int[] labels = {R.string.nav_protection, R.string.nav_rules, R.string.nav_guide};
+        for (int i = 0; i < labels.length; i++) {
+            final int page = i;
+            Button tab = new Button(this);
+            tab.setText(labels[i]);
+            tab.setAllCaps(false);
+            tab.setMinHeight(dp(48));
+            tabs.addView(tab, new LinearLayout.LayoutParams(0, -2, 1));
+            navigation[i] = tab;
+            tab.setOnClickListener(view -> showPage(page));
+        }
+        createPage(0);
 
         try { settings = PolicyStore.get(this); }
         catch (RuntimeException unavailable) { paragraph(R.string.policy_unavailable); }
 
-        heading(R.string.title, 27);
-        paragraph(R.string.subtitle);
+        paragraph(R.string.app_goal_short);
         statusTitle = heading(R.string.status_title, 21);
         paragraph(R.string.status_body);
         heading(R.string.setup_heading, 21);
@@ -92,7 +126,6 @@ public final class MainActivity extends Activity {
         setupNext.setOnClickListener(view -> nextSetupStep());
         heading(R.string.layers, 21);
         networkState = paragraph(R.string.network);
-        networkStats = paragraph(R.string.dns_stats_empty);
         startDns = new Button(this);
         startDns.setText(R.string.dns_start);
         startDns.setAllCaps(false);
@@ -105,7 +138,7 @@ public final class MainActivity extends Activity {
         vpnSettings.setText(R.string.dns_settings);
         vpnSettings.setAllCaps(false);
         root.addView(vpnSettings, layout());
-        vpnSettings.setOnClickListener(v -> startActivity(new Intent(Settings.ACTION_VPN_SETTINGS)));
+        vpnSettings.setOnClickListener(v -> reviewVpnSettings());
         networkCheckState = paragraph(R.string.network_check_idle);
         checkNetwork = new Button(this);
         checkNetwork.setText(R.string.network_check_button);
@@ -119,8 +152,15 @@ public final class MainActivity extends Activity {
                 }).show());
         textState = paragraph(R.string.words);
         paragraph(R.string.text_guard_recheck_note);
-        paragraph(R.string.visual);
+        visualState = paragraph(R.string.visual);
         commitmentState = paragraph(R.string.commitment);
+        Button manageRules = new Button(this);
+        manageRules.setText(R.string.nav_rules);
+        manageRules.setAllCaps(false);
+        root.addView(manageRules, layout());
+        manageRules.setOnClickListener(view -> showPage(1));
+
+        createPage(1);
         heading(R.string.rules_heading, 21);
         paragraph(R.string.rules_help);
         adultState = paragraph(R.string.adult_mode_off);
@@ -134,6 +174,10 @@ public final class MainActivity extends Activity {
         policyButton(R.string.edit_words, view -> editRules(false));
         policyButton(R.string.choose_blocked_apps, view -> chooseApps(false));
         policyButton(R.string.choose_scanned_apps, view -> chooseApps(true));
+        visualToggle = new Button(this);
+        visualToggle.setAllCaps(false);
+        root.addView(visualToggle, layout());
+        visualToggle.setOnClickListener(view -> editVisualMode());
         scheduleState = paragraph(R.string.schedule_off);
         policyButton(R.string.schedule_edit, view -> editSchedule());
         policyButton(R.string.enable_text_guard, view -> new AlertDialog.Builder(this)
@@ -142,6 +186,16 @@ public final class MainActivity extends Activity {
                 .setPositiveButton(R.string.open_accessibility, (dialog, which) ->
                         startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))).show());
         policyButton(R.string.commitment_setup, view -> chooseCommitment());
+        createPage(2);
+        heading(R.string.app_goal_title, 23);
+        paragraph(R.string.app_goal_body);
+        heading(R.string.guide_steps_title, 21);
+        paragraph(R.string.guide_steps_body);
+        heading(R.string.guide_limits_title, 21);
+        paragraph(R.string.guide_limits_body);
+        heading(R.string.privacy_heading, 21);
+        paragraph(R.string.privacy);
+        heading(R.string.admin_title, 21);
         adminState = paragraph(R.string.admin_off);
         policyButton(R.string.admin_setup, view -> new AlertDialog.Builder(this)
                 .setTitle(R.string.admin_title).setMessage(R.string.admin_explanation)
@@ -152,6 +206,8 @@ public final class MainActivity extends Activity {
                             .putExtra(android.app.admin.DevicePolicyManager.EXTRA_ADD_EXPLANATION, getString(R.string.admin_explanation));
                     startActivity(request);
                 }).show());
+        heading(R.string.diagnostics_title, 21);
+        networkStats = paragraph(R.string.dns_stats_empty);
         heading(R.string.tester, 21);
         paragraph(R.string.tester_help);
 
@@ -191,7 +247,34 @@ public final class MainActivity extends Activity {
                 result.setText(R.string.invalid);
             }
         });
-        paragraph(R.string.privacy);
+        showPage(savedInstanceState == null ? 0 : savedInstanceState.getInt("selectedPage", 0));
+    }
+
+    private void createPage(int index) {
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(dp(24), 0, dp(24), dp(32));
+        scroll.addView(root);
+        shell.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
+        pages[index] = scroll;
+    }
+
+    private void showPage(int index) {
+        selectedPage = Math.max(0, Math.min(pages.length - 1, index));
+        for (int i = 0; i < pages.length; i++) {
+            pages[i].setVisibility(i == selectedPage ? View.VISIBLE : View.GONE);
+            navigation[i].setSelected(i == selectedPage);
+            navigation[i].setTextColor(i == selectedPage ? Color.rgb(135, 185, 255) : Color.WHITE);
+            navigation[i].setTypeface(null, i == selectedPage
+                    ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
+        }
+    }
+
+    @Override protected void onSaveInstanceState(Bundle state) {
+        state.putInt("selectedPage", selectedPage);
+        super.onSaveInstanceState(state);
     }
 
     @Override protected void onResume() {
@@ -258,7 +341,7 @@ public final class MainActivity extends Activity {
                 PolicyStore.Snapshot rules = settings.snapshot();
                 accessibilityConfigured = !rules.blockedApps.isEmpty()
                         || (rules.schedule.enabled && rules.schedule.isConfigured())
-                        || (!rules.scannedApps.isEmpty() && rules.hasWordProtection());
+                        || (!rules.scannedApps.isEmpty() && (rules.hasWordProtection() || rules.visualEnabled));
                 refreshSchedule(rules.schedule);
                 if (rules.adultWordsEnabled) AdultPolicyAssets.ensureLoaded(this);
             } catch (RuntimeException unavailable) {
@@ -274,6 +357,14 @@ public final class MainActivity extends Activity {
             statusTitle.setText(R.string.protection_attention);
         else statusTitle.setText(current == DnsVpnService.State.RUNNING || guard == GuardHealth.ACTIVE
                 ? R.string.protection_partial : R.string.status_title);
+        try {
+            if (settingsReadable) refreshVisual(settings.snapshot());
+            else { visualToggle.setEnabled(false); visualState.setText(R.string.policy_unavailable); }
+        } catch (RuntimeException unavailable) {
+            visualToggle.setEnabled(false);
+            visualState.setText(R.string.policy_unavailable);
+            statusTitle.setText(R.string.protection_attention);
+        }
         startDns.setEnabled(settings != null && (current == DnsVpnService.State.OFF || current == DnsVpnService.State.ERROR));
         networkStats.setText(getString(R.string.dns_summary,
                 getString(R.string.dns_stats, DnsVpnService.domains, DnsVpnService.blocked.get(),
@@ -327,7 +418,7 @@ public final class MainActivity extends Activity {
         if (settings == null) { setupState.setText(R.string.policy_unavailable); setupNext.setEnabled(false); return; }
         PolicyStore.Snapshot rules = settings.snapshot();
         boolean appRules = !rules.blockedApps.isEmpty() || (rules.schedule.enabled && rules.schedule.isConfigured())
-                || (!rules.scannedApps.isEmpty() && rules.hasWordProtection());
+                || (!rules.scannedApps.isEmpty() && (rules.hasWordProtection() || rules.visualEnabled));
         if (rules.adultWordsEnabled) {
             switch (AdultPolicyAssets.state) {
                 case READY: adultState.setText(getString(R.string.adult_mode_ready, AdultPolicyAssets.policy().ruleCount())); break;
@@ -366,7 +457,7 @@ public final class MainActivity extends Activity {
             case CHOOSE_RULES:
                 PolicyStore.Snapshot rules = settings.snapshot();
                 if (rules.schedule.enabled && rules.schedule.isConfigured()) editSchedule();
-                else if (!rules.hasWordProtection() && rules.blockedApps.isEmpty()) editAdultMode();
+                else if (!rules.hasWordProtection() && !rules.visualEnabled && rules.blockedApps.isEmpty()) editAdultMode();
                 else chooseApps(true);
                 break;
             case CONNECT_SERVICE:
@@ -379,7 +470,7 @@ public final class MainActivity extends Activity {
                 new AlertDialog.Builder(this).setTitle(R.string.setup_review_app).setMessage(R.string.accessibility_description)
                         .setPositiveButton(android.R.string.ok, null).show(); break;
             case ENABLE_DNS: startDns.performClick(); break;
-            case REVIEW_DNS: startActivity(new Intent(Settings.ACTION_VPN_SETTINGS)); break;
+            case REVIEW_DNS: reviewVpnSettings(); break;
             case TEST_DNS:
             case READY: checkNetwork.performClick(); break;
             default: break;
@@ -399,6 +490,64 @@ public final class MainActivity extends Activity {
                         refreshStatus();
                     } catch (RuntimeException unavailable) { Toast.makeText(this, R.string.rules_locked, Toast.LENGTH_LONG).show(); }
                 }).show();
+    }
+
+    private void refreshVisual(PolicyStore.Snapshot rules) {
+        visualToggle.setText(rules.visualEnabled ? R.string.visual_disable : R.string.visual_enable);
+        visualToggle.setEnabled(Build.VERSION.SDK_INT >= 34 && (!rules.visualEnabled || settings.remainingMillis() == 0));
+        int label;
+        if (Build.VERSION.SDK_INT < 34) label = R.string.visual_unsupported;
+        else if (!rules.visualEnabled) label = R.string.visual;
+        else if (rules.scannedApps.isEmpty()) label = R.string.visual_no_apps;
+        else if (!Boolean.TRUE.equals(guardPermissionEnabled()) || !TextGuardService.connected) label = R.string.visual_disconnected;
+        else switch (VisualGuard.state) {
+            case LOADING: label = R.string.visual_loading; break;
+            case CHECKING: label = R.string.visual_checking; break;
+            case SAMPLED: label = R.string.visual_sampled; break;
+            case UNREADABLE: label = R.string.visual_unreadable; break;
+            case INPUT: label = R.string.visual_input; break;
+            case ERROR: label = R.string.visual_error; break;
+            default: label = R.string.visual_waiting;
+        }
+        visualState.setText(label);
+        if (rules.visualEnabled && (label == R.string.visual_error || label == R.string.visual_disconnected
+                || label == R.string.visual_no_apps || label == R.string.visual_unsupported
+                || label == R.string.visual_unreadable)) statusTitle.setText(R.string.protection_attention);
+    }
+
+    private void editVisualMode() {
+        if (settings == null || Build.VERSION.SDK_INT < 34) return;
+        boolean enabled = settings.snapshot().visualEnabled;
+        new AlertDialog.Builder(this).setTitle(enabled ? R.string.visual_disable : R.string.visual_enable)
+                .setMessage(R.string.visual_disclosure).setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.save_rules, (dialog, which) -> {
+                    try {
+                        settings.updateVisual(!enabled);
+                        refreshStatus();
+                        if (!enabled && settings.snapshot().scannedApps.isEmpty()) chooseApps(true);
+                    } catch (RuntimeException unavailable) {
+                        Toast.makeText(this, R.string.rules_locked, Toast.LENGTH_LONG).show();
+                    }
+                }).show();
+    }
+
+    private void reviewVpnSettings() {
+        long remaining = 0;
+        if (settings != null) {
+            try { remaining = settings.remainingMillis(); }
+            catch (RuntimeException unavailable) {
+                Toast.makeText(this, R.string.policy_unavailable, Toast.LENGTH_LONG).show();
+            }
+        }
+        if (remaining <= 0) {
+            startActivity(new Intent(Settings.ACTION_VPN_SETTINGS));
+            return;
+        }
+        new AlertDialog.Builder(this).setTitle(R.string.vpn_settings_reminder_title)
+                .setMessage(getString(R.string.vpn_settings_reminder_body, (remaining + 3599999) / 3600000))
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.vpn_settings_continue, (dialog, which) ->
+                        startActivity(new Intent(Settings.ACTION_VPN_SETTINGS))).show();
     }
 
     private Boolean guardPermissionEnabled() {
@@ -496,10 +645,10 @@ public final class MainActivity extends Activity {
     }
 
     private String scheduleTime(int minute) {
-        Calendar time = Calendar.getInstance();
-        time.set(Calendar.HOUR_OF_DAY, minute / 60);
-        time.set(Calendar.MINUTE, minute % 60);
-        return android.text.format.DateFormat.getTimeFormat(this).format(time.getTime());
+        java.text.DateFormat format = android.text.format.DateFormat.getTimeFormat(this);
+        // Format a wall-clock minute without normalizing it through a local DST transition.
+        format.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return format.format(new Date(minute * 60_000L));
     }
 
     private void editSchedule() {
@@ -643,6 +792,7 @@ public final class MainActivity extends Activity {
         view.setTextSize(size);
         view.setTextColor(Color.WHITE);
         view.setTypeface(null, android.graphics.Typeface.BOLD);
+        if (Build.VERSION.SDK_INT >= 28) view.setAccessibilityHeading(true);
         LinearLayout.LayoutParams params = layout();
         params.topMargin = dp(20);
         root.addView(view, params);

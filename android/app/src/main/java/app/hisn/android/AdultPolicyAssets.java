@@ -80,9 +80,7 @@ public final class AdultPolicyAssets {
             rules.add(new AdultTextPolicy.Rule(term.getString("t"), weight(term, true)));
         }
         // Reviewed local context additions, not extra signed-seed entries.
-        rules.add(new AdultTextPolicy.Rule("porn addiction", -8));
-        rules.add(new AdultTextPolicy.Rule("addiction recovery", -8));
-        rules.add(new AdultTextPolicy.Rule("علاج ادمان الاباحيه", -8));
+        rules.addAll(AdultTextPolicy.reviewedContextRules());
         return new AdultTextPolicy(rules);
     }
 

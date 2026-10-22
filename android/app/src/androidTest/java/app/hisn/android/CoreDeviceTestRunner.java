@@ -40,6 +40,7 @@ public final class CoreDeviceTestRunner extends Instrumentation {
             testSavedRules();
             testAdultPolicy();
             testAdultCommitment();
+            testVisualCommitment();
             testLegacyEmptyCommitment();
             VisibleTextSample sample = new VisibleTextSample();
             sample.append("blocked " + "ordinary ".repeat(1000));
@@ -49,7 +50,7 @@ public final class CoreDeviceTestRunner extends Instrumentation {
             if (!sample.isPartial() || sample.text().length() > 32768)
                 throw new AssertionError("Inspection budget failed");
             results.putString("stream", "\nPASS: verified APK seed loaded " + seed.domainCount
-                    + " domains; Arabic matching, boundaries, local DNS block, saved rules, Unicode persistence, long-text sampling, verified adult terms and commitment checks passed. No VPN was enabled.\n");
+                    + " domains; Arabic matching, boundaries, local DNS block, saved rules, Unicode persistence, long-text sampling, verified adult terms, visual settings and commitment checks passed. No VPN was enabled.\n");
             finish(Activity.RESULT_OK, results);
         } catch (Throwable failure) {
             StringBuilder detail = new StringBuilder();
@@ -58,6 +59,32 @@ public final class CoreDeviceTestRunner extends Instrumentation {
             results.putString("stream", "\nFAIL: " + detail);
             finish(Activity.RESULT_CANCELED, results);
         }
+    }
+
+    private void testVisualCommitment() {
+        String name = "hisn_visual_test_" + java.util.UUID.randomUUID();
+        android.content.Context context = getTargetContext();
+        try {
+            PolicyStore store = new PolicyStore(context, name);
+            if (store.snapshot().visualEnabled) throw new AssertionError("Visual must default off");
+            store.updateVisual(true);
+            if (store.snapshot().hasConfiguredRestrictions()) throw new AssertionError("Visual needs selected apps");
+            java.util.Set<String> apps = java.util.Collections.singleton("fixture.visual");
+            store.update("", "", java.util.Collections.emptySet(), apps);
+            store.updateSchedule(app.hisn.core.DailyAppSchedule.disabled());
+            if (!new PolicyStore(context, name).snapshot().visualEnabled)
+                throw new AssertionError("Other editors or reload erased visual preference");
+            store.startCommitment(7);
+            try { store.updateVisual(false); throw new AssertionError("Visual disabled during commitment"); }
+            catch (IllegalStateException expected) { }
+            try {
+                store.update("", "", java.util.Collections.emptySet(), java.util.Collections.emptySet());
+                throw new AssertionError("Visual app removed during commitment");
+            } catch (IllegalStateException expected) { }
+            PolicyStore.Snapshot restored = new PolicyStore(context, name).snapshot();
+            if (!restored.visualEnabled || !restored.scannedApps.equals(apps))
+                throw new AssertionError("Rejected update damaged visual rules");
+        } finally { context.getSharedPreferences(name, android.content.Context.MODE_PRIVATE).edit().clear().commit(); }
     }
 
     private void testAdultPolicy() throws Exception {

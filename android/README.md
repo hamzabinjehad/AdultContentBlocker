@@ -1,18 +1,93 @@
-# Hisn Android 0.4.3: protection development preview
+# Hisn Android 0.5.0: protection development preview
 
 The Android app contains an opt-in DNS-only VPN, saved custom rules, selected-app
-accessibility restrictions, opt-in built-in adult-text checks, an in-app
+accessibility restrictions, opt-in daily app schedules, built-in adult-text checks and
+sampled image/video checks, an in-app
 commitment and an optional legacy-admin confirmation step. The interface supports
 Arabic and English. This remains a development build, not the completed end goal.
-Core tests and controlled accessibility fixtures pass on 0.4.3. Samsung
-instrumentation passed on the earlier 0.4.0 build; it was not rerun for 0.4.3.
+Core tests pass; device evidence is version-specific in the release records below.
+The visual model and policy tests ran in a separate Samsung debug installation;
+the owner's existing app and permissions were not replaced or enabled.
 The current live VPN check passed local-block and external-resolver steps over
 both UDP and reused TCP. On 0.4.2, Brave displayed an ordinary page, search results and
 an IETF documentation page while the VPN was active. These are limited smoke
 tests, not proof that every browser request uses Hisn. Broader real-app coverage
-and VPN/lifecycle testing remain pending. Visual filtering, schedules,
-usage limits, full traffic coverage and managed-device uninstall blocking are
-not implemented.
+and VPN/lifecycle testing remain pending. Visual accuracy and real-app capture acceptance
+remain pending; the isolated live fixture sequence passes. Usage limits, full traffic coverage and managed-device uninstall
+blocking are not implemented.
+
+## 0.5.0 sampled image/video checks and app goal
+
+The app now separates Protection, Rules and Guide. Its goal is to reduce exposure
+to adult websites, explicit text and flagged visual content while supporting the
+boundaries the owner chooses. English and Arabic explanations cover setup, privacy
+and each layer's actual scope.
+
+In Rules, opt into experimental image/video checks and select apps to inspect.
+Android 14+ and the accessibility service are required. A bundled local model
+checks downscaled selected-window samples about every two seconds. A flagged
+sample returns to Home and shows a restriction notice; it does not blur a specific
+image or pause a specific video. Samples are not saved or uploaded. Identified
+focused inputs pause capture, and protected windows remain unreadable.
+
+The actual model and isolated policy/commitment tests passed on Samsung. After
+explicit test-service activation, nine live fixture checks passed for screenshots,
+moving shapes, input/password pause, protected windows, a synthetic intervention
+and capture stopping. This is not an adult-accuracy or real-video benchmark.
+See [0.5.0 evidence, repeatable driver and remaining gates](../docs/ANDROID_0.5.0.md).
+
+## 0.4.6 explicit media labels
+
+Complete two-word explicit media labels can now be detected without a promotional
+verb. Longer research/recovery prose, weak or missing vocabulary and negative
+context remain protected by regression tests. The same synthetic set now detects
+23/25 intended blocks with 0/27 benign false blocks; two challenges remain.
+See [the release record](../docs/ANDROID_0.4.6.md) for scope and limitations.
+
+## 0.4.5 adult-text matching
+
+Compact punctuation-obfuscated strong terms, such as `p.o.r.n`, are recovered
+conservatively without joining whitespace, URL separators or arbitrary substrings.
+Ten reviewed local context rules reduce false blocks of recovery and filtering
+references; custom literal rules remain independent. The 52-example synthetic
+regression set improved from 7/25 to 21/25 intended blocks and from 4/27 to 0/27
+benign false blocks. Four challenge misses remain; this is not a general accuracy
+estimate. See [the release record](../docs/ANDROID_0.4.5.md).
+
+## 0.4.4 daily selected-app schedule
+
+An optional daily local-time window can restrict a separate set of selected
+apps, including overnight windows such as 22:00–07:00. It defaults off on new
+and upgraded installations. Changes remain a draft until Save; equal endpoints
+are rejected rather than interpreted as a full day. Use permanent app blocks
+for all-day restrictions. Existing permanent blocks and word checks remain
+independent, including outside the scheduled window.
+
+The existing accessibility service checks an allowed scheduled foreground app
+about once per second so a static screen can be restricted when its window
+starts. It uses root ownership and explicitly selected package metadata before
+action; stale events from another selected app cannot silently cancel that
+foreground schedule. No alarm, screen capture, device clock change or new
+permission is used. Initial content can appear before intervention. Disabling
+accessibility, changing the device clock/timezone or removing Hisn remain gaps.
+
+During a commitment, the backend rejects removing protected schedule apps,
+disabling their schedule or reducing any previously blocked minute. Expanding
+coverage is allowed; moving every old scheduled app to permanent blocking also
+preserves coverage. Other rule editors preserve schedule choices. Schedule-only
+protection is recognized by setup; an enabled schedule with no apps cannot
+justify a new commitment.
+
+Existing in-app VPN-settings links now give a dismissible commitment reminder
+while time remains. It does not intercept system settings opened elsewhere or
+prevent deactivation/uninstall. Stronger managed-device controls are a separate
+consented product scope; see [tamper-resistance limits](../docs/ANDROID_TAMPER_RESISTANCE.md).
+
+`test-live-schedule.py --serial SERIAL` runs isolated persistence/commitment
+checks, then uses a harmless static fixture across a real upcoming local-time
+boundary. It refuses to replace any saved owner schedule or run during a real
+commitment. It does not change the device clock or grant permissions, and
+restores its fixture additions. See [0.4.4 verification](../docs/ANDROID_0.4.4.md).
 
 ## 0.4.3 private-browser diagnostic
 
@@ -118,8 +193,8 @@ is recorded separately for 0.4.0; it was not rerun after this update.
   seed are explicitly excluded because a domain-only policy cannot enforce them.
 - The opt-in adult-text loader pins the terms seed's SHA-256, checks its version,
   UTF-8, size and rule bounds, and compiles English/Arabic terms and negative
-  context on this device. Together with three reviewed local recovery-context
-  additions, the current policy contains 4,455 canonical rules. The additions
+  context on this device. Together with ten reviewed local protective/recovery-context
+  additions, the current policy contains 4,462 canonical rules. The additions
   are app code, not extra signed-seed entries. Loader failure is visible and
   does not disable independent custom literal rules.
 - A consent screen describes resolver privacy, other-VPN conflicts and limits.

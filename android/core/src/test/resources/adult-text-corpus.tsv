@@ -1,0 +1,54 @@
+# Synthetic EN/AR fixtures only; not private messages, a representative benchmark, or visual content.
+# expected<TAB>family<TAB>text
+block	clean	Watch porn videos
+block	clean	Download adult videos
+block	clean	Watch hentai now
+block	clean	Stream nude photos
+block	clean	شاهد الإباحية مجانا
+block	clean	تحميل سكس
+block	compact	Watch p.o.r.n videos
+block	compact	Watch P-O-R-N videos
+block	compact	Download p_0_r_n
+block	compact	Stream h.e.n.t.a.i now
+block	compact	Watch h-e-n-t-4-1
+block	compact	Watch p•o•r•n now
+block	compact	Watch p***o***r***n now
+block	compact	Watch p.о.r.n videos
+block	compact	Watch ｐ．ｏ．ｒ．ｎ videos
+block	compact	Watch:(p.o.r.n) now
+block	compact	شاهد إ.ب.ا.ح.ي.ة مجانا
+block	compact	تحميل س_ك_س مجانا
+block	compact	شاهد ا-ب-ا-ح-ي
+block	compact	Watch p.o.r.n! now
+allow	ordinary	A normal ordinary day
+allow	ordinary	Essex council information
+allow	ordinary	Watch pussy cats playing
+allow	ordinary	Download photos of ordinary adults
+allow	ordinary	A free OnlyFans budgeting guide
+allow	ordinary	الجنسية في جواز السفر
+allow	medical	Watch sex education
+allow	medical	Download breast cancer research
+allow	medical	Free sexual health education and addiction recovery support
+allow	medical	شاهد التربية الجنسية
+allow	recovery	Watch porn addiction recovery resources
+allow	recovery	Watch p.o.r.n addiction recovery resources
+allow	recovery	علاج ادمان الاباحيه
+allow	protective	Download a free porn blocker
+allow	protective	Download a free pornography blocker
+allow	protective	Download a free adult content blocker
+allow	protective	Download a free p.o.r.n blocker
+allow	protective	شاهد طريقة حجب الإباحية
+allow	protective	تحميل أدوات حظر الإباحية
+allow	boundary	Watch x.p.o.r.n.y
+allow	boundary	Watch x.h.e.n.t.a.i.y
+allow	boundary	Watch p.o.r.nographyresearch
+allow	boundary	Watch pornographyresearch
+allow	boundary	Watch p0rnographyresearch
+allow	boundary	Watch xhent41y
+block	challenge	Watch p/o/r/n
+block	challenge	Watch p o r n
+block	label	Porn videos
+block	label	محتوى إباحي
+allow	reference	Research definitions include porn and hentai
+allow	reference	Watch a sexual health presentation
+block	context	Watch porn videos; education

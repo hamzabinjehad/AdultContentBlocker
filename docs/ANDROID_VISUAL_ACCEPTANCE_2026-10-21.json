@@ -1,0 +1,38 @@
+{
+  "passed": true,
+  "package": "app.hisn.android.visualcheck",
+  "checks": [
+    {
+      "check": "actual capture and benign model inference",
+      "samples": 4
+    },
+    {
+      "check": "benign moving frame sampling",
+      "samples": 3
+    },
+    {
+      "check": "focused editable field pauses capture"
+    },
+    {
+      "check": "focused password pauses capture"
+    },
+    {
+      "check": "secure window remains unreadable",
+      "android_error": 6
+    },
+    {
+      "check": "synthetic intervention after actual capture and inference",
+      "accuracy_evidence": false
+    },
+    {
+      "check": "one-shot expires; ordinary capture recovers"
+    },
+    {
+      "check": "leaving selected app stops capture"
+    },
+    {
+      "check": "opt-out stops capture and model"
+    }
+  ],
+  "limits": "Synthetic fixtures only; no adult-content accuracy, real-app or battery benchmark."
+}

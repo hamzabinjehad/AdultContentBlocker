@@ -1,5 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application>
+        <activity android:name="app.hisn.android.VisualBenchmarkActivity"
+            android:exported="true" android:permission="android.permission.DUMP" />
+        <activity android:name="app.hisn.android.VisualCaptureTestActivity"
+            android:exported="true" android:permission="android.permission.DUMP" />
+        <activity android:name="app.hisn.android.VisualModelCheckActivity"
+            android:exported="true" android:permission="android.permission.DUMP" />
         <!-- Shell-only diagnostic entry point. Absent from release APKs. -->
         <activity android:name="app.hisn.android.GuardTestSetupActivity"
             android:exported="true" android:permission="android.permission.DUMP"

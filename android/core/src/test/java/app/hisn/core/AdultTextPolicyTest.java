@@ -44,6 +44,17 @@ public final class AdultTextPolicyTest {
             check(!policy.blocks(sample), "benign/boundary sample stays available: " + sample);
         }
         check(!policy.blocks(null), "null sample is empty");
+        for (String label : Arrays.asList("Porn videos", "p.o.r.n images", "محتوى إباحي", "صور اباحيه"))
+            check(policy.blocks(label), "complete explicit media label detected: " + label);
+        for (String label : Arrays.asList("Research about porn videos", "Porn videos addiction recovery",
+                "Adult videos", "Sex photos", "محتوى إباحي في بحث طبي"))
+            check(!policy.blocks(label), "label rule does not broaden to ambiguous prose");
+        check(!new AdultTextPolicy(Collections.singletonList(rule("porn", 7))).blocks("Porn videos"),
+                "media label cannot resurrect weak rules");
+        check(!new AdultTextPolicy(Collections.singletonList(rule("hentai", 8))).blocks("Porn videos"),
+                "media label cannot invent missing rules");
+        check(!new AdultTextPolicy(Arrays.asList(rule("porn", 8), rule("porn videos", -8)))
+                .blocks("Porn videos"), "negative context still applies to exact media labels");
         String gap = "ordinary ".repeat(40);
         check(policy.blocks("sexual health ".repeat(8) + gap + "Watch porn and hentai" + gap
                 + "sex education ".repeat(8)), "distant benign context cannot cancel local promotion");
@@ -60,6 +71,18 @@ public final class AdultTextPolicyTest {
                 "aliases do not resurrect reweighted weak terms");
         check(!new AdultTextPolicy(Collections.singletonList(rule("hentai", 8))).blocks("Watch p0rn"),
                 "aliases do not invent unconfigured rules");
+        for (String spelling : Arrays.asList("p.o.r.n", "p-o-r-n", "p_0_r_n", "p•o•r•n", "p***o***r***n")) {
+            check(policy.blocks("Watch " + spelling), "configured compact spelling recovered");
+            check(!new AdultTextPolicy(Collections.singletonList(rule("porn", 7))).blocks("Watch " + spelling),
+                    "compact alias must not resurrect a weak term");
+            check(!new AdultTextPolicy(Collections.singletonList(rule("hentai", 8))).blocks("Watch " + spelling),
+                    "compact alias must not invent a term");
+            check(!policy.blocks("Watch x" + spelling + "y"), "compact recovery is not substring matching");
+        }
+        check(!policy.blocks("Watch p o r n"), "compact recovery never joins whitespace");
+        check(!policy.blocks("Watch p/o/r/n"), "compact recovery never joins URL separators");
+        check(!WordRuleList.compile("porn").matches("Download a free porn blocker").isEmpty(),
+                "built-in benign contexts never exempt custom literal rules");
         check(!new AdultTextPolicy(Arrays.asList(rule("porn", 8), rule("porn", -8))).blocks("Watch porn"),
                 "conflicting canonical context remains negative");
         AdultTextPolicy duplicates = new AdultTextPolicy(Arrays.asList(rule("pussy", 8), rule("PUSSY", 8)));
@@ -93,7 +116,7 @@ public final class AdultTextPolicyTest {
         // errors or exceed the fixed token/rule bounds on arbitrary input.
         java.util.Random random = new java.util.Random(19);
         String[] pieces = {"watch", "porn", "p0rn", "ordinary", "sexual", "health", "سكس", "شاهد",
-                "\u200b", "\ud83d\ude42", "\ufb03", "\u0651", ",", "\ud800"};
+                "p.o.r.n", "x.p.o.r.n.y", "h-e-n-t-4-1", "\u200b", "\ud83d\ude42", "\ufb03", "\u0651", ",", "\ud800"};
         for (int sample = 0; sample < 1000; sample++) {
             StringBuilder text = new StringBuilder();
             for (int at = 0; at < 40; at++) text.append(pieces[random.nextInt(pieces.length)]).append(' ');
@@ -118,6 +141,7 @@ public final class AdultTextPolicyTest {
             rules.add(rule(row.substring(tab + 1), Integer.parseInt(row.substring(0, tab))));
             check(rules.size() <= AdultTextPolicy.MAX_RULES, "bounded seed entry count");
         }
+        rules.addAll(AdultTextPolicy.reviewedContextRules());
         AdultTextPolicy seed = new AdultTextPolicy(rules);
         for (String text : Arrays.asList("Watch porn and hentai", "Download adult videos", "شاهد الإباحية",
                 "مشاهدة سكس", "Watch p0rn", "لتحميل اباحي")) {

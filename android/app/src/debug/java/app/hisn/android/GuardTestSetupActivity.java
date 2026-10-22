@@ -50,6 +50,12 @@ public final class GuardTestSetupActivity extends Activity {
                 report("PASS " + mode);
                 return;
             }
+            if ("adult-policy-test".equals(mode)) {
+                try { AdultPolicyChecks.run(this); }
+                catch (Exception failure) { throw new IllegalStateException("Synthetic APK adult-policy check failed", failure); }
+                report("PASS " + mode);
+                return;
+            }
             if ("browser-canary-start".equals(mode) || "browser-canary-clear".equals(mode)) {
                 if (!DnsVpnService.setBrowserCanary("browser-canary-start".equals(mode)))
                     throw new IllegalStateException("No live approved DNS session");
@@ -101,6 +107,9 @@ public final class GuardTestSetupActivity extends Activity {
                     throw new IllegalStateException("Owner has a saved schedule; no live schedule replacement allowed");
                 if (!rules.words.matches("Hisn harmless protection test A harmless ordinary page ordinary").isEmpty())
                     throw new IllegalStateException("Existing word rules overlap harmless control text");
+                if ("setup-adult".equals(mode) && (!rules.words.matches("Download a free porn blocker").isEmpty()
+                        || !rules.words.matches("Watch porn addiction recovery resources").isEmpty()))
+                    throw new IllegalStateException("Owner literal rules overlap built-in benign controls; rules will not be weakened for testing");
                 if (!backup.edit().putBoolean("active", true).putString("domains", store.domainText())
                         .putString("words", store.wordText()).putStringSet("apps", rules.blockedApps)
                         .putStringSet("scans", rules.scannedApps).putBoolean("adult_words", rules.adultWordsEnabled)

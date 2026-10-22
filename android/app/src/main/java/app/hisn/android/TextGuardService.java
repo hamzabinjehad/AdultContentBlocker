@@ -29,6 +29,7 @@ public final class TextGuardService extends AccessibilityService {
     private boolean inspectPending;
     private int rootRetries;
     private Set<String> excluded;
+    private VisualGuard visual;
     private final Runnable inspect = this::inspectWindow;
     private final Runnable heartbeat = () -> {
         rootRetries = 5;
@@ -37,11 +38,13 @@ public final class TextGuardService extends AccessibilityService {
     };
     private boolean pendingWordReason;
     private boolean pendingScheduleReason;
+    private boolean pendingVisualReason;
     private final Runnable showRestriction = () -> {
         try {
             startActivity(new Intent(this, RestrictionActivity.class)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
-                    .putExtra("word", pendingWordReason).putExtra("schedule", pendingScheduleReason));
+                    .putExtra("word", pendingWordReason).putExtra("schedule", pendingScheduleReason)
+                    .putExtra("visual", pendingVisualReason));
         } catch (RuntimeException unavailable) {
             lastInspectionPartial = true;
             inspectionOutcome = "restriction-screen-unavailable";
@@ -51,6 +54,8 @@ public final class TextGuardService extends AccessibilityService {
     @Override protected void onServiceConnected() {
         connected = true;
         try {
+            if (visual != null) visual.close();
+            visual = new VisualGuard(this, () -> intervene(false, false, true));
             excluded = ChosenApps.excluded(this);
             inspectCurrentSelectedWindow();
         } catch (RuntimeException unavailable) {
@@ -77,6 +82,10 @@ public final class TextGuardService extends AccessibilityService {
     }
 
     @Override public void onAccessibilityEvent(AccessibilityEvent event) {
+        if (connected && visual == null) visual = new VisualGuard(this, () -> intervene(false, false, true));
+        if (visual != null && (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
+                || event.getEventType() == AccessibilityEvent.TYPE_VIEW_SCROLLED
+                || event.getEventType() == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED)) visual.windowChanged();
         CharSequence pkg = event.getPackageName();
         if (pkg == null || excluded == null) return;
         String name = pkg.toString();
@@ -121,13 +130,21 @@ public final class TextGuardService extends AccessibilityService {
                 if (!retryRoot(name)) lastInspectionPartial = true;
                 return;
             }
-            if (root.getPackageName() == null || !name.contentEquals(root.getPackageName())) {
-                inspectionOutcome = getPackageName().contentEquals(root.getPackageName())
-                        ? "root-changed-hisn" : "root-changed-other";
-                retryRoot(name);
-                return;
-            }
             PolicyStore.Snapshot rules = PolicyStore.get(this).snapshot();
+            String actual = root.getPackageName() == null ? null : root.getPackageName().toString();
+            if (!name.equals(actual)) {
+                // A stale event from selected app A must not cancel a static
+                // foreground app B's schedule heartbeat. Retarget by metadata
+                // only, and only when B is itself explicitly selected.
+                if (actual != null && !excluded.contains(actual) && isSelected(rules, actual)) {
+                    pendingPackage = name = actual;
+                    rootRetries = 5;
+                } else {
+                    inspectionOutcome = getPackageName().equals(actual) ? "root-changed-hisn" : "root-changed-other";
+                    retryRoot(name);
+                    return;
+                }
+            }
             if (rules.blockedApps.contains(name)) { intervene(false); return; }
             java.time.LocalTime local = java.time.LocalTime.now();
             if (rules.schedule.blocks(name, local.getHour() * 60 + local.getMinute())) {
@@ -191,7 +208,7 @@ public final class TextGuardService extends AccessibilityService {
     static VisibleTextSample leafSample(AccessibilityNodeInfo root) {
         ArrayDeque<AccessibilityNodeInfo> queue = new ArrayDeque<>();
         queue.add(AccessibilityNodeInfo.obtain(root));
-        VisibleTextSample text = new VisibleTextSample();
+        VisibleTextSample text = new VisibleTextSample(true);
         int visited = 0;
         int scheduled = 1;
         try {
@@ -229,6 +246,10 @@ public final class TextGuardService extends AccessibilityService {
     }
 
     private void intervene(boolean word, boolean schedule) {
+        intervene(word, schedule, false);
+    }
+
+    private void intervene(boolean word, boolean schedule, boolean visualReason) {
         long now = SystemClock.elapsedRealtime();
         inspectionOutcome = schedule ? "schedule-intervention" : word ? "word-intervention" : "app-intervention";
         if (word) wordInterventions++;
@@ -244,6 +265,7 @@ public final class TextGuardService extends AccessibilityService {
         lastIntervention = now;
         pendingWordReason = word;
         pendingScheduleReason = schedule;
+        pendingVisualReason = visualReason;
         handler.removeCallbacks(showRestriction);
         // HOME is asynchronous. Launching immediately lets its pending task
         // transition cover the explanation screen on Samsung Android 16.
@@ -251,6 +273,8 @@ public final class TextGuardService extends AccessibilityService {
     }
 
     @Override public void onInterrupt() {
+        if (visual != null) visual.close();
+        visual = null;
         handler.removeCallbacks(inspect);
         handler.removeCallbacks(showRestriction);
         handler.removeCallbacks(heartbeat);

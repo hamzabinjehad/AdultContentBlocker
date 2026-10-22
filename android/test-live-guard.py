@@ -95,6 +95,9 @@ if args.restore_only:
     configure("restore")
     print("PASS fixture additions restored")
 else:
+    if args.case == "adult":
+        configure("adult-policy-test")
+        print("PASS actual APK compact-spelling/context policy and literal-rule independence", flush=True)
     # No instrumentation: it restarts the app and disconnects Android accessibility.
     configure("setup-adult" if args.case == "adult" else "setup")
     try:
@@ -112,8 +115,14 @@ else:
             if not ready:
                 raise AssertionError("Verified adult policy load timed out")
             fixture("medical", False)
+            fixture("protective", False)
+            fixture("recovery", False)
             fixture("adult-en", True)
             fixture("adult-ar", True)
+            fixture("adult-compact-en", True)
+            fixture("adult-compact-ar", True)
+            fixture("adult-label-en", True)
+            fixture("adult-label-ar", True)
         for case in ("ordinary", "editable", "password"):
             if args.case is None or args.case == case:
                 fixture(case, False)

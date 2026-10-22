@@ -50,8 +50,10 @@ partner/         the accountability partner's page: key, and signed approvals   
 
 The [Android development preview](android/README.md) has its own consent,
 setup guide and verification record. It is not a port of macOS privileges and
-does not implement Android visual filtering, always-on coverage or uninstall
-prevention. See [Android release gates](docs/ANDROID_IMPLEMENTATION_STATUS.md).
+includes opt-in Android 14+ visual sampling of selected windows. Fixed-fixture
+capture checks pass; adult detection accuracy and real-app coverage remain
+unverified. Always-on coverage and uninstall prevention are not implemented.
+See [Android release gates](docs/ANDROID_IMPLEMENTATION_STATUS.md).
 
 The new iPhone/iPad development version is documented in [`ios/README.md`](ios/README.md).
 See [`docs/APPLE_PLATFORMS.md`](docs/APPLE_PLATFORMS.md) for platform boundaries.

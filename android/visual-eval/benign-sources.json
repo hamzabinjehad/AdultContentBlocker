@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "base_url": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.25.2/skimage/data/",
+  "license_source": "https://scikit-image.org/docs/0.25.x/api/skimage.data.html",
+  "sources": [
+    {"id": "astronaut", "sha256": "88431cd9653ccd539741b555fb0a46b61558b301d4110412b5bc28b5e3ea6cb5", "license": "Public domain, NASA portrait of astronaut Eileen Collins"},
+    {"id": "chelsea", "sha256": "596aa1e7cb875eb79f437e310381d26b338a81c2da23439704a73c4651e8c4bb", "license": "CC0, Stefan van der Walt"},
+    {"id": "coffee", "sha256": "cc02f8ca188b167c775a7101b5d767d1e71792cf762c33d6fa15a4599b5a8de7", "license": "CC0, Rachel Michetti"},
+    {"id": "camera", "sha256": "b0793d2adda0fa6ae899c03989482bff9a42d3d5690fc7e3648f2795d730c23a", "license": "CC0, Lav Varshney"}
+  ]
+}

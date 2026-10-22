@@ -12,7 +12,7 @@ status. Each layer must state its scope and recover from service/permission
 loss without displaying false protection. Absolute detection or resistance to
 a device owner's reset/recovery controls is not an achievable release claim.
 
-## Implemented in the development preview (latest: 0.4.3)
+## Implemented in the development preview (latest: 0.5.0)
 
 | Layer | Code now present | Verification boundary |
 | --- | --- | --- |
@@ -24,11 +24,12 @@ a device owner's reset/recovery controls is not an achievable release claim.
 | Packet diagnostics | Unsupported/malformed/old-network counts, accepted TCP queries, prepared replies and UDP TC signals; no payload retention | UDP/TCP parser and mutation tests pass; counts are diagnostics, not proof that all apps use the virtual endpoint |
 | Saved rules | Domain and literal word lists, selected blocked/scanned apps and separate adult-text opt-in; private persistence | Samsung persistence, Unicode rejection/reload and opt-in checks pass |
 | App/word intervention | Consent-based accessibility service restricted to chosen apps; home/restriction screen; input/password skips | Existing ordinary/editable/password/long-text/wide-tree/rapid-reopen fixtures and 2026-10-20 normal-content fixtures pass; real-app coverage pending |
-| Built-in adult-text checks | Opt-in English/Arabic policy; 4,455 canonical rules from verified seed entries/context plus reviewed local recovery additions; per-leaf local context; custom rules independent | Core actual-seed and Samsung instrumentation tests pass; controlled English/Arabic adult-promotion and benign medical-context intervention fixtures pass |
+| Built-in adult-text checks | Opt-in English/Arabic policy; 4,462 canonical rules including reviewed local protective/recovery context; bounded compact-spelling recovery and complete explicit media labels; custom rules independent | Core actual-seed tests pass; 52 synthetic examples: 23/25 intended blocks, 0/27 benign false blocks, two known challenge misses; not a general accuracy estimate. See 0.4.6 release evidence |
 | Setup guidance | Shared next-step message/action model separates rules, permission, binding, policy loading/error, limited scans and DNS/check states | All 1,280 enum combinations tested; READY requires every selected setup prerequisite, not universal protection |
 | Commitment | Backend rejects weaker settings and disabling opted-in adult checks for 7/30/90 days; elapsed/boot clock; new empty commitments rejected | Pure clock tests and isolated Samsung preference tests pass; old empty commitments preserve time and permit added restrictions |
+| Daily selected-app schedule | Optional every-day local-time window, separate app set, overnight support, static-screen periodic enforcement and commitment-preserving coverage | Exhaustive/randomized core tests, isolated Samsung persistence/commitment checks and real local-time boundary test pass; clock/timezone/accessibility bypasses remain |
 | Removal friction | Optional legacy admin receiver with no administrative policies | Compiles; latest activation/deactivation test pending |
-| Visual filtering | Not implemented on Android | No accuracy or pre-display claim |
+| Visual filtering | Opt-in Android 14+ selected-window image/video sampling using the bundled local classifier; generic Home/restriction intervention, explicit capture consent and separate health | Actual local model, isolated persistence/commitment tests and stale-frame gates pass. Nine Samsung live fixture checks pass: real screenshots, moving shapes, input/password pause, protected-window failure, synthetic intervention and capture stopping. Adult accuracy, real-app/video and battery acceptance remain pending; no pre-display claim. See [0.5.0](ANDROID_0.5.0.md) |
 
 The 0.3.0 debug APK was installed and opened on the Samsung on 2026-10-19.
 The final device runner passed seed loading, Arabic/boundary matching, local DNS
@@ -149,9 +150,21 @@ all-protocol coverage, visual filtering or uninstall resistance.
    and inference, clear capture-loss status, privacy and model evaluation.
    Android secure surfaces and capture-session stop/restart behavior remain
    coverage limits. Benchmark misses and false positives with denominators.
-8. Add tested schedules/usage limits and an explicit distribution/signing/release
+8. Expand the tested daily app schedule to separately scoped usage limits and
+   additional scheduling options; add an explicit distribution/signing/release
    process. Managed-device enrollment is a separate product mode, not an
    automatic upgrade or a reason to reset the owner's phone.
+
+The [0.4.4 record](ANDROID_0.4.4.md) covers the daily schedule and its real static
+screen boundary test. Its initial live DNS check failed while Android reported
+no active default network. After owner reconnection, the same 0.4.4 APK passed
+both UDP and reused-TCP local-block/allowed-query checks; historical session
+degradation remains visible. This is not a full-traffic or radio-handover test.
+The added commitment reminder before existing in-app VPN
+settings links is dismissible and is not system-settings interception. See
+[Android tamper-resistance scope](ANDROID_TAMPER_RESISTANCE.md) for personal-mode
+limits and the separate managed-device prerequisite. No management enrollment
+or settings trap was applied to the Samsung.
 
 References and build instructions are in `android/README.md`; earlier static
 competitor observations remain in `ANDROID_RESEARCH_PLAN.md` and are not copied
