@@ -36,6 +36,15 @@ moving shapes, input/password pause, protected windows, a synthetic intervention
 and capture stopping. This is not an adult-accuracy or real-video benchmark.
 See [0.5.0 evidence, repeatable driver and remaining gates](../docs/ANDROID_0.5.0.md).
 
+The [benign-image/performance baseline](../docs/ANDROID_VISUAL_BENCHMARK_2026-10-22.md)
+adds twelve correlated views from four public-domain/CC0 photographs, each run
+three times through the production classifier on Samsung. No view was falsely
+blocked, no call was unknown, and repeats agreed. Median roundtrip was 1,984 ms
+(p95 2,290 ms), close to the nominal inspection interval. Live sampling can be
+slower while a request is busy. Adult recall and battery drain remain unmeasured;
+the powered-phone run does not establish battery life. See
+[reproduction tools](visual-eval/README.md).
+
 ## 0.4.6 explicit media labels
 
 Complete two-word explicit media labels can now be detected without a promotional

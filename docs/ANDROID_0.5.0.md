@@ -74,6 +74,14 @@ Unsigned release APK SHA-256:
 The debug APK is installable for development; the unsigned release needs the
 owner's production signing and release process before distribution.
 
+The later benign-image/performance diagnostic added a debug-only benchmark
+activity without changing release behavior. Its current normal-package debug
+APK SHA-256 is `76bf005010546d3f6615abfae88cf4328901371e97c74210e2808f9c52c9e5f0`;
+the unsigned release hash above is unchanged. See the
+[2026-10-22 baseline](ANDROID_VISUAL_BENCHMARK_2026-10-22.md) for measured results
+and scope. That build passes lint with zero errors and twenty warnings, including
+debug diagnostic strings.
+
 This is an implementation preview. The fixed-fixture live capture checks below pass;
 real-app coverage, service-loss recovery, latency, battery and thermal performance
 still need acceptance tests. The benign model check is not an
