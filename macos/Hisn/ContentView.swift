@@ -363,7 +363,7 @@ private struct OverviewPage: View {
     private var protectionCard: some View {
         Card {
             VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 10) {
+                HStack(spacing: 12) {
                     StatusDot(level: protection.level)
                     Text(protection.headline)
                         .font(.title2.weight(.semibold))
@@ -510,8 +510,22 @@ private struct StatusDot: View {
         }
     }
 
+    private var symbol: String {
+        switch level {
+        case .active:      return "checkmark.shield.fill"
+        case .partial:     return "exclamationmark.shield.fill"
+        case .setupNeeded: return "shield"
+        case .checking:    return "shield"
+        }
+    }
+
+    /// A tinted shield reads at a glance; the headline beside it carries the words.
     var body: some View {
-        Circle().fill(colour).frame(width: 10, height: 10)
+        Image(systemName: symbol)
+            .font(.title2)
+            .foregroundStyle(colour)
+            .frame(width: 40, height: 40)
+            .background(colour.opacity(0.12), in: Circle())
             .accessibilityHidden(true)
     }
 }

@@ -141,6 +141,26 @@ public enum SiteLists {
         return nil
     }
 
+    public enum AddOutcome: Equatable {
+        case added(String)
+        case alreadyBlocked(String)
+        case invalid
+    }
+
+    /// Block one more site, as the menu bar's "Block a site…" does. Adding a
+    /// block only tightens, so it goes through the same guarded `save` and
+    /// works during a lock. A site a saved entry already covers (itself or a
+    /// parent domain) is reported rather than stored twice.
+    public static func addBlock(_ raw: String, locked: Bool) throws -> AddOutcome {
+        guard let host = normalize(raw) else { return .invalid }
+        let blocks = customBlocks()
+        if blocks.contains(where: { host == $0 || host.hasSuffix("." + $0) }) {
+            return .alreadyBlocked(host)
+        }
+        try save(customBlocks: (blocks + [host]).sorted(), allowlist: allowlist(), locked: locked)
+        return .added(host)
+    }
+
     /// Persist both lists, refusing any change that loosens protection while a
     /// lock is running.
     ///

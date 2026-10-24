@@ -1,6 +1,46 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ is already blocked." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ محجوب بالفعل."
+          }
+        }
+      }
+    },
+    "%@ is now blocked." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ محجوب الآن."
+          }
+        }
+      }
+    },
+    "Block a site" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "احجب موقعًا"
+          }
+        }
+      }
+    },
+    "Block a site…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "احجب موقعًا…"
+          }
+        }
+      }
+    },
     "browser.live.title" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Open browsers · live connection" } }, "ar" : { "stringUnit" : { "state" : "translated", "value" : "المتصفحات المفتوحة · حالة الاتصال" } } } },
     "browser.live.refresh" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Check status now" } }, "ar" : { "stringUnit" : { "state" : "translated", "value" : "افحص الحالة الآن" } } } },
     "browser.live.cadence" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Hisn checks open browsers about every 5 seconds. Extensions normally check in every 30 seconds; sleep and browser scheduling can delay replies. A connection verifies this process, not every profile or private window." } }, "ar" : { "stringUnit" : { "state" : "translated", "value" : "يفحص حصن المتصفحات المفتوحة كل ٥ ثوانٍ تقريباً. تتصل الإضافات عادة كل ٣٠ ثانية؛ قد يؤخر النوم أو جدولة المتصفح الردود. الاتصال يؤكد هذه النسخة المفتوحة، وليس كل ملف مستخدم أو نافذة خاصة." } } } },
@@ -16,6 +56,16 @@
     "browser.live.lastReply" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Last verified reply:" } }, "ar" : { "stringUnit" : { "state" : "translated", "value" : "آخر رد موثّق:" } } } },
     "browser.live.countdown %lld" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Restore the extension or close this browser. Closing in %lld seconds." } }, "ar" : { "stringUnit" : { "state" : "translated", "value" : "أعد الإضافة أو أغلق هذا المتصفح. سيُغلق خلال %lld ثانية." } } } },
     "browser.live.closing" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Recovery time expired · requesting browser closure" } }, "ar" : { "stringUnit" : { "state" : "translated", "value" : "انتهت مهلة الاستعادة · جارٍ طلب إغلاق المتصفح" } } } },
+    "Enter a domain or paste a link. Subdomains are included, and adding a block works during a lock." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أدخل نطاقًا أو الصق رابطًا. تُشمل النطاقات الفرعية، وإضافة حجب ممكنة أثناء القفل."
+          }
+        }
+      }
+    },
     "Hisn" : { "localizations" : { "ar" : { "stringUnit" : { "state" : "translated", "value" : "حصن" } } } },
     "design.localPrivacy" : { "localizations" : {
       "en" : { "stringUnit" : { "state" : "translated", "value" : "Protection, with a clear view of every layer." } },
@@ -78,6 +128,36 @@
       "localizations" : {
         "en" : { "stringUnit" : { "state" : "translated", "value" : "Official Chrome setup guide" } },
         "ar" : { "stringUnit" : { "state" : "translated", "value" : "دليل إعداد Chrome الرسمي" } }
+      }
+    },
+    "That is not a domain." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذا ليس نطاقًا."
+          }
+        }
+      }
+    },
+    "The filter and the browser extension pick it up within a few seconds. Remove it on the Blocking Rules page." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يلتقطه المرشّح وإضافة المتصفح خلال ثوانٍ. أزِله من صفحة قواعد الحجب."
+          }
+        }
+      }
+    },
+    "Try something like example.com, or paste the page's link." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جرّب شيئًا مثل example.com، أو الصق رابط الصفحة."
+          }
+        }
       }
     },
     "“%@” is too short to block safely. Words need at least %lld letters — shorter ones match parts of ordinary words and block pages you need." : {

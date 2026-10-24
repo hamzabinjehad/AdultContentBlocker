@@ -77,6 +77,44 @@ enum QuickLock {
     }
 }
 
+/// One site blocked from the menu bar: the moment someone wants a site gone
+/// is rarely the moment they want to open the Rules page. It edits the same
+/// guarded list, so it works during a lock and can never loosen one.
+@MainActor
+enum QuickBlock {
+    static func promptAndAdd() {
+        NSApp.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.messageText = String(localized: "Block a site")
+        alert.informativeText = String(localized: "Enter a domain or paste a link. Subdomains are included, and adding a block works during a lock.")
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
+        field.placeholderString = "example.com"
+        alert.accessoryView = field
+        alert.window.initialFirstResponder = field
+        alert.addButton(withTitle: String(localized: "Block"))
+        alert.addButton(withTitle: String(localized: "Cancel"))
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+
+        let result = NSAlert()
+        do {
+            switch try SiteLists.addBlock(field.stringValue, locked: LockManager.shared.isLocked) {
+            case .added(let host):
+                FilterSync.soon()
+                result.messageText = String(localized: "\(host) is now blocked.")
+                result.informativeText = String(localized: "The filter and the browser extension pick it up within a few seconds. Remove it on the Blocking Rules page.")
+            case .alreadyBlocked(let host):
+                result.messageText = String(localized: "\(host) is already blocked.")
+            case .invalid:
+                result.messageText = String(localized: "That is not a domain.")
+                result.informativeText = String(localized: "Try something like example.com, or paste the page's link.")
+            }
+        } catch {
+            result.messageText = error.localizedDescription
+        }
+        result.runModal()
+    }
+}
+
 /// Hisn's shield and gateway, with a small badge while a lock runs.
 ///
 /// Its own object, publishing only when that changes. The icon once observed
@@ -167,6 +205,7 @@ struct StatusMenu: View {
             }
             Button("Start a lock…") { MainWindow.show(.lock, open: openWindow) }
         }
+        Button("Block a site…") { QuickBlock.promptAndAdd() }
         Button("Setup") { MainWindow.show(.setup, open: openWindow) }
         Divider()
         Button("Hide Hisn") { MainWindow.hide() }
