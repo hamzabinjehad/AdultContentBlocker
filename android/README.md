@@ -22,8 +22,11 @@ The visual model now tries WebGL first. If that runtime fails to load, it retrie
 once in a fresh CPU runtime and keeps CPU for the rest of the process. A failed
 frame stays unknown and is never replayed, and replies from a replaced runtime are
 ignored. The debug benchmark accepts `--backend auto|cpu|webgl` so both paths can
-be compared on the same corpus. The core policy tests pass. The WebGL speed and
-stability on the Samsung **have not been measured yet**.
+be compared on the same corpus. On the Samsung (isolated test package, owner app
+unchanged) WebGL took 121 ms median per call versus 1,989 ms on CPU, with identical
+verdicts on the 12-view benign corpus. Injected load and frame failures recovered on
+CPU as designed. Adult recall and battery cost remain unmeasured; see
+[the 0.5.1 record](../docs/ANDROID_0.5.1.md).
 
 `assembleRelease` signs the APK when all four `HISN_ANDROID_*` variables are set.
 The finish line, the non-goals and the remaining device and owner steps are in

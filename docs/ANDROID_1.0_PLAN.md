@@ -37,7 +37,7 @@ needs its own lifecycle testing.
 | --- | --- | --- |
 | DNS layer (UDP + TCP53, DoT upstream, route check) | Implemented; core and Samsung route checks pass | Real Wi-Fi to mobile handover, screen lock, another VPN, resolver loss (M2) |
 | App blocks, schedules, words, adult text | Implemented; fixture and synthetic-corpus evidence | Real-app coverage pass (M3) |
-| Visual sampling | Implemented; benign baseline 0/12 false blocks, about 2 s median | WebGL backend measured on device, adult recall, battery (M4) |
+| Visual sampling | Implemented; benign baseline 0/12 false blocks; WebGL 121 ms median on Samsung | Adult recall, battery, live capture on 0.5.1 (M4) |
 | Commitments | Implemented; clock, boot and isolated-preference tests pass | Disposable short commitment end to end on device (M3) |
 | Layer health / honest status | Implemented model with 1,280 combinations tested | Service-kill and permission-revoke recovery on device (M2) |
 | Release signing | **Added in 0.5.1**: optional `HISN_ANDROID_*` environment signing | Owner creates and backs up the production key (M5) |
@@ -81,8 +81,9 @@ Run on a fresh 0.5.x debug install, using `test-live-*.py` where possible:
 
 ### M4: visual and performance numbers
 
-- [ ] `visual-eval/run-device.py --backend webgl` and `--backend cpu` on the same corpus.
-      Choose the default from the measurements.
+- [x] `visual-eval/run-device.py --backend webgl` and `--backend cpu` on the same corpus
+      (2026-10-24, Samsung): WebGL 121 ms median vs CPU 1,989 ms, identical verdicts.
+      Default stays `auto` (WebGL first). See [0.5.1](ANDROID_0.5.1.md).
 - [ ] Adult-recall corpus, reviewed and legally sourced, kept out of the repo,
       reported with denominators.
 - [ ] One hour of battery and CPU with each layer on, compared with all layers off.

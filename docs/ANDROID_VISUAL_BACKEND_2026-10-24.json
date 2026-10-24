@@ -1,0 +1,893 @@
+{
+  "schema": 1,
+  "date": "2026-10-24",
+  "package": "app.hisn.android.visualcheck",
+  "owner_app_untouched": "app.hisn.android 0.4.6",
+  "runs": {
+    "webgl": {
+      "schema": 1,
+      "manifest_sha256": "e5520edea31774e9cf4b361f62f1a00e8592fb8657a0233d1feb88099f784d61",
+      "version": "0.5.1",
+      "model_engine": "bundled NSFWJS MobileNetV2 / tfjs",
+      "requested_backend": "webgl",
+      "engine_sha256": "b282533fa8fa974c0d6224c12542b06845a663c7921f0a3612d952f4c236db38",
+      "device": "SM-G990B2",
+      "android_sdk": 36,
+      "webview_version": "155.0.8059.43",
+      "interval_ms": 2000,
+      "repeats": 3,
+      "case_count": 12,
+      "before": {
+        "app_process_pss_kb_excludes_renderer": 35794,
+        "app_process_cpu_ms_excludes_renderer": 423,
+        "thermal_status": 0,
+        "plugged": 2,
+        "battery_level": 19,
+        "battery_temperature_tenths_c": 222
+      },
+      "state": "complete",
+      "actual_backend": "webgl",
+      "model_load_ms": 2026,
+      "results": [
+        {
+          "id": "astronaut_image",
+          "repeat": 0,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 205.944375
+        },
+        {
+          "id": "astronaut_feed",
+          "repeat": 0,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 117.938229
+        },
+        {
+          "id": "astronaut_tile",
+          "repeat": 0,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 119.075365
+        },
+        {
+          "id": "chelsea_image",
+          "repeat": 0,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 157.977239
+        },
+        {
+          "id": "chelsea_feed",
+          "repeat": 0,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 89.73276
+        },
+        {
+          "id": "chelsea_tile",
+          "repeat": 0,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 99.303802
+        },
+        {
+          "id": "coffee_image",
+          "repeat": 0,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 159.707083
+        },
+        {
+          "id": "coffee_feed",
+          "repeat": 0,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 99.850989
+        },
+        {
+          "id": "coffee_tile",
+          "repeat": 0,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 123.487032
+        },
+        {
+          "id": "camera_image",
+          "repeat": 0,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 154.826875
+        },
+        {
+          "id": "camera_feed",
+          "repeat": 0,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 118.514271
+        },
+        {
+          "id": "camera_tile",
+          "repeat": 0,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 99.737708
+        },
+        {
+          "id": "astronaut_image",
+          "repeat": 1,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 144.101667
+        },
+        {
+          "id": "astronaut_feed",
+          "repeat": 1,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 133.583854
+        },
+        {
+          "id": "astronaut_tile",
+          "repeat": 1,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 133.161146
+        },
+        {
+          "id": "chelsea_image",
+          "repeat": 1,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 151.368177
+        },
+        {
+          "id": "chelsea_feed",
+          "repeat": 1,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 117.696146
+        },
+        {
+          "id": "chelsea_tile",
+          "repeat": 1,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 116.829479
+        },
+        {
+          "id": "coffee_image",
+          "repeat": 1,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 140.25474
+        },
+        {
+          "id": "coffee_feed",
+          "repeat": 1,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 119.923229
+        },
+        {
+          "id": "coffee_tile",
+          "repeat": 1,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 119.052344
+        },
+        {
+          "id": "camera_image",
+          "repeat": 1,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 148.060625
+        },
+        {
+          "id": "camera_feed",
+          "repeat": 1,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 115.055105
+        },
+        {
+          "id": "camera_tile",
+          "repeat": 1,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 121.569687
+        },
+        {
+          "id": "astronaut_image",
+          "repeat": 2,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 133.268333
+        },
+        {
+          "id": "astronaut_feed",
+          "repeat": 2,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 120.795989
+        },
+        {
+          "id": "astronaut_tile",
+          "repeat": 2,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 114.799792
+        },
+        {
+          "id": "chelsea_image",
+          "repeat": 2,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 134.067396
+        },
+        {
+          "id": "chelsea_feed",
+          "repeat": 2,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 126.603229
+        },
+        {
+          "id": "chelsea_tile",
+          "repeat": 2,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 93.099427
+        },
+        {
+          "id": "coffee_image",
+          "repeat": 2,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 163.984895
+        },
+        {
+          "id": "coffee_feed",
+          "repeat": 2,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 115.298489
+        },
+        {
+          "id": "coffee_tile",
+          "repeat": 2,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 92.843698
+        },
+        {
+          "id": "camera_image",
+          "repeat": 2,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 155.937813
+        },
+        {
+          "id": "camera_feed",
+          "repeat": 2,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 122.649479
+        },
+        {
+          "id": "camera_tile",
+          "repeat": 2,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 120.761718
+        }
+      ],
+      "latest_resources": {
+        "app_process_pss_kb_excludes_renderer": 189032,
+        "app_process_cpu_ms_excludes_renderer": 6377,
+        "thermal_status": 0,
+        "plugged": 2,
+        "battery_level": 19,
+        "battery_temperature_tenths_c": 222
+      },
+      "elapsed_ms": 75162,
+      "after": {
+        "app_process_pss_kb_excludes_renderer": 189103,
+        "app_process_cpu_ms_excludes_renderer": 6445,
+        "thermal_status": 0,
+        "plugged": 2,
+        "battery_level": 19,
+        "battery_temperature_tenths_c": 222
+      },
+      "error": null,
+      "limits": "Classifier roundtrip only; app-process memory/CPU exclude WebView renderer. Charging/other apps confound battery. No battery-life or accuracy guarantee.",
+      "summary": {
+        "unique_source_images": 4,
+        "unique_views": 12,
+        "inference_calls": 36,
+        "positive_views": 0,
+        "first_verdict_confusion_by_view": {
+          "true_positive": 0,
+          "false_negative": 0,
+          "true_negative": 12,
+          "false_positive": 0,
+          "unknown": 0
+        },
+        "inconsistent_views": 0,
+        "unknown_calls": 0,
+        "recall": null,
+        "roundtrip_median_ms": 121.182838,
+        "roundtrip_p95_ms": 163.984895,
+        "roundtrip_max_ms": 205.944375,
+        "limits": "Paired layouts are correlated. First verdict per view is counted once; repeats measure stability/latency. No population accuracy or battery-life estimate."
+      },
+      "corpus": {
+        "schema": 1,
+        "kind": "benign-controls",
+        "unique_sources": 4,
+        "cases": [
+          {
+            "id": "astronaut_image",
+            "source_id": "astronaut",
+            "expected": "allow",
+            "sha256": "89523b4e1d2316f40bc59e694659a25ece44ecf0b69fab6c3771ae50e1903d08",
+            "layout": "image"
+          },
+          {
+            "id": "astronaut_feed",
+            "source_id": "astronaut",
+            "expected": "allow",
+            "sha256": "b4aa1dffbbee94ca134883182ef8d87d50a26118adc75aeb62133ba253edb413",
+            "layout": "feed"
+          },
+          {
+            "id": "astronaut_tile",
+            "source_id": "astronaut",
+            "expected": "allow",
+            "sha256": "719c2aabfbbee6d34f25e152e7d477f9375b6e24b2a707066fe3f0921f869aab",
+            "layout": "tile"
+          },
+          {
+            "id": "chelsea_image",
+            "source_id": "chelsea",
+            "expected": "allow",
+            "sha256": "b9d6179aacc8b69ade8bf69d6ea9d9e211d1c4e80cf4923b2862364ad92dca04",
+            "layout": "image"
+          },
+          {
+            "id": "chelsea_feed",
+            "source_id": "chelsea",
+            "expected": "allow",
+            "sha256": "f4da92e19c5edd27c4d64910ee243da9cbb300f01140fb970b14927fe2d1c442",
+            "layout": "feed"
+          },
+          {
+            "id": "chelsea_tile",
+            "source_id": "chelsea",
+            "expected": "allow",
+            "sha256": "ac5b744c55c39ae4faefd70afe1fa53a9705187d2be952e621214c0f02b74433",
+            "layout": "tile"
+          },
+          {
+            "id": "coffee_image",
+            "source_id": "coffee",
+            "expected": "allow",
+            "sha256": "4e86cb1cf382a68031036aeddaa8ecb4c9ea1f6b2909a7451295975ef49410d8",
+            "layout": "image"
+          },
+          {
+            "id": "coffee_feed",
+            "source_id": "coffee",
+            "expected": "allow",
+            "sha256": "b82248a5a00c6ef227b9a11f5b75aae0abf6ebc9ddef01830c4396a3b360c5f3",
+            "layout": "feed"
+          },
+          {
+            "id": "coffee_tile",
+            "source_id": "coffee",
+            "expected": "allow",
+            "sha256": "38972a45f2f945d890daf50f98544e309edf31b1d3158b9b0b290adf4964ae30",
+            "layout": "tile"
+          },
+          {
+            "id": "camera_image",
+            "source_id": "camera",
+            "expected": "allow",
+            "sha256": "d1491d455822f04816fb47b08e0293b9cffc49021825fa4afd2693441727c153",
+            "layout": "image"
+          },
+          {
+            "id": "camera_feed",
+            "source_id": "camera",
+            "expected": "allow",
+            "sha256": "ecc5b3ed1952de09b9bed66a0cd2e0bbfb1b4f6b276b817214315b6ba8cc0d7c",
+            "layout": "feed"
+          },
+          {
+            "id": "camera_tile",
+            "source_id": "camera",
+            "expected": "allow",
+            "sha256": "4d94c56ada33e8d90ea031ccd0312a860c142544c7f40703a55e0ce530f6386f",
+            "layout": "tile"
+          }
+        ],
+        "sources": {
+          "schema": 1,
+          "base_url": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.25.2/skimage/data/",
+          "license_source": "https://scikit-image.org/docs/0.25.x/api/skimage.data.html",
+          "sources": [
+            {
+              "id": "astronaut",
+              "sha256": "88431cd9653ccd539741b555fb0a46b61558b301d4110412b5bc28b5e3ea6cb5",
+              "license": "Public domain, NASA portrait of astronaut Eileen Collins"
+            },
+            {
+              "id": "chelsea",
+              "sha256": "596aa1e7cb875eb79f437e310381d26b338a81c2da23439704a73c4651e8c4bb",
+              "license": "CC0, Stefan van der Walt"
+            },
+            {
+              "id": "coffee",
+              "sha256": "cc02f8ca188b167c775a7101b5d767d1e71792cf762c33d6fa15a4599b5a8de7",
+              "license": "CC0, Rachel Michetti"
+            },
+            {
+              "id": "camera",
+              "sha256": "b0793d2adda0fa6ae899c03989482bff9a42d3d5690fc7e3648f2795d730c23a",
+              "license": "CC0, Lav Varshney"
+            }
+          ]
+        },
+        "repeats": 3,
+        "interval_ms": 2000,
+        "limits": "Four sources with correlated layouts; not a representative benchmark. No positive adult cases.",
+        "engine_sha256": "b282533fa8fa974c0d6224c12542b06845a663c7921f0a3612d952f4c236db38"
+      }
+    },
+    "cpu": {
+      "schema": 1,
+      "manifest_sha256": "e5520edea31774e9cf4b361f62f1a00e8592fb8657a0233d1feb88099f784d61",
+      "version": "0.5.1",
+      "model_engine": "bundled NSFWJS MobileNetV2 / tfjs",
+      "requested_backend": "cpu",
+      "engine_sha256": "b282533fa8fa974c0d6224c12542b06845a663c7921f0a3612d952f4c236db38",
+      "device": "SM-G990B2",
+      "android_sdk": 36,
+      "webview_version": "155.0.8059.43",
+      "interval_ms": 2000,
+      "repeats": 3,
+      "case_count": 12,
+      "before": {
+        "app_process_pss_kb_excludes_renderer": 188713,
+        "app_process_cpu_ms_excludes_renderer": 6578,
+        "thermal_status": 0,
+        "plugged": 2,
+        "battery_level": 19,
+        "battery_temperature_tenths_c": 222
+      },
+      "state": "complete",
+      "actual_backend": "cpu",
+      "model_load_ms": 2098,
+      "results": [
+        {
+          "id": "astronaut_image",
+          "repeat": 0,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 1745.431093
+        },
+        {
+          "id": "astronaut_feed",
+          "repeat": 0,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 1998.416978
+        },
+        {
+          "id": "astronaut_tile",
+          "repeat": 0,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 2075.448593
+        },
+        {
+          "id": "chelsea_image",
+          "repeat": 0,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 2004.427082
+        },
+        {
+          "id": "chelsea_feed",
+          "repeat": 0,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 1982.787499
+        },
+        {
+          "id": "chelsea_tile",
+          "repeat": 0,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 1949.460416
+        },
+        {
+          "id": "coffee_image",
+          "repeat": 0,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 2023.901249
+        },
+        {
+          "id": "coffee_feed",
+          "repeat": 0,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 1985.834999
+        },
+        {
+          "id": "coffee_tile",
+          "repeat": 0,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 1958.818593
+        },
+        {
+          "id": "camera_image",
+          "repeat": 0,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 2083.632031
+        },
+        {
+          "id": "camera_feed",
+          "repeat": 0,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 1980.975312
+        },
+        {
+          "id": "camera_tile",
+          "repeat": 0,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 1963.243072
+        },
+        {
+          "id": "astronaut_image",
+          "repeat": 1,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 2108.143489
+        },
+        {
+          "id": "astronaut_feed",
+          "repeat": 1,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 1960.291926
+        },
+        {
+          "id": "astronaut_tile",
+          "repeat": 1,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 1976.532395
+        },
+        {
+          "id": "chelsea_image",
+          "repeat": 1,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 2007.070364
+        },
+        {
+          "id": "chelsea_feed",
+          "repeat": 1,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 2661.342552
+        },
+        {
+          "id": "chelsea_tile",
+          "repeat": 1,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 1975.949843
+        },
+        {
+          "id": "coffee_image",
+          "repeat": 1,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 2044.62427
+        },
+        {
+          "id": "coffee_feed",
+          "repeat": 1,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 1982.146562
+        },
+        {
+          "id": "coffee_tile",
+          "repeat": 1,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 1973.288697
+        },
+        {
+          "id": "camera_image",
+          "repeat": 1,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 2091.01177
+        },
+        {
+          "id": "camera_feed",
+          "repeat": 1,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 1987.610259
+        },
+        {
+          "id": "camera_tile",
+          "repeat": 1,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 1982.30104
+        },
+        {
+          "id": "astronaut_image",
+          "repeat": 2,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 2142.596197
+        },
+        {
+          "id": "astronaut_feed",
+          "repeat": 2,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 1997.262395
+        },
+        {
+          "id": "astronaut_tile",
+          "repeat": 2,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 1991.530832
+        },
+        {
+          "id": "chelsea_image",
+          "repeat": 2,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 2021.848645
+        },
+        {
+          "id": "chelsea_feed",
+          "repeat": 2,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 1981.398384
+        },
+        {
+          "id": "chelsea_tile",
+          "repeat": 2,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 1992.100416
+        },
+        {
+          "id": "coffee_image",
+          "repeat": 2,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 2035.820624
+        },
+        {
+          "id": "coffee_feed",
+          "repeat": 2,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 1987.634739
+        },
+        {
+          "id": "coffee_tile",
+          "repeat": 2,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 1976.803958
+        },
+        {
+          "id": "camera_image",
+          "repeat": 2,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 2097.46651
+        },
+        {
+          "id": "camera_feed",
+          "repeat": 2,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 1989.687916
+        },
+        {
+          "id": "camera_tile",
+          "repeat": 2,
+          "expected": "allow",
+          "actual": "allow",
+          "roundtrip_ms": 1975.720989
+        }
+      ],
+      "latest_resources": {
+        "app_process_pss_kb_excludes_renderer": 147618,
+        "app_process_cpu_ms_excludes_renderer": 8580,
+        "thermal_status": 0,
+        "plugged": 2,
+        "battery_level": 20,
+        "battery_temperature_tenths_c": 230
+      },
+      "elapsed_ms": 76108,
+      "after": {
+        "app_process_pss_kb_excludes_renderer": 147662,
+        "app_process_cpu_ms_excludes_renderer": 8641,
+        "thermal_status": 0,
+        "plugged": 2,
+        "battery_level": 20,
+        "battery_temperature_tenths_c": 230
+      },
+      "error": null,
+      "limits": "Classifier roundtrip only; app-process memory/CPU exclude WebView renderer. Charging/other apps confound battery. No battery-life or accuracy guarantee.",
+      "summary": {
+        "unique_source_images": 4,
+        "unique_views": 12,
+        "inference_calls": 36,
+        "positive_views": 0,
+        "first_verdict_confusion_by_view": {
+          "true_positive": 0,
+          "false_negative": 0,
+          "true_negative": 12,
+          "false_positive": 0,
+          "unknown": 0
+        },
+        "inconsistent_views": 0,
+        "unknown_calls": 0,
+        "recall": null,
+        "roundtrip_median_ms": 1988.6613275,
+        "roundtrip_p95_ms": 2142.596197,
+        "roundtrip_max_ms": 2661.342552,
+        "limits": "Paired layouts are correlated. First verdict per view is counted once; repeats measure stability/latency. No population accuracy or battery-life estimate."
+      },
+      "corpus": {
+        "schema": 1,
+        "kind": "benign-controls",
+        "unique_sources": 4,
+        "cases": [
+          {
+            "id": "astronaut_image",
+            "source_id": "astronaut",
+            "expected": "allow",
+            "sha256": "89523b4e1d2316f40bc59e694659a25ece44ecf0b69fab6c3771ae50e1903d08",
+            "layout": "image"
+          },
+          {
+            "id": "astronaut_feed",
+            "source_id": "astronaut",
+            "expected": "allow",
+            "sha256": "b4aa1dffbbee94ca134883182ef8d87d50a26118adc75aeb62133ba253edb413",
+            "layout": "feed"
+          },
+          {
+            "id": "astronaut_tile",
+            "source_id": "astronaut",
+            "expected": "allow",
+            "sha256": "719c2aabfbbee6d34f25e152e7d477f9375b6e24b2a707066fe3f0921f869aab",
+            "layout": "tile"
+          },
+          {
+            "id": "chelsea_image",
+            "source_id": "chelsea",
+            "expected": "allow",
+            "sha256": "b9d6179aacc8b69ade8bf69d6ea9d9e211d1c4e80cf4923b2862364ad92dca04",
+            "layout": "image"
+          },
+          {
+            "id": "chelsea_feed",
+            "source_id": "chelsea",
+            "expected": "allow",
+            "sha256": "f4da92e19c5edd27c4d64910ee243da9cbb300f01140fb970b14927fe2d1c442",
+            "layout": "feed"
+          },
+          {
+            "id": "chelsea_tile",
+            "source_id": "chelsea",
+            "expected": "allow",
+            "sha256": "ac5b744c55c39ae4faefd70afe1fa53a9705187d2be952e621214c0f02b74433",
+            "layout": "tile"
+          },
+          {
+            "id": "coffee_image",
+            "source_id": "coffee",
+            "expected": "allow",
+            "sha256": "4e86cb1cf382a68031036aeddaa8ecb4c9ea1f6b2909a7451295975ef49410d8",
+            "layout": "image"
+          },
+          {
+            "id": "coffee_feed",
+            "source_id": "coffee",
+            "expected": "allow",
+            "sha256": "b82248a5a00c6ef227b9a11f5b75aae0abf6ebc9ddef01830c4396a3b360c5f3",
+            "layout": "feed"
+          },
+          {
+            "id": "coffee_tile",
+            "source_id": "coffee",
+            "expected": "allow",
+            "sha256": "38972a45f2f945d890daf50f98544e309edf31b1d3158b9b0b290adf4964ae30",
+            "layout": "tile"
+          },
+          {
+            "id": "camera_image",
+            "source_id": "camera",
+            "expected": "allow",
+            "sha256": "d1491d455822f04816fb47b08e0293b9cffc49021825fa4afd2693441727c153",
+            "layout": "image"
+          },
+          {
+            "id": "camera_feed",
+            "source_id": "camera",
+            "expected": "allow",
+            "sha256": "ecc5b3ed1952de09b9bed66a0cd2e0bbfb1b4f6b276b817214315b6ba8cc0d7c",
+            "layout": "feed"
+          },
+          {
+            "id": "camera_tile",
+            "source_id": "camera",
+            "expected": "allow",
+            "sha256": "4d94c56ada33e8d90ea031ccd0312a860c142544c7f40703a55e0ce530f6386f",
+            "layout": "tile"
+          }
+        ],
+        "sources": {
+          "schema": 1,
+          "base_url": "https://raw.githubusercontent.com/scikit-image/scikit-image/v0.25.2/skimage/data/",
+          "license_source": "https://scikit-image.org/docs/0.25.x/api/skimage.data.html",
+          "sources": [
+            {
+              "id": "astronaut",
+              "sha256": "88431cd9653ccd539741b555fb0a46b61558b301d4110412b5bc28b5e3ea6cb5",
+              "license": "Public domain, NASA portrait of astronaut Eileen Collins"
+            },
+            {
+              "id": "chelsea",
+              "sha256": "596aa1e7cb875eb79f437e310381d26b338a81c2da23439704a73c4651e8c4bb",
+              "license": "CC0, Stefan van der Walt"
+            },
+            {
+              "id": "coffee",
+              "sha256": "cc02f8ca188b167c775a7101b5d767d1e71792cf762c33d6fa15a4599b5a8de7",
+              "license": "CC0, Rachel Michetti"
+            },
+            {
+              "id": "camera",
+              "sha256": "b0793d2adda0fa6ae899c03989482bff9a42d3d5690fc7e3648f2795d730c23a",
+              "license": "CC0, Lav Varshney"
+            }
+          ]
+        },
+        "repeats": 3,
+        "interval_ms": 2000,
+        "limits": "Four sources with correlated layouts; not a representative benchmark. No positive adult cases.",
+        "engine_sha256": "b282533fa8fa974c0d6224c12542b06845a663c7921f0a3612d952f4c236db38"
+      }
+    }
+  },
+  "fault_checks": {
+    "smoke(auto)": "PASS: actual backend webgl; fixed benign frame allowed",
+    "init-fallback": "PASS: actual backend cpu; fixed benign frame allowed",
+    "frame-fallback": "PASS: failed frame unknown once; fresh CPU session allowed a new benign frame"
+  }
+}
