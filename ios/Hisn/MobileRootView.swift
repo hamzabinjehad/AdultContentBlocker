@@ -115,6 +115,7 @@ struct MobileRootView: View {
             verifiedSetup
             readiness
             CommitmentSection(protection: protection)
+            CustomSitesSection(protection: protection)
             BrowserFirstSection()
             AppUsageSection(protection: protection, usage: usage)
             Section("safari.title") {

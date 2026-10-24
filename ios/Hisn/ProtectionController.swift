@@ -36,10 +36,18 @@ final class ProtectionController: ObservableObject {
     private var ticker: AnyCancellable?
     private let screenTimeStore = ManagedSettingsStore(named: .init("hisn.self-control"))
     private var screenTimeChosenForCommitment = false
+    @Published private(set) var customSites: [String] = []
+    @Published private(set) var customSitesStorageHealthy = true
+    /// The Screen Time filter reads back exactly the saved site list. Configuration only.
+    @Published private(set) var customSitesApplied = false
+    @Published private(set) var customSiteMessage: String?
+    private let customSiteStore: CustomSiteStore
 
     init(commitmentStore: CommitmentPersistence? = nil, readinessHistory: ReadinessHistory? = nil,
+         customSiteStore: CustomSiteStore? = nil,
          resourceBundleURL: URL = Bundle.main.bundleURL,
          clockSource: @escaping () -> (wall: Date, uptime: TimeInterval) = { (Date(), CommitmentClock.continuousTime) }) {
+        self.customSiteStore = customSiteStore ?? CustomSiteStore.deviceLocal()
         self.resourceBundleURL = resourceBundleURL
         self.clockSource = clockSource
         let sample = clockSource()
@@ -51,6 +59,7 @@ final class ProtectionController: ObservableObject {
             allowed: ["screentime.layer", "dns.title", "safari.title"])
         previouslyReadyContentLayers = self.readinessHistory.known
         historyStorageHealthy = self.readinessHistory.storageHealthy
+        loadCustomSites()
         loadCommitment()
         updateClock()
         ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -127,7 +136,7 @@ final class ProtectionController: ObservableObject {
             guard center.authorizationStatus == .approved else {
                 errorKey = "screentime.failed"; return
             }
-            screenTimeStore.webContent.blockedByFilter = .auto()
+            screenTimeStore.webContent.blockedByFilter = desiredFilter
             readScreenTimeState()
         } catch { errorKey = "screentime.failed" }
         #endif
@@ -137,22 +146,90 @@ final class ProtectionController: ObservableObject {
         #if targetEnvironment(simulator)
         screenTimeConfigured = false
         #else
+        let authorized = AuthorizationCenter.shared.authorizationStatus == .approved
         if !commitmentActive { screenTimeChosenForCommitment = false }
-        if commitmentActive, screenTimeStore.webContent.blockedByFilter == .auto() {
+        if commitmentActive, Self.isHisnFilter(screenTimeStore.webContent.blockedByFilter) {
             screenTimeChosenForCommitment = true
         }
         if CommitmentPolicy.shouldRestoreProtection(active: commitmentActive,
             commitmentReadable: commitmentStorageHealthy, historyReadable: historyStorageHealthy,
-            previouslyEnabled: screenTimeChosenForCommitment,
-            authorized: AuthorizationCenter.shared.authorizationStatus == .approved) {
+            previouslyEnabled: screenTimeChosenForCommitment, authorized: authorized) {
             // Reassert only Hisn's previously consented filter; do not touch other stores
             // or request new authorization. Revoked OS permission cannot be repaired here.
-            screenTimeStore.webContent.blockedByFilter = .auto()
+            if customSitesStorageHealthy || screenTimeStore.webContent.blockedByFilter == nil {
+                screenTimeStore.webContent.blockedByFilter = desiredFilter
+            }
+        } else if authorized, customSitesStorageHealthy,
+                  Self.isHisnFilter(screenTimeStore.webContent.blockedByFilter),
+                  screenTimeStore.webContent.blockedByFilter != desiredFilter {
+            // The person already consented to this filter; keep their saved sites in it.
+            // An unreadable list never replaces the sites the OS already holds.
+            screenTimeStore.webContent.blockedByFilter = desiredFilter
         }
-        screenTimeConfigured = AuthorizationCenter.shared.authorizationStatus == .approved
-            && screenTimeStore.webContent.blockedByFilter == .auto()
+        let applied = screenTimeStore.webContent.blockedByFilter
+        screenTimeConfigured = authorized && Self.isHisnFilter(applied)
+        customSitesApplied = screenTimeConfigured && customSitesStorageHealthy && applied == desiredFilter
         #endif
         rememberConfiguredLayers()
+    }
+
+    /// Apple's adult-content filter plus the person's saved sites.
+    private var desiredFilter: WebContentSettings.FilterPolicy {
+        .auto(Set(customSites.map { WebDomain(domain: $0) }))
+    }
+
+    /// Hisn only ever writes `.auto`; any saved site list still counts as Hisn's filter.
+    nonisolated static func isHisnFilter(_ policy: WebContentSettings.FilterPolicy?) -> Bool {
+        if case .auto = policy { return true }
+        return false
+    }
+
+    private func loadCustomSites() {
+        do { customSites = try customSiteStore.load(); customSitesStorageHealthy = true }
+        catch { customSitesStorageHealthy = false; customSitesApplied = false }
+    }
+
+    /// Adding a site only tightens protection, so it stays available during a commitment.
+    func addCustomSite(_ raw: String) {
+        updateClock()
+        loadCustomSites()
+        guard !busy, customSitesStorageHealthy else { customSiteMessage = "sites.failed"; return }
+        switch CustomSitePolicy.adding(raw, to: customSites) {
+        case .invalid: customSiteMessage = "sites.invalid"
+        case .duplicate: customSiteMessage = "sites.duplicate"
+        case .full: customSiteMessage = "sites.full"
+        case .added(let next): saveCustomSites(next, success: "sites.added")
+        }
+    }
+
+    /// Removal waits for the commitment to end; an unreadable commitment counts as running.
+    func removeCustomSite(_ host: String) {
+        updateClock()
+        loadCustomSites()
+        guard !busy, customSitesStorageHealthy else { customSiteMessage = "sites.failed"; return }
+        let next = customSites.filter { $0 != host }
+        guard next != customSites else { return }
+        guard CustomSitePolicy.permits(current: customSites, proposed: next,
+                                       committed: commitmentActive || !commitmentStorageHealthy) else {
+            customSiteMessage = "sites.locked"; return
+        }
+        saveCustomSites(next, success: "sites.removed")
+    }
+
+    var customSitesLocked: Bool { commitmentActive || !commitmentStorageHealthy }
+
+    private func saveCustomSites(_ next: [String], success: String) {
+        do {
+            try customSiteStore.save(next)
+            customSites = next
+            customSiteMessage = success
+        } catch {
+            customSitesStorageHealthy = false
+            customSiteMessage = "sites.failed"
+            return
+        }
+        // Applies the list only if the person's filter is already on; never enables it.
+        readScreenTimeState()
     }
 
     private var readyContentLayers: Set<String> {
@@ -244,6 +321,7 @@ final class ProtectionController: ObservableObject {
     private func readState() async {
         updateClock()
         loadCommitment()
+        loadCustomSites()
         if !listChecked {
             // Immutable bundled resources need one integrity check per launch,
             // off the UI actor. Enabled Safari switches alone do not prove that

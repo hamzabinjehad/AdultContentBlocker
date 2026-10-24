@@ -146,6 +146,26 @@ accuracy. Those need a provisioned physical-device test before release.
 التصنيف أو تقدير المظهر. الوسائط غير القابلة للقراءة لا تُعد آمنة. لم يتم
 التحقق هنا من تشغيل النماذج على آيفون أو آيباد فعلي.
 
+## My blocked sites
+
+Setup includes **My blocked sites**: up to 49 sites the person adds by hand,
+applied through Hisn's own Screen Time adult-content filter
+(`WebContentSettings.FilterPolicy.auto(_:except:)`). Apple documents up to 50
+extra domains for that filter; developers report blocking silently stops past
+49, so Hisn stays at 49. Each site covers its subdomains, and adding a parent
+domain frees the subdomain entries it now covers. Entries use the same
+canonical ASCII host rules as the Mac app and the browser extension; enter an
+internationalized name in its `xn--` form.
+
+The list is saved in mirrored app-local records. Damaged records are reported
+and never replaced with an empty list. While a commitment runs, sites can be
+added but not removed. An unreadable commitment counts as running. Saving a site
+never turns on Screen Time by itself. The list is applied only after the person
+has enabled personal Screen Time protection, and the app reads the filter back
+to show **Applied**. That is configuration readback, not a blocking test. The
+Simulator cannot apply Screen Time; unit tests cover the list rules, storage and
+commitment behaviour only.
+
 ## Selected app restrictions
 
 The iPhone/iPad Setup page now offers Apple's private activity picker, always-on
