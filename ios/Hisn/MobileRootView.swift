@@ -8,6 +8,7 @@ struct MobileRootView: View {
     @State private var confirmation: Confirmation?
     @State private var selectedTab = 0
     @StateObject private var usage = AppUsageController()
+    @StateObject private var vault = PasscodeVaultController()
 
     init(protection: ProtectionController, language: Binding<String>, initialTab: Int = 0) {
         self.protection = protection
@@ -103,6 +104,7 @@ struct MobileRootView: View {
             verifiedSetup(compact: false)
             readiness
             CommitmentSection(protection: protection)
+            PasscodeVaultSection(vault: vault)
             CustomSitesSection(protection: protection)
             BrowserFirstSection()
             AppUsageSection(protection: protection, usage: usage)

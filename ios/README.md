@@ -146,6 +146,26 @@ accuracy. Those need a provisioned physical-device test before release.
 التصنيف أو تقدير المظهر. الوسائط غير القابلة للقراءة لا تُعد آمنة. لم يتم
 التحقق هنا من تشغيل النماذج على آيفون أو آيباد فعلي.
 
+## Passcode vault (no second person needed)
+
+Setup offers a **Passcode vault**: Hisn makes a random four-digit Screen Time
+passcode, shows it for 15 minutes so the person can set it (Lock Screen Time
+Settings, then Content & Privacy › Deleting Apps: Don't Allow), and then keeps
+it hidden for 1, 7, 30 or 90 days. Until then no app, Hisn included, can be
+deleted and Screen Time cannot be changed, on an ordinary unsupervised iPhone.
+The date can be extended but never shortened.
+
+The passcode lives only in this device's Keychain (`ThisDeviceOnly`, never in
+UserDefaults, which backups include). Showing it again requires the date to
+have passed on the device clock **and** on Apple's server time (the `Date`
+header of an HTTPS request to apple.com), so moving the clock forward does not
+open it. Damaged storage keeps it sealed and blocks making a new one over it.
+
+Limits, shown in the app: the adult who set a Screen Time passcode can reset
+it with their Apple Account password (with Family Sharing, the organizer's);
+erasing the device removes everything. Unit tests cover generation, sealing,
+reveal rules and storage damage; the Settings steps need a real device.
+
 ## Removal-resistant setup (supervised devices)
 
 To stop the app and its protections being deleted or switched off, supervise

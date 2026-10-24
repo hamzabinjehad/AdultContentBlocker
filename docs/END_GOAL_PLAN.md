@@ -154,7 +154,7 @@ Row 15 of the threat model ("use another device") defeats everything above.
 
 | Step | Deliverable | Platform | Can be verified in CI? |
 |---|---|---|---|
-| 1 | Passcode vault + guide (D1) | iPhone/iPad | Logic yes; on-device steps no |
+| 1 | Passcode vault + guide (D1) — **built 2026-10-24**, unit-tested; device acceptance pending | iPhone/iPad | Logic yes; on-device steps no |
 | 2 | Labelled text corpus + CI gate (B1) | All | Yes |
 | 3 | Hide-first audit and video sampling (C1, C3) | Chromium, Safari | Yes (browser harness) |
 | 4 | Time-locked removal passwords (D2) | Mac, supervised iPhone | Yes (crypto round-trip) |
