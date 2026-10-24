@@ -1,4 +1,4 @@
-import { parseDomains, settingsAccess, connectionStatus, connectionFeedback, repairFeedback, restrictionsActive, settingsError } from "../lib/settings.js";
+import { parseDomains, settingsAccess, connectionStatus, connectionFeedback, repairFeedback, restrictionsActive, settingsError, quickBlockTarget } from "../lib/settings.js";
 
 let checks = 0;
 function check(ok, label) { checks++; if (!ok) throw new Error(label); }
@@ -42,4 +42,16 @@ check(repairFeedback({ok:false,reason:"unavailable"}, managed).includes("did not
 check(repairFeedback({ok:true}, {...managed,enforcement:undefined}).includes("could not be fully verified"), "positive command cannot replace a missing receipt");
 check(repairFeedback({ok:true}, {ok:false}).includes("did not confirm"), "missing post-repair readback is unverified");
 check(repairFeedback({ok:false,reason:"enforcement-failed"}, managed).includes("unchanged"), "failed repair explains that saved choices and lock were not reset");
+const qb = (url, state = solo) => quickBlockTarget(url, state);
+check(qb("https://www.example.com/a?b").host === "example.com" && qb("https://www.example.com/").ok, "quick block canonicalizes the tab host");
+check(qb("https://new.example").customBlocks.join() === "new.example", "quick block adds the host to an empty list");
+check(qb("https://a.example", { ...solo, customBlocks: ["b.example"] }).customBlocks.join() === "b.example,a.example", "quick block keeps existing blocks");
+check(qb("https://m.example.com", { ...solo, customBlocks: ["example.com"] }).reason === "blocked", "a parent block already covers a subdomain");
+check(qb("https://notexample.com", { ...solo, customBlocks: ["example.com"] }).ok, "suffix match respects label boundaries");
+for (const url of ["chrome://extensions", "chrome-extension://x/popup.html", "file:///tmp/a.html", "http://192.168.1.1/", "about:blank", "", undefined]) {
+  check(qb(url).reason === "page", `quick block is not offered for ${String(url)}`);
+}
+check(qb("https://example.com", managed).reason === "app-managed", "app-owned lists are not edited from the popup");
+check(qb("https://example.com", { ok: false }).reason === "unavailable", "no worker state, no quick block");
+check(qb("https://example.com", { ...solo, lockUntil: Date.now() + 1e6 }).ok, "adding a block stays available during a browser lock");
 print(`${checks}/${checks} settings checks passed`);

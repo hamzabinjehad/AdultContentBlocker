@@ -81,3 +81,19 @@ export function settingsError(result) {
 export function restrictionsActive(state) {
   return isLocked(state) || state.failClosed === true;
 }
+
+// The popup's one-tap "Block this site". Adding a block only tightens policy,
+// so it stays available during a browser lock. The worker still rechecks
+// ownership and direction, so this only decides whether to offer the button.
+export function quickBlockTarget(url, state) {
+  let parsed;
+  try { parsed = new URL(url); } catch { return { ok: false, reason: "page" }; }
+  if (!/^https?:$/.test(parsed.protocol)) return { ok: false, reason: "page" };
+  const host = canonicalHost(parsed.hostname);
+  if (!host) return { ok: false, reason: "page" };
+  if (!state || state.ok === false) return { ok: false, reason: "unavailable", host };
+  if (!settingsAccess(state, { customBlocks: [] }).ok) return { ok: false, reason: "app-managed", host };
+  const blocked = (state.customBlocks || []).map(canonicalHost).filter(Boolean);
+  if (blocked.some((b) => host === b || host.endsWith(`.${b}`))) return { ok: false, reason: "blocked", host };
+  return { ok: true, host, customBlocks: [...new Set([...blocked, host])] };
+}

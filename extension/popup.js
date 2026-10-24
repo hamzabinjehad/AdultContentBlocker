@@ -12,7 +12,7 @@ import { describeStatus, describeEnforcement } from "./lib/status.js";
 import { renderIcons } from "./lib/icons.js";
 import { send } from "./lib/messages.js";
 import { connectionStatus, connectionFeedback, repairFeedback } from "./lib/settings.js";
-import { restrictionsActive } from "./lib/settings.js";
+import { restrictionsActive, quickBlockTarget, settingsError } from "./lib/settings.js";
 import { describeVisual } from "./lib/visual-status.js";
 import { initLanguage, t, language, setLanguage, savePreference, translatePage } from "./lib/i18n.js";
 
@@ -66,6 +66,8 @@ function render(state) {
   // An inactive lock's explanation remains in full-page settings. Reserve the
   // small popup for actionable status without hiding an active/unknown lock.
   document.getElementById("lockBlock").hidden = !!state && !restrictionsActive(state);
+
+  renderQuickBlock();
 
   const notices = document.getElementById("notices");
   notices.replaceChildren(...s.notices.map((n) => {
@@ -150,6 +152,50 @@ function openDetailsPage() {
     /* leave the written steps as the fallback */
   }
 }
+
+// One-tap block for the site in the current tab. Shown only when the browser
+// owns the list; the worker still rechecks every patch through guardedUpdate.
+let activeTab;
+let quickBusy = false;
+function renderQuickBlock() {
+  const target = quickBlockTarget(activeTab?.url, lastState);
+  const show = target.ok || target.reason === "blocked";
+  document.getElementById("quickBlock").hidden = !show;
+  if (!show) return;
+  document.getElementById("quickHost").textContent = target.host;
+  const button = document.getElementById("quickBlockButton");
+  button.hidden = !target.ok;
+  button.disabled = quickBusy;
+  button.setAttribute("aria-label", t("quick.blockSite", target.host));
+  document.getElementById("quickBlocked").hidden = target.ok;
+}
+chrome.tabs?.query?.({ active: true, currentWindow: true }, (tabs) => {
+  void chrome.runtime.lastError;
+  activeTab = tabs?.[0];
+  renderQuickBlock();
+});
+document.getElementById("quickBlockButton").addEventListener("click", async () => {
+  const target = quickBlockTarget(activeTab?.url, lastState);
+  if (!target.ok || quickBusy) return;
+  const message = document.getElementById("quickMessage");
+  quickBusy = true;
+  renderQuickBlock();
+  message.textContent = t("quick.blocking");
+  try {
+    const result = await send({ type: "update", patch: { customBlocks: target.customBlocks } });
+    if (result?.ok) {
+      // The worker moves open tabs on this host to the block page itself.
+      message.textContent = t("quick.done", target.host);
+      render(result.state);
+    } else {
+      message.textContent = result?.reason === "unavailable" ? t("quick.failed") : settingsError(result);
+    }
+  } finally {
+    quickBusy = false;
+    lastRender = undefined;
+    renderQuickBlock();
+  }
+});
 
 const settingsFrame = document.getElementById("settingsFrame");
 function openEmbeddedSettings(view = "overview") {

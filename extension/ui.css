@@ -95,32 +95,42 @@ html.popup-root{width:480px;height:600px}
 body.popup{width:480px;max-width:100vw;height:600px;max-height:100vh;padding:16px 20px;overflow:hidden;display:flex;flex-direction:column}
 .popup header,.popup .actions,.popup .privacy-note,.popup #connectionMessage{flex:none}
 .popup-scroll{min-height:0;flex:1;overflow:auto;scrollbar-gutter:stable}
-.popup header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--line)}
-.popup .brand{font-size:22px}.popup .brand img{width:30px;height:30px}
-.popup .lang-switch{background:transparent;border-color:var(--line);color:var(--fg);font-size:13px;min-height:40px;border-radius:10px}
-.popup-intro{padding:10px 0 6px}.popup-intro h2{font-size:14px;line-height:1.25;margin:0 0 4px}.popup-intro .detail{margin:0}
+.popup header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding-bottom:4px}
+.popup .brand{font-size:17px;gap:8px}.popup .brand img{width:24px;height:24px}
+.popup .lang-switch{background:transparent;border-color:transparent;color:var(--muted);font-size:13px;font-weight:500;min-height:36px;border-radius:8px}
+.popup .lang-switch:hover{background:var(--card);color:var(--fg)}
+/* The layer list names itself; keep the heading for assistive navigation only. */
+.popup-intro{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .popup .detail{font-size:12px;line-height:1.55;margin:4px 0 0}
-.browser-status{display:grid;grid-template-columns:36px minmax(0,1fr);align-items:start;gap:12px;padding:14px;border-radius:16px;background:var(--card);border:1px solid var(--line);margin:12px 0 0}.browser-status h1{font-size:18px;line-height:1.3;margin:0}.browser-status .detail{font-size:12px}
-.status-symbol{display:grid;place-items:center;width:36px;height:40px;border-radius:12px;background:var(--soft);color:var(--accent)}.status-symbol .icon{width:24px;height:24px}.status-copy{min-width:0}
-.browser-status:has(.unknown){background:var(--card)}.browser-status:has(.partial){background:var(--warn-soft)}
-.layer-checklist{list-style:none;margin:0;padding:0 12px;background:var(--card);border:1px solid var(--line);border-radius:14px}
-.layer-checklist li{display:flex;align-items:center;gap:12px;min-height:58px;border-bottom:1px solid var(--line);padding:8px 0}
+.browser-status{display:grid;grid-template-columns:44px minmax(0,1fr);align-items:center;gap:14px;padding:14px 0 10px;margin:0}.browser-status h1{font-size:19px;line-height:1.3;margin:0}.browser-status .detail{font-size:12px;margin-top:2px}
+.browser-status .head .dot{display:none}
+.status-symbol{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--card);color:var(--muted)}.status-symbol .icon{width:24px;height:24px}.status-copy{min-width:0}
+.browser-status:has(.dot.active) .status-symbol{background:var(--good-soft);color:var(--good)}
+.browser-status:has(.dot.partial) .status-symbol{background:var(--warn-soft);color:var(--warn)}
+.quick-block{display:flex;align-items:center;gap:12px;padding-block:8px;padding-inline:14px 8px;margin:0 0 10px;background:var(--card);border-radius:12px}
+.quick-site{flex:1;min-width:0;display:grid}.quick-label{font-size:11px;color:var(--muted)}
+.quick-site strong{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;unicode-bidi:isolate;text-align:start}
+.quick-block button{flex:none;min-height:36px;border-radius:8px;color:var(--warn);border-color:transparent;background:var(--warn-soft)}
+.quick-state{flex:none;font-size:12px;color:var(--muted);padding-inline:8px}
+.popup #quickMessage{margin:-4px 0 10px}.popup #quickMessage:empty{display:none}
+.layer-checklist{list-style:none;margin:0;padding-block:0;padding-inline:12px 4px;background:var(--card);border-radius:12px}
+.layer-checklist li{display:flex;align-items:center;gap:12px;min-height:48px;border-bottom:1px solid var(--line);padding:5px 0}
 .layer-checklist li:last-child{border-bottom:0}
 .layer-checklist li>div{flex:1;min-width:0}.layer-checklist h2{font-size:14px;margin:0;line-height:1.35}
-.layer-indicator{display:flex;align-items:center;justify-content:center;width:23px;height:23px;flex:none;border:1.6px solid var(--muted);border-radius:50%;color:var(--muted)}
-.layer-indicator .icon{width:16px;height:16px}.layer-indicator.unknown .icon{visibility:hidden}
+.layer-indicator{display:flex;align-items:center;justify-content:center;width:20px;height:20px;flex:none;border:1.5px solid var(--muted);border-radius:50%;color:var(--muted)}
+.layer-indicator .icon{width:13px;height:13px}.layer-indicator.unknown .icon{visibility:hidden}
 .layer-indicator.active{background:var(--good);color:var(--bg);border-color:var(--good)}.layer-indicator.partial{color:var(--warn);border-color:var(--warn)}
-button.layer-link{background:transparent;color:var(--muted);min-height:44px;width:44px;padding:10px;border-radius:10px}.layer-optional{font-size:11px;color:var(--muted)}
-button.layer-link:hover{background:var(--card);color:var(--fg)}
+button.layer-link{background:transparent;color:var(--muted);min-height:40px;width:40px;padding:10px;border-radius:10px;opacity:.7}button.layer-link:is(:hover,:focus-visible){opacity:1}.layer-optional{font-size:11px;color:var(--muted)}
+button.layer-link:hover{background:var(--bg);color:var(--fg)}
 .popup :is(button,summary,a,select,input):focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 @media(prefers-reduced-motion:reduce){.popup *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 .popup .connection-badge{margin:4px 0 0}.commitment-summary{padding:13px 0;margin-top:8px}.commitment-summary h2{font-size:13px}
 .popup .notice{background:var(--warn-soft);border:0;border-radius:8px;padding:11px 12px;margin:8px 0}.popup .notice summary{color:var(--warn);font-weight:600}
-.popup .actions{display:grid;grid-template-columns:minmax(0,1fr) 48px;gap:10px;margin-top:12px;background:var(--bg)}
-.popup .actions button{min-height:48px;border-radius:12px;font-size:14px}.popup #checkConnection{width:48px}
+.popup .actions{display:grid;grid-template-columns:minmax(0,1fr) 44px;gap:8px;margin-top:12px;background:var(--bg)}
+.popup .actions button{min-height:44px;border-radius:10px;font-size:14px}.popup #checkConnection{width:44px;border-color:transparent;background:var(--card)}
 .popup details{font-size:12px;margin-top:8px}.popup summary{cursor:pointer;color:var(--muted)}
 .popup dl{display:grid;grid-template-columns:1fr 1.4fr;gap:7px;margin-bottom:0}
-.popup .privacy-note{font-size:11px;margin:12px 0 0;padding-top:10px;text-align:center}
+.popup .privacy-note{font-size:11px;margin:8px 0 0;padding-top:0;border-top:0;text-align:center}
 .popup #connectionMessage:empty{display:none}
 .protection-repair{margin:8px 0 12px}.protection-repair>button{width:100%}
 #repairProtection{min-height:44px;white-space:normal}
@@ -130,10 +140,8 @@ button.layer-link:hover{background:var(--card);color:var(--fg)}
 @media(prefers-contrast:more){:root{--line:currentColor}.layer-indicator{border-width:2px}button.secondary{border-width:2px}}
 .presentation-settings{display:grid;gap:8px;margin-top:20px}.presentation-settings label{font-weight:600;font-size:13px}.presentation-settings select{width:100%;min-height:44px}.presentation-settings .hint{margin-top:8px}
 @media(min-width:401px){
-  .popup-intro{padding:10px 0 6px}
   /* The status card already explains standalone/connected protection. */
   .popup-intro>.detail{display:none}
-  .layer-checklist li{min-height:54px;padding-block:6px}
 }
 .popup-editor{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px;padding-top:8px}
 .popup-editor-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none}
