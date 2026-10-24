@@ -33,9 +33,11 @@ final class SafariWebScannerPackageTests: XCTestCase {
         let expected: Set<String> = [
             "manifest.json", "background.js", "background.html", "blocked.html", "blocked.js",
             "options.html", "options.js", "options.css",
-            "content/scan.js", "content/feed.js", "content/visual.js", "lib/score.js", "lib/normalize.js",
+            "content/scan.js", "content/feed.js", "content/visual.js", "content/visual-effects.js",
+            "content/visual-gate.css", "lib/score.js", "lib/normalize.js",
             "seed/terms.json", "icons/icon-32.png", "icons/icon-128.png",
             "visual/capture.js", "visual/broker.js", "visual/decisions.js", "visual/queue.js",
+            "visual/verdict-cache.js",
             "visual/assets.json", "visual/engine.bundle.js", "visual/engine.bundle.js.LEGAL.txt",
             "visual/models/blazeface.json", "visual/models/blazeface.bin",
             "visual/models/gender.json", "visual/models/gender.bin",
@@ -80,7 +82,8 @@ final class SafariWebScannerPackageTests: XCTestCase {
         XCTAssertEqual(scripts.count, 1)
         let script = try XCTUnwrap(scripts.first)
         XCTAssertEqual(script["js"] as? [String],
-                       ["content/feed.js", "content/scan.js", "visual/capture.js", "content/visual.js"])
+                       ["content/feed.js", "content/scan.js", "visual/capture.js",
+                        "content/visual-effects.js", "content/visual.js"])
         XCTAssertEqual(script["matches"] as? [String], ["http://*/*", "https://*/*"])
         XCTAssertEqual(script["run_at"] as? String, "document_start")
         XCTAssertEqual(script["all_frames"] as? Bool, true)
