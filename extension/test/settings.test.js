@@ -44,6 +44,8 @@ check(repairFeedback({ok:true}, {ok:false}).includes("did not confirm"), "missin
 check(repairFeedback({ok:false,reason:"enforcement-failed"}, managed).includes("unchanged"), "failed repair explains that saved choices and lock were not reset");
 const qb = (url, state = solo) => quickBlockTarget(url, state);
 check(qb("https://www.example.com/a?b").host === "example.com" && qb("https://www.example.com/").ok, "quick block canonicalizes the tab host");
+check(qb("HTTPS://User@Sub.Example.com:8443?q#f").host === "sub.example.com", "quick block strips userinfo, port, query and fragment");
+check(qb("https://xn--mgbh0fb.xn--wgbh1c/").host === "xn--mgbh0fb.xn--wgbh1c", "quick block keeps punycode hosts");
 check(qb("https://new.example").customBlocks.join() === "new.example", "quick block adds the host to an empty list");
 check(qb("https://a.example", { ...solo, customBlocks: ["b.example"] }).customBlocks.join() === "b.example,a.example", "quick block keeps existing blocks");
 check(qb("https://m.example.com", { ...solo, customBlocks: ["example.com"] }).reason === "blocked", "a parent block already covers a subdomain");

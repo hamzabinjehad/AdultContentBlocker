@@ -86,10 +86,11 @@ export function restrictionsActive(state) {
 // so it stays available during a browser lock. The worker still rechecks
 // ownership and direction, so this only decides whether to offer the button.
 export function quickBlockTarget(url, state) {
-  let parsed;
-  try { parsed = new URL(url); } catch { return { ok: false, reason: "page" }; }
-  if (!/^https?:$/.test(parsed.protocol)) return { ok: false, reason: "page" };
-  const host = canonicalHost(parsed.hostname);
+  // No URL parser: the JavaScriptCore test shell has none. Browser tab URLs
+  // already carry ASCII (punycode) hosts, which canonicalHost accepts.
+  const authority = /^https?:\/\/([^/?#]*)/i.exec(typeof url === "string" ? url : "")?.[1];
+  if (!authority) return { ok: false, reason: "page" };
+  const host = canonicalHost(authority);
   if (!host) return { ok: false, reason: "page" };
   if (!state || state.ok === false) return { ok: false, reason: "unavailable", host };
   if (!settingsAccess(state, { customBlocks: [] }).ok) return { ok: false, reason: "app-managed", host };
