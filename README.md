@@ -76,6 +76,11 @@ face-only image masks, strong blur/opaque effects, and separate person media
 scope. Video face tracking remains a whole-media fallback.
 See [browser-first mixed-content protection](docs/BROWSER_FIRST_PROTECTION.md)
 for individual X/Twitter post checking and optional native-app restrictions.
+Blocking your own sites now works the same way everywhere: the extension
+popup's **Block** button for the current tab, the Mac menu bar's **Block a
+site…**, and iPhone/iPad **My blocked sites** (up to 49 sites through the
+Screen Time filter). See [the popup note](docs/POPUP_SETTINGS.md) and the
+[iOS README](ios/README.md#my-blocked-sites).
 
 ## Testing
 
