@@ -238,6 +238,7 @@ if [ "$ACTION" = "demote" ]; then
     if [ "$DRY" -eq 1 ]; then
         echo "(dry run) would ask the second person for '$GUARDIAN_USER''s password,"
         echo "          then run:  dseditgroup -o edit -d $ME -t user admin"
+        echo "          and hand '/Library/Application Support/Hisn' (if present) to root"
         exit 0
     fi
     # The header promised this and nothing did it: an admin whose password
@@ -256,6 +257,18 @@ if [ "$ACTION" = "demote" ]; then
     [ "$confirm" = "demote me" ] || { echo "Aborted."; exit 1; }
 
     dseditgroup -o edit -d "$ME" -t user admin
+
+    # The /Library lock mirror was created by '$ME' while still an admin, so
+    # it would stay theirs after demotion and they could delete or rewrite it
+    # (docs/TAMPER_MODEL.md, "Interim hardening"). Give it to root. The app's
+    # later writes to it then fail without harm, as for a user who was never
+    # an admin, and the file keeps whatever deadline it holds now.
+    HISN_SUPPORT="/Library/Application Support/Hisn"
+    if [ -d "$HISN_SUPPORT" ]; then
+        chown -R root:wheel "$HISN_SUPPORT"
+        chmod -R go-w "$HISN_SUPPORT"
+        echo "Lock mirror in '$HISN_SUPPORT' now belongs to root."
+    fi
 
     echo
     echo "Done. '$ME' is now a standard user."

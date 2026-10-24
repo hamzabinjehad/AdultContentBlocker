@@ -146,6 +146,14 @@ accuracy. Those need a provisioned physical-device test before release.
 التصنيف أو تقدير المظهر. الوسائط غير القابلة للقراءة لا تُعد آمنة. لم يتم
 التحقق هنا من تشغيل النماذج على آيفون أو آيباد فعلي.
 
+## Removal-resistant setup (supervised devices)
+
+To stop the app and its protections being deleted or switched off, supervise
+the device with Apple Configurator and install the profile from
+`profile/make_ios_profile.py`. It blocks app deletion, erasing, other profiles
+and VPNs, and keeps family DNS on; Apple honours these keys only on supervised
+devices. Steps and limits: [docs/IPHONE_SUPERVISED.md](../docs/IPHONE_SUPERVISED.md).
+
 ## My blocked sites
 
 Setup includes **My blocked sites**: up to 49 sites the person adds by hand,

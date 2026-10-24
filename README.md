@@ -81,6 +81,11 @@ popup's **Block** button for the current tab, the Mac menu bar's **Block a
 site…**, and iPhone/iPad **My blocked sites** (up to 49 sites through the
 Screen Time filter). See [the popup note](docs/POPUP_SETTINGS.md) and the
 [iOS README](ios/README.md#my-blocked-sites).
+To make protection hard to delete or switch off, use each platform's own
+lock-down: on a Mac, the guardian account split (`setup_guardian.sh`) with the
+removal-password profile; on iPhone/iPad, a supervised device with
+`profile/make_ios_profile.py` ([guide](docs/IPHONE_SUPERVISED.md)). No setup
+survives someone who holds the admin, recovery or supervision credentials.
 
 ## Testing
 
