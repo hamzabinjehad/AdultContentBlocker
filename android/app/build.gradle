@@ -35,6 +35,13 @@ def copyVisual = tasks.register('copyAndroidVisual', Sync) {
     into layout.buildDirectory.dir('generated/visualAssets/visual')
 }
 
+// Production signing is supplied only by the owner's environment; no key material lives in the repo.
+def releaseSigning = ['HISN_ANDROID_KEYSTORE', 'HISN_ANDROID_KEYSTORE_PASSWORD', 'HISN_ANDROID_KEY_ALIAS', 'HISN_ANDROID_KEY_PASSWORD']
+        .collectEntries { [(it): providers.environmentVariable(it).orNull] }
+def releaseSigningCount = releaseSigning.values().count { it }
+if (releaseSigningCount != 0 && releaseSigningCount != releaseSigning.size())
+    throw new GradleException('Set all or none of: ' + releaseSigning.keySet().join(', '))
+
 android {
     namespace 'app.hisn.android'
     compileSdk 37
@@ -44,8 +51,8 @@ android {
         manifestPlaceholders = [hisnAppLabel: '@string/app_name']
         minSdk 26
         targetSdk 36
-        versionCode 12
-        versionName '0.5.0'
+        versionCode 13
+        versionName '0.5.1'
         testInstrumentationRunner 'app.hisn.android.CoreDeviceTestRunner'
         buildConfigField 'String', 'DOMAIN_SEED_SHA256', '"' + seedDigest + '"'
         buildConfigField 'int', 'DOMAIN_SEED_COUNT', seedManifest.core_domain_count.toString()
@@ -57,7 +64,19 @@ android {
     sourceSets.main.assets.srcDir layout.buildDirectory.dir('generated/verifiedSeed').get().asFile
     sourceSets.main.assets.srcDir layout.buildDirectory.dir('generated/visualAssets').get().asFile
     buildFeatures { buildConfig true }
+    signingConfigs {
+        if (releaseSigningCount != 0) release {
+            storeFile file(releaseSigning.HISN_ANDROID_KEYSTORE)
+            storePassword releaseSigning.HISN_ANDROID_KEYSTORE_PASSWORD
+            keyAlias releaseSigning.HISN_ANDROID_KEY_ALIAS
+            keyPassword releaseSigning.HISN_ANDROID_KEY_PASSWORD
+        }
+    }
     buildTypes {
+        release {
+            // Without the owner's key, assembleRelease still produces an unsigned APK for inspection.
+            if (releaseSigningCount != 0) signingConfig signingConfigs.release
+        }
         debug {
             // Run fixed visual fixtures alongside the owner's app without restarting its services.
             if (providers.gradleProperty('hisnIsolatedVisualCheck').orNull == 'true') {

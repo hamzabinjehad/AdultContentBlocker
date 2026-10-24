@@ -51,6 +51,7 @@ def main():
     parser.add_argument("--corpus", required=True, type=Path)
     parser.add_argument("--report", required=True, type=Path)
     parser.add_argument("--confirm-reviewed-corpus", action="store_true")
+    parser.add_argument("--backend", choices=("auto", "cpu", "webgl"), default="auto")
     args = parser.parse_args()
     raw_manifest = (args.corpus / "manifest.json").read_bytes()
     if len(raw_manifest) > 131072:
@@ -95,7 +96,8 @@ def main():
             adb("shell", "run-as", OWNER, "cp", staging + "/" + name, "files/visual_benchmark/" + name)
         # Delete only this test's old report so an identical manifest cannot retrieve an old run.
         adb("shell", "run-as", OWNER, "rm", "-f", "files/visual_benchmark_result.json")
-        adb("shell", "am", "start", "--user", "0", "--activity-clear-task", "-W", "-n", ACTIVITY)
+        adb("shell", "am", "start", "--user", "0", "--activity-clear-task", "-W", "-n", ACTIVITY,
+            "--es", "backend", args.backend)
         deadline = time.monotonic() + 90 + len(cases) * manifest["repeats"] * (manifest["interval_ms"] / 1000 + 15)
         seen = -1
         while time.monotonic() < deadline:
@@ -103,6 +105,8 @@ def main():
             result = json.loads(adb("shell", "run-as", OWNER, "cat", "files/visual_benchmark_result.json"))
             if result.get("manifest_sha256") != expected_digest:
                 raise RuntimeError("Device report does not match supplied corpus")
+            if result.get("requested_backend") != args.backend:
+                raise RuntimeError("Device report does not match requested backend")
             count = len(result.get("results", []))
             if count != seen:
                 print("Completed", count, "/", len(cases) * manifest["repeats"], "actual model calls", flush=True)

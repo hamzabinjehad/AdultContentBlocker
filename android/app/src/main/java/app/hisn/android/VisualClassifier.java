@@ -13,6 +13,7 @@ import android.webkit.WebViewClient;
 import java.io.ByteArrayInputStream;
 import java.util.Arrays;
 import java.util.function.Consumer;
+import app.hisn.core.VisualExecutionPolicy;
 
 /** Network-isolated local model, one bounded frame at a time. Main-thread API. */
 final class VisualClassifier implements AutoCloseable {
@@ -22,12 +23,34 @@ final class VisualClassifier implements AutoCloseable {
     private String request;
     private long sequence;
     private boolean ready;
-    private final Runnable timeout = () -> finish("unknown");
+    private String actualBackend;
+    private final Context context;
+    private final VisualExecutionPolicy execution;
+    private static boolean preferCpuAfterGpuFailure;
+    private final Runnable timeout = this::failed;
+
+    VisualClassifier(Context context, Consumer<String> loaded) {
+        this(context, "auto", loaded);
+    }
 
     @android.annotation.SuppressLint({"SetJavaScriptEnabled", "JavascriptInterface"})
-    VisualClassifier(Context context, Consumer<String> loaded) {
+    VisualClassifier(Context context, String backend, Consumer<String> loaded) {
+        execution = new VisualExecutionPolicy(backend, preferCpuAfterGpuFailure);
+        this.context = context;
         pending = loaded;
         request = "load";
+        try { openRuntime(); }
+        catch (RuntimeException unavailable) {
+            execution.close(); destroyRuntime(); throw unavailable;
+        }
+    }
+
+    @android.annotation.SuppressLint({"SetJavaScriptEnabled", "JavascriptInterface"})
+    private void openRuntime() {
+        destroyRuntime();
+        ready = false;
+        actualBackend = null;
+        int token = execution.generation();
         web = new WebView(context);
         web.getSettings().setJavaScriptEnabled(true);
         web.getSettings().setAllowFileAccess(false);
@@ -51,24 +74,31 @@ final class VisualClassifier implements AutoCloseable {
                         java.util.Collections.emptyMap(), new ByteArrayInputStream(new byte[0]));
             }
             @Override public boolean onRenderProcessGone(WebView view, android.webkit.RenderProcessGoneDetail detail) {
-                ready = false;
-                finish("unknown");
-                close();
+                if (execution.accepts(token) && view == web) failed();
+                if (view == web) destroyRuntime();
                 return true;
             }
         });
-        web.addJavascriptInterface(new ResultBridge(), "HisnResult");
+        web.addJavascriptInterface(new ResultBridge(token), "HisnResult");
         handler.postDelayed(timeout, 60000);
-        web.loadUrl("https://hisn.invalid/visual/android.html");
+        web.loadUrl("https://hisn.invalid/visual/android.html?backend=" + execution.backend());
     }
 
+    String actualBackend() { return actualBackend; }
+
     private final class ResultBridge {
+        private final int token;
+        ResultBridge(int token) { this.token = token; }
         @JavascriptInterface public void result(String id, String verdict) {
             // No captured bytes, URLs or model scores cross back into application state.
             handler.post(() -> {
-                if (web == null || request == null || !request.equals(id)) return;
-                if ("load".equals(id)) ready = "ready".equals(verdict);
-                finish("ready".equals(verdict) || "allow".equals(verdict) || "block".equals(verdict) ? verdict : "unknown");
+                if (!execution.accepts(token) || web == null || request == null || !request.equals(id)) return;
+                if ("load".equals(id)) {
+                    ready = "ready:cpu".equals(verdict) || "ready:webgl".equals(verdict);
+                    actualBackend = ready ? verdict.substring(6) : null;
+                    if (ready) finish("ready"); else failed();
+                } else if ("allow".equals(verdict) || "block".equals(verdict)) finish(verdict);
+                else failed();
             });
         }
     }
@@ -109,16 +139,33 @@ final class VisualClassifier implements AutoCloseable {
         if (callback != null) callback.accept(verdict);
     }
 
+    private void failed() {
+        handler.removeCallbacks(timeout);
+        ready = false;
+        boolean retry = execution.failed("load".equals(request));
+        if (execution.preferCpuAfterFailure()) preferCpuAfterGpuFailure = true;
+        if (retry) {
+            try { openRuntime(); }
+            catch (RuntimeException unavailable) { finish("unknown"); }
+        } else finish("unknown");
+    }
+
     @Override public void close() {
+        execution.close();
         handler.removeCallbacksAndMessages(null);
         pending = null;
         request = null;
         ready = false;
+        destroyRuntime();
+    }
+
+    private void destroyRuntime() {
         if (web != null) {
-            web.removeJavascriptInterface("HisnResult");
-            web.stopLoading();
-            web.destroy();
+            WebView previous = web;
             web = null;
+            previous.removeJavascriptInterface("HisnResult");
+            previous.stopLoading();
+            previous.destroy();
         }
     }
 }

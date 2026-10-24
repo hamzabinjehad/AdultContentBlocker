@@ -6,6 +6,10 @@ Mac, iOS/iPadOS and browser code were not changed in this Android implementation
 
 ## End-state objective
 
+The fixed 1.0 finish line and milestone checklist are in
+[ANDROID_1.0_PLAN.md](ANDROID_1.0_PLAN.md). That plan takes precedence over
+the open-ended gates listed below.
+
 Offer voluntary layered protection: verified domain blocking, selected-app and
 word restrictions, appropriate visual filtering, focus commitments and accurate
 status. Each layer must state its scope and recover from service/permission

@@ -41,3 +41,7 @@ extension/_metadata/
 # Visual inference dependencies are build-time only. The pinned lockfile,
 # bundled runtime, model weights, and third-party notices remain tracked.
 extension/visual/node_modules/
+
+# Android release keystores (owner-supplied via HISN_ANDROID_KEYSTORE).
+*.jks
+*.keystore

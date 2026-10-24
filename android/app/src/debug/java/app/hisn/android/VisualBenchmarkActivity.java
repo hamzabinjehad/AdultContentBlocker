@@ -42,6 +42,9 @@ public final class VisualBenchmarkActivity extends Activity {
         try {
             if (!"app.hisn.android.visualcheck".equals(getPackageName()))
                 throw new IllegalStateException("Isolated benchmark package required");
+            String backend = getIntent().getStringExtra("backend");
+            if (backend == null) backend = "auto";
+            if (!"auto".equals(backend) && !"cpu".equals(backend) && !"webgl".equals(backend)) throw new IllegalArgumentException("Unsupported backend");
             directory = new File(getFilesDir(), "visual_benchmark");
             byte[] manifestBytes = Files.readAllBytes(new File(directory, "manifest.json").toPath());
             if (manifestBytes.length > 131072) throw new IllegalArgumentException("Manifest too large");
@@ -70,7 +73,8 @@ public final class VisualBenchmarkActivity extends Activity {
             if (!actualEngine.equals(manifest.getString("engine_sha256"))) throw new IllegalArgumentException("Engine digest mismatch");
             started = SystemClock.elapsedRealtime();
             report.put("schema", 1).put("manifest_sha256", hex(manifestBytes))
-                    .put("version", BuildConfig.VERSION_NAME).put("model_engine", "bundled NSFWJS MobileNetV2 / tfjs CPU")
+                    .put("version", BuildConfig.VERSION_NAME).put("model_engine", "bundled NSFWJS MobileNetV2 / tfjs")
+                    .put("requested_backend", backend)
                     .put("engine_sha256", actualEngine)
                     .put("device", android.os.Build.MODEL).put("android_sdk", android.os.Build.VERSION.SDK_INT)
                     .put("webview_version", android.webkit.WebView.getCurrentWebViewPackage() == null ? JSONObject.NULL
@@ -79,10 +83,11 @@ public final class VisualBenchmarkActivity extends Activity {
                     .put("before", resources()).put("state", "loading");
             save();
             status.setText("Loading local visual model. Test inputs stay on this device; no screenshots are taken.");
-            classifier = new VisualClassifier(this, verdict -> {
+            classifier = new VisualClassifier(this, backend, verdict -> {
                 try {
                     if (!"ready".equals(verdict)) { finishReport("failed", "model unavailable"); return; }
                     loadedAt = SystemClock.elapsedRealtime();
+                    report.put("actual_backend", classifier.actualBackend());
                     report.put("model_load_ms", loadedAt - started);
                     next();
                 } catch (Exception failure) { finishReport("failed", failure.getClass().getSimpleName()); }

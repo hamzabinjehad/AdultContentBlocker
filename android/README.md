@@ -1,4 +1,4 @@
-# Hisn Android 0.5.0: protection development preview
+# Hisn Android 0.5.1: protection development preview
 
 The Android app contains an opt-in DNS-only VPN, saved custom rules, selected-app
 accessibility restrictions, opt-in daily app schedules, built-in adult-text checks and
@@ -15,6 +15,19 @@ tests, not proof that every browser request uses Hisn. Broader real-app coverage
 and VPN/lifecycle testing remain pending. Visual accuracy and real-app capture acceptance
 remain pending; the isolated live fixture sequence passes. Usage limits, full traffic coverage and managed-device uninstall
 blocking are not implemented.
+
+## 0.5.1 visual runtime fallback, release signing and 1.0 plan
+
+The visual model now tries WebGL first. If that runtime fails to load, it retries
+once in a fresh CPU runtime and keeps CPU for the rest of the process. A failed
+frame stays unknown and is never replayed, and replies from a replaced runtime are
+ignored. The debug benchmark accepts `--backend auto|cpu|webgl` so both paths can
+be compared on the same corpus. The core policy tests pass. The WebGL speed and
+stability on the Samsung **have not been measured yet**.
+
+`assembleRelease` signs the APK when all four `HISN_ANDROID_*` variables are set.
+The finish line, the non-goals and the remaining device and owner steps are in
+[the Android 1.0 plan](../docs/ANDROID_1.0_PLAN.md).
 
 ## 0.5.0 sampled image/video checks and app goal
 

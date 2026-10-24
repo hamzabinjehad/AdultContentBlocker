@@ -17,6 +17,7 @@ import java.util.Set;
 
 /** Stores chosen rules only. Never receives screen text or browsing history. */
 public final class PolicyStore {
+    @android.annotation.SuppressLint("StaticFieldLeak") // Holds only the application context.
     private static PolicyStore shared;
     public static synchronized PolicyStore get(Context context) {
         if (shared == null) shared = new PolicyStore(context);

@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">حصن</string>
     <string name="title">حصن لأندرويد</string>
-    <string name="subtitle">نسخة حماية تجريبية · 0.5.0</string>
+    <string name="subtitle">نسخة حماية تجريبية · 0.5.1</string>
     <string name="status_title">الحماية غير مفعّلة</string>
     <string name="status_body">فعّل الطبقات التي تختارها وراجع حالة كل منها. يختلف نطاق DNS وتقييد التطبيقات وفحص الصور والفيديو. لا يمنع الالتزام أندرويد من تعطيل حصن أو إزالته.</string>
     <string name="layers">طبقات الحماية</string>
