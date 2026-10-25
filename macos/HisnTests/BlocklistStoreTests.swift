@@ -723,6 +723,20 @@ final class SiteListGuardTests: XCTestCase {
         )
         XCTAssertEqual(SiteLists.allowlist(), ["work.example"])
     }
+
+    /// The menu bar's "Block a site…": one entry, canonicalised, through the
+    /// same guard — so it works during a lock and leaves the allowlist alone.
+    func testAddBlockCanonicalisesAndWorksDuringALock() throws {
+        try SiteLists.save(customBlocks: ["b.com"], allowlist: ["keep.example"], locked: false)
+        XCTAssertEqual(try SiteLists.addBlock("https://www.A.com/path", locked: true), .added("a.com"))
+        XCTAssertEqual(SiteLists.customBlocks(), ["a.com", "b.com"])
+        XCTAssertEqual(SiteLists.allowlist(), ["keep.example"])
+        XCTAssertEqual(try SiteLists.addBlock("cdn.b.com", locked: true), .alreadyBlocked("cdn.b.com"))
+        XCTAssertEqual(try SiteLists.addBlock("notb.com", locked: false), .added("notb.com"))
+        XCTAssertEqual(try SiteLists.addBlock("not a domain", locked: false), .invalid)
+        XCTAssertEqual(try SiteLists.addBlock("10.0.0.1", locked: false), .invalid)
+        XCTAssertEqual(SiteLists.customBlocks(), ["a.com", "b.com", "notb.com"])
+    }
 }
 
 // MARK: - Typed lock lengths

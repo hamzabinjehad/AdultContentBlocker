@@ -133,13 +133,13 @@ unchanged, and still not trusted.
 
 ## Interim hardening that needs no service
 
-* `setup_guardian.sh --demote-me` should `chown -R root:wheel
-  "/Library/Application Support/Hisn"` if it exists, so the daily user does
-  not keep ownership of the file they created while admin. The app's later
-  writes will fail (as they already do for a user who was never admin) and
-  the file becomes a frozen mirror of the deadline at demotion — which still
-  cannot be shortened by the standard user. Not done in this pass because
-  it changes an account-setup script this machine is not running.
+* `setup_guardian.sh --demote-me` now runs `chown -R root:wheel
+  "/Library/Application Support/Hisn"` (and removes group/other write) when
+  the directory exists, so the daily user does not keep ownership of the file
+  they created while admin. The app's later writes fail without harm (as they
+  already do for a user who was never admin) and the file becomes a frozen
+  mirror of the deadline at demotion — which the standard user cannot shorten.
+  Added 2026-10-24; checked with `bash -n` only, not yet run on a Mac.
 * The extension's own storage is the user's, and no validation on read
   changes that: a well-formed `appPresent: false` written through the storage
   API is indistinguishable from the real thing. What limits the damage is

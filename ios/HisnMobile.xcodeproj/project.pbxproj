@@ -11,6 +11,12 @@
 			path = "../shared/apple/CommitmentPolicy.swift";
 			sourceTree = "<group>";
 		};
+		1AC01D8272F7B9928ACCA554  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "../shared/apple/CustomSitePolicy.swift";
+			sourceTree = "<group>";
+		};
 		22ED35E5701488EB13E1DF35  = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -77,6 +83,12 @@
 			path = "Hisn/CommitmentSection.swift";
 			sourceTree = "<group>";
 		};
+		5EF93C39AE0A12F863A953BC  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/CustomSitesSection.swift";
+			sourceTree = "<group>";
+		};
 		05D3E25C09E84BF6A4E4E3F9  = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -93,6 +105,18 @@
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = "Hisn/MobileRootView.swift";
+			sourceTree = "<group>";
+		};
+		87FCFE1D32D633AB88DE35AC  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/PasscodeVault.swift";
+			sourceTree = "<group>";
+		};
+		368028F82BE73865E23337BC  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/PasscodeVaultSection.swift";
 			sourceTree = "<group>";
 		};
 		22116B79393CB72307A2D146  = {
@@ -127,10 +151,22 @@
 			path = "HisnBlocker/ContentBlockerRequestHandler.swift";
 			sourceTree = "<group>";
 		};
+		3121358B9829FA8B92F7CC6D  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "HisnTests/CustomSiteTests.swift";
+			sourceTree = "<group>";
+		};
 		663781E64B80A15C0EE27C59  = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = "HisnTests/MobileProtectionTests.swift";
+			sourceTree = "<group>";
+		};
+		1A8B5976E8468D0F3F208589  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "HisnTests/PasscodeVaultTests.swift";
 			sourceTree = "<group>";
 		};
 		5A4596A8AC23253937A69D67  = {
@@ -241,6 +277,7 @@
 			isa = PBXGroup;
 			children = (
 				AD749F27C885AF47D2DFEDB3,
+				1AC01D8272F7B9928ACCA554,
 				22ED35E5701488EB13E1DF35,
 				B68499C7EA29DC064714AED1,
 				4AD2C81EF123DB97B20BD752,
@@ -252,13 +289,18 @@
 				50D5E2EE75626431AAA2BD98,
 				0EBF9AB5818BE3FB3CC7C87B,
 				C34582A095CC840419BB2B67,
+				5EF93C39AE0A12F863A953BC,
 				05D3E25C09E84BF6A4E4E3F9,
 				FCE2B547D5D74B8316E364F7,
 				5F9265D85EAD1C04BD50005C,
+				87FCFE1D32D633AB88DE35AC,
+				368028F82BE73865E23337BC,
 				22116B79393CB72307A2D146,
 				97E3A110C1EF2759EB12FA3D,
 				1349496B0BFBD6AE9C197419,
+				3121358B9829FA8B92F7CC6D,
 				663781E64B80A15C0EE27C59,
+				1A8B5976E8468D0F3F208589,
 				5A4596A8AC23253937A69D67,
 				C04E1F33DC7CE7CFD4CD8A41,
 				76CFB910A4011D94CDB9761F,
@@ -300,6 +342,22 @@
 			isa = PBXBuildFile;
 			fileRef = 0EBF9AB5818BE3FB3CC7C87B;
 		};
+		03030D39D65AA6D26BEB03DD  = {
+			isa = PBXBuildFile;
+			fileRef = 5EF93C39AE0A12F863A953BC;
+		};
+		61ECC799ECCDABC20088EB06  = {
+			isa = PBXBuildFile;
+			fileRef = 1AC01D8272F7B9928ACCA554;
+		};
+		675E4E0D791B59A276E737B3  = {
+			isa = PBXBuildFile;
+			fileRef = 87FCFE1D32D633AB88DE35AC;
+		};
+		5056A4C25D4251FCF27FC603  = {
+			isa = PBXBuildFile;
+			fileRef = 368028F82BE73865E23337BC;
+		};
 		E63E463FCF5BDC5519A9DB2A  = {
 			isa = PBXBuildFile;
 			fileRef = 76CFB910A4011D94CDB9761F;
@@ -340,6 +398,10 @@
 				D8DDC4F32728D713E18BFB81,
 				9C919C0944858D597CE28EDE,
 				F18BE6724423D4FCCBFBB1F7,
+				03030D39D65AA6D26BEB03DD,
+				61ECC799ECCDABC20088EB06,
+				675E4E0D791B59A276E737B3,
+				5056A4C25D4251FCF27FC603,
 				E63E463FCF5BDC5519A9DB2A,
 				67A34052DA24D995BDA10FA4,
 				4841FAB2F7715FBD6FB4C434,
@@ -1321,6 +1383,14 @@
 			isa = PBXBuildFile;
 			fileRef = 5A4596A8AC23253937A69D67;
 		};
+		CEF03A8375D752D322C6BF97  = {
+			isa = PBXBuildFile;
+			fileRef = 3121358B9829FA8B92F7CC6D;
+		};
+		394F3003CCE31AB4243863D6  = {
+			isa = PBXBuildFile;
+			fileRef = 1A8B5976E8468D0F3F208589;
+		};
 		59C5F51CCE4172371A75875E  = {
 			isa = PBXBuildFile;
 			fileRef = 7164AD19C122B8FA8BC1D8E7;
@@ -1331,6 +1401,8 @@
 			files = (
 				85BBA81F143CB1411223B2CB,
 				CF445B6175B34EAAAD8E758E,
+				CEF03A8375D752D322C6BF97,
+				394F3003CCE31AB4243863D6,
 				59C5F51CCE4172371A75875E,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

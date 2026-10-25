@@ -8,6 +8,7 @@ struct MobileRootView: View {
     @State private var confirmation: Confirmation?
     @State private var selectedTab = 0
     @StateObject private var usage = AppUsageController()
+    @StateObject private var vault = PasscodeVaultController()
 
     init(protection: ProtectionController, language: Binding<String>, initialTab: Int = 0) {
         self.protection = protection
@@ -62,43 +63,31 @@ struct MobileRootView: View {
         .onChange(of: protection.checkedAt) { _ in usage.refresh() }
     }
 
+    /// Status first, then the commitment and the person's own sites. Everything
+    /// that repeats Setup lives there; overview details stay one tap away.
     private var overview: some View {
         List {
-            verifiedSetup
-            Section("status.title") {
-                LabeledContent("dns.title") { Text(dnsLabel).foregroundStyle(.secondary) }
-                LabeledContent("safari.title") {
-                    Text("\(protection.safari.filter { $0 == true }.count) / 4").monospacedDigit()
-                }
-                Text(MobileProtectionPolicy.safariConfigurationReady(enabled: protection.safari,
-                    lastReload: protection.safariReloads) ? "safari.enabled" : "safari.partial")
-                    .font(.footnote).foregroundStyle(.secondary)
-                if let date = protection.checkedAt {
-                    LabeledContent("status.checked") { Text(date, style: .time) }
-                        .font(.footnote).foregroundStyle(.secondary)
-                }
-            }
-            CommitmentSection(protection: protection)
+            verifiedSetup(compact: true)
             readiness
-            Section("browserfirst.quickTitle") {
-                Label("browserfirst.quickBody", systemImage: "puzzlepiece.extension")
-                    .font(.callout)
-                Button("browserfirst.openSetup") { selectedTab = 1 }
-                Text("browserfirst.unverified")
-                    .font(.footnote).foregroundStyle(.secondary)
+            CommitmentSection(protection: protection)
+            Section {
+                LabeledContent("sites.title") {
+                    Text(verbatim: "\(protection.customSites.count)").monospacedDigit()
+                }
+                Button("setup.continue") { selectedTab = 1 }
             }
             Section {
                 DisclosureGroup("overview.details") {
                     Text("overview.body").foregroundStyle(.secondary)
+                    Text("setup.status.scope").font(.footnote).foregroundStyle(.secondary)
+                    Text("setup.status.mixedcontent").font(.footnote).foregroundStyle(.secondary)
+                    Label("browserfirst.quickBody", systemImage: "puzzlepiece.extension").font(.callout)
+                    Text("browserfirst.unverified").font(.footnote).foregroundStyle(.secondary)
+                    LabeledContent("list.domains", value: protection.listCount.formatted())
+                    LabeledContent("list.version", value: String(protection.listVersion))
+                    Text("list.body").font(.footnote).foregroundStyle(.secondary)
                     Button("setup.continue") { selectedTab = 1 }
                 }
-            }
-            safariParts
-            removalSection
-            Section("list.title") {
-                LabeledContent("list.domains", value: protection.listCount.formatted())
-                LabeledContent("list.version", value: String(protection.listVersion))
-                Text("list.body").font(.footnote).foregroundStyle(.secondary)
             }
             errorRow
         }
@@ -112,9 +101,11 @@ struct MobileRootView: View {
 
     private var setup: some View {
         List {
-            verifiedSetup
+            verifiedSetup(compact: false)
             readiness
             CommitmentSection(protection: protection)
+            PasscodeVaultSection(vault: vault)
+            CustomSitesSection(protection: protection)
             BrowserFirstSection()
             AppUsageSection(protection: protection, usage: usage)
             Section("safari.title") {
@@ -150,7 +141,7 @@ struct MobileRootView: View {
         .background(Color(uiColor: .systemGroupedBackground))
     }
 
-    private var verifiedSetup: some View {
+    private func verifiedSetup(compact: Bool) -> some View {
         let assessment = protection.setupAssessment
         return Section("setup.status.title") {
             setupStatusLabel(assessment.state)
@@ -158,7 +149,9 @@ struct MobileRootView: View {
                 .accessibilityAddTraits(.isHeader)
                 .foregroundStyle(assessment.state == .configured ? Color.teal : Color.orange)
                 .accessibilityIdentifier("setup.currentAssessment")
-            Text("setup.status.scope").font(.footnote).foregroundStyle(.secondary)
+            if !compact {
+                Text("setup.status.scope").font(.footnote).foregroundStyle(.secondary)
+            }
             if assessment.state == .unchecked {
                 Text("setup.next.check").font(.callout)
             }
@@ -176,7 +169,9 @@ struct MobileRootView: View {
             if assessment.state == .needsSetup, selectedTab != 1 {
                 Button("setup.continue") { selectedTab = 1 }
             }
-            Text("setup.status.mixedcontent").font(.footnote).foregroundStyle(.secondary)
+            if !compact {
+                Text("setup.status.mixedcontent").font(.footnote).foregroundStyle(.secondary)
+            }
         }
     }
 
@@ -212,8 +207,9 @@ struct MobileRootView: View {
             }
             Text("plan.layers \(protection.configuredContentLayers)")
                 .font(.headline).accessibilityIdentifier("plan.configuredLayers")
-            readinessRow("safari.title", ready: protection.safariConfigured)
-            readinessRow("dns.title", ready: protection.dns == .enabled)
+            readinessRow("safari.title", ready: protection.safariConfigured,
+                detail: Text(verbatim: "\(protection.safari.filter { $0 == true }.count) / 4"))
+            readinessRow("dns.title", ready: protection.dns == .enabled, detail: Text(dnsLabel))
             readinessRow("screentime.layer", ready: protection.screenTimeConfigured)
             Text("plan.scope").font(.footnote).foregroundStyle(.secondary)
             if protection.checkedAt == nil {
@@ -223,9 +219,12 @@ struct MobileRootView: View {
         }
     }
 
-    private func readinessRow(_ title: LocalizedStringKey, ready: Bool) -> some View {
+    private func readinessRow(_ title: LocalizedStringKey, ready: Bool, detail: Text? = nil) -> some View {
         HStack {
-            Text(title)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                if let detail { detail.font(.caption).foregroundStyle(.secondary).monospacedDigit() }
+            }
             Spacer()
             if ready {
                 Label("plan.configured", systemImage: "checkmark.circle").foregroundStyle(.teal)

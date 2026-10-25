@@ -34,3 +34,30 @@ The real worker saves popup edits; an isolated managed/locked fixture checks
 read-only controls. This is not a test of a real native connection or the
 toolbar bubble in ChatGPT's browser. No real accounts or protection settings
 are changed by the isolated tests.
+
+## Minimal popup and one-tap site blocking — 2026-10-24
+
+The Chromium popup is quieter. The status icon now carries the protection
+colour instead of a separate dot, the language switch is a plain text button,
+and the boxed status card and divider lines are gone. The "Protection layers"
+caption is now a screen-reader-only heading. Layer rows are shorter, so all
+five layers fit without scrolling in the 480 × 600 popup.
+
+When the current tab is an ordinary `http(s)` site and the browser owns the
+block list, a **Current site** row offers **Block**. It adds the canonical
+host to the existing custom block list through the same guarded `update`
+message, so the worker rechecks it. Open tabs on that host move to the block
+page, which the worker already handles. Adding a block is tightening, so it
+stays available during a browser lock. The row is hidden on browser and
+extension pages, on IP-address hosts, and when the Hisn app owns the list.
+When the host or a parent domain is already blocked, the row shows **Blocked**.
+Removing a block still goes through **Manage protection** and its existing
+lock rules.
+
+Evidence (Linux, isolated Chromium profile, no native host): 54 settings unit
+checks, including 16 new quick-block cases; the i18n and Arabic catalog gates;
+the popup browser harness; and 53 of 54 UI QA checks (the remaining check
+needs a real toolbar popup and also fails on the unchanged baseline here). An
+end-to-end run blocked a test site from the popup: the worker stored the
+host, closed the tab and opened `blocked.html?reason=custom`. Real toolbar
+popup sizing, VoiceOver and Helium checks on macOS remain pending.
