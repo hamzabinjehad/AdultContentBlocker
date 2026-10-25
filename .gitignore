@@ -45,3 +45,6 @@ extension/visual/node_modules/
 # Android release keystores (owner-supplied via HISN_ANDROID_KEYSTORE).
 *.jks
 *.keystore
+
+# Local Claude Code worktrees.
+.claude/worktrees/

@@ -1,0 +1,36 @@
+name: Bug report
+description: Something blocked the wrong thing, missed something, or broke.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please do not paste browsing history, screenshots of adult content, your blocked
+        word or site lists, or anything else that identifies you. Describe the kind of
+        page or app instead.
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options: [Browser extension, Mac, iPhone, iPad, Android, Network / router, Other]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Hisn version and device
+      placeholder: "e.g. Android 0.5.1 on Samsung Galaxy S21 FE, Android 16"
+    validations:
+      required: true
+  - type: dropdown
+    id: layer
+    attributes:
+      label: Which layer
+      options: [DNS / domain blocking, App restrictions or schedules, Text checks, Image or video checks, Commitment / lock, Setup or status screen, Not sure]
+  - type: textarea
+    id: steps
+    attributes:
+      label: What happened
+      description: Steps, what you expected, and what Hisn did instead.
+    validations:
+      required: true

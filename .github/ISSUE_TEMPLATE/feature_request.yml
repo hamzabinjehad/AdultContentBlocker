@@ -1,0 +1,24 @@
+name: Feature request
+description: Suggest a protection layer, setting or platform improvement.
+labels: [enhancement]
+body:
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      multiple: true
+      options: [Browser extension, Mac, iPhone, iPad, Android, Network / router, All]
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What gap or difficulty would this address?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Suggested change
+      description: Include known limits. Hisn never reports browsing to a server.
