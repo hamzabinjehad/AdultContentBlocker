@@ -38,6 +38,7 @@ import app.hisn.core.WordRuleList;
 import app.hisn.core.GuardHealth;
 import app.hisn.core.SetupGuide;
 import app.hisn.core.DailyAppSchedule;
+import app.hisn.core.PolicyChangeError;
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.view.accessibility.AccessibilityManager;
 
@@ -501,7 +502,7 @@ public final class MainActivity extends Activity {
                         settings.update(settings.domainText(), settings.wordText(), rules.blockedApps, rules.scannedApps, !enabled);
                         if (!enabled) AdultPolicyAssets.ensureLoaded(this);
                         refreshStatus();
-                    } catch (RuntimeException unavailable) { Toast.makeText(this, R.string.rules_locked, Toast.LENGTH_LONG).show(); }
+                    } catch (RuntimeException refused) { showRefusal(refused); }
                 }).show();
     }
 
@@ -538,9 +539,7 @@ public final class MainActivity extends Activity {
                         settings.updateVisual(!enabled);
                         refreshStatus();
                         if (!enabled && settings.snapshot().scannedApps.isEmpty()) chooseApps(true);
-                    } catch (RuntimeException unavailable) {
-                        Toast.makeText(this, R.string.rules_locked, Toast.LENGTH_LONG).show();
-                    }
+                    } catch (RuntimeException refused) { showRefusal(refused); }
                 }).show();
     }
 
@@ -608,8 +607,7 @@ public final class MainActivity extends Activity {
                         domain ? settings.wordText() : input.getText().toString(), old.blockedApps, old.scannedApps);
                 dialog.dismiss();
                 Toast.makeText(this, R.string.rules_saved, Toast.LENGTH_SHORT).show();
-            } catch (IllegalArgumentException invalid) { input.setError(getString(R.string.rules_invalid)); }
-            catch (IllegalStateException locked) { input.setError(getString(R.string.rules_locked)); }
+            } catch (RuntimeException refused) { input.setError(refusalText(refused)); }
         }));
         dialog.show();
     }
@@ -635,9 +633,7 @@ public final class MainActivity extends Activity {
                         settings.update(settings.domainText(), settings.wordText(),
                                 scan ? current.blockedApps : chosen, scan ? chosen : current.scannedApps);
                         Toast.makeText(this, R.string.rules_saved, Toast.LENGTH_SHORT).show();
-                    } catch (RuntimeException unavailable) {
-                        Toast.makeText(this, R.string.rules_locked, Toast.LENGTH_LONG).show();
-                    }
+                    } catch (RuntimeException refused) { showRefusal(refused); }
                 }).show();
     }
 
@@ -730,12 +726,9 @@ public final class MainActivity extends Activity {
                 dialog.dismiss();
                 refreshStatus();
                 Toast.makeText(this, R.string.rules_saved, Toast.LENGTH_SHORT).show();
-            } catch (IllegalArgumentException invalid) {
-                error.setText(R.string.schedule_invalid);
-            } catch (IllegalStateException locked) {
-                error.setText(R.string.rules_locked);
-            } catch (RuntimeException unavailable) {
-                error.setText(R.string.policy_unavailable);
+            } catch (RuntimeException refused) {
+                PolicyChangeError reason = PolicyChangeError.of(refused);
+                error.setText(reason == PolicyChangeError.INVALID ? getString(R.string.schedule_invalid) : refusalText(refused));
             }
         }));
         dialog.show();
@@ -776,8 +769,24 @@ public final class MainActivity extends Activity {
                         .setNegativeButton(android.R.string.cancel, null)
                         .setPositiveButton(R.string.commitment_start, (confirm, which) -> {
                             try { settings.startCommitment(days[index]); refreshStatus(); }
-                            catch (RuntimeException unavailable) { Toast.makeText(this, R.string.rules_locked, Toast.LENGTH_LONG).show(); }
+                            catch (RuntimeException refused) { showRefusal(refused); }
                         }).show()).show();
+    }
+
+    /** The real reason a change was refused; only a commitment refusal says "locked". */
+    private String refusalText(RuntimeException refused) {
+        switch (PolicyChangeError.of(refused)) {
+            case TOO_MANY_APPS: return getString(R.string.rules_too_many_apps, PolicyStore.MAX_APPS);
+            case INVALID: return getString(R.string.rules_invalid);
+            case COMMITMENT: return getString(R.string.rules_locked);
+            case NEEDS_RULES: return getString(R.string.commitment_needs_rules);
+            case SAVE_FAILED: return getString(R.string.rules_save_failed);
+            default: return getString(R.string.policy_unavailable);
+        }
+    }
+
+    private void showRefusal(RuntimeException refused) {
+        Toast.makeText(this, refusalText(refused), Toast.LENGTH_LONG).show();
     }
 
     private EditText input(int hint, boolean multiline) {

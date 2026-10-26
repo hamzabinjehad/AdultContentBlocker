@@ -89,6 +89,8 @@
     <string name="rules_saved">Rules saved on this device.</string>
     <string name="rules_invalid">Check the format. Use up to 1,000 domains or word-rule lines. Each word rule can contain at most 128 characters.</string>
     <string name="rules_locked">The change could not be saved. During a commitment you can add restrictions but cannot remove existing ones or shorten the period.</string>
+    <string name="rules_too_many_apps">Choose at most %1$d apps in each list. Nothing was changed.</string>
+    <string name="rules_save_failed">The change could not be saved on this device. Try again.</string>
     <string name="policy_unavailable">Protection settings could not be loaded or saved. Protection is unavailable until this is resolved.</string>
     <string name="commitment_setup">Start or extend commitment</string>
     <plurals name="days">

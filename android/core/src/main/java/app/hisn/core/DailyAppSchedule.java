@@ -75,7 +75,8 @@ public final class DailyAppSchedule {
     }
 
     private static Set<String> packages(Set<String> input) {
-        if (input == null || input.size() > 200) throw new IllegalArgumentException("Invalid packages");
+        if (input == null) throw new IllegalArgumentException("Invalid packages");
+        if (input.size() > 200) throw new PolicyChangeError.Invalid(PolicyChangeError.TOO_MANY_APPS, "Too many apps");
         Set<String> result = new LinkedHashSet<>();
         for (String name : input) {
             if (name == null || name.length() > 255

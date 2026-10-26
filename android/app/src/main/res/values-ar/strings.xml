@@ -75,6 +75,8 @@
     <string name="rules_saved">حُفظت القواعد على هذا الجهاز.</string>
     <string name="rules_invalid">تحقق من الصيغة. الحد الأقصى ١٬٠٠٠ نطاق أو سطر قواعد، و١٢٨ حرفًا لكل قاعدة كلمات.</string>
     <string name="rules_locked">تعذّر حفظ التغيير. أثناء الالتزام يمكنك إضافة قيود، لكن لا يمكنك إزالة القيود الحالية أو تقصير الفترة.</string>
+    <string name="rules_too_many_apps">اختر %1$d تطبيق كحد أقصى في كل قائمة. لم يتغيّر شيء.</string>
+    <string name="rules_save_failed">تعذّر حفظ التغيير على هذا الجهاز. حاول مرة أخرى.</string>
     <string name="policy_unavailable">تعذّرت قراءة إعدادات الحماية أو حفظها. الحماية غير متاحة حتى معالجة المشكلة.</string>
     <string name="commitment_setup">بدء الالتزام أو تمديده</string>
     <plurals name="days">
