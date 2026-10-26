@@ -1,8 +1,8 @@
 # Hisn Android 0.5.3: honest status, notices and housekeeping
 
 Development preview, version code 15, 2026-10-26. Written and tested in a Linux
-container that has a JDK but no Android SDK; the Gradle build and lint run in
-CI (see Verification). Nothing in this record has been run on a phone.
+container that has a JDK but no Android SDK; the Gradle build and lint ran in
+the new CI job (see Verification). Nothing in this record has been run on a phone.
 
 ## What changed
 
@@ -96,7 +96,13 @@ CI (see Verification). Nothing in this record has been run on a phone.
 | --- | --- | --- |
 | `sh test-core.sh` | Linux container, OpenJDK 21.0.12 | Pass: string parity (186 strings, 3 plurals, 195 references), notices (5 core sources), 7,680 setup states, all new and existing core tests, 25/25 corpus blocks and 0/27 benign blocks, 159,762 seed domains |
 | App, debug, release and androidTest Java type-checked against Robolectric `android-all` 16 (API 36) with generated `R`/`BuildConfig` stubs | Linux container | Pass. Not a build: no aapt2, manifest merge, dexing or lint |
-| `assembleDebug assembleDebugAndroidTest lintDebug assembleRelease` | GitHub Actions `android` job | Pending the first CI run of this branch |
+| `sh test-core.sh` | GitHub Actions `android` job, ubuntu-24.04, Temurin 17 ([run 40264041056](https://github.com/hamzabinjehad/AdultContentBlocker/actions/runs/40264041056/job/121382383130)) | Pass, the same results as above |
+| `assembleDebug assembleDebugAndroidTest lintDebug assembleRelease` | Same job, Gradle 9.3.1, AGP 9.1.1 | `BUILD SUCCESSFUL in 1m 24s`, 119 tasks; `lintDebug` reported no errors (warning count is in the uploaded `android-lint-report` artifact, not read here) |
+
+APKs from that CI run (built on a GitHub runner, debug-signed or unsigned, not for distribution):
+debug `31df077adb56bcebe7b597b1991cd3e5df58aa24af91da6051e783fdac17f9db`,
+unsigned release `920cbd4c7f5f32f0ee594b6abb29d6e5bd314519a9fb637f99c99250baea2449`,
+androidTest `a5f863035eced2e962f5fb528c8a56fba34cab3090739716cc04918829cb2f63`.
 
 ## Still needs a phone
 
