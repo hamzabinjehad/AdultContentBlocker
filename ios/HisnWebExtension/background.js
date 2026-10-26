@@ -24,10 +24,13 @@ const VISUAL_PAGE_MESSAGES = ["getVisualStatus", "saveVisualSettings"];
 export function checkedVisualRequest(message, sender, api) {
   if (!message || typeof message !== "object" || Array.isArray(message)
       || !api.runtime.id || sender?.id !== api.runtime.id) return false;
-  if (VISUAL_PAGE_MESSAGES.includes(message.type)
-      || (message.type === "getVisualSettings" && !sender.tab)) {
-    return !sender.tab && sender.url === api.runtime.getURL("options.html");
-  }
+  // The options page is identified by its own extension URL, which the browser
+  // sets and a webpage cannot. Safari opens "full settings" in a tab, so a tab
+  // alone must not reject it; http(s) content still falls through below.
+  const page = typeof sender.url === "string" ? sender.url.split(/[?#]/)[0] : "";
+  const fromOptions = page === api.runtime.getURL("options.html");
+  if (VISUAL_PAGE_MESSAGES.includes(message.type)) return fromOptions;
+  if (message.type === "getVisualSettings" && fromOptions) return true;
   if (!VISUAL_CONTENT_MESSAGES.includes(message.type)
       || !Number.isInteger(sender?.tab?.id) || sender.tab.id < 0
       || !Number.isInteger(sender.frameId) || sender.frameId < 0
