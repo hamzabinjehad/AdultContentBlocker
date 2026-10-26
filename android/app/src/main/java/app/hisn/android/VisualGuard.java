@@ -6,8 +6,10 @@ import android.hardware.HardwareBuffer;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.PowerManager;
 import android.os.SystemClock;
 import android.view.accessibility.AccessibilityNodeInfo;
+import app.hisn.core.VisualDuty;
 import app.hisn.core.VisualFrameGate;
 import app.hisn.core.VisualHealth;
 import app.hisn.core.VisualHealth.State;
@@ -29,6 +31,8 @@ final class VisualGuard implements AutoCloseable {
     private final Runnable block;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final VisualFrameGate gate = new VisualFrameGate();
+    private final VisualDuty duty = new VisualDuty();
+    private final PowerManager power;
     private final Set<String> excluded;
     private VisualClassifier classifier;
     private boolean loaded, busy, closed;
@@ -40,11 +44,17 @@ final class VisualGuard implements AutoCloseable {
     VisualGuard(AccessibilityService service, Runnable block) {
         this.service = service;
         this.block = block;
+        power = service.getSystemService(PowerManager.class);
         excluded = ChosenApps.excluded(service);
         handler.post(tick);
     }
 
     void windowChanged() { gate.invalidate(); }
+
+    private boolean interactive() {
+        // Unknown power state: keep the previous behaviour rather than silently stopping checks.
+        return power == null || power.isInteractive();
+    }
 
     private static final class Target {
         final String app;
@@ -87,8 +97,14 @@ final class VisualGuard implements AutoCloseable {
             if (Build.VERSION.SDK_INT < 34) { health.report(State.UNSUPPORTED); return; }
             if (busy) return;
             health.report(State.WAITING);
-            Target target = selectedWindow();
-            if (target == null) { gate.invalidate(); return; }
+            // Nothing is sampled while the screen is off; an idle model is freed after a few minutes.
+            boolean interactive = interactive();
+            Target target = interactive ? selectedWindow() : null;
+            switch (duty.next(interactive, target != null, classifier != null, SystemClock.elapsedRealtime())) {
+                case RELEASE: resetEngine(); gate.invalidate(); return;
+                case PAUSE: gate.invalidate(); return;
+                default: break;
+            }
             if (SystemClock.uptimeMillis() < retryAfter) { health.report(State.ERROR); return; }
             if (classifier == null) {
                 health.report(State.LOADING);
@@ -150,7 +166,8 @@ final class VisualGuard implements AutoCloseable {
     }
 
     private boolean current(VisualFrameGate.Frame frame) {
-        Target target = selectedWindow();
+        // A sample finishing after the screen went off is discarded, never acted on.
+        Target target = interactive() ? selectedWindow() : null;
         return target != null && gate.accepts(frame, target.app, target.window, true, SystemClock.uptimeMillis());
     }
 
