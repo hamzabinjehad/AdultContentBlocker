@@ -44,7 +44,7 @@ public final class VisualCaptureTestActivity extends Activity {
                 startActivity(new Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS));
             } else if (!"status".equals(action)) throw new IllegalArgumentException("Unknown test action");
             report("OK " + action + " CONNECTED " + TextGuardService.connected
-                    + " ENABLED " + store.snapshot().visualEnabled + " STATE " + VisualGuard.state
+                    + " ENABLED " + store.snapshot().visualEnabled + " STATE " + VisualGuard.health.current() + " SHOWN " + VisualGuard.health.shown()
                     + " CAPTURES " + VisualGuard.captures + " SAMPLES " + VisualGuard.samples
                     + " REQUESTS " + VisualGuard.captureRequests
                     + " ELIGIBILITY " + VisualGuard.eligibility

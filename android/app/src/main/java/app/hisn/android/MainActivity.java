@@ -361,7 +361,7 @@ public final class MainActivity extends Activity {
             }
         }
         GuardHealth guard = GuardHealth.evaluate(guardPermissionEnabled(), TextGuardService.connected,
-                accessibilityConfigured, settingsReadable, TextGuardService.lastInspectionPartial
+                accessibilityConfigured, settingsReadable, TextGuardService.inspection.incomplete()
                         || (settingsReadable && settings.snapshot().adultWordsEnabled && AdultPolicyAssets.state != AdultPolicyAssets.State.READY));
         if (guard.needsAttention || current == DnsVpnService.State.ERROR || current == DnsVpnService.State.DEGRADED
                 || privateDnsBypass || DnsVpnService.connectionCheck.state == DnsVpnService.CheckState.FAILED)
@@ -514,7 +514,7 @@ public final class MainActivity extends Activity {
         else if (!rules.visualEnabled) label = R.string.visual;
         else if (rules.scannedApps.isEmpty()) label = R.string.visual_no_apps;
         else if (!Boolean.TRUE.equals(guardPermissionEnabled()) || !TextGuardService.connected) label = R.string.visual_disconnected;
-        else switch (VisualGuard.state) {
+        else switch (VisualGuard.health.shown()) {
             case LOADING: label = R.string.visual_loading; break;
             case CHECKING: label = R.string.visual_checking; break;
             case SAMPLED: label = R.string.visual_sampled; break;

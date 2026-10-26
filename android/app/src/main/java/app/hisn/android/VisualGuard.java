@@ -9,12 +9,14 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.view.accessibility.AccessibilityNodeInfo;
 import app.hisn.core.VisualFrameGate;
+import app.hisn.core.VisualHealth;
+import app.hisn.core.VisualHealth.State;
 import java.util.Set;
 
 /** Opt-in, selected-window sampling. Never persists pixels or bypasses secure surfaces. */
 final class VisualGuard implements AutoCloseable {
-    enum State { OFF, UNSUPPORTED, WAITING, LOADING, CHECKING, SAMPLED, UNREADABLE, INPUT, ERROR }
-    static volatile State state = State.OFF;
+    /** Keeps the latest failure on the dashboard until a later sample succeeds. */
+    static final VisualHealth health = new VisualHealth();
     static volatile long samples;
     static volatile long interventions;
     static volatile long captures;
@@ -63,7 +65,7 @@ final class VisualGuard implements AutoCloseable {
             // Do not capture an app while an input field is focused, including passwords.
             input = root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT);
             if (input != null && (input.isEditable() || input.isPassword())) {
-                state = State.INPUT;
+                health.report(State.INPUT);
                 eligibility = "INPUT";
                 return null;
             }
@@ -80,16 +82,16 @@ final class VisualGuard implements AutoCloseable {
         handler.postDelayed(tick, 2000);
         try {
             if (!PolicyStore.get(service).snapshot().visualEnabled) {
-                resetEngine(); state = State.OFF; return;
+                resetEngine(); health.report(State.OFF); return;
             }
-            if (Build.VERSION.SDK_INT < 34) { state = State.UNSUPPORTED; return; }
+            if (Build.VERSION.SDK_INT < 34) { health.report(State.UNSUPPORTED); return; }
             if (busy) return;
-            state = State.WAITING;
+            health.report(State.WAITING);
             Target target = selectedWindow();
             if (target == null) { gate.invalidate(); return; }
-            if (SystemClock.uptimeMillis() < retryAfter) { state = State.ERROR; return; }
+            if (SystemClock.uptimeMillis() < retryAfter) { health.report(State.ERROR); return; }
             if (classifier == null) {
-                state = State.LOADING;
+                health.report(State.LOADING);
                 busy = true;
                 classifier = new VisualClassifier(service, verdict -> {
                     if (closed) return;
@@ -101,7 +103,7 @@ final class VisualGuard implements AutoCloseable {
             }
             if (!loaded) return;
             busy = true;
-            state = State.CHECKING;
+            health.report(State.CHECKING);
             VisualFrameGate.Frame frame = gate.begin(target.app, target.window, SystemClock.uptimeMillis());
             pendingFrame = frame;
             handler.postDelayed(captureTimeout, 10000);
@@ -113,14 +115,14 @@ final class VisualGuard implements AutoCloseable {
                         handler.removeCallbacks(captureTimeout);
                         captures++;
                         if (!current(frame)) {
-                            discarded++; pendingFrame = null; busy = false; state = State.WAITING; return;
+                            discarded++; pendingFrame = null; busy = false; health.report(State.WAITING); return;
                         }
                         Bitmap hardware = Bitmap.wrapHardwareBuffer(buffer, screenshot.getColorSpace());
-                        if (hardware == null) { busy = false; state = State.UNREADABLE; return; }
+                        if (hardware == null) { busy = false; health.report(State.UNREADABLE); return; }
                         Bitmap copy = null, scaled = null;
                         try {
                             if ((long) hardware.getWidth() * hardware.getHeight() > 16777216) {
-                                busy = false; state = State.UNREADABLE; return;
+                                busy = false; health.report(State.UNREADABLE); return;
                             }
                             copy = hardware.copy(Bitmap.Config.ARGB_8888, false);
                             double scale = Math.min(1.0, 384.0 / Math.max(copy.getWidth(), copy.getHeight()));
@@ -140,7 +142,7 @@ final class VisualGuard implements AutoCloseable {
                         pendingFrame = null;
                         captureFailures++;
                         lastCaptureError = error;
-                        busy = false; state = State.UNREADABLE;
+                        busy = false; health.report(State.UNREADABLE);
                     }
                 }
             });
@@ -157,13 +159,13 @@ final class VisualGuard implements AutoCloseable {
         pendingFrame = null;
         busy = false;
         try {
-            if (!current(frame)) { discarded++; state = State.WAITING; return; }
+            if (!current(frame)) { discarded++; health.report(State.WAITING); return; }
             Target target = selectedWindow();
             verdict = VisualTestHooks.verdict(service.getPackageName(), target == null ? null : target.app,
                     verdict, SystemClock.uptimeMillis());
             if (!"block".equals(verdict) && !"allow".equals(verdict)) { fail(); return; }
             samples++;
-            state = State.SAMPLED;
+            health.report(State.SAMPLED);
             if ("block".equals(verdict)) {
                 gate.invalidate();
                 interventions++;
@@ -175,7 +177,7 @@ final class VisualGuard implements AutoCloseable {
     private void fail() {
         resetEngine();
         retryAfter = SystemClock.uptimeMillis() + 30000;
-        state = State.ERROR;
+        health.report(State.ERROR);
     }
 
     private void resetEngine() {
@@ -193,6 +195,6 @@ final class VisualGuard implements AutoCloseable {
         closed = true;
         handler.removeCallbacksAndMessages(null);
         resetEngine();
-        state = State.OFF;
+        health.report(State.OFF);
     }
 }
