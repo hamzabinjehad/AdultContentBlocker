@@ -103,6 +103,11 @@ final class MonitorSharedState {
 
     func clearHeldBudgetDay() { defaults.map(AppUsageConfiguration.clearHeld) }
 
+    /// Removes the reached-day markers once that day is over on both clocks.
+    func settleReachedDay(deviceNow: Date, trustedNow: Date?) {
+        defaults.map { AppUsageConfiguration.settleIfOver($0, deviceNow: deviceNow, trustedNow: trustedNow) }
+    }
+
     /// The language picked in Hisn's Settings ("system", "ar" or "en").
     static var languageChoice: String? { UserDefaults.standard.string(forKey: "hisn.mobile.language") }
 }

@@ -338,3 +338,6 @@
 "guide.done" = "Done";
 "guide.next" = "Next";
 "guide.later" = "Not yet";
+
+/* Review fixes: commitment end and trusted time */
+"commitment.startNeedsTime" = "The commitment did not start: Hisn could not read Apple's server time. A commitment starts from Apple's time, so a clock set back cannot shorten it. Connect to the internet and try again.";

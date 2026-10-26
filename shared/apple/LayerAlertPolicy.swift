@@ -66,13 +66,13 @@ enum LayerAlertPolicy {
         let remember: Set<Layer>
     }
 
-    /// Only while the commitment runs (the same both-clocks rule as its end), only when
-    /// the person turned alerts on, only for layers with text, and once per loss.
+    /// Only while the commitment runs (the same both-clocks rule as its end, with no
+    /// allowance: alerts stop no earlier than the commitment does), only when the person
+    /// turned alerts on, only for layers with text, and once per loss.
     static func decide(watch: Watch?, deviceNow: Date, trustedNow: Date?, observed: Observation,
                        alreadyPosted: Set<Layer>) -> Decision {
         guard let watch, watch.alertsOn,
-              TrustedTime.verdict(for: watch.deadline, deviceNow: deviceNow, trustedNow: trustedNow,
-                                  skew: TrustedTime.readingSkew) != .passed
+              TrustedTime.verdict(for: watch.deadline, deviceNow: deviceNow, trustedNow: trustedNow) != .passed
         else { return Decision(post: [], remember: []) }
         let lost = lostLayers(watch, observed: observed)
         let post = lost.subtracting(alreadyPosted).filter { watch.texts[$0.rawValue] != nil }.sorted()

@@ -20,27 +20,81 @@ enum TrustedTime {
         return Double(info.numer) / Double(info.denom) / 1_000_000_000
     }()
 
+    /// This boot's identifier (`kern.bootsessionuuid`), new at every restart. nil when iOS
+    /// does not give it: every saved reading then counts as from another boot, which can
+    /// only under-count.
+    static let bootSession: String? = {
+        var size = 0
+        guard sysctlbyname("kern.bootsessionuuid", nil, &size, nil, 0) == 0, size > 1, size <= 256 else { return nil }
+        var buffer = [CChar](repeating: 0, count: size)
+        guard sysctlbyname("kern.bootsessionuuid", &buffer, &size, nil, 0) == 0 else { return nil }
+        let value = String(cString: buffer)
+        return value.isEmpty ? nil : value
+    }()
+
     /// One reading of Apple's server clock and the uptime when it arrived.
     struct Anchor: Codable, Equatable {
         let server: Date
         let uptime: TimeInterval
+        /// The boot whose monotonic clock `uptime` is on. nil (a reading saved before this
+        /// was recorded, or no identifier) counts as another boot.
+        var boot: String?
+        /// A lower bound carried over a reboot rather than read in `boot`: it is short by
+        /// however long the phone was off, so it is never fresh and never exact.
+        var carried: Bool?
 
-        /// The earliest the real time can be at `now` (an uptime). In the same boot
-        /// this is exact. After a reboot uptime restarts near zero, so at most the
-        /// current boot's uptime is added: that can only under-count, never over-count.
-        func lowerBound(uptime now: TimeInterval) -> Date? {
+        init(server: Date, uptime: TimeInterval, boot: String? = nil, carried: Bool? = nil) {
+            self.server = server; self.uptime = uptime; self.boot = boot; self.carried = carried
+        }
+
+        /// `uptime` is on the current boot's clock: the same boot identifier, and that clock
+        /// has not gone back. A longer-running later boot is still another boot.
+        func sameBoot(uptime now: TimeInterval, boot current: String?) -> Bool {
+            guard let boot, let current, boot == current, uptime.isFinite, now.isFinite else { return false }
+            return now >= uptime
+        }
+
+        /// The earliest the real time can be at `now` (an uptime). In the same boot this is
+        /// exact. After a reboot only the current boot's uptime is added: that can only
+        /// under-count, never over-count.
+        func lowerBound(uptime now: TimeInterval, boot current: String?) -> Date? {
             guard server.timeIntervalSinceReferenceDate.isFinite, uptime.isFinite, uptime >= 0,
                   now.isFinite, now >= 0 else { return nil }
-            let elapsed = now >= uptime ? now - uptime : now
+            let elapsed = sameBoot(uptime: now, boot: current) ? now - uptime : now
             let bound = server.addingTimeInterval(elapsed)
             return bound.timeIntervalSinceReferenceDate.isFinite ? bound : nil
         }
 
-        /// Seconds of this boot since the reading, or nil after a reboot.
-        func age(uptime now: TimeInterval) -> TimeInterval? {
-            guard uptime.isFinite, now.isFinite, now >= uptime else { return nil }
+        /// Seconds since Apple's time was read in this boot; nil for a reading from another
+        /// boot or one carried over a reboot, which callers treat as stale.
+        func age(uptime now: TimeInterval, boot current: String?) -> TimeInterval? {
+            guard carried != true, sameBoot(uptime: now, boot: current) else { return nil }
             return now - uptime
         }
+
+        /// The same lower bound restated at `now`, so a later reboot counts from here rather
+        /// than from the original reading. It stays fresh only if this one was.
+        func rebased(uptime now: TimeInterval, boot current: String?) -> Anchor? {
+            guard let bound = lowerBound(uptime: now, boot: current) else { return nil }
+            return Anchor(server: bound, uptime: now, boot: current,
+                          carried: age(uptime: now, boot: current) == nil ? true : nil)
+        }
+    }
+
+    /// A new reading of Apple's time, checked against the saved one before it is kept.
+    ///
+    /// Hisn does not pin Apple's certificate: the reading is as trustworthy as the system's
+    /// HTTPS trust, so a root certificate the person installed and trusted (an
+    /// HTTPS-inspecting proxy, say) could forge the `Date` header. Within one boot a fresh
+    /// saved reading already gives the time to within its network delay, so a new reading
+    /// may only lower it: one that is ahead is not taken, and nothing a forged header says
+    /// can move the time forward until the next restart. A reading in a new boot has
+    /// nothing to be checked against and is taken as it is.
+    static func reconcile(reading: Date, uptime: TimeInterval, boot: String?, with saved: Anchor?) -> Anchor {
+        let fresh = Anchor(server: reading, uptime: uptime, boot: boot)
+        guard let saved, saved.age(uptime: uptime, boot: boot) != nil,
+              let bound = saved.lowerBound(uptime: uptime, boot: boot), bound < reading else { return fresh }
+        return Anchor(server: bound, uptime: uptime, boot: boot)
     }
 
     enum Verdict: Equatable {
@@ -55,8 +109,10 @@ enum TrustedTime {
     }
 
     /// A reading lags the real time by the `Date` header's whole seconds and the network
-    /// delay. Allowing this much keeps an honest midnight or end date from looking like a
-    /// moved clock; it can end a lock at most this early, never days early.
+    /// delay. The monitor extension settles a budget day in one check at midnight, so it
+    /// allows this much to keep an honest midnight from looking like a moved clock. The
+    /// commitment end and the layer-alert window never use it: the app re-checks every
+    /// minute, and a commitment must not end even seconds early.
     static let readingSkew: TimeInterval = 120
 
     /// A date counts as passed only on both clocks. Unknown server time never passes.
@@ -77,12 +133,26 @@ enum TrustedTime {
         func load() -> Anchor? {
             guard let data = storage.object(forKey: Self.key) as? Data,
                   let anchor = try? JSONDecoder().decode(Anchor.self, from: data),
-                  anchor.lowerBound(uptime: anchor.uptime) != nil else { return nil }
+                  anchor.lowerBound(uptime: anchor.uptime, boot: anchor.boot) != nil else { return nil }
             return anchor
         }
 
         func save(_ anchor: Anchor) throws {
             try storage.write(JSONEncoder().encode(anchor), forKey: Self.key)
+        }
+
+        /// Saves a restated lower bound unless the saved one is already later at `uptime`,
+        /// so a check never moves the shared time backwards. At the same bound the
+        /// restatement wins (it counts from later after a reboot), unless it would replace a
+        /// reading made in this boot with one carried over a reboot.
+        func advance(to candidate: Anchor, uptime: TimeInterval, boot: String?) throws {
+            guard let next = candidate.lowerBound(uptime: uptime, boot: boot) else { return }
+            if let saved = load(), let current = saved.lowerBound(uptime: uptime, boot: boot), current >= next {
+                let losesFreshness = saved.age(uptime: uptime, boot: boot) != nil
+                    && candidate.age(uptime: uptime, boot: boot) == nil
+                guard current == next, !losesFreshness, candidate.server > saved.server else { return }
+            }
+            try save(candidate)
         }
     }
 }
@@ -95,6 +165,10 @@ protocol ServerTimeSource {
 
 /// The `Date` header of an HTTPS response from Apple. Nothing about the person
 /// is sent: a plain HEAD request with no cookies and no cache.
+///
+/// Default system trust, no certificate pinning: a root certificate the person trusted
+/// can show a false time. Callers keep a reading through `TrustedTime.reconcile`, which
+/// never lets one move the time forward within a boot that already has a reading.
 struct AppleServerTime: ServerTimeSource {
     static let url = URL(string: "https://www.apple.com/")!
     var timeout: TimeInterval = 10

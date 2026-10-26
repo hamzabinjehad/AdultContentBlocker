@@ -46,7 +46,12 @@ final class ProtectionController: ObservableObject {
     /// The last attempt to read Apple's time failed (offline or blocked).
     @Published private(set) var serverTimeFailed = false
     private let serverTime: ServerTimeSource
+    /// This boot's identifier; a saved reading from another boot is never taken as exact.
+    private let bootSession: () -> String?
     private var anchor: TrustedTime.Anchor?
+    /// Starting a commitment needs Apple's time read in this boot: set while Hisn reads it,
+    /// and to say why a commitment did not start when it could not.
+    @Published private(set) var commitmentStartNote: String?
     private var lastServerAttempt: TimeInterval?
     private var lastTimeCheck: TrustedTime.Verdict?
     private var serverCheck: Task<Void, Never>?
@@ -68,7 +73,9 @@ final class ProtectionController: ObservableObject {
          resourceBundleURL: URL = Bundle.main.bundleURL,
          clockSource: @escaping () -> (wall: Date, uptime: TimeInterval) = { (Date(), CommitmentClock.continuousTime) },
          serverTime: ServerTimeSource? = nil, shared: MonitorSharedState? = nil,
-         notifications: NotificationPermission? = nil, screenTimeFilter: ScreenTimeFilterAccess? = nil) {
+         notifications: NotificationPermission? = nil, screenTimeFilter: ScreenTimeFilterAccess? = nil,
+         bootSession: @escaping () -> String? = { TrustedTime.bootSession }) {
+        self.bootSession = bootSession
         self.screenTimeFilter = screenTimeFilter ?? ManagedScreenTimeFilter()
         self.customSiteStore = customSiteStore ?? CustomSiteStore.deviceLocal()
         self.resourceBundleURL = resourceBundleURL
@@ -108,9 +115,13 @@ final class ProtectionController: ObservableObject {
     }
 
     /// Where the saved commitment's end stands on both clocks; nil without a commitment.
+    /// No reading allowance: the app re-checks every minute, so the end is never early.
+    /// An end already confirmed and saved stays passed, whatever the clocks say later.
     var commitmentTimeCheck: TrustedTime.Verdict? {
-        commitment.map { TrustedTime.verdict(for: $0.deadline, deviceNow: now, trustedNow: trustedNow,
-                                             skew: TrustedTime.readingSkew) }
+        commitment.map { session in
+            session.endConfirmed ? .passed
+                : TrustedTime.verdict(for: session.deadline, deviceNow: now, trustedNow: trustedNow)
+        }
     }
 
     /// Running until both this iPhone's clock and Apple's server time have passed the end.
@@ -123,14 +134,39 @@ final class ProtectionController: ObservableObject {
         let sample = clockSource()
         clockAssessment = clockMonitor.assessment(wall: sample.wall, uptime: sample.uptime)
         if let elapsed = clockMonitor.elapsedDate(uptime: sample.uptime) { now = elapsed }
-        trustedNow = anchor?.lowerBound(uptime: sample.uptime)
+        trustedNow = anchor?.lowerBound(uptime: sample.uptime, boot: bootSession())
         let check = commitmentTimeCheck
         if check == .unverified || check == .clockAhead { scheduleServerTimeCheck() }
         if check != lastTimeCheck {
             lastTimeCheck = check
-            // The end was just confirmed on both clocks: stop watching for layer loss.
-            if check == .passed { publishWatch(); updateWatchSchedule() }
+            if check == .passed {
+                confirmCommitmentEnd()
+                // The end was just confirmed on both clocks: stop watching for layer loss.
+                publishWatch(); updateWatchSchedule()
+            }
         }
+    }
+
+    /// Saves, with the commitment in the Keychain, that its end passed on both clocks, and
+    /// restates Apple's time at this moment. Without this, a reboot would bring back only
+    /// the older reading (from before the deadline), and the ended commitment would run
+    /// again until Apple's time could be read, restoring a filter turned off after the end.
+    /// A failed save changes nothing now: this boot's reading still ends it, and the next
+    /// refresh tries again.
+    private func confirmCommitmentEnd() {
+        guard commitmentStorageHealthy, let session = commitment, !session.endConfirmed,
+              commitmentTimeCheck == .passed, let trustedNow,
+              let confirmed = session.confirmingEnd(at: trustedNow) else { return }
+        let sample = clockSource()
+        let boot = bootSession()
+        if let rebased = anchor?.rebased(uptime: sample.uptime, boot: boot) {
+            anchor = rebased
+            try? shared.anchors.advance(to: rebased, uptime: sample.uptime, boot: boot)
+        }
+        do {
+            try commitmentStore.save(confirmed)
+            commitment = confirmed
+        } catch {}
     }
 
     private func loadCommitment() {
@@ -138,9 +174,24 @@ final class ProtectionController: ObservableObject {
         catch { commitmentStorageHealthy = false; errorKey = "commitment.storageFailed" }
     }
 
-    func startCommitment(days: Int) {
+    /// Starts from Apple's time when the device clock is behind it, so a clock set back
+    /// before starting cannot shorten the commitment. Without a reading made in this boot
+    /// Hisn reads Apple's time first; if it cannot, the commitment does not start and
+    /// `commitmentStartNote` says why.
+    func startCommitment(days: Int) async {
         updateClock()
         guard !busy, commitmentStorageHealthy, !commitmentActive, [1, 7, 30, 90].contains(days) else { return }
+        commitmentStartNote = nil
+        if !hasReadingThisBoot {
+            busy = true
+            commitmentStartNote = "commitment.checkingTime"
+            await checkServerTime()
+            busy = false
+            commitmentStartNote = nil
+            updateClock()
+            guard hasReadingThisBoot else { commitmentStartNote = "commitment.startNeedsTime"; return }
+            guard !busy, commitmentStorageHealthy, !commitmentActive else { return }
+        }
         // Record what iOS reports now, not an older reading: this is the person's choice
         // of Hisn's Screen Time filter for the commitment, and only a chosen filter is restored.
         readScreenTimeState()
@@ -157,6 +208,11 @@ final class ProtectionController: ObservableObject {
         updateClock()
         publishWatch()
         updateWatchSchedule()
+    }
+
+    /// Apple's time was read in this boot, so `trustedNow` is exact (within network delay).
+    var hasReadingThisBoot: Bool {
+        anchor?.age(uptime: clockSource().uptime, boot: bootSession()) != nil
     }
 
     /// The person turned Hisn's filter on during the commitment (only they can): record
@@ -196,7 +252,8 @@ final class ProtectionController: ObservableObject {
             updateClock()
             return
         }
-        let next = TrustedTime.Anchor(server: reading, uptime: uptime)
+        // In a boot that already has a reading, a new one may only lower it (see reconcile).
+        let next = TrustedTime.reconcile(reading: reading, uptime: uptime, boot: bootSession(), with: anchor)
         anchor = next
         try? shared.anchors.save(next)
         serverTimeFailed = false
@@ -221,7 +278,7 @@ final class ProtectionController: ObservableObject {
     /// Apple's time is read only when something depends on it: a commitment that has not
     /// ended on both clocks, a budget day the monitor held, or a daily budget.
     var needsServerTime: Bool {
-        let age = anchor.flatMap { $0.age(uptime: clockSource().uptime) }
+        let age = anchor.flatMap { $0.age(uptime: clockSource().uptime, boot: bootSession()) }
         let stale = age.map { $0 > Self.anchorRefreshInterval } ?? true
         if let check = commitmentTimeCheck, check != .passed {
             if check != .notYet { return true }
@@ -243,6 +300,8 @@ final class ProtectionController: ObservableObject {
             ManagedSettingsStore(named: .init(AppUsageConfiguration.budgetStoreName)).clearAllSettings()
             #endif
             shared.clearHeldBudgetDay()
+            // A day over on both clocks is settled, so no later check shields it again.
+            shared.settleReachedDay(deviceNow: now, trustedNow: trustedNow)
         }
     }
 
@@ -570,6 +629,8 @@ final class ProtectionController: ObservableObject {
         loadCommitment()
         anchor = shared.anchors.load() ?? anchor
         updateClock()
+        // An end confirmed in this boot whose save failed earlier: try again.
+        confirmCommitmentEnd()
         loadCustomSites()
         settleHeldBudgetDay()
         notificationStatus = await notifications.status()

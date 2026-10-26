@@ -37,6 +37,7 @@ struct CommitmentSection: View {
                 Toggle("commitment.acknowledge", isOn: $understandsLimits)
                 Button("commitment.start") { confirmation = .commitment(days) }
                     .disabled(protection.busy || !protection.commitmentStorageHealthy || !understandsLimits)
+                if let note = protection.commitmentStartNote { Label(LocalizedStringKey(note), systemImage: "clock.badge.exclamationmark").font(.footnote).foregroundStyle(HisnPalette.warning) }
             }
             if !protection.commitmentStorageHealthy {
                 Label("commitment.storageFailed", systemImage: "exclamationmark.triangle")
@@ -68,7 +69,7 @@ struct CommitmentSection: View {
             case .commitment(let selected):
                 Button("commitment.start") {
                     switch CommitmentStartFlow.afterFirstConfirmation(hasBlockingLayer: protection.hasBlockingConfiguration) {
-                    case .start: protection.startCommitment(days: selected)
+                    case .start: Task { await protection.startCommitment(days: selected) }
                     case .confirmNothingLocked: nothingLockedDays = selected
                     }
                 }
@@ -93,7 +94,7 @@ struct CommitmentSection: View {
         .alert("commitment.empty.title",
                isPresented: Binding(get: { nothingLockedDays != nil }, set: { if !$0 { nothingLockedDays = nil } }),
                presenting: nothingLockedDays) { selected in
-            Button("commitment.empty.start", role: .destructive) { protection.startCommitment(days: selected) }
+            Button("commitment.empty.start", role: .destructive) { Task { await protection.startCommitment(days: selected) } }
             Button("commitment.empty.cancel", role: .cancel) { }
         } message: { selected in
             Text("commitment.empty.body \(selected)")

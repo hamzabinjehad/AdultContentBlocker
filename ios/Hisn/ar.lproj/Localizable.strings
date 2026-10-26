@@ -338,3 +338,6 @@
 "guide.done" = "تم";
 "guide.next" = "التالي";
 "guide.later" = "ليس بعد";
+
+/* Review fixes: commitment end and trusted time */
+"commitment.startNeedsTime" = "لم يبدأ الالتزام: تعذّر على حصن قراءة وقت خادم Apple. يبدأ الالتزام من وقت Apple، فلا يقصّره إرجاع الساعة إلى الوراء. اتصل بالإنترنت وحاول مجددًا.";

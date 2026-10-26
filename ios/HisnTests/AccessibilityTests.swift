@@ -130,8 +130,9 @@ final class AccessibilityTests: XCTestCase {
         defaults.set(MobileProtectionPolicy.LockAttestation(claim: .passcodeVault, selfTested: true,
                                                             vaultCreatedAt: facts.createdAt, confirmedAt: now).storage,
                      forKey: MobileProtectionPolicy.lockAttestationKey)
-        let protection = ProtectionController(commitmentStore: MemoryCommitmentStore())
-        protection.startCommitment(days: 30)
+        let protection = ProtectionController(commitmentStore: MemoryCommitmentStore(),
+                                              serverTime: AppleTimeStub.followingDeviceClock())
+        await protection.startCommitment(days: 30)
         XCTAssertTrue(protection.commitmentActive)
         XCTAssertNotNil(VaultCommitmentDates.plan(vault: vault.vault, commitmentEnd: protection.commitment?.deadline, now: now),
                         "the vault opens first, so the offer is on screen")

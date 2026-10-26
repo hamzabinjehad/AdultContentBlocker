@@ -53,6 +53,12 @@ enum CommitmentPolicy {
                                               < ($1.deadline, $1.screenTimeFilter == true ? 1 : 0) }) else {
             throw RestorationFailure.corrupt
         }
+        // A confirmed end counts only when every readable copy carries one: a single copy
+        // (a damaged or edited mirror) cannot end a commitment. Without it the end is
+        // simply checked again on both clocks.
+        guard latest.endConfirmedAt == nil || sessions.allSatisfy({ $0.endConfirmed }) else {
+            return latest.withoutEndConfirmation()
+        }
         return latest
     }
 
@@ -96,11 +102,25 @@ enum CommitmentPolicy {
         /// turned it on during the commitment). Recorded with the commitment as their
         /// consent to have it restored; nil for sessions saved before it was recorded.
         let screenTimeFilter: Bool?
-        init(startedAt: Date, deadline: Date, screenTimeFilter: Bool? = nil) {
+        /// Apple's time (a lower bound) when the end had passed on both clocks, saved with the
+        /// commitment so it stays ended: a reboot that loses the same-boot reading cannot
+        /// make it run again, nor bring back a filter the person turned off after the end.
+        /// Never before the deadline; nil until the end is confirmed.
+        let endConfirmedAt: Date?
+        init(startedAt: Date, deadline: Date, screenTimeFilter: Bool? = nil, endConfirmedAt: Date? = nil) {
             self.startedAt = startedAt; self.deadline = deadline; self.screenTimeFilter = screenTimeFilter
+            self.endConfirmedAt = endConfirmedAt
         }
         func isActive(at now: Date) -> Bool { now < deadline }
-        func isValid() -> Bool { CommitmentPolicy.validDuration(deadline.timeIntervalSince(startedAt)) }
+        func isValid() -> Bool {
+            CommitmentPolicy.validDuration(deadline.timeIntervalSince(startedAt))
+                && (endConfirmedAt == nil || endConfirmed)
+        }
+        /// The end was confirmed on both clocks at or after the deadline.
+        var endConfirmed: Bool {
+            guard let endConfirmedAt, endConfirmedAt.timeIntervalSinceReferenceDate.isFinite else { return false }
+            return endConfirmedAt >= deadline
+        }
         func extending(by seconds: TimeInterval) -> Session? {
             guard isValid(), let next = CommitmentPolicy.extendedDeadline(deadline, by: seconds) else { return nil }
             let session = Session(startedAt: startedAt, deadline: next, screenTimeFilter: screenTimeFilter)
@@ -108,7 +128,16 @@ enum CommitmentPolicy {
         }
         /// Recording the choice only ever adds it; the commitment's dates do not change.
         func choosingScreenTimeFilter() -> Session {
-            Session(startedAt: startedAt, deadline: deadline, screenTimeFilter: true)
+            Session(startedAt: startedAt, deadline: deadline, screenTimeFilter: true, endConfirmedAt: endConfirmedAt)
+        }
+        /// Records that the end has passed on both clocks; nil if `trustedNow` is before it.
+        func confirmingEnd(at trustedNow: Date) -> Session? {
+            let session = Session(startedAt: startedAt, deadline: deadline, screenTimeFilter: screenTimeFilter,
+                                  endConfirmedAt: trustedNow)
+            return session.endConfirmed && session.isValid() ? session : nil
+        }
+        func withoutEndConfirmation() -> Session {
+            Session(startedAt: startedAt, deadline: deadline, screenTimeFilter: screenTimeFilter)
         }
     }
 }

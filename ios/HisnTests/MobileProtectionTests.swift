@@ -150,22 +150,22 @@ final class MobileProtectionTests: XCTestCase {
         }
     }
 
-    @MainActor func testWallClockJumpDoesNotReplaceOrExpireRunningMobileCommitment() throws {
+    @MainActor func testWallClockJumpDoesNotReplaceOrExpireRunningMobileCommitment() async throws {
         let start = Date(timeIntervalSince1970: 1_800_000_000)
         var wall = start
         var uptime: TimeInterval = 100
         let controller = ProtectionController(commitmentStore: MemoryCommitmentStore(),
-            clockSource: { (wall, uptime) })
-        controller.startCommitment(days: 90)
+            clockSource: { (wall, uptime) }, serverTime: AppleTimeStub(start))
+        await controller.startCommitment(days: 90)
         let original = try XCTUnwrap(controller.commitment)
         wall = start.addingTimeInterval(100 * 86400); uptime = 101
-        controller.startCommitment(days: 1)
+        await controller.startCommitment(days: 1)
         XCTAssertTrue(controller.commitmentActive)
         XCTAssertEqual(controller.commitment, original)
         XCTAssertEqual(controller.clockAssessment, .changed)
         XCTAssertEqual(controller.now, start.addingTimeInterval(1))
         wall = start.addingTimeInterval(2); uptime = 102
-        controller.startCommitment(days: 1)
+        await controller.startCommitment(days: 1)
         XCTAssertEqual(controller.clockAssessment, .consistent)
         XCTAssertEqual(controller.commitment, original)
     }
@@ -223,8 +223,9 @@ final class MobileProtectionTests: XCTestCase {
         let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
         try C.markBudgetReached(defaults, today: "2026-10-13")
-        XCTAssertEqual(defaults.object(forKey: C.reachedKey) as? String, "2026-10-13")
-        XCTAssertEqual(defaults.object(forKey: C.reachedMirrorKey) as? String, "2026-10-13")
+        XCTAssertNotNil(defaults.object(forKey: C.reachedKey) as? Data)
+        XCTAssertEqual(defaults.object(forKey: C.reachedMirrorKey) as? Data, defaults.object(forKey: C.reachedKey) as? Data)
+        XCTAssertEqual(try C.reachedDay(defaults), "2026-10-13")
         defaults.removeObject(forKey: C.reachedKey)
         XCTAssertTrue(try C.budgetReached(mode: .dailyBudget, defaults: defaults, today: "2026-10-13"))
         defaults.set(["wrong": "type"], forKey: C.reachedKey)
@@ -252,13 +253,14 @@ final class MobileProtectionTests: XCTestCase {
         let name = "hisn.mobile.budget.tests." + UUID().uuidString
         let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
         defer { defaults.removePersistentDomain(forName: name) }
-        defaults.set("2026-10-9", forKey: C.reachedKey)
+        func record(_ day: String) throws -> Data { try JSONEncoder().encode(XCTUnwrap(C.reachedDay(day))) }
+        defaults.set(try record("2026-10-9"), forKey: C.reachedKey)
         XCTAssertTrue(try C.budgetReached(mode: .dailyBudget, defaults: defaults, today: "2026-10-9"))
-        defaults.set("2026-10-13", forKey: C.reachedMirrorKey)
+        defaults.set(try record("2026-10-13"), forKey: C.reachedMirrorKey)
         XCTAssertEqual(try C.reachedDay(defaults), "2026-10-13")
         XCTAssertTrue(try C.budgetReached(mode: .dailyBudget, defaults: defaults, today: "2026-10-13"))
         XCTAssertFalse(try C.budgetReached(mode: .dailyBudget, defaults: defaults, today: "2026-10-14"))
-        XCTAssertEqual(defaults.object(forKey: C.reachedKey) as? String, "2026-10-9",
+        XCTAssertEqual(defaults.object(forKey: C.reachedKey) as? Data, try record("2026-10-9"),
             "Reading must not write stale data over the monitor's newer marker")
     }
     func testReachedBudgetRejectsMalformedOrImpossibleDays() throws {
@@ -307,10 +309,10 @@ final class MobileProtectionTests: XCTestCase {
         XCTAssertFalse(C.Health.notConfigured.needsAttention)
         XCTAssertFalse(C.Health.budgetRegistered.needsAttention)
     }
-    @MainActor func testExtensionPreservesStartAndSurvivesRelaunch() throws {
+    @MainActor func testExtensionPreservesStartAndSurvivesRelaunch() async throws {
         let store = MemoryCommitmentStore()
-        let controller = ProtectionController(commitmentStore: store)
-        controller.startCommitment(days: 90)
+        let controller = ProtectionController(commitmentStore: store, serverTime: AppleTimeStub.followingDeviceClock())
+        await controller.startCommitment(days: 90)
         let first = try XCTUnwrap(controller.commitment)
         controller.extendCommitment(days: 7)
         let next = try XCTUnwrap(controller.commitment)
@@ -319,7 +321,7 @@ final class MobileProtectionTests: XCTestCase {
         XCTAssertEqual(ProtectionController(commitmentStore: store).commitment, next)
         controller.extendCommitment(days: -7)
         XCTAssertEqual(controller.commitment, next)
-        controller.startCommitment(days: 1)
+        await controller.startCommitment(days: 1)
         XCTAssertEqual(controller.commitment, next)
     }
 
@@ -333,7 +335,7 @@ final class MobileProtectionTests: XCTestCase {
         }
     }
 
-    @MainActor func testFailedExtensionKeepsOriginalCommitmentAndDisallowsWeakening() throws {
+    @MainActor func testFailedExtensionKeepsOriginalCommitmentAndDisallowsWeakening() async throws {
         final class FailingStore: CommitmentPersistence {
             let original = CommitmentPolicy.Session(startedAt: Date(), deadline: Date().addingTimeInterval(7 * 86400))
             func load() throws -> CommitmentPolicy.Session? { original }
@@ -344,28 +346,31 @@ final class MobileProtectionTests: XCTestCase {
         controller.extendCommitment(days: 7)
         XCTAssertEqual(controller.commitment, store.original)
         XCTAssertFalse(controller.commitmentStorageHealthy)
-        controller.startCommitment(days: 1)
+        await controller.startCommitment(days: 1)
         XCTAssertEqual(controller.commitment, store.original)
     }
-    @MainActor func testUncheckedProtectionDoesNotClaimConfiguredLayers() {
-        let controller = ProtectionController(commitmentStore: MemoryCommitmentStore())
+    @MainActor func testUncheckedProtectionDoesNotClaimConfiguredLayers() async {
+        let controller = ProtectionController(commitmentStore: MemoryCommitmentStore(),
+                                              serverTime: AppleTimeStub.followingDeviceClock())
         XCTAssertEqual(controller.configuredContentLayers, 0)
         XCTAssertFalse(controller.safariConfigured)
         XCTAssertFalse(controller.hasBlockingConfiguration)
         XCTAssertFalse(controller.listIntegrityVerified)
         XCTAssertEqual(controller.setupAssessment.state, .unchecked)
-        controller.startCommitment(days: 7)
+        await controller.startCommitment(days: 7)
+        XCTAssertNotNil(controller.commitment)
         XCTAssertEqual(controller.setupAssessment.state, .unchecked,
             "Starting a commitment must not mark unchecked protection as configured")
         XCTAssertTrue(controller.previouslyReadyContentLayers.isEmpty)
         XCTAssertTrue(controller.unconfirmedContentLayers.isEmpty)
     }
-    @MainActor func testNinetyDayCommitmentCannotBeReplacedWithOneDay() throws {
-        let controller = ProtectionController(commitmentStore: MemoryCommitmentStore())
-        controller.startCommitment(days: 90)
+    @MainActor func testNinetyDayCommitmentCannotBeReplacedWithOneDay() async throws {
+        let controller = ProtectionController(commitmentStore: MemoryCommitmentStore(),
+                                              serverTime: AppleTimeStub.followingDeviceClock())
+        await controller.startCommitment(days: 90)
         let first = try XCTUnwrap(controller.commitment)
         XCTAssertEqual(first.deadline.timeIntervalSince(first.startedAt), 90 * 86400)
-        controller.startCommitment(days: 1)
+        await controller.startCommitment(days: 1)
         XCTAssertEqual(controller.commitment, first)
     }
 
@@ -401,9 +406,11 @@ final class MobileProtectionTests: XCTestCase {
     }
     @MainActor func testSimulatorDoesNotClaimPersonalScreenTimeProtection() async {
         #if targetEnvironment(simulator)
-        let controller = ProtectionController(commitmentStore: MemoryCommitmentStore())
-        controller.startCommitment(days: 7)
+        let controller = ProtectionController(commitmentStore: MemoryCommitmentStore(),
+                                              serverTime: AppleTimeStub.followingDeviceClock())
+        await controller.startCommitment(days: 7)
         let session = controller.commitment
+        XCTAssertNotNil(session)
         await controller.enablePersonalScreenTime()
         XCTAssertFalse(controller.screenTimeConfigured)
         XCTAssertEqual(controller.errorKey, "screentime.simulator")
@@ -413,14 +420,14 @@ final class MobileProtectionTests: XCTestCase {
     }
     @MainActor func testCommitmentSurvivesRelaunchAndCannotBeShortened() async {
         let store = MemoryCommitmentStore()
-        let controller = ProtectionController(commitmentStore: store)
-        controller.startCommitment(days: 7)
+        let controller = ProtectionController(commitmentStore: store, serverTime: AppleTimeStub.followingDeviceClock())
+        await controller.startCommitment(days: 7)
         let first = controller.commitment
         XCTAssertNotNil(first)
         XCTAssertTrue(controller.commitmentActive)
-        controller.startCommitment(days: 1)
+        await controller.startCommitment(days: 1)
         XCTAssertEqual(controller.commitment, first)
-        controller.startCommitment(days: 30)
+        await controller.startCommitment(days: 30)
         XCTAssertEqual(controller.commitment, first, "New duration requires separate consent, not replacement")
         let relaunched = ProtectionController(commitmentStore: store)
         XCTAssertEqual(relaunched.commitment, first)
@@ -429,14 +436,15 @@ final class MobileProtectionTests: XCTestCase {
         XCTAssertEqual(relaunched.commitment, first)
     }
 
-    @MainActor func testCorruptCommitmentDoesNotLookUnlockedOrAllowNewPlan() {
+    @MainActor func testCorruptCommitmentDoesNotLookUnlockedOrAllowNewPlan() async {
         struct BrokenStore: CommitmentPersistence {
             func load() throws -> CommitmentPolicy.Session? { throw MobileCommitmentStore.Failure.corrupt }
             func save(_ session: CommitmentPolicy.Session) throws { XCTFail("Must not overwrite unknown lock") }
         }
-        let controller = ProtectionController(commitmentStore: BrokenStore())
+        let controller = ProtectionController(commitmentStore: BrokenStore(),
+                                              serverTime: AppleTimeStub.followingDeviceClock())
         XCTAssertFalse(controller.commitmentStorageHealthy)
-        controller.startCommitment(days: 7)
+        await controller.startCommitment(days: 7)
         XCTAssertNil(controller.commitment)
         XCTAssertEqual(controller.errorKey, "commitment.storageFailed")
     }
