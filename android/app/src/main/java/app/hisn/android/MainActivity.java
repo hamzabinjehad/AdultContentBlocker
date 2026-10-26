@@ -754,11 +754,12 @@ public final class MainActivity extends Activity {
             Toast.makeText(this, R.string.commitment_needs_rules, Toast.LENGTH_LONG).show();
             return;
         }
-        int[] days = {7, 30, 90};
+        int[] days = {1, 7, 30, 90};
+        String[] labels = new String[days.length];
+        for (int at = 0; at < days.length; at++) labels[at] = getResources().getQuantityString(R.plurals.days, days[at], days[at]);
         new AlertDialog.Builder(this).setTitle(R.string.commitment_setup)
-                .setItems(new String[]{getString(R.string.days_count, 7), getString(R.string.days_count, 30),
-                        getString(R.string.days_count, 90)}, (dialog, index) -> new AlertDialog.Builder(this)
-                        .setTitle(getString(R.string.days_count, days[index])).setMessage(R.string.commitment_disclosure)
+                .setItems(labels, (dialog, index) -> new AlertDialog.Builder(this)
+                        .setTitle(labels[index]).setMessage(R.string.commitment_disclosure)
                         .setNegativeButton(android.R.string.cancel, null)
                         .setPositiveButton(R.string.commitment_start, (confirm, which) -> {
                             try { settings.startCommitment(days[index]); refreshStatus(); }

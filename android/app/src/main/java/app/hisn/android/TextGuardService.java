@@ -23,14 +23,23 @@ public final class TextGuardService extends AccessibilityService {
     static volatile long cooldownEnforcements;
     static volatile long periodicInspections;
     static volatile long scheduleInterventions;
+    static volatile long holdEnforcements;
+    static volatile long homeFailures;
+    static volatile long inspectionFailures;
+    /** After a word or image block, reopening the same app within this period returns Home again. */
+    static final long BLOCK_HOLD_MILLIS = 60000;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private String pendingPackage;
     private long lastIntervention;
     private boolean inspectPending;
+    private String heldPackage;
+    private long heldUntil;
+    private boolean heldWord, heldVisual;
     private int rootRetries;
     private Set<String> excluded;
     private VisualGuard visual;
     private final Runnable inspect = this::inspectWindow;
+    private final Runnable checkpoint = this::checkpointCommitment;
     private final Runnable heartbeat = () -> {
         rootRetries = 5;
         periodicInspections++;
@@ -53,6 +62,8 @@ public final class TextGuardService extends AccessibilityService {
 
     @Override protected void onServiceConnected() {
         connected = true;
+        handler.removeCallbacks(checkpoint);
+        handler.post(checkpoint);
         try {
             if (visual != null) visual.close();
             visual = new VisualGuard(this, () -> intervene(false, false, true));
@@ -62,6 +73,12 @@ public final class TextGuardService extends AccessibilityService {
             lastInspectionPartial = true;
             inspectionOutcome = "setup-unavailable";
         }
+    }
+
+    /** Saves commitment progress once a minute so a restart loses little counted time. */
+    private void checkpointCommitment() {
+        try { PolicyStore.get(this).checkpoint(); } catch (RuntimeException unsaved) { /* Retry next minute. */ }
+        handler.postDelayed(checkpoint, 60000);
     }
 
     /** Rebinding should not require a fresh foreground-window event. Metadata only until selected. */
@@ -83,9 +100,10 @@ public final class TextGuardService extends AccessibilityService {
 
     @Override public void onAccessibilityEvent(AccessibilityEvent event) {
         if (connected && visual == null) visual = new VisualGuard(this, () -> intervene(false, false, true));
-        if (visual != null && (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
-                || event.getEventType() == AccessibilityEvent.TYPE_VIEW_SCROLLED
-                || event.getEventType() == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED)) visual.windowChanged();
+        // Only a window change discards an in-flight image sample. Scrolls and content changes
+        // in feeds and videos are constant; the frame gate still requires the same app and
+        // window and a fresh sample before acting.
+        if (visual != null && event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) visual.windowChanged();
         CharSequence pkg = event.getPackageName();
         if (pkg == null || excluded == null) return;
         String name = pkg.toString();
@@ -93,6 +111,13 @@ public final class TextGuardService extends AccessibilityService {
             // Background/stale events from Settings, the launcher or our own
             // window must not cancel a selected foreground window's queued check.
             // inspectWindow still checks root ownership before reading any text.
+            return;
+        }
+        if (name.equals(heldPackage) && SystemClock.elapsedRealtime() < heldUntil
+                && event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            holdEnforcements++;
+            pendingPackage = name;
+            intervene(heldWord, false, heldVisual, true);
             return;
         }
         try {
@@ -178,8 +203,14 @@ public final class TextGuardService extends AccessibilityService {
             }
         } catch (RuntimeException unavailable) {
             // No unverified decision when a node changes or settings are unavailable.
+            // Keep rechecking this app, more slowly, instead of going silent.
             lastInspectionPartial = true;
             inspectionOutcome = "inspection-failed";
+            inspectionFailures++;
+            if (name.equals(pendingPackage)) {
+                handler.removeCallbacks(heartbeat);
+                handler.postDelayed(heartbeat, 5000);
+            }
         } finally { if (root != null) root.recycle(); }
     }
 
@@ -250,17 +281,37 @@ public final class TextGuardService extends AccessibilityService {
     }
 
     private void intervene(boolean word, boolean schedule, boolean visualReason) {
+        intervene(word, schedule, visualReason, false);
+    }
+
+    private void intervene(boolean word, boolean schedule, boolean visualReason, boolean held) {
         long now = SystemClock.elapsedRealtime();
-        inspectionOutcome = schedule ? "schedule-intervention" : word ? "word-intervention" : "app-intervention";
-        if (word) wordInterventions++;
+        inspectionOutcome = held ? "hold-intervention" : schedule ? "schedule-intervention"
+                : word ? "word-intervention" : "app-intervention";
+        if (word && !held) wordInterventions++;
         if (schedule) scheduleInterventions++;
+        if ((word || visualReason) && !held) {
+            // The hold starts at the block itself; reopening does not extend it.
+            String app = pendingPackage != null ? pendingPackage : activePackage();
+            if (app != null && excluded != null && !excluded.contains(app)) {
+                heldPackage = app;
+                heldUntil = now + BLOCK_HOLD_MILLIS;
+                heldWord = word;
+                heldVisual = visualReason;
+            }
+        }
         handler.removeCallbacks(heartbeat);
         handler.removeCallbacks(inspect);
         inspectPending = false;
         pendingPackage = null;
         // Never debounce enforcement: reopening during the warning cooldown
         // must still leave the restricted app immediately.
-        performGlobalAction(GLOBAL_ACTION_HOME);
+        if (!performGlobalAction(GLOBAL_ACTION_HOME)) {
+            // For example under screen pinning. BACK at least leaves the current screen.
+            homeFailures++;
+            inspectionOutcome += "-home-failed";
+            performGlobalAction(GLOBAL_ACTION_BACK);
+        }
         if (now - lastIntervention < 1500) { cooldownEnforcements++; return; }
         lastIntervention = now;
         pendingWordReason = word;
@@ -270,6 +321,16 @@ public final class TextGuardService extends AccessibilityService {
         // HOME is asynchronous. Launching immediately lets its pending task
         // transition cover the explanation screen on Samsung Android 16.
         handler.postDelayed(showRestriction, 350);
+    }
+
+    private String activePackage() {
+        AccessibilityNodeInfo root = null;
+        try {
+            root = getRootInActiveWindow();
+            return root == null || root.getPackageName() == null ? null : root.getPackageName().toString();
+        } catch (RuntimeException unavailable) {
+            return null;
+        } finally { if (root != null) root.recycle(); }
     }
 
     @Override public void onInterrupt() {
@@ -284,12 +345,14 @@ public final class TextGuardService extends AccessibilityService {
 
     @Override public boolean onUnbind(Intent intent) {
         connected = false;
+        handler.removeCallbacks(checkpoint);
         onInterrupt();
         return super.onUnbind(intent);
     }
 
     @Override public void onDestroy() {
         connected = false;
+        handler.removeCallbacks(checkpoint);
         onInterrupt();
         super.onDestroy();
     }

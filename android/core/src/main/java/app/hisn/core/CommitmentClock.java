@@ -17,7 +17,9 @@ public final class CommitmentClock {
 
     public long remaining(long elapsed, int boot) {
         if (elapsed < 0 || boot < 0) throw new IllegalArgumentException("Invalid clock sample");
-        if (boot != bootAtCheckpoint || elapsed < elapsedAtCheckpoint) return remainingAtCheckpoint;
+        // After a restart, elapsed time since boot is real running time; only power-off is not counted.
+        if (boot != bootAtCheckpoint) return Math.max(0, remainingAtCheckpoint - elapsed);
+        if (elapsed < elapsedAtCheckpoint) return remainingAtCheckpoint;
         return Math.max(0, remainingAtCheckpoint - (elapsed - elapsedAtCheckpoint));
     }
 
