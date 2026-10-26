@@ -30,7 +30,9 @@
     <string name="dns_tcp_stats">TCP DNS queries: %1$d · Replies prepared: %2$d · UDP retry signals: %3$d</string>
     <string name="dns_summary">%1$s\n%2$s\n%3$s\n%4$s\n%5$s\n%6$s\n%7$s</string>
     <string name="dns_notification_title">Hisn DNS preview</string>
-    <string name="dns_notification_body">DNS session running. Open Hisn for connection status and coverage.</string>
+    <string name="dns_notification_body">Open Hisn for connection status and coverage.</string>
+    <string name="dns_channel">DNS filtering status</string>
+    <string name="dns_notification_private_dns">DNS tunnel connected · Android Private DNS can bypass Hisn</string>
     <string name="dns_alert_channel">DNS filtering alerts</string>
     <string name="dns_stopped_title">DNS filtering stopped</string>
     <string name="dns_stopped_body">Android disconnected Hisn’s VPN, for example because another VPN app took over or it was turned off in Android settings. Domains are not filtered until you turn DNS filtering on again in Hisn.</string>
