@@ -53,6 +53,11 @@ enum PasscodeVaultPolicy {
         return nil
     }
 
+    /// The passcode, or one dot per digit while the scene is not active.
+    static func displayed(_ passcode: String, sceneActive: Bool) -> String {
+        sceneActive ? passcode : String(repeating: "•", count: passcode.count)
+    }
+
     static func isValid(_ vault: PasscodeVault) -> Bool {
         let length = vault.revealAt.timeIntervalSince(vault.createdAt)
         return vault.passcode.count == 4 && vault.passcode.allSatisfy { $0.isASCII && $0.isNumber }

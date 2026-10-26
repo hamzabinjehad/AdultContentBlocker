@@ -95,6 +95,12 @@
 			path = "Hisn/HisnMobileApp.swift";
 			sourceTree = "<group>";
 		};
+		9B58D6F32A0B01CC13845E15  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/HisnPalette.swift";
+			sourceTree = "<group>";
+		};
 		FCE2B547D5D74B8316E364F7  = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -149,6 +155,12 @@
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = "HisnBlocker/ContentBlockerRequestHandler.swift";
+			sourceTree = "<group>";
+		};
+		5B368D5BABE28E26ED070FEC  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "HisnTests/AccessibilityTests.swift";
 			sourceTree = "<group>";
 		};
 		3121358B9829FA8B92F7CC6D  = {
@@ -291,6 +303,7 @@
 				C34582A095CC840419BB2B67,
 				5EF93C39AE0A12F863A953BC,
 				05D3E25C09E84BF6A4E4E3F9,
+				9B58D6F32A0B01CC13845E15,
 				FCE2B547D5D74B8316E364F7,
 				5F9265D85EAD1C04BD50005C,
 				87FCFE1D32D633AB88DE35AC,
@@ -298,6 +311,7 @@
 				22116B79393CB72307A2D146,
 				97E3A110C1EF2759EB12FA3D,
 				1349496B0BFBD6AE9C197419,
+				5B368D5BABE28E26ED070FEC,
 				3121358B9829FA8B92F7CC6D,
 				663781E64B80A15C0EE27C59,
 				1A8B5976E8468D0F3F208589,
@@ -358,6 +372,10 @@
 			isa = PBXBuildFile;
 			fileRef = 368028F82BE73865E23337BC;
 		};
+		0F5087ABAF7F3247B0E1006D  = {
+			isa = PBXBuildFile;
+			fileRef = 9B58D6F32A0B01CC13845E15;
+		};
 		E63E463FCF5BDC5519A9DB2A  = {
 			isa = PBXBuildFile;
 			fileRef = 76CFB910A4011D94CDB9761F;
@@ -402,6 +420,7 @@
 				61ECC799ECCDABC20088EB06,
 				675E4E0D791B59A276E737B3,
 				5056A4C25D4251FCF27FC603,
+				0F5087ABAF7F3247B0E1006D,
 				E63E463FCF5BDC5519A9DB2A,
 				67A34052DA24D995BDA10FA4,
 				4841FAB2F7715FBD6FB4C434,
@@ -1391,6 +1410,10 @@
 			isa = PBXBuildFile;
 			fileRef = 1A8B5976E8468D0F3F208589;
 		};
+		873F708AA5685C785FFC0579  = {
+			isa = PBXBuildFile;
+			fileRef = 5B368D5BABE28E26ED070FEC;
+		};
 		59C5F51CCE4172371A75875E  = {
 			isa = PBXBuildFile;
 			fileRef = 7164AD19C122B8FA8BC1D8E7;
@@ -1403,6 +1426,7 @@
 				CF445B6175B34EAAAD8E758E,
 				CEF03A8375D752D322C6BF97,
 				394F3003CCE31AB4243863D6,
+				873F708AA5685C785FFC0579,
 				59C5F51CCE4172371A75875E,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

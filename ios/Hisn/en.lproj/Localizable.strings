@@ -223,7 +223,7 @@
 "sites.removed" = "Site removed.";
 "sites.locked" = "Your commitment is running, so sites cannot be removed until it ends. Adding more still works.";
 "vault.title" = "Passcode vault";
-"vault.body" = "Hisn makes a Screen Time passcode and keeps it from you until the date you choose. With it set, apps (Hisn included) cannot be deleted and Screen Time cannot be changed before then. No second person is needed.";
+"vault.body" = "Hisn makes a Screen Time passcode and keeps it from you until the date you choose. If you set it as your Screen Time passcode and set Deleting Apps to Don't Allow (steps 1 and 2), apps, Hisn included, cannot be deleted and Screen Time cannot be changed before then. Hisn cannot check that you did. No second person is needed.";
 "vault.duration" = "Keep it sealed for";
 "vault.acknowledge" = "I understand I will not see this passcode again until the date, and Hisn cannot show it early.";
 "vault.create" = "Create a passcode";
@@ -249,3 +249,15 @@
 "vault.notYet" = "The date has not passed yet.";
 "vault.needsNetwork" = "Connect to the internet: Hisn checks Apple's server time before showing the passcode.";
 "vault.clockDisagrees" = "This iPhone's clock is ahead of Apple's server time. The passcode stays sealed until the real date.";
+"screentime.state.unavailable" = "Can't be checked here: needs a signed build on a real device";
+"screentime.state.notRequested" = "Not set up";
+"screentime.state.declined" = "Screen Time access was declined";
+"screentime.state.accessRemoved" = "Screen Time access was turned off in Settings";
+"screentime.state.filterOff" = "Access allowed · filter off";
+"screentime.state.configured" = "Filter configured";
+"setup.next.screentimeAccess" = "Screen Time access was turned off in Settings, so iOS removed Hisn's web filter, your blocked sites and app limits. In Setup, enable personal Screen Time protection again; Hisn cannot turn it back on for you.";
+"commitment.screenTimeLost" = "Screen Time access was turned off during your commitment. iOS removed Hisn's filter, sites and app limits, and Hisn cannot restore them by itself. Turn access back on below.";
+"screentime.accessRemovedBody" = "Screen Time access was turned off in Settings, so Hisn's filter no longer applies. Turn it back on below.";
+"sites.accessRemoved" = "Saved, but not applied: Screen Time access was turned off in Settings. Turn it back on to apply these sites.";
+"plan.safariParts %lld" = "%lld of 4 parts on";
+"vault.hidden" = "Passcode hidden while Hisn is not in front";

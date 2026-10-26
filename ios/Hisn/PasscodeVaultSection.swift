@@ -8,6 +8,9 @@ struct PasscodeVaultSection: View {
     @State private var understands = false
     @State private var confirmCreate = false
     @State private var confirmExtend = false
+    @Environment(\.scenePhase) private var scenePhase
+    @ScaledMetric(relativeTo: .largeTitle) private var passcodeSize: CGFloat = 44
+    @ScaledMetric(relativeTo: .largeTitle) private var passcodeTracking: CGFloat = 12
 
     var body: some View {
         Section {
@@ -37,7 +40,7 @@ struct PasscodeVaultSection: View {
             }
             if let message = vault.messageKey {
                 Label(LocalizedStringKey(message), systemImage: "exclamationmark.triangle")
-                    .font(.footnote).foregroundStyle(.orange)
+                    .font(.footnote).foregroundStyle(HisnPalette.warning)
             }
             DisclosureGroup("vault.limitsTitle") {
                 Text("vault.limits").font(.footnote).foregroundStyle(.secondary)
@@ -78,13 +81,19 @@ struct PasscodeVaultSection: View {
             .buttonStyle(.borderedProminent)
     }
 
+    /// Scales with Dynamic Type. Leaving the active state (the app switcher takes its snapshot
+    /// then) replaces the digits with dots, so the passcode is not kept in the snapshot.
     private func passcodeView(_ passcode: String) -> some View {
-        Text(verbatim: passcode)
-            .font(.system(size: 44, weight: .semibold, design: .monospaced))
-            .tracking(12)
+        let active = scenePhase == .active
+        return Text(verbatim: PasscodeVaultPolicy.displayed(passcode, sceneActive: active))
+            .font(.system(size: passcodeSize, weight: .semibold, design: .monospaced))
+            .tracking(passcodeTracking)
+            .lineLimit(1)
+            .minimumScaleFactor(0.5)
             .frame(maxWidth: .infinity)
             .environment(\.layoutDirection, .leftToRight)
-            .accessibilityLabel(Text(verbatim: passcode.map(String.init).joined(separator: " ")))
+            .accessibilityLabel(active ? Text(verbatim: passcode.map(String.init).joined(separator: " "))
+                                       : Text("vault.hidden"))
             .textSelection(.disabled)
     }
 }

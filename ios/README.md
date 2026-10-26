@@ -155,9 +155,13 @@ accuracy. Those need a provisioned physical-device test before release.
 Setup offers a **Passcode vault**: Hisn makes a random four-digit Screen Time
 passcode, shows it for 15 minutes so the person can set it (Lock Screen Time
 Settings, then Content & Privacy › Deleting Apps: Don't Allow), and then keeps
-it hidden for 1, 7, 30 or 90 days. Until then no app, Hisn included, can be
-deleted and Screen Time cannot be changed, on an ordinary unsupervised iPhone.
-The date can be extended but never shortened.
+it hidden for 1, 7, 30 or 90 days. If the person really sets it as the Screen
+Time passcode and sets Deleting Apps to Don't Allow, then until that date no app,
+Hisn included, can be deleted and Screen Time cannot be changed, on an ordinary
+unsupervised iPhone. Hisn cannot check that both steps were done, and the app
+says so. The date can be extended but never shortened. The passcode follows
+Dynamic Type, and shows dots whenever Hisn is not the active app, so the
+app-switcher snapshot does not keep it.
 
 The passcode lives only in this device's Keychain (`ThisDeviceOnly`, never in
 UserDefaults, which backups include). Showing it again requires the date to
@@ -288,6 +292,29 @@ Checked 2026-10-03:
 - [Family Controls distribution entitlement](https://developer.apple.com/documentation/familycontrols/requesting-the-family-controls-entitlement)
 - [Family Controls child authorization and removal restrictions](https://developer.apple.com/documentation/familycontrols)
 - [Why individual authorization does not prevent deletion](https://developer.apple.com/videos/play/wwdc2022/110336/)
+
+## Status, accessibility and languages
+
+Screen Time status distinguishes access turned off in Settings from access never
+requested, declined, or allowed with Hisn's filter off. When access is turned
+off after Hisn's filter was confirmed, the readiness row, the commitment section,
+My blocked sites and the setup issues say that iOS removed the filter, the sites
+and the app limits, and that only the person can turn access back on; Hisn
+requests nothing by itself. The Simulator reports this layer as uncheckable.
+
+Warning and success text uses `HisnPalette` colours, which keep at least 4.5:1
+contrast on every grouped list background in light and dark mode (the system
+orange and teal are about 2:1 on white). Readiness rows and the blocked-site field
+stack at accessibility text sizes, the Safari detail reads "3 of 4 parts on", and
+direction arrows follow the reading direction in Arabic. On iPad every tab uses
+the same 860 pt readable column.
+
+`ios/test_localization.py` checks, without Xcode, that English and Arabic have the
+same keys and placeholders, that every Arabic value is written in Arabic, and that
+every key the SwiftUI code looks up exists in both files. `AccessibilityTests`
+checks the contrast, the passcode masking, the Screen Time states and renders all
+three tabs on iPhone and both iPad orientations at accessibility sizes in both
+languages. What VoiceOver actually announces on a device is not tested.
 
 ## Validation
 

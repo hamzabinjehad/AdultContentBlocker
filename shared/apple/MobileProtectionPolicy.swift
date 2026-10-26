@@ -23,6 +23,7 @@ enum MobileProtectionPolicy {
         case list = "setup.next.list"
         case safari = "setup.next.safari"
         case screenTime = "setup.next.screentime"
+        case screenTimeAccess = "setup.next.screentimeAccess"
         case dns = "setup.next.dns"
         case dnsSaved = "setup.next.dnssaved"
         case dnsDifferent = "setup.next.dnsdifferent"
@@ -50,7 +51,7 @@ enum MobileProtectionPolicy {
                                 listCount: Int, listVersion: Int,
                                 safari: [Bool?], lastReload: [Bool?],
                                 screenTime: Bool, dns: DNSState,
-                                storageHealthy: Bool) -> SetupAssessment {
+                                storageHealthy: Bool, screenTimeAccessRemoved: Bool = false) -> SetupAssessment {
         if busy { return .init(state: .checking, issues: []) }
         guard checked else { return .init(state: .unchecked, issues: []) }
         var issues: [SetupIssue] = []
@@ -58,7 +59,7 @@ enum MobileProtectionPolicy {
             issues.append(.list)
         }
         if !safariConfigurationReady(enabled: safari, lastReload: lastReload) { issues.append(.safari) }
-        if !screenTime { issues.append(.screenTime) }
+        if !screenTime { issues.append(screenTimeAccessRemoved ? .screenTimeAccess : .screenTime) }
         switch dns {
         case .enabled: break
         case .saved: issues.append(.dnsSaved)
@@ -70,6 +71,29 @@ enum MobileProtectionPolicy {
     }
 
     enum FamilyAuthorization { case notDetermined, denied, approved, unavailable }
+
+    /// What the Screen Time layer can honestly report. Access turned off in Settings is not
+    /// "never set up": iOS then drops Hisn's filter, sites and app shields, and only the
+    /// person can turn access back on.
+    enum ScreenTimeState: String {
+        case unavailable = "screentime.state.unavailable"
+        case notRequested = "screentime.state.notRequested"
+        case declined = "screentime.state.declined"
+        case accessRemoved = "screentime.state.accessRemoved"
+        case filterOff = "screentime.state.filterOff"
+        case configured = "screentime.state.configured"
+    }
+
+    /// `previouslyConfigured` is Hisn's readiness history: the filter was confirmed before.
+    static func screenTimeState(authorization: FamilyAuthorization, filterConfigured: Bool,
+                                previouslyConfigured: Bool) -> ScreenTimeState {
+        switch authorization {
+        case .unavailable: return .unavailable
+        case .approved: return filterConfigured ? .configured : .filterOff
+        case .denied: return previouslyConfigured ? .accessRemoved : .declined
+        case .notDetermined: return previouslyConfigured ? .accessRemoved : .notRequested
+        }
+    }
     enum RemovalState: String {
         case notRequested = "removal.notRequested"
         case denied = "removal.denied"
