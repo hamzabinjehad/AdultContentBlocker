@@ -137,16 +137,17 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install --quiet 'cryptography>=42'
-      # The runner image ships JDK 17 and the Android command-line tools; only
-      # the platform and build tools that android/README.md names are added,
-      # from Google's repository. `yes` ends on SIGPIPE, which pipefail would
-      # otherwise report as a failure.
-      - name: JDK 17 and Android SDK packages
+      # The runner image ships JDK 17 and the Android command-line tools. With
+      # the licenses accepted, the Android Gradle plugin downloads the
+      # compileSdk platform and build tools it needs from Google's repository.
+      # `yes` ends on SIGPIPE, which pipefail would otherwise report as a failure.
+      - name: JDK 17 and Android SDK licenses
         run: |
           echo "JAVA_HOME=$JAVA_HOME_17_X64" >> "$GITHUB_ENV"
           sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           (yes || true) | "$sdkmanager" --licenses > /dev/null
-          "$sdkmanager" --install "platforms;android-37" "build-tools;36.0.0" > /dev/null
+          "$sdkmanager" --version
+          "$sdkmanager" --list_installed | grep -E "platforms;|build-tools;" || true
       - name: Core suite (strings, notices and JDK-only tests)
         working-directory: android
         run: sh test-core.sh
