@@ -22,7 +22,7 @@ public final class DnsPolicyTest {
         return out.toByteArray();
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         DnsPolicy policy = new DnsPolicy(new DomainPolicy(Collections.singleton("blocked.example"),
                 Collections.singleton("safe.blocked.example")));
         byte[] packet = query("www.blocked.example", 28);
@@ -76,6 +76,35 @@ public final class DnsPolicyTest {
         byte[] failure = policy.failureResponse(query("safe.example", 1));
         check((failure[3] & 15) == 2 && (failure[2] & 0x80) != 0, "resolver failure is SERVFAIL");
         check(policy.failureResponse(new byte[3]) == null, "no reply fabricated for invalid query");
+
+        // Names no domain rule can equal are forwarded, but a blocked hostname suffix still blocks.
+        for (String name : new String[] {"_sip._tcp.example.org", "_dmarc.safe.blocked.example",
+                "host_name.example.org", "_dns.resolver.arpa", "_tcp.local", "printer", "localhost", "a._b"}) {
+            check(policy.evaluate(query(name, 33)).action == DnsPolicy.Action.FORWARD, "forward " + name);
+        }
+        for (String name : new String[] {"_sip._tcp.blocked.example", "s1._domainkey.www.blocked.example",
+                "host_name.blocked.example", "_8443._https.blocked.example"}) {
+            check(policy.evaluate(query(name, 16)).action == DnsPolicy.Action.BLOCK, "suffix block " + name);
+        }
+        check(policy.evaluate(query("_srv._tcp.192.0.2.1", 33)).action == DnsPolicy.Action.UNSUPPORTED,
+                "numeric suffix stays unsupported");
+        check(policy.evaluate(query("bad*name.example", 1)).action == DnsPolicy.Action.UNSUPPORTED,
+                "invalid multi-label hostname stays unsupported");
+        byte[] root = {0x12, 0x34, 0x01, 0x00, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1};
+        check(policy.evaluate(root).action == DnsPolicy.Action.FORWARD, "root NS query forwarded");
+        check((policy.failureResponse(query("_sip._tcp.example.org", 33))[3] & 15) == 2,
+                "forwarded SRV gets SERVFAIL on resolver failure");
+        DnsExchange srv = new DnsExchange(policy, request -> {
+            byte[] reply = request.clone(); reply[2] = (byte) 0x81; reply[3] = (byte) 0x80; return reply;
+        });
+        DnsExchange.Resolution answer = srv.resolveDetailed(query("_sip._tcp.example.org", 33));
+        check(!answer.blocked && (answer.answer[3] & 15) == 0, "SRV reply passes the reply guard");
+        check(srv.resolveDetailed(query("printer", 1)).answer != null, "single-label reply passes the reply guard");
+        byte[] srvQuery = query("_sip._tcp.example.org", 33);
+        check(policy.blocksReply(DnsReplyGuardTest.alias(srvQuery, null, "_sip._tcp.www.blocked.example", 5)),
+                "underscore alias target under a blocked domain is blocked");
+        check(!policy.blocksReply(DnsReplyGuardTest.alias(srvQuery, null, "_sip._tcp.other.example", 5)),
+                "underscore alias target under an allowed domain passes");
         System.out.println("DnsPolicy tests passed");
     }
 }

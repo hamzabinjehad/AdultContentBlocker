@@ -24,6 +24,7 @@ public final class Ipv4TcpPacket {
     public final int window;
     public final int mss;
     public final int sourcePort;
+    public final int destinationPort;
     public final byte[] payload;
 
     private final byte[] peerAddress;
@@ -33,6 +34,7 @@ public final class Ipv4TcpPacket {
         peerAddress = Arrays.copyOfRange(packet, 12, 16);
         serverAddress = Arrays.copyOfRange(packet, 16, 20);
         sourcePort = u16(packet, ipHeader);
+        destinationPort = u16(packet, ipHeader + 2);
         flowId = (u32(packet, 12) << 16) | sourcePort;
         sequence = u32(packet, ipHeader + 4);
         acknowledgement = u32(packet, ipHeader + 8);
@@ -44,7 +46,12 @@ public final class Ipv4TcpPacket {
 
     /** Returns null for malformed packets or traffic outside this DNS-only adapter. */
     public static Ipv4TcpPacket parse(byte[] packet, byte[] server) {
-        if (packet == null || server == null || server.length != 4
+        return parse(packet, server, 53);
+    }
+
+    /** The same validation for another port of the virtual DNS address, e.g. 853 to refuse it. */
+    public static Ipv4TcpPacket parse(byte[] packet, byte[] server, int port) {
+        if (packet == null || server == null || server.length != 4 || port < 1 || port > 65535
                 || packet.length < 40 || packet.length > MAX_PACKET
                 || (packet[0] & 0xf0) != 0x40) return null;
         int ipHeader = (packet[0] & 15) * 4;
@@ -55,7 +62,7 @@ public final class Ipv4TcpPacket {
                 || checksum(packet, 0, ipHeader, 0) != 0
                 || !validIpOptions(packet, ipHeader)) return null;
         for (int i = 0; i < 4; i++) if (packet[16 + i] != server[i]) return null;
-        if (u16(packet, ipHeader) == 0 || u16(packet, ipHeader + 2) != 53) return null;
+        if (u16(packet, ipHeader) == 0 || u16(packet, ipHeader + 2) != port) return null;
 
         int tcpHeader = ((packet[ipHeader + 12] & 255) >>> 4) * 4;
         // The low nibble is reserved, including the obsolete NS bit.
@@ -86,7 +93,7 @@ public final class Ipv4TcpPacket {
         out[9] = 6;
         System.arraycopy(serverAddress, 0, out, 12, 4);
         System.arraycopy(peerAddress, 0, out, 16, 4);
-        put16(out, 20, 53);
+        put16(out, 20, destinationPort);
         put16(out, 22, sourcePort);
         put32(out, 24, seq);
         put32(out, 28, ack);

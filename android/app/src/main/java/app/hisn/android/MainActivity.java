@@ -333,7 +333,10 @@ public final class MainActivity extends Activity {
             case ERROR: text = R.string.dns_error; break;
             default: text = R.string.network;
         }
-        networkState.setText(text);
+        // Strict Private DNS can send system DNS straight to its provider, around this tunnel.
+        boolean privateDnsBypass = DnsVpnService.privateDnsStrict;
+        if (privateDnsBypass) networkState.setText(getString(R.string.dns_private_dns_strict, getString(text)));
+        else networkState.setText(text);
         boolean accessibilityConfigured = false;
         boolean settingsReadable = settings != null;
         if (settings != null) {
@@ -353,7 +356,7 @@ public final class MainActivity extends Activity {
                 accessibilityConfigured, settingsReadable, TextGuardService.lastInspectionPartial
                         || (settingsReadable && settings.snapshot().adultWordsEnabled && AdultPolicyAssets.state != AdultPolicyAssets.State.READY));
         if (guard.needsAttention || current == DnsVpnService.State.ERROR || current == DnsVpnService.State.DEGRADED
-                || DnsVpnService.connectionCheck.state == DnsVpnService.CheckState.FAILED)
+                || privateDnsBypass || DnsVpnService.connectionCheck.state == DnsVpnService.CheckState.FAILED)
             statusTitle.setText(R.string.protection_attention);
         else statusTitle.setText(current == DnsVpnService.State.RUNNING || guard == GuardHealth.ACTIVE
                 ? R.string.protection_partial : R.string.status_title);
@@ -371,6 +374,9 @@ public final class MainActivity extends Activity {
                         DnsVpnService.forwarded.get(), DnsVpnService.errors.get()),
                 getString(R.string.dns_packet_diagnostics, DnsVpnService.unsupportedPackets.get(),
                         DnsVpnService.unsupportedTcpPackets.get(), DnsVpnService.malformedPackets.get()),
+                getString(R.string.dns_benign_packets, DnsVpnService.ignoredPackets.get(),
+                        DnsVpnService.refusedTlsConnections.get()),
+                getString(R.string.dns_recoveries, DnsVpnService.recoveries.get()),
                 getString(DnsVpnService.networkMonitoring ? R.string.dns_monitor_active : R.string.dns_monitor_inactive,
                         DnsVpnService.networkChanges.get()),
                 getString(R.string.dns_cancelled_network_requests, DnsVpnService.cancelledNetworkRequests.get()),

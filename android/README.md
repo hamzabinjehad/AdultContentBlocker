@@ -224,7 +224,16 @@ is recorded separately for 0.4.0; it was not rerun after this update.
   does not disable independent custom literal rules.
 - A consent screen describes resolver privacy, other-VPN conflicts and limits.
   Android's VPN approval is requested after this screen. Nothing starts on app
-  launch or reboot. Starting the service can replace another active VPN.
+  launch. After a reboot, `VpnBootReceiver` restarts DNS filtering only if the
+  owner left it on and `VpnService.prepare` still returns no consent screen;
+  otherwise it posts a "not resumed" notification and never asks for consent.
+  Android sends the boot broadcast only after the first unlock, and not to a
+  force-stopped app; device battery or sleeping-app settings may also withhold it.
+  An Android revocation (another VPN took over, or a disconnect in Settings)
+  clears that choice and posts a "DNS filtering stopped" notification. A service
+  error posts a similar notification but keeps the choice, so the next boot
+  tries again. Notifications need Android's notification permission. Starting
+  the service can replace another active VPN.
 - A foreground service routes only `10.111.0.2/32` into the local TUN interface
   and advertises that address as the DNS server. Normal internet traffic and
   IPv6 traffic use the underlying network. This is not a full traffic tunnel.
@@ -247,7 +256,33 @@ is recorded separately for 0.4.0; it was not rerun after this update.
   nor full semantic validation of every resource-record type.
 - The app shows connection state, loaded-domain count and session-only blocked,
   forwarded and error counters. A connected tunnel does not prove full protection.
-  Errors keep the status degraded until the session ends.
+  A failure marks the session degraded. It returns to connected only after two
+  minutes without a new failure and at least ten validated resolver answers, and
+  never while network monitoring is unavailable. Error counters and a recovery
+  count stay visible for the whole session. Unrelated packets (other protocols
+  or ports, IPv6) and refused port-853 connections are counted separately and do
+  not degrade the session.
+- Android's automatic Private DNS probes port 853 on the advertised DNS server.
+  Those SYNs get an immediate TCP reset, so Android falls back to filtered port
+  53 instead of waiting for a timeout. Strict Private DNS (a provider hostname on
+  the underlying network) is detected read-only and shown as a warning: system
+  DNS may then go to that provider and bypass Hisn. Hisn never changes it, and
+  answers that one hostname normally so Android's own lookup of it still works.
+- Well-known public DoH/DoT provider hostnames (Google, Cloudflare, Quad9,
+  OpenDNS, CleanBrowsing, NextDNS, AdGuard, Mullvad, Control D, Comcast, CIRA,
+  CZ.NIC, DNS.SB, AliDNS, DNSPod, and `resolver.arpa` discovery; the list is in
+  `EncryptedDnsProviders`) and Firefox's `use-application-dns.net` canary get
+  local NXDOMAIN, which turns off Firefox's default DoH. This reduces but does
+  not eliminate browser DoH bypass: clients with hard-coded bootstrap IPs,
+  IP-literal endpoints, unlisted providers or user-forced Firefox DoH never ask
+  Hisn. Hisn's own upstream is pinned to `1.1.1.3` and uses its hostname only
+  for TLS identity, so it does not depend on resolving these names.
+- Underscore names (SRV, `_dmarc`, DDR) and single-label names can never equal
+  a domain rule, so they are forwarded instead of failing and do not degrade
+  the session. The hostname part of an underscore name is still checked: one
+  under a blocked domain, such as `_8443._https.blocked.example`, stays blocked.
+- The VPN is marked unmetered on Android 10+, so it inherits the underlying
+  network's metered state instead of making Wi-Fi look metered to apps.
 - After a separate disclosure and owner confirmation, the DNS route check sends
   a synthetic `blocked.hisn-self-check.invalid` query through the virtual DNS
   route, then `example.com` only if the local NXDOMAIN check passes, first over
@@ -326,16 +361,19 @@ is recorded separately for 0.4.0; it was not rerun after this update.
 
 Apps' independent encrypted DNS, direct-IP connections, cached DNS, alternative resolvers, secure
 browser DNS, other profiles and mixed-content websites can bypass this layer.
-The virtual DNS server handles IPv4 UDP and bounded TCP port 53 only, not
-client TLS port 853 or TCP to arbitrary destinations. Fragmented IP, compressed
-questions and some non-hostname queries are unsupported; replies above the
+Blocking known provider hostnames narrows, but does not close, the encrypted-DNS
+gap. Strict Private DNS can route system DNS around Hisn; it is warned about, not changed.
+The virtual DNS server handles IPv4 UDP and bounded TCP port 53 only; client TLS
+port 853 is refused with a reset, and TCP to other destinations is not served. Fragmented IP, compressed
+questions and malformed multi-label names are unsupported; replies above the
 4,096-byte cap, unsupported queries and resolver outages may cause page loads to fail. The
 service reports errors rather than claiming those requests were filtered.
 
 Always-on support is explicitly disabled. Do not enable lockdown for this
 DNS-only route: it would prevent normal internet traffic from using the
-underlying network. The service does not automatically restart after boot,
-process death or permission loss. Android VPN settings can disconnect it.
+underlying network. After boot it resumes only if left on and VPN approval
+remains; it does not restart after process death or permission loss. Android
+VPN settings can disconnect it.
 
 The local tester accepts one literal rule per line with bounded rule and text
 sizes. Tester inputs/results are not saved; rules entered in the separate saved

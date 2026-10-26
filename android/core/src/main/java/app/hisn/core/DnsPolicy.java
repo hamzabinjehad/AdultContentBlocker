@@ -62,7 +62,7 @@ public final class DnsPolicy {
         } else if (!validOpt(query, questionEnd)) {
             return unsupported();
         }
-        DomainPolicy.Decision decision = domains.evaluate(name.toString());
+        DomainPolicy.Decision decision = decide(name.toString());
         if (decision == DomainPolicy.Decision.INVALID) return unsupported();
         if (decision == DomainPolicy.Decision.ALLOW) return new Result(Action.FORWARD, null, questionEnd);
         return new Result(Action.BLOCK, response(query, questionEnd, 3), questionEnd);
@@ -96,7 +96,24 @@ public final class DnsPolicy {
                 : Math.max(512, Math.min(1232, read16(query, parsed.questionEnd + 3)));
     }
 
-    boolean blocksReply(byte[] reply) throws java.io.IOException { return DnsReplyGuard.blocks(reply, domains); }
+    // Alias targets get the same underscore/single-label handling as questions.
+    boolean blocksReply(byte[] reply) throws java.io.IOException { return DnsReplyGuard.blocks(reply, this::decide); }
+
+    private DomainPolicy.Decision decide(String name) {
+        DomainPolicy.Decision decision = domains.evaluate(name);
+        return decision == DomainPolicy.Decision.INVALID ? nonHostname(name) : decision;
+    }
+
+    /** No domain rule can equal a root, single-label or underscore (SRV, DKIM, DDR) name, so
+     * those are forwarded. The hostname after the last underscore label is still checked:
+     * _sip._tcp.blocked.example stays blocked. A malformed suffix remains unsupported. */
+    private DomainPolicy.Decision nonHostname(String name) {
+        int underscore = name.lastIndexOf('_');
+        if (underscore < 0) return name.indexOf('.') < 0 ? DomainPolicy.Decision.ALLOW : DomainPolicy.Decision.INVALID;
+        int dot = name.indexOf('.', underscore);
+        if (dot < 0 || name.indexOf('.', dot + 1) < 0) return DomainPolicy.Decision.ALLOW;
+        return domains.evaluate(name.substring(dot + 1));
+    }
 
     private static byte[] response(byte[] query, int questionEnd, int code) {
         int additional = read16(query, 10);
