@@ -1,4 +1,4 @@
-# Hisn Android 0.5.2: protection development preview
+# Hisn Android 0.5.3: protection development preview
 
 The Android app contains an opt-in DNS-only VPN, saved custom rules, selected-app
 accessibility restrictions, opt-in daily app schedules, built-in adult-text checks and
@@ -15,6 +15,21 @@ tests, not proof that every browser request uses Hisn. Broader real-app coverage
 and VPN/lifecycle testing remain pending. Visual accuracy and real-app capture acceptance
 remain pending; the isolated live fixture sequence passes. Usage limits, full traffic coverage and managed-device uninstall
 blocking are not implemented.
+
+## 0.5.3 honest status, notices and housekeeping
+
+The setup guide now reaches ready for DNS alone, the selected-app layer alone, or
+both, and says which layer is off. "Last screen scan incomplete" clears after any
+later complete inspection, and an image-check failure stays visible until a later
+sample. The DNS notification has a proper channel name and shows the real session
+state. Refused rule changes name their real cause instead of always "locked".
+Image sampling stops while the screen is off and the model is freed after three
+idle minutes. Remaining commitment time uses plurals and switches to days after 48
+hours. Arabic disclosures now say everything the English says, Android 13+ lists
+Hisn under App languages, the DNS section shows the bundled list's version and
+date, and the Guide page has a Licenses and sources screen. `test-core.sh` now
+checks English/Arabic resource parity and list notices; CI builds and lints the
+app. Phone acceptance is pending; see [the 0.5.3 record](../docs/ANDROID_0.5.3.md).
 
 ## 0.5.2 blocking hardening and commitment clock fix
 
@@ -356,11 +371,30 @@ is recorded separately for 0.4.0; it was not rerun after this update.
   as no saved restrictions, partial inspection and unreadable settings. A live
   service alone is never presented as configured enforcement.
 - A shared setup guide supplies both the next-step message and its action.
-  Its 1,280 tested state combinations distinguish rules, permission, binding,
-  loading/error states, incomplete app inspections, DNS startup/degradation and
-  the explicit route check. READY requires configured app protection, healthy
-  service state, a ready or disabled optional policy, a running DNS layer and a
-  passed check. It still does not mean complete device protection.
+  Its 7,680 tested state combinations distinguish rules, whether DNS filtering
+  was left on, permission, binding, loading/error states, incomplete app
+  inspections, image-check failures, DNS startup/degradation and the explicit
+  route check. Each layer is optional. Ready for the app layer requires
+  configured app protection, healthy service state, a ready or disabled optional
+  policy and no failing image check; ready for DNS requires a running DNS layer
+  and a passed check. When only one layer is chosen, the guide says the other is
+  off. Unreadable settings are never ready. Ready does not mean complete device
+  protection.
+- "Last screen scan incomplete" is set by a partial or failed inspection and
+  cleared by a later complete one, including blocked-app and schedule
+  decisions. An image-check failure stays on the dashboard until a later sample
+  succeeds or the layer is turned off.
+- Image sampling never runs while the screen is off, and the on-device model is
+  released after three minutes without a sample.
+- The ongoing DNS notification ("DNS filtering status" channel) shows starting,
+  connected, recent failures or a strict Private DNS bypass.
+- A refused rule change names its cause: too many apps (200 per list), invalid
+  input, an active commitment, no saved restrictions, a failed save or
+  unreadable settings.
+- The Guide page's Licenses and sources screen summarises the bundled lists'
+  and engine's origins in English and Arabic and shows each full license text
+  from the APK; nothing is downloaded. The DNS section shows the bundled list's
+  version and build date; lists change only with a new app version.
 - Selected-window root changes receive bounded retries. Warning cooldown never
   suppresses a fresh enforcement action. The explanation screen is delayed until
   after Home to avoid the observed Samsung transition race.
@@ -406,8 +440,15 @@ Gradle 9.3.1. Set `JAVA_HOME` and `ANDROID_HOME`, then run:
 
 ```sh
 sh test-core.sh
-./gradlew --no-daemon assembleDebug assembleDebugAndroidTest lintDebug
+./gradlew --no-daemon assembleDebug assembleDebugAndroidTest lintDebug assembleRelease
 ```
+
+CI runs the same commands in its `android` job. `test-core.sh` starts with two
+resource checks: `check-strings.py` (English and Arabic have the same string
+keys, plurals and placeholders, every Arabic plural category, nothing aapt2
+would reject, and every referenced key exists) and `check-notices.py` (every
+bundled list source has its license text and an entry in both summaries). Add
+any new `*Test` class to the loop in `test-core.sh`.
 
 The core suite covers word boundaries, Unicode, bounded lists, seed tampering,
 the actual full seed, domain exceptions, DNS/EDNS packets, packet checksums,
@@ -416,7 +457,7 @@ TCP tests cover framing, pipelining/reuse, sequence wrap, partial/future ACKs,
 overlap/duplicates, peer MSS/window limits, retransmission, FIN/RST, queue/flow
 caps, deadlines and late completions. Packet mutation/fuzz tests and a validated
 4,096-byte UDP-TC-to-segmented-TCP fixture run without public network access.
-The suite also checks all 1,280 setup-guide combinations, actual-seed adult-text
+The suite also checks all 7,680 setup-guide combinations, actual-seed adult-text
 fixtures, local context, Unicode/evasion boundaries and bounded classifier work.
 DNS-probe tests use loopback responders for route-check response validation,
 timeouts, cancellation and no public query after a failed local check.

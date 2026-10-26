@@ -59,11 +59,19 @@ as a limit. It is never dropped silently.
       downloads that reuse `blocklist/` Ed25519 signatures. Record the decision.
 - [x] `PolicyStore` static-context lint warning: already holds the application context; suppressed with reason.
 - [ ] Remaining lint warnings: plural-string candidates and two attributes that need a higher API than minSdk 26.
+      0.5.3 turned the "about N hours" strings into plurals and marks `<application>` with
+      `tools:targetApi="33"`; confirm the remaining count in the CI lint report before ticking.
 
 - [x] 0.5.2 blocking hardening: DoH canary and provider names, strict Private DNS warning,
       degraded recovery, resume after reboot, separated spellings, Arabic name false
       positives, image checks on feeds, 60-second hold, commitment reboot clock fix.
       See [0.5.2](ANDROID_0.5.2.md).
+- [x] 0.5.3 honest status: setup guide ready for DNS only, app layer only or both; incomplete-scan
+      and image-check failures clear only after a later success; real DNS notification state and
+      channel name; real refusal reasons; no sampling with the screen off and idle model release;
+      remaining-time plurals; Arabic disclosure parity and a resource parity check; App languages;
+      bundled list version; Licenses and sources screen; Android CI job.
+      See [0.5.3](ANDROID_0.5.3.md).
 
 ### M2: device lifecycle acceptance (needs the owner's phone and consent)
 
@@ -75,6 +83,9 @@ Run on a fresh 0.5.x debug install, using `test-live-*.py` where possible:
 - [ ] Accessibility: force-stop, revoke, and re-grant. Health must report the loss
       and recover after re-grant.
 - [ ] `CoreDeviceTestRunner` passes on the release-candidate APK.
+- [ ] 0.5.3 status checks on device: DNS notification states, image-check failure persistence,
+      no captures with the screen off, model release after idle minutes
+      ([0.5.3 list](ANDROID_0.5.3.md#still-needs-a-phone)).
 
 ### M3: real-app coverage (needs the owner's phone)
 
