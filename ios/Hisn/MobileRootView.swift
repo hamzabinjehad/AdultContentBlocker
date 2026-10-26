@@ -581,14 +581,18 @@ struct KeychainLockMarkerStore: LockMarkerStore {
               let data = item as? Data else { return nil }
         return String(data: data, encoding: .utf8)
     }
+    /// The item as it is added: device-only, never synced.
+    func item(_ marker: String) -> [String: Any] {
+        var insert = query
+        insert[kSecValueData as String] = Data(marker.utf8)
+        insert[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+        return insert
+    }
     /// Replaced, not updated, so the item is always device-only whatever was there before.
     func write(_ marker: String) -> Bool {
         let removed = SecItemDelete(query as CFDictionary)
         guard removed == errSecSuccess || removed == errSecItemNotFound else { return false }
-        var insert = query
-        insert[kSecValueData as String] = Data(marker.utf8)
-        insert[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-        return SecItemAdd(insert as CFDictionary, nil) == errSecSuccess
+        return SecItemAdd(item(marker) as CFDictionary, nil) == errSecSuccess
     }
 }
 

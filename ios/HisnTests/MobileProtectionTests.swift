@@ -1,4 +1,5 @@
 import CryptoKit
+import Security
 import SwiftUI
 import WebKit
 import FamilyControls
@@ -846,6 +847,18 @@ final class SetupHonestyTests: XCTestCase {
             XCTAssertEqual(values.isExcludedFromBackup, true, path)
         }
         XCTAssertEqual(FileLockMarkerStore.standard.url.lastPathComponent, "lock-marker")
+    }
+
+    /// The unsigned test host has no Keychain entitlement (errSecMissingEntitlement), so this checks
+    /// the item the store adds rather than a round trip.
+    func testTheKeychainMarkerIsDeviceOnly() {
+        let item = KeychainLockMarkerStore().item("marker-value")
+        XCTAssertEqual(item[kSecAttrAccessible as String] as? String,
+                       kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly as String,
+                       "never migrated to another device")
+        XCTAssertNil(item[kSecAttrSynchronizable as String], "never in iCloud Keychain")
+        XCTAssertEqual(item[kSecAttrService as String] as? String, "hisn.mobile.lockMarker")
+        XCTAssertEqual(item[kSecValueData as String] as? Data, Data("marker-value".utf8))
     }
 
     // MARK: Vault and commitment dates
