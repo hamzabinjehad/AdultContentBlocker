@@ -247,6 +247,13 @@ public final class MainActivity extends Activity {
                 result.setText(R.string.invalid);
             }
         });
+        heading(R.string.notices_title, 21);
+        paragraph(R.string.notices_help);
+        Button notices = new Button(this);
+        notices.setText(R.string.notices_open);
+        notices.setAllCaps(false);
+        root.addView(notices, layout());
+        notices.setOnClickListener(view -> Notices.show(this));
         showPage(savedInstanceState == null ? 0 : savedInstanceState.getInt("selectedPage", 0));
     }
 

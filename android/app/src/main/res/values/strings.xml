@@ -169,4 +169,15 @@
     <string name="guide_limits_body">DNS blocks matching domains on the supported route. Independent encrypted DNS, cached answers and direct IP connections can bypass it. Text and visual checks inspect only selected apps and may act after content appears. Visual checks classify downscaled window samples, not every image or video frame. Secure windows cannot be inspected.\n\nAndroid can stop services or revoke permissions. Reopen Protection after a restart or permission change. Commitments guard changes inside Hisn; Android settings, data clearing and uninstall remain available. This build does not provide always-on or lockdown VPN protection.</string>
     <string name="privacy_heading">Your privacy</string>
     <string name="diagnostics_title">DNS session diagnostics</string>
+    <string name="notices_title">Licenses and sources</string>
+    <string name="notices_help">Hisn bundles lists and code from other projects under their own licenses. Their full texts are stored in the app, in their original English.</string>
+    <string name="notices_open">Open licenses and sources</string>
+    <string name="notices_unavailable">This notice could not be read from the app. Reinstall Hisn from a trusted copy.</string>
+    <string name="notice_sources">Where the bundled lists and engine come from</string>
+    <string name="notice_sources_body">Hisn includes data and code from other projects. Their licenses apply to those parts. The full license texts are listed after this summary; they are stored in the app and nothing is downloaded.\n\nBundled domain list: Hisn builds it from these sources, then filters and merges them:\n• StevenBlack hosts: the porn-only list and a saved snapshot of the unified list with its porn extension (github.com/StevenBlack/hosts), MIT License\n• Sinfonietta hostfiles: the pornography list (github.com/Sinfonietta/hostfiles), MIT License\n• HaGeZi DNS blocklists: the NSFW list (github.com/hagezi/dns-blocklists), GNU GPL 3.0\n• chadmayfield Pi-hole blocklists: adult domains among the top one million sites (github.com/chadmayfield/my-pihole-blocklists), GNU GPL 3.0\n\nThe list is a plain-text file inside the app (domains_core.txt). The scripts that build it are in the Hisn source repository.\n\nWord list: some German terms in the bundled vocabulary come from the List of Dirty, Naughty, Obscene, and Otherwise Bad Words by its LDNOOBW contributors (github.com/LDNOOBW), Creative Commons Attribution 4.0. Hisn kept only terms that also appear in adult domain names and set its own weights.\n\nImage-check engine: the bundled TensorFlow.js, NSFWJS, Human, MediaPipe and other code and models keep the notices listed after this summary, including the engine’s full third-party license file.</string>
+    <string name="notice_mit_stevenblack">MIT License · StevenBlack hosts</string>
+    <string name="notice_mit_sinfonietta">MIT License · Sinfonietta hostfiles</string>
+    <string name="notice_gpl">GNU GPL 3.0 · HaGeZi and chadmayfield lists</string>
+    <string name="notice_cc_by">CC BY 4.0 · LDNOOBW word list</string>
+    <string name="notice_visual_file">Image-check engine · %1$s</string>
 </resources>

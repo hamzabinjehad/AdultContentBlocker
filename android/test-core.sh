@@ -3,6 +3,8 @@ set -eu
 cd "$(dirname "$0")"
 # English and Arabic resources: same keys, plurals and placeholders; every referenced key exists.
 python3 check-strings.py
+# Every bundled list source has its license text and an English and Arabic summary entry.
+python3 check-notices.py
 hisn_test_output=$(mktemp -d "${TMPDIR:-/tmp}/hisn-core.XXXXXX")
 # Test class files stay in a newly created temporary directory; no repo files are changed.
 hisn_java_bin=${JAVA_HOME:+$JAVA_HOME/bin/}
