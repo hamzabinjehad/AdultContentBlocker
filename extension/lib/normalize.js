@@ -41,12 +41,25 @@ const TATWEEL = 0x0640;
 
 /** Orthographic folds. Arabic writers are inconsistent about every one of
  *  these, and a list that distinguishes them matches about half of what it
- *  should. */
+ *  should.
+ *
+ *  The second block is the Persian/Urdu side of the same alphabet. A Persian
+ *  or Urdu keyboard produces ک (U+06A9) and ی (U+06CC) where an Arabic keyboard
+ *  produces ك (U+0643) and ي (U+064A); the glyphs are indistinguishable at
+ *  reading size and the words are identical. Without these folds a page can
+ *  visibly write `سکسی` and match nothing, which is the worst kind of miss:
+ *  the list looks right, the page looks right, and the layer silently does
+ *  nothing. Only letters that are the SAME phoneme are folded; peh, tcheh, gaf
+ *  and jeh are genuinely different letters and are deliberately left alone. */
 const FOLD = new Map([
   [0x0623, "ا"], [0x0625, "ا"], [0x0622, "ا"], [0x0671, "ا"], // أ إ آ ٱ
   [0x0649, "ي"], [0x0626, "ي"],                               // ى ئ
   [0x0624, "و"],                                              // ؤ
   [0x0629, "ه"],                                              // ة
+  [0x06cc, "ي"], [0x06d2, "ي"], [0x06d3, "ي"],                // ی ے ۓ
+  [0x06a9, "ك"],                                              // ک
+  [0x06c1, "ه"], [0x06c3, "ه"],                               // ہ ۃ
+  [0x06ba, "ن"],                                              // ں
 ]);
 
 /** Tashkeel/harakat. Optional in written Arabic, so the same word appears with

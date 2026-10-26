@@ -121,6 +121,19 @@ for (const url of [
 <iframe src="https://kw4.hisn.test/free-porn-videos"></iframe>
 <iframe src="https://www.milford.hisn.test/"></iframe>
 <iframe src="https://milfs.hisn.test/"></iframe>
+<iframe src="https://p0rnhub.hisn.test/"></iframe>
+<iframe src="https://s3x.hisn.test/"></iframe>
+<iframe src="https://n0de.hisn.test/"></iframe>
+<iframe src="https://s3xeducation.hisn.test/"></iframe>
+<iframe src="https://kw5.hisn.test/?q=p0rn"></iframe>
+<iframe src="https://kw6.hisn.test/?q=sp0rts"></iframe>
+<iframe src="https://kw7.hisn.test/?q=%D8%B3%D9%83%D8%B3"></iframe>
+<iframe src="https://kw8.hisn.test/?q=%D8%B3%D9%83%D8%B3%D9%88%D9%86%D9%8A%D8%A7"></iframe>
+<iframe src="https://kw9.hisn.test/%D8%B3%D9%83%D8%B3"></iframe>
+<iframe src="https://kw10.hisn.test/?q=%D8%B3%D9%83%D8%B3%20%D8%B9%D8%B1%D8%A8%D9%8A"></iframe>
+<iframe src="https://kw11.hisn.test/?q=hello&x=%D8%B3%D9%83%D8%B3"></iframe>
+<img src="https://s3x-embed.hisn.test/x.png">
+<img src="https://s3xeducation.hisn.test/ok.png">
 <iframe src="https://www.reddit.com/r/nsfw_gifs/"></iframe>
 <iframe src="https://www.reddit.com/r/nosleep/"></iframe>
 <p id=done>loaded</p></body>""".replace(b"<p id=done>", CASE_FRAMES + POLICY_FRAMES + b"<p id=done>")
@@ -200,7 +213,9 @@ PY
 arrived() {  # every frame that is expected to reach the server has
     [ "$(grep -c 'q=background' "$WORK/requests.log" 2>/dev/null || true)" = "4" ] || return 1
     for h in 'www\.google\.com' 'www\.bing\.com' 'duckduckgo\.com' 'www\.youtube\.com' \
-             'kw\.hisn\.test' 'kw2\.hisn\.test' 'www\.milford\.hisn\.test' 'www\.reddit\.com' \
+             'kw\.hisn\.test' 'kw2\.hisn\.test' 'kw6\.hisn\.test' 'kw8\.hisn\.test' \
+             'kw9\.hisn\.test' 'kw11\.hisn\.test' 'www\.milford\.hisn\.test' \
+             's3xeducation\.hisn\.test' 'www\.reddit\.com' \
              'search\.brave\.com' 'mail\.yandex\.ru' 'yandex\.com\.hisn\.test' 'sotwe\.com\.hisn\.test'; do
         grep -q "^$h	" "$WORK/requests.log" 2>/dev/null || return 1
     done
@@ -230,6 +245,19 @@ refuse "a token keyword blocks a site NAMED with it (hot-sex.…)" '^hot-sex\.hi
 expect "…but not a search that mentions it (adult adhd)"  '^kw\.hisn\.test'
 expect "…nor a form field (?sex=female)"                   '^kw2\.hisn\.test'
 refuse "a substring keyword fires anywhere (/free-porn-…)" '^kw4\.hisn\.test'
+refuse "an obfuscated host is caught (p0rnhub)"             '^p0rnhub\.hisn\.test'
+refuse "an obfuscated host label is caught (s3x)"           '^s3x\.hisn\.test'
+refuse "an obfuscated host label is caught (n0de)"          '^n0de\.hisn\.test'
+expect "…but a longer label is not (s3xeducation)"          '^s3xeducation\.hisn\.test'
+refuse "an obfuscated query is caught (?q=p0rn)"            '^kw5\.hisn\.test'
+expect "…while an ordinary word is not (?q=sp0rts)"         '^kw6\.hisn\.test'
+refuse "an explicit Arabic search is caught (q=سكس)"        '^kw7\.hisn\.test'
+expect "…but Saxony is not (q=سكسونيا)"                     '^kw8\.hisn\.test'
+expect "…nor is the word in a path"                         '^kw9\.hisn\.test'
+refuse "…while a space-separated query is"                  '^kw10\.hisn\.test'
+expect "…and an unrelated parameter stays a page"           '^kw11\.hisn\.test'
+refuse "…but an embedded image from an alias host is dropped" '^s3x-embed\.hisn\.test'
+expect "…while an ordinary long label still loads its image" '^s3xeducation\.hisn\.test	/ok\.png'
 expect "Milford is not milf (guarded continuation)"        '^www\.milford\.hisn\.test'
 refuse "…while milfs still is"                              '^milfs\.hisn\.test'
 refuse "a Reddit community named nsfw (rules/paths.json)"    '^www\.reddit\.com	/r/nsfw'

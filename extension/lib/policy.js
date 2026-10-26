@@ -92,12 +92,19 @@ export const RULE_DOWNLOADED_BASE = 10000;
  *                                video from listed adult domains that
  *                                blocklist mode refused. Tightening loosened.
  *   4  published URL keywords
+ *   5  URL obfuscation aliases — `p0rn`/`s3x` spellings of terms the keyword
+ *                                layer already covers. Above the exact rules
+ *                                because they only ever add coverage for the
+ *                                same reviewed vocabulary, and below every hand
+ *                                list so a custom block still wins.
  *   1000+ the hand lists (see the header) — above everything published.
  */
 export const PRIORITY_CATCHALL = 1;
 export const PRIORITY_PLUMBING = 2;
 export const PRIORITY_LIST = 3;
 export const PRIORITY_KEYWORDS = 4;
+/** Generated from blocklist/evasion_aliases.json; see blocklist/evasion.py. */
+export const PRIORITY_EVASION = 5;
 /** Base priority of the hand lists; see the header. */
 export const PRIORITY_HAND = 1000;
 const MAX_LABELS = 32;

@@ -39,11 +39,21 @@ public enum TextNormalizer {
     /// Orthographic folds. Arabic writers are inconsistent about every one of
     /// these, and a list that distinguishes them matches about half of what it
     /// should.
+    ///
+    /// The second group is the Persian/Urdu spelling of the same letters. A
+    /// Persian or Urdu keyboard produces ک (U+06A9) and ی (U+06CC) where an
+    /// Arabic keyboard produces ك and ي; the words are identical and the
+    /// glyphs are indistinguishable at reading size. Only same-phoneme letters
+    /// are folded; peh, tcheh, gaf and jeh are different letters and stay.
     private static let folds: [UInt32: Character] = [
         0x0623: "ا", 0x0625: "ا", 0x0622: "ا", 0x0671: "ا",   // أ إ آ ٱ
         0x0649: "ي", 0x0626: "ي",                             // ى ئ
         0x0624: "و",                                          // ؤ
         0x0629: "ه",                                          // ة
+        0x06CC: "ي", 0x06D2: "ي", 0x06D3: "ي",                // ی ے ۓ
+        0x06A9: "ك",                                          // ک
+        0x06C1: "ه", 0x06C3: "ه",                             // ہ ۃ
+        0x06BA: "ن",                                          // ں
     ]
 
     /// True for tashkeel/harakat. Optional in written Arabic, so the same word

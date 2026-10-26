@@ -152,7 +152,7 @@ check(rejected && enabled.includes("lockdown"),
 rejectDynamic = false;
 await applyRules({ ...DEFAULT_STATE, mode: "blocklist" });
 check(!enabled.includes("lockdown") && !dynamic.some((r) => r.condition.urlFilter === "*")
-      && ["blocklist", "keywords", "safesearch", "paths", "web_protection"].every((id) => enabled.includes(id)),
+      && ["blocklist", "keywords", "safesearch", "paths", "web_protection", "evasion", "encoded_queries"].every((id) => enabled.includes(id)),
       "Standard mode retires stale lockdown without a catch-all while preserving baseline sets");
 check(ALARMS.heartbeat === 0.5 && ALARMS.listUpdate === 360,
       "heartbeat is thirty seconds without accelerating list downloads");
@@ -179,15 +179,16 @@ check(alarms.get("listUpdate")?.periodInMinutes === 360,
 state = { ...DEFAULT_STATE };
 check(!(await message({ type: "forceSync" })).ok, "missing native app is tolerated");
 check(!state.failClosed && !state.appPresent, "fresh browser-only install does not lock down");
-check(["blocklist", "keywords", "safesearch", "paths", "web_protection"].every((id) => enabled.includes(id)),
+check(["blocklist", "keywords", "safesearch", "paths", "web_protection", "evasion", "encoded_queries"].every((id) => enabled.includes(id)),
       "actual worker keeps all baseline layers when native app is absent");
 check(registeredScripts.some((script) => script.id === "hisn-scan"),
       "actual worker keeps text scanning registered without native app");
 let r = await message({ type: "update", patch: { customBlocks: ["example.com"], customTerms: ["GAMBLING"] } });
 check(r.ok && state.customTerms[0] === "gambling", "standalone saves normalized terms through real worker");
 check(enabled.includes("blocklist") && enabled.includes("keywords") && enabled.includes("safesearch")
-      && enabled.includes("paths") && enabled.includes("web_protection"),
-      "baseline rule sets, SafeSearch and path rules included, enabled without app");
+      && enabled.includes("paths") && enabled.includes("web_protection")
+      && enabled.includes("evasion") && enabled.includes("encoded_queries"),
+      "baseline rule sets, SafeSearch, path and obfuscation rules included, enabled without app");
 check(dynamic.some((r) => r.condition.requestDomains?.includes("example.com")), "standalone rules installed");
 r = await message({ type: "update", patch: { mode: "strict", allowlist: ["safe.example"] } });
 check(r.ok && dynamic.some((r) => r.condition.urlFilter === "*"), "standalone strict mode is operational");
@@ -205,7 +206,7 @@ state.lockUntil = Date.now() + 100000;
 state.lastHeartbeat = Date.now() - 600000;
 await message({ type: "forceSync" });
 check(state.failClosed, "app loss during lock fails closed");
-check(["blocklist", "keywords", "safesearch", "paths", "web_protection"].every((id) => enabled.includes(id))
+check(["blocklist", "keywords", "safesearch", "paths", "web_protection", "evasion", "encoded_queries"].every((id) => enabled.includes(id))
       && registeredScripts.some((script) => script.id === "hisn-scan")
       && dynamic.some((rule) => rule.condition.urlFilter === "*"),
       "app removal during commitment retains baseline, text scanner and restrictive policy together");
@@ -235,7 +236,7 @@ check(state.lastHeartbeat === recoveredHeartbeat, "an absent authority cannot re
 nativeReply = { lockUntil: 0, mode: "off", allowlist: [], customBlocks: [] };
 check((await message({ type: "forceSync" })).ok && !state.failClosed && state.lockUntil === 0,
       "a fresh authoritative unlocked reply can end restrictive recovery");
-check(["blocklist", "keywords", "safesearch", "paths", "web_protection"].every((id) => enabled.includes(id)),
+check(["blocklist", "keywords", "safesearch", "paths", "web_protection", "evasion", "encoded_queries"].every((id) => enabled.includes(id)),
       "confirmed unlock releases the commitment but never turns off baseline blocking");
 
 // Failed durable expiry uses a transport-only hold, including standard mode.
@@ -362,7 +363,7 @@ check((await message({ type: 'inspectVisualMedia', id: 'x', width: 1, height: 1,
 state.lockUntil = 0;
 check((await message({ type: 'update', patch: { inspectVisual: false, personBlur: 'off' } })).ok, 'unlocked user can disable visual beta');
 check(!registeredScripts.some(script => script.id === 'hisn-visual')
-  && ['blocklist', 'keywords', 'safesearch', 'paths', 'web_protection'].every(id => enabled.includes(id)), 'visual off keeps baseline enforcement');
+  && ['blocklist', 'keywords', 'safesearch', 'paths', 'web_protection', 'evasion', 'encoded_queries'].every(id => enabled.includes(id)), 'visual off keeps baseline enforcement');
 
 // Healthy delayed IPC stays "checking" beyond the ordinary page-message
 // deadline. Exercise the actual UI helper through the actual worker listener.
@@ -560,7 +561,7 @@ check(r.ok && !state.appPresent && !state.failClosed && state.lockUntil === 0
       "standalone repair preserves optional scanner choices without inventing app ownership or a commitment");
 check(dynamic.some(rule => rule.condition.requestDomains?.includes("standalone-block.example"))
       && !dynamic.some(rule => rule.condition.urlFilter === "*")
-      && ["blocklist", "keywords", "safesearch", "paths", "web_protection"].every(id => enabled.includes(id)),
+      && ["blocklist", "keywords", "safesearch", "paths", "web_protection", "evasion", "encoded_queries"].every(id => enabled.includes(id)),
       "standalone repair restores independent baseline and custom blocking without unexpectedly imposing strict mode");
 
 await toolbarStatus.whenIdle();

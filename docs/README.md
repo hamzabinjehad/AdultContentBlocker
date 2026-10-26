@@ -22,6 +22,7 @@ past version; *superseded* documents point to their replacement. Start with the
 ## Browser extension
 
 - [Browser management and guard limits](CHROME_ENFORCEMENT.md): What the Mac browser guard and consented managed browser policies add, supported browsers, and remaining removal limits.
+- [The browser blocking pipeline](BLOCKING_PIPELINE.md): Code map of every browser layer, which generated ruleset owns it, and the invariants a change must keep.
 - [Browser-first protection for mixed sites](BROWSER_FIRST_PROTECTION.md): Hiding single explicit posts on mixed-content sites like X instead of blocking the whole site, plus setup and checks.
 - [Person area, effect and media choices](PERSON_PRESENTATION.md): Face-only versus whole-media masking, blur versus opaque, image/video scope, and appearance-estimate rules through 1.1.9.
 - [Settings inside the popup](POPUP_SETTINGS.md): Protection settings opened inside the toolbar popup, the minimal popup redesign, and one-tap current-site blocking.
@@ -101,6 +102,7 @@ Per-version change and verification notes, newest first.
 
 ### Browser extension
 
+- [Extension 1.1.12 release notes](EXTENSION_1.1.12.md): Glued phrase matching, Persian/Urdu normalisation, generated obfuscation and encoded-query rulesets, and an organised worker. *Historical.*
 - [Extension 1.1.11 release notes](EXTENSION_1.1.11.md): Text scanner hardening: phrase tree, disguised-word detection, French form fix and corpus checks at three sensitivities. *Historical.*
 - [Extension 1.1.10 release notes](EXTENSION_1.1.10.md): Faster model preparation and a larger verdict cache that removes repeat image checks, with measured results. *Historical.*
 - [Extension 1.1.9 release notes](EXTENSION_1.1.9.md): Mirrored-crop confirmation before excluding a face and stable face masks across identical rechecks, with test evidence. *Historical.*

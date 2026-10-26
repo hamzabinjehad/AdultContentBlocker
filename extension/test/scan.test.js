@@ -402,6 +402,12 @@ await (async () => {
   check(h.log.sent.length === 2 && h.log.navigated.length === 1, "a hung worker request times out and retries instead of freezing the scanner");
 })();
 check(S.OBSERVER_OPTIONS.attributes && ["alt", "aria-label", "content"].every((key) => S.OBSERVER_OPTIONS.attributeFilter.includes(key)), "metadata and image-label attribute changes are observed");
+check(S.META_SELECTORS.some((sel) => sel.includes('name^="twitter:"'))
+      && S.META_SELECTORS.some((sel) => sel.includes('property^="og:"'))
+      && S.META_SELECTORS.some((sel) => sel.includes('itemprop="description"')),
+      "Open Graph, Twitter-card and schema.org metadata are collected");
+check(new Set(S.META_SELECTORS).size === S.META_SELECTORS.length,
+      "metadata selectors are not duplicated");
 check(S.scoringPolicyChanged({ customTerms: [] }, { customTerms: ["fixture"] }), "new words invalidate content verdicts");
 check(S.scoringPolicyChanged({ inspectText: false }, { inspectText: true }), "enabling checking invalidates content verdicts");
 check(!S.scoringPolicyChanged({ lastHeartbeat: 1, textSensitivity: 50 }, { lastHeartbeat: 2, textSensitivity: 50 }), "ordinary heartbeat does not rescan every page");

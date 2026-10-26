@@ -16,6 +16,12 @@ no automation, and it must be run on a real Mac by a person.
 | Lock ends at the effective deadline in the filter | matured release → `strictModeActive` false | `SelfReleaseTests` |
 | Rollback protection survives a filter restart | `versionFloor` | `BlocklistLoadTests` |
 | Scanner: equal-length replacement, non-settling feed, malformed URL, worker restart, stale verdict, subframe, SPA route | fake DOM + fake clock | `scan.test.js` |
+| Concatenated spellings of reviewed phrases match, share the cap, and disappear when ignored | compiled alias table + score assertions | `compound.test.js` |
+| Persian/Urdu letter forms normalise identically in Python, JavaScript and Swift | shared `normalize_cases.json` fixture | `test_terms.py`, `normalize.test.js`, `KeywordLayerTests` |
+| Reviewed evasion vocabulary does not restore an ignored/weak term and fits its bitmask | alias/verdict assertions | `text-evasion.test.js` |
+| Every static network regex compiles, and obfuscated/encoded-query rules match only where intended | real Chromium `isRegexSupported` + server request log | `test/browser/dnr.sh` |
+| Generated evasion/encoded-query rules are the output of the reviewed tables and signed vocabulary | `--check` generators | `evasion.py --check`, `encoded_queries.py --check`, `test_evasion.py`, `test_encoded_queries.py` |
+| The service worker stays split into focused modules without import cycles | source-shape assertions | `worker-layout.test.js` |
 | Same scanner scenarios in a real Chromium DOM | harness page, headless Chrome in CI | `test/browser/run.sh` |
 | A generation is installed whole or not at all (browser) | planner refusals | `generation.test.js` |
 | Every shipped artifact matches the signed seed manifest and the sources | `seed.py verify` | `test_seed.py`, CI |

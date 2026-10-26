@@ -264,7 +264,7 @@ a lock.
 ## Publishing the list the clients download
 
 Both clients download signed updates from this repository's `lists` branch —
-`LIST_BASE` in `extension/background.js` and `base` in
+`LIST_BASE` in `extension/worker/lists.js` and `base` in
 `macos/Hisn/ListUpdater.swift`, pinned to each other and to this repository by
 `test_build.py`. Two things must be true before any install receives an update:
 

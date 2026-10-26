@@ -104,11 +104,20 @@ _TASHKEEL = dict.fromkeys(
 
 # Orthographic folds. Arabic writers are inconsistent about all of these, and a
 # term list that distinguishes them matches roughly half of what it should.
+#
+# The second group is the Persian/Urdu spelling of the same letters. A Persian
+# or Urdu keyboard produces ک (U+06A9) and ی (U+06CC) where an Arabic keyboard
+# produces ك and ي; the words are identical and the glyphs are indistinguishable
+# at reading size. Folding only same-phoneme letters, never peh/tcheh/gaf/jeh.
 _FOLD = {
     ord("أ"): "ا", ord("إ"): "ا", ord("آ"): "ا", ord("ٱ"): "ا",
     ord("ى"): "ي", ord("ئ"): "ي",
     ord("ؤ"): "و",
     ord("ة"): "ه",
+    ord("ی"): "ي", ord("ے"): "ي", ord("ۓ"): "ي",
+    ord("ک"): "ك",
+    ord("ہ"): "ه", ord("ۃ"): "ه",
+    ord("ں"): "ن",
 }
 
 # Arabic-Indic and Extended Arabic-Indic digits.

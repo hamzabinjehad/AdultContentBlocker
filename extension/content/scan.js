@@ -80,6 +80,9 @@
   const MAX_STALE = 3;           // a page that re-routes this often mid-verdict is dodging
   const MAX_SHADOW_NODES = 20_000;
   const REPLY_TIMEOUT_MS = 5_000;
+  const META_SELECTORS = ['meta[name="description"]', 'meta[property^="og:"]',
+    'meta[name^="twitter:"]', 'meta[property^="twitter:"]',
+    'meta[itemprop="description"]', 'meta[name="keywords"]'];
   const OBSERVER_OPTIONS = { childList: true, subtree: true, characterData: true,
     attributes: true, attributeFilter: ["alt", "aria-label", "content", "name", "property", "hidden"] };
   const POLICY_FIELDS = ["inspectText", "textSensitivity", "customTerms", "ignoreTerms",
@@ -258,8 +261,11 @@
     /** Collect the zones the scorer weights, cheaply. */
     function collectZones() {
       const meta = [];
-      for (const sel of ['meta[name="description"]', 'meta[property^="og:"]',
-                         'meta[name="keywords"]']) {
+      // Open Graph, Twitter card and schema.org descriptions all carry the
+      // page's own summary and are frequently the only place a feed puts the
+      // explicit words. They are metadata the page chose to publish, not
+      // inferred content.
+      for (const sel of META_SELECTORS) {
         for (const el of sampleElements(doc.querySelectorAll(sel), 40)) {
           const c = el.getAttribute("content");
           if (c) meta.push(boundedText(c, 2000));
@@ -522,7 +528,7 @@
     safeDecode, fnv1a, contentSignature, retryDelayMs, createScheduler, createScanner,
     boundedText, sampleElements,
     SETTLE_MS, MAX_WAIT_MS, RETRY_BASE_MS, MAX_RETRIES, MAX_TEXT, HREF_POLL_MS,
-    REPLY_TIMEOUT_MS, OBSERVER_OPTIONS, scoringPolicyChanged,
+    REPLY_TIMEOUT_MS, OBSERVER_OPTIONS, META_SELECTORS, scoringPolicyChanged,
   };
 
   // Only a real extension has a runtime id. A test harness that loads this

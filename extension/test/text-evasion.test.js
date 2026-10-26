@@ -1,5 +1,5 @@
 /** Deliberate coverage changes, separate from legacy matcher parity. */
-import { buildIndex, scorePage, withoutTerms } from "../lib/score.js";
+import { buildIndex, scorePage, withoutTerms, EVASION_TERM_LIMIT } from "../lib/score.js";
 
 let checks = 0, failures = 0;
 function check(ok, label) {
@@ -66,6 +66,45 @@ for (const c of JSON.parse(readFile("../eval/corpus/text-hardening.json")).cases
       `labelled hardening regression: ${c.id} at ${sensitivity}`);
   }
 }
+
+// ── the reviewed alias set covers strong single-token brands too ───────────
+// All of these are exactly one token in the signed list and carry weight 8.
+// The lane only ever accepts a term that is present at that weight, so these
+// aliases cannot promote a word the list does not already treat as explicit.
+for (const [spelling, term] of [
+  ["p0rnhub", "pornhub"], ["0nlyf4ns", "onlyfans"], ["xv1de0s", "xvideos"],
+  ["r3dtub3", "redtube"], ["y0up0rn", "youporn"], ["br4zz3rs", "brazzers"],
+  ["c4mg1rls", "camgirls"], ["s3xc4m", "sexcam"], ["l1v3s3x", "livesex"],
+  ["s3xch4t", "sexchat"], ["m1lf", "milf"], ["bl0wj0b", "blowjob"],
+  ["h4ndj0b", "handjob"], ["cr34mpi3", "creampie"], ["cumsh0t", "cumshot"],
+  ["g4ngb4ng", "gangbang"], ["d33pthr04t", "deepthroat"], ["t1tt13s", "titties"],
+  ["p0rn0gr4ph1c", "pornographic"],
+]) {
+  const r = scorePage({ body: spelling }, index, 50);
+  check(r.block && r.hits.has(term), `brand alias resolves to its canonical term: ${spelling}`);
+}
+for (const spelling of ["0nlyf4ns", "p0rnhub"]) {
+  const term = spelling === "0nlyf4ns" ? "onlyfans" : "pornhub";
+  check(!scorePage({ body: spelling }, withoutTerms(index, [term])).block,
+    `ignoring ${term} also stops its alias ${spelling}`);
+}
+
+// ── the local lane's bitmask spans every reviewed term ─────────────────────
+// LOCAL_TERMS outgrew a byte; a Uint8Array used to truncate the evidence for
+// every term past the eighth, so the promotion lane silently stopped seeing
+// late entries. The filler makes the whole-page score too diluted to fire, so
+// only the local lane can produce this block.
+const filler = "the committee met on tuesday to review the quarterly report and road repairs. ";
+const high = scorePage({ body: "t1tt13s buttplug watch. " + filler.repeat(1000) }, index, 50);
+check(high.words > 5000, `the dilution fixture is long (${high.words} words)`);
+check(high.localEvidence, "the local lane sees terms in the high bits (titties, buttplug)");
+check(high.block, "a local promotion still blocks a diluted page");
+
+// The local lane packs one bit per reviewed term into a 32-bit word. The
+// module throws at load if this is exceeded; the assertion documents the bound
+// where a future reviewer will see it.
+check(EVASION_TERM_LIMIT === 31 && Number.isInteger(EVASION_TERM_LIMIT),
+      "the reviewed evasion vocabulary fits the bitmask");
 
 print(`  ${checks - failures}/${checks} text evasion/context checks passed`);
 if (failures) throw new Error(`${failures} check(s) failed`);

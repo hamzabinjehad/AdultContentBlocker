@@ -110,6 +110,41 @@
       "why": "separators survive normalisation; the tokenizer removes them"
     },
     {
+      "in": "سکسی",
+      "out": "سكسي",
+      "why": "a Persian keyboard's keheh and farsi yeh are the same Arabic letters"
+    },
+    {
+      "in": "ک",
+      "out": "ك",
+      "why": "keheh (U+06A9) folds to kaf (U+0643)"
+    },
+    {
+      "in": "ی",
+      "out": "ي",
+      "why": "farsi yeh (U+06CC) folds to yeh (U+064A)"
+    },
+    {
+      "in": "ےۓ",
+      "out": "يي",
+      "why": "barree and hamza yeh variants fold to yeh"
+    },
+    {
+      "in": "ہۃ",
+      "out": "هه",
+      "why": "Urdu heh and teh marbuta goal fold to haa"
+    },
+    {
+      "in": "ں",
+      "out": "ن",
+      "why": "noon ghunna folds to noon"
+    },
+    {
+      "in": "پچژگ",
+      "out": "پچژگ",
+      "why": "peh, tcheh, jeh and gaf are different letters and must not fold"
+    },
+    {
       "in": "",
       "out": "",
       "why": "empty input is not an error"

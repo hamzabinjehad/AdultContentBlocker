@@ -46,8 +46,20 @@ const MAX_OCCURRENCES = 3;
 // replacement normaliser. Only an already-present strong positive can match;
 // ignored/removed/reweighted terms cannot be resurrected here. In particular,
 // do not globally fold Franco-Arabic digits or all Greek/Cyrillic prose.
-const EVASION_TERMS = new Set(["porn", "porno", "pornography", "hentai",
-  "اباحي", "اباحيه", "بورنو", "سكس"]);
+// Every entry is a single-token term that already carries weight >= 8 in the
+// signed list. The lane cannot promote a term the list does not have, cannot
+// restore one the user ignored, and shares the canonical occurrence cap. The
+// set is deliberately small and reviewed; LOCAL_BITS packs it into one 32-bit
+// word, so adding beyond the spare bits needs a second word rather than a
+// larger shift.
+const EVASION_TERMS = new Set([
+  "porn", "porno", "pornography", "pornographic", "hentai",
+  "pornhub", "xvideos", "redtube", "youporn", "brazzers", "onlyfans",
+  "camgirl", "camgirls", "sexcam", "livesex", "sexchat", "milf",
+  "blowjob", "handjob", "creampie", "cumshot", "gangbang", "deepthroat",
+  "buttplug", "titties", "xnxx",
+  "اباحي", "اباحيه", "بورنو", "سكس",
+]);
 const EVASION_FOLDS = new Map([
   ["0", "o"], ["1", "i"], ["3", "e"], ["4", "a"], ["7", "t"],
   ["о", "o"], ["ο", "o"], ["р", "p"], ["ρ", "p"],
@@ -55,6 +67,13 @@ const EVASION_FOLDS = new Map([
 ]);
 const EVASION_MARKER = /[01347\u043e\u03bf\u0440\u03c1\u0430\u0435\u0456\u0443\u04bb]/u;
 const LOCAL_TERMS = [...EVASION_TERMS];
+// The lane packs one evidence bit per term into a 32-bit word. Exported so the
+// suite can fail when a future addition outgrows it instead of silently
+// reusing/sign-flipping a bit.
+export const EVASION_TERM_LIMIT = 31;
+if (LOCAL_TERMS.length > EVASION_TERM_LIMIT) {
+  throw new Error(`reviewed evasion vocabulary (${LOCAL_TERMS.length}) exceeds ${EVASION_TERM_LIMIT} bits`);
+}
 const LOCAL_BITS = new Map(LOCAL_TERMS.map((term, i) => [term, 1 << i]));
 const PROMOTION_WORDS = new Set(["watch", "download", "stream", "شاهد", "تحميل", "مشاهده"]);
 
@@ -152,6 +171,47 @@ function phraseTree(positive, negative) {
   return root;
 }
 
+/** The no-space spelling of every reviewed multi-word term.
+ *
+ *  WHY THIS EXISTS
+ *  ---------------
+ *  The scanner tokenises on anything that is not a letter or digit, then looks
+ *  each token up exactly. That catches `nude photos` as two adjacent tokens and
+ *  `nude-photos` / `nude_photos` as the same pair, because punctuation is a
+ *  separator. It does NOT catch `nudephotos`, which is one token and matches
+ *  nothing — exactly the spelling adult sites use in titles, captions and
+ *  hashtags, and exactly the concatenation this module claims to catch.
+ *
+ *  The fix stays data-driven rather than fuzzy: an alias is created ONLY from a
+ *  phrase already in the reviewed vocabulary, only when every word is letters
+ *  or digits, and only when the glued form is not already a term in either map.
+ *  No stemming, no arbitrary substring search, no edit distance. Scores and the
+ *  per-term occurrence cap stay attached to the canonical phrase through
+ *  `canonical`, so `nudephotos nude photos nudephotos` is still one term seen
+ *  three times.
+ *
+ *  A conflicting glued string is not aliased at all. If `sexvideo` is already
+ *  a compiled term, the phrase `sex video` must not take it over; the real term
+ *  owns its own score and occurrence count.
+ */
+function gluedAliases(positive, negative) {
+  const canonical = new Map();
+  const add = (map, term, weight) => {
+    const words = term.split(" ");
+    if (words.length < 2) return;
+    if (!words.every((word) => /^[\p{L}\p{N}]+$/u.test(word))) return;
+    const glued = words.join("");
+    // Owned by a real term, or by an earlier phrase: leave it alone. This also
+    // keeps positive and negative from fighting over one spelling.
+    if (positive.has(glued) || negative.has(glued) || canonical.has(glued)) return;
+    map.set(glued, weight);
+    canonical.set(glued, term);
+  };
+  for (const [term, weight] of positive) add(positive, term, weight);
+  for (const [term, weight] of negative) add(negative, term, weight);
+  return canonical;
+}
+
 /**
  * How much score a page needs per thousand words before a block is allowed.
  *
@@ -194,11 +254,16 @@ export function buildIndex(termsJson) {
   for (const r of termsJson.terms ?? []) add(positive, r.t, r.w);
   for (const r of termsJson.negatives ?? []) add(negative, r.t, -Math.abs(r.w));
 
+  // Aliases are added only after both canonical maps are complete, so a real
+  // term always wins its own spelling (see gluedAliases).
+  const canonical = gluedAliases(positive, negative);
+
   return {
     positive,
     negative,
     maxPhrase: maxWords,
     phrases: phraseTree(positive, negative),
+    canonical,
     exempt: new Set(termsJson.exempt_domains ?? []),
   };
 }
@@ -231,8 +296,22 @@ export function withoutTerms(index, terms) {
   if (!terms || !terms.length) return index;
   const drop = new Set(terms.map(phraseKey));
   const positive = new Map();
-  for (const [t, w] of index.positive) if (!drop.has(t)) positive.set(t, w);
-  return { ...index, positive, phrases: phraseTree(positive, index.negative) };
+  const canonical = new Map();
+  for (const [t, w] of index.positive) {
+    const source = index.canonical?.get(t);
+    // Dropping a canonical phrase must drop its glued aliases too, or the
+    // ignored term would keep matching through `nudephotos`.
+    if (drop.has(t) || (source && drop.has(source))) continue;
+    positive.set(t, w);
+    if (source) canonical.set(t, source);
+  }
+  // Negative aliases are never dropped by this function; carry them over so a
+  // later ignore of a positive word cannot silently disable a negative phrase.
+  for (const t of index.negative.keys()) {
+    const source = index.canonical?.get(t);
+    if (source) canonical.set(t, source);
+  }
+  return { ...index, positive, canonical, phrases: phraseTree(positive, index.negative) };
 }
 
 /** True if this hostname is exempt from PAGE-TEXT blocking.
@@ -256,7 +335,10 @@ export function isExempt(hostname, index) {
 function scoreZone(text, index, counts, inspectLocal = false, sensitivity = 50) {
   const normalised = normalize(text);
   const tokens = tokenize(normalised);
-  const strong = inspectLocal ? new Uint8Array(tokens.length) : null;
+  // 32-bit, not 8-bit: LOCAL_TERMS has outgrown one byte. A Uint8Array
+  // silently truncated every term past the eighth, which made the local
+  // promotion lane stop seeing them without any error.
+  const strong = inspectLocal ? new Uint32Array(tokens.length) : null;
   const negative = inspectLocal ? new Uint8Array(tokens.length) : null;
   let union = 0, starts = null;
   function record(term, start, end = start) {
@@ -291,16 +373,19 @@ function scoreZone(text, index, counts, inspectLocal = false, sensitivity = 50) 
 
   for (let i = 0; i < tokens.length; i++) {
     // Single token, plus its bounded affix-stripped forms. `الإباحية` has to
-    // find the listed `اباحيه`.
+    // find the listed `اباحيه`. A glued phrase alias scores and counts as its
+    // canonical phrase, so the occurrence cap and the block-page explanation
+    // are the same for both spellings.
     let positiveMatch = false;
     for (const v of variants(tokens[i])) {
+      const key = index.canonical?.get(v) ?? v;
       if (index.positive.has(v)) {
         positiveMatch = true;
-        if (!formChoice(v, tokens, i, index)) {
-          counts.set(v, (counts.get(v) ?? 0) + 1); record(v, i);
+        if (!formChoice(key, tokens, i, index)) {
+          counts.set(key, (counts.get(key) ?? 0) + 1); record(key, i);
         }
       }
-      if (index.negative.has(v)) { counts.set(v, (counts.get(v) ?? 0) + 1); record(v, i); }
+      if (index.negative.has(v)) { counts.set(key, (counts.get(key) ?? 0) + 1); record(key, i); }
     }
     // Do not invent a second signal when an existing exact/affix spelling
     // already matched (e.g. the trailing-digit variant of "porn0").

@@ -8,10 +8,12 @@
 # would have added the first third-party toolchain to a codebase that has
 # deliberately avoided one.
 #
-# Only PURE modules are testable this way — `lib/normalize.js`, `lib/score.js`.
-# Anything touching `chrome.*` cannot be imported outside an extension, which
-# is exactly why the scoring and normalisation logic lives in its own files
-# rather than inside background.js.
+# Pure modules — `lib/normalize.js`, `lib/score.js`, `lib/policy.js` — import
+# directly. The real worker entry point is exercised through a mocked
+# `chrome.*` transport in `runtime.test.js`, which is what keeps the wiring
+# honest without a browser; browser-only behaviour lives in `test/browser/`.
+# That split is also why scoring and normalisation live in their own files
+# rather than inside the service worker.
 #
 #     extension/test/run.sh
 set -euo pipefail
@@ -30,7 +32,7 @@ fail=0
 # because none imports it — and for as long as that lasted the block page
 # ran no script at all: no reason, no timer, no report buttons.
 echo "── syntax: every script the extension ships"
-for f in ../background.js ../popup.js ../options.js ../blocked.js ../lib/*.js ../lib/locale/*.js ../visual/{broker,decisions,engine,offscreen,queue}.js; do
+for f in ../background.js ../popup.js ../options.js ../blocked.js ../lib/*.js ../lib/locale/*.js ../worker/*.js ../visual/{broker,decisions,engine,offscreen,queue}.js; do
   # checkModuleSyntax takes SOURCE, not a path — readFile it first.
   "$JSC" -e "checkModuleSyntax(readFile('$f'))" >/dev/null || { echo "  syntax error: $f" >&2; fail=1; }
 done

@@ -1,11 +1,21 @@
 async function run() {
   const { WEB_PROTECTION_RULES, SAFESEARCH_TEMPLATES } = await import("./lib/web-protection.js");
-  for (const rule of [...WEB_PROTECTION_RULES, ...SAFESEARCH_TEMPLATES]) {
+  // Every static ruleset that carries a regex must compile in Chrome, not just
+  // the generated policy module. A single unsupported expression silently
+  // disables its whole ruleset, which looks exactly like a rule that did not
+  // match. The keyword, evasion and encoded-query sets are checked here too.
+  const staticRules = [];
+  for (const path of ["rules/dnr_keyword_rules.json", "rules/evasion.json",
+                      "rules/encoded_queries.json"]) {
+    staticRules.push(...await (await fetch(chrome.runtime.getURL(path))).json());
+  }
+  for (const rule of [...WEB_PROTECTION_RULES, ...SAFESEARCH_TEMPLATES, ...staticRules]) {
     if (!rule.condition.regexFilter) continue;
     const result = await chrome.declarativeNetRequest.isRegexSupported({
       regex: rule.condition.regexFilter, isCaseSensitive: false,
     });
-    if (!result.isSupported) throw new Error("unsupported policy regex: " + JSON.stringify(result));
+    if (!result.isSupported) throw new Error("unsupported regex in a static ruleset: "
+      + JSON.stringify({ condition: rule.condition, result }));
   }
   const response = await chrome.runtime.sendMessage({ type: "update", patch: {
     inspectText: false,

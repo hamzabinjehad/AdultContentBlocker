@@ -65,3 +65,12 @@ Run `extension/test/browser/run.sh settings.html` for the Settings UI in a
 headless Chromium browser (set `CHROME` to its executable if needed). This
 uses the real page and DOM with simulated extension messages; it does not
 activate a native filter or prove installation of the real bridge.
+
+Run `extension/test/browser/dnr.sh` for the network rules themselves. It loads
+the extension into a Chromium build that still accepts unpacked extensions
+(Helium or Chromium; set `CHROME`), serves fake hosts locally, and checks what
+actually reached the server: SafeSearch rewrites, the shared host contract,
+keyword and path rules, obfuscated hosts, embedded media and encoded Arabic
+searches. It also asks Chrome whether every static regex compiles, because a
+rejected rule silently disables its whole ruleset. The code map for these
+layers is [BLOCKING_PIPELINE.md](BLOCKING_PIPELINE.md).

@@ -25,6 +25,8 @@ suite_python() {
     echo "── python: test-runner regression checks"
     python3 -m unittest discover -s script -p 'test_*.py'
     python3 blocklist/web_protection.py --check
+    python3 blocklist/evasion.py --check
+    python3 blocklist/encoded_queries.py --check
     # Discovery, not the direct runners: `test_terms.py` once had its
     # `unittest.main()` above its last class, and the documented runner
     # silently ran 22 of 29 tests for weeks. Discovery finds every

@@ -1,0 +1,3089 @@
+[
+  {
+    "id": 1,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%A7%D8%A8%D8%A7%D8%AD%D9%8A(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 2,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%A7%D8%A8%D8%A7%D8%AD%D9%8A%D8%A7%D8%AA(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 3,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%A7%D8%A8%D8%A7%D8%AD%D9%8A%D9%87(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 4,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%A7%D8%AA%D9%86%D8%A7%D9%83%D8%AA(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 5,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%A7%D9%84%D8%A7%D8%A8%D8%A7%D8%AD%D9%8A%D9%87(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 6,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%A8%D8%B2%D8%A7%D8%B2(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 7,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%A8%D8%B2%D8%A7%D8%B2%D9%87%D8%A7(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 8,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%A8%D8%B2%D9%87%D8%A7(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 9,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%A8%D9%88%D8%B1%D9%86(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 10,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%A8%D9%88%D8%B1%D9%86%D9%87%D8%A7%D8%A8(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 11,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%A8%D9%88%D8%B1%D9%86%D9%88(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 12,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%A8%D9%8A%D9%86%D9%8A%D9%83(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 13,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%AA%D9%86%D9%8A%D9%83(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 14,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%AE%D9%84%D8%A7%D8%B9%D9%8A(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 15,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%B2%D8%A8%D8%AC(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 16,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%B2%D8%A8%D9%83(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 17,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%B3%D9%83%D8%B3(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 18,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%B3%D9%83%D8%B3%D8%A7%D9%88%D9%8A(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 19,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%B3%D9%83%D8%B3%D9%8A(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 20,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%B3%D9%83%D8%B3%D9%8A%D9%87(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 21,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%B3%D9%8A%D9%83%D8%B3(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 22,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%B4%D8%B1%D8%A7%D9%85%D9%8A%D8%AA(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 23,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%B4%D8%B1%D8%A7%D9%85%D9%8A%D8%B7(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 24,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%B4%D8%B1%D9%85%D8%B7%D9%87(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 25,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%B4%D8%B1%D9%85%D9%88%D8%B7(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 26,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%B4%D8%B1%D9%85%D9%88%D8%B7%D9%87(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 27,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%B7%D9%8A%D8%A7%D8%B2(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 28,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%B7%D9%8A%D8%B2%D8%AC(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 29,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%B7%D9%8A%D8%B2%D9%83(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 30,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%B7%D9%8A%D8%B2%D9%87%D8%A7(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 31,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D8%B9%D8%B1%D9%8A%D8%A7%D9%86%D8%A7%D8%AA(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 32,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%82%D8%AD%D8%A7%D8%A8(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 33,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%82%D8%AD%D8%A8%D8%A7%D8%AA(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 34,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%82%D8%AD%D8%A8%D8%A7%D9%86(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 35,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%82%D8%AD%D8%A8%D9%87(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 36,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%83%D8%AD%D8%A7%D8%A8(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 37,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%83%D8%AD%D8%A8%D9%87(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 38,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%83%D8%B3%D8%A7%D8%B3(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 39,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%83%D8%B3%D8%AC(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 40,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%83%D8%B3%D8%AE%D8%AA%D9%83(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 41,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%83%D8%B3%D9%83(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 42,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%83%D8%B3%D9%85%D9%83(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 43,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%83%D8%B3%D9%87%D8%A7(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 44,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%83%D8%B3%D9%8A(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 45,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%85%D8%AA%D8%B4%D8%B1%D9%85%D8%B7%D9%87(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 46,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%85%D8%AA%D9%86%D8%A7%D9%83(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 47,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%85%D8%AA%D9%86%D8%A7%D9%83%D9%87(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 48,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%85%D8%AA%D9%86%D8%A7%D9%83%D9%8A%D9%86(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 49,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%85%D9%86%D8%A7%D9%8A%D9%83(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 50,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%85%D9%86%D9%8A%D9%83(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 51,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%85%D9%86%D9%8A%D9%88%D8%AC(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 52,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%85%D9%86%D9%8A%D9%88%D9%83(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 53,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%85%D9%86%D9%8A%D9%88%D9%83%D9%87(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 54,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%85%D9%86%D9%8A%D9%88%D9%83%D9%8A%D9%86(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 55,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%86%D9%8A%D8%A7%D9%83%D9%87(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 56,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%86%D9%8A%D9%83(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 57,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%86%D9%8A%D9%83%D9%86%D9%8A(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 58,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%86%D9%8A%D9%83%D9%87(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 59,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%86%D9%8A%D9%83%D9%87%D8%A7(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 60,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%87%D9%86%D8%AA%D8%A7%D9%8A(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 61,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%8A%D8%AA%D9%86%D8%A7%D9%83(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 62,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%8A%D9%86%D9%8A%D9%83(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  },
+  {
+    "id": 63,
+    "priority": 5,
+    "action": {
+      "type": "redirect",
+      "redirect": {
+        "extensionPath": "/blocked.html?reason=terms"
+      }
+    },
+    "condition": {
+      "regexFilter": "^https?://[^#]*[?&](?:q|p|query|search|search_query|text|wd)=[^&#]*%D9%8A%D9%86%D9%8A%D9%83%D9%87%D8%A7(?:$|[&+#]|%20|%2B)",
+      "isUrlFilterCaseSensitive": false,
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame"
+      ],
+      "excludedRequestDomains": [
+        "aljazeera.com",
+        "aljazeera.net",
+        "apnews.com",
+        "arxiv.org",
+        "bbc.co.uk",
+        "bbc.com",
+        "britannica.com",
+        "cdc.gov",
+        "clevelandclinic.org",
+        "jins-global.com",
+        "jins.com",
+        "jstor.org",
+        "kos.gr",
+        "koss.com",
+        "mayoclinic.org",
+        "medlineplus.gov",
+        "nhs.uk",
+        "nih.gov",
+        "nytimes.com",
+        "pubmed.ncbi.nlm.nih.gov",
+        "reuters.com",
+        "scholar.google.com",
+        "theguardian.com",
+        "un.org",
+        "unicef.org",
+        "who.int",
+        "wikimedia.org",
+        "wikipedia.org",
+        "wiktionary.org"
+      ]
+    }
+  }
+]

@@ -1,0 +1,22 @@
+# Terms excluded from the ENCODED QUERY ruleset, with the reason.
+#
+# The page-text scorer sees the whole page: context, negatives, density and
+# other terms. An encoded-query rule sees one word in a search box, so a term
+# that is explicit in adult material but also an ordinary topical word in news,
+# law, food or education must not block the search. Excluding it here does NOT
+# remove it from the page-text vocabulary; the context-aware lane still sees it.
+#
+# Format:  one normalised Arabic term per line, then an optional `# reason` on
+# the same line. The generator fails if an entry is not a strong single-token
+# term in the signed list, so a typo cannot quietly do nothing.
+
+# A clay oven and the flatbread baked in it. Mined from adult domain names, but
+# an ordinary food search; the text lane keeps its surrounding context.
+طابون
+طبون
+
+# Prostitution and "prostitutes": adult vocabulary, but also the vocabulary of
+# news, law, public health and academic research. A bare-word query cannot tell
+# a search for a report from a search for material.
+الدعاره
+مومسات

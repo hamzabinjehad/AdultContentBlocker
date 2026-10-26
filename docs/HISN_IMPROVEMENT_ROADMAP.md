@@ -38,7 +38,31 @@ The shared scorer is used by Chromium and staged into Safari for macOS,
 iPhone and iPad. Source/staging changes are not proof of an installed mobile
 update. No native app, browser-management policy or lock was replaced here.
 
-Validation for the initial optimisation and its follow-through is recorded in
+### Delivered in the 1.1.12 pass
+
+- Match concatenated spellings of reviewed multi-word terms (`nudephotos`,
+  `sexvideos`, `اباحيجديد`) through compile-time glued aliases. The alias
+  shares the canonical term's score and occurrence cap, disappears when the
+  phrase is ignored, and never takes over a spelling that is already a term.
+- Fold the Persian/Urdu forms of the same Arabic letters (keheh, farsi yeh,
+  yeh barree, heh goal, teh marbuta goal, noon ghunna) in all three
+  normalisers and the shared fixture. Same-phoneme letters only.
+- Expand the reviewed text-evasion vocabulary to strong single-token brand
+  terms and fix the local-evidence bitmask width that silently truncated
+  entries past the eighth.
+- Add two generated URL layers: reviewed obfuscation aliases (`p0rn`, `s3x`,
+  embedded media included) and percent-encoded explicit Arabic search queries.
+  Both are built from the signed vocabulary, carry the reference-site rail and
+  are checked for staleness by the Python suite.
+- Split the 1,286-line worker into `extension/worker/` modules with the entry
+  point reduced to lifecycle and message wiring; add a layout regression test.
+- Extend the real-browser DNR harness to validate every static regex with
+  `isRegexSupported` and to exercise the new host, embedded-media and Arabic
+  query boundaries.
+
+Validation for 1.1.12 is recorded in
+[the 1.1.12 candidate notes](EXTENSION_1.1.12.md). The initial optimisation and
+its follow-through remain recorded in
 [the 1.1.11 candidate notes](EXTENSION_1.1.11.md). The original corpus's French
 form false block is now corrected. The expanded 41-case synthetic corpus reports
 0/18 adult misses and 0/23 benign blocks at sensitivity 50, 80 and 100. This is

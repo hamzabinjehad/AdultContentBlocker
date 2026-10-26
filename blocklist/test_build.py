@@ -371,9 +371,11 @@ class TestClientConfig(unittest.TestCase):
     repo = Path(__file__).parent.parent
 
     def _js_base(self):
-        src = (self.repo / "extension" / "background.js").read_text(encoding="utf-8")
+        # The worker was split into modules; the update endpoint lives beside
+        # the code that fetches it, not in the entry-point wiring.
+        src = (self.repo / "extension" / "worker" / "lists.js").read_text(encoding="utf-8")
         m = re.search(r'const LIST_BASE = "([^"]+)"', src)
-        self.assertIsNotNone(m, "LIST_BASE not found in background.js")
+        self.assertIsNotNone(m, "LIST_BASE not found in extension/worker/lists.js")
         return m.group(1)
 
     def _swift_base(self):

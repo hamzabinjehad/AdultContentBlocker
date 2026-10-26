@@ -1,0 +1,49 @@
+{
+  "_comment": [
+    "Obfuscated spellings of terms that are ALREADY in the reviewed list.",
+    "",
+    "The URL keyword layer matches the hostname and path exactly as written:",
+    "`porn` and `hentai` are caught, `p0rn` and `h3ntai` are not. That is the",
+    "one gap a leet-spelled domain has, and it costs nothing for an adult site",
+    "to register `p0rnhub-something.com` instead. This table closes the gap for",
+    "a small, reviewed set of strong terms.",
+    "",
+    "Rules for adding an entry:",
+    "  * `canonical` MUST already exist in blocklist/terms/host_terms.tsv",
+    "    (the generator refuses an alias that would invent vocabulary);",
+    "  * the alias must be ASCII letters and digits only, because Chrome sees a",
+    "    punycode hostname and a non-ASCII urlFilter can make it reject the",
+    "    whole downloaded ruleset;",
+    "  * `substring` is for unambiguous terms where a match anywhere in the URL",
+    "    is safe (the same rail the keyword layer applies);",
+    "  * `host_token` is for ambiguous or short words where only a whole",
+    "    hostname label may match — `s3x.com` yes, `s3xeducation.com` no.",
+    "",
+    "Do NOT add ordinary words, brand names that are not already in the list,",
+    "or aliases built from transliteration guesses. This is an obfuscation",
+    "table, not a second vocabulary."
+  ],
+  "substring": [
+    { "alias": "p0rn", "canonical": "porn" },
+    { "alias": "pr0n", "canonical": "porn" },
+    { "alias": "h3ntai", "canonical": "hentai" },
+    { "alias": "henta1", "canonical": "hentai" },
+    { "alias": "h4ntai", "canonical": "hentai" },
+    { "alias": "0nlyfans", "canonical": "onlyfans" },
+    { "alias": "onlyf4ns", "canonical": "onlyfans" },
+    { "alias": "0nlyf4ns", "canonical": "onlyfans" }
+  ],
+  "host_token": [
+    { "alias": "s3x", "canonical": "sex" },
+    { "alias": "n0de", "canonical": "nude" },
+    { "alias": "n0des", "canonical": "nudes" },
+    { "alias": "m1lf", "canonical": "milf" },
+    { "alias": "c4mgirl", "canonical": "camgirl" },
+    { "alias": "c4mg1rl", "canonical": "camgirl" },
+    { "alias": "c4msex", "canonical": "camsex" },
+    { "alias": "s3xcam", "canonical": "sexcam" },
+    { "alias": "s3xchat", "canonical": "sexchat" },
+    { "alias": "s3xvideo", "canonical": "sexvideo" },
+    { "alias": "s3xtube", "canonical": "sextube" }
+  ]
+}

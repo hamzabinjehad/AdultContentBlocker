@@ -15,6 +15,8 @@ test suites assert every case: `PolicyContractTests.swift` against the store,
 |---|---|---|
 | Published list + URL keyword rules | CI, signed | static rulesets and the downloaded list |
 | Built-in search/viewer blocks | maintained `blocklist/web_protection.json` | generated static ruleset |
+| URL obfuscation aliases (`p0rn`, `s3x`) | reviewed alias table + signed host vocabulary | generated static ruleset |
+| Encoded Arabic search queries | signed Arabic page vocabulary | generated static ruleset |
 | `customBlocks` — "Always block these" | the app (`SiteLists`) | native heartbeat |
 | `allowlist` — "Always allowed" | the app (`SiteLists`) | native heartbeat |
 | mode, lock deadline | the app (`LockStore`) | native heartbeat |
@@ -75,6 +77,14 @@ below are identical.
     They never turn a custom denial into access. Strict mode still denies
     engines that are not allowed. SafeSearch is a provider filter, not a
     guarantee that every result is suitable.
+12. **Obfuscation and encoded-query rules are additive coverage, not built-in
+    blocks.** They spell terms the keyword layer already covers (`p0rn`,
+    `s3x`) or encode strong Arabic terms in a recognised search parameter.
+    They sit at priority 5, below every hand list, so an explicit allowance
+    still wins — the rule-2 escape valve applies. They are generated from the
+    signed vocabulary; `evasion.py --check` and `encoded_queries.py --check`
+    reject drift, and `test/browser/dnr.sh` proves the rules compile in Chrome
+    and match only where intended (including not matching `سكسونيا`).
 
 ## Scope, stated plainly
 
@@ -99,7 +109,8 @@ allows. A request matches every group whose entry covers it; the highest
 priority among them is the most specific entry, and a tie between an allow and
 a block at the same depth goes to the block. Below the hand lists, the ladder
 is: strict catch-all 1, strict plumbing carve-out 2, published domain list 3,
-published URL keywords 4. Built-in search/viewer blocks sit at 2000, above
+published URL keywords and path rules 4, obfuscation/encoded-query aliases 5.
+Built-in search/viewer blocks sit at 2000, above
 every hand-list rule. So any allowance outranks the published rules and
 carves through strict mode, while the plumbing carve-out — an allowed page's
 scripts, images and fetches — can never reach a listed domain. (It sat above

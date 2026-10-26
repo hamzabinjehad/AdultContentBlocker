@@ -49,7 +49,9 @@ PINNED = (
 )
 
 # Built-in policy is generated from maintained source, not the signed seed.
-BUILT_IN = ("rules/web_protection.json", "rules/safesearch.json", "lib/web-protection.js")
+BUILT_IN = ("rules/web_protection.json", "rules/safesearch.json",
+            "rules/evasion.json", "rules/encoded_queries.json",
+            "lib/web-protection.js")
 
 FORBIDDEN_PREFIXES = ("test/", "eval/", "keys/", "_metadata/", "visual/node_modules/", "visual/test/", "node_modules/")
 FORBIDDEN_SUFFIXES = (".pem", ".DS_Store", "package.sh", "check_package.py", "prepare_unpacked.py", "build.mjs", "pnpm-lock.yaml", "package.json")
