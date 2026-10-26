@@ -89,9 +89,12 @@
     <string name="rules_locked">The change could not be saved. During a commitment you can add restrictions but cannot remove existing ones or shorten the period.</string>
     <string name="policy_unavailable">Protection settings could not be loaded or saved. Protection is unavailable until this is resolved.</string>
     <string name="commitment_setup">Start or extend commitment</string>
-    <string name="days_count">%1$d days</string>
+    <plurals name="days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
     <string name="commitment_remaining">Commitment active · About %1$d hours remaining</string>
-    <string name="commitment_disclosure">This locks the removal of saved domain rules, word rules and selected apps inside Hisn for the chosen period. It also prevents disabling or reducing an enabled daily app schedule inside Hisn. You may add restrictions and extend the period.\n\nCommitment time counts while the device is running. Restarts or power-off can extend the period because Hisn does not trust a changed date. Daily schedules instead follow the device clock and time zone, which can still be changed outside Hisn.\n\nThis does not lock Android settings, permissions, app removal or clearing app data. It does not turn an inactive service on. Check your protection layers before starting.</string>
+    <string name="commitment_disclosure">This locks the removal of saved domain rules, word rules and selected apps inside Hisn for the chosen period. It also prevents disabling or reducing an enabled daily app schedule inside Hisn. You may add restrictions and extend the period.\n\nCommitment time counts while the device is running, including after a restart. Time while the device is switched off is not counted, so powering off extends the period; Hisn does not trust a changed date. Daily schedules instead follow the device clock and time zone, which can still be changed outside Hisn.\n\nThis does not lock Android settings, permissions, app removal or clearing app data. It does not turn an inactive service on. Check your protection layers before starting.</string>
     <string name="commitment_start">Start this commitment</string>
     <string name="restriction_title">Your commitment comes first</string>
     <string name="restriction_word">Your selected text protection detected restricted content in this app.</string>

@@ -79,8 +79,29 @@ public final class AdultTextPolicyTest {
                     "compact alias must not invent a term");
             check(!policy.blocks("Watch x" + spelling + "y"), "compact recovery is not substring matching");
         }
-        check(!policy.blocks("Watch p o r n"), "compact recovery never joins whitespace");
-        check(!policy.blocks("Watch p/o/r/n"), "compact recovery never joins URL separators");
+        for (String spelling : Arrays.asList("p o r n", "p  o  r  n", "p/o/r/n", "p / o / r / n", "p|o|r|n",
+                "p,o,r,n", "p, o, r, n", "(p o r n)", "h e n t a i")) {
+            check(policy.blocks("Watch " + spelling), "separated spelling recovered: " + spelling);
+            check(!new AdultTextPolicy(Collections.singletonList(rule("porn", 7))).blocks("Watch " + spelling),
+                    "separated alias must not resurrect a weak term");
+        }
+        // Whole runs only: initials, option lists, mixed separators, paths and longer runs stay apart.
+        for (String sample : Arrays.asList("Watch a b c d", "Choose a, b, c or d", "Watch J. R. R. Tolkien",
+                "Watch x p o r n", "Watch p o r n x", "Watch p/o r n", "Watch p o/r n", "Open /p/o/r/n/",
+                "Open https://example.com/p/o/r/n", "Watch p/o/r/n/x", "Watch p o r t", "Watch s e x",
+                "Watch po r n", "Watch p    o    r    n")) {
+            check(!policy.blocks(sample), "separated recovery stays conservative: " + sample);
+        }
+        AdultTextPolicy arabic = new AdultTextPolicy(Arrays.asList(rule("سكس", 8), rule("نيك", 8),
+                rule("بورنو", 8), rule("اباحي", 8)));
+        // Nick, Borno (Nigeria) and couscous are ordinary words; alone they never confirm adult intent.
+        for (String sample : Arrays.asList("شاهد نيك", "شاهد فيلم نيك كيج", "تحميل أخبار بورنو مجانا",
+                "شاهد نيك بورنو", "طبق كسكس مجاني", "شاهد طريقة الكسكسي")) {
+            check(!arabic.blocks(sample), "ambiguous Arabic word alone stays allowed: " + sample);
+        }
+        check(arabic.blocks("شاهد سكس"), "unambiguous Arabic term still detected");
+        check(arabic.blocks("شاهد سكس نيك"), "ambiguous word still adds evidence beside a clear term");
+        check(arabic.blocks("شاهد ا ب ا ح ي"), "separated Arabic letters recovered");
         check(!WordRuleList.compile("porn").matches("Download a free porn blocker").isEmpty(),
                 "built-in benign contexts never exempt custom literal rules");
         check(!new AdultTextPolicy(Arrays.asList(rule("porn", 8), rule("porn", -8))).blocks("Watch porn"),

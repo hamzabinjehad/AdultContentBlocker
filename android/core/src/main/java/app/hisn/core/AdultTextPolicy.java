@@ -20,6 +20,11 @@ import java.util.Set;
  * Complete two-word explicit media labels can supply that intent without a verb.
  * Signed negative context subtracts evidence only within eight tokens of that
  * window; distant medical prose cannot cancel a separate promotional cluster.
+ * Punctuated ("p.o.r.n") or separated ("p o r n", "p/o/r/n") spellings are joined
+ * only as a whole run that spells a configured strong explicit term.
+ * A few Arabic terms are also a common name, place or food. Any hit containing one,
+ * including seed phrases such as "watch X", only adds evidence beside another
+ * distinct unambiguous strong signal in the same window.
  * This is not an image classifier or a guarantee of detecting all adult text.
  * The immutable policy never stores, logs or sends submitted text anywhere.
  */
@@ -58,6 +63,10 @@ public final class AdultTextPolicy {
     private static final Set<String> EXPLICIT = immutableSet("porn", "porno", "pornography",
             "pornographic", "hentai", "blowjob", "cumshot", "creampie", "gangbang",
             "handjob", "اباحي", "اباحيه", "بورنو", "سكس", "نيك");
+    // Canonical tokens that are also Nick, Borno (Nigeria), Bourne, couscous or taboon
+    // bread; كسكس and كسكسي otherwise fold to the prefix ك plus سكس/سكسي. Two of these
+    // never confirm each other ("Nick Bourne" is a name).
+    private static final Set<String> AMBIGUOUS = immutableSet("نيك", "بورنو", "بورن", "كسكس", "كسكسي", "طابون");
     private static final Set<String> PROMOTION = immutableSet("watch", "download", "stream",
             "streaming", "free", "شاهد", "مشاهده", "تحميل", "تنزيل", "مجانا", "مجاني");
     private static final String[] PREFIXES = {"وبال", "فبال", "وال", "بال", "فال", "كال",
@@ -95,7 +104,7 @@ public final class AdultTextPolicy {
         Map<String, Entry> singles = new HashMap<>();
         for (Map.Entry<String, Integer> rule : weights.entrySet()) {
             String[] words = rule.getKey().split(" ");
-            Entry entry = new Entry(compiled.size(), rule.getKey(), rule.getValue(), words.length);
+            Entry entry = new Entry(compiled.size(), rule.getKey(), words, rule.getValue());
             compiled.add(entry);
             Trie branch = index;
             for (String word : words) branch = branch.children.computeIfAbsent(word, unused -> new Trie());
@@ -115,7 +124,8 @@ public final class AdultTextPolicy {
             throw new IllegalArgumentException("Adult-text sample exceeds inspection limit");
         }
         if (entries.isEmpty()) return false;
-        String normalized = canonical(recoverCompactSpellings(Normalizer.normalize(input, Normalizer.Form.NFKC)));
+        String normalized = canonical(recoverSeparatedSpellings(
+                recoverCompactSpellings(Normalizer.normalize(input, Normalizer.Form.NFKC))));
         if (normalized.isEmpty()) return false;
         // NFKC can expand compatibility characters. Bound the normalized work
         // too, rather than permitting large hidden allocation after validation.
@@ -148,11 +158,12 @@ public final class AdultTextPolicy {
             for (int end = start; end < Math.min(tokens.length, start + MAX_PHRASE_TOKENS); end++) {
                 branch = branch.children.get(tokens[end]);
                 if (branch == null) break;
-                if (branch.entry != null) record(hits, starts, new Hit(branch.entry, start, end));
+                if (branch.entry != null) record(hits, starts, new Hit(branch.entry, start, end,
+                        ambiguous(tokens[start], branch.entry)));
             }
             Entry variant = variant(tokens[start]);
             if (variant != null && !tokens[start].equals(variant.phrase)) {
-                record(hits, starts, new Hit(variant, start, start));
+                record(hits, starts, new Hit(variant, start, start, ambiguous(tokens[start], variant)));
             }
         }
         return classifyWindows(hits, starts, promotions);
@@ -170,13 +181,23 @@ public final class AdultTextPolicy {
         } else return false;
         Entry entry = singleWords.get(explicit);
         if (entry == null) entry = variant(explicit);
-        return entry != null && entry.weight >= STRONG_WEIGHT && EXPLICIT.contains(entry.phrase);
+        return entry != null && entry.weight >= STRONG_WEIGHT && EXPLICIT.contains(entry.phrase)
+                && !ambiguous(explicit, entry);
+    }
+
+    /** The token covers a folded spelling such as كسكس; the entry covers whole phrases. */
+    private static boolean ambiguous(String token, Entry entry) {
+        return entry.ambiguous || AMBIGUOUS.contains(token);
     }
 
     private boolean classifyWindows(List<Hit>[] hits, List<Hit>[] starts, boolean[] promotions) {
-        int[] positiveCounts = new int[entries.size()];
+        int[] clearCounts = new int[entries.size()];
+        int[] ambiguousCounts = new int[entries.size()];
         int[] negativeCounts = new int[entries.size()];
-        int positiveScore = 0, negativeScore = 0, strong = 0, trusted = 0, promotion = 0;
+        // Each positive entry counts once: as clear evidence, or else as contextual
+        // evidence that only joins a window already holding a clear strong signal.
+        Evidence clear = new Evidence(), contextual = new Evidence();
+        int negativeScore = 0, promotion = 0;
         // All mutations concern one bounded sliding window, never rescan the
         // vocabulary for each text position. Each hit enters/leaves once.
         for (int end = 0; end < hits.length; end++) {
@@ -197,24 +218,26 @@ public final class AdultTextPolicy {
             if (end >= WINDOW && promotions[end - WINDOW]) promotion--;
             if (hits[end] != null) for (Hit hit : hits[end]) {
                 Entry entry = hit.entry;
-                if (entry.weight > 0 && positiveCounts[entry.id]++ == 0) {
-                    positiveScore += entry.weight;
-                    if (entry.weight >= STRONG_WEIGHT) {
-                        strong++;
-                        if (entry.trusted) trusted++;
-                    }
+                if (entry.weight <= 0) continue;
+                if (hit.ambiguous) {
+                    if (ambiguousCounts[entry.id]++ == 0 && clearCounts[entry.id] == 0) contextual.add(entry, 1);
+                } else if (clearCounts[entry.id]++ == 0) {
+                    clear.add(entry, 1);
+                    if (ambiguousCounts[entry.id] > 0) contextual.add(entry, -1);
                 }
             }
             if (end >= WINDOW && starts[end - WINDOW] != null) for (Hit hit : starts[end - WINDOW]) {
                 Entry entry = hit.entry;
-                if (entry.weight > 0 && --positiveCounts[entry.id] == 0) {
-                    positiveScore -= entry.weight;
-                    if (entry.weight >= STRONG_WEIGHT) {
-                        strong--;
-                        if (entry.trusted) trusted--;
-                    }
+                if (hit.ambiguous) {
+                    if (--ambiguousCounts[entry.id] == 0 && clearCounts[entry.id] == 0) contextual.add(entry, -1);
+                } else if (--clearCounts[entry.id] == 0) {
+                    clear.add(entry, -1);
+                    if (ambiguousCounts[entry.id] > 0) contextual.add(entry, 1);
                 }
             }
+            int with = clear.strong > 0 ? 1 : 0;
+            int strong = clear.strong + with * contextual.strong, trusted = clear.trusted + with * contextual.trusted;
+            int positiveScore = clear.score + with * contextual.score;
             // A contextual phrase must earn its signed weight; neither one
             // generic "education" nor distant benign paragraphs grant immunity.
             int threshold = strong >= 2 ? 16 : 8;
@@ -222,6 +245,17 @@ public final class AdultTextPolicy {
                     && positiveScore - negativeScore >= threshold) return true;
         }
         return false;
+    }
+
+    private static final class Evidence {
+        int score, strong, trusted;
+        void add(Entry entry, int sign) {
+            score += sign * entry.weight;
+            if (entry.weight >= STRONG_WEIGHT) {
+                strong += sign;
+                if (entry.trusted) trusted += sign;
+            }
+        }
     }
 
     private static void record(List<Hit>[] hits, List<Hit>[] starts, Hit hit) {
@@ -254,7 +288,7 @@ public final class AdultTextPolicy {
                 at += Character.charCount(input.codePointAt(at));
             }
             while (at < input.length() && compactCharacter(input.codePointAt(at)));
-            Entry recovered = null;
+            String recovered = null;
             if (hasJoiner && at - start <= 128) {
                 int left = start, right = at;
                 while (left < right && joiner(input.charAt(left))) left++;
@@ -266,21 +300,118 @@ public final class AdultTextPolicy {
                     if (joiner(value)) punctuated = true;
                     else candidate.append(value);
                 }
-                if (punctuated) {
-                    String word = canonical(candidate.toString());
-                    recovered = singleWords.get(word);
-                    if (recovered == null) recovered = variant(word);
-                    if (recovered != null && (recovered.weight < STRONG_WEIGHT || !EXPLICIT.contains(recovered.phrase)))
-                        recovered = null;
-                }
+                if (punctuated) recovered = recoveredTerm(canonical(candidate.toString()));
             }
             if (recovered != null) {
                 if (result == null) result = new StringBuilder(input.length());
-                result.append(input, copiedUntil, start).append(recovered.phrase);
+                result.append(input, copiedUntil, start).append(recovered);
                 copiedUntil = at;
             }
         }
         return result == null ? input : result.append(input, copiedUntil, input.length()).toString();
+    }
+
+    /** The configured strong explicit term a joined spelling stands for, or null. An
+     * ambiguous word keeps its own spelling so scoring still requires adult context. */
+    private String recoveredTerm(String word) {
+        Entry entry = singleWords.get(word);
+        if (entry == null) entry = variant(word);
+        if (entry == null || entry.weight < STRONG_WEIGHT || !EXPLICIT.contains(entry.phrase)) return null;
+        return ambiguous(word, entry) ? word : entry.phrase;
+    }
+
+    /** Join one whole run of 3-32 single letters split by one repeated separator
+     * (1-3 spaces, or "/", "|" or "," with at most one space each side) only when it
+     * spells a strong explicit term. Runs beside another single letter, a different
+     * separator, or path/URL punctuation stay unjoined; whole words never join. */
+    private String recoverSeparatedSpellings(String input) {
+        StringBuilder result = null;
+        int copiedUntil = 0, length = input.length();
+        int first = -1, last = -1, units = 0, leftFrom = 0, separatorAt = 0, separatorLength = 0;
+        int previousEnd = 0, symbol = 0;
+        boolean previousUnit = false, leftWord = false, leftUnit = false;
+        for (int at = 0; ; ) {
+            while (at < length && !unitLetter(input.codePointAt(at))) at += Character.charCount(input.codePointAt(at));
+            int start = at, letters = 0;
+            while (at < length) {
+                int point = input.codePointAt(at);
+                if (unitLetter(point)) letters++;
+                else if (!attached(point)) break;
+                at += Character.charCount(point);
+            }
+            boolean unit = letters == 1;
+            if (unit && previousUnit) {
+                int gap = separator(input, previousEnd, start);
+                if (units == 1 && gap != 0) {
+                    symbol = gap; separatorAt = previousEnd; separatorLength = start - previousEnd;
+                }
+                if (gap != 0 && start - previousEnd == separatorLength
+                        && input.regionMatches(previousEnd, input, separatorAt, separatorLength)) {
+                    units++; last = at;
+                } else {
+                    // Two single letters split differently: neither part is a whole run.
+                    first = start; last = at; units = 1; leftFrom = previousEnd; leftWord = false; leftUnit = true;
+                }
+            } else if (unit) {
+                first = start; last = at; units = 1; leftFrom = previousEnd; leftWord = previousEnd > 0; leftUnit = false;
+            } else {
+                if (previousUnit && units >= 3 && units <= 32 && last - first <= 512 && !leftUnit
+                        && edge(input, leftFrom, first, !leftWord, true, symbol)
+                        && edge(input, last, start, start >= length, false, symbol)) {
+                    StringBuilder joined = new StringBuilder(last - first);
+                    for (int pos = first; pos < last; ) {
+                        int point = input.codePointAt(pos);
+                        if (unitLetter(point) || attached(point)) joined.appendCodePoint(point);
+                        pos += Character.charCount(point);
+                    }
+                    String recovered = recoveredTerm(canonical(joined.toString()));
+                    if (recovered != null) {
+                        if (result == null) result = new StringBuilder(length);
+                        result.append(input, copiedUntil, first).append(recovered);
+                        copiedUntil = last;
+                    }
+                }
+                units = 0;
+            }
+            previousUnit = unit;
+            previousEnd = at;
+            if (start >= length) break;
+        }
+        return result == null ? input : result.append(input, copiedUntil, length).toString();
+    }
+
+    /** The separator symbol for an allowed gap between two single letters, else 0. */
+    private static int separator(String input, int from, int to) {
+        int length = to - from, spaces = 0;
+        while (spaces < length && input.charAt(from + spaces) == ' ') spaces++;
+        if (spaces == length) return length <= 3 ? ' ' : 0;
+        char value = input.charAt(from + spaces);
+        if (spaces > 1 || (value != '/' && value != '|' && value != ',')) return 0;
+        int after = length - spaces - 1;
+        return after == 0 || (after == 1 && input.charAt(to - 1) == ' ') ? value : 0;
+    }
+
+    /** A run's outer gap must reach whitespace or the text edge, and may touch the run
+     * only with brackets, quotes or sentence punctuation, never its own separator. */
+    private static boolean edge(String input, int from, int to, boolean textEdge, boolean left, int symbol) {
+        boolean space = false;
+        for (int pos = left ? to - 1 : from; pos >= from && pos < to; pos += left ? -1 : 1) {
+            char value = input.charAt(pos);
+            if (value == symbol && symbol != ' ') return false;
+            if (Character.isWhitespace(value)) space = true;
+            else if (!space && "()[]{}\"'«»“”‘’.,!?;:".indexOf(value) < 0) return false;
+        }
+        return space || textEdge;
+    }
+
+    private static boolean unitLetter(int point) {
+        return Character.isLetterOrDigit(point) && point != 0x0640;
+    }
+
+    private static boolean attached(int point) {
+        int type = Character.getType(point);
+        return point == 0x0640 || type == Character.FORMAT || type == Character.NON_SPACING_MARK
+                || type == Character.ENCLOSING_MARK || type == Character.COMBINING_SPACING_MARK;
     }
 
     private static boolean joiner(int value) {
@@ -382,12 +513,15 @@ public final class AdultTextPolicy {
     private static final class Entry {
         final int id, weight;
         final String phrase;
-        final boolean trusted;
-        Entry(int id, String phrase, int weight, int words) {
+        final boolean trusted, ambiguous;
+        Entry(int id, String phrase, String[] words, int weight) {
             this.id = id;
             this.phrase = phrase;
             this.weight = weight;
-            this.trusted = words > 1 || EXPLICIT.contains(phrase);
+            this.trusted = words.length > 1 || EXPLICIT.contains(phrase);
+            boolean shared = false;
+            for (String word : words) shared |= AMBIGUOUS.contains(word);
+            this.ambiguous = shared;
         }
     }
 
@@ -399,6 +533,9 @@ public final class AdultTextPolicy {
     private static final class Hit {
         final Entry entry;
         final int start, end;
-        Hit(Entry entry, int start, int end) { this.entry = entry; this.start = start; this.end = end; }
+        final boolean ambiguous;
+        Hit(Entry entry, int start, int end, boolean ambiguous) {
+            this.entry = entry; this.start = start; this.end = end; this.ambiguous = ambiguous;
+        }
     }
 }

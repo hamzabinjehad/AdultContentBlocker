@@ -120,7 +120,15 @@ public final class PolicyStore {
     public Snapshot snapshot() { return snapshot; }
 
     public synchronized long remainingMillis() {
-        return commitment.remaining(SystemClock.elapsedRealtime(), boot());
+        long now = SystemClock.elapsedRealtime();
+        int boot = boot();
+        long remaining = commitment.remaining(now, boot);
+        // Save progress at most once a minute so a restart loses little counted time.
+        if (commitment.remainingAtCheckpoint > 0 && (boot != commitment.bootAtCheckpoint
+                || now - commitment.elapsedAtCheckpoint >= 60000)) {
+            try { checkpoint(); } catch (RuntimeException unsaved) { /* Keep the last saved progress. */ }
+        }
+        return remaining;
     }
 
     public synchronized void checkpoint() {
@@ -131,7 +139,7 @@ public final class PolicyStore {
     }
 
     public synchronized void startCommitment(int days) {
-        if (days != 7 && days != 30 && days != 90) throw new IllegalArgumentException("Invalid duration");
+        if (days != 1 && days != 7 && days != 30 && days != 90) throw new IllegalArgumentException("Invalid duration");
         if (!snapshot.hasConfiguredRestrictions()) throw new IllegalStateException("Choose restrictions before a commitment");
         long duration = days * 86400000L;
         if (duration < remainingMillis()) throw new IllegalStateException("Cannot shorten commitment");
