@@ -31,6 +31,7 @@ past version; *superseded* documents point to their replacement. Start with the
 ## iPhone and iPad
 
 - [Apple platform structure](APPLE_PLATFORMS.md): How macOS, iOS and iPadOS code is laid out, what each protects, and cross-platform development rules.
+- [iPhone and iPad end-goal plan](IOS_IMPROVEMENT_PLAN.md): The lock ladder on iPhone (vault, guardian, supervised, time-locked), current gaps per layer, and milestones M0-M6.
 - [Supervised iPhone or iPad setup](IPHONE_SUPERVISED.md): Step-by-step guardian setup using Apple Configurator so Hisn cannot be removed from a supervised device, plus limits.
 
 ## Android

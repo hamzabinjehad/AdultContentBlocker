@@ -4,6 +4,10 @@
 عربية وإنجليزية. يحوي أربع إضافات لحجب مواقع Safari من قائمة حصن الأساسية،
 ومسارًا اختياريًا لإعداد DNS عائلي. لا يعني ذلك حجب كل التطبيقات أو كل المحتوى.
 
+The plan to finish the iPhone/iPad app, including which Apple-supported lock
+level stops deletion and what each one cannot stop, is in
+[the iOS end-goal plan](../docs/IOS_IMPROVEMENT_PLAN.md).
+
 ## Open and run
 
 For the separately labeled free-development Safari-only candidate, see
