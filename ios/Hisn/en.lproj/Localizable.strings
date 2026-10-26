@@ -298,7 +298,7 @@
 "lock.ladder" = "Levels, weakest first. Self only: you can delete Hisn or turn off its access. Passcode vault: deleting apps needs the passcode Hisn keeps, but resetting it with your Apple Account password or erasing the phone still works. Family guardian: the guardian decides. Supervised: the holder of the profile's removal password decides, and restoring the phone still works. Hisn shows a level as verified only when Apple confirms it during this session, which today is only a guardian's child authorization.";
 "lock.confirm.title" = "Confirm this lock?";
 "lock.confirm.button" = "I confirm";
-"lock.confirm.hint" = "Hisn cannot see these settings. Your confirmation is saved on this device and shown as confirmed by you, never as verified.";
+"lock.confirm.hint" = "Hisn cannot see these settings. Your confirmation is shown as confirmed by you, never as verified. It stays with this device: after a restore from a backup, or on a new device, confirm again.";
 "lock.confirm.passcodeVault" = "I set this passcode and Deleting Apps: Don't Allow";
 "lock.confirm.familyGuardian" = "A family organizer keeps my Screen Time passcode";
 "lock.confirm.supervised" = "This device is supervised with Hisn's profile";
@@ -316,7 +316,7 @@
 "dates.vaultEarlierHere" = "This passcode can be shown before your commitment ends.";
 "dates.neverEarlier" = "Hisn only ever moves these dates later, never earlier.";
 "vault.match" = "Until my commitment ends";
-"vault.matchUntil" = "Would stay hidden until";
+"vault.matchUntil" = "Can be kept hidden until";
 "vault.matchButton" = "Keep it hidden until my commitment ends";
 "vault.matchTitle" = "Keep the passcode until your commitment ends?";
 "vault.matchBody" = "Hisn adds 7 or 30 days at a time, so the new date is the first one it can set that is not before your commitment's end. It cannot be shortened afterwards. New date:";
@@ -338,3 +338,12 @@
 "guide.done" = "Done";
 "guide.next" = "Next";
 "guide.later" = "Not yet";
+
+/* Setup review fixes: confirmed vault choice applied exactly, opens-earlier warning, setup window, lock confirmations kept to this device */
+"vault.confirm.ended" = "Nothing changed: your commitment's end was reached while you were confirming, so there is no end left to match.";
+"vault.confirm.moved" = "Nothing changed: the dates moved while you were confirming, so the date you confirmed no longer applies. Check the new date and confirm again.";
+"vault.cannotReach" = "Hisn cannot keep this passcode hidden until then: it keeps a passcode for at most 366 days in all, adding 7 or 30 days at a time.";
+"dates.vaultEarlierBeyond" = "Your passcode can be shown before this commitment ends. Passcode vault cannot keep it hidden that long: it keeps a passcode for at most 366 days in all, adding 7 or 30 days at a time.";
+"dates.vaultShownUntil" = "Shown now for setup, then hidden until";
+"lock.staleDevice" = "Your earlier confirmation no longer counts: it came back from a backup or another device, or Hisn cannot read this device's record of it. Confirm again only if the lock is still in place.";
+"lock.saveFailed" = "Hisn could not save your confirmation on this device, so your level stays as it was.";
