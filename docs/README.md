@@ -102,7 +102,7 @@ Per-version change and verification notes, newest first.
 
 ### Browser extension
 
-- [Extension 1.1.12 release notes](EXTENSION_1.1.12.md): Glued phrase matching, Persian/Urdu normalisation, generated obfuscation and encoded-query rulesets, and an organised worker. *Historical.*
+- [Extension 1.1.12 release notes](EXTENSION_1.1.12.md): Glued phrase matching, Persian/Urdu normalisation, generated obfuscation and encoded-query rulesets, and an organised worker.
 - [Extension 1.1.11 release notes](EXTENSION_1.1.11.md): Text scanner hardening: phrase tree, disguised-word detection, French form fix and corpus checks at three sensitivities. *Historical.*
 - [Extension 1.1.10 release notes](EXTENSION_1.1.10.md): Faster model preparation and a larger verdict cache that removes repeat image checks, with measured results. *Historical.*
 - [Extension 1.1.9 release notes](EXTENSION_1.1.9.md): Mirrored-crop confirmation before excluding a face and stable face masks across identical rechecks, with test evidence. *Historical.*
