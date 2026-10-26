@@ -1,4 +1,4 @@
-# Hisn Android 0.5.1: protection development preview
+# Hisn Android 0.5.2: protection development preview
 
 The Android app contains an opt-in DNS-only VPN, saved custom rules, selected-app
 accessibility restrictions, opt-in daily app schedules, built-in adult-text checks and
@@ -15,6 +15,19 @@ tests, not proof that every browser request uses Hisn. Broader real-app coverage
 and VPN/lifecycle testing remain pending. Visual accuracy and real-app capture acceptance
 remain pending; the isolated live fixture sequence passes. Usage limits, full traffic coverage and managed-device uninstall
 blocking are not implemented.
+
+## 0.5.2 blocking hardening and commitment clock fix
+
+DNS filtering now turns off Firefox's default DNS-over-HTTPS, answers well-known
+encrypted-DNS provider names with "not found", warns when strict Private DNS can
+bypass Hisn, recovers from a degraded state, and resumes after a reboot when left
+on. The screen guard catches separated spellings such as "p o r n", no longer
+treats Arabic names and foods (Nick, Borno, couscous) as explicit on their own,
+lets image checks run on scrolling feeds and videos, and keeps a blocked app
+blocked for 60 seconds. Commitments now count running time after a restart, so
+they cannot outlive the chosen duration, and a 1-day option exists. Core tests
+and builds pass; phone acceptance is still pending. See
+[the 0.5.2 record](../docs/ANDROID_0.5.2.md).
 
 ## 0.5.1 visual runtime fallback, release signing and 1.0 plan
 

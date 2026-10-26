@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Hisn</string>
     <string name="title">Hisn for Android</string>
-    <string name="subtitle">Protection preview · 0.5.1</string>
+    <string name="subtitle">Protection preview · 0.5.2</string>
     <string name="status_title">Protection is not active</string>
     <string name="status_body">Enable the layers you choose, then review each status. DNS, selected-app restrictions and sampled image/video checks have different coverage. A commitment does not prevent Android from disabling or removing Hisn.</string>
     <string name="layers">Protection layers</string>

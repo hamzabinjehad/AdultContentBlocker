@@ -60,6 +60,11 @@ as a limit. It is never dropped silently.
 - [x] `PolicyStore` static-context lint warning: already holds the application context; suppressed with reason.
 - [ ] Remaining lint warnings: plural-string candidates and two attributes that need a higher API than minSdk 26.
 
+- [x] 0.5.2 blocking hardening: DoH canary and provider names, strict Private DNS warning,
+      degraded recovery, resume after reboot, separated spellings, Arabic name false
+      positives, image checks on feeds, 60-second hold, commitment reboot clock fix.
+      See [0.5.2](ANDROID_0.5.2.md).
+
 ### M2: device lifecycle acceptance (needs the owner's phone and consent)
 
 Run on a fresh 0.5.x debug install, using `test-live-*.py` where possible:
@@ -76,7 +81,7 @@ Run on a fresh 0.5.x debug install, using `test-live-*.py` where possible:
 - [ ] Browsers: Chrome, Brave, Samsung Internet, Firefox. Record DNS block, text check
       and visual check per browser, as pass / fail / not supported.
 - [ ] Two feed apps chosen by the owner, using public content only, never private messages.
-- [ ] Disposable 1-day commitment: restart, stronger-rule update, rejected weakening.
+- [ ] Disposable 1-day commitment (option added in 0.5.2): restart, stronger-rule update, rejected weakening.
 - [ ] Optional admin step: activation and deactivation UI observed.
 
 ### M4: visual and performance numbers
