@@ -4,6 +4,8 @@ import SafariServices
 import FamilyControls
 import Combine
 import ManagedSettings
+import DeviceActivity
+import UserNotifications
 import CryptoKit
 
 @MainActor
@@ -35,8 +37,25 @@ final class ProtectionController: ObservableObject {
     private let clockMonitor: CommitmentClock
     private let commitmentStore: CommitmentPersistence
     private var ticker: AnyCancellable?
-    private let screenTimeStore = ManagedSettingsStore(named: .init("hisn.self-control"))
-    private var screenTimeChosenForCommitment = false
+    /// Hisn's own Screen Time web filter and whether iOS grants access to it.
+    private let screenTimeFilter: ScreenTimeFilterAccess
+    /// Apple's server time carried forward with the monotonic clock: a lower bound of the
+    /// real time that a moved device clock cannot raise. nil until Apple's time was read.
+    @Published private(set) var trustedNow: Date?
+    @Published private(set) var checkingServerTime = false
+    /// The last attempt to read Apple's time failed (offline or blocked).
+    @Published private(set) var serverTimeFailed = false
+    private let serverTime: ServerTimeSource
+    private var anchor: TrustedTime.Anchor?
+    private var lastServerAttempt: TimeInterval?
+    private var lastTimeCheck: TrustedTime.Verdict?
+    private var serverCheck: Task<Void, Never>?
+    /// The app group shared with the monitor extension; memory only in tests unless injected.
+    private let shared: MonitorSharedState
+    private let notifications: NotificationPermission
+    @Published private(set) var notificationStatus: NotificationStatus?
+    /// The person turned layer alerts on in Hisn.
+    @Published private(set) var alertsWanted = false
     @Published private(set) var customSites: [String] = []
     @Published private(set) var customSitesStorageHealthy = true
     /// The Screen Time filter reads back exactly the saved site list. Configuration only.
@@ -47,7 +66,10 @@ final class ProtectionController: ObservableObject {
     init(commitmentStore: CommitmentPersistence? = nil, readinessHistory: ReadinessHistory? = nil,
          customSiteStore: CustomSiteStore? = nil,
          resourceBundleURL: URL = Bundle.main.bundleURL,
-         clockSource: @escaping () -> (wall: Date, uptime: TimeInterval) = { (Date(), CommitmentClock.continuousTime) }) {
+         clockSource: @escaping () -> (wall: Date, uptime: TimeInterval) = { (Date(), CommitmentClock.continuousTime) },
+         serverTime: ServerTimeSource? = nil, shared: MonitorSharedState? = nil,
+         notifications: NotificationPermission? = nil, screenTimeFilter: ScreenTimeFilterAccess? = nil) {
+        self.screenTimeFilter = screenTimeFilter ?? ManagedScreenTimeFilter()
         self.customSiteStore = customSiteStore ?? CustomSiteStore.deviceLocal()
         self.resourceBundleURL = resourceBundleURL
         self.clockSource = clockSource
@@ -56,10 +78,16 @@ final class ProtectionController: ObservableObject {
         if sample.wall.timeIntervalSinceReferenceDate.isFinite { now = sample.wall }
         let isTest = NSClassFromString("XCTestCase") != nil
         self.commitmentStore = commitmentStore ?? (isTest ? MemoryCommitmentStore() : MobileCommitmentStore())
+        // Tests never reach Apple's server, the real app group or the notification prompt.
+        self.serverTime = serverTime ?? (isTest ? UnavailableServerTime() : AppleServerTime())
+        self.shared = shared ?? MonitorSharedState.appGroup()
+        self.notifications = notifications ?? (isTest ? NoNotificationPermission() : SystemNotificationPermission())
         self.readinessHistory = readinessHistory ?? .deviceLocal(key: "hisn.mobile.readiness",
             allowed: ["screentime.layer", "dns.title", "safari.title"])
         previouslyReadyContentLayers = self.readinessHistory.known
         historyStorageHealthy = self.readinessHistory.storageHealthy
+        anchor = self.shared.anchors.load()
+        alertsWanted = self.shared.alertsWanted
         loadCustomSites()
         loadCommitment()
         updateClock()
@@ -79,14 +107,30 @@ final class ProtectionController: ObservableObject {
         #endif
     }
 
-    var commitmentActive: Bool { commitment?.isActive(at: now) == true }
+    /// Where the saved commitment's end stands on both clocks; nil without a commitment.
+    var commitmentTimeCheck: TrustedTime.Verdict? {
+        commitment.map { TrustedTime.verdict(for: $0.deadline, deviceNow: now, trustedNow: trustedNow,
+                                             skew: TrustedTime.readingSkew) }
+    }
+
+    /// Running until both this iPhone's clock and Apple's server time have passed the end.
+    /// Offline, or with the clock moved forward, it stays on.
+    var commitmentActive: Bool { commitmentTimeCheck.map { $0 != .passed } ?? false }
 
     private func updateClock() {
-        // A forward wall-clock jump cannot end a running app session early.
-        // Reboot/termination still requires wall-clock trust; this is not secure time.
+        // A forward wall-clock jump cannot end a running app session early, and after a
+        // relaunch or reboot the end also needs Apple's server time (see TrustedTime).
         let sample = clockSource()
         clockAssessment = clockMonitor.assessment(wall: sample.wall, uptime: sample.uptime)
         if let elapsed = clockMonitor.elapsedDate(uptime: sample.uptime) { now = elapsed }
+        trustedNow = anchor?.lowerBound(uptime: sample.uptime)
+        let check = commitmentTimeCheck
+        if check == .unverified || check == .clockAhead { scheduleServerTimeCheck() }
+        if check != lastTimeCheck {
+            lastTimeCheck = check
+            // The end was just confirmed on both clocks: stop watching for layer loss.
+            if check == .passed { publishWatch(); updateWatchSchedule() }
+        }
     }
 
     private func loadCommitment() {
@@ -97,13 +141,210 @@ final class ProtectionController: ObservableObject {
     func startCommitment(days: Int) {
         updateClock()
         guard !busy, commitmentStorageHealthy, !commitmentActive, [1, 7, 30, 90].contains(days) else { return }
-        let session = CommitmentPolicy.Session(startedAt: now, deadline: now.addingTimeInterval(Double(days) * 86400))
+        // Record what iOS reports now, not an older reading: this is the person's choice
+        // of Hisn's Screen Time filter for the commitment, and only a chosen filter is restored.
+        readScreenTimeState()
+        // A clock set back before starting must not shorten the commitment in real time.
+        let start = max(now, trustedNow ?? now)
+        let session = CommitmentPolicy.Session(startedAt: start,
+                                               deadline: start.addingTimeInterval(Double(days) * 86400),
+                                               screenTimeFilter: screenTimeConfigured)
         do {
             try commitmentStore.save(session)
             commitment = session
-            screenTimeChosenForCommitment = screenTimeConfigured
             errorKey = nil
+        } catch { commitmentStorageHealthy = false; errorKey = "commitment.storageFailed"; return }
+        updateClock()
+        publishWatch()
+        updateWatchSchedule()
+    }
+
+    /// The person turned Hisn's filter on during the commitment (only they can): record
+    /// it with the commitment so a relaunch restores it. It is never recorded as off.
+    private func recordScreenTimeChoice() {
+        guard let session = commitment, session.screenTimeFilter != true else { return }
+        let next = session.choosingScreenTimeFilter()
+        do {
+            try commitmentStore.save(next)
+            commitment = next
+            publishWatch()
         } catch { commitmentStorageHealthy = false; errorKey = "commitment.storageFailed" }
+    }
+
+    // MARK: - Apple server time
+
+    /// Reads Apple's server time and keeps it as the shared anchor, for the commitment
+    /// end, the budget day the monitor held, and the monitor's own offline checks.
+    /// A failure changes nothing: the commitment stays on and shields stay.
+    func checkServerTime() async {
+        // One reading at a time; a second caller waits for the one in flight.
+        if serverCheck == nil {
+            serverCheck = Task { [weak self] in await self?.readServerTime() }
+        }
+        await serverCheck?.value
+        serverCheck = nil
+    }
+
+    private func readServerTime() async {
+        checkingServerTime = true
+        defer { checkingServerTime = false }
+        lastServerAttempt = clockSource().uptime
+        let reading = await serverTime.currentTime()
+        let uptime = clockSource().uptime
+        guard let reading, reading.timeIntervalSinceReferenceDate.isFinite, uptime.isFinite, uptime >= 0 else {
+            serverTimeFailed = true
+            updateClock()
+            return
+        }
+        let next = TrustedTime.Anchor(server: reading, uptime: uptime)
+        anchor = next
+        try? shared.anchors.save(next)
+        serverTimeFailed = false
+        updateClock()
+        settleHeldBudgetDay()
+    }
+
+    /// Automatic checks retry at most once a minute; the person can always check now.
+    private func scheduleServerTimeCheck() {
+        guard serverCheck == nil else { return }
+        let uptime = clockSource().uptime
+        if let last = lastServerAttempt, uptime >= last, uptime - last < Self.serverRetryInterval { return }
+        lastServerAttempt = uptime
+        Task { await checkServerTime() }
+    }
+
+    static let serverRetryInterval: TimeInterval = 60
+    /// While a commitment or daily budget is on, a reading older than this (or from before
+    /// a reboot) is refreshed so the monitor can settle the next day offline.
+    static let anchorRefreshInterval: TimeInterval = 6 * 3600
+
+    /// Apple's time is read only when something depends on it: a commitment that has not
+    /// ended on both clocks, a budget day the monitor held, or a daily budget.
+    var needsServerTime: Bool {
+        let age = anchor.flatMap { $0.age(uptime: clockSource().uptime) }
+        let stale = age.map { $0 > Self.anchorRefreshInterval } ?? true
+        if let check = commitmentTimeCheck, check != .passed {
+            if check != .notYet { return true }
+            if stale { return true }
+        }
+        if shared.hasHeldBudgetDay { return true }
+        return stale && shared.dailyBudgetConfigured
+    }
+
+    /// Finishes a new budget day the monitor could not confirm, with the same both-clocks
+    /// rule. Unreadable rules or markers keep the shield.
+    private func settleHeldBudgetDay() {
+        switch shared.heldDayAction(deviceNow: now, trustedNow: trustedNow) {
+        case .none: return
+        case .forget: shared.clearHeldBudgetDay()
+        case .clearShield:
+            #if !targetEnvironment(simulator)
+            guard AuthorizationCenter.shared.authorizationStatus == .approved else { return }
+            ManagedSettingsStore(named: .init(AppUsageConfiguration.budgetStoreName)).clearAllSettings()
+            #endif
+            shared.clearHeldBudgetDay()
+        }
+    }
+
+    // MARK: - Layer alerts
+
+    enum LayerAlertState: Equatable { case off, unchecked, on, notAllowed, notScheduled }
+
+    /// iOS refused the monitor's watch schedule, so alerts would come only at budget times.
+    @Published private(set) var watchRefused = false
+
+    var layerAlerts: LayerAlertState {
+        guard alertsWanted else { return .off }
+        switch notificationStatus {
+        case nil: return .unchecked
+        case .allowed?: return watchRefused ? .notScheduled : .on
+        case .denied?, .notDetermined?: return .notAllowed
+        }
+    }
+
+    /// Only after the person asked, with Hisn's explanation shown first. iOS shows its
+    /// own permission prompt at most once; the monitor extension never asks.
+    func enableLayerAlerts() async {
+        guard !busy else { return }
+        busy = true
+        defer { busy = false }
+        _ = await notifications.request()
+        notificationStatus = await notifications.status()
+        setAlertsWanted(true)
+    }
+
+    /// Alerts are notices, not protection: they can be turned off at any time.
+    func disableLayerAlerts() {
+        setAlertsWanted(false)
+    }
+
+    private func setAlertsWanted(_ wanted: Bool) {
+        alertsWanted = wanted
+        shared.alertsWanted = wanted
+        publishWatch()
+        updateWatchSchedule()
+    }
+
+    /// What the monitor may check, written for it to read. Nothing while no commitment
+    /// runs; an unreadable commitment leaves the last watch in place.
+    private func publishWatch() {
+        guard commitmentStorageHealthy else { return }
+        var watch: LayerAlertPolicy.Watch?
+        if let session = commitment, commitmentActive {
+            watch = .init(startedAt: session.startedAt, deadline: session.deadline,
+                          webFilter: session.screenTimeFilter == true,
+                          alertsOn: alertsWanted && notificationStatus == .allowed,
+                          texts: Self.alertTexts(languageChoice: MonitorSharedState.languageChoice))
+        }
+        shared.saveWatch(watch)
+    }
+
+    /// Alert text in the language the person chose in Hisn (or the app's system language).
+    nonisolated static func alertTexts(languageChoice: String?,
+                                       bundle: Bundle = .main) -> [String: LayerAlertPolicy.Text] {
+        let language = ["ar", "en"].contains(languageChoice ?? "") ? languageChoice!
+            : (bundle.preferredLocalizations.first ?? "en")
+        let localized = bundle.path(forResource: language, ofType: "lproj").flatMap(Bundle.init(path:)) ?? bundle
+        var texts: [String: LayerAlertPolicy.Text] = [:]
+        for layer in LayerAlertPolicy.Layer.allCases {
+            let title = localized.localizedString(forKey: layer.titleKey, value: nil, table: nil)
+            let body = localized.localizedString(forKey: layer.bodyKey, value: nil, table: nil)
+            // A missing translation is no alert, never a raw key.
+            guard title != layer.titleKey, body != layer.bodyKey else { continue }
+            texts[layer.rawValue] = .init(title: title, body: body)
+        }
+        return texts
+    }
+
+    /// iOS wakes the monitor three times a day during the commitment, only while the
+    /// person wants alerts and Screen Time access is granted. Never requests access.
+    private func updateWatchSchedule() {
+        #if !targetEnvironment(simulator)
+        guard commitmentStorageHealthy else { return }
+        let center = DeviceActivityCenter()
+        let name = DeviceActivityName(LayerAlertPolicy.watchActivity)
+        let wanted = commitmentActive && alertsWanted && notificationStatus == .allowed
+            && AuthorizationCenter.shared.authorizationStatus == .approved
+        let running = center.activities.contains(name)
+        if wanted, !running {
+            let start = DateComponents(hour: 0, minute: 0), end = DateComponents(hour: 23, minute: 59, second: 59)
+            do {
+                try center.startMonitoring(name, during: DeviceActivitySchedule(intervalStart: start,
+                    intervalEnd: end, repeats: true, warningTime: DateComponents(hour: 12)))
+                watchRefused = false
+            } catch {
+                // Without the midday warning iOS still wakes the monitor at both ends of the day.
+                do {
+                    try center.startMonitoring(name, during: DeviceActivitySchedule(intervalStart: start,
+                        intervalEnd: end, repeats: true))
+                    watchRefused = false
+                } catch { watchRefused = true }
+            }
+        } else if !wanted, running {
+            center.stopMonitoring([name])
+        }
+        if !wanted || running { watchRefused = false }
+        #endif
     }
 
     /// Strengthening only: preserve the start and add time to the chosen end.
@@ -117,6 +358,7 @@ final class ProtectionController: ObservableObject {
             try commitmentStore.save(next)
             commitment = next
             errorKey = nil
+            publishWatch()
         } catch { commitmentStorageHealthy = false; errorKey = "commitment.storageFailed" }
     }
 
@@ -138,40 +380,35 @@ final class ProtectionController: ObservableObject {
             guard center.authorizationStatus == .approved else {
                 errorKey = "screentime.failed"; return
             }
-            screenTimeStore.webContent.blockedByFilter = desiredFilter
+            screenTimeFilter.filter = desiredFilter
             readScreenTimeState()
         } catch { errorKey = "screentime.failed" }
         #endif
     }
 
     private func readScreenTimeState() {
-        #if targetEnvironment(simulator)
-        screenTimeConfigured = false
-        #else
-        let authorized = AuthorizationCenter.shared.authorizationStatus == .approved
-        if !commitmentActive { screenTimeChosenForCommitment = false }
-        if commitmentActive, Self.isHisnFilter(screenTimeStore.webContent.blockedByFilter) {
-            screenTimeChosenForCommitment = true
+        let authorized = screenTimeFilter.authorized
+        let present = Self.isHisnFilter(screenTimeFilter.filter)
+        // Hisn's filter on during the commitment was turned on by the person (Hisn cannot
+        // turn it off until the end): record that choice with the commitment.
+        if authorized, present, commitmentActive, commitmentStorageHealthy {
+            recordScreenTimeChoice()
         }
-        if CommitmentPolicy.shouldRestoreProtection(active: commitmentActive,
-            commitmentReadable: commitmentStorageHealthy, historyReadable: historyStorageHealthy,
-            previouslyEnabled: screenTimeChosenForCommitment, authorized: authorized) {
-            // Reassert only Hisn's previously consented filter; do not touch other stores
-            // or request new authorization. Revoked OS permission cannot be repaired here.
-            if customSitesStorageHealthy || screenTimeStore.webContent.blockedByFilter == nil {
-                screenTimeStore.webContent.blockedByFilter = desiredFilter
+        if CommitmentPolicy.shouldRestoreScreenTimeFilter(session: commitment, active: commitmentActive,
+            commitmentReadable: commitmentStorageHealthy, authorized: authorized, filterPresent: present) {
+            // Reassert only the filter the person chose for this commitment; do not touch other
+            // stores or request new authorization. Revoked OS permission cannot be repaired here.
+            if customSitesStorageHealthy || screenTimeFilter.filter == nil {
+                screenTimeFilter.filter = desiredFilter
             }
-        } else if authorized, customSitesStorageHealthy,
-                  Self.isHisnFilter(screenTimeStore.webContent.blockedByFilter),
-                  screenTimeStore.webContent.blockedByFilter != desiredFilter {
+        } else if authorized, customSitesStorageHealthy, present, screenTimeFilter.filter != desiredFilter {
             // The person already consented to this filter; keep their saved sites in it.
             // An unreadable list never replaces the sites the OS already holds.
-            screenTimeStore.webContent.blockedByFilter = desiredFilter
+            screenTimeFilter.filter = desiredFilter
         }
-        let applied = screenTimeStore.webContent.blockedByFilter
+        let applied = screenTimeFilter.filter
         screenTimeConfigured = authorized && Self.isHisnFilter(applied)
         customSitesApplied = screenTimeConfigured && customSitesStorageHealthy && applied == desiredFilter
-        #endif
         rememberConfiguredLayers()
     }
 
@@ -253,7 +490,7 @@ final class ProtectionController: ObservableObject {
     func disablePersonalScreenTime() {
         updateClock()
         guard !busy, commitmentStorageHealthy, !commitmentActive else { return }
-        screenTimeStore.webContent.blockedByFilter = nil
+        screenTimeFilter.filter = nil
         readScreenTimeState()
     }
 
@@ -330,9 +567,14 @@ final class ProtectionController: ObservableObject {
     }
 
     private func readState() async {
-        updateClock()
         loadCommitment()
+        anchor = shared.anchors.load() ?? anchor
+        updateClock()
         loadCustomSites()
+        settleHeldBudgetDay()
+        notificationStatus = await notifications.status()
+        // Never blocks the refresh: offline, the commitment simply stays on.
+        if needsServerTime { Task { await checkServerTime() } }
         if !listChecked {
             // Immutable bundled resources need one integrity check per launch,
             // off the UI actor. Enabled Safari switches alone do not prove that
@@ -350,6 +592,8 @@ final class ProtectionController: ObservableObject {
         #if !targetEnvironment(simulator)
         observeAuthorization(AuthorizationCenter.shared.authorizationStatus)
         #endif
+        publishWatch()
+        updateWatchSchedule()
         #if targetEnvironment(simulator)
         dns = .unavailable
         #else
@@ -450,4 +694,67 @@ final class ProtectionController: ObservableObject {
 
     private struct Metadata: Decodable { let count: Int; let version: Int; let parts: Int }
     private struct PartMetadata: Decodable { let count: Int; let version: Int; let sha256: String }
+}
+
+// MARK: - Screen Time filter access
+
+/// Hisn's named Screen Time store and the access iOS grants to it. Reading never asks
+/// for access; only `enablePersonalScreenTime` does, after the person confirms.
+protocol ScreenTimeFilterAccess: AnyObject {
+    var authorized: Bool { get }
+    var filter: WebContentSettings.FilterPolicy? { get set }
+}
+
+final class ManagedScreenTimeFilter: ScreenTimeFilterAccess {
+    private let store = ManagedSettingsStore(named: .init("hisn.self-control"))
+    var authorized: Bool {
+        #if targetEnvironment(simulator)
+        return false
+        #else
+        return AuthorizationCenter.shared.authorizationStatus == .approved
+        #endif
+    }
+    var filter: WebContentSettings.FilterPolicy? {
+        get {
+            #if targetEnvironment(simulator)
+            return nil
+            #else
+            return store.webContent.blockedByFilter
+            #endif
+        }
+        set {
+            #if !targetEnvironment(simulator)
+            store.webContent.blockedByFilter = newValue
+            #endif
+        }
+    }
+}
+
+// MARK: - Notification permission
+
+enum NotificationStatus: Equatable { case notDetermined, allowed, denied }
+
+/// Asked only from the app, after the person taps to turn alerts on.
+protocol NotificationPermission {
+    func status() async -> NotificationStatus
+    func request() async -> Bool
+}
+
+struct SystemNotificationPermission: NotificationPermission {
+    func status() async -> NotificationStatus {
+        switch await UNUserNotificationCenter.current().notificationSettings().authorizationStatus {
+        case .authorized, .provisional, .ephemeral: return .allowed
+        case .denied: return .denied
+        default: return .notDetermined
+        }
+    }
+    func request() async -> Bool {
+        (try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])) ?? false
+    }
+}
+
+/// Tests never show the system prompt.
+struct NoNotificationPermission: NotificationPermission {
+    func status() async -> NotificationStatus { .notDetermined }
+    func request() async -> Bool { false }
 }

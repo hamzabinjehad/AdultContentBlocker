@@ -113,7 +113,7 @@
 "commitment.start" = "Start my commitment";
 "commitment.confirmTitle" = "Commit to the full duration?";
 "commitment.confirmBody %lld" = "You choose %lld days without early self-release inside Hisn. This does not make Hisn undeletable or stop revocation in Apple settings. Keep access to essential services. Protection depends on separately enabled layers.";
-"commitment.scope" = "A voluntary app-level lock, not a device-owner lock. Device erasure, removal, permission revocation and clock changes across relaunch can bypass it. DNS and Safari stay enabled independently; ending a plan does not automatically turn them off.";
+"commitment.scope" = "A voluntary app-level lock, not a device-owner lock. Device erasure, removal and permission revocation can bypass it; moving the clock cannot end it early. DNS and Safari stay enabled independently; ending a plan does not automatically turn them off.";
 "commitment.noLayer" = "No blocking configuration was confirmed. A commitment alone blocks nothing: enable Screen Time, Safari or DNS and check again.";
 "commitment.storageFailed" = "The saved commitment could not be read or secured. Do not assume it is unlocked. Retry after unlocking the device; changes remain unavailable.";
 "screentime.configured" = "Screen Time adult-content filter configured";
@@ -149,7 +149,7 @@
 "language.title" = "Language";
 "language.system" = "Follow device language";
 "privacy.title" = "Privacy";
-"privacy.body" = "Hisn does not record visited sites or blocked browsing attempts. Safari applies declarative rules without sending browsing history to Hisn. Family DNS is handled by Cloudflare under its own privacy policy.";
+"privacy.body" = "Hisn does not record visited sites or blocked browsing attempts. Safari applies declarative rules without sending browsing history to Hisn. Family DNS is handled by Cloudflare under its own privacy policy. To check commitment, daily budget and passcode dates, Hisn reads the time from apple.com over HTTPS; nothing about you is sent.";
 "coverage.title" = "What this version protects";
 "coverage.body" = "A self-control commitment, Safari domain blockers, separately enabled Hisn Text webpage checking, selected-app shields, optional family DNS and Apple's adult-content web filter. These do not guarantee all content, all apps, VPN resistance or protection that cannot be disabled. Hisn works independently of your Mac; settings do not sync yet.";
 "apple.title" = "iPhone and iPad";
@@ -261,3 +261,24 @@
 "sites.accessRemoved" = "Saved, but not applied: Screen Time access was turned off in Settings. Turn it back on to apply these sites.";
 "plan.safariParts %lld" = "%lld of 4 parts on";
 "vault.hidden" = "Passcode hidden while Hisn is not in front";
+/* Work package A: a commitment that holds (trusted time, restored filter, layer alerts) */
+"commitment.endUnverified" = "The end date has passed on this iPhone, but Hisn could not confirm it with Apple's server time. Your commitment stays on until it can: connect to the internet.";
+"commitment.clockAhead" = "This iPhone's clock is ahead of Apple's server time. Your commitment stays on until the real end date.";
+"commitment.checkTime" = "Check Apple's time now";
+"commitment.checkingTime" = "Checking Apple's time…";
+"commitment.trustedTime" = "Moving this iPhone's clock does not end the commitment or start a new budget day early: the date must have passed on this iPhone and on Apple's server time. While a commitment or daily budget is on, Hisn reads the time from apple.com over HTTPS; nothing about you is sent. Without internet, the commitment stays on.";
+"commitment.restoreConsent" = "Hisn's Screen Time filter is on, and this commitment records that. If iOS drops the filter while Screen Time access is still allowed, Hisn turns it back on the next time it opens. Hisn never asks for access by itself.";
+"alerts.enable" = "Alert me if a layer stops";
+"alerts.consentTitle" = "Turn on layer alerts?";
+"alerts.consentBody" = "During your commitment, iOS wakes Hisn's monitor a few times a day. It checks that Hisn's Screen Time filter and always-block apps are still set, and sends you a notification if one stopped. It changes nothing. iOS will ask you to allow notifications. If Screen Time access itself is turned off, iOS may stop the monitor too; Hisn shows that the next time you open it.";
+"alerts.on" = "Layer alerts on";
+"alerts.notAllowed" = "Notifications for Hisn are off in Settings, so layer alerts cannot be shown.";
+"alerts.limits" = "Alerts are not instant: they come only when iOS runs Hisn's monitor. They cover Hisn's Screen Time settings, not Safari or DNS.";
+"alerts.disable" = "Turn off layer alerts";
+"alerts.notScheduled" = "iOS did not accept Hisn's monitor schedule, so layer alerts can come only when a daily budget's monitor runs.";
+"alert.screenTimeAccess.title" = "Hisn: Screen Time access was turned off";
+"alert.screenTimeAccess.body" = "iOS removed Hisn's web filter and app blocks during your commitment. Only you can turn access back on: open Hisn, then Setup.";
+"alert.webFilter.title" = "Hisn: the web filter stopped";
+"alert.webFilter.body" = "Hisn's Screen Time web filter is no longer set during your commitment. Only you can turn it back on: open Hisn.";
+"alert.appShields.title" = "Hisn: app blocks stopped";
+"alert.appShields.body" = "The apps you chose to always block are no longer blocked during your commitment. Only you can turn this back on: open Hisn.";

@@ -45,12 +45,14 @@ enum PasscodeVaultPolicy {
     enum RevealRefusal: Equatable { case notYet, needsNetwork, clockDisagrees }
 
     /// The device clock alone can be moved forward, so the date must also have
-    /// passed on a server clock read over HTTPS.
+    /// passed on a server clock read over HTTPS: the same rule as the commitment end.
     static func revealRefusal(_ vault: PasscodeVault, deviceNow: Date, serverNow: Date?) -> RevealRefusal? {
-        guard deviceNow >= vault.revealAt else { return .notYet }
-        guard let serverNow else { return .needsNetwork }
-        guard serverNow >= vault.revealAt else { return .clockDisagrees }
-        return nil
+        switch TrustedTime.verdict(for: vault.revealAt, deviceNow: deviceNow, trustedNow: serverNow) {
+        case .notYet: return .notYet
+        case .unverified: return .needsNetwork
+        case .clockAhead: return .clockDisagrees
+        case .passed: return nil
+        }
     }
 
     /// The passcode, or one dot per digit while the scene is not active.
@@ -156,32 +158,8 @@ final class MemoryPasscodeVaultStorage: PasscodeVaultStorage {
 
 // MARK: - Server time
 
-protocol ServerTimeSource {
-    func currentTime() async -> Date?
-}
-
-/// The `Date` header of an HTTPS response from Apple. Nothing about the person
-/// is sent; the request is a plain HEAD with no cookies.
-struct AppleServerTime: ServerTimeSource {
-    func currentTime() async -> Date? {
-        guard let url = URL(string: "https://www.apple.com/") else { return nil }
-        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 10)
-        request.httpMethod = "HEAD"
-        request.httpShouldHandleCookies = false
-        guard let result = try? await URLSession.shared.data(for: request),
-              let http = result.1 as? HTTPURLResponse,
-              let header = http.value(forHTTPHeaderField: "Date") else { return nil }
-        return Self.parse(header)
-    }
-
-    static func parse(_ header: String) -> Date? {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(secondsFromGMT: 0)
-        formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss zzz"
-        return formatter.date(from: header)
-    }
-}
+// `ServerTimeSource` and `AppleServerTime` live in shared/apple/TrustedTime.swift:
+// the commitment and the daily budget use the same check.
 
 // MARK: - Controller
 

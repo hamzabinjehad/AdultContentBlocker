@@ -17,6 +17,12 @@
 			path = "../shared/apple/CustomSitePolicy.swift";
 			sourceTree = "<group>";
 		};
+		F75157D9F3F6FD446D4554B2  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "../shared/apple/LayerAlertPolicy.swift";
+			sourceTree = "<group>";
+		};
 		22ED35E5701488EB13E1DF35  = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -45,6 +51,12 @@
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = "../shared/apple/RouterAppDomainsView.swift";
+			sourceTree = "<group>";
+		};
+		C38152135A92032045D3472B  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "../shared/apple/TrustedTime.swift";
 			sourceTree = "<group>";
 		};
 		7164AD19C122B8FA8BC1D8E7  = {
@@ -161,6 +173,12 @@
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = "HisnTests/AccessibilityTests.swift";
+			sourceTree = "<group>";
+		};
+		AA7435CE49B19E8A74589018  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "HisnTests/CommitmentHoldsTests.swift";
 			sourceTree = "<group>";
 		};
 		3121358B9829FA8B92F7CC6D  = {
@@ -290,11 +308,13 @@
 			children = (
 				AD749F27C885AF47D2DFEDB3,
 				1AC01D8272F7B9928ACCA554,
+				F75157D9F3F6FD446D4554B2,
 				22ED35E5701488EB13E1DF35,
 				B68499C7EA29DC064714AED1,
 				4AD2C81EF123DB97B20BD752,
 				5BCBB7D0DC93FC1DDAE9ED61,
 				982975E53CB533CADA8FD61F,
+				C38152135A92032045D3472B,
 				7164AD19C122B8FA8BC1D8E7,
 				F4A4A803611C34FD3F87E18B,
 				D962BB45B52B4FE0516D8BD8,
@@ -312,6 +332,7 @@
 				97E3A110C1EF2759EB12FA3D,
 				1349496B0BFBD6AE9C197419,
 				5B368D5BABE28E26ED070FEC,
+				AA7435CE49B19E8A74589018,
 				3121358B9829FA8B92F7CC6D,
 				663781E64B80A15C0EE27C59,
 				1A8B5976E8468D0F3F208589,
@@ -404,6 +425,14 @@
 			isa = PBXBuildFile;
 			fileRef = 4AD2C81EF123DB97B20BD752;
 		};
+		8BB35C3CE4955B1835EF1FE6  = {
+			isa = PBXBuildFile;
+			fileRef = C38152135A92032045D3472B;
+		};
+		E5BF8E834ACC9E9A7001D37D  = {
+			isa = PBXBuildFile;
+			fileRef = F75157D9F3F6FD446D4554B2;
+		};
 		8677145FDA9C24C7C2212F65  = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -428,6 +457,8 @@
 				5C34E515C5A1879247A7104C,
 				89B7E79B511E57D7CD132466,
 				6307C624C25779677EE9E939,
+				8BB35C3CE4955B1835EF1FE6,
+				E5BF8E834ACC9E9A7001D37D,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1169,6 +1200,14 @@
 			isa = PBXBuildFile;
 			fileRef = 22ED35E5701488EB13E1DF35;
 		};
+		B8E279F12DD08D93B7935A0E  = {
+			isa = PBXBuildFile;
+			fileRef = C38152135A92032045D3472B;
+		};
+		5818E9A8A757A0D2D0EBC9D9  = {
+			isa = PBXBuildFile;
+			fileRef = F75157D9F3F6FD446D4554B2;
+		};
 		B884913EA88F94EB8FE0036E  = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1176,6 +1215,8 @@
 				707A212370C97AEED1AA292D,
 				B2570C35428D914459EABAD2,
 				8E027986F7C87BF8C58736D8,
+				B8E279F12DD08D93B7935A0E,
+				5818E9A8A757A0D2D0EBC9D9,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1414,6 +1455,10 @@
 			isa = PBXBuildFile;
 			fileRef = 5B368D5BABE28E26ED070FEC;
 		};
+		A60F9772F83335B1494C665D  = {
+			isa = PBXBuildFile;
+			fileRef = AA7435CE49B19E8A74589018;
+		};
 		59C5F51CCE4172371A75875E  = {
 			isa = PBXBuildFile;
 			fileRef = 7164AD19C122B8FA8BC1D8E7;
@@ -1427,6 +1472,7 @@
 				CEF03A8375D752D322C6BF97,
 				394F3003CCE31AB4243863D6,
 				873F708AA5685C785FFC0579,
+				A60F9772F83335B1494C665D,
 				59C5F51CCE4172371A75875E,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -41,17 +41,92 @@ struct AppUsageConfiguration: Codable {
     static let key = "appUsageConfiguration"
     static let reachedKey = "appUsageReachedDay"
     static let reachedMirrorKey = "appUsageReachedDay.mirror"
+    /// The monitor kept a reached day's shield at a new interval because Apple's
+    /// time could not confirm the day was over. The app finishes the clear later.
+    static let heldKey = "appUsageHeldDay"
+    static let budgetStoreName = "hisn.apps.budget"
     enum BudgetMarkerFailure: Error { case corrupt, writeFailed }
     static let activity = "hisn.selected.daily"
     static let event = "hisn.selected.budget"
+    /// Budget days are Gregorian dates in the device's current time zone, whatever
+    /// calendar the person reads: switching calendars in Settings must not turn a
+    /// saved day into a far-future or far-past one.
+    static var dayCalendar: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = .current
+        return calendar
+    }
     static func day(_ date: Date = Date()) -> String {
-        let c = Calendar.current.dateComponents([.year, .month, .day], from: date)
+        let c = dayCalendar.dateComponents([.year, .month, .day], from: date)
         return "\(c.year ?? 0)-\(c.month ?? 0)-\(c.day ?? 0)"
     }
     /// Shared by the foreground app and monitor. Registration/relaunch must
     /// preserve a reached budget, but yesterday's marker must not block today.
+    /// A marker from a later day than the device's (its clock was set back) still
+    /// counts as reached.
     static func budgetReached(mode: Mode, reachedDay: String?, today: String = day()) -> Bool {
-        mode == .dailyBudget && reachedDay == today
+        guard mode == .dailyBudget, let reachedDay, let reached = checkedDay(reachedDay),
+              let current = checkedDay(today) else { return false }
+        return !reached.lexicographicallyPrecedes(current)
+    }
+
+    enum BudgetDay: Equatable {
+        /// No budget was reached: nothing to keep.
+        case notReached
+        /// The reached day has not ended on the device clock: keep the shield.
+        case reached
+        /// The reached day ended on the device clock and on Apple's time: clear.
+        case over
+        /// The device clock says a new day, Apple's time does not confirm it
+        /// (offline, or the clock was moved forward): keep the shield.
+        case unverified
+    }
+
+    /// The day boundary uses the same rule as the commitment end: a reached day is
+    /// over only when both the device clock and Apple's time have passed its end.
+    static func budgetDay(reachedDay: String?, deviceNow: Date, trustedNow: Date?) -> BudgetDay {
+        guard let reachedDay else { return .notReached }
+        let calendar = dayCalendar
+        guard let parts = checkedDay(reachedDay),
+              let start = calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2])),
+              let end = calendar.date(byAdding: .day, value: 1, to: start) else { return .unverified }
+        switch TrustedTime.verdict(for: end, deviceNow: deviceNow, trustedNow: trustedNow,
+                                   skew: TrustedTime.readingSkew) {
+        case .notYet: return .reached
+        case .unverified, .clockAhead: return .unverified
+        case .passed: return .over
+        }
+    }
+
+    static func heldDay(_ defaults: UserDefaults) -> String? { defaults.object(forKey: heldKey) as? String }
+    static func markHeld(_ defaults: UserDefaults, day: String) { defaults.set(day, forKey: heldKey) }
+    static func clearHeld(_ defaults: UserDefaults) { defaults.removeObject(forKey: heldKey) }
+
+    enum HeldDayAction: Equatable { case none, clearShield, forget }
+    /// What the app does with a day the monitor held. It clears only what the monitor
+    /// would have cleared with Apple's time; unreadable rules or markers keep the shield.
+    static func heldDayAction(_ defaults: UserDefaults, deviceNow: Date, trustedNow: Date?) -> HeldDayAction {
+        guard defaults.object(forKey: heldKey) != nil else { return .none }
+        let config: AppUsageConfiguration?
+        let reached: String?
+        do {
+            config = try load(defaults)
+            reached = try reachedDay(defaults)
+        } catch { return .none }
+        return heldDayAction(held: true, mode: config?.mode, reachedDay: reached,
+                             deviceNow: deviceNow, trustedNow: trustedNow)
+    }
+
+    static func heldDayAction(held: Bool, mode: Mode?, reachedDay: String?,
+                              deviceNow: Date, trustedNow: Date?) -> HeldDayAction {
+        guard held else { return .none }
+        // Always-block mode or removed rules: the app already cleared the budget store.
+        guard mode == .dailyBudget else { return .forget }
+        switch budgetDay(reachedDay: reachedDay, deviceNow: deviceNow, trustedNow: trustedNow) {
+        case .notReached, .over: return .clearShield
+        case .reached: return .forget
+        case .unverified: return .none
+        }
     }
     /// Read the raw objects so damaged marker data is not mistaken for a new
     /// unrestricted day. Either valid local copy can survive accidental loss;
@@ -94,7 +169,7 @@ struct AppUsageConfiguration: Codable {
               raw == "\(year)-\(month)-\(date)" else { return nil }
         // Use the same calendar that produced day(); do not break a saved
         // shield just because the person uses a non-Gregorian calendar.
-        let calendar = Calendar.current
+        let calendar = dayCalendar
         let parts = DateComponents(year: year, month: month, day: date)
         guard let instant = calendar.date(from: parts),
               calendar.dateComponents([.year, .month, .day], from: instant) == parts else { return nil }
