@@ -445,7 +445,11 @@ public final class MainActivity extends Activity {
         SetupGuide.Assets assets = !rules.adultWordsEnabled ? SetupGuide.Assets.DISABLED
                 : AdultPolicyAssets.state == AdultPolicyAssets.State.READY ? SetupGuide.Assets.READY
                 : AdultPolicyAssets.state == AdultPolicyAssets.State.ERROR ? SetupGuide.Assets.ERROR : SetupGuide.Assets.LOADING;
-        currentSetupStep = SetupGuide.next(appRules, guard, assets, SetupGuide.Network.valueOf(network.name()),
+        SetupGuide.Visual visual = !rules.visualEnabled ? SetupGuide.Visual.OFF
+                : Build.VERSION.SDK_INT < 34 || rules.scannedApps.isEmpty() || VisualGuard.health.shown().failure()
+                        ? SetupGuide.Visual.FAILED : SetupGuide.Visual.OK;
+        currentSetupStep = SetupGuide.next(appRules, DnsVpnService.resumeRequested(this), guard, assets, visual,
+                SetupGuide.Network.valueOf(network.name()),
                 DnsVpnService.connectionCheck.state == DnsVpnService.CheckState.STALE ? SetupGuide.Probe.IDLE
                         : SetupGuide.Probe.valueOf(DnsVpnService.connectionCheck.state.name()));
         setupNext.setEnabled(true);
@@ -456,12 +460,15 @@ public final class MainActivity extends Activity {
             case LOAD_POLICY: setupState.setText(R.string.setup_policy_loading); setupNext.setText(R.string.setup_wait); setupNext.setEnabled(false); break;
             case REPAIR_POLICY: setupState.setText(R.string.adult_mode_error); setupNext.setText(R.string.setup_retry_policy); break;
             case REVIEW_APP_LAYER: setupState.setText(R.string.setup_review); setupNext.setText(R.string.setup_review_app); break;
+            case REVIEW_VISUAL: setupState.setText(R.string.setup_review_visual); setupNext.setText(R.string.setup_review_visual_button); break;
             case ENABLE_DNS: setupState.setText(R.string.setup_dns); setupNext.setText(R.string.dns_start); break;
             case STARTING_DNS: setupState.setText(R.string.dns_starting); setupNext.setText(R.string.setup_wait); setupNext.setEnabled(false); break;
             case REVIEW_DNS: setupState.setText(R.string.dns_degraded); setupNext.setText(R.string.setup_review_network); break;
             case TEST_DNS: setupState.setText(R.string.setup_test); setupNext.setText(R.string.network_check_button); break;
             case CHECKING_DNS: setupState.setText(R.string.network_check_running); setupNext.setText(R.string.setup_wait); setupNext.setEnabled(false); break;
             case READY: setupState.setText(R.string.setup_ready); setupNext.setText(R.string.network_check_button); break;
+            case READY_APPS: setupState.setText(R.string.setup_ready_apps); setupNext.setText(R.string.dns_start); break;
+            case READY_DNS: setupState.setText(R.string.setup_ready_dns); setupNext.setText(R.string.network_check_button); break;
         }
     }
 
@@ -483,10 +490,13 @@ public final class MainActivity extends Activity {
             case REVIEW_APP_LAYER:
                 new AlertDialog.Builder(this).setTitle(R.string.setup_review_app).setMessage(R.string.accessibility_description)
                         .setPositiveButton(android.R.string.ok, null).show(); break;
-            case ENABLE_DNS: startDns.performClick(); break;
+            case REVIEW_VISUAL: showPage(1); break;
+            case ENABLE_DNS:
+            case READY_APPS: startDns.performClick(); break;
             case REVIEW_DNS: reviewVpnSettings(); break;
             case TEST_DNS:
-            case READY: checkNetwork.performClick(); break;
+            case READY:
+            case READY_DNS: checkNetwork.performClick(); break;
             default: break;
         }
     }
