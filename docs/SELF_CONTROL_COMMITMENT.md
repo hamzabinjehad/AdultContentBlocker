@@ -47,10 +47,15 @@ does not silently request that mode for an adult.
 
 The mobile timer uses monotonic elapsed time including sleep while its process survives, so changing the
 wall clock during that process does not immediately finish a plan. After process
-termination/reboot the saved deadline depends on the wall clock. No trusted-time
-server or root authority is implemented on mobile; clock changes across relaunch,
-device erasure, deleting persistence, removal or permission revocation remain
-bypasses. Keychain retention after removal is not a guarantee of enforcement.
+termination or reboot, iPhone and iPad end a plan only when both the device clock
+and Apple's server time have passed the deadline. Apple's time is the `Date` header
+of an HTTPS HEAD request to apple.com (no cookies, nothing about the person), kept
+with the monotonic clock as a lower bound and shared with the monitor extension.
+Offline, the plan stays on and the app says so; a network error never ends it.
+This is not a root authority: a device that trusts a user-installed root
+certificate could be shown a false server time, and device erasure, deleting
+persistence, removal or permission revocation remain bypasses. Keychain retention
+after removal is not a guarantee of enforcement.
 
 Mac, iPhone and iPad show a session-local warning when wall time differs from
 the sleep-inclusive monotonic clock by more than two minutes, or the clock
@@ -282,8 +287,13 @@ An authorized app refresh and same-day monitor registration reapply a shield
 when the saved daily threshold marker matches today. This restores configuration
 without restarting monitoring or resetting usage counters. A prior-day marker
 does not reapply a shield, and the app does not infer that a limit was reached
-when the OS callback was never received. Day markers depend on the local calendar;
-this is not trusted-clock or time-zone tamper protection. The reached-day marker
+when the OS callback was never received. Day markers are Gregorian dates in the
+current time zone, whatever calendar the person reads. On iPhone and iPad the
+monitor clears a reached day's shield only when the device clock and Apple's server
+time have both passed the end of that day; if the extension cannot confirm it, the
+shield stays and the app finishes the clear once it can. A marker from a later day
+than the device's (clock set back) keeps the shield. Time-zone travel can move the
+boundary by the zone difference. The reached-day marker
 now has two validated local copies: either surviving copy can preserve the
 same-day shield. If existing marker data is damaged and no valid copy remains,
 the monitor does not take its clear-shield branch, and the app reports invalid
