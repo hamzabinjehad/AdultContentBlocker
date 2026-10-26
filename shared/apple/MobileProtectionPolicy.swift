@@ -151,4 +151,124 @@ enum MobileProtectionPolicy {
     static func allSafariLayersEnabled(_ enabled: [Bool?]) -> Bool {
         enabled.count == blockerIdentifiers.count && enabled.allSatisfy { $0 == true }
     }
+
+    // MARK: - Removal protection (lock ladder)
+
+    /// How hard it is for the person to remove Hisn on their own, weakest first.
+    /// Each raw value is the level's text key.
+    enum LockLevel: String, CaseIterable, Comparable {
+        case selfOnly = "lock.level.selfOnly"
+        case passcodeVault = "lock.level.passcodeVault"
+        case familyGuardian = "lock.level.familyGuardian"
+        case supervised = "lock.level.supervised"
+
+        var rank: Int { Self.allCases.firstIndex(of: self) ?? 0 }
+        static func < (lhs: Self, rhs: Self) -> Bool { lhs.rank < rhs.rank }
+    }
+
+    /// Verified: an Apple API confirmed it during this session. Attested: the person said so,
+    /// and Hisn cannot check it. Self only needs neither: it is where every install starts.
+    enum LockEvidence: String {
+        case verified = "lock.evidence.verified"
+        case attested = "lock.evidence.attested"
+    }
+
+    /// The person's own statement about a lock Hisn cannot read: the Screen Time passcode,
+    /// "Deleting Apps: Don't Allow", a family organizer or supervision. Never upgraded to verified.
+    struct LockAttestation: Codable, Equatable {
+        enum Claim: String, Codable, CaseIterable {
+            case passcodeVault, familyGuardian, supervised
+            var level: LockLevel {
+                switch self {
+                case .passcodeVault: return .passcodeVault
+                case .familyGuardian: return .familyGuardian
+                case .supervised: return .supervised
+                }
+            }
+        }
+        var claim: Claim
+        /// The person tried to delete an app and could not. Optional, and also only their word.
+        var selfTested: Bool
+        /// The vault a passcode-vault claim is about; a new vault needs a new confirmation.
+        var vaultCreatedAt: Date?
+        var confirmedAt: Date
+
+        /// Empty or damaged data reads as no confirmation, so it can only ever lower the level.
+        init?(storage data: Data) {
+            guard !data.isEmpty, let decoded = try? JSONDecoder().decode(Self.self, from: data),
+                  decoded.isWellFormed else { return nil }
+            self = decoded
+        }
+
+        init(claim: Claim, selfTested: Bool = false, vaultCreatedAt: Date? = nil, confirmedAt: Date) {
+            self.claim = claim
+            self.selfTested = selfTested
+            self.vaultCreatedAt = claim == .passcodeVault ? vaultCreatedAt : nil
+            self.confirmedAt = confirmedAt
+        }
+
+        var isWellFormed: Bool {
+            confirmedAt.timeIntervalSinceReferenceDate.isFinite
+                && (claim == .passcodeVault) == (vaultCreatedAt != nil)
+                && vaultCreatedAt?.timeIntervalSinceReferenceDate.isFinite != false
+        }
+
+        var storage: Data { (try? JSONEncoder().encode(self)) ?? Data() }
+    }
+
+    /// Where the person's confirmation is kept on this device.
+    static let lockAttestationKey = "hisn.mobile.lockAttestation"
+
+    /// What Hisn knows about its passcode vault, without its passcode.
+    struct VaultFacts: Equatable {
+        let createdAt: Date
+        let revealAt: Date
+        let revealed: Bool
+
+        /// The passcode is still kept from the person: not shown, and its date not reached.
+        func holdsPasscode(at now: Date) -> Bool { !revealed && now < revealAt }
+    }
+
+    struct RemovalProtection: Equatable {
+        let level: LockLevel
+        /// nil only for self only.
+        let evidence: LockEvidence?
+        /// The highest level an API confirmed in this session.
+        let verifiedLevel: LockLevel
+        let selfTested: Bool
+        /// A saved confirmation that no longer counts: its vault was shown, replaced or reached its date.
+        let staleAttestation: Bool
+    }
+
+    /// A passcode-vault confirmation counts only for the vault it was given for, and only while
+    /// that vault still keeps the passcode. Other claims stand until the person withdraws them.
+    static func attestationApplies(_ attestation: LockAttestation, vault: VaultFacts?, now: Date) -> Bool {
+        guard attestation.isWellFormed else { return false }
+        guard attestation.claim == .passcodeVault else { return true }
+        guard let vault, let confirmed = attestation.vaultCreatedAt, vault.holdsPasscode(at: now) else { return false }
+        return abs(confirmed.timeIntervalSince(vault.createdAt)) < 1
+    }
+
+    /// The level the readiness row shows. Hisn cannot read the Screen Time passcode, the
+    /// deletion setting or supervision, so those are attested at most. Child authorization
+    /// accepted in this session is the only verified level; `RemovalEvidence` drops it when
+    /// approval is lost or the app relaunches. A new install with nothing confirmed is self only.
+    static func removalProtection(removal: RemovalState, attestation: LockAttestation?,
+                                  vault: VaultFacts?, now: Date) -> RemovalProtection {
+        let verified: LockLevel = removal == .guardianRequestAccepted ? .familyGuardian : .selfOnly
+        let applies = attestation.map { attestationApplies($0, vault: vault, now: now) } ?? false
+        let stale = attestation != nil && !applies
+        let attested = applies ? attestation?.claim.level ?? .selfOnly : .selfOnly
+        let selfTested = applies && attestation?.selfTested == true
+        if attested > verified {
+            return .init(level: attested, evidence: .attested, verifiedLevel: verified,
+                         selfTested: selfTested, staleAttestation: stale)
+        }
+        if verified > .selfOnly {
+            return .init(level: verified, evidence: .verified, verifiedLevel: verified,
+                         selfTested: selfTested && attested == verified, staleAttestation: stale)
+        }
+        return .init(level: .selfOnly, evidence: nil, verifiedLevel: .selfOnly,
+                     selfTested: false, staleAttestation: stale)
+    }
 }

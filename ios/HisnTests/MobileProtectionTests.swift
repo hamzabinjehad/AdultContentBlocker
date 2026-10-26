@@ -613,3 +613,328 @@ final class MobileProtectionTests: XCTestCase {
 
     private struct Metadata: Decodable { let count: Int; let sha256: String }
 }
+
+/// Honest, guided setup: the removal-protection level, the vault and commitment dates, and
+/// the order Setup asks for things in.
+final class SetupHonestyTests: XCTestCase {
+    private typealias Policy = MobileProtectionPolicy
+    private typealias Attestation = MobileProtectionPolicy.LockAttestation
+    private let start = Date(timeIntervalSince1970: 1_800_000_000)
+    private let day: TimeInterval = 86400
+
+    private func facts(created: Date? = nil, days: Double = 7, revealed: Bool = false) -> Policy.VaultFacts {
+        let created = created ?? start
+        return .init(createdAt: created, revealAt: created.addingTimeInterval(days * day), revealed: revealed)
+    }
+
+    private func lock(_ removal: Policy.RemovalState = .notRequested, _ attestation: Attestation? = nil,
+                      vault: Policy.VaultFacts? = nil, now: Date? = nil) -> Policy.RemovalProtection {
+        Policy.removalProtection(removal: removal, attestation: attestation, vault: vault,
+                                 now: now ?? start.addingTimeInterval(3600))
+    }
+
+    private static let removalStates: [Policy.RemovalState] = [.notRequested, .denied, .approvedScopeUnknown,
+                                                               .guardianRequestAccepted, .unavailable]
+
+    // MARK: Removal-protection level
+
+    func testANewInstallIsSelfOnly() {
+        XCTAssertNil(Attestation(storage: Data()), "nothing saved is no confirmation")
+        for removal: Policy.RemovalState in [.notRequested, .unavailable, .denied, .approvedScopeUnknown] {
+            let level = lock(removal, Attestation(storage: Data()))
+            XCTAssertEqual(level.level, .selfOnly, "\(removal)")
+            XCTAssertNil(level.evidence)
+            XCTAssertEqual(level.verifiedLevel, .selfOnly)
+            XCTAssertFalse(level.selfTested)
+            XCTAssertFalse(level.staleAttestation)
+        }
+    }
+
+    func testLevelsFollowThePlanLadder() {
+        XCTAssertEqual(Policy.LockLevel.allCases, [.selfOnly, .passcodeVault, .familyGuardian, .supervised])
+        XCTAssertLessThan(Policy.LockLevel.selfOnly, .passcodeVault)
+        XCTAssertLessThan(Policy.LockLevel.passcodeVault, .familyGuardian)
+        XCTAssertLessThan(Policy.LockLevel.familyGuardian, .supervised)
+        XCTAssertEqual(Attestation.Claim.allCases.map(\.level), [.passcodeVault, .familyGuardian, .supervised])
+    }
+
+    func testPasscodeVaultIsOnlyEverAttested() {
+        let vault = facts()
+        let claim = Attestation(claim: .passcodeVault, selfTested: true, vaultCreatedAt: vault.createdAt, confirmedAt: start)
+        for removal: Policy.RemovalState in [.notRequested, .denied, .approvedScopeUnknown, .unavailable] {
+            let level = lock(removal, claim, vault: vault)
+            XCTAssertEqual(level.level, .passcodeVault, "\(removal)")
+            XCTAssertEqual(level.evidence, .attested, "Hisn cannot read the Screen Time passcode or deletion setting")
+            XCTAssertEqual(level.verifiedLevel, .selfOnly)
+            XCTAssertTrue(level.selfTested)
+        }
+        let untested = Attestation(claim: .passcodeVault, vaultCreatedAt: vault.createdAt, confirmedAt: start)
+        XCTAssertFalse(lock(.notRequested, untested, vault: vault).selfTested, "the self-test is optional")
+    }
+
+    func testVaultConfirmationCountsOnlyForThatVaultWhileItKeepsThePasscode() {
+        let vault = facts()
+        let claim = Attestation(claim: .passcodeVault, vaultCreatedAt: vault.createdAt, confirmedAt: start)
+        XCTAssertEqual(lock(.notRequested, claim, vault: vault).level, .passcodeVault)
+        let gone: [(Policy.VaultFacts?, Date?)] = [
+            (nil, nil),                                                    // forgotten
+            (facts(created: start.addingTimeInterval(day)), nil),          // a new vault
+            (facts(revealed: true), nil),                                  // shown again
+            (vault, vault.revealAt),                                       // its date reached
+            (vault, vault.revealAt.addingTimeInterval(day)),
+        ]
+        for (current, now) in gone {
+            let level = lock(.notRequested, claim, vault: current, now: now)
+            XCTAssertEqual(level.level, .selfOnly)
+            XCTAssertNil(level.evidence)
+            XCTAssertTrue(level.staleAttestation, "an old confirmation is reported, never kept as a lock")
+        }
+    }
+
+    func testOnlyChildAuthorizationSeenThisSessionIsVerified() {
+        var evidence = Policy.RemovalEvidence()
+        let accepted = evidence.observe(.approved, childRequestSucceeded: true)
+        let guardian = lock(accepted)
+        XCTAssertEqual(guardian.level, .familyGuardian)
+        XCTAssertEqual(guardian.evidence, .verified)
+        XCTAssertEqual(lock(evidence.observe(.denied)).level, .selfOnly, "revoked approval drops it")
+        var relaunched = Policy.RemovalEvidence()
+        XCTAssertNil(lock(relaunched.observe(.approved)).evidence, "a relaunch alone proves nothing")
+
+        let vault = facts()
+        let attestations: [Attestation?] = [nil] + Attestation.Claim.allCases.map {
+            Attestation(claim: $0, selfTested: true, vaultCreatedAt: vault.createdAt, confirmedAt: start)
+        }
+        for removal in Self.removalStates {
+            for attestation in attestations {
+                for current in [nil, vault] {
+                    let level = lock(removal, attestation, vault: current)
+                    if level.evidence == .verified {
+                        XCTAssertEqual(removal, .guardianRequestAccepted, "only an API result is verified")
+                    }
+                    if level.evidence == .attested { XCTAssertEqual(level.level, attestation?.claim.level) }
+                    XCTAssertEqual(level.evidence == nil, level.level == .selfOnly)
+                    XCTAssertGreaterThanOrEqual(level.level, level.verifiedLevel)
+                }
+            }
+        }
+    }
+
+    func testAHigherConfirmedLevelStaysMarkedAsConfirmed() {
+        let supervised = Attestation(claim: .supervised, confirmedAt: start)
+        let above = lock(.guardianRequestAccepted, supervised)
+        XCTAssertEqual(above.level, .supervised)
+        XCTAssertEqual(above.evidence, .attested)
+        XCTAssertEqual(above.verifiedLevel, .familyGuardian)
+
+        let guardian = Attestation(claim: .familyGuardian, selfTested: true, confirmedAt: start)
+        XCTAssertEqual(lock(.guardianRequestAccepted, guardian).evidence, .verified, "verified outranks the same claim")
+        XCTAssertTrue(lock(.guardianRequestAccepted, guardian).selfTested)
+        XCTAssertEqual(lock(.approvedScopeUnknown, guardian).evidence, .attested)
+
+        let vault = facts()
+        let lower = Attestation(claim: .passcodeVault, selfTested: true, vaultCreatedAt: vault.createdAt, confirmedAt: start)
+        let verified = lock(.guardianRequestAccepted, lower, vault: vault)
+        XCTAssertEqual(verified.level, .familyGuardian)
+        XCTAssertFalse(verified.selfTested, "a self-test belongs to the level it was given for")
+    }
+
+    func testDamagedOrMalformedConfirmationNeverRaisesTheLevel() throws {
+        XCTAssertNil(Attestation(storage: Data("damaged".utf8)))
+        XCTAssertNil(Attestation(storage: Data("{}".utf8)))
+        let reference = start.timeIntervalSinceReferenceDate
+        func json(_ fields: String) -> Data {
+            Data("{\(fields),\"selfTested\":false,\"confirmedAt\":\(reference)}".utf8)
+        }
+        XCTAssertNil(Attestation(storage: json("\"claim\":\"passcodeVault\"")), "a vault claim must name its vault")
+        XCTAssertNil(Attestation(storage: json("\"claim\":\"supervised\",\"vaultCreatedAt\":1")))
+        XCTAssertNil(Attestation(storage: json("\"claim\":\"verified\"")))
+        XCTAssertNotNil(Attestation(storage: json("\"claim\":\"supervised\"")))
+        let saved = Attestation(claim: .familyGuardian, selfTested: true, vaultCreatedAt: start, confirmedAt: start)
+        XCTAssertNil(saved.vaultCreatedAt, "only a vault claim names a vault")
+        XCTAssertEqual(Attestation(storage: saved.storage), saved)
+        let vault = facts()
+        let vaultClaim = Attestation(claim: .passcodeVault, vaultCreatedAt: vault.createdAt, confirmedAt: start)
+        let restored = try XCTUnwrap(Attestation(storage: vaultClaim.storage))
+        XCTAssertTrue(Policy.attestationApplies(restored, vault: vault, now: start), "survives being saved")
+    }
+
+    // MARK: Vault and commitment dates
+
+    private func vault(days: Int = 7, revealed: Bool = false) throws -> PasscodeVault {
+        var generator = SystemRandomNumberGenerator()
+        var made = try XCTUnwrap(PasscodeVaultPolicy.make(days: days, now: start, using: &generator))
+        if revealed { made.revealedAt = made.revealAt }
+        return made
+    }
+
+    func testNoDateOfferWithoutARunningCommitment() throws {
+        let sealed = try vault()
+        let now = start.addingTimeInterval(3600)
+        XCTAssertNil(VaultCommitmentDates.plan(vault: sealed, commitmentEnd: nil, now: now))
+        XCTAssertNil(VaultCommitmentDates.plan(vault: nil, commitmentEnd: nil, now: now))
+        XCTAssertNil(VaultCommitmentDates.plan(vault: nil, commitmentEnd: now, now: now), "an ended commitment")
+        XCTAssertNil(VaultCommitmentDates.plan(vault: nil, commitmentEnd: now.addingTimeInterval(-1), now: now))
+    }
+
+    func testDateOfferNeverShortensTheVault() throws {
+        let sealed = try vault(days: 30)
+        let now = start.addingTimeInterval(3600)
+        for end in [sealed.revealAt, sealed.revealAt.addingTimeInterval(-day), start.addingTimeInterval(2 * day)] {
+            XCTAssertNil(VaultCommitmentDates.plan(vault: sealed, commitmentEnd: end, now: now),
+                         "a vault that already lasts as long is left alone")
+        }
+        XCTAssertNil(VaultCommitmentDates.plan(vault: try vault(revealed: true),
+                                               commitmentEnd: start.addingTimeInterval(60 * day), now: now),
+                     "a shown passcode is the person's again")
+    }
+
+    func testDateOfferReachesTheCommitmentEndWithTheFewestDays() throws {
+        let sealed = try vault(days: 7)
+        let now = start.addingTimeInterval(3600)
+        let exact = try XCTUnwrap(VaultCommitmentDates.plan(vault: sealed,
+            commitmentEnd: sealed.revealAt.addingTimeInterval(7 * day), now: now))
+        XCTAssertNil(exact.createDays)
+        XCTAssertEqual(exact.extensions, [7])
+        XCTAssertEqual(exact.until, sealed.revealAt.addingTimeInterval(7 * day), "lands on the commitment's end")
+
+        for gapDays in [0.01, 1, 6.5, 8, 23, 29.9, 30, 31, 45, 100, 200] {
+            let end = sealed.revealAt.addingTimeInterval(gapDays * day)
+            let plan = try XCTUnwrap(VaultCommitmentDates.plan(vault: sealed, commitmentEnd: end, now: now), "\(gapDays)")
+            XCTAssertNil(plan.createDays)
+            XCTAssertTrue(plan.extensions.allSatisfy { [7, 30].contains($0) }, "only the vault's own steps")
+            XCTAssertGreaterThanOrEqual(plan.until, end, "never before the commitment ends")
+            XCTAssertLessThan(plan.until.timeIntervalSince(end), 7 * day, "\(gapDays): no week longer than needed")
+            XCTAssertEqual(plan.until, sealed.revealAt.addingTimeInterval(Double(plan.extensions.reduce(0, +)) * day))
+        }
+        XCTAssertEqual(VaultCommitmentDates.plan(vault: sealed, commitmentEnd: sealed.revealAt.addingTimeInterval(23 * day),
+                                                 now: now)?.extensions, [7, 7, 7, 7], "28 days, not 30")
+        XCTAssertEqual(VaultCommitmentDates.plan(vault: sealed, commitmentEnd: sealed.revealAt.addingTimeInterval(30 * day),
+                                                 now: now)?.extensions, [30], "same days, fewer steps")
+    }
+
+    func testANewPasscodeForACommitmentUsesTheShortestCoveringDuration() throws {
+        let now = start
+        func plan(_ days: Double) throws -> VaultCommitmentDates.Plan {
+            try XCTUnwrap(VaultCommitmentDates.plan(vault: nil, commitmentEnd: now.addingTimeInterval(days * day), now: now))
+        }
+        XCTAssertEqual(try plan(0.5), .init(createDays: 1, extensions: [], until: now.addingTimeInterval(day)))
+        XCTAssertEqual(try plan(5), .init(createDays: 7, extensions: [], until: now.addingTimeInterval(7 * day)))
+        XCTAssertEqual(try plan(7), .init(createDays: 7, extensions: [], until: now.addingTimeInterval(7 * day)))
+        XCTAssertEqual(try plan(31), .init(createDays: 1, extensions: [30], until: now.addingTimeInterval(31 * day)))
+        XCTAssertEqual(try plan(90), .init(createDays: 90, extensions: [], until: now.addingTimeInterval(90 * day)))
+        for days in [0.01, 2, 8, 14.5, 37, 60, 91, 120, 250, 365] {
+            let result = try plan(days)
+            let created = try XCTUnwrap(result.createDays)
+            XCTAssertTrue(PasscodeVaultPolicy.durations.contains(created))
+            XCTAssertGreaterThanOrEqual(result.until, now.addingTimeInterval(days * day))
+            XCTAssertLessThan(result.until.timeIntervalSince(now.addingTimeInterval(days * day)), 7 * day, "\(days)")
+            XCTAssertLessThanOrEqual(result.until.timeIntervalSince(now), PasscodeVaultPolicy.maximumSeal)
+        }
+    }
+
+    func testDateOfferStaysWithinTheLongestSeal() throws {
+        var extended = try vault(days: 90)
+        for _ in 0..<7 { extended = try XCTUnwrap(PasscodeVaultPolicy.extending(extended, byDays: 30)) }  // 300 days
+        let now = start.addingTimeInterval(3600)
+        XCTAssertNil(VaultCommitmentDates.plan(vault: extended, commitmentEnd: extended.revealAt.addingTimeInterval(100 * day),
+                                               now: now), "past 366 days the vault would refuse, so nothing is offered")
+        XCTAssertNotNil(VaultCommitmentDates.plan(vault: extended, commitmentEnd: extended.revealAt.addingTimeInterval(60 * day),
+                                                  now: now))
+        XCTAssertNil(VaultCommitmentDates.plan(vault: nil, commitmentEnd: now.addingTimeInterval(400 * day), now: now))
+        XCTAssertNil(VaultCommitmentDates.extensions(covering: .infinity, room: 366 * day))
+        XCTAssertEqual(VaultCommitmentDates.extensions(covering: 0, room: 0), [])
+    }
+
+    @MainActor func testApplyingTheOfferThroughTheVaultLandsOnItsDate() throws {
+        let clock = start
+        let controller = PasscodeVaultController(storage: MemoryPasscodeVaultStorage(), clock: { clock })
+        controller.create(days: 7)
+        controller.seal()
+        let before = try XCTUnwrap(controller.vault)
+        let end = before.revealAt.addingTimeInterval(12 * day)
+        let plan = try XCTUnwrap(VaultCommitmentDates.plan(vault: before, commitmentEnd: end, now: clock))
+        VaultCommitmentDates.apply(plan, to: controller)
+        XCTAssertEqual(controller.vault?.revealAt, plan.until)
+        XCTAssertEqual(controller.vault?.passcode, before.passcode, "the same passcode, kept longer")
+        XCTAssertEqual(controller.phase, .sealed(until: plan.until))
+
+        let fresh = PasscodeVaultController(storage: MemoryPasscodeVaultStorage(), clock: { clock })
+        let newPlan = try XCTUnwrap(VaultCommitmentDates.plan(vault: nil,
+            commitmentEnd: clock.addingTimeInterval(45 * day), now: clock))
+        VaultCommitmentDates.apply(newPlan, to: fresh)
+        XCTAssertEqual(fresh.vault?.revealAt, newPlan.until)
+        guard case .setup? = fresh.phase else { return XCTFail("a new passcode is shown for its setup window") }
+
+        VaultCommitmentDates.apply(newPlan, to: controller)
+        XCTAssertEqual(controller.vault?.revealAt, plan.until, "a plan for a new passcode never touches an existing one")
+    }
+
+    // MARK: Guided order
+
+    func testStartingACommitmentWithNoLayerNeedsASecondConfirmation() {
+        XCTAssertEqual(CommitmentStartFlow.afterFirstConfirmation(hasBlockingLayer: true), .start)
+        XCTAssertEqual(CommitmentStartFlow.afterFirstConfirmation(hasBlockingLayer: false), .confirmNothingLocked)
+        XCTAssertEqual(CommitmentStartFlow.confirmationsNeeded(hasBlockingLayer: true), 1)
+        XCTAssertEqual(CommitmentStartFlow.confirmationsNeeded(hasBlockingLayer: false), 2)
+    }
+
+    @MainActor func testUncheckedProtectionCountsAsNoLayerForTheCommitment() {
+        let controller = ProtectionController(commitmentStore: MemoryCommitmentStore())
+        XCTAssertFalse(controller.hasBlockingConfiguration)
+        XCTAssertEqual(CommitmentStartFlow.confirmationsNeeded(hasBlockingLayer: controller.hasBlockingConfiguration), 2)
+    }
+
+    func testSetupGuideAsksForLayersThenCommitmentThenVault() {
+        XCTAssertEqual(SetupGuide.Step.allCases, [.layers, .commitment, .vault])
+        func statuses(_ layer: Bool, _ commitment: Bool, _ vault: Bool) -> [SetupGuide.Status] {
+            SetupGuide.Step.allCases.map {
+                SetupGuide.status(of: $0, hasBlockingLayer: layer, commitmentActive: commitment, vaultHoldsPasscode: vault)
+            }
+        }
+        XCTAssertEqual(statuses(false, false, false), [.next, .later, .later])
+        XCTAssertEqual(statuses(true, false, false), [.done, .next, .later])
+        XCTAssertEqual(statuses(true, true, false), [.done, .done, .next])
+        XCTAssertEqual(statuses(true, true, true), [.done, .done, .done])
+        XCTAssertEqual(statuses(false, true, false), [.next, .done, .later], "a commitment with no layer sends you back")
+        XCTAssertEqual(statuses(false, false, true), [.next, .later, .done])
+    }
+
+    func testSetupHonestyTextShipsInEnglishAndArabic() throws {
+        let claims = Attestation.Claim.allCases
+        let keys = Policy.LockLevel.allCases.map(\.rawValue)
+            + [Policy.LockEvidence.verified, .attested].map(\.rawValue)
+            + SetupGuide.Step.allCases.map(\.rawValue)
+            + claims.map(LockConfirmationRows.confirmKey) + claims.map(LockConfirmationRows.confirmBodyKey)
+            + claims.map(LockConfirmationRows.confirmedKey)
+            + ["lock.title", "lock.evidence.none", "lock.selfTested", "lock.stale", "lock.ladder", "lock.selfTest",
+               "lock.withdraw", "lock.confirm.hint", "dates.commitmentUntil", "dates.vaultUntil", "dates.vaultEarlier",
+               "dates.neverEarlier", "vault.match", "vault.matchBody", "vault.matchCreateBody", "vault.moreLocks",
+               "vault.writeDown", "vault.appleGuide", "commitment.empty.title", "commitment.empty.body %lld",
+               "commitment.shortScopeGuided", "commitment.screenTimeLostSetup", "guide.title"]
+        for language in ["en", "ar"] {
+            let path = try XCTUnwrap(Bundle.main.path(forResource: language, ofType: "lproj"))
+            let localized = try XCTUnwrap(Bundle(path: path))
+            for key in keys {
+                XCTAssertNotEqual(localized.localizedString(forKey: key, value: nil, table: nil), key, "\(language): \(key)")
+            }
+        }
+    }
+
+    func testVaultGuideNamesTheOtherContentAndPrivacyLocksInBothLanguages() throws {
+        func text(_ language: String, _ key: String) throws -> String {
+            let bundle = try XCTUnwrap(Bundle(path: try XCTUnwrap(Bundle.main.path(forResource: language, ofType: "lproj"))))
+            return bundle.localizedString(forKey: key, value: nil, table: nil)
+        }
+        let english = try text("en", "vault.moreLocks")
+        for setting in ["Account Changes", "Passcode Changes", "Installing Apps", "Content & Privacy"] {
+            XCTAssertTrue(english.contains(setting), setting)
+        }
+        XCTAssertTrue(try text("en", "vault.writeDown").contains("write it down"))
+        let arabic = try text("ar", "vault.moreLocks")
+        for setting in ["تغييرات الحساب", "تغييرات رمز الدخول", "تثبيت التطبيقات", "قيود المحتوى والخصوصية"] {
+            XCTAssertTrue(arabic.contains(setting), setting)
+        }
+        XCTAssertTrue(try text("ar", "vault.writeDown").contains("كتابته"))
+    }
+}

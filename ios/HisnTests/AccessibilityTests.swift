@@ -116,6 +116,72 @@ final class AccessibilityTests: XCTestCase {
         }
     }
 
+    /// The guided-setup rows: a running commitment, a sealed vault that opens before it with the
+    /// offer to keep it longer, both dates, and a confirmed (not verified) lock in readiness.
+    @MainActor func testGuidedSetupWithCommitmentVaultAndConfirmedLockRenders() async throws {
+        let suite = "hisn.tests.lock." + UUID().uuidString
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let now = Date()
+        let vault = PasscodeVaultController(storage: MemoryPasscodeVaultStorage(), clock: { now })
+        vault.create(days: 7)
+        vault.seal()
+        let facts = try XCTUnwrap(vault.facts)
+        defaults.set(MobileProtectionPolicy.LockAttestation(claim: .passcodeVault, selfTested: true,
+                                                            vaultCreatedAt: facts.createdAt, confirmedAt: now).storage,
+                     forKey: MobileProtectionPolicy.lockAttestationKey)
+        let protection = ProtectionController(commitmentStore: MemoryCommitmentStore())
+        protection.startCommitment(days: 30)
+        XCTAssertTrue(protection.commitmentActive)
+        XCTAssertNotNil(VaultCommitmentDates.plan(vault: vault.vault, commitmentEnd: protection.commitment?.deadline, now: now),
+                        "the vault opens first, so the offer is on screen")
+        let lock = MobileProtectionPolicy.removalProtection(removal: protection.removal,
+            attestation: MobileProtectionPolicy.LockAttestation(storage: defaults.data(forKey: MobileProtectionPolicy.lockAttestationKey) ?? Data()),
+            vault: facts, now: protection.now)
+        XCTAssertEqual(lock.level, .passcodeVault)
+        XCTAssertEqual(lock.evidence, .attested)
+
+        let cases: [(CGSize, DynamicTypeSize)] = [
+            (CGSize(width: 390, height: 844), .accessibility5),
+            (CGSize(width: 1024, height: 1366), .large),
+        ]
+        // Setup is long and lists are lazy, so its last sections are also rendered on their own.
+        let lateSections = List {
+            CommitmentSection(protection: protection, vault: vault)
+            PasscodeVaultSection(vault: vault, protection: protection)
+            Section { LockConfirmationRows(claims: [.familyGuardian, .supervised], vault: facts, now: now) }
+            ScreenTimeSection(protection: protection)
+        }
+        for language in ["en", "ar"] {
+            for (size, typeSize) in cases {
+                for tab in 0...2 {
+                    let view = Group {
+                        if tab < 2 {
+                            MobileRootView(protection: protection, language: .constant(language),
+                                           initialTab: tab, vault: vault)
+                        } else {
+                            lateSections.listStyle(.insetGrouped)
+                        }
+                    }
+                        .defaultAppStorage(defaults)
+                        .environment(\.locale, Locale(identifier: language))
+                        .environment(\.layoutDirection, language == "ar" ? .rightToLeft : .leftToRight)
+                        .environment(\.dynamicTypeSize, typeSize)
+                    let image = try await render(view, size: size)
+                    XCTAssertEqual(image.size, size)
+                    let pixels = try XCTUnwrap(image.cgImage?.dataProvider?.data) as Data
+                    let shades = Set(stride(from: 0, to: pixels.count, by: 97).map { pixels[$0] })
+                    XCTAssertGreaterThan(shades.count, 8, "A blank image is not evidence of rendered UI")
+                    let attachment = XCTAttachment(image: image)
+                    let part = tab < 2 ? "tab\(tab)" : "late-sections"
+                    attachment.name = "guided-\(language)-\(Int(size.width))x\(Int(size.height))-\(part)-\(typeSize)"
+                    attachment.lifetime = .keepAlways
+                    add(attachment)
+                }
+            }
+        }
+    }
+
     @MainActor private func render<V: View>(_ view: V, size: CGSize) async throws -> UIImage {
         let host = UIHostingController(rootView: view.frame(width: size.width, height: size.height))
         let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)

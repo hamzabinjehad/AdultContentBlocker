@@ -9,12 +9,16 @@ struct MobileRootView: View {
     @State private var confirmation: Confirmation?
     @State private var selectedTab = 0
     @StateObject private var usage = AppUsageController()
-    @StateObject private var vault = PasscodeVaultController()
+    @StateObject private var vault: PasscodeVaultController
+    /// The person's own confirmation of a lock Hisn cannot read; empty means none.
+    @AppStorage(MobileProtectionPolicy.lockAttestationKey) private var lockAttestationData = Data()
 
-    init(protection: ProtectionController, language: Binding<String>, initialTab: Int = 0) {
+    init(protection: ProtectionController, language: Binding<String>, initialTab: Int = 0,
+         vault: PasscodeVaultController? = nil) {
         self.protection = protection
         self._language = language
         self._selectedTab = State(initialValue: (0...2).contains(initialTab) ? initialTab : 0)
+        self._vault = StateObject(wrappedValue: vault ?? PasscodeVaultController())
     }
 
     var body: some View {
@@ -70,7 +74,7 @@ struct MobileRootView: View {
         List {
             verifiedSetup(compact: true)
             readiness
-            CommitmentSection(protection: protection)
+            CommitmentSection(protection: protection, vault: vault)
             Section {
                 LabeledContent("sites.title") {
                     Text(verbatim: "\(protection.customSites.count)").monospacedDigit()
@@ -100,15 +104,14 @@ struct MobileRootView: View {
         .background(Color(uiColor: .systemGroupedBackground))
     }
 
+    /// Guided order: status, then the blocking layers, then the commitment that locks them,
+    /// then the passcode vault and the stronger locks that keep Hisn from being removed.
     private var setup: some View {
         List {
             verifiedSetup(compact: false)
             readiness
-            CommitmentSection(protection: protection)
-            PasscodeVaultSection(vault: vault)
-            CustomSitesSection(protection: protection)
-            BrowserFirstSection()
-            AppUsageSection(protection: protection, usage: usage)
+            setupGuide
+            // Step 1: blocking layers.
             Section("safari.title") {
                 Text("safari.steps")
                 Button("safari.reload") { Task { await protection.reloadSafari() } }
@@ -116,6 +119,10 @@ struct MobileRootView: View {
                 Text("safari.scope").font(.footnote).foregroundStyle(.secondary)
             }
             safariParts
+            BrowserFirstSection()
+            ScreenTimeSection(protection: protection)
+            CustomSitesSection(protection: protection)
+            AppUsageSection(protection: protection, usage: usage)
             Section("dns.title") {
                 Text("dns.steps")
                 Button("dns.prepare") { confirmation = .dns }.disabled(protection.busy)
@@ -132,6 +139,9 @@ struct MobileRootView: View {
                 Text("network.scope").font(.footnote).foregroundStyle(.secondary)
                 Link("network.guide", destination: URL(string: "https://developers.cloudflare.com/1.1.1.1/setup/router/")!)
             }
+            // Step 2: the commitment. Step 3: the passcode vault, then stronger locks.
+            CommitmentSection(protection: protection, vault: vault)
+            PasscodeVaultSection(vault: vault, protection: protection)
             removalSection
             errorRow
         }
@@ -214,6 +224,7 @@ struct MobileRootView: View {
             readinessRow("dns.title", ready: protection.dns == .enabled, detail: Text(dnsLabel))
             readinessRow("screentime.layer", ready: protection.screenTimeConfigured,
                 detail: Text(LocalizedStringKey(protection.screenTimeState.rawValue)))
+            lockRow
             Text("plan.scope").font(.footnote).foregroundStyle(.secondary)
             if protection.checkedAt == nil {
                 Label("plan.checkFirst", systemImage: "arrow.clockwise")
@@ -224,24 +235,75 @@ struct MobileRootView: View {
 
     private var enabledSafariParts: Int { protection.safari.filter { $0 == true }.count }
 
-    /// Title and status side by side, stacked at accessibility text sizes so neither is cut off.
     private func readinessRow(_ title: LocalizedStringKey, ready: Bool, detail: Text? = nil) -> some View {
+        readinessRow(title, detail: detail) { readinessStatus(ready) }
+    }
+
+    /// Title and status side by side, stacked at accessibility text sizes so neither is cut off.
+    private func readinessRow<Status: View>(_ title: LocalizedStringKey, detail: Text? = nil,
+                                            @ViewBuilder status: () -> Status) -> some View {
         Group {
             if dynamicTypeSize.isAccessibilitySize {
                 VStack(alignment: .leading, spacing: 4) {
                     readinessTitle(title, detail: detail)
-                    readinessStatus(ready)
+                    status()
                 }
             } else {
                 HStack {
                     readinessTitle(title, detail: detail)
                     Spacer()
-                    readinessStatus(ready)
+                    status()
                 }
             }
         }
         .font(.subheadline)
         .accessibilityElement(children: .combine)
+    }
+
+    /// The person's lock level from the plan's ladder. Hisn cannot read the Screen Time passcode,
+    /// the deletion setting or supervision, so those show as confirmed by the person, never verified.
+    private var removalProtection: MobileProtectionPolicy.RemovalProtection {
+        MobileProtectionPolicy.removalProtection(removal: protection.removal,
+            attestation: MobileProtectionPolicy.LockAttestation(storage: lockAttestationData),
+            vault: vault.facts, now: protection.now)
+    }
+
+    @ViewBuilder private var lockRow: some View {
+        let lock = removalProtection
+        let level = Text(LocalizedStringKey(lock.level.rawValue))
+        readinessRow("lock.title",
+                     detail: lock.selfTested ? level + Text(verbatim: "\n") + Text("lock.selfTested") : level) {
+            switch lock.evidence {
+            case .verified?:
+                Label("lock.evidence.verified", systemImage: "checkmark.seal").foregroundStyle(HisnPalette.good)
+            case .attested?:
+                Label("lock.evidence.attested", systemImage: "person.fill.checkmark").foregroundStyle(.secondary)
+            case nil:
+                Label("lock.evidence.none", systemImage: "lock.open").foregroundStyle(.secondary)
+            }
+        }
+        .accessibilityIdentifier("plan.removalProtection")
+        if lock.staleAttestation {
+            Text("lock.stale").font(.footnote).foregroundStyle(.secondary)
+        }
+    }
+
+    /// Setup's three steps in order, each with what Hisn can see of it.
+    private var setupGuide: some View {
+        Section("guide.title") {
+            Text("guide.body").font(.footnote).foregroundStyle(.secondary)
+            ForEach(SetupGuide.Step.allCases, id: \.self) { step in
+                readinessRow(LocalizedStringKey(step.rawValue)) {
+                    switch SetupGuide.status(of: step, hasBlockingLayer: protection.hasBlockingConfiguration,
+                                             commitmentActive: protection.commitmentActive,
+                                             vaultHoldsPasscode: vault.facts?.holdsPasscode(at: protection.now) == true) {
+                    case .done: Label("guide.done", systemImage: "checkmark.circle").foregroundStyle(HisnPalette.good)
+                    case .next: Label("guide.next", systemImage: "arrow.forward.circle")
+                    case .later: Label("guide.later", systemImage: "circle").foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
     }
 
     private func readinessTitle(_ title: LocalizedStringKey, detail: Text?) -> some View {
@@ -270,6 +332,10 @@ struct MobileRootView: View {
                 Text("removal.setup.mobile").font(.callout).foregroundStyle(.secondary)
                 Button("status.refresh") { Task { await protection.refresh() } }
                     .disabled(protection.busy)
+            }
+            DisclosureGroup("lock.confirmOther") {
+                Text("lock.ladder").font(.footnote).foregroundStyle(.secondary)
+                LockConfirmationRows(claims: [.familyGuardian, .supervised], vault: vault.facts, now: protection.now)
             }
             Link("removal.guide", destination: URL(string: "https://support.apple.com/en-gb/105121")!)
         }
@@ -339,6 +405,118 @@ struct MobileRootView: View {
         case .enabled: return "dns.enabled"
         case .differentConfiguration: return "dns.different"
         case .unavailable: return "dns.unavailable"
+        }
+    }
+}
+
+/// Setup's order: blocking layers, then the commitment that locks them, then the passcode vault.
+/// Each raw value is the step's text key.
+enum SetupGuide {
+    enum Step: String, CaseIterable {
+        case layers = "guide.layers"
+        case commitment = "guide.commitment"
+        case vault = "guide.vault"
+    }
+    enum Status: Equatable { case done, next, later }
+
+    /// The first step not done is next. A commitment running with no layer on sends the person
+    /// back to step 1 rather than reading as progress.
+    static func status(of step: Step, hasBlockingLayer: Bool, commitmentActive: Bool,
+                       vaultHoldsPasscode: Bool) -> Status {
+        func done(_ step: Step) -> Bool {
+            switch step {
+            case .layers: return hasBlockingLayer
+            case .commitment: return commitmentActive
+            case .vault: return vaultHoldsPasscode
+            }
+        }
+        if done(step) { return .done }
+        return Step.allCases.first { !done($0) } == step ? .next : .later
+    }
+}
+
+/// The person's own confirmation of a lock Hisn cannot read. It is saved on this device and
+/// always shown as confirmed by them, never as verified. The self-test is optional.
+struct LockConfirmationRows: View {
+    typealias Claim = MobileProtectionPolicy.LockAttestation.Claim
+    let claims: [Claim]
+    let vault: MobileProtectionPolicy.VaultFacts?
+    let now: Date
+    @AppStorage(MobileProtectionPolicy.lockAttestationKey) private var data = Data()
+    @State private var pending: Claim?
+
+    private var current: MobileProtectionPolicy.LockAttestation? {
+        MobileProtectionPolicy.LockAttestation(storage: data)
+    }
+
+    /// Claims this place may record: all of them, or only higher ones while another still counts.
+    private var offered: [Claim] {
+        guard let current, MobileProtectionPolicy.attestationApplies(current, vault: vault, now: now) else { return claims }
+        return claims.filter { $0.level > current.claim.level }
+    }
+
+    var body: some View {
+        let applies = current.map { MobileProtectionPolicy.attestationApplies($0, vault: vault, now: now) } ?? false
+        if let current, applies, claims.contains(current.claim) {
+            Label(LocalizedStringKey(Self.confirmedKey(current.claim)), systemImage: "person.fill.checkmark")
+                .font(.callout)
+            Toggle("lock.selfTest", isOn: selfTested)
+            Button("lock.withdraw") { data = Data() }
+        } else {
+            if current != nil, !applies {
+                Text("lock.stale").font(.footnote).foregroundStyle(.secondary)
+                Button("lock.withdraw") { data = Data() }
+            }
+            ForEach(offered, id: \.self) { claim in
+                Button(LocalizedStringKey(Self.confirmKey(claim))) { pending = claim }
+                    .disabled(claim == .passcodeVault && vault?.holdsPasscode(at: now) != true)
+                    .alert("lock.confirm.title",
+                           isPresented: Binding(get: { pending == claim }, set: { if !$0 { pending = nil } })) {
+                        Button("lock.confirm.button") { confirm(claim) }
+                        Button("cancel", role: .cancel) { }
+                    } message: {
+                        Text(LocalizedStringKey(Self.confirmBodyKey(claim)))
+                    }
+            }
+            if !offered.isEmpty {
+                Text("lock.confirm.hint").font(.footnote).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var selfTested: Binding<Bool> {
+        Binding(get: { current?.selfTested == true }, set: { value in
+            guard var next = current else { return }
+            next.selfTested = value
+            data = next.storage
+        })
+    }
+
+    private func confirm(_ claim: Claim) {
+        if claim == .passcodeVault, vault?.holdsPasscode(at: now) != true { return }
+        data = MobileProtectionPolicy.LockAttestation(claim: claim, vaultCreatedAt: vault?.createdAt,
+                                                      confirmedAt: Date()).storage
+    }
+
+    static func confirmKey(_ claim: Claim) -> String {
+        switch claim {
+        case .passcodeVault: return "lock.confirm.passcodeVault"
+        case .familyGuardian: return "lock.confirm.familyGuardian"
+        case .supervised: return "lock.confirm.supervised"
+        }
+    }
+    static func confirmBodyKey(_ claim: Claim) -> String {
+        switch claim {
+        case .passcodeVault: return "lock.confirmBody.passcodeVault"
+        case .familyGuardian: return "lock.confirmBody.familyGuardian"
+        case .supervised: return "lock.confirmBody.supervised"
+        }
+    }
+    static func confirmedKey(_ claim: Claim) -> String {
+        switch claim {
+        case .passcodeVault: return "lock.confirmed.passcodeVault"
+        case .familyGuardian: return "lock.confirmed.familyGuardian"
+        case .supervised: return "lock.confirmed.supervised"
         }
     }
 }
