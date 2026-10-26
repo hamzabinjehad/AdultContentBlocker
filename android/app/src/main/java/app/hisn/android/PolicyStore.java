@@ -8,6 +8,7 @@ import android.provider.Settings;
 import app.hisn.core.CommitmentClock;
 import app.hisn.core.DailyAppSchedule;
 import app.hisn.core.DomainPolicy;
+import app.hisn.core.PolicyChangeError;
 import app.hisn.core.WordMatcher;
 import app.hisn.core.WordRuleList;
 
@@ -23,6 +24,9 @@ public final class PolicyStore {
         if (shared == null) shared = new PolicyStore(context);
         return shared;
     }
+    /** Most apps one list may hold. */
+    public static final int MAX_APPS = 200;
+
     public static final class Snapshot {
         public final DomainPolicy domains;
         public final WordMatcher words;
@@ -70,7 +74,8 @@ public final class PolicyStore {
         }
 
         private static Set<String> packages(Set<String> input) {
-            if (input == null || input.size() > 200) throw new IllegalArgumentException("Invalid packages");
+            if (input == null) throw new IllegalArgumentException("Invalid packages");
+            if (input.size() > MAX_APPS) throw new PolicyChangeError.Invalid(PolicyChangeError.TOO_MANY_APPS, "Too many apps");
             Set<String> result = new LinkedHashSet<>();
             for (String name : input) {
                 if (name == null || name.length() > 255 || !name.matches("[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z0-9_]+)+")) {
@@ -134,18 +139,20 @@ public final class PolicyStore {
     public synchronized void checkpoint() {
         CommitmentClock next = commitment.checkpoint(SystemClock.elapsedRealtime(), boot());
         if (!prefs.edit().putLong("remaining", next.remainingAtCheckpoint).putLong("elapsed", next.elapsedAtCheckpoint)
-                .putInt("boot", next.bootAtCheckpoint).commit()) throw new IllegalStateException("Cannot save commitment");
+                .putInt("boot", next.bootAtCheckpoint).commit()) throw saveFailed("Cannot save commitment");
         commitment = next;
     }
 
     public synchronized void startCommitment(int days) {
         if (days != 1 && days != 7 && days != 30 && days != 90) throw new IllegalArgumentException("Invalid duration");
-        if (!snapshot.hasConfiguredRestrictions()) throw new IllegalStateException("Choose restrictions before a commitment");
+        if (!snapshot.hasConfiguredRestrictions())
+            throw new PolicyChangeError.Refused(PolicyChangeError.NEEDS_RULES, "Choose restrictions before a commitment");
         long duration = days * 86400000L;
-        if (duration < remainingMillis()) throw new IllegalStateException("Cannot shorten commitment");
+        if (duration < remainingMillis())
+            throw new PolicyChangeError.Refused(PolicyChangeError.COMMITMENT, "Cannot shorten commitment");
         CommitmentClock next = new CommitmentClock(duration, SystemClock.elapsedRealtime(), boot());
         if (!prefs.edit().putLong("remaining", duration).putLong("elapsed", next.elapsedAtCheckpoint)
-                .putInt("boot", next.bootAtCheckpoint).commit()) throw new IllegalStateException("Cannot save commitment");
+                .putInt("boot", next.bootAtCheckpoint).commit()) throw saveFailed("Cannot save commitment");
         commitment = next;
     }
 
@@ -177,7 +184,7 @@ public final class PolicyStore {
                 || (previous.adultWordsEnabled && !next.adultWordsEnabled)
                 || (previous.visualEnabled && !next.visualEnabled)
                 || !next.schedule.preserves(previous.schedule, next.blockedApps))) {
-            throw new IllegalStateException("Commitment prevents weakening rules");
+            throw new PolicyChangeError.Refused(PolicyChangeError.COMMITMENT, "Commitment prevents weakening rules");
         }
         if (!prefs.edit().putString("domains", String.join("\n", next.domains.blockedRules()))
                 .putString("words", String.join("\n", next.words.configuredRules()))
@@ -187,10 +194,15 @@ public final class PolicyStore {
                 .putBoolean("schedule_enabled", next.schedule.enabled)
                 .putInt("schedule_start", next.schedule.startMinute).putInt("schedule_end", next.schedule.endMinute)
                 .putStringSet("schedule_apps", next.schedule.apps).commit()) {
-            throw new IllegalStateException("Cannot save rules");
+            throw saveFailed("Cannot save rules");
         }
         snapshot = next;
-        checkpoint();
+        // The rules are saved; commitment progress is saved again within a minute.
+        try { checkpoint(); } catch (RuntimeException unsaved) { /* Keep the last saved progress. */ }
+    }
+
+    private static PolicyChangeError.Refused saveFailed(String message) {
+        return new PolicyChangeError.Refused(PolicyChangeError.SAVE_FAILED, message);
     }
 
     public String domainText() { return String.join("\n", snapshot.domains.blockedRules()); }

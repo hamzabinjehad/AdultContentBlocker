@@ -17,9 +17,11 @@
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@drawable/ic_hisn"
         android:label="${hisnAppLabel}"
+        android:localeConfig="@xml/locales_config"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
-        android:usesCleartextTraffic="false">
+        android:usesCleartextTraffic="false"
+        tools:targetApi="33">
         <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -10,12 +10,14 @@ import android.view.accessibility.AccessibilityNodeInfo;
 
 import java.util.ArrayDeque;
 import java.util.Set;
+import app.hisn.core.InspectionHealth;
 import app.hisn.core.VisibleTextSample;
 
 /** Explicitly selected apps only. Does not consume event text or retain screen content. */
 public final class TextGuardService extends AccessibilityService {
     public static volatile boolean connected;
-    public static volatile boolean lastInspectionPartial;
+    /** Set by an incomplete or failed inspection; cleared by a later complete one. */
+    public static final InspectionHealth inspection = new InspectionHealth();
     // Ephemeral outcome only: never screen text, matched rules or app identities.
     static volatile String inspectionOutcome = "not-run";
     static volatile long inspectedScreens;
@@ -55,7 +57,7 @@ public final class TextGuardService extends AccessibilityService {
                     .putExtra("word", pendingWordReason).putExtra("schedule", pendingScheduleReason)
                     .putExtra("visual", pendingVisualReason));
         } catch (RuntimeException unavailable) {
-            lastInspectionPartial = true;
+            inspection.record(InspectionHealth.Outcome.INCOMPLETE);
             inspectionOutcome = "restriction-screen-unavailable";
         }
     };
@@ -70,7 +72,7 @@ public final class TextGuardService extends AccessibilityService {
             excluded = ChosenApps.excluded(this);
             inspectCurrentSelectedWindow();
         } catch (RuntimeException unavailable) {
-            lastInspectionPartial = true;
+            inspection.record(InspectionHealth.Outcome.INCOMPLETE);
             inspectionOutcome = "setup-unavailable";
         }
     }
@@ -138,7 +140,7 @@ public final class TextGuardService extends AccessibilityService {
                 handler.postDelayed(inspect, 150);
             }
         } catch (RuntimeException unavailable) {
-            lastInspectionPartial = true;
+            inspection.record(InspectionHealth.Outcome.INCOMPLETE);
             inspectionOutcome = "settings-unavailable";
         }
     }
@@ -152,7 +154,7 @@ public final class TextGuardService extends AccessibilityService {
             root = getRootInActiveWindow();
             if (root == null) {
                 inspectionOutcome = "no-root";
-                if (!retryRoot(name)) lastInspectionPartial = true;
+                if (!retryRoot(name)) inspection.record(InspectionHealth.Outcome.INCOMPLETE);
                 return;
             }
             PolicyStore.Snapshot rules = PolicyStore.get(this).snapshot();
@@ -170,12 +172,16 @@ public final class TextGuardService extends AccessibilityService {
                     return;
                 }
             }
-            if (rules.blockedApps.contains(name)) { intervene(false); return; }
+            // Blocked, scheduled and nothing-to-read decisions are complete inspections too.
+            if (rules.blockedApps.contains(name)) {
+                inspection.record(InspectionHealth.Outcome.COMPLETE); intervene(false); return;
+            }
             java.time.LocalTime local = java.time.LocalTime.now();
             if (rules.schedule.blocks(name, local.getHour() * 60 + local.getMinute())) {
-                intervene(false, true); return;
+                inspection.record(InspectionHealth.Outcome.COMPLETE); intervene(false, true); return;
             }
             if (!rules.scannedApps.contains(name) || !rules.hasWordProtection()) {
+                inspection.record(InspectionHealth.Outcome.COMPLETE);
                 // A static allowed screen must still be blocked when its daily window begins.
                 if (rules.schedule.isConfigured() && rules.schedule.apps.contains(name)) scheduleHeartbeat();
                 return;
@@ -184,7 +190,8 @@ public final class TextGuardService extends AccessibilityService {
             VisibleTextSample sample = leafSample(root);
             inspectedScreens++;
             app.hisn.core.AdultTextPolicy adult = AdultPolicyAssets.policy();
-            lastInspectionPartial = sample.isPartial() || (rules.adultWordsEnabled && adult == null);
+            inspection.record(sample.isPartial() || (rules.adultWordsEnabled && adult == null)
+                    ? InspectionHealth.Outcome.INCOMPLETE : InspectionHealth.Outcome.COMPLETE);
             String text = sample.text();
             inspectionOutcome = text.isEmpty() ? "no-readable-leaves" : "no-word-match";
             boolean matches = !text.isEmpty() && !rules.words.matches(text).isEmpty();
@@ -204,7 +211,7 @@ public final class TextGuardService extends AccessibilityService {
         } catch (RuntimeException unavailable) {
             // No unverified decision when a node changes or settings are unavailable.
             // Keep rechecking this app, more slowly, instead of going silent.
-            lastInspectionPartial = true;
+            inspection.record(InspectionHealth.Outcome.INCOMPLETE);
             inspectionOutcome = "inspection-failed";
             inspectionFailures++;
             if (name.equals(pendingPackage)) {

@@ -21,6 +21,8 @@ import android.system.StructPollfd;
 
 import app.hisn.core.DnsExchange;
 import app.hisn.core.DnsHealth;
+import app.hisn.core.DnsNotice;
+import app.hisn.core.SetupGuide;
 import app.hisn.core.DnsPacketKind;
 import app.hisn.core.DnsPolicy;
 import app.hisn.core.DnsTunnelProbe;
@@ -74,6 +76,7 @@ public final class DnsVpnService extends VpnService {
     }
     private static final String CHANNEL = "dns_filter";
     private static final String ALERT_CHANNEL = "dns_alerts";
+    private static final int STATUS_ID = 1;
     private static final int ALERT_ID = 2;
     private static final String PREFS = "hisn_dns";
     private static final String RESUME = "resume_after_boot";
@@ -236,15 +239,10 @@ public final class DnsVpnService extends VpnService {
     @Override public int onStartCommand(Intent intent, int flags, int startId) {
         if (session != null) return START_NOT_STICKY;
         try {
+            // Same channel id as before, so existing installs get the corrected name.
             getSystemService(NotificationManager.class).createNotificationChannel(
-                    new NotificationChannel(CHANNEL, getString(R.string.network), NotificationManager.IMPORTANCE_LOW));
-            PendingIntent open = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class),
-                    PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
-            Notification notification = new Notification.Builder(this, CHANNEL)
-                    .setSmallIcon(R.drawable.ic_hisn).setContentTitle(getString(R.string.dns_notification_title))
-                    .setContentText(getString(R.string.dns_notification_body)).setContentIntent(open)
-                    .setOngoing(true).build();
-            startForeground(1, notification);
+                    new NotificationChannel(CHANNEL, getString(R.string.dns_channel), NotificationManager.IMPORTANCE_LOW));
+            startForeground(STATUS_ID, statusNotification(DnsNotice.STARTING));
             setResumeRequested(this, true);
             getSystemService(NotificationManager.class).cancel(ALERT_ID);
             domains = 0; blocked.set(0); forwarded.set(0); errors.set(0); lastDnsFailure = "NONE";
@@ -277,6 +275,24 @@ public final class DnsVpnService extends VpnService {
         state = State.OFF;
         alert(R.string.dns_stopped_body);
         stopSelf();
+    }
+
+    /** The ongoing notification states the session as it is, never more than the dashboard does. */
+    private Notification statusNotification(DnsNotice notice) {
+        int text;
+        switch (notice) {
+            case FILTERING: text = R.string.dns_running; break;
+            case DEGRADED: text = R.string.dns_degraded; break;
+            case PRIVATE_DNS_BYPASS: text = R.string.dns_notification_private_dns; break;
+            default: text = R.string.dns_starting;
+        }
+        PendingIntent open = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class),
+                PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+        return new Notification.Builder(this, CHANNEL)
+                .setSmallIcon(R.drawable.ic_hisn).setContentTitle(getString(R.string.dns_notification_title))
+                .setContentText(getString(text))
+                .setStyle(new Notification.BigTextStyle().bigText(getString(text) + "\n" + getString(R.string.dns_notification_body)))
+                .setContentIntent(open).setOngoing(true).setOnlyAlertOnce(true).build();
     }
 
     private void alert(int body) {
@@ -317,6 +333,8 @@ public final class DnsVpnService extends VpnService {
         // strict mode fails closed, so it is never answered NXDOMAIN.
         private volatile String privateDnsName;
         private volatile boolean closed;
+        // Reader thread only: what the ongoing notification currently says.
+        private DnsNotice postedNotice = DnsNotice.STARTING;
         private volatile ParcelFileDescriptor tunnel;
         private volatile TlsDnsTransport transport;
         private DnsTunnelProbe checkProbe;
@@ -396,6 +414,7 @@ public final class DnsVpnService extends VpnService {
                     byte[] buffer = new byte[1501];
                     long checkpointAt = android.os.SystemClock.elapsedRealtime();
                     while (!closed) {
+                        refreshNotice();
                         emitTcp(tcp.poll(android.os.SystemClock.elapsedRealtime()), tcpExchange, tcpPolicy, output);
                         if (android.os.SystemClock.elapsedRealtime() - checkpointAt >= 60000) {
                             checkpointAt = android.os.SystemClock.elapsedRealtime();
@@ -490,6 +509,19 @@ public final class DnsVpnService extends VpnService {
                 if ((packet.flags & (Ipv4TcpPacket.SYN | Ipv4TcpPacket.ACK)) == Ipv4TcpPacket.SYN)
                     refusedTlsConnections.incrementAndGet();
                 else ignoredPackets.incrementAndGet();
+            }
+        }
+
+        /** Re-posts the ongoing notification only when what it says changes. Posted under CHECK_LOCK
+         * while this session is current, so it can never land after stopForeground removed it. */
+        private void refreshNotice() {
+            synchronized (CHECK_LOCK) {
+                if (closed || session != this) return;
+                DnsNotice next = DnsNotice.of(SetupGuide.Network.valueOf(state.name()), privateDnsStrict);
+                if (next == postedNotice || next == DnsNotice.STOPPED) return;
+                postedNotice = next;
+                try { getSystemService(NotificationManager.class).notify(STATUS_ID, statusNotification(next)); }
+                catch (RuntimeException unavailable) { /* The dashboard still shows the state. */ }
             }
         }
 

@@ -1,11 +1,15 @@
 #!/bin/sh
 set -eu
 cd "$(dirname "$0")"
+# English and Arabic resources: same keys, plurals and placeholders; every referenced key exists.
+python3 check-strings.py
+# Every bundled list source has its license text and an English and Arabic summary entry.
+python3 check-notices.py
 hisn_test_output=$(mktemp -d "${TMPDIR:-/tmp}/hisn-core.XXXXXX")
 # Test class files stay in a newly created temporary directory; no repo files are changed.
 hisn_java_bin=${JAVA_HOME:+$JAVA_HOME/bin/}
 "${hisn_java_bin}javac" -d "$hisn_test_output" core/src/main/java/app/hisn/core/*.java core/src/test/java/app/hisn/core/*.java
-for hisn_test in WordMatcher VisibleTextSample GuardHealth SetupGuide DomainPolicy BrowserCanary DnsPolicy DnsUdpTruncation DnsExchange DnsTunnelProbe DnsTunnelTcpProbe DnsReplyGuard Ipv4DnsPacket Ipv4TcpPacket DnsTcpServer DnsTcpFallback DnsPacketKind EncryptedDnsProviders DnsHealth CommitmentClock DailyAppSchedule VisualFrameGate VisualExecutionPolicy; do
+for hisn_test in WordMatcher VisibleTextSample GuardHealth SetupGuide DomainPolicy BrowserCanary DnsPolicy DnsUdpTruncation DnsExchange DnsTunnelProbe DnsTunnelTcpProbe DnsReplyGuard Ipv4DnsPacket Ipv4TcpPacket DnsTcpServer DnsTcpFallback DnsPacketKind EncryptedDnsProviders DnsHealth DnsNotice PolicyChangeError RemainingTime CommitmentClock DailyAppSchedule VisualFrameGate VisualExecutionPolicy InspectionHealth VisualHealth VisualDuty; do
     "${hisn_java_bin}java" -cp "$hisn_test_output" "app.hisn.core.${hisn_test}Test"
 done
 # Compile the actual release-only hook separately: it must remain a no-op without Android APIs.

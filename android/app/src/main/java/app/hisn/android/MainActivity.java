@@ -38,6 +38,7 @@ import app.hisn.core.WordRuleList;
 import app.hisn.core.GuardHealth;
 import app.hisn.core.SetupGuide;
 import app.hisn.core.DailyAppSchedule;
+import app.hisn.core.PolicyChangeError;
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.view.accessibility.AccessibilityManager;
 
@@ -126,6 +127,8 @@ public final class MainActivity extends Activity {
         setupNext.setOnClickListener(view -> nextSetupStep());
         heading(R.string.layers, 21);
         networkState = paragraph(R.string.network);
+        paragraph(R.string.network).setText(getString(R.string.dns_seed_version,
+                BuildConfig.DOMAIN_SEED_VERSION, seedDate(BuildConfig.DOMAIN_SEED_BUILT)));
         startDns = new Button(this);
         startDns.setText(R.string.dns_start);
         startDns.setAllCaps(false);
@@ -247,6 +250,13 @@ public final class MainActivity extends Activity {
                 result.setText(R.string.invalid);
             }
         });
+        heading(R.string.notices_title, 21);
+        paragraph(R.string.notices_help);
+        Button notices = new Button(this);
+        notices.setText(R.string.notices_open);
+        notices.setAllCaps(false);
+        root.addView(notices, layout());
+        notices.setOnClickListener(view -> Notices.show(this));
         showPage(savedInstanceState == null ? 0 : savedInstanceState.getInt("selectedPage", 0));
     }
 
@@ -353,7 +363,7 @@ public final class MainActivity extends Activity {
             }
         }
         GuardHealth guard = GuardHealth.evaluate(guardPermissionEnabled(), TextGuardService.connected,
-                accessibilityConfigured, settingsReadable, TextGuardService.lastInspectionPartial
+                accessibilityConfigured, settingsReadable, TextGuardService.inspection.incomplete()
                         || (settingsReadable && settings.snapshot().adultWordsEnabled && AdultPolicyAssets.state != AdultPolicyAssets.State.READY));
         if (guard.needsAttention || current == DnsVpnService.State.ERROR || current == DnsVpnService.State.DEGRADED
                 || privateDnsBypass || DnsVpnService.connectionCheck.state == DnsVpnService.CheckState.FAILED)
@@ -412,7 +422,7 @@ public final class MainActivity extends Activity {
             try {
                 long remaining = settings.remainingMillis();
                 commitmentState.setText(remaining == 0 ? getString(R.string.commitment)
-                        : getString(R.string.commitment_remaining, (remaining + 3599999) / 3600000));
+                        : getString(R.string.commitment_remaining, Durations.remaining(this, remaining)));
             } catch (RuntimeException unavailable) {
                 commitmentState.setText(R.string.policy_unavailable);
                 statusTitle.setText(R.string.protection_attention);
@@ -437,7 +447,11 @@ public final class MainActivity extends Activity {
         SetupGuide.Assets assets = !rules.adultWordsEnabled ? SetupGuide.Assets.DISABLED
                 : AdultPolicyAssets.state == AdultPolicyAssets.State.READY ? SetupGuide.Assets.READY
                 : AdultPolicyAssets.state == AdultPolicyAssets.State.ERROR ? SetupGuide.Assets.ERROR : SetupGuide.Assets.LOADING;
-        currentSetupStep = SetupGuide.next(appRules, guard, assets, SetupGuide.Network.valueOf(network.name()),
+        SetupGuide.Visual visual = !rules.visualEnabled ? SetupGuide.Visual.OFF
+                : Build.VERSION.SDK_INT < 34 || rules.scannedApps.isEmpty() || VisualGuard.health.shown().failure()
+                        ? SetupGuide.Visual.FAILED : SetupGuide.Visual.OK;
+        currentSetupStep = SetupGuide.next(appRules, DnsVpnService.resumeRequested(this), guard, assets, visual,
+                SetupGuide.Network.valueOf(network.name()),
                 DnsVpnService.connectionCheck.state == DnsVpnService.CheckState.STALE ? SetupGuide.Probe.IDLE
                         : SetupGuide.Probe.valueOf(DnsVpnService.connectionCheck.state.name()));
         setupNext.setEnabled(true);
@@ -448,12 +462,15 @@ public final class MainActivity extends Activity {
             case LOAD_POLICY: setupState.setText(R.string.setup_policy_loading); setupNext.setText(R.string.setup_wait); setupNext.setEnabled(false); break;
             case REPAIR_POLICY: setupState.setText(R.string.adult_mode_error); setupNext.setText(R.string.setup_retry_policy); break;
             case REVIEW_APP_LAYER: setupState.setText(R.string.setup_review); setupNext.setText(R.string.setup_review_app); break;
+            case REVIEW_VISUAL: setupState.setText(R.string.setup_review_visual); setupNext.setText(R.string.setup_review_visual_button); break;
             case ENABLE_DNS: setupState.setText(R.string.setup_dns); setupNext.setText(R.string.dns_start); break;
             case STARTING_DNS: setupState.setText(R.string.dns_starting); setupNext.setText(R.string.setup_wait); setupNext.setEnabled(false); break;
             case REVIEW_DNS: setupState.setText(R.string.dns_degraded); setupNext.setText(R.string.setup_review_network); break;
             case TEST_DNS: setupState.setText(R.string.setup_test); setupNext.setText(R.string.network_check_button); break;
             case CHECKING_DNS: setupState.setText(R.string.network_check_running); setupNext.setText(R.string.setup_wait); setupNext.setEnabled(false); break;
             case READY: setupState.setText(R.string.setup_ready); setupNext.setText(R.string.network_check_button); break;
+            case READY_APPS: setupState.setText(R.string.setup_ready_apps); setupNext.setText(R.string.dns_start); break;
+            case READY_DNS: setupState.setText(R.string.setup_ready_dns); setupNext.setText(R.string.network_check_button); break;
         }
     }
 
@@ -475,10 +492,13 @@ public final class MainActivity extends Activity {
             case REVIEW_APP_LAYER:
                 new AlertDialog.Builder(this).setTitle(R.string.setup_review_app).setMessage(R.string.accessibility_description)
                         .setPositiveButton(android.R.string.ok, null).show(); break;
-            case ENABLE_DNS: startDns.performClick(); break;
+            case REVIEW_VISUAL: showPage(1); break;
+            case ENABLE_DNS:
+            case READY_APPS: startDns.performClick(); break;
             case REVIEW_DNS: reviewVpnSettings(); break;
             case TEST_DNS:
-            case READY: checkNetwork.performClick(); break;
+            case READY:
+            case READY_DNS: checkNetwork.performClick(); break;
             default: break;
         }
     }
@@ -494,7 +514,7 @@ public final class MainActivity extends Activity {
                         settings.update(settings.domainText(), settings.wordText(), rules.blockedApps, rules.scannedApps, !enabled);
                         if (!enabled) AdultPolicyAssets.ensureLoaded(this);
                         refreshStatus();
-                    } catch (RuntimeException unavailable) { Toast.makeText(this, R.string.rules_locked, Toast.LENGTH_LONG).show(); }
+                    } catch (RuntimeException refused) { showRefusal(refused); }
                 }).show();
     }
 
@@ -506,7 +526,7 @@ public final class MainActivity extends Activity {
         else if (!rules.visualEnabled) label = R.string.visual;
         else if (rules.scannedApps.isEmpty()) label = R.string.visual_no_apps;
         else if (!Boolean.TRUE.equals(guardPermissionEnabled()) || !TextGuardService.connected) label = R.string.visual_disconnected;
-        else switch (VisualGuard.state) {
+        else switch (VisualGuard.health.shown()) {
             case LOADING: label = R.string.visual_loading; break;
             case CHECKING: label = R.string.visual_checking; break;
             case SAMPLED: label = R.string.visual_sampled; break;
@@ -531,9 +551,7 @@ public final class MainActivity extends Activity {
                         settings.updateVisual(!enabled);
                         refreshStatus();
                         if (!enabled && settings.snapshot().scannedApps.isEmpty()) chooseApps(true);
-                    } catch (RuntimeException unavailable) {
-                        Toast.makeText(this, R.string.rules_locked, Toast.LENGTH_LONG).show();
-                    }
+                    } catch (RuntimeException refused) { showRefusal(refused); }
                 }).show();
     }
 
@@ -550,7 +568,7 @@ public final class MainActivity extends Activity {
             return;
         }
         new AlertDialog.Builder(this).setTitle(R.string.vpn_settings_reminder_title)
-                .setMessage(getString(R.string.vpn_settings_reminder_body, (remaining + 3599999) / 3600000))
+                .setMessage(getString(R.string.vpn_settings_reminder_body, Durations.remaining(this, remaining)))
                 .setNegativeButton(android.R.string.cancel, null)
                 .setPositiveButton(R.string.vpn_settings_continue, (dialog, which) ->
                         startActivity(new Intent(Settings.ACTION_VPN_SETTINGS))).show();
@@ -601,8 +619,7 @@ public final class MainActivity extends Activity {
                         domain ? settings.wordText() : input.getText().toString(), old.blockedApps, old.scannedApps);
                 dialog.dismiss();
                 Toast.makeText(this, R.string.rules_saved, Toast.LENGTH_SHORT).show();
-            } catch (IllegalArgumentException invalid) { input.setError(getString(R.string.rules_invalid)); }
-            catch (IllegalStateException locked) { input.setError(getString(R.string.rules_locked)); }
+            } catch (RuntimeException refused) { input.setError(refusalText(refused)); }
         }));
         dialog.show();
     }
@@ -628,9 +645,7 @@ public final class MainActivity extends Activity {
                         settings.update(settings.domainText(), settings.wordText(),
                                 scan ? current.blockedApps : chosen, scan ? chosen : current.scannedApps);
                         Toast.makeText(this, R.string.rules_saved, Toast.LENGTH_SHORT).show();
-                    } catch (RuntimeException unavailable) {
-                        Toast.makeText(this, R.string.rules_locked, Toast.LENGTH_LONG).show();
-                    }
+                    } catch (RuntimeException refused) { showRefusal(refused); }
                 }).show();
     }
 
@@ -648,6 +663,14 @@ public final class MainActivity extends Activity {
         scheduleState.setText(getString(R.string.schedule_summary, schedule.apps.size(),
                 scheduleTime(schedule.startMinute), scheduleTime(schedule.endMinute),
                 getString(active ? R.string.schedule_window_active : R.string.schedule_window_inactive)));
+    }
+
+    /** The bundled list's signed build date, in the reader's own date format. */
+    private static String seedDate(String isoDate) {
+        try {
+            return java.time.LocalDate.parse(isoDate).format(java.time.format.DateTimeFormatter
+                    .ofLocalizedDate(java.time.format.FormatStyle.MEDIUM).withLocale(java.util.Locale.getDefault()));
+        } catch (RuntimeException unparsable) { return isoDate; }
     }
 
     private String scheduleTime(int minute) {
@@ -723,12 +746,9 @@ public final class MainActivity extends Activity {
                 dialog.dismiss();
                 refreshStatus();
                 Toast.makeText(this, R.string.rules_saved, Toast.LENGTH_SHORT).show();
-            } catch (IllegalArgumentException invalid) {
-                error.setText(R.string.schedule_invalid);
-            } catch (IllegalStateException locked) {
-                error.setText(R.string.rules_locked);
-            } catch (RuntimeException unavailable) {
-                error.setText(R.string.policy_unavailable);
+            } catch (RuntimeException refused) {
+                PolicyChangeError reason = PolicyChangeError.of(refused);
+                error.setText(reason == PolicyChangeError.INVALID ? getString(R.string.schedule_invalid) : refusalText(refused));
             }
         }));
         dialog.show();
@@ -769,8 +789,24 @@ public final class MainActivity extends Activity {
                         .setNegativeButton(android.R.string.cancel, null)
                         .setPositiveButton(R.string.commitment_start, (confirm, which) -> {
                             try { settings.startCommitment(days[index]); refreshStatus(); }
-                            catch (RuntimeException unavailable) { Toast.makeText(this, R.string.rules_locked, Toast.LENGTH_LONG).show(); }
+                            catch (RuntimeException refused) { showRefusal(refused); }
                         }).show()).show();
+    }
+
+    /** The real reason a change was refused; only a commitment refusal says "locked". */
+    private String refusalText(RuntimeException refused) {
+        switch (PolicyChangeError.of(refused)) {
+            case TOO_MANY_APPS: return getString(R.string.rules_too_many_apps, PolicyStore.MAX_APPS);
+            case INVALID: return getString(R.string.rules_invalid);
+            case COMMITMENT: return getString(R.string.rules_locked);
+            case NEEDS_RULES: return getString(R.string.commitment_needs_rules);
+            case SAVE_FAILED: return getString(R.string.rules_save_failed);
+            default: return getString(R.string.policy_unavailable);
+        }
+    }
+
+    private void showRefusal(RuntimeException refused) {
+        Toast.makeText(this, refusalText(refused), Toast.LENGTH_LONG).show();
     }
 
     private EditText input(int hint, boolean multiline) {

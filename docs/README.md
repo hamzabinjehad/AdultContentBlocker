@@ -89,7 +89,8 @@ Per-version change and verification notes, newest first.
 
 ### Android
 
-- [Android 0.5.2 release notes](ANDROID_0.5.2.md): Latest Android build: DNS bypass hardening, separated-spelling and Arabic name fixes, image checks on feeds, 60-second hold and the commitment reboot fix.
+- [Android 0.5.3 release notes](ANDROID_0.5.3.md): Latest Android build: setup guide ready per chosen layer, failures kept visible, real DNS notification and refusal reasons, screen-off sampling stop, Arabic parity, licenses screen and an Android CI job.
+- [Android 0.5.2 release notes](ANDROID_0.5.2.md): DNS bypass hardening, separated-spelling and Arabic name fixes, image checks on feeds, 60-second hold and the commitment reboot fix. *Historical.*
 - [Android 0.5.1 release notes](ANDROID_0.5.1.md): WebGL-first visual classifier with CPU fallback, optional release signing, WebGL versus CPU timings. *Historical.*
 - [Android 0.5.0 release notes](ANDROID_0.5.0.md): Adds opt-in on-device image and video sampling of chosen apps on Android 14+, with live Samsung results. *Historical.*
 - [Android 0.4.6 release notes](ANDROID_0.4.6.md): Detects complete two-word explicit media labels in English and Arabic; synthetic corpus reaches 23/25, zero false blocks. *Historical.*
