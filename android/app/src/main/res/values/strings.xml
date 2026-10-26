@@ -9,7 +9,7 @@
     <string name="dns_start">Set up DNS filtering</string>
     <string name="dns_settings">Android VPN settings</string>
     <string name="vpn_settings_reminder_title">Review your active commitment</string>
-    <string name="vpn_settings_reminder_body">About %1$d hours remain in your Hisn commitment. Changing or disconnecting the VPN can weaken your network protection.\n\nYou can continue to Android settings or cancel and return to Hisn. This reminder does not prevent changes made in Android Settings.</string>
+    <string name="vpn_settings_reminder_body">Your Hisn commitment has about %1$s remaining. Changing or disconnecting the VPN can weaken your network protection.\n\nYou can continue to Android settings or cancel and return to Hisn. This reminder does not prevent changes made in Android Settings.</string>
     <string name="vpn_settings_continue">Open Android settings</string>
     <string name="dns_consent_title">Enable experimental DNS filtering?</string>
     <string name="dns_consent_body">Hisn checks supported IPv4 UDP and TCP DNS requests to its virtual DNS server against the bundled list and your saved rules. Allowed requests go to Cloudflare Families (1.1.1.3) over authenticated, encrypted DNS-over-TLS. Cloudflare can see these requests. Hisn does not save a browsing log or fall back to plaintext DNS.\n\nAndroid allows one VPN per profile. Starting Hisn can disconnect your existing VPN.\n\nHisn answers well-known encrypted-DNS provider names and Firefox’s DNS-over-HTTPS canary domain with “not found”. This reduces, but does not stop, apps using their own encrypted DNS: some reach providers at built-in IP addresses. This DNS layer also does not cover direct IP access, cached answers, images or videos. Optional visual checks are a separate layer. TCP is bounded to DNS port 53 and messages up to 4096 bytes; unsupported requests or resolver failures can interrupt loading. Client TLS on port 853 is refused so Android uses port 53 instead. If Android Private DNS is set to a provider hostname, system DNS can bypass Hisn; Hisn warns but does not change that setting. Always-on and lockdown are unsupported. If you leave DNS filtering on, Hisn starts it again after a restart while Android still holds this VPN approval. You can disconnect through Android VPN settings.</string>
@@ -97,7 +97,15 @@
         <item quantity="one">%1$d day</item>
         <item quantity="other">%1$d days</item>
     </plurals>
-    <string name="commitment_remaining">Commitment active · About %1$d hours remaining</string>
+    <string name="commitment_remaining">Commitment active · About %1$s remaining</string>
+    <plurals name="remaining_hours">
+        <item quantity="one">%1$d hour</item>
+        <item quantity="other">%1$d hours</item>
+    </plurals>
+    <plurals name="remaining_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
     <string name="commitment_disclosure">This locks the removal of saved domain rules, word rules and selected apps inside Hisn for the chosen period. It also prevents disabling or reducing an enabled daily app schedule inside Hisn. You may add restrictions and extend the period.\n\nCommitment time counts while the device is running, including after a restart. Time while the device is switched off is not counted, so powering off extends the period; Hisn does not trust a changed date. Daily schedules instead follow the device clock and time zone, which can still be changed outside Hisn.\n\nThis does not lock Android settings, permissions, app removal or clearing app data. It does not turn an inactive service on. Check your protection layers before starting.</string>
     <string name="commitment_start">Start this commitment</string>
     <string name="restriction_title">Your commitment comes first</string>
@@ -112,7 +120,7 @@
     <string name="admin_off">Extra uninstall step · Not active</string>
     <string name="admin_active">Device admin active · Can be deactivated in Android settings</string>
     <string name="admin_disable_warning">Deactivating this administrator removes the extra uninstall step.</string>
-    <string name="admin_commitment_warning">Your Hisn commitment has about %1$d hours remaining. Deactivating this administrator removes the extra uninstall step. Android still allows you to continue.</string>
+    <string name="admin_commitment_warning">Your Hisn commitment has about %1$s remaining. Deactivating this administrator removes the extra uninstall step. Android still allows you to continue.</string>
     <string name="tester">Try word rules</string>
     <string name="tester_help">Enter one literal word or phrase per line and test them locally. This does not monitor other apps or use the signed protection list.</string>
     <string name="rule_hint">Words or phrases, one per line</string>

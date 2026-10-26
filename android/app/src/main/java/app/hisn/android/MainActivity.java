@@ -420,7 +420,7 @@ public final class MainActivity extends Activity {
             try {
                 long remaining = settings.remainingMillis();
                 commitmentState.setText(remaining == 0 ? getString(R.string.commitment)
-                        : getString(R.string.commitment_remaining, (remaining + 3599999) / 3600000));
+                        : getString(R.string.commitment_remaining, Durations.remaining(this, remaining)));
             } catch (RuntimeException unavailable) {
                 commitmentState.setText(R.string.policy_unavailable);
                 statusTitle.setText(R.string.protection_attention);
@@ -566,7 +566,7 @@ public final class MainActivity extends Activity {
             return;
         }
         new AlertDialog.Builder(this).setTitle(R.string.vpn_settings_reminder_title)
-                .setMessage(getString(R.string.vpn_settings_reminder_body, (remaining + 3599999) / 3600000))
+                .setMessage(getString(R.string.vpn_settings_reminder_body, Durations.remaining(this, remaining)))
                 .setNegativeButton(android.R.string.cancel, null)
                 .setPositiveButton(R.string.vpn_settings_continue, (dialog, which) ->
                         startActivity(new Intent(Settings.ACTION_VPN_SETTINGS))).show();
