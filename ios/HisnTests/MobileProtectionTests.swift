@@ -112,7 +112,8 @@ final class MobileProtectionTests: XCTestCase {
     func testVerifiedSetupGuidanceShipsInEnglishAndArabic() throws {
         let keys = ["setup.status.title", "setup.status.scope", "setup.status.mixedcontent", "setup.next.check"]
             + [MobileProtectionPolicy.SetupState.unchecked, .checking, .needsSetup, .configured].map(\.rawValue)
-            + [MobileProtectionPolicy.SetupIssue.list, .safari, .screenTime, .dns, .dnsSaved, .dnsDifferent, .storage].map(\.rawValue)
+            + [MobileProtectionPolicy.SetupIssue.list, .safari, .screenTime, .screenTimeAccess, .dns, .dnsSaved,
+               .dnsDifferent, .storage].map(\.rawValue)
         for language in ["en", "ar"] {
             let path = try XCTUnwrap(Bundle.main.path(forResource: language, ofType: "lproj"))
             let localized = try XCTUnwrap(Bundle(path: path))

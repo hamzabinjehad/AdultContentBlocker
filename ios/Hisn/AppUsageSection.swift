@@ -13,7 +13,7 @@ struct AppUsageSection: View {
     var body: some View {
         Section("apps.title") {
             Label(LocalizedStringKey(usage.health.rawValue), systemImage: "shield.lefthalf.filled")
-                .foregroundStyle(usage.health.needsAttention ? Color.orange : Color.secondary)
+                .foregroundStyle(usage.health.needsAttention ? HisnPalette.warning : Color.secondary)
             Text("apps.scope").font(.footnote).foregroundStyle(.secondary)
             Text("apps.browserGuardGuidance").font(.footnote).foregroundStyle(.secondary)
             Text("apps.browserGuardLimits").font(.footnote).foregroundStyle(.secondary)

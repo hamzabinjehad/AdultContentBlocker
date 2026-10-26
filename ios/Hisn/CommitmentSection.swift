@@ -11,7 +11,7 @@ struct CommitmentSection: View {
         Section("commitment.title") {
             if protection.clockAssessment != .consistent {
                 Label("commitment.clockUncertain", systemImage: "clock.badge.exclamationmark")
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(HisnPalette.warning)
             }
             if protection.commitmentActive, let session = protection.commitment {
                 Label("commitment.active", systemImage: "lock.fill")
@@ -39,14 +39,20 @@ struct CommitmentSection: View {
             Text("commitment.shortScope").font(.footnote).foregroundStyle(.secondary)
             if !protection.hasBlockingConfiguration {
                 Label("commitment.noLayer", systemImage: "exclamationmark.triangle")
-                    .font(.footnote).foregroundStyle(.orange)
+                    .font(.footnote).foregroundStyle(HisnPalette.warning)
             }
             Label(protection.screenTimeConfigured ? "screentime.configured" : "screentime.notConfigured",
                   systemImage: "shield.lefthalf.filled")
+            // iOS drops every Hisn setting when access is turned off; say so rather than "not confirmed".
+            if protection.screenTimeState == .accessRemoved {
+                Label(protection.commitmentActive ? "commitment.screenTimeLost" : "screentime.accessRemovedBody",
+                      systemImage: "exclamationmark.triangle")
+                    .font(.footnote).foregroundStyle(HisnPalette.warning)
+            }
             Button("screentime.enable") { confirmation = .screenTime }.disabled(protection.busy)
             if let error = protection.errorKey, error.hasPrefix("screentime.") {
                 Label(LocalizedStringKey(error), systemImage: "exclamationmark.triangle")
-                    .font(.footnote).foregroundStyle(.orange)
+                    .font(.footnote).foregroundStyle(HisnPalette.warning)
             }
             if protection.screenTimeConfigured && !protection.commitmentActive {
                 Button("screentime.disable") { protection.disablePersonalScreenTime() }

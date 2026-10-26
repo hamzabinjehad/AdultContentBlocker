@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MobileRootView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ObservedObject var protection: ProtectionController
     @Binding var language: String
     private enum Confirmation { case dns, guardian }
@@ -147,7 +148,7 @@ struct MobileRootView: View {
             setupStatusLabel(assessment.state)
                 .font(.title2.bold())
                 .accessibilityAddTraits(.isHeader)
-                .foregroundStyle(assessment.state == .configured ? Color.teal : Color.orange)
+                .foregroundStyle(assessment.state == .configured ? HisnPalette.good : HisnPalette.warning)
                 .accessibilityIdentifier("setup.currentAssessment")
             if !compact {
                 Text("setup.status.scope").font(.footnote).foregroundStyle(.secondary)
@@ -156,7 +157,8 @@ struct MobileRootView: View {
                 Text("setup.next.check").font(.callout)
             }
             ForEach(assessment.issues, id: \.rawValue) { issue in
-                Label(LocalizedStringKey(issue.rawValue), systemImage: "arrow.right.circle")
+                // "Forward" points the reading direction: left in Arabic, right in English.
+                Label(LocalizedStringKey(issue.rawValue), systemImage: "arrow.forward.circle")
                     .font(.callout)
             }
             if assessment.state == .checking { ProgressView("working") }
@@ -188,11 +190,11 @@ struct MobileRootView: View {
         Section("plan.title") {
             if !protection.historyStorageHealthy {
                 Label("plan.historyUnavailable", systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(HisnPalette.warning)
             }
             if !protection.unconfirmedContentLayers.isEmpty {
                 Label("plan.lost", systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(HisnPalette.warning)
                 ForEach(protection.unconfirmedContentLayers.sorted(), id: \.self) { key in
                     Text(LocalizedStringKey(key)).font(.callout)
                 }
@@ -201,16 +203,17 @@ struct MobileRootView: View {
             }
             if usage.health.needsAttention {
                 Label(LocalizedStringKey(usage.health.rawValue), systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(HisnPalette.warning)
                 Text("apps.health.recovery").font(.footnote)
                 Button("setup.continue") { selectedTab = 1 }
             }
             Text("plan.layers \(protection.configuredContentLayers)")
                 .font(.headline).accessibilityIdentifier("plan.configuredLayers")
             readinessRow("safari.title", ready: protection.safariConfigured,
-                detail: Text(verbatim: "\(protection.safari.filter { $0 == true }.count) / 4"))
+                detail: Text("plan.safariParts \(enabledSafariParts)"))
             readinessRow("dns.title", ready: protection.dns == .enabled, detail: Text(dnsLabel))
-            readinessRow("screentime.layer", ready: protection.screenTimeConfigured)
+            readinessRow("screentime.layer", ready: protection.screenTimeConfigured,
+                detail: Text(LocalizedStringKey(protection.screenTimeState.rawValue)))
             Text("plan.scope").font(.footnote).foregroundStyle(.secondary)
             if protection.checkedAt == nil {
                 Label("plan.checkFirst", systemImage: "arrow.clockwise")
@@ -219,21 +222,41 @@ struct MobileRootView: View {
         }
     }
 
+    private var enabledSafariParts: Int { protection.safari.filter { $0 == true }.count }
+
+    /// Title and status side by side, stacked at accessibility text sizes so neither is cut off.
     private func readinessRow(_ title: LocalizedStringKey, ready: Bool, detail: Text? = nil) -> some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                if let detail { detail.font(.caption).foregroundStyle(.secondary).monospacedDigit() }
-            }
-            Spacer()
-            if ready {
-                Label("plan.configured", systemImage: "checkmark.circle").foregroundStyle(.teal)
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 4) {
+                    readinessTitle(title, detail: detail)
+                    readinessStatus(ready)
+                }
             } else {
-                Label("plan.needsSetup", systemImage: "circle").foregroundStyle(.secondary)
+                HStack {
+                    readinessTitle(title, detail: detail)
+                    Spacer()
+                    readinessStatus(ready)
+                }
             }
         }
         .font(.subheadline)
         .accessibilityElement(children: .combine)
+    }
+
+    private func readinessTitle(_ title: LocalizedStringKey, detail: Text?) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+            if let detail { detail.font(.caption).foregroundStyle(.secondary).monospacedDigit() }
+        }
+    }
+
+    @ViewBuilder private func readinessStatus(_ ready: Bool) -> some View {
+        if ready {
+            Label("plan.configured", systemImage: "checkmark.circle").foregroundStyle(HisnPalette.good)
+        } else {
+            Label("plan.needsSetup", systemImage: "circle").foregroundStyle(.secondary)
+        }
     }
 
     private var removalSection: some View {
@@ -296,6 +319,10 @@ struct MobileRootView: View {
             Section("coverage.title") { Text("coverage.body") }
             Section("apple.title") { Text("apple.body") }
         }
+        // The same readable column as the other tabs on a wide iPad.
+        .frame(maxWidth: horizontalSizeClass == .regular ? 860 : .infinity)
+        .frame(maxWidth: .infinity)
+        .background(Color(uiColor: .systemGroupedBackground))
     }
 
     @ViewBuilder private var errorRow: some View {

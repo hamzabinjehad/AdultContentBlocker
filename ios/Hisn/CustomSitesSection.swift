@@ -4,23 +4,15 @@ import SwiftUI
 struct CustomSitesSection: View {
     @ObservedObject var protection: ProtectionController
     @State private var entry = ""
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         Section {
-            HStack(spacing: 12) {
-                TextField("sites.placeholder", text: $entry)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .keyboardType(.URL)
-                    .submitLabel(.done)
-                    .onSubmit(add)
-                    // Hostnames read left to right in both languages.
-                    .environment(\.layoutDirection, .leftToRight)
-                    .accessibilityIdentifier("customSitesEntry")
-                Button("sites.add", action: add)
-                    .buttonStyle(.borderedProminent)
-                    .disabled(protection.busy || !protection.customSitesStorageHealthy
-                              || entry.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            // Side by side normally; stacked at accessibility text sizes so the field stays usable.
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 12) { entryField; addButton }
+            } else {
+                HStack(spacing: 12) { entryField; addButton }
             }
             if protection.customSites.isEmpty {
                 Text("sites.empty").foregroundStyle(.secondary)
@@ -36,7 +28,7 @@ struct CustomSitesSection: View {
             statusRow
             if let message = protection.customSiteMessage {
                 Text(LocalizedStringKey(message)).font(.footnote)
-                    .foregroundStyle(message == "sites.added" || message == "sites.removed" ? Color.secondary : Color.orange)
+                    .foregroundStyle(message == "sites.added" || message == "sites.removed" ? Color.secondary : HisnPalette.warning)
             }
         } header: {
             HStack {
@@ -50,14 +42,35 @@ struct CustomSitesSection: View {
         }
     }
 
+    private var entryField: some View {
+        TextField("sites.placeholder", text: $entry)
+            .textInputAutocapitalization(.never)
+            .autocorrectionDisabled()
+            .keyboardType(.URL)
+            .submitLabel(.done)
+            .onSubmit(add)
+            // Hostnames read left to right in both languages.
+            .environment(\.layoutDirection, .leftToRight)
+            .accessibilityIdentifier("customSitesEntry")
+    }
+
+    private var addButton: some View {
+        Button("sites.add", action: add)
+            .buttonStyle(.borderedProminent)
+            .disabled(protection.busy || !protection.customSitesStorageHealthy
+                      || entry.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+    }
+
     @ViewBuilder private var statusRow: some View {
         if !protection.customSitesStorageHealthy {
-            Label("sites.storageFailed", systemImage: "exclamationmark.triangle").foregroundStyle(.orange)
+            Label("sites.storageFailed", systemImage: "exclamationmark.triangle").foregroundStyle(HisnPalette.warning)
         } else if !protection.customSites.isEmpty {
             if protection.customSitesApplied {
-                Label("sites.applied", systemImage: "checkmark.circle").foregroundStyle(.teal)
+                Label("sites.applied", systemImage: "checkmark.circle").foregroundStyle(HisnPalette.good)
+            } else if protection.screenTimeState == .accessRemoved {
+                Label("sites.accessRemoved", systemImage: "exclamationmark.circle").foregroundStyle(HisnPalette.warning)
             } else {
-                Label("sites.needsScreenTime", systemImage: "exclamationmark.circle").foregroundStyle(.orange)
+                Label("sites.needsScreenTime", systemImage: "exclamationmark.circle").foregroundStyle(HisnPalette.warning)
             }
         }
     }

@@ -20,6 +20,7 @@ final class ProtectionController: ObservableObject {
     private var listChecked = false
     private let resourceBundleURL: URL
     @Published private(set) var removal: MobileProtectionPolicy.RemovalState = .notRequested
+    @Published private(set) var screenTimeAuthorization: MobileProtectionPolicy.FamilyAuthorization = .notDetermined
     private var removalEvidence = MobileProtectionPolicy.RemovalEvidence()
     private var authorizationObservation: AnyCancellable?
     @Published private(set) var commitment: CommitmentPolicy.Session?
@@ -70,6 +71,7 @@ final class ProtectionController: ObservableObject {
         }
         #if targetEnvironment(simulator)
         removal = .unavailable
+        screenTimeAuthorization = .unavailable
         #else
         authorizationObservation = AuthorizationCenter.shared.$authorizationStatus
             .receive(on: DispatchQueue.main)
@@ -268,7 +270,15 @@ final class ProtectionController: ObservableObject {
         MobileProtectionPolicy.setupAssessment(checked: checkedAt != nil, busy: busy,
             listVerified: listIntegrityVerified, listCount: listCount, listVersion: listVersion,
             safari: safari, lastReload: safariReloads, screenTime: screenTimeConfigured, dns: dns,
-            storageHealthy: commitmentStorageHealthy && historyStorageHealthy)
+            storageHealthy: commitmentStorageHealthy && historyStorageHealthy,
+            screenTimeAccessRemoved: screenTimeState == .accessRemoved)
+    }
+
+    /// Separates access turned off in Settings from a filter that was never set up.
+    var screenTimeState: MobileProtectionPolicy.ScreenTimeState {
+        MobileProtectionPolicy.screenTimeState(authorization: screenTimeAuthorization,
+            filterConfigured: screenTimeConfigured,
+            previouslyConfigured: previouslyReadyContentLayers.contains("screentime.layer"))
     }
 
     /// Configuration readback only; never a claim that every route is blocked.
@@ -287,6 +297,7 @@ final class ProtectionController: ObservableObject {
         default: value = .unavailable
         }
         removal = removalEvidence.observe(value, childRequestSucceeded: childRequestSucceeded)
+        screenTimeAuthorization = value
         readScreenTimeState()
     }
 
