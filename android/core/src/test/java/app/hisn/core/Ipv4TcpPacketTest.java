@@ -13,7 +13,7 @@ public final class Ipv4TcpPacketTest {
         rejectMalformed();
         responseBounds();
         fuzz();
-        System.out.println("Ipv4TcpPacket tests passed (TCP checksums, bounds, options, unsigned sequences and ownership)");
+        System.out.println("Ipv4TcpPacket tests passed (TCP checksums, bounds, options, unsigned sequences, ownership and port 853)");
     }
 
     private static void basicAndOwnership() {
@@ -101,6 +101,16 @@ public final class Ipv4TcpPacketTest {
         bad = good.clone(); bad[19] = 3; fixChecksums(bad); reject(bad, "different server");
         bad = good.clone(); put16(bad, 20, 0); fixChecksums(bad); reject(bad, "source port zero");
         bad = good.clone(); put16(bad, 22, 853); fixChecksums(bad); reject(bad, "DoT port 853");
+        Ipv4TcpPacket tls = require853(bad);
+        check(tls.destinationPort == 853 && require(good, SERVER).destinationPort == 53, "destination port");
+        byte[] tlsReply = tls.response(0, 1, Ipv4TcpPacket.RST | Ipv4TcpPacket.ACK, 0, new byte[0]);
+        check(u16(tlsReply, 20) == 853 && u16(tlsReply, 22) == 43123, "port 853 reply keeps its ports");
+        validChecksums(tlsReply);
+        check(Ipv4TcpPacket.parse(good, SERVER, 853) == null, "port 53 is not port 853");
+        check(Ipv4TcpPacket.parse(bad, SERVER, 0) == null && Ipv4TcpPacket.parse(bad, SERVER, 65536) == null,
+                "invalid port argument");
+        byte[] corrupt = bad.clone(); corrupt[40] ^= 1;
+        check(Ipv4TcpPacket.parse(corrupt, SERVER, 853) == null, "port 853 checksum still verified");
         bad = good.clone(); put16(bad, 22, 443); fixChecksums(bad); reject(bad, "HTTPS port");
         bad = good.clone(); bad[32] = 0x40; fixChecksums(bad); reject(bad, "short TCP header");
         bad = good.clone(); bad[32] = (byte) 0xf0; fixChecksums(bad); reject(bad, "oversized TCP header");
@@ -153,6 +163,12 @@ public final class Ipv4TcpPacketTest {
     private static Ipv4TcpPacket require(byte[] raw, byte[] server) {
         Ipv4TcpPacket result = Ipv4TcpPacket.parse(raw, server);
         if (result == null) throw new AssertionError("Valid TCP packet rejected");
+        return result;
+    }
+
+    private static Ipv4TcpPacket require853(byte[] raw) {
+        Ipv4TcpPacket result = Ipv4TcpPacket.parse(raw, SERVER, 853);
+        if (result == null) throw new AssertionError("Valid port 853 packet rejected");
         return result;
     }
 

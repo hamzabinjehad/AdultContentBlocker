@@ -58,9 +58,9 @@ public final class DnsPacketKindTest {
         expect(DnsPacketKind.MALFORMED, packet(17, 8));
 
         bad = udp.clone(); bad[6] = 0x20; checksum(bad);
-        expect(DnsPacketKind.OTHER_UNSUPPORTED, bad);
+        expect(DnsPacketKind.FRAGMENT, bad);
         bad = udp.clone(); bad[7] = 1; checksum(bad);
-        expect(DnsPacketKind.OTHER_UNSUPPORTED, bad);
+        expect(DnsPacketKind.FRAGMENT, bad);
         bad = udp.clone(); bad[6] = (byte) 0x80; checksum(bad);
         expect(DnsPacketKind.MALFORMED, bad);
         bad = udp.clone(); bad[19] = 3; checksum(bad);
@@ -71,7 +71,7 @@ public final class DnsPacketKindTest {
         byte[] tcp = packet(6, 20);
         expect(DnsPacketKind.TCP_DNS_UNSUPPORTED, tcp);
         Ipv4DnsPacket.put16(tcp, 22, 853);
-        expect(DnsPacketKind.TCP_DNS_UNSUPPORTED, tcp);
+        expect(DnsPacketKind.TCP_TLS_PORT, tcp);
         Ipv4DnsPacket.put16(tcp, 22, 443);
         expect(DnsPacketKind.OTHER_UNSUPPORTED, tcp);
         Ipv4DnsPacket.put16(tcp, 22, 53); tcp[19] = 3; checksum(tcp);
@@ -82,7 +82,7 @@ public final class DnsPacketKindTest {
         expect(DnsPacketKind.MALFORMED, tcp);
         expect(DnsPacketKind.MALFORMED, packet(6, 19));
         tcp = packet(6, 20); tcp[6] = 0x20; checksum(tcp);
-        expect(DnsPacketKind.OTHER_UNSUPPORTED, tcp);
+        expect(DnsPacketKind.FRAGMENT, tcp);
         expect(DnsPacketKind.OTHER_UNSUPPORTED, packet(1, 8));
 
         byte[] ipv6 = new byte[40]; ipv6[0] = 0x60;
@@ -94,6 +94,12 @@ public final class DnsPacketKindTest {
                 || DnsPacketKind.classify(udp, new byte[3]) != DnsPacketKind.MALFORMED)
             throw new AssertionError("Invalid server accepted");
 
+        // Only unrelated traffic is benign; anything that may have been a DNS request is not.
+        for (DnsPacketKind kind : DnsPacketKind.values()) {
+            boolean benign = kind == DnsPacketKind.TCP_TLS_PORT || kind == DnsPacketKind.OTHER_UNSUPPORTED;
+            if (kind.benign() != benign) throw new AssertionError("Wrong benign classification: " + kind);
+        }
+
         Random random = new Random(20261020);
         for (int i = 0; i < 20000; i++) {
             byte[] arbitrary = new byte[random.nextInt(1600)];
@@ -103,7 +109,7 @@ public final class DnsPacketKindTest {
             mutation[random.nextInt(mutation.length)] = (byte) random.nextInt(256);
             expectAdapterInvariant(mutation);
         }
-        System.out.println("DnsPacketKind tests passed (UDP adapter gate, unsupported TCP, checksums, bounds and fuzz)");
+        System.out.println("DnsPacketKind tests passed (UDP adapter gate, unsupported TCP, port 853, fragments, benign split, checksums, bounds and fuzz)");
     }
 
     private static void expectAdapterInvariant(byte[] packet) {

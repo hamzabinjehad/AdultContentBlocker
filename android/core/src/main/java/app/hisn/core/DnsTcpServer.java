@@ -130,6 +130,15 @@ public final class DnsTcpServer {
 
     public synchronized boolean isPending(Request request) { return current(request) != null; }
 
+    /** RFC 9293 reset for a connection this endpoint never accepts, such as port 853.
+     * Returns null for an incoming RST, which must never be answered. */
+    public static byte[] refuse(Ipv4TcpPacket packet) {
+        if (packet == null || (packet.flags & Ipv4TcpPacket.RST) != 0) return null;
+        Output output = new Output();
+        resetUnknown(packet, output);
+        return output.packets.get(0);
+    }
+
     public synchronized Result receive(Ipv4TcpPacket packet, long nowMillis) {
         Output output = new Output();
         if (closed || packet == null) return output.result();
@@ -419,7 +428,7 @@ public final class DnsTcpServer {
                 Ipv4TcpPacket.RST | Ipv4TcpPacket.ACK, 0, new byte[0]));
     }
 
-    private void resetUnknown(Ipv4TcpPacket packet, Output output) {
+    private static void resetUnknown(Ipv4TcpPacket packet, Output output) {
         boolean ack = (packet.flags & Ipv4TcpPacket.ACK) != 0;
         long sequence = ack ? packet.acknowledgement : 0;
         long acknowledgement = ack ? 0 : add(packet.sequence, packet.payload.length

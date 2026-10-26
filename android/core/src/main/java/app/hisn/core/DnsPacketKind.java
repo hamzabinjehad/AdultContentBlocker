@@ -4,9 +4,17 @@ package app.hisn.core;
  * No addresses, ports, payloads or packet objects are retained by this classifier. */
 public enum DnsPacketKind {
     UDP_DNS,
+    /** TCP to port 53 that the bounded TCP adapter rejected: a DNS request was lost. */
     TCP_DNS_UNSUPPORTED,
+    /** TCP to the DNS-over-TLS port 853, which Hisn refuses so Android falls back to port 53. */
+    TCP_TLS_PORT,
+    /** An IPv4 fragment is not a complete message; a fragmented DNS query cannot be served. */
+    FRAGMENT,
     OTHER_UNSUPPORTED,
     MALFORMED;
+
+    /** Unrelated traffic (another protocol or port, IPv6, port 853) does not mean a DNS request failed. */
+    public boolean benign() { return this == TCP_TLS_PORT || this == OTHER_UNSUPPORTED; }
 
     /** UDP_DNS is returned only for packets accepted by the existing tunnel adapter. */
     public static DnsPacketKind classify(byte[] packet, byte[] server) {
@@ -24,7 +32,7 @@ public enum DnsPacketKind {
                 || Ipv4DnsPacket.checksum(packet, 0, header, 0) != 0
                 || (u16(packet, 6) & 0x8000) != 0) return MALFORMED;
         // A fragment is not a complete UDP/TCP message. Do not infer a transport from it.
-        if ((u16(packet, 6) & 0x3fff) != 0) return OTHER_UNSUPPORTED;
+        if ((u16(packet, 6) & 0x3fff) != 0) return FRAGMENT;
         int protocol = packet[9] & 255;
         int payload = packet.length - header;
         if (protocol == 17) {
@@ -40,9 +48,9 @@ public enum DnsPacketKind {
             if (payload < 20) return MALFORMED;
             int tcpHeader = ((packet[header + 12] & 255) >>> 4) * 4;
             if (tcpHeader < 20 || tcpHeader > payload) return MALFORMED;
+            if (!destinationMatches(packet, server)) return OTHER_UNSUPPORTED;
             int port = u16(packet, header + 2);
-            return destinationMatches(packet, server) && (port == 53 || port == 853)
-                    ? TCP_DNS_UNSUPPORTED : OTHER_UNSUPPORTED;
+            return port == 53 ? TCP_DNS_UNSUPPORTED : port == 853 ? TCP_TLS_PORT : OTHER_UNSUPPORTED;
         }
         return OTHER_UNSUPPORTED;
     }

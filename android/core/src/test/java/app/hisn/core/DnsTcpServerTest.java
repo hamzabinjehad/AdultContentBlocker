@@ -86,8 +86,8 @@ public final class DnsTcpServerTest {
     }
 
     public static void main(String[] args) {
-        framingAndReuse(); overlapAndFuture(); windowsAndPartialAck(); closingAndTokens(); boundsAndTimers();
-        System.out.println("DnsTcpServer tests passed (handshake, framing, reuse, pipeline, wrap, windows, retries, FIN/RST and bounds)");
+        framingAndReuse(); overlapAndFuture(); windowsAndPartialAck(); closingAndTokens(); boundsAndTimers(); refusal();
+        System.out.println("DnsTcpServer tests passed (handshake, framing, reuse, pipeline, wrap, windows, retries, FIN/RST, bounds and port 853 refusal)");
     }
 
     static void framingAndReuse() {
@@ -201,6 +201,35 @@ public final class DnsTcpServerTest {
         for (int i = 0; i < 6; i++) excess = concat(excess, frame(dns));
         DnsTcpServer.Result rejected = c.send(excess);
         check(rejected.requests.isEmpty() && (rejected.packets.get(0)[33] & RST) != 0, "Pipeline cap left live work");
+    }
+
+    /** Android's automatic Private DNS probes port 853; a reset lets it fall back to port 53 at once. */
+    static void refusal() {
+        byte[] reset = DnsTcpServer.refuse(tls(0xfffffffeL, 0, SYN));
+        check(reset != null && (reset[33] & 255) == (RST | ACK), "SYN refused with RST+ACK");
+        check(u32(reset, 24) == 0 && u32(reset, 28) == 0xffffffffL, "RST acknowledges the SYN, wrapping");
+        check(u16(reset, 20) == 853 && u16(reset, 22) == 41000, "RST comes from port 853");
+        reset = DnsTcpServer.refuse(tls(5, 77, ACK));
+        check((reset[33] & 255) == RST && u32(reset, 24) == 77, "stray ACK gets RST at its ACK number");
+        check(DnsTcpServer.refuse(tls(5, 0, RST)) == null && DnsTcpServer.refuse(null) == null, "never answer an RST");
+    }
+
+    static Ipv4TcpPacket tls(long seq, long ack, int flags) {
+        byte[] bytes = new byte[40];
+        bytes[0] = 0x45; bytes[8] = 64; bytes[9] = 6;
+        put16(bytes, 2, 40);
+        bytes[12] = 10; bytes[13] = 111; bytes[15] = 1;
+        System.arraycopy(SERVER, 0, bytes, 16, 4);
+        put16(bytes, 20, 41000); put16(bytes, 22, 853);
+        put32(bytes, 24, seq); put32(bytes, 28, ack);
+        bytes[32] = 0x50; bytes[33] = (byte) flags; put16(bytes, 34, 8192);
+        put16(bytes, 10, Ipv4DnsPacket.checksum(bytes, 0, 20, 0));
+        int sum = 6 + 20;
+        for (int i = 12; i < 20; i += 2) sum += u16(bytes, i);
+        put16(bytes, 36, Ipv4DnsPacket.checksum(bytes, 20, 20, sum));
+        Ipv4TcpPacket result = Ipv4TcpPacket.parse(bytes, SERVER, 853);
+        check(result != null && Ipv4TcpPacket.parse(bytes, SERVER) == null, "Invalid port 853 test packet");
+        return result;
     }
 
     static DnsTcpServer.Request only(List<DnsTcpServer.Request> requests) {

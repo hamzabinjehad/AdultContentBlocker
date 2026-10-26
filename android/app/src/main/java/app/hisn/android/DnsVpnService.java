@@ -4,6 +4,7 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.net.VpnService;
 import android.net.ConnectivityManager;
@@ -11,6 +12,7 @@ import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.net.LinkProperties;
+import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.os.Parcel;
 import android.system.Os;
@@ -18,12 +20,14 @@ import android.system.OsConstants;
 import android.system.StructPollfd;
 
 import app.hisn.core.DnsExchange;
+import app.hisn.core.DnsHealth;
 import app.hisn.core.DnsPacketKind;
 import app.hisn.core.DnsPolicy;
 import app.hisn.core.DnsTunnelProbe;
 import app.hisn.core.DnsTcpServer;
 import app.hisn.core.DomainSeed;
 import app.hisn.core.DomainPolicy;
+import app.hisn.core.EncryptedDnsProviders;
 import app.hisn.core.Ipv4DnsPacket;
 import app.hisn.core.Ipv4TcpPacket;
 import app.hisn.core.TlsDnsTransport;
@@ -69,6 +73,10 @@ public final class DnsVpnService extends VpnService {
         }
     }
     private static final String CHANNEL = "dns_filter";
+    private static final String ALERT_CHANNEL = "dns_alerts";
+    private static final int ALERT_ID = 2;
+    private static final String PREFS = "hisn_dns";
+    private static final String RESUME = "resume_after_boot";
     private static final byte[] SERVER = {10, 111, 0, 2};
     private static final Object CHECK_LOCK = new Object();
     private static DnsVpnService activeService;
@@ -86,6 +94,12 @@ public final class DnsVpnService extends VpnService {
     public static final AtomicLong tcpQueries = new AtomicLong();
     public static final AtomicLong tcpReplies = new AtomicLong();
     public static final AtomicLong udpTruncated = new AtomicLong();
+    /** Unrelated packets (other protocols or ports, IPv6): counted, never treated as DNS failures. */
+    public static final AtomicLong ignoredPackets = new AtomicLong();
+    public static final AtomicLong refusedTlsConnections = new AtomicLong();
+    public static final AtomicLong recoveries = new AtomicLong();
+    /** Strict Private DNS (a provider hostname) on the underlying network lets system DNS bypass this tunnel. */
+    public static volatile boolean privateDnsStrict;
     public static volatile boolean networkMonitoring;
     // Diagnostic category only: never retain a question, answer, hostname or exception message.
     public static volatile String lastDnsFailure = "NONE";
@@ -93,6 +107,29 @@ public final class DnsVpnService extends VpnService {
 
     private static ConnectionCheck idleCheck() {
         return new ConnectionCheck(CheckState.IDLE, false, 0, DnsTunnelProbe.Failure.NONE);
+    }
+
+    /** True only while the owner left DNS filtering on; an Android revocation clears it. */
+    static boolean resumeRequested(Context context) {
+        return context.getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(RESUME, false);
+    }
+
+    static void setResumeRequested(Context context, boolean resume) {
+        context.getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean(RESUME, resume).apply();
+    }
+
+    /** A visible notice that filtering is off, so a vanished VPN key icon is not the only signal. */
+    static void notifyStopped(Context context, int body) {
+        NotificationManager notifications = context.getSystemService(NotificationManager.class);
+        notifications.createNotificationChannel(new NotificationChannel(ALERT_CHANNEL,
+                context.getString(R.string.dns_alert_channel), NotificationManager.IMPORTANCE_DEFAULT));
+        PendingIntent open = PendingIntent.getActivity(context, 0, new Intent(context, MainActivity.class),
+                PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+        notifications.notify(ALERT_ID, new Notification.Builder(context, ALERT_CHANNEL)
+                .setSmallIcon(R.drawable.ic_hisn).setContentTitle(context.getString(R.string.dns_stopped_title))
+                .setContentText(context.getString(body))
+                .setStyle(new Notification.BigTextStyle().bigText(context.getString(body)))
+                .setContentIntent(open).setAutoCancel(true).build());
     }
 
     /** Debug fixture only: simulate a callback without changing Android network settings. */
@@ -208,9 +245,12 @@ public final class DnsVpnService extends VpnService {
                     .setContentText(getString(R.string.dns_notification_body)).setContentIntent(open)
                     .setOngoing(true).build();
             startForeground(1, notification);
+            setResumeRequested(this, true);
+            getSystemService(NotificationManager.class).cancel(ALERT_ID);
             domains = 0; blocked.set(0); forwarded.set(0); errors.set(0); lastDnsFailure = "NONE";
             unsupportedPackets.set(0); malformedPackets.set(0); unsupportedTcpPackets.set(0);
-            networkChanges.set(0); networkMonitoring = false;
+            ignoredPackets.set(0); refusedTlsConnections.set(0); recoveries.set(0);
+            networkChanges.set(0); networkMonitoring = false; privateDnsStrict = false;
             cancelledNetworkRequests.set(0);
             tcpQueries.set(0); tcpReplies.set(0); udpTruncated.set(0);
             Session next = new Session();
@@ -223,15 +263,25 @@ public final class DnsVpnService extends VpnService {
             new Thread(next::run, "hisn-dns-reader").start();
         } catch (RuntimeException unavailable) {
             state = State.ERROR;
+            alert(R.string.dns_failed_body);
             stopSelf();
         }
         return START_NOT_STICKY;
     }
 
+    /** Another VPN took over or the owner disconnected Hisn in Android settings. */
     @Override public void onRevoke() {
-        state = State.OFF;
+        setResumeRequested(this, false);
+        // Close first so a reader failing on the reset tunnel cannot replace this OFF state or notice.
         closeSession();
+        state = State.OFF;
+        alert(R.string.dns_stopped_body);
         stopSelf();
+    }
+
+    private void alert(int body) {
+        try { notifyStopped(this, body); }
+        catch (RuntimeException unavailable) { /* The dashboard still shows the state. */ }
     }
 
     @Override public void onDestroy() {
@@ -250,6 +300,7 @@ public final class DnsVpnService extends VpnService {
                 activeService = null;
                 connectionCheck = idleCheck();
                 networkMonitoring = false;
+                privateDnsStrict = false;
             }
         }
         if (current != null) current.close();
@@ -260,6 +311,11 @@ public final class DnsVpnService extends VpnService {
         private final AtomicLong selfCheckTcpSeen = new AtomicLong();
         private final DnsTcpServer tcp = new DnsTcpServer();
         private final BrowserTestHooks browserTest = new BrowserTestHooks();
+        // Accessed under CHECK_LOCK.
+        private final DnsHealth health = new DnsHealth();
+        // Android's strict Private DNS hostname. Android may resolve it through this tunnel, and
+        // strict mode fails closed, so it is never answered NXDOMAIN.
+        private volatile String privateDnsName;
         private volatile boolean closed;
         private volatile ParcelFileDescriptor tunnel;
         private volatile TlsDnsTransport transport;
@@ -270,6 +326,9 @@ public final class DnsVpnService extends VpnService {
         private final Object monitorLock = new Object();
         private final Map<Network, LinkProperties> linkMarks = new HashMap<>();
         private final Map<Network, Integer> capabilityMarks = new HashMap<>();
+        private final Map<Network, String> privateDnsNames = new HashMap<>();
+        // Under monitorLock. Once callbacks report link properties, the pre-tunnel reading is dropped.
+        private boolean privateDnsTracked;
         private ConnectivityManager connectivity;
         private ConnectivityManager.NetworkCallback callback;
         // Never wait for a response on a packet-processing worker: this query enters the TUN itself.
@@ -287,9 +346,14 @@ public final class DnsVpnService extends VpnService {
                 }
                 if (closed) return;
                 domains = seed.domainCount;
-                ParcelFileDescriptor established = new Builder().setSession(getString(R.string.dns_notification_title))
+                readPrivateDns();
+                Builder builder = new Builder().setSession(getString(R.string.dns_notification_title))
                         .setMtu(1500).addAddress("10.111.0.1", 32).addDnsServer("10.111.0.2")
-                        .addRoute("10.111.0.2", 32).allowFamily(OsConstants.AF_INET6).establish();
+                        .addRoute("10.111.0.2", 32).allowFamily(OsConstants.AF_INET6);
+                // Apps targeting API 29+ get a metered VPN by default, which makes Wi-Fi look metered to
+                // every app. false inherits the underlying network's metered state instead.
+                if (Build.VERSION.SDK_INT >= 29) builder.setMetered(false);
+                ParcelFileDescriptor established = builder.establish();
                 if (established == null) throw new IOException("VPN permission unavailable");
                 tunnel = established;
                 if (closed) { established.close(); return; }
@@ -298,7 +362,8 @@ public final class DnsVpnService extends VpnService {
                     DomainPolicy.Decision custom = settings.snapshot().domains.evaluate(hostname);
                     return custom == DomainPolicy.Decision.ALLOW ? seed.policy.evaluate(hostname) : custom;
                 };
-                DnsPolicy.Rules rules = hostname -> browserTest.evaluate(hostname, savedRules);
+                DnsPolicy.Rules rules = hostname -> EncryptedDnsProviders.blocks(hostname, privateDnsName)
+                        ? DomainPolicy.Decision.BLOCK : browserTest.evaluate(hostname, savedRules);
                 DnsPolicy policy = new DnsPolicy(hostname -> {
                     // This reserved test name must always be handled locally, regardless of user rules.
                     if (DnsTunnelProbe.BLOCKED_HOST.equalsIgnoreCase(hostname)) {
@@ -333,8 +398,9 @@ public final class DnsVpnService extends VpnService {
                     while (!closed) {
                         emitTcp(tcp.poll(android.os.SystemClock.elapsedRealtime()), tcpExchange, tcpPolicy, output);
                         if (android.os.SystemClock.elapsedRealtime() - checkpointAt >= 60000) {
-                            settings.checkpoint();
                             checkpointAt = android.os.SystemClock.elapsedRealtime();
+                            // Retried next minute; failing to save commitment progress must not stop DNS filtering.
+                            try { settings.checkpoint(); } catch (RuntimeException unsaved) { /* Keep filtering. */ }
                         }
                         if (Os.poll(new StructPollfd[]{poll}, 250) == 0) continue;
                         if ((poll.revents & (OsConstants.POLLERR | OsConstants.POLLHUP | OsConstants.POLLNVAL)) != 0) {
@@ -343,23 +409,17 @@ public final class DnsVpnService extends VpnService {
                         if ((poll.revents & OsConstants.POLLIN) == 0) continue;
                         int size = input.read(buffer);
                         if (size <= 0) continue;
-                        Ipv4DnsPacket packet = Ipv4DnsPacket.parse(Arrays.copyOf(buffer, size), SERVER);
+                        byte[] raw = Arrays.copyOf(buffer, size);
+                        Ipv4DnsPacket packet = Ipv4DnsPacket.parse(raw, SERVER);
                         if (packet == null) {
-                            Ipv4TcpPacket tcpPacket = Ipv4TcpPacket.parse(Arrays.copyOf(buffer, size), SERVER);
+                            Ipv4TcpPacket tcpPacket = Ipv4TcpPacket.parse(raw, SERVER);
                             if (tcpPacket != null) {
                                 emitTcp(tcp.receive(tcpPacket, android.os.SystemClock.elapsedRealtime()), tcpExchange, tcpPolicy, output);
                                 continue;
                             }
-                            DnsPacketKind kind = DnsPacketKind.classify(Arrays.copyOf(buffer, size), SERVER);
-                            synchronized (CHECK_LOCK) {
-                                if (closed || session != this) continue;
-                                if (kind == DnsPacketKind.MALFORMED) malformedPackets.incrementAndGet();
-                                else {
-                                    unsupportedPackets.incrementAndGet();
-                                    if (kind == DnsPacketKind.TCP_DNS_UNSUPPORTED) unsupportedTcpPackets.incrementAndGet();
-                                }
-                                errors.incrementAndGet(); state = State.DEGRADED;
-                            }
+                            Ipv4TcpPacket tlsPacket = Ipv4TcpPacket.parse(raw, SERVER, 853);
+                            if (tlsPacket != null) refuseTls(tlsPacket, output);
+                            else recordUnsupported(DnsPacketKind.classify(raw, SERVER));
                             continue;
                         }
                         long queuedAt = android.os.SystemClock.elapsedRealtime();
@@ -380,6 +440,8 @@ public final class DnsVpnService extends VpnService {
                 synchronized (CHECK_LOCK) {
                     if (!closed && session == this) {
                         state = State.ERROR; errors.incrementAndGet(); stopSelf();
+                        // Posted under the lock so a concurrent revocation's notice always lands last.
+                        alert(R.string.dns_failed_body);
                     }
                 }
             } finally {
@@ -413,6 +475,54 @@ public final class DnsVpnService extends VpnService {
             }
         }
 
+        /** Android's automatic Private DNS probes port 853 on the advertised server; an immediate
+         * reset lets it fall back to filtered port 53 instead of waiting for a connect timeout. */
+        private void refuseTls(Ipv4TcpPacket packet, OutputStream output) throws IOException {
+            byte[] reset = DnsTcpServer.refuse(packet);
+            if (reset != null) {
+                synchronized (outputLock) {
+                    if (closed) return;
+                    output.write(reset);
+                }
+            }
+            synchronized (CHECK_LOCK) {
+                if (closed || session != this) return;
+                if ((packet.flags & (Ipv4TcpPacket.SYN | Ipv4TcpPacket.ACK)) == Ipv4TcpPacket.SYN)
+                    refusedTlsConnections.incrementAndGet();
+                else ignoredPackets.incrementAndGet();
+            }
+        }
+
+        private void recordUnsupported(DnsPacketKind kind) {
+            synchronized (CHECK_LOCK) {
+                if (closed || session != this) return;
+                if (kind.benign()) { ignoredPackets.incrementAndGet(); return; }
+                if (kind == DnsPacketKind.MALFORMED) malformedPackets.incrementAndGet();
+                else {
+                    unsupportedPackets.incrementAndGet();
+                    if (kind == DnsPacketKind.TCP_DNS_UNSUPPORTED) unsupportedTcpPackets.incrementAndGet();
+                }
+                markFailure();
+            }
+        }
+
+        // Called with CHECK_LOCK held. Counters stay cumulative for the whole session.
+        private void markFailure() {
+            errors.incrementAndGet();
+            health.failure(android.os.SystemClock.elapsedRealtime());
+            state = State.DEGRADED;
+        }
+
+        // Called with CHECK_LOCK held after a validated upstream answer. A failed network
+        // monitor registration keeps the session degraded.
+        private void markSuccess() {
+            if (networkMonitoring && health.success(android.os.SystemClock.elapsedRealtime())
+                    && state == State.DEGRADED) {
+                state = State.RUNNING;
+                recoveries.incrementAndGet();
+            }
+        }
+
         private void finishTcp(DnsTcpServer.Request request, byte[] response,
                 DnsExchange exchange, DnsPolicy policy, OutputStream output) {
             if (closed) return;
@@ -435,7 +545,8 @@ public final class DnsVpnService extends VpnService {
                     if (closed || session != this || !tcp.isPending(request)) return;
                     if (requestEpoch != networkEpoch) throw new IOException("DNS connection invalidated");
                     tcpReplies.incrementAndGet();
-                    if (resolution.blocked) blocked.incrementAndGet(); else forwarded.incrementAndGet();
+                    if (resolution.blocked) blocked.incrementAndGet();
+                    else { forwarded.incrementAndGet(); markSuccess(); }
                 }
                 finishTcp(request, resolution.answer, exchange, policy, output);
             } catch (IOException | IllegalArgumentException failure) {
@@ -473,12 +584,14 @@ public final class DnsVpnService extends VpnService {
                         synchronized (monitorLock) {
                             if (closed || !linkMarks.containsKey(network)) return;
                             linkMarks.remove(network); capabilityMarks.remove(network);
+                            trackPrivateDns(network, null);
                         }
                         networkChanged();
                     }
                     @Override public void onLinkPropertiesChanged(Network network, LinkProperties properties) {
                         synchronized (monitorLock) {
                             if (closed || !linkMarks.containsKey(network)) return;
+                            trackPrivateDns(network, properties);
                             LinkProperties previous = linkMarks.put(network, snapshotLinks(properties));
                             if (previous == null || previous.equals(properties)) return;
                         }
@@ -516,6 +629,41 @@ public final class DnsVpnService extends VpnService {
             }
         }
 
+        /** Learn strict Private DNS before the tunnel exists, so its hostname is never answered NXDOMAIN. */
+        private void readPrivateDns() {
+            try {
+                ConnectivityManager manager = getSystemService(ConnectivityManager.class);
+                Network active = manager.getActiveNetwork();
+                NetworkCapabilities capabilities = active == null ? null : manager.getNetworkCapabilities(active);
+                // Match the callback: another VPN that is still active is never tracked.
+                if (capabilities == null || !capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)) return;
+                String name = privateDnsServerName(manager.getLinkProperties(active));
+                synchronized (monitorLock) { if (!closed && !privateDnsTracked) publishPrivateDns(name); }
+            } catch (RuntimeException unavailable) { /* The network callback reports it later. */ }
+        }
+
+        // Called with monitorLock held. Only strict mode exposes a provider hostname; the setting
+        // is global, so any tracked underlying network reports the same name. Read-only.
+        private void trackPrivateDns(Network network, LinkProperties properties) {
+            privateDnsTracked = true;
+            String name = privateDnsServerName(properties);
+            if (name == null) privateDnsNames.remove(network); else privateDnsNames.put(network, name);
+            publishPrivateDns(privateDnsNames.isEmpty() ? null : privateDnsNames.values().iterator().next());
+        }
+
+        private void publishPrivateDns(String name) {
+            privateDnsName = name;
+            synchronized (CHECK_LOCK) {
+                if (!closed && session == this) privateDnsStrict = name != null;
+            }
+        }
+
+        private String privateDnsServerName(LinkProperties properties) {
+            if (properties == null || Build.VERSION.SDK_INT < 28) return null;
+            String name = properties.getPrivateDnsServerName();
+            return name == null || name.isEmpty() ? null : name;
+        }
+
         private LinkProperties snapshotLinks(LinkProperties properties) {
             // The SDK copy constructor is hidden; Parcelable provides an independent
             // snapshot using public API, so later mutations cannot defeat comparison.
@@ -541,7 +689,7 @@ public final class DnsVpnService extends VpnService {
                 }
                 failureEpoch++;
                 lastDnsFailure = category;
-                errors.incrementAndGet(); state = State.DEGRADED;
+                markFailure();
                 if (connectionCheck.state == CheckState.PASSED) {
                     connectionCheck = new ConnectionCheck(CheckState.STALE, false, 0, DnsTunnelProbe.Failure.NONE);
                 }
@@ -557,7 +705,7 @@ public final class DnsVpnService extends VpnService {
                     try { connectivity.unregisterNetworkCallback(previous); }
                     catch (RuntimeException alreadyGone) { /* No permission or live callback left. */ }
                 }
-                linkMarks.clear(); capabilityMarks.clear();
+                linkMarks.clear(); capabilityMarks.clear(); privateDnsNames.clear();
             }
         }
 
@@ -586,7 +734,7 @@ public final class DnsVpnService extends VpnService {
                     if (closed || session != this || activeService != DnsVpnService.this) return;
                     if (truncated) udpTruncated.incrementAndGet();
                     if (resolution.blocked) blocked.incrementAndGet();
-                    else forwarded.incrementAndGet();
+                    else { forwarded.incrementAndGet(); markSuccess(); }
                 }
             } catch (IOException | IllegalArgumentException failure) {
                 if (recordRequestFailure(failureCategory(failure), requestEpoch)) sendUdpFailure(packet, policy, output);
@@ -602,6 +750,7 @@ public final class DnsVpnService extends VpnService {
                             : "Invalid or unsupported DNS reply structure".equals(failure.getMessage()) ? "REPLY_STRUCTURE"
                             : "Could not protect resolver socket".equals(failure.getMessage()) ? "PROTECT"
                             : "Invalid DNS frame size".equals(failure.getMessage()) ? "FRAME"
+                            : "Unsupported DNS request".equals(failure.getMessage()) ? "QUERY_UNSUPPORTED"
                             : failure instanceof java.io.EOFException ? "EOF"
                             : failure instanceof java.net.SocketException ? "SOCKET"
                             : failure instanceof IllegalArgumentException ? "PACKET"
@@ -630,6 +779,7 @@ public final class DnsVpnService extends VpnService {
                         activeService = null;
                         connectionCheck = idleCheck();
                         networkMonitoring = false;
+                        privateDnsStrict = false;
                     }
                 }
             }
