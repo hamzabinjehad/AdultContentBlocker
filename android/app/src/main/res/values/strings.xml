@@ -6,6 +6,7 @@
     <string name="status_body">Enable the layers you choose, then review each status. DNS, selected-app restrictions and sampled image/video checks have different coverage. A commitment does not prevent Android from disabling or removing Hisn.</string>
     <string name="layers">Protection layers</string>
     <string name="network">DNS filtering · Off</string>
+    <string name="dns_seed_version">Bundled domain list · Version %1$d · Built %2$s · Updates arrive only with a new Hisn version</string>
     <string name="dns_start">Set up DNS filtering</string>
     <string name="dns_settings">Android VPN settings</string>
     <string name="vpn_settings_reminder_title">Review your active commitment</string>

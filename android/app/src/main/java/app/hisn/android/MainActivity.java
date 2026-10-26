@@ -127,6 +127,8 @@ public final class MainActivity extends Activity {
         setupNext.setOnClickListener(view -> nextSetupStep());
         heading(R.string.layers, 21);
         networkState = paragraph(R.string.network);
+        paragraph(R.string.network).setText(getString(R.string.dns_seed_version,
+                BuildConfig.DOMAIN_SEED_VERSION, seedDate(BuildConfig.DOMAIN_SEED_BUILT)));
         startDns = new Button(this);
         startDns.setText(R.string.dns_start);
         startDns.setAllCaps(false);
@@ -661,6 +663,14 @@ public final class MainActivity extends Activity {
         scheduleState.setText(getString(R.string.schedule_summary, schedule.apps.size(),
                 scheduleTime(schedule.startMinute), scheduleTime(schedule.endMinute),
                 getString(active ? R.string.schedule_window_active : R.string.schedule_window_inactive)));
+    }
+
+    /** The bundled list's signed build date, in the reader's own date format. */
+    private static String seedDate(String isoDate) {
+        try {
+            return java.time.LocalDate.parse(isoDate).format(java.time.format.DateTimeFormatter
+                    .ofLocalizedDate(java.time.format.FormatStyle.MEDIUM).withLocale(java.util.Locale.getDefault()));
+        } catch (RuntimeException unparsable) { return isoDate; }
     }
 
     private String scheduleTime(int minute) {

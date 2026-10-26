@@ -6,6 +6,7 @@
     <string name="status_body">فعّل الطبقات التي تختارها وراجع حالة كل منها. يختلف نطاق DNS وتقييد التطبيقات وفحص الصور والفيديو. لا يمنع الالتزام أندرويد من تعطيل حصن أو إزالته.</string>
     <string name="layers">طبقات الحماية</string>
     <string name="network">فلترة DNS · متوقفة</string>
+    <string name="dns_seed_version">قائمة النطاقات المضمّنة · الإصدار %1$d · بُنيت في %2$s · تصل التحديثات مع إصدار جديد من حصن فقط</string>
     <string name="dns_start">إعداد فلترة DNS</string>
     <string name="dns_settings">إعدادات VPN في أندرويد</string>
     <string name="vpn_settings_reminder_title">راجع التزامك النشط</string>
