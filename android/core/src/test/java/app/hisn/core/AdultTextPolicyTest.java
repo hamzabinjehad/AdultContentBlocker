@@ -188,7 +188,7 @@ public final class AdultTextPolicyTest {
                 "شاهد الجنسية في جواز السفر", "علاج ادمان الاباحيه", "Download sexual health advice",
                 "Watch Dara and Abhi play, free entry", "Free class with Nika, Nashwa and Inek",
                 "Watch Nik Masri live for free", "tahmil aflam Nik Cage mojani", "Watch the video, sex ed for teens",
-                "Watch pussy cats with Dara and Abhi", "Download 97ab photos free")) {
+                "Watch pussy cats with Dara and Abhi", "Download 97ab photos free", "Watch Neek and Dara play, free")) {
             check(!seed.blocks(text), "actual seed keeps benign fixture available: " + text);
         }
         check(!seed.blocks("Watch sharmota"), "an Arabizi insult alone is not trusted");
@@ -258,7 +258,8 @@ public final class AdultTextPolicyTest {
                 "Watch seks sks free", "Watch sharmota zeb", "Watch pussy cats with Dara and Abhi",
                 "A free OnlyFans budgeting guide by Abhi and Dara",
                 "Watch porn addiction recovery with Dara, Abhi, Nika and 97ab",
-                "Yalla 3ala el ma7al, free 2ahwa 7elwa", "Download 7abibi playlist free, inshallah")) {
+                "Yalla 3ala el ma7al, free 2ahwa 7elwa", "Download 7abibi playlist free, inshallah",
+                "Watch Neek and Dara play, free")) {
             check(!policy.blocks(sample), "Arabizi chat, names and contextual words stay allowed: " + sample);
         }
         check(new AdultTextPolicy(Collections.singletonList(rule("video sex", 8))).blocks("Watch video sex"),
@@ -268,7 +269,7 @@ public final class AdultTextPolicyTest {
         check(!new AdultTextPolicy(Collections.singletonList(latin("sharmota", 7))).blocks("Watch sharmota sharmota"),
                 "weak Arabizi entries never become strong evidence");
         java.util.Random random = new java.util.Random(77);
-        String[] words = {"ordinary", "ordinary", "ordinary", "ordinary", "porn", "pussy", "sharmota", "kahba", "aba7i",
+        String[] words = {"ordinary", "ordinary", "ordinary", "ordinary", "porn", "pussy", "sharmota", "kahba", "aba7i", "neek",
                 "dara", "abhi", "zeb", "video", "sex", "aflam", "sks", "watch", "free", "tahmil", "addiction", "recovery"};
         for (int at = 0; at < 3000; at++) {
             String[] sample = new String[5 + random.nextInt(60)];
@@ -280,7 +281,7 @@ public final class AdultTextPolicyTest {
 
     /** Direct reference for checkArabizi: contextual Arabizi joins only beside a clear strong Arabizi signal. */
     private static boolean referenceArabizi(String[] text, List<AdultTextPolicy.Rule> rules) {
-        List<String> contextual = Arrays.asList("dara", "abhi", "nika", "inek", "97ab", "seks", "sks", "zeb",
+        List<String> contextual = Arrays.asList("neek", "dara", "abhi", "nika", "inek", "97ab", "seks", "sks", "zeb",
                 "video sex", "sex arab", "nik masri", "aflam nik");
         for (int end = 0; end < text.length; end++) {
             int left = Math.max(0, end - 15);

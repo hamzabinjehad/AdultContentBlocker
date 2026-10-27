@@ -82,10 +82,11 @@ public final class AdultTextPolicy {
     // never confirm each other ("Nick Bourne" is a name). Latin "nik" is the name Nik.
     private static final Set<String> AMBIGUOUS = immutableSet("نيك", "بورنو", "بورن", "كسكس", "كسكسي", "طابون", "nik");
     // Reviewed Arabizi spellings with no everyday meaning: whore, porn(ographic), fucked,
-    // prostitution. The seed's other ~800 generated single words stay contextual. Package-visible for tests.
+    // prostitution. The seed's other ~800 generated single words stay contextual, neek among
+    // them as its Arabic form نيك is ambiguous (Neek is also a nickname). Package-visible for tests.
     static final Set<String> ARABIZI_CLEAR = immutableSet("sharmota", "sharmoot", "sharameet",
             "shrmota", "shrmuta", "shrmot", "shrmut", "shramit", "shrmo6a", "shrm6a", "kahba", "kahbat",
-            "gahba", "neek", "3ahra", "3ahira", "3ahrat", "3aherat", "aba7i", "aba7ia", "aba7iat",
+            "gahba", "3ahra", "3ahira", "3ahrat", "3aherat", "aba7i", "aba7ia", "aba7iat",
             "aba7y", "aba7ya", "aba7yat", "alaba7ia", "alaba7ya", "ebahia", "ebahiya", "ibahia", "ibahiya",
             "arabsex", "sexarab", "sksarab", "mtnak", "mtnaka", "d3ara", "da3ara", "mnyok", "mnyuk");
     // The clear spellings of "pornographic" (Arabic اباحي, اباحيه), trusted alone like them.
