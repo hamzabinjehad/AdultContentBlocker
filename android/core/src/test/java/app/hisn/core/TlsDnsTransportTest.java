@@ -11,6 +11,12 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -87,8 +93,10 @@ public final class TlsDnsTransportTest {
             invalidateDuringOpen(loopback, query, true);
             rejectIdentity(serverContext, clientContext.getSocketFactory(), loopback, query, "wrong.example");
             rejectIdentity(serverContext, (SSLSocketFactory) SSLSocketFactory.getDefault(), loopback, query, "localhost");
+            Failover.run(serverContext, clientContext.getSocketFactory(), loopback, query);
         }
-        System.out.println("TlsDnsTransport tests passed (protection ordering, TLS identity, stale-only retry, generation invalidation, in-flight cancellation and terminal closure)");
+        cloudflareFamilyOnly();
+        System.out.println("TlsDnsTransport tests passed (protection ordering, TLS identity, stale-only retry, generation invalidation, in-flight cancellation, terminal closure and backup-resolver failover)");
     }
 
     private static void readQuery(SSLSocket socket, byte[] query, boolean reply) throws IOException {
@@ -463,5 +471,235 @@ public final class TlsDnsTransportTest {
             }
             serving.get(4, TimeUnit.SECONDS);
         } finally { executor.shutdownNow(); }
+    }
+
+    /** The only upstream is Cloudflare for Families, main address first, then its second address. */
+    private static void cloudflareFamilyOnly() throws Exception {
+        try (TlsDnsTransport family = TlsDnsTransport.cloudflareFamily(2000, socket -> {
+            throw new AssertionError("Constructing the upstream must not connect");
+        })) {
+            List<InetSocketAddress> resolvers = family.resolvers();
+            if (resolvers.size() != 2 || !resolvers.get(0).equals(new InetSocketAddress(InetAddress.getByName("1.1.1.3"), 853))
+                    || !resolvers.get(1).equals(new InetSocketAddress(InetAddress.getByName("1.0.0.3"), 853))
+                    || !"family.cloudflare-dns.com".equals(family.serverName()) || family.preferredResolver() != 0)
+                throw new AssertionError("Upstream must be the two Cloudflare Families addresses on 853, main first");
+        }
+        try {
+            new TlsDnsTransport(Collections.emptyList(), "localhost", 200, socket -> true);
+            throw new AssertionError("Empty resolver list accepted");
+        } catch (IllegalArgumentException expected) { }
+    }
+
+    /**
+     * Two loopback resolvers on different ports stand in for 1.1.1.3 and 1.0.0.3. Each accepted
+     * connection is handled in the mode current when it was accepted, and accepts are counted.
+     */
+    private static final class Failover {
+        enum Mode { TLS, STALL, PLAINTEXT, NO_REPLY }
+
+        static final class Resolver implements AutoCloseable {
+            final ServerSocket server;
+            final SSLContext context;
+            volatile Mode mode;
+            final AtomicInteger accepts = new AtomicInteger();
+            final List<Socket> open = Collections.synchronizedList(new ArrayList<>());
+
+            Resolver(SSLContext context, InetAddress loopback, Mode mode) throws IOException {
+                this.context = context; this.mode = mode;
+                server = new ServerSocket(0, 8, loopback);
+                Thread acceptor = new Thread(this::serve, "fake-resolver");
+                acceptor.setDaemon(true);
+                acceptor.start();
+            }
+
+            InetSocketAddress address() { return new InetSocketAddress(server.getInetAddress(), server.getLocalPort()); }
+
+            private void serve() {
+                while (!server.isClosed()) {
+                    Socket client;
+                    try { client = server.accept(); } catch (IOException closed) { return; }
+                    open.add(client);
+                    accepts.incrementAndGet();
+                    Mode current = mode;
+                    Thread handler = new Thread(() -> handle(client, current), "fake-resolver-client");
+                    handler.setDaemon(true);
+                    handler.start();
+                }
+            }
+
+            private void handle(Socket client, Mode current) {
+                try {
+                    client.setSoTimeout(5000);
+                    // Accept TCP, read the TLS hello and never answer, as a black-holed resolver does.
+                    if (current == Mode.STALL) { while (client.getInputStream().read(new byte[4096]) >= 0) { } return; }
+                    if (current == Mode.PLAINTEXT) { client.getOutputStream().write(new byte[]{0, 1, 2, 3, 4}); return; }
+                    SSLSocket secure = (SSLSocket) context.getSocketFactory().createSocket(client, null, client.getPort(), true);
+                    secure.setUseClientMode(false);
+                    DataInputStream input = new DataInputStream(secure.getInputStream());
+                    DataOutputStream output = new DataOutputStream(secure.getOutputStream());
+                    while (true) {
+                        int length = input.readUnsignedShort();
+                        byte[] message = new byte[length]; input.readFully(message);
+                        if (current == Mode.NO_REPLY) return;
+                        message[2] = (byte) 0x81;
+                        output.writeShort(length); output.write(message); output.flush();
+                    }
+                } catch (IOException finished) { /* Client closed or test finished. */ }
+                finally { try { client.close(); } catch (IOException ignored) { } }
+            }
+
+            @Override public void close() throws IOException {
+                server.close();
+                synchronized (open) { for (Socket socket : open) try { socket.close(); } catch (IOException ignored) { } }
+            }
+        }
+
+        static void run(SSLContext context, SSLSocketFactory factory, InetAddress loopback, byte[] query) throws Exception {
+            timeoutMovesToBackupAndReturns(context, factory, loopback, query);
+            refusedMainUsesBackup(context, factory, loopback, query);
+            waitsDoubleWhileMainFails(context, factory, loopback, query);
+            onlyConnectFailuresAndTimeoutsMove(context, factory, loopback, query, Mode.PLAINTEXT);
+            onlyConnectFailuresAndTimeoutsMove(context, factory, loopback, query, Mode.NO_REPLY);
+            bothFailingIsBounded(context, factory, loopback, query);
+            networkChangeReturnsToMain(context, factory, loopback, query);
+            invalidatedAttemptDoesNotMove(context, factory, loopback, query);
+        }
+
+        private static TlsDnsTransport client(Resolver main, Resolver backup, SSLSocketFactory factory,
+                AtomicLong clock, int timeout) {
+            return new TlsDnsTransport(Arrays.asList(main.address(), backup.address()), "localhost", timeout,
+                    socket -> true, factory, clock::get);
+        }
+
+        private static void reply(TlsDnsTransport client, byte[] query, String label) throws IOException {
+            byte[] response = client.exchange(query);
+            if (response.length != query.length || (response[2] & 0x80) == 0) throw new AssertionError(label);
+        }
+
+        private static void counts(Resolver main, int mainAccepts, Resolver backup, int backupAccepts, String label) throws Exception {
+            // Accepts are counted on another thread; let it catch up before comparing.
+            for (int i = 0; i < 100 && (main.accepts.get() < mainAccepts || backup.accepts.get() < backupAccepts); i++) Thread.sleep(10);
+            Thread.sleep(30);
+            if (main.accepts.get() != mainAccepts || backup.accepts.get() != backupAccepts)
+                throw new AssertionError(label + ": main " + main.accepts.get() + ", backup " + backup.accepts.get());
+        }
+
+        private static void timeoutMovesToBackupAndReturns(SSLContext context, SSLSocketFactory factory,
+                InetAddress loopback, byte[] query) throws Exception {
+            AtomicLong clock = new AtomicLong(1000);
+            try (Resolver main = new Resolver(context, loopback, Mode.STALL);
+                 Resolver backup = new Resolver(context, loopback, Mode.TLS);
+                 TlsDnsTransport client = client(main, backup, factory, clock, 300)) {
+                reply(client, query, "Backup answers when the main resolver times out");
+                counts(main, 1, backup, 1, "One main attempt, then the backup");
+                if (client.preferredResolver() != 1) throw new AssertionError("Backup preferred while main waits");
+                reply(client, query, "Backup connection reused");
+                clock.set(1000 + ResolverFailover.FIRST_WAIT - 1);
+                reply(client, query, "Still the backup before the wait ends");
+                counts(main, 1, backup, 1, "No main attempt during its wait");
+                main.mode = Mode.TLS;
+                clock.set(1000 + ResolverFailover.FIRST_WAIT);
+                reply(client, query, "Main resolver answers again after its wait");
+                counts(main, 2, backup, 1, "Returned to the main resolver");
+                reply(client, query, "Main connection reused");
+                counts(main, 2, backup, 1, "Main connection kept");
+                if (client.preferredResolver() != 0) throw new AssertionError("Main preferred after success");
+            }
+        }
+
+        private static void refusedMainUsesBackup(SSLContext context, SSLSocketFactory factory,
+                InetAddress loopback, byte[] query) throws Exception {
+            InetSocketAddress refused;
+            try (ServerSocket closed = new ServerSocket(0, 1, loopback)) {
+                refused = new InetSocketAddress(loopback, closed.getLocalPort());
+            }
+            AtomicLong clock = new AtomicLong();
+            try (Resolver backup = new Resolver(context, loopback, Mode.TLS);
+                 TlsDnsTransport client = new TlsDnsTransport(Arrays.asList(refused, backup.address()),
+                         "localhost", 1500, socket -> true, factory, clock::get)) {
+                reply(client, query, "Backup answers when the main resolver refuses");
+                if (backup.accepts.get() != 1 || client.preferredResolver() != 1) throw new AssertionError("Backup used once");
+            }
+        }
+
+        private static void waitsDoubleWhileMainFails(SSLContext context, SSLSocketFactory factory,
+                InetAddress loopback, byte[] query) throws Exception {
+            AtomicLong clock = new AtomicLong();
+            long first = ResolverFailover.FIRST_WAIT;
+            try (Resolver main = new Resolver(context, loopback, Mode.STALL);
+                 Resolver backup = new Resolver(context, loopback, Mode.TLS);
+                 TlsDnsTransport client = client(main, backup, factory, clock, 300)) {
+                reply(client, query, "First failover");
+                clock.set(first);
+                reply(client, query, "Probe fails, backup answers");
+                counts(main, 2, backup, 2, "Probe dropped the backup connection, then reconnected to it");
+                clock.set(first + 2 * first - 1);
+                reply(client, query, "Second wait is doubled");
+                counts(main, 2, backup, 2, "No probe during the doubled wait");
+                clock.set(first + 2 * first);
+                reply(client, query, "Probe after the doubled wait");
+                counts(main, 3, backup, 3, "Third main attempt only after the doubled wait");
+            }
+        }
+
+        /** A TLS failure or a reply-less close is not a reachability problem: no backup attempt. */
+        private static void onlyConnectFailuresAndTimeoutsMove(SSLContext context, SSLSocketFactory factory,
+                InetAddress loopback, byte[] query, Mode failure) throws Exception {
+            AtomicLong clock = new AtomicLong();
+            try (Resolver main = new Resolver(context, loopback, failure);
+                 Resolver backup = new Resolver(context, loopback, Mode.TLS);
+                 TlsDnsTransport client = client(main, backup, factory, clock, 1500)) {
+                failure(client, query);
+                counts(main, 1, backup, 0, failure + " stays a failure");
+                if (client.preferredResolver() != 0) throw new AssertionError(failure + " marked the main resolver failing");
+            }
+        }
+
+        private static void bothFailingIsBounded(SSLContext context, SSLSocketFactory factory,
+                InetAddress loopback, byte[] query) throws Exception {
+            AtomicLong clock = new AtomicLong();
+            try (Resolver main = new Resolver(context, loopback, Mode.STALL);
+                 Resolver backup = new Resolver(context, loopback, Mode.STALL);
+                 TlsDnsTransport client = client(main, backup, factory, clock, 250)) {
+                try { client.exchange(query); throw new AssertionError("Timeouts answered"); }
+                catch (java.net.SocketTimeoutException expected) { }
+                counts(main, 1, backup, 1, "One attempt per resolver");
+                failure(client, query);
+                counts(main, 2, backup, 1, "Only one attempt while both wait");
+                if (client.preferredResolver() != -1) throw new AssertionError("Nothing preferred while both fail");
+            }
+        }
+
+        private static void networkChangeReturnsToMain(SSLContext context, SSLSocketFactory factory,
+                InetAddress loopback, byte[] query) throws Exception {
+            AtomicLong clock = new AtomicLong();
+            try (Resolver main = new Resolver(context, loopback, Mode.STALL);
+                 Resolver backup = new Resolver(context, loopback, Mode.TLS);
+                 TlsDnsTransport client = client(main, backup, factory, clock, 300)) {
+                reply(client, query, "Backup after main timeout");
+                main.mode = Mode.TLS;
+                client.invalidateConnections();
+                reply(client, query, "A new network starts with the main resolver");
+                counts(main, 2, backup, 1, "Main resolver retried at once after a network change");
+            }
+        }
+
+        /** An attempt cut short by a network change fails; it is not replayed on the backup. */
+        private static void invalidatedAttemptDoesNotMove(SSLContext context, SSLSocketFactory factory,
+                InetAddress loopback, byte[] query) throws Exception {
+            AtomicLong clock = new AtomicLong();
+            ExecutorService worker = Executors.newSingleThreadExecutor();
+            try (Resolver main = new Resolver(context, loopback, Mode.STALL);
+                 Resolver backup = new Resolver(context, loopback, Mode.TLS);
+                 TlsDnsTransport client = client(main, backup, factory, clock, 3000)) {
+                Future<byte[]> pending = worker.submit(() -> client.exchange(query));
+                for (int i = 0; i < 200 && main.accepts.get() == 0; i++) Thread.sleep(10);
+                Thread.sleep(50);
+                client.invalidateConnections();
+                exchangeFailed(pending);
+                counts(main, 1, backup, 0, "Invalidated attempt not moved to the backup");
+                if (client.preferredResolver() != 0) throw new AssertionError("Invalidation counted as a resolver failure");
+            } finally { worker.shutdownNow(); }
+        }
     }
 }

@@ -396,9 +396,9 @@ public final class DnsVpnService extends VpnService {
                     }
                     return rules.evaluate(hostname);
                 });
-                transport = new TlsDnsTransport(
-                        new InetSocketAddress(InetAddress.getByAddress(new byte[]{1, 1, 1, 3}), 853),
-                        "family.cloudflare-dns.com", 2000, DnsVpnService.this::protect);
+                // Cloudflare for Families at 1.1.1.3, or 1.0.0.3 with the same TLS identity when 1.1.1.3
+                // cannot be reached or times out. Never plaintext, never an unfiltered resolver.
+                transport = TlsDnsTransport.cloudflareFamily(2000, DnsVpnService.this::protect);
                 DnsExchange exchange = new DnsExchange(policy, transport);
                 DnsExchange tcpExchange = new DnsExchange(tcpPolicy, transport);
                 try (InputStream input = new ParcelFileDescriptor.AutoCloseInputStream(ParcelFileDescriptor.dup(established.getFileDescriptor()));
