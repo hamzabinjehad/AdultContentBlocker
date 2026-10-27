@@ -26,8 +26,8 @@ import java.util.Set;
 /** Opt-in sampling of selected apps' windows (split screen, pop-up and picture-in-picture included),
  * one window and one inference at a time. Never persists pixels or bypasses secure surfaces. */
 final class VisualGuard implements AutoCloseable {
-    /** Acts on the app whose window was flagged. */
-    interface Block { void run(String app, int window); }
+    /** Acts on the app whose window was flagged; false when that window was acted on moments ago. */
+    interface Block { boolean run(GuardWindows.Window window); }
 
     /** Keeps the latest failure on the dashboard until a later sample succeeds. */
     static final VisualHealth health = new VisualHealth();
@@ -111,6 +111,9 @@ final class VisualGuard implements AutoCloseable {
         if (!rules.visualEnabled) { eligibility = "OFF"; return eligible; }
         List<GuardWindows.Window> windows = TextGuardService.selectedWindows(service, excluded, rules.scannedApps::contains);
         if (windows == null) { eligibility = "NO_ROOT"; return eligible; }
+        List<Integer> ids = new ArrayList<>();
+        for (GuardWindows.Window window : windows) ids.add(window.id);
+        cadence.retain(ids);
         if (windows.isEmpty()) { eligibility = "NOT_SELECTED"; return eligible; }
         boolean typing = false;
         for (GuardWindows.Window window : windows) {
@@ -125,14 +128,15 @@ final class VisualGuard implements AutoCloseable {
         return eligible;
     }
 
-    /** True while an input field of that window is focused, including passwords; null when it is gone. */
+    /** True while that window holds input focus and an input field in it is focused, including
+     * passwords (rule in core GuardWindows.typing); null when it is gone. */
     private Boolean typing(GuardWindows.Window window) {
         AccessibilityNodeInfo root = null, input = null;
         try {
             root = TextGuardService.windowRoot(service, window);
             if (root == null) return null;
             input = root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT);
-            return input != null && (input.isEditable() || input.isPassword());
+            return GuardWindows.typing(window, input != null && (input.isEditable() || input.isPassword()));
         } finally {
             if (input != null) input.recycle();
             if (root != null) root.recycle();
@@ -143,6 +147,7 @@ final class VisualGuard implements AutoCloseable {
         if (closed) return;
         boolean interactive = interactive();
         long now = SystemClock.uptimeMillis();
+        cadence.polled(now);
         schedule(cadence.interval(interactive, now));
         try {
             if (!PolicyStore.get(service).snapshot().visualEnabled) {
@@ -258,8 +263,7 @@ final class VisualGuard implements AutoCloseable {
             health.report(State.SAMPLED);
             if ("block".equals(verdict)) {
                 gate.invalidate();
-                interventions++;
-                block.run(target.app, target.id);
+                if (block.run(target)) interventions++;
             }
         } catch (RuntimeException unavailable) { fail(); }
         finally { sampleEnded(); }

@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import app.hisn.core.GuardWindows;
 import app.hisn.core.InspectionHealth;
+import app.hisn.core.InterventionRepeat;
 import app.hisn.core.LabelScan;
 import app.hisn.core.VisibleTextSample;
 
@@ -34,6 +35,7 @@ public final class TextGuardService extends AccessibilityService {
     static volatile long holdEnforcements;
     static volatile long homeFailures;
     static volatile long inspectionFailures;
+    static volatile long repeatHoldOffs;
     /** After a word or image block, reopening the same app within this period returns Home again. */
     static final long BLOCK_HOLD_MILLIS = 60000;
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -46,6 +48,11 @@ public final class TextGuardService extends AccessibilityService {
     private int rootRetries;
     private Set<String> excluded;
     private VisualGuard visual;
+    /** A window Home left on screen (pop-up, refused PiP dismiss) is not acted on again at once. */
+    private final InterventionRepeat repeat = new InterventionRepeat();
+    /** The selected windows of the last inspection; a windows-changed event with the same set
+     * leaves them to the heartbeat and app events instead of inspecting again. */
+    private String inspectedKey;
     private final Runnable inspect = this::inspectWindow;
     private final Runnable discover = this::inspectCurrentSelectedWindow;
     private final Runnable checkpoint = this::checkpointCommitment;
@@ -85,7 +92,7 @@ public final class TextGuardService extends AccessibilityService {
     }
 
     private VisualGuard newVisualGuard() {
-        return new VisualGuard(this, (app, window) -> intervene(app, window, false, false, true, false));
+        return new VisualGuard(this, window -> intervene(window.app, window.id, window.active, false, false, true, false));
     }
 
     /** Saves commitment progress once a minute so a restart loses little counted time. */
@@ -103,7 +110,7 @@ public final class TextGuardService extends AccessibilityService {
         try {
             PolicyStore.Snapshot rules = PolicyStore.get(this).snapshot();
             List<GuardWindows.Window> windows = selectedWindows(this, excluded, app -> isSelected(rules, app));
-            if (windows == null || windows.isEmpty()) return;
+            if (windows == null || windows.isEmpty() || GuardWindows.key(windows).equals(inspectedKey)) return;
             pendingPackage = windows.get(0).app;
             rootRetries = 5;
             inspectPending = true;
@@ -190,7 +197,7 @@ public final class TextGuardService extends AccessibilityService {
                 && event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             holdEnforcements++;
             pendingPackage = name;
-            intervene(name, event.getWindowId(), heldWord, false, heldVisual, true);
+            intervene(name, event.getWindowId(), true, heldWord, false, heldVisual, true);
             return;
         }
         try {
@@ -225,6 +232,7 @@ public final class TextGuardService extends AccessibilityService {
         try {
             PolicyStore.Snapshot rules = PolicyStore.get(this).snapshot();
             List<GuardWindows.Window> windows = selectedWindows(this, excluded, app -> isSelected(rules, app));
+            inspectedKey = windows == null ? null : GuardWindows.key(windows);
             if (windows == null) {
                 inspectionOutcome = "no-root";
                 if (!retryRoot(name)) inspection.record(InspectionHealth.Outcome.INCOMPLETE);
@@ -241,11 +249,25 @@ public final class TextGuardService extends AccessibilityService {
                 pendingPackage = name = windows.get(0).app;
                 rootRetries = 5;
             }
+            // A window acted on moments ago and still on screen though not in use is left for now,
+            // so other selected windows are still checked and Home is not pressed in a loop.
+            long now = SystemClock.elapsedRealtime();
+            List<GuardWindows.Window> held = new ArrayList<>();
+            for (GuardWindows.Window window : windows) {
+                if (repeat.wait(window.app, window.id, window.active, now) > 0) held.add(window);
+            }
+            windows.removeAll(held);
+            if (windows.isEmpty()) {
+                repeatHoldOffs++;
+                inspectionOutcome = "repeat-held";
+                scheduleHeartbeat();
+                return;
+            }
             // Blocked, scheduled and nothing-to-read decisions are complete inspections too.
             for (GuardWindows.Window window : windows) {
                 if (rules.blockedApps.contains(window.app)) {
                     inspection.record(InspectionHealth.Outcome.COMPLETE);
-                    intervene(window.app, window.id, false, false, false, false);
+                    intervene(window.app, window.id, window.active, false, false, false, false);
                     return;
                 }
             }
@@ -256,7 +278,7 @@ public final class TextGuardService extends AccessibilityService {
             for (GuardWindows.Window window : windows) {
                 if (rules.schedule.blocks(window.app, minute)) {
                     inspection.record(InspectionHealth.Outcome.COMPLETE);
-                    intervene(window.app, window.id, false, true, false, false);
+                    intervene(window.app, window.id, window.active, false, true, false, false);
                     return;
                 }
                 if (rules.scannedApps.contains(window.app) && rules.hasWordProtection()) scanned.add(window);
@@ -265,13 +287,16 @@ public final class TextGuardService extends AccessibilityService {
             if (scanned.isEmpty()) {
                 inspection.record(InspectionHealth.Outcome.COMPLETE);
                 // A static allowed screen must still be blocked when its daily window begins.
-                if (scheduledOnScreen) scheduleHeartbeat();
+                if (scheduledOnScreen || !held.isEmpty()) scheduleHeartbeat();
                 return;
             }
             if (rules.adultWordsEnabled) AdultPolicyAssets.ensureLoaded(this);
             app.hisn.core.AdultTextPolicy adult = AdultPolicyAssets.policy();
             boolean partial = rules.adultWordsEnabled && adult == null, read = false;
             // One 512-node budget shared by every window, so split screen costs no more than one app.
+            // Small windows (PiP, then other inactive ones) are read first and hand what they leave
+            // to the window in use (rule and tests in core GuardWindows.scanOrder).
+            scanned = GuardWindows.scanOrder(scanned);
             int left = LabelScan.NODE_BUDGET;
             for (int i = 0; i < scanned.size(); i++) {
                 GuardWindows.Window window = scanned.get(i);
@@ -286,7 +311,7 @@ public final class TextGuardService extends AccessibilityService {
                 read |= !text.isEmpty();
                 if (matches(rules, adult, text)) {
                     inspection.record(partial ? InspectionHealth.Outcome.INCOMPLETE : InspectionHealth.Outcome.COMPLETE);
-                    intervene(window.app, window.id, true, false, false, false);
+                    intervene(window.app, window.id, window.active, true, false, false, false);
                     return;
                 }
             }
@@ -300,6 +325,7 @@ public final class TextGuardService extends AccessibilityService {
             // Keep rechecking this app, more slowly, instead of going silent.
             inspection.record(InspectionHealth.Outcome.INCOMPLETE);
             inspectionOutcome = "inspection-failed";
+            inspectedKey = null;
             inspectionFailures++;
             if (name.equals(pendingPackage)) {
                 handler.removeCallbacks(heartbeat);
@@ -359,9 +385,14 @@ public final class TextGuardService extends AccessibilityService {
         @Override public void release(AccessibilityNodeInfo node) { node.recycle(); }
     }
 
-    /** Acts on the offending app: closes its window when that is picture-in-picture, else Home. */
-    private void intervene(String app, int window, boolean word, boolean schedule, boolean visualReason, boolean held) {
+    /** Acts on the offending app: closes its window when that is picture-in-picture, else Home.
+     * Not again for a while on the same window while Home has left it on screen and out of use
+     * (rule and tests in core InterventionRepeat); reopening a held app always acts. */
+    private boolean intervene(String app, int window, boolean active, boolean word, boolean schedule,
+            boolean visualReason, boolean held) {
         long now = SystemClock.elapsedRealtime();
+        if (!held && repeat.wait(app, window, active, now) > 0) { repeatHoldOffs++; return false; }
+        if (app != null) repeat.acted(app, window, now);
         inspectionOutcome = held ? "hold-intervention" : schedule ? "schedule-intervention"
                 : word ? "word-intervention" : visualReason ? "visual-intervention" : "app-intervention";
         if (word && !held) wordInterventions++;
@@ -389,7 +420,7 @@ public final class TextGuardService extends AccessibilityService {
             inspectionOutcome += "-home-failed";
             performGlobalAction(GLOBAL_ACTION_BACK);
         }
-        if (now - lastIntervention < 1500) { cooldownEnforcements++; return; }
+        if (now - lastIntervention < 1500) { cooldownEnforcements++; return true; }
         lastIntervention = now;
         pendingWordReason = word;
         pendingScheduleReason = schedule;
@@ -398,6 +429,7 @@ public final class TextGuardService extends AccessibilityService {
         // HOME is asynchronous. Launching immediately lets its pending task
         // transition cover the explanation screen on Samsung Android 16.
         handler.postDelayed(showRestriction, 350);
+        return true;
     }
 
     /** A picture-in-picture window of the offending app is closed with Android's own dismiss action,
@@ -439,6 +471,7 @@ public final class TextGuardService extends AccessibilityService {
         inspectPending = false;
         discoverPending = false;
         pendingPackage = null;
+        inspectedKey = null;
     }
 
     @Override public boolean onUnbind(Intent intent) {
