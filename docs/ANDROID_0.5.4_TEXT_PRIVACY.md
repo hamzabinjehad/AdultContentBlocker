@@ -108,7 +108,8 @@ Masri live, free" and "Watch the video, sex ed for teens", among others.
 
 - `LabelScanTest`: card, button and nested-card cases; input fields at any depth,
   including invisible ones; budget cuts; missing children; long descriptions; node
-  release after an error. It also runs 2,400 random trees. Without parent
+  release after an error; a description too long to hold still covers its outer
+  card. It also runs 2,400 random trees. Without parent
   descriptions the scan equals the old leaf-only scan, budget cuts and partial flags
   included. Small trees match a direct recursive statement of the rule.
 - `AdultTextPolicyTest`: Arabizi unit cases, with a sliding-window reference over
@@ -143,8 +144,8 @@ Masri live, free" and "Watch the video, sex ed for teens", among others.
 | `assembleDebug assembleDebugAndroidTest lintDebug assembleRelease` | Same Mac, Gradle 9.3.1, AGP 9.1.1, local SDK | `BUILD SUCCESSFUL`, 119 tasks. `lintDebug`: 0 errors, 13 warnings. Two are `text_guard_service.xml` attributes ignored below API 30/31. Eleven are in debug-only visual test screens. `PluralsCandidate` went from 2 to 0 |
 
 These APKs were built locally and are not for distribution. Debug
-`f81cdf44651142d5dd8c20ac158fdf1c8694664cfd2d8d90bf9fceb37d3e456e`, unsigned release
-`3b9bfc6b3f3d45cfa0b21cddf2088e06b1a700e24d4b7eec162a6dcada015fc0`, androidTest
+`185627e6c905f62d89f7371bd99ab8d1d766fbde42c78a95ae91baa638c58de2`, unsigned release
+`01ac253c0314b17bf7f9a595a787eb661c92c024edf67c72e6ff0afb6d9d95e1`, androidTest
 `57e33aa113c4f36bba2831f45cc59941f79ebda11890fafb1ce4aae624688be9`. They change
 when the version is set.
 
