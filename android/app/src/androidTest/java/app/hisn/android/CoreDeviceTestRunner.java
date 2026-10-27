@@ -51,7 +51,7 @@ public final class CoreDeviceTestRunner extends Instrumentation {
             if (!sample.isPartial() || sample.text().length() > 32768)
                 throw new AssertionError("Inspection budget failed");
             results.putString("stream", "\nPASS: verified APK seed loaded " + seed.domainCount
-                    + " domains; Arabic matching, boundaries, local DNS block, saved rules, Unicode persistence, long-text sampling, verified adult terms, visual settings, commitment and damaged-settings checks passed. No VPN was enabled.\n");
+                    + " domains; Arabic matching, boundaries, local DNS block, saved rules, Unicode persistence, long-text sampling, verified adult terms, visual settings, commitment, damaged-settings and invalid-settings checks passed. No VPN was enabled.\n");
             finish(Activity.RESULT_OK, results);
         } catch (Throwable failure) {
             StringBuilder detail = new StringBuilder();
@@ -240,6 +240,28 @@ public final class CoreDeviceTestRunner extends Instrumentation {
                 throw new AssertionError("Unknown commitment allowed weakening");
             } catch (IllegalStateException expected) { }
             if (!new PolicyStore(context, name).commitmentUnknown()) throw new AssertionError("Unknown commitment was not saved");
+            // Intact settings that a stricter version cannot accept are refused and left as they are.
+            forget(context, name);
+            java.util.Set<String> apps = new java.util.HashSet<>();
+            for (int i = 0; i <= PolicyStore.MAX_APPS; i++) apps.add("com.example.app" + i);
+            java.util.Map<String, Object> tooMany = app.hisn.core.SavedSettings.values("", "", apps, Collections.emptySet(),
+                    false, false, app.hisn.core.DailyAppSchedule.disabled(), new app.hisn.core.CommitmentClock(0, 0, 0), false, false);
+            for (String file : new String[]{name, name + PolicyStore.COPY_SUFFIX}) {
+                android.content.SharedPreferences.Editor editor = context.getSharedPreferences(file, 0).edit();
+                for (java.util.Map.Entry<String, Object> entry : tooMany.entrySet()) {
+                    Object value = entry.getValue();
+                    if (value instanceof String) editor.putString(entry.getKey(), (String) value);
+                    else if (value instanceof Boolean) editor.putBoolean(entry.getKey(), (Boolean) value);
+                    else if (value instanceof Integer) editor.putInt(entry.getKey(), (Integer) value);
+                    else if (value instanceof Long) editor.putLong(entry.getKey(), (Long) value);
+                    else { @SuppressWarnings("unchecked") java.util.Set<String> set = (java.util.Set<String>) value; editor.putStringSet(entry.getKey(), set); }
+                }
+                if (!editor.commit()) throw new AssertionError("Fixture not saved");
+            }
+            try { new PolicyStore(context, name); throw new AssertionError("Intact but invalid settings loaded"); }
+            catch (IllegalStateException expected) { }
+            if (!context.getSharedPreferences(name, 0).getAll().equals(tooMany))
+                throw new AssertionError("Refused settings were changed");
         } finally { forget(context, name); }
         try {
             PolicyStore cleared = new PolicyStore(context, name);

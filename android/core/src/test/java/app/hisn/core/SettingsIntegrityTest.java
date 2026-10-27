@@ -2,6 +2,7 @@ package app.hisn.core;
 
 import static app.hisn.core.SettingsIntegrity.Source.COPY;
 import static app.hisn.core.SettingsIntegrity.Source.FRESH;
+import static app.hisn.core.SettingsIntegrity.Source.INVALID;
 import static app.hisn.core.SettingsIntegrity.Source.MAIN;
 import static app.hisn.core.SettingsIntegrity.Source.UNKNOWN;
 import static app.hisn.core.SettingsIntegrity.Source.UNSEALED;
@@ -134,7 +135,11 @@ public final class SettingsIntegrityTest {
         check(SettingsIntegrity.choose(tampered, tampered, true, readable) == UNKNOWN, "Both changed");
         check(SettingsIntegrity.choose(legacy, none, true, readable) == UNKNOWN, "Unsealed main beside an unreadable copy");
         check(SettingsIntegrity.choose(legacy, tampered, true, readable) == UNKNOWN, "Unsealed main, damaged copy");
-        check(SettingsIntegrity.choose(invalid, invalid, true, readable) == UNKNOWN, "Sealed but invalid");
-        check(SettingsIntegrity.choose(invalid, none, false, readable) == UNKNOWN, "Sealed but invalid, no copy");
+
+        // Intact but not valid (a later version tightened a limit): not damage, so refuse rather than replace.
+        check(SettingsIntegrity.choose(invalid, invalid, true, readable) == INVALID, "Sealed but invalid");
+        check(SettingsIntegrity.choose(invalid, none, false, readable) == INVALID, "Sealed but invalid, no copy");
+        check(SettingsIntegrity.choose(invalid, none, true, readable) == INVALID, "Sealed but invalid, copy unreadable");
+        check(SettingsIntegrity.choose(tampered, invalid, true, readable) == INVALID, "Damaged main, intact but invalid copy");
     }
 }

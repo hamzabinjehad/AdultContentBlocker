@@ -29,7 +29,9 @@ public final class SettingsIntegrity {
         /** The main file is damaged or unreadable; its intact copy replaces it. */
         COPY,
         /** Settings were saved, but neither file can be trusted: the commitment cannot be read. */
-        UNKNOWN
+        UNKNOWN,
+        /** A file is intact but its values are not valid settings: refuse to load, never replace. */
+        INVALID
     }
 
     private SettingsIntegrity() { }
@@ -74,7 +76,9 @@ public final class SettingsIntegrity {
      * empty, and {@code readable} says sealed values hold valid settings. The copy is written after
      * the main file by every sealed save, so its file is the evidence that settings were saved. Values
      * saved before seals are used as before only while no copy exists; if they do not hold valid
-     * settings the caller refuses to load them, as before, rather than guessing.
+     * settings the caller refuses to load them, as before, rather than guessing. The same holds for a
+     * file whose seal matches but whose values are not valid (for example after a later version
+     * tightens a limit): it was not damaged, so it is neither replaced nor read as unknown.
      *
      * Without a copy, an empty main file is a new installation, even if its file exists: that is also
      * what a first save cut short leaves, and a new owner must not find a commitment they never chose.
@@ -84,6 +88,7 @@ public final class SettingsIntegrity {
             Predicate<Map<String, ?>> readable) {
         if (intact(main) && readable.test(main)) return Source.MAIN;
         if (intact(copy) && readable.test(copy)) return Source.COPY;
+        if (intact(main) || intact(copy)) return Source.INVALID;
         if (copyOnDisk || !copy.isEmpty() || main.containsKey(SEAL)) return Source.UNKNOWN;
         return main.isEmpty() ? Source.FRESH : Source.UNSEALED;
     }

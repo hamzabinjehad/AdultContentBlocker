@@ -9,13 +9,12 @@ import app.hisn.core.CommitmentClock;
 import app.hisn.core.DailyAppSchedule;
 import app.hisn.core.DomainPolicy;
 import app.hisn.core.PolicyChangeError;
-import app.hisn.core.SettingsIntegrity;
+import app.hisn.core.SavedSettings;
 import app.hisn.core.WordMatcher;
 import app.hisn.core.WordRuleList;
 
 import java.io.File;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -99,10 +98,15 @@ public final class PolicyStore {
 
     /** The second copy's file name is the main name with this suffix. */
     static final String COPY_SUFFIX = "_copy";
-    private static final String UNKNOWN = "commitment_unknown", RESTORED = "restored_from_copy";
+    private static final String TAG = "HisnSettings";
     private final Context context;
     private final SharedPreferences prefs;
     private final SharedPreferences copy;
+    private final File copyFile;
+    // The last values saved to the main file, and whether the copy still lacks them (retried each minute).
+    private Map<String, Object> saved;
+    private boolean copyBehind;
+    private long copyRetryAt;
     private volatile Snapshot snapshot;
     private CommitmentClock commitment;
     // Saved with the rules: the commitment could not be read and runs for the longest possible time,
@@ -125,39 +129,25 @@ public final class PolicyStore {
         this.context = application == null ? context : application;
         prefs = context.getSharedPreferences(name, Context.MODE_PRIVATE);
         copy = context.getSharedPreferences(name + COPY_SUFFIX, Context.MODE_PRIVATE);
+        // The copy's file in Android's preferences folder exists even when it reads as empty. If this
+        // path ever differed, only two files damaged at once would go undetected, as before seals;
+        // the check after the first save below logs that.
+        copyFile = new File(new File(context.getDataDir(), "shared_prefs"), name + COPY_SUFFIX + ".xml");
         try {
             int boot = boot();
             // Reading waits for the load, which also restores the backup of an interrupted write.
             Map<String, ?> main = prefs.getAll(), second = copy.getAll();
-            // The copy's file in Android's preferences folder exists even when it reads as empty. If this
-            // path ever differed, only two files damaged at once would go undetected, as before seals.
-            File copyFile = new File(new File(context.getDataDir(), "shared_prefs"), name + COPY_SUFFIX + ".xml");
-            SettingsIntegrity.Source source = SettingsIntegrity.choose(main, second, copyFile.exists(),
-                    values -> readable(values, boot));
-            long now = SystemClock.elapsedRealtime();
-            switch (source) {
-                case FRESH:
-                    snapshot = rules(Collections.emptyMap());
-                    commitment = new CommitmentClock(0, now, boot);
-                    break;
-                case UNKNOWN:
-                    // Keep whatever rules still read; the commitment cannot have more than the longest time left.
-                    snapshot = rulesReadable(main) ? rules(main)
-                            : rulesReadable(second) ? rules(second) : rules(Collections.emptyMap());
-                    commitment = new CommitmentClock(CommitmentClock.LONGEST, now, boot);
-                    commitmentUnknown = true;
-                    break;
-                default:
-                    Map<String, ?> trusted = source == SettingsIntegrity.Source.COPY ? second : main;
-                    snapshot = rules(trusted);
-                    commitment = clock(trusted, boot);
-                    commitmentUnknown = flag(trusted, UNKNOWN);
-                    restored = source == SettingsIntegrity.Source.COPY || flag(trusted, RESTORED);
-            }
+            // Intact but invalid settings throw here and are left unchanged (SavedSettings.load).
+            SavedSettings.Load load = SavedSettings.load(main, second, copyFile.exists(), boot,
+                    SystemClock.elapsedRealtime(), PolicyStore::valid);
+            snapshot = rules(load.rules);
+            commitment = load.clock;
+            commitmentUnknown = load.unknown;
+            restored = load.restored;
             // Repair, seal or mirror at once, so the next start finds two intact files.
-            if (source != SettingsIntegrity.Source.MAIN || !main.equals(second))
-                persist(snapshot, commitment.checkpoint(now, boot), commitmentUnknown, restored);
+            if (load.rewrite) persist(snapshot, commitment.checkpoint(SystemClock.elapsedRealtime(), boot), commitmentUnknown, restored);
             else checkpoint();
+            if (!copyBehind && !copyFile.exists()) android.util.Log.e(TAG, "Settings copy not found where expected");
         } catch (RuntimeException invalid) {
             throw new IllegalStateException("Cannot read protection settings", invalid);
         }
@@ -179,6 +169,7 @@ public final class PolicyStore {
     public synchronized long remainingMillis() {
         long now = SystemClock.elapsedRealtime();
         int boot = boot();
+        retryCopy(now);
         long remaining = commitment.remaining(now, boot);
         // Save progress at most once a minute so a restart loses little counted time.
         if (commitment.remainingAtCheckpoint > 0 && (boot != commitment.bootAtCheckpoint
@@ -190,6 +181,7 @@ public final class PolicyStore {
 
     /** Saves commitment progress. With no commitment running there is nothing to count or save. */
     public synchronized void checkpoint() {
+        retryCopy(SystemClock.elapsedRealtime());
         if (commitment.remainingAtCheckpoint == 0) return;
         persist(snapshot, commitment.checkpoint(SystemClock.elapsedRealtime(), boot()), commitmentUnknown, restored);
     }
@@ -240,32 +232,31 @@ public final class PolicyStore {
 
     /**
      * Writes every value and its seal to the main file, then the same to the copy. Only a failed main
-     * write refuses the change: the copy is mirrored again on the next start if it fell behind.
+     * write refuses the change. A failed copy write is logged and retried each minute; until it
+     * succeeds, a damaged main file can only be detected, not restored.
      */
     private void persist(Snapshot rules, CommitmentClock clock, boolean unknown, boolean restoredNotice) {
-        Map<String, Object> values = new HashMap<>();
-        values.put("domains", String.join("\n", rules.domains.blockedRules()));
-        values.put("words", String.join("\n", rules.words.configuredRules()));
-        values.put("apps", rules.blockedApps);
-        values.put("scans", rules.scannedApps);
-        values.put("adult_words", rules.adultWordsEnabled);
-        values.put("visual_enabled", rules.visualEnabled);
-        values.put("schedule_enabled", rules.schedule.enabled);
-        values.put("schedule_start", rules.schedule.startMinute);
-        values.put("schedule_end", rules.schedule.endMinute);
-        values.put("schedule_apps", rules.schedule.apps);
-        values.put("remaining", clock.remainingAtCheckpoint);
-        values.put("elapsed", clock.elapsedAtCheckpoint);
-        values.put("boot", clock.bootAtCheckpoint);
-        values.put(UNKNOWN, unknown);
-        values.put(RESTORED, restoredNotice);
-        values.put(SettingsIntegrity.SEAL, SettingsIntegrity.seal(values));
+        Map<String, Object> values = SavedSettings.values(String.join("\n", rules.domains.blockedRules()),
+                String.join("\n", rules.words.configuredRules()), rules.blockedApps, rules.scannedApps,
+                rules.adultWordsEnabled, rules.visualEnabled, rules.schedule, clock, unknown, restoredNotice);
         if (!write(prefs, values)) throw saveFailed("Cannot save settings");
-        write(copy, values);
+        saved = values;
         snapshot = rules;
         commitment = clock;
         commitmentUnknown = unknown;
         restored = restoredNotice;
+        mirror(SystemClock.elapsedRealtime());
+    }
+
+    private void mirror(long now) {
+        boolean behind = !write(copy, saved);
+        if (behind && !copyBehind) android.util.Log.w(TAG, "Settings copy not saved; retrying");
+        copyBehind = behind;
+        copyRetryAt = now + 60000;
+    }
+
+    private void retryCopy(long now) {
+        if (copyBehind && saved != null && now >= copyRetryAt) mirror(now);
     }
 
     // clear() first, so the file holds exactly the sealed values.
@@ -277,68 +268,21 @@ public final class PolicyStore {
             else if (value instanceof Boolean) editor.putBoolean(entry.getKey(), (Boolean) value);
             else if (value instanceof Integer) editor.putInt(entry.getKey(), (Integer) value);
             else if (value instanceof Long) editor.putLong(entry.getKey(), (Long) value);
-            else editor.putStringSet(entry.getKey(), names(values, entry.getKey()));
+            else {
+                Set<String> names = new LinkedHashSet<>();
+                for (Object name : (Set<?>) value) names.add((String) name);
+                editor.putStringSet(entry.getKey(), names);
+            }
         }
         return editor.commit();
     }
 
     private static Snapshot rules(Map<String, ?> values) {
-        return new Snapshot(text(values, "domains"), text(values, "words"), names(values, "apps"), names(values, "scans"),
-                flag(values, "adult_words"), new DailyAppSchedule(flag(values, "schedule_enabled"),
-                        number(values, "schedule_start", 1320), number(values, "schedule_end", 420), names(values, "schedule_apps")),
-                flag(values, "visual_enabled"));
+        SavedSettings saved = SavedSettings.rules(values);
+        return new Snapshot(saved.domains, saved.words, saved.apps, saved.scans, saved.adultWords, saved.schedule, saved.visual);
     }
 
-    // Values saved before 0.5.4 may lack a field; the defaults are the ones those versions read.
-    private static CommitmentClock clock(Map<String, ?> values, int boot) {
-        Object remaining = values.get("remaining"), elapsed = values.get("elapsed");
-        if ((remaining != null && !(remaining instanceof Long)) || (elapsed != null && !(elapsed instanceof Long)))
-            throw new IllegalArgumentException("Invalid commitment");
-        return new CommitmentClock(remaining == null ? 0 : (Long) remaining, elapsed == null ? 0 : (Long) elapsed,
-                number(values, "boot", boot));
-    }
-
-    private static boolean readable(Map<String, ?> values, int boot) {
-        try { rules(values); clock(values, boot); flag(values, UNKNOWN); flag(values, RESTORED); return true; }
-        catch (RuntimeException invalid) { return false; }
-    }
-
-    private static boolean rulesReadable(Map<String, ?> values) {
-        try { rules(values); return true; } catch (RuntimeException invalid) { return false; }
-    }
-
-    private static String text(Map<String, ?> values, String key) {
-        Object value = values.get(key);
-        if (value == null) return "";
-        if (value instanceof String) return (String) value;
-        throw new IllegalArgumentException("Invalid " + key);
-    }
-
-    private static Set<String> names(Map<String, ?> values, String key) {
-        Object value = values.get(key);
-        if (value == null) return Collections.emptySet();
-        if (!(value instanceof Set)) throw new IllegalArgumentException("Invalid " + key);
-        Set<String> names = new LinkedHashSet<>();
-        for (Object name : (Set<?>) value) {
-            if (!(name instanceof String)) throw new IllegalArgumentException("Invalid " + key);
-            names.add((String) name);
-        }
-        return names;
-    }
-
-    private static boolean flag(Map<String, ?> values, String key) {
-        Object value = values.get(key);
-        if (value == null) return false;
-        if (value instanceof Boolean) return (Boolean) value;
-        throw new IllegalArgumentException("Invalid " + key);
-    }
-
-    private static int number(Map<String, ?> values, String key, int fallback) {
-        Object value = values.get(key);
-        if (value == null) return fallback;
-        if (value instanceof Integer) return (Integer) value;
-        throw new IllegalArgumentException("Invalid " + key);
-    }
+    private static boolean valid(Map<String, ?> values) { rules(values); return true; }
 
     private static PolicyChangeError.Refused saveFailed(String message) {
         return new PolicyChangeError.Refused(PolicyChangeError.SAVE_FAILED, message);
