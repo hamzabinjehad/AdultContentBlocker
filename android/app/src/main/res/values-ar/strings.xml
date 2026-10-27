@@ -10,6 +10,7 @@
     <string name="dns_start">إعداد فلترة DNS</string>
     <string name="dns_settings">إعدادات VPN في أندرويد</string>
     <string name="vpn_settings_reminder_title">راجع التزامك النشط</string>
+    <string name="vpn_settings_reminder_body_unknown">تعذّر على حصن قراءة التزامه المحفوظ، فأبقاه نشطًا %1$s على الأكثر من الآن. قد يؤدي تغيير VPN أو فصله إلى إضعاف حماية الشبكة.\n\nيمكنك المتابعة إلى إعدادات أندرويد، أو الإلغاء والعودة إلى حصن. هذا التذكير لا يمنع إجراء تغييرات من إعدادات أندرويد.</string>
     <string name="vpn_settings_reminder_body">بقي نحو %1$s من التزامك في حصن. قد يؤدي تغيير VPN أو فصله إلى إضعاف حماية الشبكة.\n\nيمكنك المتابعة إلى إعدادات أندرويد، أو الإلغاء والعودة إلى حصن. هذا التذكير لا يمنع إجراء تغييرات من إعدادات أندرويد.</string>
     <string name="vpn_settings_continue">فتح إعدادات أندرويد</string>
     <string name="dns_consent_title">تفعيل فلترة DNS التجريبية؟</string>
@@ -120,6 +121,7 @@
     <string name="admin_off">خطوة الحذف الإضافية · غير مفعّلة</string>
     <string name="admin_active">مسؤول الجهاز مفعّل · يمكن إلغاؤه من إعدادات أندرويد</string>
     <string name="admin_disable_warning">إلغاء تفعيل مسؤول الجهاز يزيل الخطوة الإضافية قبل الحذف.</string>
+    <string name="admin_commitment_warning_unknown">تعذّر على حصن قراءة التزامه المحفوظ، فأبقاه نشطًا %1$s على الأكثر من الآن. إلغاء مسؤول الجهاز يزيل خطوة التأكيد الإضافية للحذف. يظل بإمكانك المتابعة من أندرويد.</string>
     <string name="admin_commitment_warning">بقي نحو %1$s من التزام حصن. إلغاء مسؤول الجهاز يزيل خطوة التأكيد الإضافية للحذف. يظل بإمكانك المتابعة من أندرويد.</string>
     <string name="tester">جرّب قواعد الكلمات</string>
     <string name="tester_help">أدخل كلمة أو عبارة حرفية في كل سطر واختبرها على الجهاز. لا تراقب هذه التجربة التطبيقات الأخرى ولا تستخدم قائمة الحماية الموقّعة.</string>

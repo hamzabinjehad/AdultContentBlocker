@@ -10,6 +10,7 @@
     <string name="dns_start">Set up DNS filtering</string>
     <string name="dns_settings">Android VPN settings</string>
     <string name="vpn_settings_reminder_title">Review your active commitment</string>
+    <string name="vpn_settings_reminder_body_unknown">Hisn could not read its saved commitment, so it keeps it active for at most %1$s from now. Changing or disconnecting the VPN can weaken your network protection.\n\nYou can continue to Android settings or cancel and return to Hisn. This reminder does not prevent changes made in Android Settings.</string>
     <string name="vpn_settings_reminder_body">Your Hisn commitment has about %1$s remaining. Changing or disconnecting the VPN can weaken your network protection.\n\nYou can continue to Android settings or cancel and return to Hisn. This reminder does not prevent changes made in Android Settings.</string>
     <string name="vpn_settings_continue">Open Android settings</string>
     <string name="dns_consent_title">Enable experimental DNS filtering?</string>
@@ -121,6 +122,7 @@
     <string name="admin_off">Extra uninstall step · Not active</string>
     <string name="admin_active">Device admin active · Can be deactivated in Android settings</string>
     <string name="admin_disable_warning">Deactivating this administrator removes the extra uninstall step.</string>
+    <string name="admin_commitment_warning_unknown">Hisn could not read its saved commitment, so it keeps it active for at most %1$s from now. Deactivating this administrator removes the extra uninstall step. Android still allows you to continue.</string>
     <string name="admin_commitment_warning">Your Hisn commitment has about %1$s remaining. Deactivating this administrator removes the extra uninstall step. Android still allows you to continue.</string>
     <string name="tester">Try word rules</string>
     <string name="tester_help">Enter one literal word or phrase per line and test them locally. This does not monitor other apps or use the signed protection list.</string>

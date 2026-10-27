@@ -19,8 +19,10 @@ public final class CommitmentAdminReceiver extends DeviceAdminReceiver {
 
     @Override public CharSequence onDisableRequested(Context context, Intent intent) {
         try {
-            long remaining = PolicyStore.get(context).remainingMillis();
-            if (remaining > 0) return context.getString(R.string.admin_commitment_warning, Durations.remaining(context, remaining));
+            PolicyStore settings = PolicyStore.get(context);
+            long remaining = settings.remainingMillis();
+            if (remaining > 0) return context.getString(settings.commitmentUnknown() ? R.string.admin_commitment_warning_unknown
+                    : R.string.admin_commitment_warning, Durations.remaining(context, remaining));
         } catch (RuntimeException unavailable) { /* Android must retain its removal controls. */ }
         return context.getString(R.string.admin_disable_warning);
     }

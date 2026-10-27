@@ -615,8 +615,9 @@ public final class MainActivity extends Activity {
 
     private void reviewVpnSettings() {
         long remaining = 0;
+        boolean unknown = false;
         if (settings != null) {
-            try { remaining = settings.remainingMillis(); }
+            try { remaining = settings.remainingMillis(); unknown = settings.commitmentUnknown(); }
             catch (RuntimeException unavailable) {
                 Toast.makeText(this, R.string.policy_unavailable, Toast.LENGTH_LONG).show();
             }
@@ -626,7 +627,8 @@ public final class MainActivity extends Activity {
             return;
         }
         new AlertDialog.Builder(this).setTitle(R.string.vpn_settings_reminder_title)
-                .setMessage(getString(R.string.vpn_settings_reminder_body, Durations.remaining(this, remaining)))
+                .setMessage(getString(unknown ? R.string.vpn_settings_reminder_body_unknown : R.string.vpn_settings_reminder_body,
+                        Durations.remaining(this, remaining)))
                 .setNegativeButton(android.R.string.cancel, null)
                 .setPositiveButton(R.string.vpn_settings_continue, (dialog, which) ->
                         startActivity(new Intent(Settings.ACTION_VPN_SETTINGS))).show();
