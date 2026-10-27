@@ -19,8 +19,12 @@ import javax.net.ssl.SSLSocketFactory;
 
 /**
  * Authenticated DNS-over-TLS with per-worker connection reuse and no plaintext fallback. With more
- * than one resolver address, all share one TLS identity; a failure to connect or a timeout moves to
- * the next address (see {@link ResolverFailover}), and nothing else does.
+ * than one resolver address, all share one TLS identity, so trying another never weakens what is
+ * accepted. A failure to connect or to complete the TLS handshake (including a certificate or name
+ * that does not verify), or a timeout, moves to the next address (see {@link ResolverFailover}).
+ * A reply timeout on a connection that has already answered is retried once at the next address
+ * without counting against the first, since one slow lookup is not an unreachable resolver. Bad
+ * frames and closed connections fail without moving.
  */
 public final class TlsDnsTransport implements DnsExchange.Transport, AutoCloseable {
     public interface SocketProtector { boolean protect(Socket socket) throws IOException; }
@@ -129,13 +133,15 @@ public final class TlsDnsTransport implements DnsExchange.Transport, AutoCloseab
                 synchronized (lifecycle) {
                     requireGeneration(exchangeGeneration);
                     failover.succeeded(resolver);
+                    connection.answered = true;
                     return response;
                 }
             } catch (IOException thrown) {
+                boolean answered = connection != null && connection.answered;
                 if (connection != null) connection.close();
                 connection = null;
                 local.remove();
-                boolean unreachable = thrown instanceof Unreachable;
+                boolean unreachable = thrown instanceof NoSession;
                 IOException failure = unreachable ? (IOException) thrown.getCause() : thrown;
                 // An idle upstream can close a pooled connection. Retry only one
                 // reused EOF/reset, at the SAME authenticated resolver.
@@ -143,12 +149,14 @@ public final class TlsDnsTransport implements DnsExchange.Transport, AutoCloseab
                 if (closed || generation != exchangeGeneration) throw failure;
                 if (reused && stale) { reused = false; continue; }
                 reused = false;
-                // Only a failure to connect or a timeout moves on, to the next resolver with the same
-                // TLS identity. TLS identity failures, bad frames and fresh EOFs fail here.
-                if (!unreachable && !(failure instanceof java.net.SocketTimeoutException)) throw failure;
+                // Only a failure before an authenticated session existed, or a timeout, moves on to the
+                // next resolver with the same TLS identity. Bad frames and fresh EOFs fail here.
+                boolean timeout = failure instanceof java.net.SocketTimeoutException;
+                if (!unreachable && !timeout) throw failure;
                 synchronized (lifecycle) {
                     if (closed || generation != exchangeGeneration) throw failure;
-                    failover.failed(resolver, clock.getAsLong());
+                    // A connection that already answered reached its resolver: a slow reply is not counted.
+                    if (!(timeout && answered)) failover.failed(resolver, clock.getAsLong());
                     resolver = failover.next(tried, clock.getAsLong());
                 }
                 if (resolver < 0) throw failure;
@@ -176,7 +184,7 @@ public final class TlsDnsTransport implements DnsExchange.Transport, AutoCloseab
             if (!protector.protect(raw)) throw new IOException("Could not protect resolver socket");
             requireGeneration(expectedGeneration);
             try { raw.connect(resolvers[resolver], timeout); }
-            catch (IOException unreachable) { throw new Unreachable(unreachable); }
+            catch (IOException unreachable) { throw new NoSession(unreachable); }
             raw.setSoTimeout(timeout);
             SSLSocket secure = (SSLSocket) factory.createSocket(raw, serverName, resolvers[resolver].getPort(), true);
             secure.setSoTimeout(timeout);
@@ -189,7 +197,8 @@ public final class TlsDnsTransport implements DnsExchange.Transport, AutoCloseab
             }
             if (protocols.isEmpty()) throw new IOException("Modern TLS unavailable");
             secure.setEnabledProtocols(protocols.toArray(new String[0]));
-            secure.startHandshake();
+            // The same identity is required at every address, so a failed handshake may try the next one.
+            try { secure.startHandshake(); } catch (IOException handshake) { throw new NoSession(handshake); }
             requireGeneration(expectedGeneration);
             return new Connection(raw, secure, resolver, expectedGeneration);
         } catch (IOException | RuntimeException failure) {
@@ -235,9 +244,9 @@ public final class TlsDnsTransport implements DnsExchange.Transport, AutoCloseab
         for (Socket socket : previous) try { socket.close(); } catch (IOException ignored) { }
     }
 
-    /** A failure before the resolver accepted the TCP connection; the cause is what callers see. */
-    private static final class Unreachable extends IOException {
-        Unreachable(IOException cause) { super(cause); }
+    /** A failure to connect or to authenticate the resolver; the cause is what callers see. */
+    private static final class NoSession extends IOException {
+        NoSession(IOException cause) { super(cause); }
     }
 
     private final class Connection {
@@ -247,6 +256,8 @@ public final class TlsDnsTransport implements DnsExchange.Transport, AutoCloseab
         final long generation;
         final DataInputStream input;
         final DataOutputStream output;
+        // Set by the exchange thread that owns this connection after a complete reply.
+        boolean answered;
         Connection(Socket raw, SSLSocket secure, int resolver, long generation) throws IOException {
             this.raw = raw; this.secure = secure;
             this.resolver = resolver; this.generation = generation;

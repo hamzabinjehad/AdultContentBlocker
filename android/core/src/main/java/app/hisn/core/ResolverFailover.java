@@ -2,7 +2,7 @@ package app.hisn.core;
 
 /**
  * Chooses among resolvers that are authenticated the same way, in a fixed order. The first is used
- * while it works. After it fails to connect or times out, new connections use the next one, and the
+ * while it works. After it cannot be reached or authenticated, or times out, new connections use the next one, and the
  * first is tried again once its wait ends: 30 seconds, doubling on each further failure up to 5
  * minutes. One connection at a time probes a resolver whose wait has ended; a success clears its
  * failures. A network change clears everything. This only orders the given resolvers; it never adds one.
@@ -47,7 +47,7 @@ public final class ResolverFailover {
         return -1;
     }
 
-    /** Counts a failure to connect or a timeout. A failure from an attempt that began before this
+    /** Counts a failure to connect or authenticate, or a timeout. A failure from an attempt that began before this
      * resolver was already marked failing does not lengthen its wait again. */
     public synchronized void failed(int index, long now) {
         if (!probing[index] && failures[index] > 0 && now < retryAt[index]) return;

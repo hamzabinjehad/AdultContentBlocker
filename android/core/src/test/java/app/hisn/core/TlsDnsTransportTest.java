@@ -495,7 +495,7 @@ public final class TlsDnsTransportTest {
      * connection is handled in the mode current when it was accepted, and accepts are counted.
      */
     private static final class Failover {
-        enum Mode { TLS, STALL, PLAINTEXT, NO_REPLY }
+        enum Mode { TLS, STALL, PLAINTEXT, NO_REPLY, SLOW_SECOND }
 
         static final class Resolver implements AutoCloseable {
             final ServerSocket server;
@@ -537,10 +537,12 @@ public final class TlsDnsTransportTest {
                     secure.setUseClientMode(false);
                     DataInputStream input = new DataInputStream(secure.getInputStream());
                     DataOutputStream output = new DataOutputStream(secure.getOutputStream());
-                    while (true) {
+                    for (int received = 1; ; received++) {
                         int length = input.readUnsignedShort();
                         byte[] message = new byte[length]; input.readFully(message);
                         if (current == Mode.NO_REPLY) return;
+                        // Answer the first query, then keep the connection open without answering, as a slow lookup does.
+                        if (current == Mode.SLOW_SECOND && received > 1) { while (input.read() >= 0) { } return; }
                         message[2] = (byte) 0x81;
                         output.writeShort(length); output.write(message); output.flush();
                     }
@@ -558,8 +560,10 @@ public final class TlsDnsTransportTest {
             timeoutMovesToBackupAndReturns(context, factory, loopback, query);
             refusedMainUsesBackup(context, factory, loopback, query);
             waitsDoubleWhileMainFails(context, factory, loopback, query);
-            onlyConnectFailuresAndTimeoutsMove(context, factory, loopback, query, Mode.PLAINTEXT);
-            onlyConnectFailuresAndTimeoutsMove(context, factory, loopback, query, Mode.NO_REPLY);
+            handshakeFailureMoves(context, factory, loopback, query);
+            identityFailsAtEveryAddress(context, factory, loopback, query);
+            freshCloseDoesNotMove(context, factory, loopback, query);
+            slowReplyIsNotCounted(context, factory, loopback, query);
             bothFailingIsBounded(context, factory, loopback, query);
             networkChangeReturnsToMain(context, factory, loopback, query);
             invalidatedAttemptDoesNotMove(context, factory, loopback, query);
@@ -642,16 +646,65 @@ public final class TlsDnsTransportTest {
             }
         }
 
-        /** A TLS failure or a reply-less close is not a reachability problem: no backup attempt. */
-        private static void onlyConnectFailuresAndTimeoutsMove(SSLContext context, SSLSocketFactory factory,
-                InetAddress loopback, byte[] query, Mode failure) throws Exception {
+        /** A server that cannot complete the TLS handshake (here, a plaintext one) moves to the backup. */
+        private static void handshakeFailureMoves(SSLContext context, SSLSocketFactory factory,
+                InetAddress loopback, byte[] query) throws Exception {
             AtomicLong clock = new AtomicLong();
-            try (Resolver main = new Resolver(context, loopback, failure);
+            try (Resolver main = new Resolver(context, loopback, Mode.PLAINTEXT);
+                 Resolver backup = new Resolver(context, loopback, Mode.TLS);
+                 TlsDnsTransport client = client(main, backup, factory, clock, 1500)) {
+                reply(client, query, "Backup answers when the main handshake fails");
+                counts(main, 1, backup, 1, "One main attempt, then the backup");
+                if (client.preferredResolver() != 1) throw new AssertionError("Failed handshake marks the main resolver");
+            }
+        }
+
+        /** The backup must prove the same identity: a name that does not verify fails at both addresses. */
+        private static void identityFailsAtEveryAddress(SSLContext context, SSLSocketFactory factory,
+                InetAddress loopback, byte[] query) throws Exception {
+            AtomicLong clock = new AtomicLong();
+            try (Resolver main = new Resolver(context, loopback, Mode.TLS);
+                 Resolver backup = new Resolver(context, loopback, Mode.TLS);
+                 TlsDnsTransport client = new TlsDnsTransport(Arrays.asList(main.address(), backup.address()),
+                         "wrong.example", 1500, socket -> true, factory, clock::get)) {
+                try { client.exchange(query); throw new AssertionError("Unverified identity accepted"); }
+                catch (SSLHandshakeException expected) { }
+                counts(main, 1, backup, 1, "Each address tried once, neither accepted");
+            }
+        }
+
+        /** A reply-less close after the handshake is not a reachability problem: no backup attempt. */
+        private static void freshCloseDoesNotMove(SSLContext context, SSLSocketFactory factory,
+                InetAddress loopback, byte[] query) throws Exception {
+            AtomicLong clock = new AtomicLong();
+            try (Resolver main = new Resolver(context, loopback, Mode.NO_REPLY);
                  Resolver backup = new Resolver(context, loopback, Mode.TLS);
                  TlsDnsTransport client = client(main, backup, factory, clock, 1500)) {
                 failure(client, query);
-                counts(main, 1, backup, 0, failure + " stays a failure");
-                if (client.preferredResolver() != 0) throw new AssertionError(failure + " marked the main resolver failing");
+                counts(main, 1, backup, 0, "A closed connection stays a failure");
+                if (client.preferredResolver() != 0) throw new AssertionError("A close marked the main resolver failing");
+            }
+        }
+
+        /** One slow reply on a connection that already answered is retried at the backup but not counted. */
+        private static void slowReplyIsNotCounted(SSLContext context, SSLSocketFactory factory,
+                InetAddress loopback, byte[] query) throws Exception {
+            AtomicLong clock = new AtomicLong();
+            try (Resolver main = new Resolver(context, loopback, Mode.SLOW_SECOND);
+                 Resolver backup = new Resolver(context, loopback, Mode.TLS);
+                 TlsDnsTransport client = client(main, backup, factory, clock, 300)) {
+                reply(client, query, "Main answers first");
+                reply(client, query, "Backup answers the slow query");
+                counts(main, 1, backup, 1, "Slow query retried once at the backup");
+                if (client.preferredResolver() != 0) throw new AssertionError("A slow reply put the main resolver in backoff");
+                main.mode = Mode.TLS;
+                reply(client, query, "Main resolver used again at once");
+                counts(main, 2, backup, 1, "Next query returns to the main resolver");
+                // A fresh connection that never answers is a failing resolver, as before.
+                main.mode = Mode.STALL;
+                client.invalidateConnections();
+                reply(client, query, "Backup after a fresh timeout");
+                if (client.preferredResolver() != 1) throw new AssertionError("A fresh timeout marks the main resolver");
             }
         }
 
