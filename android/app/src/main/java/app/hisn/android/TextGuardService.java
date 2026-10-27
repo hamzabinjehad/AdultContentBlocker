@@ -80,6 +80,7 @@ public final class TextGuardService extends AccessibilityService {
     /** Saves commitment progress once a minute so a restart loses little counted time. */
     private void checkpointCommitment() {
         try { PolicyStore.get(this).checkpoint(); } catch (RuntimeException unsaved) { /* Retry next minute. */ }
+        ScreenGray.reassert(this);
         handler.postDelayed(checkpoint, 60000);
     }
 

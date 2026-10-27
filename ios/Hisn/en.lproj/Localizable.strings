@@ -349,3 +349,9 @@
 "dates.vaultShownUntil" = "Shown now for setup, then hidden until";
 "lock.staleDevice" = "Your earlier confirmation no longer counts: it came back from a backup or another device, or Hisn cannot read this device's record of it. Confirm again only if the lock is still in place.";
 "lock.saveFailed" = "Hisn could not save your confirmation on this device, so your level stays as it was.";
+
+"gray.title" = "Gray screen";
+"gray.body" = "A gray screen takes most of the pull out of images and videos while every app keeps working. iPhone and iPad do not let an app switch it, so it is set in Apple's own Settings.";
+"gray.steps" = "Settings › Accessibility › Display & Text Size › Color Filters: turn on Color Filters and choose Grayscale.";
+"gray.shortcut" = "To switch it quickly, add Color Filters to Settings › Accessibility › Accessibility Shortcut, then triple-click the side or Home button.";
+"gray.automation" = "To keep it on at set times, add a personal automation in the Shortcuts app with the Set Color Filters action.";

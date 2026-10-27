@@ -197,4 +197,11 @@
     <string name="notice_gpl">GNU GPL 3.0 · HaGeZi and chadmayfield lists</string>
     <string name="notice_cc_by">CC BY 4.0 · LDNOOBW word list</string>
     <string name="notice_visual_file">Image-check engine · %1$s</string>
+    <string name="gray_title">Gray screen</string>
+    <string name="gray_off">The screen shows colour. Gray takes most of the pull out of images and videos; apps keep working.</string>
+    <string name="gray_on">The screen is gray.</string>
+    <string name="gray_committed">A commitment is running. The screen stays gray until it ends.</string>
+    <string name="gray_enable">Make the screen gray</string>
+    <string name="gray_disable">Show colour again</string>
+    <string name="gray_manual">Android lets an app switch the screen to gray only after a computer grants it permission once:\n\n%1$s\n\nUntil then, turn it on yourself: Accessibility › Color correction › Grayscale (on some phones under Visibility enhancements or Digital Wellbeing › Bedtime mode).</string>
 </resources>

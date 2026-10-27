@@ -386,6 +386,16 @@ struct MobileRootView: View {
                     .font(.footnote).foregroundStyle(.secondary)
                 Button("browserfirst.openSetup") { selectedTab = 1 }
             }
+            // iOS gives apps no way to change the screen's colours, so this
+            // says where Apple's own switch is rather than offering a toggle.
+            Section("gray.title") {
+                Text("gray.body").font(.callout)
+                Label("gray.steps", systemImage: "circle.lefthalf.filled")
+                    .font(.callout)
+                Text("gray.shortcut").font(.footnote).foregroundStyle(.secondary)
+                Text("gray.automation").font(.footnote).foregroundStyle(.secondary)
+            }
+            .accessibilityIdentifier("settings.grayScreen")
             Section("privacy.title") { Text("privacy.body") }
             Section("coverage.title") { Text("coverage.body") }
             Section("apple.title") { Text("apple.body") }

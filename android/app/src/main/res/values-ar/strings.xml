@@ -210,4 +210,11 @@
     <string name="notice_gpl">رخصة GNU GPL 3.0 · قائمتا HaGeZi وchadmayfield</string>
     <string name="notice_cc_by">رخصة CC BY 4.0 · قائمة كلمات LDNOOBW</string>
     <string name="notice_visual_file">محرك فحص الصور · %1$s</string>
+    <string name="gray_title">شاشة رمادية</string>
+    <string name="gray_off">تعرض الشاشة الألوان. يُفقد اللون الرمادي الصور ومقاطع الفيديو معظم جاذبيتها، وتبقى التطبيقات تعمل.</string>
+    <string name="gray_on">الشاشة رمادية.</string>
+    <string name="gray_committed">الالتزام قيد التشغيل. تبقى الشاشة رمادية حتى ينتهي.</string>
+    <string name="gray_enable">اجعل الشاشة رمادية</string>
+    <string name="gray_disable">أعد الألوان</string>
+    <string name="gray_manual">لا يسمح أندرويد لتطبيق بجعل الشاشة رمادية إلا بعد أن يمنحه حاسوب الإذن مرة واحدة:\n\n%1$s\n\nحتى ذلك الحين، فعّلها بنفسك: تسهيلات الاستخدام › تصحيح الألوان › التدرج الرمادي (وفي بعض الهواتف ضمن تحسينات الرؤية أو الصحة الرقمية › وضع وقت النوم).</string>
 </resources>

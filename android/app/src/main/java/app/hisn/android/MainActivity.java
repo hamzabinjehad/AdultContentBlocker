@@ -61,6 +61,8 @@ public final class MainActivity extends Activity {
     private TextView adultState;
     private TextView visualState;
     private Button visualToggle;
+    private TextView grayState;
+    private Button grayToggle;
     private TextView scheduleState;
     private TextView networkCheckState;
     private Button adultToggle;
@@ -189,6 +191,13 @@ public final class MainActivity extends Activity {
                 .setPositiveButton(R.string.open_accessibility, (dialog, which) ->
                         startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))).show());
         policyButton(R.string.commitment_setup, view -> chooseCommitment());
+        heading(R.string.gray_title, 21);
+        grayState = paragraph(R.string.gray_off);
+        grayToggle = new Button(this);
+        grayToggle.setAllCaps(false);
+        grayToggle.setText(R.string.gray_enable);
+        root.addView(grayToggle, layout());
+        grayToggle.setOnClickListener(view -> editGray());
         createPage(2);
         heading(R.string.app_goal_title, 23);
         paragraph(R.string.app_goal_body);
@@ -372,6 +381,7 @@ public final class MainActivity extends Activity {
                 ? R.string.protection_partial : R.string.status_title);
         try {
             if (settingsReadable) refreshVisual(settings.snapshot());
+            refreshGray();
             else { visualToggle.setEnabled(false); visualState.setText(R.string.policy_unavailable); }
         } catch (RuntimeException unavailable) {
             visualToggle.setEnabled(false);
@@ -539,6 +549,37 @@ public final class MainActivity extends Activity {
         if (rules.visualEnabled && (label == R.string.visual_error || label == R.string.visual_disconnected
                 || label == R.string.visual_no_apps || label == R.string.visual_unsupported
                 || label == R.string.visual_unreadable)) statusTitle.setText(R.string.protection_attention);
+    }
+
+    private boolean committed() {
+        try { return settings != null && settings.remainingMillis() > 0; }
+        catch (RuntimeException unavailable) { return true; }
+    }
+
+    private void refreshGray() {
+        ScreenGray.reassert(this);
+        boolean wanted = ScreenGray.wanted(this);
+        boolean gray = ScreenGray.isGray(this);
+        grayToggle.setText(wanted ? R.string.gray_disable : R.string.gray_enable);
+        grayToggle.setEnabled(!wanted || !committed());
+        if (wanted && committed()) grayState.setText(R.string.gray_committed);
+        else grayState.setText(gray ? R.string.gray_on : R.string.gray_off);
+    }
+
+    /** With adb's permission Hisn switches it; otherwise Settings has the same switch. */
+    private void editGray() {
+        boolean wanted = ScreenGray.wanted(this);
+        if (ScreenGray.canControl(this)) {
+            if (!ScreenGray.set(this, !wanted, committed()))
+                Toast.makeText(this, R.string.gray_committed, Toast.LENGTH_LONG).show();
+            refreshGray();
+            return;
+        }
+        new AlertDialog.Builder(this).setTitle(R.string.gray_title)
+                .setMessage(getString(R.string.gray_manual, ScreenGray.GRANT))
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.open_accessibility, (dialog, which) ->
+                        startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))).show();
     }
 
     private void editVisualMode() {
