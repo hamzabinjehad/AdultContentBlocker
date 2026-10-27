@@ -176,6 +176,16 @@ filter the person turned off before committing; item 7 is not possible: iOS does
 not show an app another configuration's DNS; item 9 is in `extension/`, which
 another change owns.
 
+**Done 2026-10-27 (setup honesty), code and simulator tests only:** item 2 (a
+removal-protection row; levels Hisn cannot read show as confirmed by the person,
+never verified, and confirmations are bound to this device so a restore does not
+carry them), item 5 (the vault offers to stay hidden until the commitment ends,
+shows both dates, applies exactly the confirmed date and warns when it cannot
+reach the end), item 6 (setup lists blocking layers, then the commitment, then
+the vault; a commitment with no blocking layer warns in place and in the
+confirmation). M4 item 1 (vault guide covers Passcode Changes, Account Changes and
+Installing Apps, and says the code can be written down) is also done.
+
 ### M2. A commitment that holds
 
 1. `[code]` Check the commitment deadline against Apple server time, reusing the
@@ -195,6 +205,20 @@ another change owns.
 
 Exit: a moved clock and a revoked authorization are both detected on a device,
 and recorded in a dated record.
+
+**Done 2026-10-27, code and simulator tests only; device checks pending:**
+items 1, 2 and 4. A commitment ends only when both the device clock and Apple's
+server time have passed its date, with no early allowance; offline it stays on and
+says so; starting one reads Apple's time first. A confirmed end is saved with the
+commitment so a reboot cannot revive it. Within one boot a new server reading can
+only lower the saved time, so a forged `Date` header cannot move it forward
+(certificate pinning is not done; see `SELF_CONTROL_COMMITMENT.md`). Budget days
+use the same rule, keep the time zone they were reached in, settle once cleared,
+and ignore old calendar markers. The Screen Time filter is restored after a
+relaunch only if the person chose it for the commitment. Optional layer-loss
+alerts (item 4) are posted by the monitor when Hisn's own Screen Time settings
+disappear. Items 3, 5 and 6 remain. Verified: 181 iOS, 490 macOS and the Python
+suites pass.
 
 ### M3. Wider blocking
 
