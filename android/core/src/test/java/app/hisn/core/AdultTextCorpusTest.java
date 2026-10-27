@@ -21,7 +21,8 @@ public final class AdultTextCorpusTest {
             String[] fields = row.split("\t", 3);
             if (fields.length != 3 || !(fields[0].equals("block") || fields[0].equals("allow")))
                 throw new AssertionError("Invalid corpus fixture");
-            boolean expected = fields[0].equals("block"), actual = policy.blocks(fields[2]);
+            boolean expected = fields[0].equals("block"), actual = policy.blocksAnyLine(fields[2].replace("\\n", "\n"));
+            // "\\n" separates the visible labels of one screen, judged as TextGuardService does.
             // Franco-Arabic (Arabizi) families start with "arabizi"; also reported separately.
             // A family ending in "challenge" is a known miss: counted and printed, never required.
             boolean latin = fields[1].startsWith("arabizi");

@@ -371,7 +371,10 @@ is recorded separately for 0.4.0; it was not rerun after this update.
   labels; the consent screen discloses this. Screen text is not saved.
 - Built-in adult-text checks use bounded local context within individual visible
   labels, rather than exempting a whole screen because of unrelated medical
-  or news wording. Custom rules are checked independently first; built-in benign
+  or news wording. A label of up to three words that are all explicit terms
+  ("Porn", "سكس") blocks on its own, unless a label on the same screen names
+  recovery, blocking, research or similar context; then only promotions and media
+  labels block there. Custom rules are checked independently first; built-in benign
   context never overrides a chosen literal rule. Opt-in is off by default for
   existing installations and enabling it does not grant any Android permission
   or choose apps automatically.

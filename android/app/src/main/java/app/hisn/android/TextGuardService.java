@@ -338,10 +338,10 @@ public final class TextGuardService extends AccessibilityService {
         if (text.isEmpty()) return false;
         if (!rules.words.matches(text).isEmpty()) return true;
         if (!rules.adultWordsEnabled || adult == null) return false;
-        // Do not let a medical/news label elsewhere in the UI exempt an
-        // unrelated adult-promotion label. Custom rules remain independent.
-        for (String leaf : text.split("\n")) if (adult.blocks(leaf)) return true;
-        return false;
+        // Each label is judged alone, so a medical/news label elsewhere in the UI never
+        // exempts an unrelated adult-promotion label; it only stops a bare term such as a
+        // "Porn" tag chip from blocking by itself. Custom rules remain independent.
+        return adult.blocksAnyLine(text);
     }
 
     private static boolean isSelected(PolicyStore.Snapshot rules, String name) {
