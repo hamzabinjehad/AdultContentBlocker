@@ -45,12 +45,52 @@ public final class VisualCadenceTest {
         expect(VisualCadence.BASE_MILLIS, cadence.interval(true, now), "a changed frame");
         cadence.finished(7, 43);
         cadence.finished(8, 43);
-        expect(VisualCadence.BASE_MILLIS, cadence.interval(true, now), "another window");
+        expect(VisualCadence.BASE_MILLIS, cadence.interval(true, now), "a new window in the rotation");
         cadence.finished(8, 43);
         cadence.finished(8, 43);
+        expect(VisualCadence.BASE_MILLIS + VisualCadence.STILL_STEP_MILLIS, cadence.interval(true, now),
+                "the least still window sets the back-off");
         cadence.activity(now);
         expect(VisualCadence.FAST_MILLIS, cadence.interval(true, now), "an event");
         expect(VisualCadence.BASE_MILLIS, cadence.interval(true, now + 5_000), "and no back-off is left over");
+
+        // Two unchanged windows taking turns (paused PiP over a still feed, an idle split screen) back off.
+        VisualCadence turns = new VisualCadence();
+        for (int i = 0; i < 10; i++) { turns.finished(1, 100); turns.finished(2, 200); }
+        expect(VisualCadence.STILL_MAX_MILLIS, turns.interval(true, now), "alternating unchanged windows back off");
+        turns.finished(1, 101);
+        expect(VisualCadence.BASE_MILLIS, turns.interval(true, now), "one changed window ends it");
+        turns.finished(1, 101);
+        turns.finished(2, 200);
+        expect(VisualCadence.BASE_MILLIS + VisualCadence.STILL_STEP_MILLIS, turns.interval(true, now),
+                "and it resumes from the least still window");
+        turns.finished(3, 300);
+        expect(VisualCadence.BASE_MILLIS, turns.interval(true, now), "a window joining the rotation");
+        turns.retain(java.util.Arrays.asList(1, 2));
+        expect(VisualCadence.BASE_MILLIS + VisualCadence.STILL_STEP_MILLIS, turns.interval(true, now),
+                "a closed window no longer holds the back-off");
+        turns.retain(java.util.Collections.emptyList());
+        expect(VisualCadence.BASE_MILLIS, turns.interval(true, now), "no windows, the default");
+        for (int i = 0; i < 20; i++) turns.finished(10 + i, 0);
+        check(turns.interval(true, now) == VisualCadence.BASE_MILLIS, "per-window memory stays bounded");
+
+        // Polls are bounded too: events every 160 ms while no sample can start (typing, a retry wait)
+        // bring polls forward no more than once a second, as VisualGuard.soon() schedules them.
+        VisualCadence storm = new VisualCadence();
+        long next = 0, polls = 0;
+        for (long t = 0; t <= 10_000; t += 10) {
+            if (t >= next) { polls++; storm.polled(t); next = t + storm.interval(true, t); }
+            if (t % 160 == 0) {
+                storm.activity(t);
+                long wait = storm.earliest(true, t);
+                if (t + wait < next) next = t + wait;
+            }
+        }
+        check(polls <= 11, "at most one poll a second during an event storm, got " + polls);
+        VisualCadence quiet = new VisualCadence();
+        quiet.polled(1_000);
+        expect(VisualCadence.FAST_MILLIS - 100, quiet.earliest(true, 1_100), "a second after the last poll");
+        expect(VisualCadence.MIN_WAIT_MILLIS, quiet.earliest(true, 2_500), "then soon");
 
         // Signatures: the same screen, or one differing only in low colour bits, gives the same value.
         int[] frame = new int[256], noisy = new int[256], moved = new int[256];
@@ -68,13 +108,14 @@ public final class VisualCadenceTest {
         // slower than the bounded maximum while the screen is on.
         for (int round = 0; round < 2000; round++) {
             VisualCadence c = new VisualCadence();
-            long t = random.nextInt(10_000), start = -1;
+            long t = random.nextInt(10_000), start = -1, poll = -1;
             for (int step = 0; step < 50; step++) {
                 t += random.nextInt(3000);
-                switch (random.nextInt(4)) {
+                switch (random.nextInt(5)) {
                     case 0: c.activity(t); break;
-                    case 1: c.started(t); start = t; break;
+                    case 1: c.polled(t); c.started(t); start = poll = t; break;
                     case 2: c.finished(random.nextInt(3), random.nextInt(3)); break;
+                    case 3: c.polled(t); poll = t; break;
                     default: break;
                 }
                 boolean on = random.nextInt(5) != 0;
@@ -84,6 +125,8 @@ public final class VisualCadenceTest {
                 check(wait >= VisualCadence.MIN_WAIT_MILLIS && wait <= interval, "earliest bounds");
                 if (on && start >= 0) check(t + wait >= start + VisualCadence.FAST_MILLIS,
                         "never sooner than a second after the last start");
+                if (on && poll >= 0) check(t + wait >= poll + VisualCadence.FAST_MILLIS,
+                        "never sooner than a second after the last poll, sampled or not");
             }
         }
         System.out.println("VisualCadence tests passed (1 s while scrolling, 2 s by default, up to "

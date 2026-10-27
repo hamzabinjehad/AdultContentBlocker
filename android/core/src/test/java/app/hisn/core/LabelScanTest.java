@@ -131,6 +131,29 @@ public final class LabelScanTest {
         Tree whole = new Tree();
         check(!LabelScan.sample(whole, whole.obtain(card(null, leaf("a"), leaf("b"))), 3).isPartial()
                 && whole.obtained == 3, "a tree within its share is complete");
+        // A large active feed and a tiny picture-in-picture window: the small one is read first, so
+        // the feed gets nearly the whole budget instead of half of it.
+        Node[] feed = new Node[480];
+        for (int i = 0; i < feed.length; i++) feed[i] = leaf("post " + i);
+        Map<Integer, Node> trees = new java.util.HashMap<>();
+        trees.put(1, card(null, feed));
+        trees.put(2, card(null, leaf("Paused"), image("Play")));
+        List<GuardWindows.Window> windows = Arrays.asList(new GuardWindows.Window(1, "feed", true, true, true, false),
+                new GuardWindows.Window(2, "video", true, false, false, true));
+        List<GuardWindows.Window> order = GuardWindows.scanOrder(windows);
+        int left = LabelScan.NODE_BUDGET;
+        boolean anyPartial = false;
+        for (int i = 0; i < order.size(); i++) {
+            Tree shared = new Tree();
+            VisibleTextSample read = LabelScan.sample(shared, shared.obtain(trees.get(order.get(i).id)),
+                    GuardWindows.share(left, order.size() - i));
+            left -= shared.obtained;
+            anyPartial |= read.isPartial();
+        }
+        check(order.get(1).id == 1 && !anyPartial && left >= 0, "a small window first leaves the feed complete");
+        Tree halved = new Tree();
+        check(LabelScan.sample(halved, halved.obtain(trees.get(1)), GuardWindows.share(LabelScan.NODE_BUDGET, 2))
+                .isPartial(), "while the feed first, at half the budget, is cut");
         Tree zero = new Tree();
         check(LabelScan.sample(zero, zero.obtain(card(null, leaf("a"))), 0).isPartial() && zero.held.isEmpty(),
                 "a zero share still visits the root, and only it");

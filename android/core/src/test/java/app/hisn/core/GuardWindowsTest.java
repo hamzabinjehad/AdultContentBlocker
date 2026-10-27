@@ -69,6 +69,24 @@ public final class GuardWindowsTest {
         check(GuardWindows.share(512, 1) == 512 && GuardWindows.share(512, 2) == 256 && GuardWindows.share(500, 0) == 500
                 && GuardWindows.share(-1, 2) == 0, "shares");
 
+        // Text read order: picture-in-picture, then other inactive windows, the active window last.
+        check(ids(GuardWindows.scanOrder(Arrays.asList(active(1, "feed"), app(2, "chat"), pip(3, "video"))))
+                .equals("3:video 2:chat 1:feed"), "small windows first, the active one last");
+        check(ids(GuardWindows.scanOrder(Arrays.asList(active(1, "feed")))).equals("1:feed"), "one window");
+
+        // Typing: only a focused input in the window that holds input focus.
+        check(GuardWindows.typing(focused(3, "chat"), true) && GuardWindows.typing(active(1, "feed"), true),
+                "a focused input in the focused window");
+        check(!GuardWindows.typing(app(2, "feed"), true), "an input left focused after moving to the other half");
+        check(!GuardWindows.typing(focused(3, "chat"), false), "no focused input");
+
+        // Window-set keys: order ignored, any id or app change noticed.
+        check(GuardWindows.key(Arrays.asList(active(1, "feed"), pip(9, "video")))
+                .equals(GuardWindows.key(Arrays.asList(app(9, "video"), app(1, "feed")))), "same set");
+        check(!GuardWindows.key(Arrays.asList(app(1, "feed"))).equals(GuardWindows.key(Arrays.asList(app(2, "feed"))))
+                && !GuardWindows.key(Arrays.asList(app(1, "feed"))).equals(GuardWindows.key(Arrays.asList(app(1, "chat"))))
+                && GuardWindows.key(new ArrayList<>()).isEmpty(), "a different set");
+
         // Random lists: the rule holds for every result.
         Random random = new Random(55);
         String[] apps = {"video", "feed", "chat", "other", "launcher", "com.android.settings", "app.hisn.android", null};

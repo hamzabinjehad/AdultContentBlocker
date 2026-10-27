@@ -68,5 +68,30 @@ public final class GuardWindows {
         return Math.max(0, windows <= 1 ? left : left / windows);
     }
 
+    /** The order in which windows' text is read: picture-in-picture first, then other inactive windows,
+     * the active window last. Each takes a {@link #share} of what is left, so the small windows read
+     * first hand what they leave to the window in use, usually the largest. */
+    public static List<Window> scanOrder(List<Window> windows) {
+        List<Window> order = new ArrayList<>();
+        for (int rank = 0; rank < 3; rank++) {
+            for (Window window : windows) if (rank == (window.pip ? 0 : window.active ? 2 : 1)) order.add(window);
+        }
+        return order;
+    }
+
+    /** Whether a window counts as typing: a focused editable or password field there, and the window
+     * itself holds input focus. An input left focused in a window the user moved away from does not. */
+    public static boolean typing(Window window, boolean focusedInput) {
+        return focusedInput && window.focused;
+    }
+
+    /** Identifies a set of windows (ids and apps, order ignored), to tell whether the set changed. */
+    public static String key(List<Window> windows) {
+        List<String> parts = new ArrayList<>();
+        for (Window window : windows) parts.add(window.toString());
+        java.util.Collections.sort(parts);
+        return String.join(",", parts);
+    }
+
     private GuardWindows() { }
 }
