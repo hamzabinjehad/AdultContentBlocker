@@ -112,22 +112,27 @@ final class VisualGuard implements AutoCloseable {
         List<GuardWindows.Window> windows = TextGuardService.selectedWindows(service, excluded, rules.scannedApps::contains);
         if (windows == null) { eligibility = "NO_ROOT"; return eligible; }
         if (windows.isEmpty()) { eligibility = "NOT_SELECTED"; return eligible; }
-        for (GuardWindows.Window window : windows) if (capturable(window)) eligible.add(window);
-        if (eligible.isEmpty()) {
+        boolean typing = false;
+        for (GuardWindows.Window window : windows) {
+            Boolean input = typing(window);
+            if (input == null) continue; // Gone or changed app since listing.
+            if (input) typing = true; else eligible.add(window);
+        }
+        if (eligible.isEmpty() && typing) {
             health.report(State.INPUT);
             eligibility = "INPUT";
-        } else eligibility = "SELECTED";
+        } else eligibility = eligible.isEmpty() ? "NO_ROOT" : "SELECTED";
         return eligible;
     }
 
-    /** False while an input field of that window is focused, including passwords, or when it is gone. */
-    private boolean capturable(GuardWindows.Window window) {
+    /** True while an input field of that window is focused, including passwords; null when it is gone. */
+    private Boolean typing(GuardWindows.Window window) {
         AccessibilityNodeInfo root = null, input = null;
         try {
             root = TextGuardService.windowRoot(service, window);
-            if (root == null) return false;
+            if (root == null) return null;
             input = root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT);
-            return input == null || !(input.isEditable() || input.isPassword());
+            return input != null && (input.isEditable() || input.isPassword());
         } finally {
             if (input != null) input.recycle();
             if (root != null) root.recycle();
