@@ -183,9 +183,9 @@ failover, the slow-reply backoff and the "about N" wording are fixed; Android
 
 | Check | Result |
 | --- | --- |
-| `sh test-core.sh` (JBR 25.0.3) | Pass, including the new `ResolverFailover`, `UnderlyingNetwork` and `SettingsIntegrity` tests, the extended `CommitmentClock` test and `TlsDnsTransport` failover over loopback fakes (timeout, refusal, doubling waits, both down, network change, no move on TLS failure or a reply-less close, no move after invalidation); string parity 196 strings |
+| `sh test-core.sh` (JBR 25.0.3) | Pass, including the new `ResolverFailover`, `UnderlyingNetwork`, `SettingsIntegrity` and `SavedSettings` tests, the extended `CommitmentClock` test and `TlsDnsTransport` failover over loopback fakes (timeout, refusal, failed handshake, identity checked at both, slow reply not counted, doubling waits, both down, network change, no move on a reply-less close, no move after invalidation); string parity 198 strings |
 | `./gradlew --no-daemon assembleDebug assembleDebugAndroidTest lintDebug assembleRelease` | `BUILD SUCCESSFUL`; lint 0 errors, 16 warnings, none in changed files |
-| `check-release.py` on the unsigned release APK | Pass: 2 activities and 1,288 classes, none of the 4 debug-only components or 6 debug-only classes |
+| `check-release.py` on the unsigned release APK | Pass after the review follow-up: 2 activities and 1,294 classes (SHA-256 `b3aaf1789ada8b6f552c457b5e7ff539b23b67cde3277f1f75b7945af01fe4d9`), none of the 4 debug-only components or 6 debug-only classes |
 | `check-release.py` on the debug APK (negative control) | Fails: debuggable, 4 DUMP-gated fixture activities, 6 debug-only classes and their synthetic classes |
 
 APKs from this branch (version name still 0.5.3; unsigned or debug-signed, not
