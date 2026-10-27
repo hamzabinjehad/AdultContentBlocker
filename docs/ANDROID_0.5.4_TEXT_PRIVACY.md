@@ -167,12 +167,12 @@ Masri live, free" and "Watch the video, sex ed for teens", among others.
 
 | Check | Where | Result |
 | --- | --- | --- |
-| `sh test-core.sh` | macOS 27.2, JetBrains JBR 25.0.3 | Pass. String parity: 194 strings, 5 plurals, 205 references. 2,400 LabelScan trees; 5,911 submitted and 5,909 canonical seed rules; corpus 41/41 and 0/59 |
-| `assembleDebug assembleDebugAndroidTest lintDebug assembleRelease` | Same Mac, Gradle 9.3.1, AGP 9.1.1, local SDK | `BUILD SUCCESSFUL`, 119 tasks. `lintDebug`: 0 errors, 13 warnings. Two are `text_guard_service.xml` attributes ignored below API 30/31. Eleven are in debug-only visual test screens. `PluralsCandidate` went from 2 to 0 |
+| `sh test-core.sh` | macOS 27.2, JetBrains JBR 25.0.3 | Pass. String parity: 194 strings, 5 plurals, 205 references. 2,400 LabelScan trees; 5,911 submitted and 5,909 canonical seed rules; corpus 43/47 (4 challenge rows) and 0/65 |
+| `assembleDebug assembleDebugAndroidTest lintDebug assembleRelease` | Same Mac, Gradle 9.3.1, AGP 9.1.1, local SDK | `BUILD SUCCESSFUL`, 119 tasks. `lintDebug`: 0 errors, 14 warnings. One is lint noting a newer Gradle release. Two are `text_guard_service.xml` attributes ignored below API 30/31. Eleven are in debug-only visual test screens. `PluralsCandidate` went from 2 to 0 |
 
 These APKs were built locally and are not for distribution. Debug
-`185627e6c905f62d89f7371bd99ab8d1d766fbde42c78a95ae91baa638c58de2`, unsigned release
-`01ac253c0314b17bf7f9a595a787eb661c92c024edf67c72e6ff0afb6d9d95e1`, androidTest
+`f9a19f258c22f85573d905545655d06f48e6eac6d8e4559a99f2be775133b0ac`, unsigned release
+`e6dd0349c980c7b0e639e22c7dfec5355ed6fff8e86d96abd6e906be30549912`, androidTest
 `57e33aa113c4f36bba2831f45cc59941f79ebda11890fafb1ce4aae624688be9`. They change
 when the version is set.
 
