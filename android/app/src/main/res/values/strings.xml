@@ -160,7 +160,7 @@
     <string name="adult_mode_ready">Built-in adult-text policy loaded · %1$d compiled rules · Selected apps only</string>
     <string name="adult_mode_loading">Built-in adult-text policy · Loading verified terms on this device</string>
     <string name="adult_mode_error">Built-in adult-text policy unavailable · Retry loading or install a verified update; custom rules remain independent</string>
-    <string name="adult_mode_disclosure">This opt-in layer checks visible text in apps you select, using English and Arabic adult-promotion evidence from the verified bundled vocabulary. It is separate from your literal custom rules. It can miss content or match harmless text; it does not analyze images or videos. Text stays on your device and is not saved.\n\nChoose apps after enabling it. During an active commitment this setting cannot be turned off inside Hisn. No Android permission is granted by this button.</string>
+    <string name="adult_mode_disclosure">This opt-in layer checks visible text in apps you select, using English, Arabic and Franco-Arabic (Arabic written in Latin letters and digits) adult-promotion evidence from the verified bundled vocabulary. It is separate from your literal custom rules. It can miss content or match harmless text; it does not analyze images or videos. Text stays on your device and is not saved.\n\nChoose apps after enabling it. During an active commitment this setting cannot be turned off inside Hisn. No Android permission is granted by this button.</string>
     <string name="network_check_idle">DNS route check · Not run in this session</string>
     <string name="network_check_button">Check the DNS route</string>
     <string name="network_check_start">Run these checks</string>
