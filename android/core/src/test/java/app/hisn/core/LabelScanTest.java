@@ -127,6 +127,8 @@ public final class LabelScanTest {
         String huge = "x ".repeat(VisibleTextSample.LIMIT);
         VisibleTextSample large = scan(card(null, card(huge, image(null)), card("Small card", image(null))));
         check(large.isPartial() && large.text().length() <= VisibleTextSample.LIMIT, "held descriptions are bounded");
+        VisibleTextSample skipped = scan(card("Outer card", card(huge, image(null))));
+        check(skipped.isPartial() && skipped.text().isEmpty(), "a description too long to hold still covers its outer card");
 
         // A node that goes stale mid-scan: everything held is still released.
         Tree failing = new Tree();

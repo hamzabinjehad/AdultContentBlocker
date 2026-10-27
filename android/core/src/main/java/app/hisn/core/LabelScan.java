@@ -69,7 +69,7 @@ public final class LabelScan {
                             if (held + description.length() <= VisibleTextSample.LIMIT) {
                                 held += description.length();
                                 parents.add(owner = new Parent(description, owner));
-                            } else text.markPartial();
+                            } else { text.markPartial(); ruleOut(owner); } // Skipped, but still text inside.
                         }
                         for (int i = 0; i < count; i++) {
                             if (scheduled >= NODE_BUDGET) { text.markPartial(); ruleOut(owner); break; }
