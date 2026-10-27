@@ -13,6 +13,8 @@ import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.net.LinkProperties;
 import android.os.Build;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.ParcelFileDescriptor;
 import android.os.Parcel;
 import android.system.Os;
@@ -33,6 +35,7 @@ import app.hisn.core.EncryptedDnsProviders;
 import app.hisn.core.Ipv4DnsPacket;
 import app.hisn.core.Ipv4TcpPacket;
 import app.hisn.core.TlsDnsTransport;
+import app.hisn.core.UnderlyingNetwork;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -342,13 +345,14 @@ public final class DnsVpnService extends VpnService {
         private long networkEpoch;
         private long failureEpoch;
         private final Object monitorLock = new Object();
-        private final Map<Network, LinkProperties> linkMarks = new HashMap<>();
-        private final Map<Network, Integer> capabilityMarks = new HashMap<>();
+        // Under monitorLock. The network protected resolver sockets use: Android names it on 12+.
+        private final UnderlyingNetwork<Network> underlying = new UnderlyingNetwork<>(Build.VERSION.SDK_INT >= 31);
         private final Map<Network, String> privateDnsNames = new HashMap<>();
         // Under monitorLock. Once callbacks report link properties, the pre-tunnel reading is dropped.
         private boolean privateDnsTracked;
         private ConnectivityManager connectivity;
         private ConnectivityManager.NetworkCallback callback;
+        private HandlerThread monitorThread;
         // Never wait for a response on a packet-processing worker: this query enters the TUN itself.
         private final ThreadPoolExecutor checkWorker = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS,
                 new ArrayBlockingQueue<>(1), job -> new Thread(job, "hisn-dns-self-check"));
@@ -604,48 +608,67 @@ public final class DnsVpnService extends VpnService {
             synchronized (monitorLock) {
                 if (closed) return;
                 connectivity = getSystemService(ConnectivityManager.class);
+                // Only the network that protected resolver sockets use matters (UnderlyingNetwork):
+                // changes on a standby network, such as mobile data beside Wi-Fi, keep connections.
                 callback = new ConnectivityManager.NetworkCallback() {
                     @Override public void onAvailable(Network network) {
+                        boolean changed;
                         synchronized (monitorLock) {
-                            if (closed || linkMarks.containsKey(network)) return;
-                            linkMarks.put(network, null);
+                            if (closed) return;
+                            changed = underlying.available(network);
                         }
-                        networkChanged();
+                        if (changed) networkChanged();
                     }
                     @Override public void onLost(Network network) {
+                        boolean changed;
                         synchronized (monitorLock) {
-                            if (closed || !linkMarks.containsKey(network)) return;
-                            linkMarks.remove(network); capabilityMarks.remove(network);
+                            if (closed) return;
+                            changed = underlying.lost(network);
                             trackPrivateDns(network, null);
                         }
-                        networkChanged();
+                        if (changed) networkChanged();
                     }
                     @Override public void onLinkPropertiesChanged(Network network, LinkProperties properties) {
+                        boolean changed;
                         synchronized (monitorLock) {
-                            if (closed || !linkMarks.containsKey(network)) return;
+                            if (closed || !underlying.tracks(network)) return;
                             trackPrivateDns(network, properties);
-                            LinkProperties previous = linkMarks.put(network, snapshotLinks(properties));
-                            if (previous == null || previous.equals(properties)) return;
+                            changed = underlying.link(network, snapshotLinks(properties));
                         }
-                        networkChanged();
+                        if (changed) networkChanged();
                     }
                     @Override public void onCapabilitiesChanged(Network network, NetworkCapabilities capabilities) {
-                        // Ignore signal strength/bandwidth churn; only validation/captive changes matter here.
-                        int mark = (capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) ? 1 : 0)
-                                | (capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_CAPTIVE_PORTAL) ? 2 : 0);
+                        // Signal strength and bandwidth churn are ignored: only what ranks the network,
+                        // and its validation and captive-portal state, are passed on.
+                        UnderlyingNetwork.Transport transport =
+                                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) ? UnderlyingNetwork.Transport.ETHERNET
+                                : capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ? UnderlyingNetwork.Transport.WIFI
+                                : capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ? UnderlyingNetwork.Transport.CELLULAR
+                                : UnderlyingNetwork.Transport.OTHER;
+                        boolean foreground = Build.VERSION.SDK_INT < 28
+                                || capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_FOREGROUND);
+                        boolean changed;
                         synchronized (monitorLock) {
-                            if (closed || !linkMarks.containsKey(network)) return;
-                            Integer previous = capabilityMarks.put(network, mark);
-                            if (previous == null || previous == mark) return;
+                            if (closed) return;
+                            changed = underlying.capabilities(network, transport,
+                                    capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED),
+                                    capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_CAPTIVE_PORTAL), foreground);
                         }
-                        networkChanged();
+                        if (changed) networkChanged();
                     }
                 };
                 try {
                     NetworkRequest request = new NetworkRequest.Builder()
                             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
                             .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN).build();
-                    connectivity.registerNetworkCallback(request, callback);
+                    // Callbacks close sockets, so they run on their own thread, never the main one.
+                    monitorThread = new HandlerThread("hisn-dns-network");
+                    monitorThread.start();
+                    Handler handler = new Handler(monitorThread.getLooper());
+                    // Android 12+ reports the best non-VPN network, the one protected sockets use; before
+                    // that every Internet network is reported and UnderlyingNetwork ranks them.
+                    if (Build.VERSION.SDK_INT >= 31) connectivity.registerBestMatchingNetworkCallback(request, callback, handler);
+                    else connectivity.registerNetworkCallback(request, callback, handler);
                     synchronized (CHECK_LOCK) {
                         if (!closed && session == this && activeService == DnsVpnService.this) networkMonitoring = true;
                     }
@@ -675,11 +698,13 @@ public final class DnsVpnService extends VpnService {
         }
 
         // Called with monitorLock held. Only strict mode exposes a provider hostname; the setting
-        // is global, so any tracked underlying network reports the same name. Read-only.
+        // is global, so any tracked underlying network reports the same name. Read-only. A network
+        // no longer followed (lost, or replaced as Android's reported default) no longer counts.
         private void trackPrivateDns(Network network, LinkProperties properties) {
             privateDnsTracked = true;
             String name = privateDnsServerName(properties);
             if (name == null) privateDnsNames.remove(network); else privateDnsNames.put(network, name);
+            privateDnsNames.keySet().removeIf(known -> !underlying.tracks(known));
             publishPrivateDns(privateDnsNames.isEmpty() ? null : privateDnsNames.values().iterator().next());
         }
 
@@ -737,7 +762,9 @@ public final class DnsVpnService extends VpnService {
                     try { connectivity.unregisterNetworkCallback(previous); }
                     catch (RuntimeException alreadyGone) { /* No permission or live callback left. */ }
                 }
-                linkMarks.clear(); capabilityMarks.clear(); privateDnsNames.clear();
+                if (monitorThread != null) monitorThread.quitSafely();
+                monitorThread = null;
+                underlying.clear(); privateDnsNames.clear();
             }
         }
 
