@@ -8,10 +8,11 @@ import java.util.List;
  *
  * Breadth-first over at most 512 visited nodes and 512 scheduled children. Editable,
  * password and EditText nodes are never read and their subtrees are skipped; invisible
- * nodes are skipped. A childless node gives its text, else its content description.
+ * nodes are skipped, and an invisible node with children is not opened. A childless node gives its text, else its content description.
  * A parent's own content description, common on card and button layouts whose children
  * are images, is read only when its whole subtree was inspected, gave no text, and held
- * no editable or password node (even an invisible one). A cut-short subtree never yields
+ * no editable or password node (even an invisible one) and no invisible node with children,
+ * which may hide one (an input inside a hidden container). A cut-short subtree never yields
  * its parent's description, and a parent that is read covers every enclosing parent.
  * Those descriptions follow the leaf labels, one line each, in screen order. Nothing
  * beyond the nodes already visited is fetched.
@@ -60,7 +61,9 @@ public final class LabelScan {
                 try {
                     // A private node also rules out every enclosing parent: its label may repeat the input.
                     if (tree.isPrivate(node)) { ruleOut(item.owner); continue; }
-                    if (!tree.isVisible(node)) continue;
+                    // An invisible container is not opened, so it may hide an input whose value an
+                    // enclosing label repeats: it rules out every enclosing parent.
+                    if (!tree.isVisible(node)) { if (tree.childCount(node) > 0) ruleOut(item.owner); continue; }
                     int count = tree.childCount(node);
                     if (count > 0) {
                         Parent owner = item.owner;

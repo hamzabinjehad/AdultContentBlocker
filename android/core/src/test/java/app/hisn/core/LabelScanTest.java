@@ -80,6 +80,10 @@ public final class LabelScanTest {
                 "a parent holding an input field is never read, nor the input");
         check(labels(card("Card", image(null), hidden(input("typed", null)))).isEmpty(),
                 "an invisible input field still rules out the parent description");
+        check(labels(card("Reply: draft text", image(null), hidden(card(null, input("draft text", null))))).isEmpty(),
+                "an input inside an invisible container rules out the parent description");
+        check(labels(card("Outer", card("Inner", image(null), hidden(card(null, image(null)))))).isEmpty(),
+                "an invisible container rules out every enclosing parent, not only its own");
         check(labels(card("Card", card(null, input(null, "pin")))).isEmpty(),
                 "an input field deeper down rules out every enclosing parent");
         check(labels(input("password", "Password field", leaf("child"))).isEmpty(),
@@ -87,7 +91,7 @@ public final class LabelScanTest {
         check(labels(card(null, hidden(card("Hidden card", image(null))), hidden(leaf("Hidden leaf")))).isEmpty(),
                 "invisible nodes are not read");
         check(labels(card("Shown card", image(null), hidden(leaf("Hidden leaf")))).equals(Arrays.asList("Shown card")),
-                "invisible text below a card neither reads nor rules it out");
+                "an invisible childless label below a card neither reads nor rules it out");
         check(labels(card("Outer", card("Inner", image(null)), image(null))).equals(Arrays.asList("Inner")),
                 "the innermost card is read and covers its enclosing card");
         check(labels(card("Outer", card("Left", image(null)), card("Right", image(null))))
@@ -225,7 +229,7 @@ public final class LabelScanTest {
     /** 0: nothing below; 1: text or a read parent below; 2: an input field below (rules out every parent). */
     static int settle(Node node, Map<Node, Boolean> read) {
         if (node.secret) return 2;
-        if (!node.visible) return 0;
+        if (!node.visible) return node.children.isEmpty() ? 0 : 2; // May hide an input field.
         if (node.children.isEmpty()) {
             String value = node.text == null || node.text.isEmpty() ? node.description : node.text;
             return value != null && !value.trim().isEmpty() ? 1 : 0;
