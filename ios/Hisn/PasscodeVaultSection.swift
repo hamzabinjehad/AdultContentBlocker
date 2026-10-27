@@ -5,12 +5,16 @@ import SwiftUI
 struct PasscodeVaultSection: View {
     @ObservedObject var vault: PasscodeVaultController
     @ObservedObject var protection: ProtectionController
+    let lockDevice: LockConfirmationDevice
     /// `VaultCommitmentDates.pickerTag` stands for "until my commitment ends".
     @State private var days = 7
     @State private var understands = false
-    @State private var confirmCreate = false
+    /// What a confirmation shows, saved as it opens; its button applies exactly this or nothing.
+    @State private var pendingCreate: VaultConfirmation.Choice?
+    @State private var pendingMatch: VaultCommitmentDates.Plan?
     @State private var confirmExtend = false
-    @State private var confirmMatch = false
+    /// Why the last confirmed choice changed nothing.
+    @State private var refusal: VaultConfirmation.Refusal?
     @Environment(\.scenePhase) private var scenePhase
     @ScaledMetric(relativeTo: .largeTitle) private var passcodeSize: CGFloat = 44
     @ScaledMetric(relativeTo: .largeTitle) private var passcodeTracking: CGFloat = 12
@@ -33,7 +37,8 @@ struct PasscodeVaultSection: View {
                 LabeledContent("vault.sealedUntil") { dateText(until) }
                 commitmentDates
                 Button("vault.extend") { confirmExtend = true }.disabled(vault.busy)
-                LockConfirmationRows(claims: [.passcodeVault], vault: vault.facts, now: protection.now)
+                LockConfirmationRows(claims: [.passcodeVault], vault: vault.facts, now: protection.now,
+                                     device: lockDevice)
             case .due(let since)?:
                 Label("vault.due", systemImage: "lock.open")
                 LabeledContent("vault.sealedUntil") { dateText(since) }
@@ -49,6 +54,10 @@ struct PasscodeVaultSection: View {
                 Label(LocalizedStringKey(message), systemImage: "exclamationmark.triangle")
                     .font(.footnote).foregroundStyle(HisnPalette.warning)
             }
+            if let refusal {
+                Label(LocalizedStringKey(refusal.rawValue), systemImage: "exclamationmark.triangle")
+                    .font(.footnote).foregroundStyle(HisnPalette.warning)
+            }
             DisclosureGroup("vault.limitsTitle") {
                 Text("vault.limits").font(.footnote).foregroundStyle(.secondary)
                 Text("vault.writeDown").font(.footnote).foregroundStyle(.secondary)
@@ -58,31 +67,29 @@ struct PasscodeVaultSection: View {
         }
         .onAppear { vault.reload() }
         .onReceive(Self.ticker) { _ in vault.tick() }
-        .onChange(of: days) { _ in understands = false }
-        // "Until my commitment ends" disappears with the commitment; never keep a choice that is not shown.
+        .onChange(of: days) { _ in understands = false; refusal = nil }
+        // "Until my commitment ends" disappears with the commitment; never keep a choice that is not
+        // shown. An open confirmation keeps its own saved choice, so this never changes what it applies.
         .onChange(of: createPlan == nil) { gone in
             if gone, days == VaultCommitmentDates.pickerTag { days = 7 }
         }
-        .alert("vault.confirmTitle", isPresented: $confirmCreate) {
-            Button("vault.create") { create() }
+        .alert("vault.confirmTitle",
+               isPresented: Binding(get: { pendingCreate != nil }, set: { if !$0 { pendingCreate = nil } }),
+               presenting: pendingCreate) { choice in
+            Button("vault.create") { confirm(choice) }
             Button("cancel", role: .cancel) { }
-        } message: { createMessage }
+        } message: { choice in createMessage(choice) }
         .alert("vault.extendTitle", isPresented: $confirmExtend) {
             Button("vault.extend") { vault.extend(days: 7) }
             Button("cancel", role: .cancel) { }
         } message: { Text("vault.extendBody") }
-        .alert("vault.matchTitle", isPresented: $confirmMatch) {
-            Button("vault.matchButton") {
-                vault.tick()
-                if let plan = extendPlan { VaultCommitmentDates.apply(plan, to: vault) }
-            }
+        .alert("vault.matchTitle",
+               isPresented: Binding(get: { pendingMatch != nil }, set: { if !$0 { pendingMatch = nil } }),
+               presenting: pendingMatch) { plan in
+            Button("vault.matchButton") { confirm(.plan(plan)) }
             Button("cancel", role: .cancel) { }
-        } message: {
-            if let plan = extendPlan {
-                Text("vault.matchBody") + Text(verbatim: " ") + dateText(plan.until)
-            } else {
-                Text("vault.matchBody")
-            }
+        } message: { plan in
+            Text("vault.matchBody") + Text(verbatim: " ") + dateText(plan.until)
         }
     }
 
@@ -90,16 +97,33 @@ struct PasscodeVaultSection: View {
         protection.commitmentActive ? protection.commitment?.deadline : nil
     }
 
-    private var plan: VaultCommitmentDates.Plan? {
-        VaultCommitmentDates.plan(vault: vault.vault, commitmentEnd: commitmentEnd, now: vault.now)
-    }
     private var createPlan: VaultCommitmentDates.Plan? {
-        guard vault.vault == nil, let plan, plan.createDays != nil else { return nil }
+        guard vault.vault == nil,
+              let plan = VaultCommitmentDates.plan(vault: nil, commitmentEnd: commitmentEnd, now: vault.now),
+              plan.createDays != nil else { return nil }
         return plan
     }
-    private var extendPlan: VaultCommitmentDates.Plan? {
-        guard vault.vault != nil, let plan, plan.createDays == nil else { return nil }
-        return plan
+    /// The vault opens before the commitment ends, and what Hisn can do about it.
+    private var earlier: VaultCommitmentDates.Earlier? {
+        VaultCommitmentDates.earlier(vault: vault.vault, commitmentEnd: commitmentEnd, now: vault.now)
+    }
+
+    /// Saves the choice, with its date worked out from the vault's clock now, as the alert opens.
+    private func offerCreate() {
+        vault.tick()
+        refusal = nil
+        pendingCreate = VaultConfirmation.choice(days: days, plan: createPlan)
+    }
+
+    private func offerMatch() {
+        vault.tick()
+        refusal = nil
+        if case .matchable(let plan)? = earlier { pendingMatch = plan }
+    }
+
+    /// Applies exactly what the alert showed, or nothing and says why.
+    private func confirm(_ choice: VaultConfirmation.Choice) {
+        refusal = VaultConfirmation.carryOut(choice, on: vault, commitmentEnd: commitmentEnd)
     }
 
     @ViewBuilder private var createControls: some View {
@@ -120,39 +144,36 @@ struct PasscodeVaultSection: View {
                 .font(.footnote).foregroundStyle(.secondary)
         }
         Toggle("vault.acknowledge", isOn: $understands)
-        Button("vault.create") { confirmCreate = true }
+        Button("vault.create") { offerCreate() }
             .disabled(vault.busy || !understands
                       || (days == VaultCommitmentDates.pickerTag && createPlan == nil))
     }
 
-    private var createMessage: Text {
-        if days == VaultCommitmentDates.pickerTag, let plan = createPlan {
-            return Text("vault.matchCreateBody") + Text(verbatim: " ") + dateText(plan.until)
-        }
-        return Text("vault.confirmBody \(days)")
-    }
-
-    private func create() {
-        if days == VaultCommitmentDates.pickerTag {
-            // The plan is worked out again from the vault's own clock, the one `create` uses.
-            vault.tick()
-            if let plan = createPlan { VaultCommitmentDates.apply(plan, to: vault) }
-        } else {
-            vault.create(days: days)
+    private func createMessage(_ choice: VaultConfirmation.Choice) -> Text {
+        switch choice {
+        case .plan(let plan): return Text("vault.matchCreateBody") + Text(verbatim: " ") + dateText(plan.until)
+        case .days(let days): return Text("vault.confirmBody \(days)")
         }
     }
 
-    /// The commitment's end beside the vault's date, and the offer to keep the passcode
-    /// until the commitment ends when it would open first.
+    /// The commitment's end beside the vault's date. Whenever the vault opens first this says so,
+    /// then offers to keep the passcode until the commitment ends, or says why Hisn cannot.
     @ViewBuilder private var commitmentDates: some View {
         if let end = commitmentEnd {
             LabeledContent("dates.commitmentUntil") { dateText(end) }
-            if let plan = extendPlan {
+            if let earlier {
                 Label("dates.vaultEarlierHere", systemImage: "exclamationmark.triangle")
                     .font(.footnote).foregroundStyle(HisnPalette.warning)
-                LabeledContent("vault.matchUntil") { dateText(plan.until) }
-                    .font(.footnote).foregroundStyle(.secondary)
-                Button("vault.matchButton") { confirmMatch = true }.disabled(vault.busy)
+                switch earlier {
+                case .matchable(let plan):
+                    LabeledContent("vault.matchUntil") { dateText(plan.until) }
+                        .font(.footnote).foregroundStyle(.secondary)
+                    Button("vault.matchButton") { offerMatch() }.disabled(vault.busy)
+                case .beyondLongestSeal:
+                    Text("vault.cannotReach").font(.footnote).foregroundStyle(.secondary)
+                case .endReached:
+                    EmptyView()
+                }
             }
             Text("dates.neverEarlier").font(.footnote).foregroundStyle(.secondary)
         }
@@ -193,8 +214,14 @@ struct PasscodeVaultSection: View {
 
 extension PasscodeVaultController {
     /// What readiness may know about the vault: its dates, never its passcode.
-    var facts: MobileProtectionPolicy.VaultFacts? {
-        vault.map { .init(createdAt: $0.createdAt, revealAt: $0.revealAt, revealed: $0.revealedAt != nil) }
+    var facts: MobileProtectionPolicy.VaultFacts? { vault.map(MobileProtectionPolicy.VaultFacts.init) }
+}
+
+extension MobileProtectionPolicy.VaultFacts {
+    /// A vault not yet sealed hides itself when its setup window closes; until then it is on screen.
+    init(_ vault: PasscodeVault) {
+        self.init(createdAt: vault.createdAt, revealAt: vault.revealAt, revealed: vault.revealedAt != nil,
+                  hidesAt: vault.sealed ? nil : vault.createdAt.addingTimeInterval(PasscodeVaultPolicy.setupWindow))
     }
 }
 
@@ -260,7 +287,38 @@ enum VaultCommitmentDates {
         return best
     }
 
-    private static func seconds(_ steps: [Int]) -> TimeInterval { Double(steps.reduce(0, +)) * 86400 }
+    static func seconds(_ steps: [Int]) -> TimeInterval { Double(steps.reduce(0, +)) * 86400 }
+
+    /// The vault opens before a running commitment ends. Said whenever it is true, not only
+    /// when Hisn has a fix to offer.
+    enum Earlier: Equatable {
+        /// Hisn can keep the passcode until the commitment ends with this plan.
+        case matchable(Plan)
+        /// The longest seal (366 days in all, 7 or 30 days at a time) stops short of the end.
+        case beyondLongestSeal
+        /// The end has passed on this iPhone's clock and waits on Apple's time: nothing to match.
+        case endReached
+
+        /// The commitment section's warning, which names the fix in Setup only when there is one.
+        var commitmentKey: String {
+            switch self {
+            case .matchable: return "dates.vaultEarlier"
+            case .beyondLongestSeal: return "dates.vaultEarlierBeyond"
+            case .endReached: return "dates.vaultEarlierHere"
+            }
+        }
+    }
+
+    static func earlier(vault: PasscodeVault?, commitmentEnd: Date?, now: Date) -> Earlier? {
+        guard let vault, vault.revealedAt == nil, let end = commitmentEnd, vault.revealAt < end else { return nil }
+        if let plan = plan(vault: vault, commitmentEnd: end, now: now) { return .matchable(plan) }
+        return end > now ? .beyondLongestSeal : .endReached
+    }
+
+    /// The label for the vault's date: hidden until it, or shown now while the setup window is open.
+    static func vaultDateKey(_ facts: MobileProtectionPolicy.VaultFacts, now: Date) -> String {
+        facts.inSetupWindow(at: now) ? "dates.vaultShownUntil" : "dates.vaultUntil"
+    }
 
     /// Applies a plan through the vault's own create and extend, stopping at the first refusal.
     /// A partial result only ever leaves the date later than before, never earlier.
@@ -274,5 +332,67 @@ enum VaultCommitmentDates {
             vault.extend(days: days)
             guard vault.messageKey == nil else { return }
         }
+    }
+}
+
+/// A vault's date can never be shortened, so its confirmation applies what it showed or nothing.
+/// The choice is saved as the alert opens; while it is open the picker can reset (the commitment
+/// ended) and a fresh plan can differ (the clock moved on, the commitment was extended), and
+/// neither may change what the button does.
+enum VaultConfirmation {
+    enum Choice: Equatable {
+        /// A fixed duration from the picker.
+        case days(Int)
+        /// "Until my commitment ends": a new passcode, or extensions to the one Hisn keeps.
+        case plan(VaultCommitmentDates.Plan)
+    }
+
+    /// Why a confirmed choice changed nothing. Each raw value is its text key.
+    enum Refusal: String, Equatable {
+        case commitmentEnded = "vault.confirm.ended"
+        case datesMoved = "vault.confirm.moved"
+    }
+
+    /// How much later than the date it showed a new passcode may land: time to read the alert.
+    static let slack: TimeInterval = 5 * 60
+
+    /// What the Create button's alert shows and applies. nil when "until my commitment ends" has no plan.
+    static func choice(days: Int, plan: VaultCommitmentDates.Plan?) -> Choice? {
+        guard days == VaultCommitmentDates.pickerTag else { return .days(days) }
+        return plan.map(Choice.plan)
+    }
+
+    /// nil when the saved choice still lands where it said; otherwise why it must not be applied.
+    static func refusal(_ choice: Choice, vault: PasscodeVault?, commitmentEnd: Date?, now: Date) -> Refusal? {
+        guard case .plan(let plan) = choice else { return nil }
+        guard let end = commitmentEnd, end > now else { return .commitmentEnded }
+        let added = VaultCommitmentDates.seconds(plan.extensions)
+        let lands: Date
+        if let days = plan.createDays {
+            guard vault == nil else { return .datesMoved }
+            lands = now.addingTimeInterval(Double(days) * 86400 + added)
+            guard lands >= plan.until, lands.timeIntervalSince(plan.until) <= slack else { return .datesMoved }
+        } else {
+            guard let vault, vault.revealedAt == nil else { return .datesMoved }
+            lands = vault.revealAt.addingTimeInterval(added)
+            guard abs(lands.timeIntervalSince(plan.until)) < 1,
+                  lands.timeIntervalSince(vault.createdAt) <= PasscodeVaultPolicy.maximumSeal else { return .datesMoved }
+        }
+        return lands >= end ? nil : .datesMoved
+    }
+
+    /// What the alert's button does: re-reads the vault, then applies the saved choice exactly, or
+    /// nothing and returns why.
+    @MainActor static func carryOut(_ choice: Choice, on vault: PasscodeVaultController,
+                                    commitmentEnd: Date?) -> Refusal? {
+        vault.reload()
+        if let refusal = refusal(choice, vault: vault.vault, commitmentEnd: commitmentEnd, now: vault.now) {
+            return refusal
+        }
+        switch choice {
+        case .days(let days): vault.create(days: days)
+        case .plan(let plan): VaultCommitmentDates.apply(plan, to: vault)
+        }
+        return nil
     }
 }

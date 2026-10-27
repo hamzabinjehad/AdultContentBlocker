@@ -127,8 +127,10 @@ final class AccessibilityTests: XCTestCase {
         vault.create(days: 7)
         vault.seal()
         let facts = try XCTUnwrap(vault.facts)
+        let lockDevice = LockConfirmationDevice(stores: [MemoryLockMarkerStore("this-device")])
         defaults.set(MobileProtectionPolicy.LockAttestation(claim: .passcodeVault, selfTested: true,
-                                                            vaultCreatedAt: facts.createdAt, confirmedAt: now).storage,
+                                                            vaultCreatedAt: facts.createdAt, confirmedAt: now,
+                                                            deviceMarker: lockDevice.marker).storage,
                      forKey: MobileProtectionPolicy.lockAttestationKey)
         let protection = ProtectionController(commitmentStore: MemoryCommitmentStore(),
                                               serverTime: AppleTimeStub.followingDeviceClock())
@@ -138,7 +140,7 @@ final class AccessibilityTests: XCTestCase {
                         "the vault opens first, so the offer is on screen")
         let lock = MobileProtectionPolicy.removalProtection(removal: protection.removal,
             attestation: MobileProtectionPolicy.LockAttestation(storage: defaults.data(forKey: MobileProtectionPolicy.lockAttestationKey) ?? Data()),
-            vault: facts, now: protection.now)
+            vault: facts, now: protection.now, deviceMarker: lockDevice.marker)
         XCTAssertEqual(lock.level, .passcodeVault)
         XCTAssertEqual(lock.evidence, .attested)
 
@@ -147,10 +149,17 @@ final class AccessibilityTests: XCTestCase {
             (CGSize(width: 1024, height: 1366), .large),
         ]
         // Setup is long and lists are lazy, so its last sections are also rendered on their own.
+        // A second vault still in its setup window: shown now, not yet called hidden.
+        let shown = PasscodeVaultController(storage: MemoryPasscodeVaultStorage(), clock: { now })
+        shown.create(days: 7)
+        XCTAssertEqual(VaultCommitmentDates.vaultDateKey(try XCTUnwrap(shown.facts), now: protection.now),
+                       "dates.vaultShownUntil")
         let lateSections = List {
             CommitmentSection(protection: protection, vault: vault)
-            PasscodeVaultSection(vault: vault, protection: protection)
-            Section { LockConfirmationRows(claims: [.familyGuardian, .supervised], vault: facts, now: now) }
+            PasscodeVaultSection(vault: vault, protection: protection, lockDevice: lockDevice)
+            Section { LockConfirmationRows(claims: [.familyGuardian, .supervised], vault: facts, now: now,
+                                           device: lockDevice) }
+            CommitmentSection(protection: protection, vault: shown)
             ScreenTimeSection(protection: protection)
         }
         for language in ["en", "ar"] {
@@ -159,7 +168,7 @@ final class AccessibilityTests: XCTestCase {
                     let view = Group {
                         if tab < 2 {
                             MobileRootView(protection: protection, language: .constant(language),
-                                           initialTab: tab, vault: vault)
+                                           initialTab: tab, vault: vault, lockDevice: lockDevice)
                         } else {
                             lateSections.listStyle(.insetGrouped)
                         }

@@ -102,11 +102,15 @@ struct CommitmentSection: View {
     }
 
     /// The passcode vault's date beside the commitment's, so the person sees which opens first.
+    /// A passcode still in its setup window is on screen, so it is not called hidden yet.
     @ViewBuilder private func vaultDates(commitmentEnd: Date) -> some View {
         if let facts = vault.facts, !facts.revealed {
-            LabeledContent("dates.vaultUntil") { dateText(facts.revealAt) }
-            if facts.revealAt < commitmentEnd {
-                Label("dates.vaultEarlier", systemImage: "exclamationmark.triangle")
+            LabeledContent(LocalizedStringKey(VaultCommitmentDates.vaultDateKey(facts, now: protection.now))) {
+                dateText(facts.revealAt)
+            }
+            if let earlier = VaultCommitmentDates.earlier(vault: vault.vault, commitmentEnd: commitmentEnd,
+                                                          now: protection.now) {
+                Label(LocalizedStringKey(earlier.commitmentKey), systemImage: "exclamationmark.triangle")
                     .font(.footnote).foregroundStyle(HisnPalette.warning)
             }
         }
