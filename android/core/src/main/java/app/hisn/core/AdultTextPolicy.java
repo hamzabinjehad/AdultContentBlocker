@@ -17,7 +17,9 @@ import java.util.Set;
  * Unlike user-selected literal rules, a word such as "sex" or a single ambiguous
  * seed term does not itself block. A 16-token window needs promotional wording
  * and a reviewed explicit term/strong phrase or two distinct strong signals.
- * Complete two-word explicit media labels can supply that intent without a verb.
+ * Complete two-word explicit media labels can supply that intent without a verb, and so
+ * can a short leaf of up to three words that is mostly a lone explicit term ("porn",
+ * "#hentai", "سكس"), unless negative context such as "porn addiction" cancels it.
  * Signed negative context subtracts evidence only within eight tokens of that
  * window; distant medical prose cannot cancel a separate promotional cluster.
  * Punctuated ("p.o.r.n") or separated ("p o r n", "p/o/r/n") spellings are joined
@@ -77,6 +79,11 @@ public final class AdultTextPolicy {
     private static final Set<String> EXPLICIT = immutableSet("porn", "porno", "pornography",
             "pornographic", "hentai", "blowjob", "cumshot", "creampie", "gangbang",
             "handjob", "اباحي", "اباحيه", "بورنو", "سكس", "نيك");
+    // Explicit terms that mark adult content even alone in a short leaf. Not "pornography" or
+    // "pornographic", which name the subject in encyclopedia headings, law and research.
+    private static final Set<String> LONE = immutableSet("porn", "porno", "hentai", "blowjob", "cumshot",
+            "creampie", "gangbang", "handjob", "اباحي", "اباحيه", "سكس");
+    private static final int LONE_TOKENS = 3;
     // Canonical tokens that are also Nick, Borno (Nigeria), Bourne, couscous or taboon
     // bread; كسكس and كسكسي otherwise fold to the prefix ك plus سكس/سكسي. Two of these
     // never confirm each other ("Nick Bourne" is a name). Latin "nik" and "neek" (niek, neik)
@@ -183,7 +190,7 @@ public final class AdultTextPolicy {
         // A complete two-word media label is evidence without a call to action.
         // Do not apply this to substrings of research/recovery prose or generic
         // "adult" labels; configured strong terms and negative context still score.
-        if (!anyPromotion && explicitMediaLabel(tokens)) {
+        if (!anyPromotion && (explicitMediaLabel(tokens) || loneExplicitLabel(tokens))) {
             promotions[0] = true;
             anyPromotion = true;
         }
@@ -224,6 +231,25 @@ public final class AdultTextPolicy {
         if (entry == null) entry = variant(explicit);
         return entry != null && entry.weight >= STRONG_WEIGHT && EXPLICIT.contains(entry.phrase)
                 && !ambiguous(explicit, entry);
+    }
+
+    /** A short leaf (a title, caption, button or search suggestion) of at most three words,
+     * most of them a lone explicit term, states its intent like a media label. One such word
+     * beside another ("porn addiction", "anti porn", "porn ban") is not most of the leaf. */
+    private boolean loneExplicitLabel(String[] tokens) {
+        if (tokens.length > LONE_TOKENS) return false;
+        int explicit = 0;
+        for (String token : tokens) if (loneExplicit(token)) explicit++;
+        return explicit * 2 > tokens.length;
+    }
+
+    private boolean loneExplicit(String token) {
+        // Only the bare word: a prefixed Arabic noun (الاباحيه, السكس) is how headings and
+        // headlines name the subject, so it never stands alone.
+        Entry entry = singleWords.get(token);
+        if (entry == null && !containsArabic(token)) entry = variant(token);
+        return entry != null && entry.weight >= STRONG_WEIGHT && !ambiguous(token, entry)
+                && (LONE.contains(entry.phrase) || (entry.arabizi && ARABIZI_EXPLICIT.contains(entry.phrase)));
     }
 
     /** The token covers a folded spelling such as كسكس; the entry covers whole phrases. */

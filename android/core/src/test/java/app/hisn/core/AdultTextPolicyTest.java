@@ -66,6 +66,7 @@ public final class AdultTextPolicyTest {
                 "media label cannot invent missing rules");
         check(!new AdultTextPolicy(Arrays.asList(rule("porn", 8), rule("porn videos", -8)))
                 .blocks("Porn videos"), "negative context still applies to exact media labels");
+        checkLoneTerms(policy);
         String gap = "ordinary ".repeat(40);
         check(policy.blocks("sexual health ".repeat(8) + gap + "Watch porn and hentai" + gap
                 + "sex education ".repeat(8)), "distant benign context cannot cancel local promotion");
@@ -162,6 +163,31 @@ public final class AdultTextPolicyTest {
                 + (elapsed / 1_000_000L) + " ms (diagnostic, not a device speed guarantee)");
     }
 
+    /** A short leaf that is mostly a lone strong explicit term blocks with no promotion word. */
+    private static void checkLoneTerms(AdultTextPolicy policy) {
+        for (String leaf : Arrays.asList("porn", "PORN!", "#hentai", "p0rn", "p.o.r.n", "h e n t a i",
+                "Porn & hentai", "porn porn", "porn, hentai, more", "سكس", "#سكس", "إِبَاحِيّ", "اباحية"))
+            check(policy.blocks(leaf), "lone explicit term in a short leaf detected: " + leaf);
+        for (String leaf : Arrays.asList("Porn addiction", "porn porn addiction", "Anti porn", "Quit porn",
+                "Porn research", "porn porn porn porn", "pornography", "Pornography research", "pussy", "onlyfans",
+                "nude photos", "الإباحية", "السكس", "porn x y", "Research about porn"))
+            check(!policy.blocks(leaf), "lone-term rule stays narrow: " + leaf);
+        check(!new AdultTextPolicy(Collections.singletonList(rule("porn", 7))).blocks("porn"),
+                "a lone weak term never blocks");
+        check(!new AdultTextPolicy(Collections.singletonList(rule("hentai", 8))).blocks("porn"),
+                "a lone term must be configured");
+        check(!new AdultTextPolicy(Arrays.asList(rule("porn", 8), rule("porn", -8))).blocks("porn"),
+                "negative context still applies to a lone term");
+        AdultTextPolicy arabic = new AdultTextPolicy(Arrays.asList(rule("سكس", 8), rule("نيك", 8),
+                rule("بورنو", 8), rule("كسكس", 8), latin("aba7i", 8), latin("abahi", 8), latin("sharmota", 8),
+                latin("neek", 8), latin("sks", 8), latin("sksy", 8)));
+        for (String leaf : Arrays.asList("سكس", "aba7i", "ABAHI", "aba7i aba7i"))
+            check(arabic.blocks(leaf), "lone Arabic or Arabizi explicit term detected: " + leaf);
+        for (String leaf : Arrays.asList("نيك", "بورنو", "كسكس", "نيك نيك", "sharmota", "neek", "sks", "sksy",
+                "Nick", "Borno"))
+            check(!arabic.blocks(leaf), "ambiguous or insulting lone word stays allowed: " + leaf);
+    }
+
     /** Optional bounded TSV adapter for testing the actual signed seed without
      * introducing a JSON dependency into this platform-independent core. */
     private static void checkSeed(String path) throws Exception {
@@ -204,6 +230,11 @@ public final class AdultTextPolicyTest {
                 "Watch abahyat free", "moshahda alabahia")) {
             check(seed.blocks(text), "Arabizi spellings of pornographic are trusted like اباحي: " + text);
         }
+        for (String text : Arrays.asList("porn", "Hentai", "#سكس", "إباحي", "aba7i", "Creampie"))
+            check(seed.blocks(text), "actual seed: a lone explicit term in a short leaf blocks: " + text);
+        for (String text : Arrays.asList("Porn addiction", "Porn blocker", "Anti-porn campaign", "Pornography",
+                "الإباحية", "حجب الإباحية", "نيك", "بورنو", "كسكس", "Neek", "Nik", "sks", "sksy", "sharmota", "XXX", "Sex"))
+            check(!seed.blocks(text), "actual seed: lone ambiguous, academic or protective leaf allowed: " + text);
         checkArabiziChat(rules, seed);
         String gap = "ordinary ".repeat(40);
         check(seed.blocks("sexual health ".repeat(8) + gap + "Watch porn and hentai" + gap

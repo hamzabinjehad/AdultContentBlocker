@@ -116,3 +116,75 @@ allow	arabizi-name	Neek jadid free download
 allow	arabizi-name	Watch Niek and Neik play, free entry
 allow	arabizi-shared	Free download: jadwal SKS semester ini
 allow	arabizi-chat	7abibi, 3ala el 7, free download el app w 2ollo
+# Single explicit words (0.5.5): a short leaf that is mostly a strong, unambiguous explicit term,
+# such as a title, caption, button or search suggestion, with no promotion word.
+block	single	porn
+block	single	PORN
+block	single	Porn
+block	single	#hentai
+block	single	Hentai 🔞
+block	single	Porno
+block	single	p.o.r.n
+block	single	p0rn
+block	single	Blowjob
+block	single	creampie
+block	single	gangbang
+block	single	Porn & hentai
+block	single	porn porn
+block	single	سكس
+block	single	#سكس
+block	single	سكس سكس
+block	single	إباحي
+block	single	اباحية
+block	arabizi-single	aba7i
+block	arabizi-single	ABAHI
+block	arabizi-single	ebahia
+block	arabizi-single	aba7i aba7i
+# Headlines, campaigns, recovery and blockers that name the term stay available.
+allow	single-safe	Porn addiction
+allow	single-safe	Porn addiction: what the research says
+allow	single-safe	How porn addiction rewires the brain
+allow	single-safe	Quitting porn saved my marriage
+allow	single-safe	Porn blocker
+allow	single-safe	porn blocking
+allow	single-safe	Anti-porn campaign
+allow	single-safe	Anti porn
+allow	single-safe	Stop porn
+allow	single-safe	No porn
+allow	single-safe	Quit porn
+allow	single-safe	Porn research
+allow	single-safe	Porn ban
+allow	single-safe	Porn industry
+allow	single-safe	Pornography
+allow	single-safe	Pornographic
+allow	single-safe	Child pornography laws
+allow	single-safe	Hentai addiction recovery
+allow	single-safe	Porno for Pyros
+allow	single-safe	الإباحية
+allow	single-safe	إدمان الإباحية
+allow	single-safe	علاج إدمان الإباحية
+allow	single-safe	حجب الإباحية
+allow	single-safe	حملة ضد الإباحية
+allow	single-safe	الإدمان على السكس
+# Ambiguous names, places, foods and everyday words stay available as lone words.
+allow	single-name	نيك
+allow	single-name	Nick
+allow	single-name	بورنو
+allow	single-name	Borno State
+allow	single-name	كسكس
+allow	single-name	كسكسي
+allow	single-name	طابون
+allow	single-name	Banana cream pie
+allow	single-name	Sex
+allow	single-name	Sexy
+allow	single-name	Nude
+allow	single-name	XXX
+allow	single-name	Essex
+allow	arabizi-single-name	Neek
+allow	arabizi-single-name	Nik
+allow	arabizi-single-name	sks
+allow	arabizi-single-name	SKS rifle
+allow	arabizi-single-name	sksy
+allow	arabizi-single-name	sharmota
+allow	arabizi-single-name	Dara
+allow	arabizi-single-name	Abhi
