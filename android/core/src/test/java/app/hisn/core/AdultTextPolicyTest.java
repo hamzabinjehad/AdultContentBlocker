@@ -179,7 +179,7 @@ public final class AdultTextPolicyTest {
         AdultTextPolicy seed = new AdultTextPolicy(rules);
         for (String text : Arrays.asList("Watch porn and hentai", "Download adult videos", "شاهد الإباحية",
                 "مشاهدة سكس", "Watch p0rn", "لتحميل اباحي", "tahmil aflam sks mojani", "Watch sharmota w kahba",
-                "moshahda neek masri")) {
+                "moshahda sharmota neek masri")) {
             check(seed.blocks(text), "actual seed recognizes promotional fixture: " + text);
         }
         for (String text : Arrays.asList("Watch sex education", "شاهد التربية الجنسية", "Essex council",
@@ -188,11 +188,20 @@ public final class AdultTextPolicyTest {
                 "شاهد الجنسية في جواز السفر", "علاج ادمان الاباحيه", "Download sexual health advice",
                 "Watch Dara and Abhi play, free entry", "Free class with Nika, Nashwa and Inek",
                 "Watch Nik Masri live for free", "tahmil aflam Nik Cage mojani", "Watch the video, sex ed for teens",
-                "Watch pussy cats with Dara and Abhi", "Download 97ab photos free", "Watch Neek and Dara play, free")) {
+                "Watch pussy cats with Dara and Abhi", "Download 97ab photos free", "Watch Neek and Dara play, free",
+                "Watch Neek Masri live, free", "Neek Saudi free download", "Neek jadid free download",
+                "moshahda neek masri", "Watch Neek HD free", "sksy download free", "Free download: jadwal SKS semester ini")) {
             check(!seed.blocks(text), "actual seed keeps benign fixture available: " + text);
         }
         check(!seed.blocks("Watch sharmota"), "an Arabizi insult alone is not trusted");
-        for (String text : Arrays.asList("Watch aba7i free", "tahmil ebahia mojani", "moshahda ALABA7YA")) {
+        // Like Arabic: نيك phrases are contextual, سكسي needs a second strong signal.
+        check(!seed.blocks("تحميل نيك سعودي مجانا"), "Arabic نيك phrases stay contextual, as neek ones do");
+        for (String text : Arrays.asList("sksy sharmota download", "Watch sharmota aflam neek masri free")) {
+            check(seed.blocks(text), "a clear Arabizi word confirms a second strong signal: " + text);
+        }
+        for (String text : Arrays.asList("Watch aba7i free", "tahmil ebahia mojani", "moshahda ALABA7YA",
+                "download abahi", "free download abahi", "tahmil aflam abahi", "aflam abahi mojani tahmil",
+                "Watch abahyat free", "moshahda alabahia")) {
             check(seed.blocks(text), "Arabizi spellings of pornographic are trusted like اباحي: " + text);
         }
         checkArabiziChat(rules, seed);
@@ -248,7 +257,7 @@ public final class AdultTextPolicyTest {
                 latin("neek masri", 8), latin("sks mojani", 8));
         AdultTextPolicy policy = new AdultTextPolicy(rules);
         for (String sample : Arrays.asList("Watch sharmota w kahba", "tahmil aflam sks", "aflam sks mojani",
-                "Watch neek masri", "moshahda sharmota neek", "Watch sharmota with Dara", "SHARMOTA, KAHBA: free",
+                "Watch sharmota neek masri", "moshahda sharmota neek", "Watch sharmota with Dara", "SHARMOTA, KAHBA: free",
                 "Watch porn with Dara", "Watch aba7i", "free aba7i with Dara")) {
             check(policy.blocks(sample), "Arabizi adult promotion detected: " + sample);
         }
@@ -259,7 +268,7 @@ public final class AdultTextPolicyTest {
                 "A free OnlyFans budgeting guide by Abhi and Dara",
                 "Watch porn addiction recovery with Dara, Abhi, Nika and 97ab",
                 "Yalla 3ala el ma7al, free 2ahwa 7elwa", "Download 7abibi playlist free, inshallah",
-                "Watch Neek and Dara play, free")) {
+                "Watch Neek and Dara play, free", "Watch neek masri", "Watch Neek Masri live, free")) {
             check(!policy.blocks(sample), "Arabizi chat, names and contextual words stay allowed: " + sample);
         }
         check(new AdultTextPolicy(Collections.singletonList(rule("video sex", 8))).blocks("Watch video sex"),
@@ -270,7 +279,8 @@ public final class AdultTextPolicyTest {
                 "weak Arabizi entries never become strong evidence");
         java.util.Random random = new java.util.Random(77);
         String[] words = {"ordinary", "ordinary", "ordinary", "ordinary", "porn", "pussy", "sharmota", "kahba", "aba7i", "neek",
-                "dara", "abhi", "zeb", "video", "sex", "aflam", "sks", "watch", "free", "tahmil", "addiction", "recovery"};
+                "dara", "abhi", "zeb", "video", "sex", "aflam", "sks", "watch", "free", "tahmil", "addiction", "recovery",
+                "masri"};
         for (int at = 0; at < 3000; at++) {
             String[] sample = new String[5 + random.nextInt(60)];
             for (int token = 0; token < sample.length; token++) sample[token] = words[random.nextInt(words.length)];
@@ -282,7 +292,7 @@ public final class AdultTextPolicyTest {
     /** Direct reference for checkArabizi: contextual Arabizi joins only beside a clear strong Arabizi signal. */
     private static boolean referenceArabizi(String[] text, List<AdultTextPolicy.Rule> rules) {
         List<String> contextual = Arrays.asList("neek", "dara", "abhi", "nika", "inek", "97ab", "seks", "sks", "zeb",
-                "video sex", "sex arab", "nik masri", "aflam nik");
+                "video sex", "sex arab", "nik masri", "aflam nik", "neek masri");
         for (int end = 0; end < text.length; end++) {
             int left = Math.max(0, end - 15);
             boolean promotion = false;

@@ -18,19 +18,26 @@ most of the seed's single spellings are generated variants that are also names o
 everyday words: Dara, Nika, Nashwa, Abhi (Hindi "now"), inek (Turkish "cow"),
 97ab (Gulf "friends"), 3ara ("shame"), e7a (an exclamation), moms, jins, tabon.
 
-- **38 reviewed single words are clear**: spellings of whore, porn(ographic),
-  prostitution and "fucked" with no everyday meaning (sharmota, kahba, 3ahra, aba7i,
-  ebahia, d3ara, mnyok, ...). The other 787 single words are contextual. That
-  includes neek, because its Arabic form نيك is ambiguous (Nick) and Neek is also a
-  nickname. Its seed phrases, such as "aflam neek" and "tahmil neek", stay clear.
-- **Only the spellings of "pornographic"** (aba7i, ebahia, ibahia and variants) are
-  trusted alone, as the Arabic اباحي and اباحيه are, so "Watch aba7i mojani" blocks.
-  Other clear words, such as insults, need a second strong signal.
+- **78 reviewed single words are clear**: spellings of whore, porn(ographic),
+  prostitution, "fucked" and sexy (سكسي) with no everyday meaning (sharmota, kahba,
+  3ahra, aba7i, abahi, ebahia, d3ara, mnyok, sksy, sksi, ...). The other 747 single
+  words are contextual. That includes neek, niek and neik, because their Arabic form
+  نيك is ambiguous (Nick) and Neek is also a nickname, and sks, which is also a
+  rifle and the Indonesian abbreviation for university credits.
+- **A seed phrase holding nik or neek is contextual** ("aflam neek", "neek masri",
+  "neek hd"), as the Arabic نيك phrases (نيك سعودي) are. "Watch Neek Masri live,
+  free" is allowed; beside a clear term ("Watch sharmota aflam neek masri free")
+  it blocks.
+- **Only the spellings of "pornographic"** are trusted alone, as the Arabic اباحي
+  and اباحيه are: all 46 seed spellings with 7, h or e (aba7i, aba7e, abahi, abahy,
+  alabahia, ebahia, ibahia and variants). "Watch aba7i mojani" and "download abahi"
+  block. Other clear words, such as insults and sksy, need a second strong signal:
+  "sksy download free" is not blocked, while تحميل سكس مجانا is.
 - **Contextual Arabizi evidence joins a window only beside a clear Arabizi signal.**
   A name in English text cannot add up with "pussy cats", OnlyFans budgeting or
   recovery context.
 - **A phrase made only of words English also uses** ("video sex", "sex arab",
-  "sour sex"), or holding the name Nik, is contextual.
+  "sour sex") is contextual.
 - tahmil, mojani, moshahda and their spellings count as promotion, like download,
   free and watch.
 
@@ -45,9 +52,11 @@ scheduled children:
 
 - A childless node gives its text, else its content description, as before.
 - A parent's description is read only when its whole subtree was inspected, gave no
-  text, and held no editable, password or EditText node, even an invisible one. A
-  subtree cut by the budget, or with a child Android could not provide, never yields
-  its parent's description.
+  text, and held no editable, password or EditText node, even an invisible one. An
+  invisible node with children is not opened, so it rules out every parent around
+  it: it may hide an input whose draft a card label repeats. A subtree cut by the
+  budget, or with a child Android could not provide, never yields its parent's
+  description.
 - An inner card that is read covers every card around it, so nothing is read twice.
 - Editable and password nodes and their subtrees are still never read.
 - Parent descriptions follow the leaf labels, one line each, in screen order. The
@@ -89,16 +98,31 @@ comes after the `if`/`else`, inside the same `try`.
 
 ## Synthetic corpus
 
-Reproducible fixture counts, not population accuracy. The 100 rows include 48
-Franco-Arabic ones: 16 adult and 32 harmless. The harmless rows cover chat with
-digits used as letters, names, words shared with English, Hindi, Turkish and
-German, and mixed English.
+Reproducible fixture counts, not population accuracy. The 112 rows include 60
+Franco-Arabic ones: 22 adult and 38 harmless. The harmless rows cover chat with
+digits used as letters, names, words shared with English, Hindi, Turkish, German
+and Indonesian, and mixed English. Rows in a family ending in `challenge` are known
+misses: they stay in the counts and are printed, but do not fail the test.
 
 | Policy | Expected blocks found | Harmless rows blocked | Arabizi blocks | Arabizi harmless blocked |
 | --- | --- | --- | --- | --- |
 | `origin/main` (en and ar only) | 25/41 | 0/59 | 0/16 | 0/32 |
 | ar-latn loaded with no Arabizi rules | 31/41 | 9/59 | 6/16 | 9/32 |
-| This branch | 41/41 | 0/59 | 16/16 | 0/32 |
+| First review of this branch | 41/41 | 0/59 | 16/16 | 0/32 |
+| Review fixes, old policy on the new corpus | 43/47 | 3/65 | 18/22 | 3/38 |
+| Review fixes | 43/47 | 0/65 | 18/22 | 0/38 |
+
+The review found that seed phrases holding neek ("neek masri", "neek saudi",
+"neek jadid") were clear and trusted, so "Watch Neek Masri live, free", "Neek Saudi
+free download" and "Neek jadid free download" were blocked, while the Arabic forms
+were not. It also found that the h-spellings of "pornographic" (abahi, abahy) never
+blocked. With the old policy, the 12 new rows give 4 misses ("tahmil aflam abahi",
+"download abahi free", "aflam abahy mojani tahmil" and "sksy download free") and
+those 3 false blocks.
+With the fixes, the 4 misses are challenge rows, all by design and matching Arabic
+script: three neek rows with no clear term ("Watch aflam neek masri free", "tahmil
+film neek arabi", "tahmil aflam neek 7elwa mojani", earlier counted as blocks) and
+"sksy download free".
 
 The 52 older rows stay at 25/25 blocks and 0/27 harmless blocked. Loading the terms
 without the Arabizi rules blocked "Watch Dara and Nika play, free entry", "Watch Nik
@@ -107,7 +131,7 @@ Masri live, free" and "Watch the video, sex ed for teens", among others.
 ## Tests added
 
 - `LabelScanTest`: card, button and nested-card cases; input fields at any depth,
-  including invisible ones; budget cuts; missing children; long descriptions; node
+  including invisible ones and ones inside an invisible container; budget cuts; missing children; long descriptions; node
   release after an error; a description too long to hold still covers its outer
   card. It also runs 2,400 random trees. Without parent
   descriptions the scan equals the old leaf-only scan, budget cuts and partial flags
@@ -115,7 +139,7 @@ Masri live, free" and "Watch the video, sex ed for teens", among others.
 - `AdultTextPolicyTest`: Arabizi unit cases, with a sliding-window reference over
   3,000 random samples. Against the real seed it adds fixtures and 3,000 random chat
   samples built from everyday Arabizi, names, promotion words and the contextual
-  single spellings (all 787 except those also used in seed phrases). None of these
+  single spellings (all 747 except those also used in seed phrases). None of these
   blocks, and adding one clear seed phrase does. Treating every Arabizi word as clear
   fails this test.
 - The seed fixture written by `test-core.sh` gains a language column.
@@ -124,6 +148,9 @@ Masri live, free" and "Watch the video, sex ed for teens", among others.
 
 - Arabizi detection is deliberately conservative, so it misses some things.
   "Watch sks free" is not blocked, because sks is also a rifle and an abbreviation.
+  "sksy download free" and "Watch aflam neek masri free" are not blocked either, as
+  sksy needs a second strong signal and neek is a name; the Arabic نيك phrases are
+  treated the same way.
   Spelling variants outside the reviewed list count only beside a clear term. Real
   chat was not used: every corpus row is synthetic.
 - Two clear Arabizi insults beside "watch" ("Ya sharmota ya kahba, watch out") are
@@ -153,7 +180,10 @@ when the version is set.
 
 - On Android 15 or later, the keyboard leaves the word tester's fields and the
   domain and word editor dialogs visible. On Android 8–14 the page still resizes
-  once, without double padding.
+  once, without double padding. On Android 11–14 this rests on the window, which is
+  not edge to edge there, consuming the system-bar and keyboard insets before the
+  page sees them, so the page adds no padding of its own. That is the platform's
+  documented behaviour but has not been seen on a device.
 - A screenshot and a screen recording of each list dialog, and of the tester holding
   text, come out black or are refused. The recent-apps preview of Hisn is blank
   while one is open, and normal again after it closes or the tester is cleared.

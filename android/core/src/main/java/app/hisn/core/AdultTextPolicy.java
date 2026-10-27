@@ -29,10 +29,10 @@ import java.util.Set;
  * words are generated spellings that are also everyday chat ("97ab" is Gulf "friends"),
  * Hinglish ("abhi"), Turkish ("inek") or names ("Dara", "Nika"), so only a reviewed
  * list of single words counts as clear; every other one is contextual. A phrase made
- * only of words English also uses ("video sex", "sex arab"), or holding the name "nik",
- * is contextual too. As with the Arabic اباحي, only the spellings of "pornographic"
- * (aba7i, ebahia, ...) are trusted alone; other clear single words need a second strong
- * signal. Contextual Arabizi evidence joins a window only beside a clear Arabizi signal,
+ * only of words English also uses ("video sex", "sex arab") is contextual too, and so
+ * is one holding the names "nik" or "neek", as نيك phrases are. As with the Arabic
+ * اباحي, only the spellings of "pornographic" (aba7i, abahi, ebahia, ...) are trusted
+ * alone; other clear single words (sharmota, sksy) need a second strong signal. Contextual Arabizi evidence joins a window only beside a clear Arabizi signal,
  * so names in English text cannot add up against "pussy cats" or recovery context.
  * This is not an image classifier or a guarantee of detecting all adult text.
  * The immutable policy never stores, logs or sends submitted text anywhere.
@@ -79,19 +79,26 @@ public final class AdultTextPolicy {
             "handjob", "اباحي", "اباحيه", "بورنو", "سكس", "نيك");
     // Canonical tokens that are also Nick, Borno (Nigeria), Bourne, couscous or taboon
     // bread; كسكس and كسكسي otherwise fold to the prefix ك plus سكس/سكسي. Two of these
-    // never confirm each other ("Nick Bourne" is a name). Latin "nik" is the name Nik.
-    private static final Set<String> AMBIGUOUS = immutableSet("نيك", "بورنو", "بورن", "كسكس", "كسكسي", "طابون", "nik");
+    // never confirm each other ("Nick Bourne" is a name). Latin "nik" and "neek" (niek, neik)
+    // are the names Nik and Neek, and spell the ambiguous نيك, so seed phrases holding them
+    // ("neek masri", "aflam neek") stay contextual like "نيك سعودي".
+    private static final Set<String> AMBIGUOUS = immutableSet("نيك", "بورنو", "بورن", "كسكس", "كسكسي", "طابون",
+            "nik", "neek", "niek", "neik");
+    // The seed's spellings of "pornographic" (Arabic اباحي, اباحيه) with 7 or h, trusted alone like them.
+    private static final Set<String> ARABIZI_EXPLICIT = immutableSet("aba7i", "aba7ia", "aba7iat", "aba7ih",
+            "aba7it", "aba7y", "aba7ya", "aba7yat", "aba7yh", "aba7yt", "aba7e", "aba7ea", "aba7eat", "aba7eh",
+            "aba7et", "alaba7ia", "alaba7ih", "alaba7ya", "alaba7yh", "alaba7ea", "alaba7eh", "abahi", "abahia",
+            "abahiat", "abahih", "abahit", "abahy", "abahya", "abahyat", "abahyh", "abahyt", "abahe", "abahea",
+            "abaheat", "abaheh", "abahet", "alabahia", "alabahih", "alabahya", "alabahyh", "alabahea", "alabaheh",
+            "ebahia", "ebahiya", "ibahia", "ibahiya");
     // Reviewed Arabizi spellings with no everyday meaning: whore, porn(ographic), fucked,
-    // prostitution. The seed's other ~800 generated single words stay contextual, neek among
-    // them as its Arabic form نيك is ambiguous (Neek is also a nickname). Package-visible for tests.
-    static final Set<String> ARABIZI_CLEAR = immutableSet("sharmota", "sharmoot", "sharameet",
+    // prostitution, sexy (سكسي: sksy, sksi; not "sks", which is also Indonesian university
+    // credits and a rifle). The seed's other ~800 generated single words stay contextual,
+    // neek among them. Package-visible for tests.
+    static final Set<String> ARABIZI_CLEAR = union(ARABIZI_EXPLICIT, "sharmota", "sharmoot", "sharameet",
             "shrmota", "shrmuta", "shrmot", "shrmut", "shramit", "shrmo6a", "shrm6a", "kahba", "kahbat",
-            "gahba", "3ahra", "3ahira", "3ahrat", "3aherat", "aba7i", "aba7ia", "aba7iat",
-            "aba7y", "aba7ya", "aba7yat", "alaba7ia", "alaba7ya", "ebahia", "ebahiya", "ibahia", "ibahiya",
-            "arabsex", "sexarab", "sksarab", "mtnak", "mtnaka", "d3ara", "da3ara", "mnyok", "mnyuk");
-    // The clear spellings of "pornographic" (Arabic اباحي, اباحيه), trusted alone like them.
-    private static final Set<String> ARABIZI_EXPLICIT = immutableSet("aba7i", "aba7ia", "aba7iat", "aba7y",
-            "aba7ya", "aba7yat", "alaba7ia", "alaba7ya", "ebahia", "ebahiya", "ibahia", "ibahiya");
+            "gahba", "3ahra", "3ahira", "3ahrat", "3aherat", "arabsex", "sexarab", "sksarab", "mtnak", "mtnaka",
+            "d3ara", "da3ara", "mnyok", "mnyuk", "sksy", "sksi", "sksya", "sksia", "sksyh", "sksih");
     // Latin words with ordinary English use, or common surnames. An Arabizi phrase made
     // only of these ("video sex", "sex arab", "sour sex") is contextual.
     private static final Set<String> ARABIZI_SHARED = immutableSet("sex", "film", "video", "sour", "soar",
@@ -510,6 +517,12 @@ public final class AdultTextPolicy {
     private static Set<String> immutableSet(String... values) {
         // Set.of is unavailable on Android 26 without library desugaring.
         return Collections.unmodifiableSet(new HashSet<>(Arrays.asList(values)));
+    }
+
+    private static Set<String> union(Set<String> base, String... values) {
+        Set<String> all = new HashSet<>(base);
+        all.addAll(Arrays.asList(values));
+        return Collections.unmodifiableSet(all);
     }
 
     private static boolean containsArabic(String token) {
