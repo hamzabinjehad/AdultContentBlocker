@@ -48,14 +48,18 @@ public final class LabelScan {
     }
 
     /** Scans from root, which the scan takes ownership of and releases. */
-    public static <N> VisibleTextSample sample(Tree<N> tree, N root) {
+    public static <N> VisibleTextSample sample(Tree<N> tree, N root) { return sample(tree, root, NODE_BUDGET); }
+
+    /** The same scan within a smaller share of the budget (several windows share one), at least 1. */
+    public static <N> VisibleTextSample sample(Tree<N> tree, N root, int budget) {
+        budget = Math.max(1, Math.min(NODE_BUDGET, budget));
         ArrayDeque<Queued<N>> queue = new ArrayDeque<>();
         queue.add(new Queued<>(root, null));
         VisibleTextSample text = new VisibleTextSample(true);
         List<Parent> parents = new ArrayList<>();
         int visited = 0, scheduled = 1, held = 0;
         try {
-            while (!queue.isEmpty() && visited++ < NODE_BUDGET && !text.isFull()) {
+            while (!queue.isEmpty() && visited++ < budget && !text.isFull()) {
                 Queued<N> item = queue.removeFirst();
                 N node = item.node;
                 try {
@@ -75,7 +79,7 @@ public final class LabelScan {
                             } else { text.markPartial(); ruleOut(owner); } // Skipped, but still text inside.
                         }
                         for (int i = 0; i < count; i++) {
-                            if (scheduled >= NODE_BUDGET) { text.markPartial(); ruleOut(owner); break; }
+                            if (scheduled >= budget) { text.markPartial(); ruleOut(owner); break; }
                             scheduled++;
                             N child = tree.child(node, i);
                             if (child != null) queue.addLast(new Queued<>(child, owner));

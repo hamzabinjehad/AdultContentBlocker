@@ -121,6 +121,20 @@ public final class LabelScanTest {
         int lines = wide.text().split("\n").length;
         check(lines < LabelScan.NODE_BUDGET, "visited nodes stay within the budget");
 
+        // A shared budget (several windows): never more nodes obtained than the share, and a cut is partial.
+        for (int share : new int[]{1, 2, 100, 256}) {
+            Tree counted = new Tree();
+            VisibleTextSample part = LabelScan.sample(counted, counted.obtain(card(null, list)), share);
+            check(counted.obtained <= Math.max(1, share) && part.isPartial() && counted.held.isEmpty(),
+                    "a share of " + share + " obtains at most that many nodes");
+        }
+        Tree whole = new Tree();
+        check(!LabelScan.sample(whole, whole.obtain(card(null, leaf("a"), leaf("b"))), 3).isPartial()
+                && whole.obtained == 3, "a tree within its share is complete");
+        Tree zero = new Tree();
+        check(LabelScan.sample(zero, zero.obtain(card(null, leaf("a"))), 0).isPartial() && zero.held.isEmpty(),
+                "a zero share still visits the root, and only it");
+
         // Deep nesting is bounded by visited nodes, not recursion.
         Node deep = image(null);
         for (int i = 0; i < 2000; i++) deep = card(i == 1999 ? "Top" : null, deep);
