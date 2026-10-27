@@ -111,30 +111,30 @@ public final class SettingsIntegrityTest {
         Predicate<Map<String, ?>> readable = values -> !Long.valueOf(-1).equals(values.get("remaining"));
         Map<String, Object> invalid = sealed(settings(-1));
 
-        check(SettingsIntegrity.choose(none, false, none, false, readable) == FRESH, "New installation");
-        check(SettingsIntegrity.choose(good, true, good, true, readable) == MAIN, "Both intact");
-        check(SettingsIntegrity.choose(good, true, none, false, readable) == MAIN, "Copy missing");
-        check(SettingsIntegrity.choose(good, true, tampered, true, readable) == MAIN, "Copy damaged");
-        check(SettingsIntegrity.choose(good, true, older, true, readable) == MAIN, "Main file is newer than its copy");
+        check(SettingsIntegrity.choose(none, none, false, readable) == FRESH, "New installation or cleared app data");
+        check(SettingsIntegrity.choose(good, good, true, readable) == MAIN, "Both intact");
+        check(SettingsIntegrity.choose(good, none, false, readable) == MAIN, "Copy not written yet");
+        check(SettingsIntegrity.choose(good, none, true, readable) == MAIN, "Copy unreadable");
+        check(SettingsIntegrity.choose(good, tampered, true, readable) == MAIN, "Copy damaged");
+        check(SettingsIntegrity.choose(good, older, true, readable) == MAIN, "Main file is newer than its copy");
 
-        // Android reads a corrupt file as empty: the file on disk and the copy show it was saved.
-        check(SettingsIntegrity.choose(none, true, good, true, readable) == COPY, "Unreadable main file");
-        check(SettingsIntegrity.choose(tampered, true, good, true, readable) == COPY, "Main values changed");
-        check(SettingsIntegrity.choose(legacy, true, good, true, readable) == COPY, "Main file lost its seal");
-        check(SettingsIntegrity.choose(invalid, true, good, true, readable) == COPY, "Main values invalid");
-        check(SettingsIntegrity.choose(none, false, good, true, readable) == COPY, "Main file missing");
+        // Android reads a corrupt file as empty; the intact copy shows what was saved.
+        check(SettingsIntegrity.choose(none, good, true, readable) == COPY, "Unreadable or missing main file");
+        check(SettingsIntegrity.choose(tampered, good, true, readable) == COPY, "Main values changed");
+        check(SettingsIntegrity.choose(legacy, good, true, readable) == COPY, "Main file lost its seal");
+        check(SettingsIntegrity.choose(invalid, good, true, readable) == COPY, "Main values invalid");
 
         // Settings from Hisn 0.5.3 have no seal and no copy yet. Invalid ones still refuse to load, as before.
-        check(SettingsIntegrity.choose(legacy, true, none, false, readable) == UNSEALED, "Upgrade");
-        check(SettingsIntegrity.choose(settings(-1), true, none, false, readable) == UNSEALED, "Invalid pre-seal values");
+        check(SettingsIntegrity.choose(legacy, none, false, readable) == UNSEALED, "Upgrade");
+        check(SettingsIntegrity.choose(settings(-1), none, false, readable) == UNSEALED, "Invalid pre-seal values");
 
         // Settings were saved but nothing can be trusted: never read as a new installation.
-        check(SettingsIntegrity.choose(none, true, none, true, readable) == UNKNOWN, "Both files unreadable");
-        check(SettingsIntegrity.choose(none, true, none, false, readable) == UNKNOWN, "Pre-seal file unreadable");
-        check(SettingsIntegrity.choose(none, false, none, true, readable) == UNKNOWN, "Only a damaged copy left");
-        check(SettingsIntegrity.choose(tampered, true, tampered, true, readable) == UNKNOWN, "Both changed");
-        check(SettingsIntegrity.choose(legacy, true, none, true, readable) == UNKNOWN, "Unsealed main beside a copy");
-        check(SettingsIntegrity.choose(legacy, true, tampered, true, readable) == UNKNOWN, "Unsealed main, damaged copy");
-        check(SettingsIntegrity.choose(invalid, true, invalid, true, readable) == UNKNOWN, "Sealed but invalid");
+        check(SettingsIntegrity.choose(none, none, true, readable) == UNKNOWN, "Both files unreadable");
+        check(SettingsIntegrity.choose(tampered, none, false, readable) == UNKNOWN, "Sealed main damaged, copy never written");
+        check(SettingsIntegrity.choose(tampered, tampered, true, readable) == UNKNOWN, "Both changed");
+        check(SettingsIntegrity.choose(legacy, none, true, readable) == UNKNOWN, "Unsealed main beside an unreadable copy");
+        check(SettingsIntegrity.choose(legacy, tampered, true, readable) == UNKNOWN, "Unsealed main, damaged copy");
+        check(SettingsIntegrity.choose(invalid, invalid, true, readable) == UNKNOWN, "Sealed but invalid");
+        check(SettingsIntegrity.choose(invalid, none, false, readable) == UNKNOWN, "Sealed but invalid, no copy");
     }
 }

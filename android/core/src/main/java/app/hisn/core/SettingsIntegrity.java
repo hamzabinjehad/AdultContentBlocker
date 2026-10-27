@@ -12,7 +12,7 @@ import java.util.function.Predicate;
  * Saved settings live in a main file and a second copy. Each holds every value plus a seal: a SHA-256
  * over all the other values, written in the same commit. Android reads a corrupt or unreadable
  * preferences file as empty, the same as a new installation, so reading alone cannot tell them apart;
- * the seal, the copy and whether a file exists on disk can. Clearing app data removes both files,
+ * the seal, the copy and whether the copy's file exists can. Clearing app data removes both files,
  * which is a new installation again.
  */
 public final class SettingsIntegrity {
@@ -20,7 +20,7 @@ public final class SettingsIntegrity {
     private static final String VERSION = "1:";
 
     public enum Source {
-        /** Nothing was ever saved: a new installation, or app data cleared in Android settings. */
+        /** Nothing was saved: a new installation, app data cleared in Android settings, or a first save cut short. */
         FRESH,
         /** The main file is intact. */
         MAIN,
@@ -70,19 +70,22 @@ public final class SettingsIntegrity {
     }
 
     /**
-     * Which saved values to trust. {@code onDisk} says a file exists even if it read as empty, and
-     * {@code readable} says sealed values hold valid settings. Values saved before seals are used as
-     * before only while no copy exists, because every sealed save also writes the copy; if they do not
-     * hold valid settings the caller refuses to load them, as before, rather than guessing.
+     * Which saved values to trust. {@code copyOnDisk} says the copy's file exists even if it read as
+     * empty, and {@code readable} says sealed values hold valid settings. The copy is written after
+     * the main file by every sealed save, so its file is the evidence that settings were saved. Values
+     * saved before seals are used as before only while no copy exists; if they do not hold valid
+     * settings the caller refuses to load them, as before, rather than guessing.
+     *
+     * Without a copy, an empty main file is a new installation, even if its file exists: that is also
+     * what a first save cut short leaves, and a new owner must not find a commitment they never chose.
+     * The cost is that a 0.5.3 file damaged before the first start of a sealed version still reads as new.
      */
-    public static Source choose(Map<String, ?> main, boolean mainOnDisk, Map<String, ?> copy, boolean copyOnDisk,
+    public static Source choose(Map<String, ?> main, Map<String, ?> copy, boolean copyOnDisk,
             Predicate<Map<String, ?>> readable) {
         if (intact(main) && readable.test(main)) return Source.MAIN;
         if (intact(copy) && readable.test(copy)) return Source.COPY;
-        boolean copySaved = copyOnDisk || !copy.isEmpty();
-        if (!copySaved && !main.isEmpty() && !main.containsKey(SEAL)) return Source.UNSEALED;
-        if (!copySaved && !mainOnDisk && main.isEmpty()) return Source.FRESH;
-        return Source.UNKNOWN;
+        if (copyOnDisk || !copy.isEmpty() || main.containsKey(SEAL)) return Source.UNKNOWN;
+        return main.isEmpty() ? Source.FRESH : Source.UNSEALED;
     }
 
     // Length-prefixed, so no two different value lists produce the same bytes.

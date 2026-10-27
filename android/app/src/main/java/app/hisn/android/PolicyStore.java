@@ -129,11 +129,11 @@ public final class PolicyStore {
             int boot = boot();
             // Reading waits for the load, which also restores the backup of an interrupted write.
             Map<String, ?> main = prefs.getAll(), second = copy.getAll();
-            // Android's preferences folder. If this path ever differed, a file would look absent, which
-            // only loses the detection of a damaged file with no intact copy, as before seals existed.
-            File folder = new File(context.getDataDir(), "shared_prefs");
-            SettingsIntegrity.Source source = SettingsIntegrity.choose(main, new File(folder, name + ".xml").exists(),
-                    second, new File(folder, name + COPY_SUFFIX + ".xml").exists(), values -> readable(values, boot));
+            // The copy's file in Android's preferences folder exists even when it reads as empty. If this
+            // path ever differed, only two files damaged at once would go undetected, as before seals.
+            File copyFile = new File(new File(context.getDataDir(), "shared_prefs"), name + COPY_SUFFIX + ".xml");
+            SettingsIntegrity.Source source = SettingsIntegrity.choose(main, second, copyFile.exists(),
+                    values -> readable(values, boot));
             long now = SystemClock.elapsedRealtime();
             switch (source) {
                 case FRESH:
