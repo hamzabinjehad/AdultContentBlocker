@@ -15,12 +15,20 @@ knows the second Families address, `1.0.0.3:853`, with the same TLS identity
 (`family.cloudflare-dns.com`), the same certificate and hostname checks and the
 same TLS 1.2/1.3 limit (`TlsDnsTransport.cloudflareFamily`).
 
-- **What moves an exchange.** Only a failure to connect (refused, unreachable,
-  connect timeout) or a read timeout. The same exchange then tries the next
-  address once. A TLS identity failure, a bad frame or reply, a failure to
-  protect the socket, or an end of stream on a fresh connection fails as
-  before. The existing single retry of a reused connection closed by the
-  server stays at the same address.
+- **What moves an exchange.** A failure to connect (refused, unreachable,
+  connect timeout), a failed TLS handshake (including a certificate or name
+  that does not verify, for example a middlebox answering on `1.1.1.x:853`),
+  or a read timeout. The same exchange then tries the next address once. Both
+  addresses must prove the same identity, so moving never accepts anything the
+  first would not. A bad frame or reply, a failure to protect the socket, or
+  an end of stream on a fresh connection fails as before. The existing single
+  retry of a reused connection closed by the server stays at the same address.
+- **One slow reply is not a failing resolver.** A read timeout on a connection
+  that has already answered is retried once at the next address, but does not
+  put the first address into backoff; the next exchange opens a fresh
+  connection to it. A fresh connection that never answers does count, so a
+  resolver that accepts connections but stops answering still moves within two
+  timeouts.
 - **Bounds.** At most one attempt per address per exchange, plus that one
   reused-connection retry. When both addresses are failing, an exchange makes
   one attempt (on the worker's open connection, else at the address due
@@ -83,6 +91,7 @@ in the same commit, to `hisn_policy`, then the same to a second copy,
 | Main file damaged, missing or unreadable; intact copy | Uses the copy, rewrites the main file, and shows "the main settings file could not be read... check your rules" in Protection with a "My rules are as I set them" button that clears the notice |
 | 0.5.3 settings: no seal, no copy | Reads them as before, then seals both files. Invalid values still refuse to load, as before |
 | No copy and an empty main file | A new installation (also after clearing app data, or a first save cut short) |
+| A file whose seal matches but whose values are not valid settings (for example a later version lowered a limit) | Refuses to load and changes nothing, as for invalid 0.5.3 values: Protection shows that settings are unavailable |
 | Anything else: both damaged, or a damaged sealed main file | Commitment unknown, below |
 
 **Unknown commitment.** No commitment can have more than 90 days left (the
@@ -101,17 +110,26 @@ at least as long as the time left gives it a known end again.
   permission, backup, external file or system setting is involved; uninstall,
   force stop and clearing data behave as before.
 - **Writes.** Each save writes both files in full. Checkpoints with no
-  commitment running no longer write at all.
+  commitment running no longer write at all. The DNS service saves its
+  once-a-minute checkpoint on its own thread, never on the packet loop. A
+  failed copy write is logged (`HisnSettings`) and retried each minute even
+  with no commitment running; a missing copy file after a save is logged.
+- **Where the decision lives.** Reading each value with its type, the load
+  decision and the values written are in core (`SavedSettings`) and tested
+  with maps shaped as Android returns them; `PolicyStore` adds only the rule
+  limits and the file access.
 - **Limits.** If the app dies between the two writes, the copy is one save
   behind until the next start mirrors it; it is used only if the main file is
   damaged before then. A 0.5.3 file damaged before the first start of this
   version still reads as new, because an empty main file without a copy is
   also what an interrupted first save leaves. The copy's file is found in
   Android's `shared_prefs` folder; if that path ever differed, two damaged
-  files would read as new, as before. An unknown commitment can last longer
-  than the real one did; the owner can clear app data. The VPN-settings
-  reminder and admin warning still say "about" the remaining time for an
-  unknown commitment. Edits by someone with root access are out of scope.
+  files would read as new, as before (logged, not shown). While a copy write
+  keeps failing, a damaged main file can be detected but not restored. An
+  unknown commitment can last longer than the real one did; the owner can
+  clear app data. For an unknown commitment, the VPN-settings reminder and
+  the admin warning say it was kept for at most the time left, as Protection
+  does. Edits by someone with root access are out of scope.
 
 ### Release APK check
 
@@ -138,7 +156,8 @@ python3 check-release.py app/build/outputs/apk/release/app-release-unsigned.apk
 
 Tools come from `--build-tools DIR`, else the newest build-tools under
 `ANDROID_HOME` or `ANDROID_SDK_ROOT`, else `PATH`. `test-core.sh` does not call
-it, because it runs before any APK is built and without the SDK.
+it, because it runs before any APK is built and without the SDK. It is not yet
+part of CI; the integrator can add it after the release build step.
 
 ## Outside this package
 
@@ -149,6 +168,16 @@ it, because it runs before any APK is built and without the SDK.
 - `CoreDeviceTestRunner`: a damaged-settings device test (corrupts isolated
   files, never `hisn_policy`) and removal of both files after every test.
 - `SchedulePolicyChecks` (debug): also deletes the new copy files it creates.
+
+## Review follow-up
+
+A review of this branch found four low-severity issues; all were real and are
+fixed on `android/reliability-fix`: intact but invalid settings are refused
+instead of becoming an unknown commitment with emptied rules; the settings
+decision moved to core with tests; copy-write failures are logged and retried;
+the DNS checkpoint left the packet loop. Of its spec gaps, the handshake
+failover, the slow-reply backoff and the "about N" wording are fixed; Android
+8 to 11 network inference and on-device runs remain as listed below.
 
 ## Verification
 
