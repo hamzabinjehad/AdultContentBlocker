@@ -191,7 +191,11 @@ public final class AdultTextPolicyTest {
                 "Watch pussy cats with Dara and Abhi", "Download 97ab photos free")) {
             check(!seed.blocks(text), "actual seed keeps benign fixture available: " + text);
         }
-        check(!seed.blocks("Watch sharmota"), "one Arabizi single word is never trusted alone");
+        check(!seed.blocks("Watch sharmota"), "an Arabizi insult alone is not trusted");
+        for (String text : Arrays.asList("Watch aba7i free", "tahmil ebahia mojani", "moshahda ALABA7YA")) {
+            check(seed.blocks(text), "Arabizi spellings of pornographic are trusted like اباحي: " + text);
+        }
+        checkArabiziChat(rules, seed);
         String gap = "ordinary ".repeat(40);
         check(seed.blocks("sexual health ".repeat(8) + gap + "Watch porn and hentai" + gap
                 + "sex education ".repeat(8)), "actual seed local evidence survives distant negative prose");
@@ -199,18 +203,53 @@ public final class AdultTextPolicyTest {
                 + seed.ruleCount() + " canonical rules");
     }
 
+    /** Random everyday Arabizi chat, names and every contextual single Arabizi seed spelling, beside
+     * promotion words, never blocks; one clear seed phrase in the same window does. */
+    private static void checkArabiziChat(List<AdultTextPolicy.Rule> rules, AdultTextPolicy seed) {
+        List<String> promotion = Arrays.asList("watch", "free", "download", "tahmil", "mojani", "moshahda");
+        // Words of multi-word Arabizi phrases are left out so no seed phrase can form by chance.
+        java.util.Set<String> phraseWords = new java.util.HashSet<>();
+        for (AdultTextPolicy.Rule rule : rules) {
+            if (rule.arabizi && rule.phrase.contains(" ")) phraseWords.addAll(Arrays.asList(rule.phrase.split(" ")));
+        }
+        List<String> words = new ArrayList<>(Arrays.asList("yalla", "3ala", "el", "ma7al", "2ahwa", "7elwa",
+                "7abibi", "sa7", "2ana", "3amel", "5ali", "3ammi", "ya", "w", "fi", "mesh", "7aga", "ba3d", "2alf",
+                "shokr", "inshallah", "mabrook", "3ayez", "a7mel", "gdid", "7alaqa", "Nashwa", "Dara", "Abhi",
+                "Nika", "Arin", "Nik", "Inek", "97ab", "e7a", "3ara", "moms", "jins", "tabon", "dios", "kos"));
+        int contextual = 0;
+        for (AdultTextPolicy.Rule rule : rules) {
+            if (rule.arabizi && !rule.phrase.contains(" ") && !AdultTextPolicy.ARABIZI_CLEAR.contains(rule.phrase)) {
+                words.add(rule.phrase);
+                contextual++;
+            }
+        }
+        words.removeAll(phraseWords);
+        check(contextual > 700, "the seed's contextual Arabizi spellings are all exercised");
+        java.util.Random random = new java.util.Random(2026);
+        for (int at = 0; at < 3000; at++) {
+            StringBuilder text = new StringBuilder();
+            int length = 5 + random.nextInt(36);
+            for (int token = 0; token < length; token++) {
+                text.append(random.nextInt(4) == 0 ? promotion.get(random.nextInt(promotion.size()))
+                        : words.get(random.nextInt(words.size()))).append(random.nextInt(5) == 0 ? ", " : " ");
+            }
+            check(!seed.blocks(text.toString()), "contextual Arabizi chat never blocks alone: " + text);
+            if (at % 10 == 0) check(seed.blocks(text + "watch aflam 3ahra"), "a clear Arabizi phrase still blocks");
+        }
+    }
+
     /** Franco-Arabic: reviewed clear words, contextual generated spellings, names and shared English words. */
     private static void checkArabizi() {
         List<AdultTextPolicy.Rule> rules = Arrays.asList(rule("porn", 8), rule("pussy", 8), rule("onlyfans", 8),
                 rule("porn addiction", -8), rule("addiction recovery", -8), latin("sharmota", 8), latin("kahba", 8),
-                latin("neek", 8), latin("dara", 8), latin("abhi", 8), latin("nika", 8), latin("inek", 8),
-                latin("97ab", 8), latin("seks", 8), latin("sks", 8), latin("zeb", 6), latin("aflam sks", 8),
+                latin("neek", 8), latin("aba7i", 8), latin("dara", 8), latin("abhi", 8), latin("nika", 8),
+                latin("inek", 8), latin("97ab", 8), latin("seks", 8), latin("sks", 8), latin("zeb", 6), latin("aflam sks", 8),
                 latin("video sex", 8), latin("sex arab", 8), latin("nik masri", 8), latin("aflam nik", 8),
                 latin("neek masri", 8), latin("sks mojani", 8));
         AdultTextPolicy policy = new AdultTextPolicy(rules);
         for (String sample : Arrays.asList("Watch sharmota w kahba", "tahmil aflam sks", "aflam sks mojani",
                 "Watch neek masri", "moshahda sharmota neek", "Watch sharmota with Dara", "SHARMOTA, KAHBA: free",
-                "Watch porn with Dara")) {
+                "Watch porn with Dara", "Watch aba7i", "free aba7i with Dara")) {
             check(policy.blocks(sample), "Arabizi adult promotion detected: " + sample);
         }
         for (String sample : Arrays.asList("Watch sharmota", "aflam sks", "Watch Dara and Abhi, free",
@@ -229,7 +268,7 @@ public final class AdultTextPolicyTest {
         check(!new AdultTextPolicy(Collections.singletonList(latin("sharmota", 7))).blocks("Watch sharmota sharmota"),
                 "weak Arabizi entries never become strong evidence");
         java.util.Random random = new java.util.Random(77);
-        String[] words = {"ordinary", "ordinary", "ordinary", "ordinary", "porn", "pussy", "sharmota", "kahba",
+        String[] words = {"ordinary", "ordinary", "ordinary", "ordinary", "porn", "pussy", "sharmota", "kahba", "aba7i",
                 "dara", "abhi", "zeb", "video", "sex", "aflam", "sks", "watch", "free", "tahmil", "addiction", "recovery"};
         for (int at = 0; at < 3000; at++) {
             String[] sample = new String[5 + random.nextInt(60)];
@@ -266,7 +305,8 @@ public final class AdultTextPolicyTest {
                 }
                 if (!seen) continue;
                 if (rule.weight < 0) { negative -= rule.weight; continue; }
-                boolean isStrong = rule.weight >= 8, isTrusted = phrase.length > 1 || rule.phrase.equals("porn");
+                boolean isStrong = rule.weight >= 8;
+                boolean isTrusted = phrase.length > 1 || rule.phrase.equals("porn") || rule.phrase.equals("aba7i");
                 if (contextual.contains(rule.phrase)) {
                     latinScore += rule.weight;
                     if (isStrong) { latinStrong++; if (isTrusted) latinTrusted++; }

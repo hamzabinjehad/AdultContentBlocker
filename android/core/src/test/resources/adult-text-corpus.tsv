@@ -65,6 +65,10 @@ block	arabizi	mawqe3 sks mojani
 block	arabizi	Stream video 3ahra masri
 block	arabizi	tahmil film neek arabi
 block	arabizi	sowar ebahy arab mojani
+block	arabizi	Watch aflam 3ahra 5aliji free
+block	arabizi	moshahda fedio qahba jadid mojani
+block	arabizi	tahmil aflam neek 7elwa mojani
+block	arabizi	Watch aba7i mojani
 allow	arabizi-chat	Yalla 3ala el ma7al, free 2ahwa 7elwa
 allow	arabizi-chat	Mabrook! 3ala el sala, el video 7elw 2awi, download it free
 allow	arabizi-chat	Ana 3ayez a7mel el film el gdid mojani
@@ -87,3 +91,13 @@ allow	arabizi-shared	Free Kos island travel guide
 allow	arabizi-mixed	Watch pussy cats with Dara and Abhi
 allow	arabizi-mixed	A free OnlyFans budgeting guide by Abhi
 allow	arabizi-mixed	Watch porn addiction recovery with Dara and Nika
+# Everyday chat with digits as letters (2, 3, 5, 7) beside seed spellings such as 3ara, e7a, moms, jins, tabon.
+allow	arabizi-chat	e7a, el match 5ilis? watch el highlights free
+allow	arabizi-chat	Moms w el banat, tahmil el sowar mojani
+allow	arabizi-chat	3ara 3alik ya 2a7mad, watch el 7alaqa free
+allow	arabizi-chat	Tabon w jebna, delivery free, 2alf shokr
+allow	arabizi-chat	Download el app, el jins el gdid mojani
+allow	arabizi-chat	Shofto el film? Mesh 7elw bas el music 7elwa, watch it free
+allow	arabizi-name	Watch Nashwa w Arin, free concert tickets
+allow	arabizi-name	Dios mio, Dara! Watch Abhi sing, free entry
+allow	arabizi-mixed	Watch porn addiction recovery talk, ya 7abibi, free

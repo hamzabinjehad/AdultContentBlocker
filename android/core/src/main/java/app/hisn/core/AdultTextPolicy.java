@@ -30,9 +30,10 @@ import java.util.Set;
  * Hinglish ("abhi"), Turkish ("inek") or names ("Dara", "Nika"), so only a reviewed
  * list of single words counts as clear; every other one is contextual. A phrase made
  * only of words English also uses ("video sex", "sex arab"), or holding the name "nik",
- * is contextual too. Arabizi single words are never trusted alone, and contextual
- * Arabizi evidence joins a window only beside a clear Arabizi signal, so names in
- * English text cannot add up against "pussy cats" or recovery context.
+ * is contextual too. As with the Arabic اباحي, only the spellings of "pornographic"
+ * (aba7i, ebahia, ...) are trusted alone; other clear single words need a second strong
+ * signal. Contextual Arabizi evidence joins a window only beside a clear Arabizi signal,
+ * so names in English text cannot add up against "pussy cats" or recovery context.
  * This is not an image classifier or a guarantee of detecting all adult text.
  * The immutable policy never stores, logs or sends submitted text anywhere.
  */
@@ -81,12 +82,15 @@ public final class AdultTextPolicy {
     // never confirm each other ("Nick Bourne" is a name). Latin "nik" is the name Nik.
     private static final Set<String> AMBIGUOUS = immutableSet("نيك", "بورنو", "بورن", "كسكس", "كسكسي", "طابون", "nik");
     // Reviewed Arabizi spellings with no everyday meaning: whore, porn(ographic), fucked,
-    // prostitution. The seed's other ~800 generated single words stay contextual.
-    private static final Set<String> ARABIZI_CLEAR = immutableSet("sharmota", "sharmoot", "sharameet",
+    // prostitution. The seed's other ~800 generated single words stay contextual. Package-visible for tests.
+    static final Set<String> ARABIZI_CLEAR = immutableSet("sharmota", "sharmoot", "sharameet",
             "shrmota", "shrmuta", "shrmot", "shrmut", "shramit", "shrmo6a", "shrm6a", "kahba", "kahbat",
             "gahba", "neek", "3ahra", "3ahira", "3ahrat", "3aherat", "aba7i", "aba7ia", "aba7iat",
             "aba7y", "aba7ya", "aba7yat", "alaba7ia", "alaba7ya", "ebahia", "ebahiya", "ibahia", "ibahiya",
             "arabsex", "sexarab", "sksarab", "mtnak", "mtnaka", "d3ara", "da3ara", "mnyok", "mnyuk");
+    // The clear spellings of "pornographic" (Arabic اباحي, اباحيه), trusted alone like them.
+    private static final Set<String> ARABIZI_EXPLICIT = immutableSet("aba7i", "aba7ia", "aba7iat", "aba7y",
+            "aba7ya", "aba7yat", "alaba7ia", "alaba7ya", "ebahia", "ebahiya", "ibahia", "ibahiya");
     // Latin words with ordinary English use, or common surnames. An Arabizi phrase made
     // only of these ("video sex", "sex arab", "sour sex") is contextual.
     private static final Set<String> ARABIZI_SHARED = immutableSet("sex", "film", "video", "sour", "soar",
@@ -553,7 +557,8 @@ public final class AdultTextPolicy {
             this.phrase = phrase;
             this.weight = weight;
             this.arabizi = arabizi;
-            this.trusted = words.length > 1 || EXPLICIT.contains(phrase);
+            this.trusted = words.length > 1 || EXPLICIT.contains(phrase)
+                    || (arabizi && ARABIZI_EXPLICIT.contains(phrase));
             boolean shared = false, everyday = true;
             for (String word : words) {
                 shared |= AMBIGUOUS.contains(word);
