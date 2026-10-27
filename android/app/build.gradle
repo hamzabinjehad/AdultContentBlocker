@@ -53,8 +53,8 @@ android {
         manifestPlaceholders = [hisnAppLabel: '@string/app_name']
         minSdk 26
         targetSdk 36
-        versionCode 15
-        versionName '0.5.3'
+        versionCode 16
+        versionName '0.5.4'
         testInstrumentationRunner 'app.hisn.android.CoreDeviceTestRunner'
         buildConfigField 'String', 'DOMAIN_SEED_SHA256', '"' + seedDigest + '"'
         buildConfigField 'int', 'DOMAIN_SEED_COUNT', seedManifest.core_domain_count.toString()

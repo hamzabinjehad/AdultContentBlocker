@@ -1,4 +1,4 @@
-# Hisn Android 0.5.3: protection development preview
+# Hisn Android 0.5.4: protection development preview
 
 The Android app contains an opt-in DNS-only VPN, saved custom rules, selected-app
 accessibility restrictions, opt-in daily app schedules, built-in adult-text checks and
