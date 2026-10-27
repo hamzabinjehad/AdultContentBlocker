@@ -273,9 +273,18 @@ is recorded separately for 0.4.0; it was not rerun after this update.
 - Domain matches return local NXDOMAIN without contacting the upstream server.
   Allowed queries go to Cloudflare Families at `1.1.1.3:853` with authenticated
   DNS-over-TLS, certificate and hostname validation, and TLS 1.2/1.3 only.
-  Each worker reuses its connection. There is no plaintext or alternate-resolver
-  fallback. The resolver can see allowed domain requests. Saved domain rules
-  are applied immediately alongside the bundled seed.
+  When `1.1.1.3` refuses or times out, the same exchange moves once to the
+  second Families address, `1.0.0.3:853`, with the same identity
+  (`family.cloudflare-dns.com`); `1.1.1.3` is tried again by one connection
+  after 30 seconds, doubling to at most five minutes, and at once when the
+  network in use changes. TLS identity failures and bad replies never move.
+  Each worker reuses its connection. There is no plaintext fallback and no
+  other resolver. The resolver can see allowed domain requests. Saved domain
+  rules are applied immediately alongside the bundled seed.
+- Only the network that protected resolver sockets use resets connections: on
+  Android 12+ the best-matching non-VPN network Android reports, on Android 8
+  to 11 the one Hisn ranks first the way Android does. A change on a standby
+  network, such as mobile data kept up beside Wi-Fi, keeps them.
 - Upstream sockets must pass `VpnService.protect`. Transaction IDs are randomized
   upstream and restored for clients; mismatched questions, IDs, oversized and
   truncated replies are rejected. A bounded reply parser checks record lengths,
@@ -303,8 +312,8 @@ is recorded separately for 0.4.0; it was not rerun after this update.
   local NXDOMAIN, which turns off Firefox's default DoH. This reduces but does
   not eliminate browser DoH bypass: clients with hard-coded bootstrap IPs,
   IP-literal endpoints, unlisted providers or user-forced Firefox DoH never ask
-  Hisn. Hisn's own upstream is pinned to `1.1.1.3` and uses its hostname only
-  for TLS identity, so it does not depend on resolving these names.
+  Hisn. Hisn's own upstream is pinned to `1.1.1.3` and `1.0.0.3` and uses its
+  hostname only for TLS identity, so it does not depend on resolving these names.
 - Underscore names (SRV, `_dmarc`, DDR) and single-label names can never equal
   a domain rule, so they are forwarded instead of failing and do not degrade
   the session. The hostname part of an underscore name is still checked: one
@@ -343,6 +352,13 @@ is recorded separately for 0.4.0; it was not rerun after this update.
   Progress is checkpointed on app pause and periodically during a DNS session;
   reboot or power-off can extend the period. Android settings, data clearing
   and uninstall remain outside this in-app lock.
+- Settings are saved twice, in `hisn_policy` and `hisn_policy_copy`, each
+  sealed with a SHA-256 over its values. A damaged or unreadable main file is
+  replaced by its copy and Protection asks the owner to check the rules. If
+  neither can be read although settings were saved, the commitment is kept
+  active, shown as unknown, for at most 90 days of running time, the longest
+  one can last, instead of reading as a new installation. Clearing app data
+  removes both files and resets everything.
 - The accessibility service is off until the owner enables it. It acts only in
   explicitly selected apps. Chosen blocked apps, matching literal word rules or
   built-in adult-promotion evidence in the optional mode

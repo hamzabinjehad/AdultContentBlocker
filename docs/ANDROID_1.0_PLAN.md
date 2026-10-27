@@ -72,6 +72,10 @@ as a limit. It is never dropped silently.
       remaining-time plurals; Arabic disclosure parity and a resource parity check; App languages;
       bundled list version; Licenses and sources screen; Android CI job.
       See [0.5.3](ANDROID_0.5.3.md).
+- [x] 0.5.4 reliability (code and core tests; phone checks pending): second Cloudflare Families
+      address with bounded failover, connections reset only by the network in use, damaged
+      settings never end a commitment, and `check-release.py` for release APKs.
+      See [0.5.4 part A](ANDROID_0.5.4_RELIABILITY.md).
 
 ### M2: device lifecycle acceptance (needs the owner's phone and consent)
 
@@ -108,8 +112,8 @@ Run on a fresh 0.5.x debug install, using `test-live-*.py` where possible:
 
 - [ ] Owner creates the production keystore offline and keeps two backups. Losing it
       means existing installs can never be updated.
-- [ ] Build with the `HISN_ANDROID_*` variables set, then run `apksigner verify --print-certs`
-      and publish the certificate SHA-256 next to the APK hash.
+- [ ] Build with the `HISN_ANDROID_*` variables set, then run `check-release.py` and
+      `apksigner verify --print-certs`, and publish the certificate SHA-256 next to the APK hash.
 - [ ] Set `versionName '1.0.0'` and update the strings, README and `ANDROID_1.0.md` release record.
 - [ ] GitHub release with the signed APK, hash, certificate fingerprint and the
       "not part of 1.0" list above, copied verbatim.
@@ -122,8 +126,13 @@ export HISN_ANDROID_KEYSTORE_PASSWORD=...
 export HISN_ANDROID_KEY_ALIAS=hisn
 export HISN_ANDROID_KEY_PASSWORD=...
 ./gradlew --no-daemon assembleRelease
+python3 check-release.py app/build/outputs/apk/release/app-release.apk
 apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
 ```
+
+`check-release.py` fails when the APK is debuggable or test-only, uses the DUMP permission,
+contains a debug-only component or class, or has a package or version that differs from
+`app/build.gradle`. Run it on `app-release-unsigned.apk` for unsigned builds.
 
 Set all four variables or none of them. A partial set fails the build. With none set,
 `assembleRelease` produces `app-release-unsigned.apk` as before.
