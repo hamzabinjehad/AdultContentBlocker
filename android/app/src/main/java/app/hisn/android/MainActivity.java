@@ -381,8 +381,8 @@ public final class MainActivity extends Activity {
                 ? R.string.protection_partial : R.string.status_title);
         try {
             if (settingsReadable) refreshVisual(settings.snapshot());
-            refreshGray();
             else { visualToggle.setEnabled(false); visualState.setText(R.string.policy_unavailable); }
+            refreshGray();
         } catch (RuntimeException unavailable) {
             visualToggle.setEnabled(false);
             visualState.setText(R.string.policy_unavailable);
