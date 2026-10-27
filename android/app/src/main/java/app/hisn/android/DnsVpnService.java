@@ -356,6 +356,9 @@ public final class DnsVpnService extends VpnService {
         // Never wait for a response on a packet-processing worker: this query enters the TUN itself.
         private final ThreadPoolExecutor checkWorker = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS,
                 new ArrayBlockingQueue<>(1), job -> new Thread(job, "hisn-dns-self-check"));
+        // Saving commitment progress writes two files with fsync; never on the packet loop. One pending save at most.
+        private final ThreadPoolExecutor saver = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS,
+                new ArrayBlockingQueue<>(1), job -> new Thread(job, "hisn-settings-save"), new ThreadPoolExecutor.DiscardPolicy());
         private final Object outputLock = new Object();
         private final ThreadPoolExecutor workers = new ThreadPoolExecutor(4, 4, 0, TimeUnit.MILLISECONDS,
                 new ArrayBlockingQueue<>(64), new ThreadPoolExecutor.AbortPolicy());
@@ -423,7 +426,9 @@ public final class DnsVpnService extends VpnService {
                         if (android.os.SystemClock.elapsedRealtime() - checkpointAt >= 60000) {
                             checkpointAt = android.os.SystemClock.elapsedRealtime();
                             // Retried next minute; failing to save commitment progress must not stop DNS filtering.
-                            try { settings.checkpoint(); } catch (RuntimeException unsaved) { /* Keep filtering. */ }
+                            saver.execute(() -> {
+                                try { settings.checkpoint(); } catch (RuntimeException unsaved) { /* Retry next minute. */ }
+                            });
                         }
                         if (Os.poll(new StructPollfd[]{poll}, 250) == 0) continue;
                         if ((poll.revents & (OsConstants.POLLERR | OsConstants.POLLHUP | OsConstants.POLLNVAL)) != 0) {
@@ -846,6 +851,8 @@ public final class DnsVpnService extends VpnService {
             browserTest.clear();
             tcp.close();
             checkWorker.shutdownNow();
+            // Let a save in progress finish; interrupting it would only lose that minute.
+            saver.shutdown();
             workers.shutdownNow();
             TlsDnsTransport currentTransport = transport;
             if (currentTransport != null) currentTransport.close();
