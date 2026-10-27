@@ -18,8 +18,9 @@ import java.util.Set;
  * seed term does not itself block. A 16-token window needs promotional wording
  * and a reviewed explicit term/strong phrase or two distinct strong signals.
  * Complete two-word explicit media labels can supply that intent without a verb, and so
- * can a short leaf of up to three words that is mostly a lone explicit term ("porn",
- * "#hentai", "سكس"), unless negative context such as "porn addiction" cancels it.
+ * can a short leaf of up to three words that are all lone explicit terms ("porn",
+ * "#hentai", "سكس"), unless a protective word or negative phrase such as "porn addiction"
+ * appears anywhere on the same screen ({@link #blocksAnyLine}).
  * Signed negative context subtracts evidence only within eight tokens of that
  * window; distant medical prose cannot cancel a separate promotional cluster.
  * Punctuated ("p.o.r.n") or separated ("p o r n", "p/o/r/n") spellings are joined
@@ -81,9 +82,20 @@ public final class AdultTextPolicy {
             "handjob", "اباحي", "اباحيه", "بورنو", "سكس", "نيك");
     // Explicit terms that mark adult content even alone in a short leaf. Not "pornography" or
     // "pornographic", which name the subject in encyclopedia headings, law and research.
-    private static final Set<String> LONE = immutableSet("porn", "porno", "hentai", "blowjob", "cumshot",
+    // "porno" is left out too: it is the generic noun in Spanish, Italian and German news and
+    // the title of Irvine Welsh's novel; "Porno videos" and promotion still block.
+    private static final Set<String> LONE = immutableSet("porn", "hentai", "blowjob", "cumshot",
             "creampie", "gangbang", "handjob", "اباحي", "اباحيه", "سكس");
     private static final int LONE_TOKENS = 3;
+    // Words that mark a screen as about quitting, blocking, treating or studying adult content.
+    // Any of them (or a configured negative phrase) on a screen stops a bare term from blocking
+    // alone; a promotion still blocks. Specific words only, not "stop", "ban" or "block", which
+    // are ordinary player and chat buttons.
+    private static final Set<String> PROTECTIVE = immutableSet("anti", "against", "quit", "quitting",
+            "blocker", "blockers", "blocking", "addiction", "addicted", "addict", "recovery", "recovering",
+            "relapse", "detox", "nofap", "harms", "therapy", "research", "awareness", "accountability",
+            "ضد", "ادمان", "علاج", "حجب", "حظر", "مكافحه", "تعافي", "اقلاع", "اضرار", "توعيه",
+            "edman", "idman", "2edman", "3ilaj", "3elaj", "3laj");
     // Canonical tokens that are also Nick, Borno (Nigeria), Bourne, couscous or taboon
     // bread; كسكس and كسكسي otherwise fold to the prefix ك plus سكس/سكسي. Two of these
     // never confirm each other ("Nick Bourne" is a name). Latin "nik" and "neek" (niek, neik)
@@ -167,20 +179,62 @@ public final class AdultTextPolicy {
 
     /** Classify a bounded sample. Oversized input is rejected, never silently truncated. */
     public boolean blocks(String input) {
-        if (input == null || input.isEmpty()) return false;
-        if (input.codePointCount(0, input.length()) > MAX_TEXT_CODEPOINTS) {
-            throw new IllegalArgumentException("Adult-text sample exceeds inspection limit");
+        String[] tokens = tokens(input);
+        return tokens != null && judge(tokens, true);
+    }
+
+    /** Classify each line of a screen sample (one visible label per line) on its own, as
+     * {@link #blocks} does, so unrelated medical or news wording never exempts an adult
+     * promotion elsewhere. A bare explicit term ("Porn", "سكس") counts as a label only when
+     * no line on the screen names protective context: a "Porn" tag chip beside the headline
+     * "Study links porn addiction to anxiety" is not a call to action. */
+    public boolean blocksAnyLine(String sample) {
+        if (sample == null || sample.isEmpty()) return false;
+        checkLength(sample, "Adult-text sample exceeds inspection limit");
+        String[] lines = sample.split("\n");
+        String[][] tokens = new String[lines.length][];
+        boolean lone = true;
+        for (int at = 0; at < lines.length; at++) {
+            tokens[at] = tokens(lines[at]);
+            if (tokens[at] != null && protective(tokens[at])) lone = false;
         }
-        if (entries.isEmpty()) return false;
+        for (String[] line : tokens) if (line != null && judge(line, lone)) return true;
+        return false;
+    }
+
+    private static void checkLength(String text, String message) {
+        if (text.codePointCount(0, text.length()) > MAX_TEXT_CODEPOINTS) throw new IllegalArgumentException(message);
+    }
+
+    /** Canonical tokens, or null when there is nothing to judge. */
+    private String[] tokens(String input) {
+        if (input == null || input.isEmpty()) return null;
+        checkLength(input, "Adult-text sample exceeds inspection limit");
+        if (entries.isEmpty()) return null;
         String normalized = canonical(recoverSeparatedSpellings(
                 recoverCompactSpellings(Normalizer.normalize(input, Normalizer.Form.NFKC))));
-        if (normalized.isEmpty()) return false;
+        if (normalized.isEmpty()) return null;
         // NFKC can expand compatibility characters. Bound the normalized work
         // too, rather than permitting large hidden allocation after validation.
-        if (normalized.codePointCount(0, normalized.length()) > MAX_TEXT_CODEPOINTS) {
-            throw new IllegalArgumentException("Normalized adult-text sample exceeds inspection limit");
+        checkLength(normalized, "Normalized adult-text sample exceeds inspection limit");
+        return normalized.split(" ");
+    }
+
+    /** A protective word or a configured negative phrase anywhere in the tokens. */
+    private boolean protective(String[] tokens) {
+        for (int start = 0; start < tokens.length; start++) {
+            if (inSet(PROTECTIVE, tokens[start])) return true;
+            Trie branch = index;
+            for (int end = start; end < Math.min(tokens.length, start + MAX_PHRASE_TOKENS); end++) {
+                branch = branch.children.get(tokens[end]);
+                if (branch == null) break;
+                if (branch.entry != null && branch.entry.weight < 0) return true;
+            }
         }
-        String[] tokens = normalized.split(" ");
+        return false;
+    }
+
+    private boolean judge(String[] tokens, boolean lone) {
         boolean[] promotions = new boolean[tokens.length];
         boolean anyPromotion = false;
         for (int at = 0; at < tokens.length; at++) {
@@ -190,7 +244,7 @@ public final class AdultTextPolicy {
         // A complete two-word media label is evidence without a call to action.
         // Do not apply this to substrings of research/recovery prose or generic
         // "adult" labels; configured strong terms and negative context still score.
-        if (!anyPromotion && (explicitMediaLabel(tokens) || loneExplicitLabel(tokens))) {
+        if (!anyPromotion && (explicitMediaLabel(tokens) || (lone && loneExplicitLabel(tokens)))) {
             promotions[0] = true;
             anyPromotion = true;
         }
@@ -234,13 +288,13 @@ public final class AdultTextPolicy {
     }
 
     /** A short leaf (a title, caption, button or search suggestion) of at most three words,
-     * most of them a lone explicit term, states its intent like a media label. One such word
-     * beside another ("porn addiction", "anti porn", "porn ban") is not most of the leaf. */
+     * every one a lone explicit term, states its intent like a media label. Any other word
+     * may be protective ("Porn, hentai blocker", "ضد سكس اباحي", "porn porn recovery"),
+     * and only reviewed bigrams carry negative weight, so one other word is never allowed. */
     private boolean loneExplicitLabel(String[] tokens) {
         if (tokens.length > LONE_TOKENS) return false;
-        int explicit = 0;
-        for (String token : tokens) if (loneExplicit(token)) explicit++;
-        return explicit * 2 > tokens.length;
+        for (String token : tokens) if (!loneExplicit(token)) return false;
+        return true;
     }
 
     private boolean loneExplicit(String token) {
@@ -532,10 +586,13 @@ public final class AdultTextPolicy {
         return entry != null && entry.weight >= STRONG_WEIGHT ? entry : null;
     }
 
-    private static boolean isPromotion(String token) {
-        if (PROMOTION.contains(token)) return true;
+    private static boolean isPromotion(String token) { return inSet(PROMOTION, token); }
+
+    /** The token, or an Arabic token without one leading prefix (الادمان, وعلاج), is in the set. */
+    private static boolean inSet(Set<String> words, String token) {
+        if (words.contains(token)) return true;
         if (containsArabic(token)) for (String prefix : PREFIXES) {
-            if (token.startsWith(prefix)) return PROMOTION.contains(token.substring(prefix.length()));
+            if (token.startsWith(prefix)) return words.contains(token.substring(prefix.length()));
         }
         return false;
     }

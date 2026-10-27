@@ -197,11 +197,10 @@ public final class TextGuardService extends AccessibilityService {
             inspectionOutcome = text.isEmpty() ? "no-readable-leaves" : "no-word-match";
             boolean matches = !text.isEmpty() && !rules.words.matches(text).isEmpty();
             if (!matches && rules.adultWordsEnabled && adult != null) {
-                // Do not let a medical/news label elsewhere in the UI exempt an
-                // unrelated adult-promotion label. Custom rules remain independent.
-                for (String leaf : text.split("\n")) {
-                    if (adult.blocks(leaf)) { matches = true; break; }
-                }
+                // Each label is judged alone, so a medical/news label elsewhere in the UI never
+                // exempts an unrelated adult-promotion label; it only stops a bare term such as a
+                // "Porn" tag chip from blocking by itself. Custom rules remain independent.
+                matches = adult.blocksAnyLine(text);
             }
             if (matches) intervene(true);
             else {

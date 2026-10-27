@@ -163,15 +163,38 @@ public final class AdultTextPolicyTest {
                 + (elapsed / 1_000_000L) + " ms (diagnostic, not a device speed guarantee)");
     }
 
-    /** A short leaf that is mostly a lone strong explicit term blocks with no promotion word. */
+    /** A short leaf made only of lone strong explicit terms blocks with no promotion word. */
     private static void checkLoneTerms(AdultTextPolicy policy) {
         for (String leaf : Arrays.asList("porn", "PORN!", "#hentai", "p0rn", "p.o.r.n", "h e n t a i",
-                "Porn & hentai", "porn porn", "porn, hentai, more", "سكس", "#سكس", "إِبَاحِيّ", "اباحية"))
+                "Porn & hentai", "porn porn", "porn, hentai, porn", "سكس", "#سكس", "إِبَاحِيّ", "اباحية", "سكس اباحي"))
             check(policy.blocks(leaf), "lone explicit term in a short leaf detected: " + leaf);
         for (String leaf : Arrays.asList("Porn addiction", "porn porn addiction", "Anti porn", "Quit porn",
                 "Porn research", "porn porn porn porn", "pornography", "Pornography research", "pussy", "onlyfans",
-                "nude photos", "الإباحية", "السكس", "porn x y", "Research about porn"))
+                "nude photos", "الإباحية", "السكس", "porn x y", "Research about porn", "porn, hentai, more",
+                // Two terms and a third word, which may be protective: never a label (review finding).
+                "Porn, hentai blocker", "Stop porn & hentai", "Anti porn hentai", "Porn/hentai detox",
+                "Porn hentai harms", "Hentai porn effects", "porn porn recovery", "NoFap porn hentai",
+                "Porn & Hentai Blocker", "ضد سكس اباحي", "سكس اباحي ادمان", "لا سكس اباحي",
+                // "porno" is a Romance-language noun and a novel's title; not a lone label.
+                "Porno", "porno porno"))
             check(!policy.blocks(leaf), "lone-term rule stays narrow: " + leaf);
+        check(policy.blocks("Porno videos") && policy.blocks("Watch porno"), "porno still blocks as a label or promotion");
+        // A screen: each line is judged alone, but protective context on any line keeps a bare term from blocking.
+        for (String screen : Arrays.asList("Home\nPorn\nSettings", "Porn\nSearch", "سكس\nالرئيسية", "Hentai\nNews\nTrending"))
+            check(policy.blocksAnyLine(screen), "a bare term on an ordinary screen blocks: " + screen);
+        for (String screen : Arrays.asList("Study links porn addiction to anxiety\nPorn",
+                "Porn\nHow to quit, one day at a time", "Recovery check-in\nTriggers\nPorn\nHentai",
+                "Porn\nPorn blocker settings", "ضد الإباحية\nسكس", "علاج الإدمان\nاباحي", "Anti-porn campaign\nporn",
+                "Sex education\nPorn", "Accountability partner\nporn", "3ilaj\naba7i", "porn\nporn addiction"))
+            check(!policy.blocksAnyLine(screen), "protective context on the screen keeps a bare term allowed: " + screen);
+        for (String screen : Arrays.asList("Porn addiction recovery\nWatch porn videos free",
+                "Study links porn addiction to anxiety\nPorn videos", "ضد الإباحية\nشاهد سكس"))
+            check(policy.blocksAnyLine(screen), "protective context elsewhere never exempts a promotion or label: " + screen);
+        check(!policy.blocksAnyLine(null) && !policy.blocksAnyLine("") && !policy.blocksAnyLine("\n\n"),
+                "an empty screen never blocks");
+        check(policy.blocksAnyLine("Watch porn") == policy.blocks("Watch porn") && !policy.blocksAnyLine("Porn addiction"),
+                "a one-line screen is judged like a leaf");
+        invalid(() -> policy.blocksAnyLine("a\n".repeat(AdultTextPolicy.MAX_TEXT_CODEPOINTS)), "oversized screen accepted");
         check(!new AdultTextPolicy(Collections.singletonList(rule("porn", 7))).blocks("porn"),
                 "a lone weak term never blocks");
         check(!new AdultTextPolicy(Collections.singletonList(rule("hentai", 8))).blocks("porn"),
@@ -233,8 +256,14 @@ public final class AdultTextPolicyTest {
         for (String text : Arrays.asList("porn", "Hentai", "#سكس", "إباحي", "aba7i", "Creampie"))
             check(seed.blocks(text), "actual seed: a lone explicit term in a short leaf blocks: " + text);
         for (String text : Arrays.asList("Porn addiction", "Porn blocker", "Anti-porn campaign", "Pornography",
-                "الإباحية", "حجب الإباحية", "نيك", "بورنو", "كسكس", "Neek", "Nik", "sks", "sksy", "sharmota", "XXX", "Sex"))
+                "الإباحية", "حجب الإباحية", "نيك", "بورنو", "كسكس", "Neek", "Nik", "sks", "sksy", "sharmota", "XXX", "Sex",
+                "Porn, hentai blocker", "Stop porn & hentai", "Anti porn hentai", "Porn/hentai detox", "Porn hentai harms",
+                "Hentai porn effects", "porn porn recovery", "NoFap porn hentai", "Porn & Hentai Blocker", "ضد سكس اباحي",
+                "سكس اباحي ادمان", "aba7i sks 3ilaj", "Porno"))
             check(!seed.blocks(text), "actual seed: lone ambiguous, academic or protective leaf allowed: " + text);
+        check(!seed.blocksAnyLine("Study links porn addiction to anxiety\nPorn")
+                && !seed.blocksAnyLine("أخبار: دراسة عن إدمان الإباحية\nسكس") && seed.blocksAnyLine("Trending\nPorn"),
+                "actual seed: a bare tag chip follows the screen's protective context");
         checkArabiziChat(rules, seed);
         String gap = "ordinary ".repeat(40);
         check(seed.blocks("sexual health ".repeat(8) + gap + "Watch porn and hentai" + gap

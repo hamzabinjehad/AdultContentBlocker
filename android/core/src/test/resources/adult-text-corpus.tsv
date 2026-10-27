@@ -123,7 +123,6 @@ block	single	PORN
 block	single	Porn
 block	single	#hentai
 block	single	Hentai 🔞
-block	single	Porno
 block	single	p.o.r.n
 block	single	p0rn
 block	single	Blowjob
@@ -188,3 +187,33 @@ allow	arabizi-single-name	sksy
 allow	arabizi-single-name	sharmota
 allow	arabizi-single-name	Dara
 allow	arabizi-single-name	Abhi
+# Review fixes (0.5.5): two terms beside a third, possibly protective word are never a label; every
+# word must be a lone term. "Porno" alone is a novel's title and the Romance-language noun.
+allow	single-safe	Porno
+allow	single-safe	Porn, hentai blocker
+allow	single-safe	Porn & Hentai Blocker
+allow	single-safe	Stop porn & hentai
+allow	single-safe	Anti porn hentai
+allow	single-safe	Porn/hentai detox
+allow	single-safe	Porn hentai harms
+allow	single-safe	Hentai porn effects
+allow	single-safe	porn porn recovery
+allow	single-safe	NoFap porn hentai
+allow	single-safe	ضد سكس اباحي
+allow	single-safe	سكس اباحي ادمان
+allow	single-safe	لا سكس اباحي
+allow	arabizi-single-safe	aba7i sks 3ilaj
+allow	arabizi-single-safe	edman aba7i abahi
+# Screens: "\n" separates visible labels. Each label is judged alone, but protective context on
+# any label keeps a bare tag chip from blocking; a promotion or media label still blocks.
+block	screen	Trending\nPorn\nSettings
+block	screen	الرئيسية\nسكس
+block	screen	Porn addiction recovery\nWatch porn videos free
+block	screen	ضد الإباحية\nشاهد سكس
+allow	screen-safe	Study links porn addiction to anxiety\nPorn
+allow	screen-safe	Recovery check-in\nTriggers\nPorn\nHentai
+allow	screen-safe	Porn\nPorn blocker settings
+allow	screen-safe	Porn\nHow to quit, one day at a time
+allow	screen-safe	دراسة عن إدمان الإباحية\nسكس
+allow	screen-safe	حملة ضد الإباحية\nاباحي
+allow	arabizi-screen-safe	3ilaj el edman\naba7i
