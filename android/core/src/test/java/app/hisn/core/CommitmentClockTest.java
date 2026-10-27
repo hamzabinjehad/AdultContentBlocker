@@ -18,6 +18,10 @@ public final class CommitmentClockTest {
         check(restarted.checkpoint(30000, 9).remaining(30000, 9) == 0);
         try { new CommitmentClock(-1, 0, 0); throw new AssertionError("Invalid duration"); }
         catch (IllegalArgumentException expected) { }
+        // 90 days is the longest that can be chosen, and the bound kept when a commitment cannot be read.
+        check(new CommitmentClock(CommitmentClock.LONGEST, 0, 0).remaining(0, 0) == 90L * 86400000);
+        try { new CommitmentClock(CommitmentClock.LONGEST + 1, 0, 0); throw new AssertionError("Longer than 90 days"); }
+        catch (IllegalArgumentException expected) { }
         System.out.println("CommitmentClock tests passed (expiry, rollback, restart time since boot and checkpoints)");
     }
 }

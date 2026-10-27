@@ -56,6 +56,7 @@ public final class MainActivity extends Activity {
     private Button startDns;
     private TextView textState;
     private TextView commitmentState;
+    private Button restoredConfirm;
     private TextView adminState;
     private TextView setupState;
     private TextView adultState;
@@ -159,6 +160,16 @@ public final class MainActivity extends Activity {
         paragraph(R.string.text_guard_recheck_note);
         visualState = paragraph(R.string.visual);
         commitmentState = paragraph(R.string.commitment);
+        // Shown only after damaged settings were replaced by their second copy.
+        restoredConfirm = new Button(this);
+        restoredConfirm.setText(R.string.settings_restored_confirm);
+        restoredConfirm.setAllCaps(false);
+        restoredConfirm.setVisibility(View.GONE);
+        root.addView(restoredConfirm, layout());
+        restoredConfirm.setOnClickListener(view -> {
+            try { settings.confirmRestored(); } catch (RuntimeException refused) { showRefusal(refused); }
+            refreshStatus();
+        });
         Button manageRules = new Button(this);
         manageRules.setText(R.string.nav_rules);
         manageRules.setAllCaps(false);
@@ -431,9 +442,15 @@ public final class MainActivity extends Activity {
         if (settings != null) {
             try {
                 long remaining = settings.remainingMillis();
-                commitmentState.setText(remaining == 0 ? getString(R.string.commitment)
-                        : getString(R.string.commitment_remaining, Durations.remaining(this, remaining)));
+                // An unreadable commitment is kept, with its longest possible end, never shown as none.
+                boolean unknown = settings.commitmentUnknown(), restored = settings.restoredFromCopy();
+                String commitment = remaining == 0 ? getString(R.string.commitment) : getString(unknown
+                        ? R.string.commitment_unknown : R.string.commitment_remaining, Durations.remaining(this, remaining));
+                commitmentState.setText(restored ? commitment + "\n" + getString(R.string.settings_restored) : commitment);
+                restoredConfirm.setVisibility(restored ? View.VISIBLE : View.GONE);
+                if (unknown || restored) statusTitle.setText(R.string.protection_attention);
             } catch (RuntimeException unavailable) {
+                restoredConfirm.setVisibility(View.GONE);
                 commitmentState.setText(R.string.policy_unavailable);
                 statusTitle.setText(R.string.protection_attention);
             }

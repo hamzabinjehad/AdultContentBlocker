@@ -2,12 +2,14 @@ package app.hisn.core;
 
 /** A commitment clock that does not trust the editable wall clock. */
 public final class CommitmentClock {
+    /** The longest commitment that can be chosen, so no saved commitment can have more time left. */
+    public static final long LONGEST = 90L * 86400000;
     public final long remainingAtCheckpoint;
     public final long elapsedAtCheckpoint;
     public final int bootAtCheckpoint;
 
     public CommitmentClock(long remaining, long elapsed, int boot) {
-        if (remaining < 0 || remaining > 90L * 86400000 || elapsed < 0 || boot < 0) {
+        if (remaining < 0 || remaining > LONGEST || elapsed < 0 || boot < 0) {
             throw new IllegalArgumentException("Invalid commitment clock");
         }
         remainingAtCheckpoint = remaining;

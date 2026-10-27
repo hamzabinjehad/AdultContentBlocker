@@ -204,4 +204,8 @@
     <string name="gray_enable">Make the screen gray</string>
     <string name="gray_disable">Show colour again</string>
     <string name="gray_manual">Android lets an app switch the screen to gray only after a computer grants it permission once:\n\n%1$s\n\nUntil then, turn it on yourself: Accessibility › Color correction › Grayscale (on some phones under Visibility enhancements or Digital Wellbeing › Bedtime mode).</string>
+    <!-- Package A: reliability (DNS resolver failover, network changes, damaged settings) -->
+    <string name="commitment_unknown">Commitment stays active · Hisn could not read its saved commitment, so it keeps it for as long as it could still be running: at most %1$s from now. Check that your rules are as you set them; some may be missing. Clearing Hisn’s app data in Android settings removes every rule and this commitment.</string>
+    <string name="settings_restored">Hisn’s main settings file could not be read, so it was replaced by the second copy saved beside it. Check that your rules and commitment are as you set them.</string>
+    <string name="settings_restored_confirm">My rules are as I set them</string>
 </resources>
