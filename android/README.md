@@ -348,15 +348,25 @@ is recorded separately for 0.4.0; it was not rerun after this update.
   built-in adult-promotion evidence in the optional mode
   return to the launcher and show a generic restriction screen. Settings,
   launchers and dialers are excluded. Traversal is bounded and skips editable
-  and password nodes and their descendants. Only leaf labels are read to avoid
-  duplicated parent input values. Sensitive content may still be exposed by
-  other labels; the consent screen discloses this. Screen text is not saved.
+  and password nodes and their descendants. Childless labels are read, and a
+  card or button's own content description only when nothing inside it has text
+  and no input or password field sits inside it, so a parent never repeats an
+  input value (`LabelScan`). Sensitive content may still be exposed by other
+  labels; the consent screen discloses this. Screen text is not saved.
 - Built-in adult-text checks use bounded local context within individual visible
-  leaf labels, rather than exempting a whole screen because of unrelated medical
+  labels, rather than exempting a whole screen because of unrelated medical
   or news wording. Custom rules are checked independently first; built-in benign
   context never overrides a chosen literal rule. Opt-in is off by default for
   existing installations and enabling it does not grant any Android permission
   or choose apps automatically.
+- The built-in check uses the seed's English, Arabic and Franco-Arabic (Arabizi)
+  terms. Most single Arabizi spellings are also names or everyday chat, so they
+  count only beside a reviewed clear Arabizi term; see
+  [the text and privacy record](../docs/ANDROID_0.5.4_TEXT_PRIVACY.md).
+- The rule editors, app lists, schedule editor and a word tester holding text
+  are FLAG_SECURE windows: Android leaves them out of screenshots, screen
+  recordings and the recent-apps preview. Anyone looking at the screen and
+  accessibility services can still read them.
 - Long visible labels are sampled rather than skipped above 2,048 characters.
   A global 512-node/child-attempt budget and 32,768-character sample bound work;
   truncated tokens cannot manufacture whole-word matches. The dashboard reports
