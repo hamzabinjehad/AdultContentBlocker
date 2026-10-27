@@ -8,9 +8,9 @@ import android.os.SystemClock;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 
-import java.util.ArrayDeque;
 import java.util.Set;
 import app.hisn.core.InspectionHealth;
+import app.hisn.core.LabelScan;
 import app.hisn.core.VisibleTextSample;
 
 /** Explicitly selected apps only. Does not consume event text or retain screen content. */
@@ -188,7 +188,7 @@ public final class TextGuardService extends AccessibilityService {
                 return;
             }
             if (rules.adultWordsEnabled) AdultPolicyAssets.ensureLoaded(this);
-            VisibleTextSample sample = leafSample(root);
+            VisibleTextSample sample = labelSample(root);
             inspectedScreens++;
             app.hisn.core.AdultTextPolicy adult = AdultPolicyAssets.policy();
             inspection.record(sample.isPartial() || (rules.adultWordsEnabled && adult == null)
@@ -243,42 +243,24 @@ public final class TextGuardService extends AccessibilityService {
         return false;
     }
 
-    /** Conservative leaf-only scan avoids parent labels that duplicate child input values. */
-    static VisibleTextSample leafSample(AccessibilityNodeInfo root) {
-        ArrayDeque<AccessibilityNodeInfo> queue = new ArrayDeque<>();
-        queue.add(AccessibilityNodeInfo.obtain(root));
-        VisibleTextSample text = new VisibleTextSample(true);
-        int visited = 0;
-        int scheduled = 1;
-        try {
-            while (!queue.isEmpty() && visited++ < 512 && !text.isFull()) {
-                AccessibilityNodeInfo node = queue.removeFirst();
-                try {
-                    CharSequence type = node.getClassName();
-                    if (node.isPassword() || node.isEditable() || !node.isVisibleToUser()
-                            || (type != null && type.toString().contains("EditText"))) continue;
-                    int count = node.getChildCount();
-                    if (count > 0) {
-                        for (int i = 0; i < count; i++) {
-                            if (scheduled >= 512) { text.markPartial(); break; }
-                            scheduled++;
-                            AccessibilityNodeInfo child = node.getChild(i);
-                            if (child != null) queue.addLast(child);
-                            else text.markPartial();
-                        }
-                    } else {
-                        CharSequence value = node.getText();
-                        if (value == null || value.length() == 0) value = node.getContentDescription();
-                        text.append(value);
-                    }
-                } finally { node.recycle(); }
-            }
-        } finally {
-            if (!queue.isEmpty()) text.markPartial();
-            while (!queue.isEmpty()) queue.removeFirst().recycle();
-        }
-        return text;
+    /** Leaf labels, plus a card or button's own description when nothing inside it has text or
+     * an input field (rule and tests in core {@link LabelScan}). Same 512-node budget. */
+    static VisibleTextSample labelSample(AccessibilityNodeInfo root) {
+        return LabelScan.sample(NODES, AccessibilityNodeInfo.obtain(root));
     }
+
+    private static final LabelScan.Tree<AccessibilityNodeInfo> NODES = new LabelScan.Tree<AccessibilityNodeInfo>() {
+        @Override public boolean isPrivate(AccessibilityNodeInfo node) {
+            CharSequence type = node.getClassName();
+            return node.isPassword() || node.isEditable() || (type != null && type.toString().contains("EditText"));
+        }
+        @Override public boolean isVisible(AccessibilityNodeInfo node) { return node.isVisibleToUser(); }
+        @Override public int childCount(AccessibilityNodeInfo node) { return node.getChildCount(); }
+        @Override public AccessibilityNodeInfo child(AccessibilityNodeInfo node, int index) { return node.getChild(index); }
+        @Override public CharSequence text(AccessibilityNodeInfo node) { return node.getText(); }
+        @Override public CharSequence description(AccessibilityNodeInfo node) { return node.getContentDescription(); }
+        @Override public void release(AccessibilityNodeInfo node) { node.recycle(); }
+    };
 
     private void intervene(boolean word) {
         intervene(word, false);

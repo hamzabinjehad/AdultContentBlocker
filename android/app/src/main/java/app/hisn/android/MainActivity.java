@@ -17,6 +17,8 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.Gravity;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -70,6 +72,11 @@ public final class MainActivity extends Activity {
     private Button checkNetwork;
     private Button setupNext;
     private SetupGuide.Step currentSetupStep = SetupGuide.Step.CHOOSE_RULES;
+    private EditText testerRule, testerSample;
+    /** Open dialogs showing the person's lists, whether the word tester shows their text, and whether
+     * this window currently has FLAG_SECURE. */
+    private int privateDialogs;
+    private boolean testerPrivate, secured;
     private PolicyStore settings;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable refresh = new Runnable() {
@@ -81,12 +88,17 @@ public final class MainActivity extends Activity {
         shell = new LinearLayout(this);
         shell.setOrientation(LinearLayout.VERTICAL);
         shell.setBackgroundColor(Color.rgb(16, 21, 30));
+        // Edge to edge (targetSdk 35+ on Android 15+) leaves the keyboard to the app: the bottom
+        // padding grows with it, and the shrinking page scrolls the focused field into view.
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         shell.setOnApplyWindowInsetsListener((view, insets) -> {
             if (Build.VERSION.SDK_INT >= 30) {
                 android.graphics.Insets bars = insets.getInsets(android.view.WindowInsets.Type.systemBars()
                         | android.view.WindowInsets.Type.displayCutout());
-                view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+                int keyboard = insets.getInsets(android.view.WindowInsets.Type.ime()).bottom;
+                view.setPadding(bars.left, bars.top, bars.right, Math.max(bars.bottom, keyboard));
             } else {
+                // Before Android 11 these insets already include the keyboard under adjustResize.
                 view.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(),
                         insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
             }
@@ -179,6 +191,7 @@ public final class MainActivity extends Activity {
         createPage(1);
         heading(R.string.rules_heading, 21);
         paragraph(R.string.rules_help);
+        paragraph(R.string.private_screens);
         adultState = paragraph(R.string.adult_mode_off);
         adultToggle = new Button(this);
         adultToggle.setText(R.string.adult_mode_enable);
@@ -218,6 +231,7 @@ public final class MainActivity extends Activity {
         paragraph(R.string.guide_limits_body);
         heading(R.string.privacy_heading, 21);
         paragraph(R.string.privacy);
+        paragraph(R.string.private_screens);
         heading(R.string.admin_title, 21);
         adminState = paragraph(R.string.admin_off);
         policyButton(R.string.admin_setup, view -> new AlertDialog.Builder(this)
@@ -233,9 +247,10 @@ public final class MainActivity extends Activity {
         networkStats = paragraph(R.string.dns_stats_empty);
         heading(R.string.tester, 21);
         paragraph(R.string.tester_help);
+        paragraph(R.string.tester_private);
 
-        EditText rule = input(R.string.rule_hint, true);
-        EditText sample = input(R.string.sample_hint, true);
+        EditText rule = testerRule = input(R.string.rule_hint, true);
+        EditText sample = testerSample = input(R.string.sample_hint, true);
         Button check = new Button(this);
         check.setText(R.string.test_button);
         check.setAllCaps(false);
@@ -247,6 +262,7 @@ public final class MainActivity extends Activity {
             @Override public void beforeTextChanged(CharSequence text, int start, int count, int after) { }
             @Override public void onTextChanged(CharSequence text, int start, int before, int count) {
                 result.setText("");
+                updateTesterPrivacy();
             }
             @Override public void afterTextChanged(Editable text) { }
         };
@@ -300,6 +316,35 @@ public final class MainActivity extends Activity {
             navigation[i].setTypeface(null, i == selectedPage
                     ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
         }
+        updateTesterPrivacy();
+    }
+
+    /** The word tester is private while it is on screen holding the person's text. */
+    private void updateTesterPrivacy() {
+        testerPrivate = selectedPage == 2 && testerRule != null
+                && (testerRule.length() > 0 || testerSample.length() > 0);
+        updateSecure();
+    }
+
+    /** FLAG_SECURE: Android leaves the window out of screenshots, screen recording and the recent-apps
+     * preview. It does not hide the text from accessibility services or from anyone looking. */
+    private void updateSecure() {
+        boolean secure = privateDialogs > 0 || testerPrivate;
+        if (secure == secured) return; // Each flag change relayouts the window; not on every keystroke.
+        secured = secure;
+        if (secure) getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
+        else getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
+    }
+
+    /** Shows a dialog holding the person's lists as a secure window. This window is secured too while it
+     * is open, because some Android versions build the recent-apps preview from the activity window. */
+    private void showPrivate(AlertDialog dialog) {
+        Window window = dialog.getWindow();
+        if (window != null) window.addFlags(WindowManager.LayoutParams.FLAG_SECURE);
+        dialog.setOnDismissListener(closed -> { privateDialogs--; updateSecure(); });
+        privateDialogs++;
+        updateSecure();
+        dialog.show();
     }
 
     @Override protected void onSaveInstanceState(Bundle state) {
@@ -464,7 +509,10 @@ public final class MainActivity extends Activity {
                 || (!rules.scannedApps.isEmpty() && (rules.hasWordProtection() || rules.visualEnabled));
         if (rules.adultWordsEnabled) {
             switch (AdultPolicyAssets.state) {
-                case READY: adultState.setText(getString(R.string.adult_mode_ready, AdultPolicyAssets.policy().ruleCount())); break;
+                case READY:
+                    int compiled = AdultPolicyAssets.policy().ruleCount();
+                    adultState.setText(getResources().getQuantityString(R.plurals.adult_mode_ready, compiled, compiled));
+                    break;
                 case ERROR: adultState.setText(R.string.adult_mode_error); break;
                 default: adultState.setText(R.string.adult_mode_loading);
             }
@@ -670,7 +718,8 @@ public final class MainActivity extends Activity {
         input.setText(domain ? settings.domainText() : settings.wordText());
         input.setHint(domain ? R.string.domain_hint : R.string.rule_hint);
         AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle(domain ? R.string.edit_domains : R.string.edit_words).setView(input)
+                .setTitle(domain ? R.string.edit_domains : R.string.edit_words)
+                .setMessage(R.string.rules_editor_private).setView(input)
                 .setNegativeButton(android.R.string.cancel, null).setPositiveButton(R.string.save_rules, null).create();
         dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
             try {
@@ -681,7 +730,7 @@ public final class MainActivity extends Activity {
                 Toast.makeText(this, R.string.rules_saved, Toast.LENGTH_SHORT).show();
             } catch (RuntimeException refused) { input.setError(refusalText(refused)); }
         }));
-        dialog.show();
+        showPrivate(dialog);
     }
 
     private void chooseApps(boolean scan) {
@@ -694,7 +743,7 @@ public final class MainActivity extends Activity {
             labels[i] = apps.get(i).label;
             checks[i] = chosen.contains(apps.get(i).packageName);
         }
-        new AlertDialog.Builder(this).setTitle(scan ? R.string.choose_scanned_apps : R.string.choose_blocked_apps)
+        showPrivate(new AlertDialog.Builder(this).setTitle(scan ? R.string.choose_scanned_apps : R.string.choose_blocked_apps)
                 .setMultiChoiceItems(labels, checks, (dialog, index, checked) -> {
                     if (checked) chosen.add(apps.get(index).packageName);
                     else chosen.remove(apps.get(index).packageName);
@@ -706,7 +755,7 @@ public final class MainActivity extends Activity {
                                 scan ? current.blockedApps : chosen, scan ? chosen : current.scannedApps);
                         Toast.makeText(this, R.string.rules_saved, Toast.LENGTH_SHORT).show();
                     } catch (RuntimeException refused) { showRefusal(refused); }
-                }).show();
+                }).create());
     }
 
     private void refreshSchedule(DailyAppSchedule schedule) {
@@ -811,7 +860,7 @@ public final class MainActivity extends Activity {
                 error.setText(reason == PolicyChangeError.INVALID ? getString(R.string.schedule_invalid) : refusalText(refused));
             }
         }));
-        dialog.show();
+        showPrivate(dialog);
     }
 
     private void chooseScheduleApps(Set<String> selected, Button count) {
@@ -823,7 +872,7 @@ public final class MainActivity extends Activity {
             labels[i] = apps.get(i).label;
             checks[i] = draft.contains(apps.get(i).packageName);
         }
-        new AlertDialog.Builder(this).setTitle(R.string.schedule_choose_apps)
+        showPrivate(new AlertDialog.Builder(this).setTitle(R.string.schedule_choose_apps)
                 .setMultiChoiceItems(labels, checks, (dialog, index, checked) -> {
                     if (checked) draft.add(apps.get(index).packageName);
                     else draft.remove(apps.get(index).packageName);
@@ -832,7 +881,7 @@ public final class MainActivity extends Activity {
                     selected.clear();
                     selected.addAll(draft);
                     count.setText(getString(R.string.schedule_apps, selected.size()));
-                }).show();
+                }).create());
     }
 
     private void chooseCommitment() {
@@ -856,7 +905,8 @@ public final class MainActivity extends Activity {
     /** The real reason a change was refused; only a commitment refusal says "locked". */
     private String refusalText(RuntimeException refused) {
         switch (PolicyChangeError.of(refused)) {
-            case TOO_MANY_APPS: return getString(R.string.rules_too_many_apps, PolicyStore.MAX_APPS);
+            case TOO_MANY_APPS: return getResources().getQuantityString(R.plurals.rules_too_many_apps,
+                    PolicyStore.MAX_APPS, PolicyStore.MAX_APPS);
             case INVALID: return getString(R.string.rules_invalid);
             case COMMITMENT: return getString(R.string.rules_locked);
             case NEEDS_RULES: return getString(R.string.commitment_needs_rules);

@@ -2,7 +2,7 @@ package app.hisn.core;
 
 /** Ephemeral, bounded text sample. Never stores screen content beyond this inspection. */
 public final class VisibleTextSample {
-    private static final int LIMIT = 32768;
+    public static final int LIMIT = 32768;
     private final StringBuilder text = new StringBuilder();
     private boolean partial;
     private final boolean preservePunctuation;

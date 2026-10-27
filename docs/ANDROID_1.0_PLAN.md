@@ -60,7 +60,10 @@ as a limit. It is never dropped silently.
 - [x] `PolicyStore` static-context lint warning: already holds the application context; suppressed with reason.
 - [ ] Remaining lint warnings: plural-string candidates and two attributes that need a higher API than minSdk 26.
       0.5.3 turned the "about N hours" strings into plurals and marks `<application>` with
-      `tools:targetApi="33"`; confirm the remaining count in the CI lint report before ticking.
+      `tools:targetApi="33"`. The 0.5.4 text and privacy work made the last two plural candidates
+      plurals; a local `lintDebug` then reported 0 errors and 13 warnings: the two
+      `text_guard_service.xml` attributes (`canTakeScreenshot`, `isAccessibilityTool`, ignored
+      below API 30/31) and 11 in debug-only visual test screens (`SetTextI18n`, `ApplySharedPref`).
 
 - [x] 0.5.2 blocking hardening: DoH canary and provider names, strict Private DNS warning,
       degraded recovery, resume after reboot, separated spellings, Arabic name false

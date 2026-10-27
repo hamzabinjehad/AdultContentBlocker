@@ -52,3 +52,67 @@ block	label	محتوى إباحي
 allow	reference	Research definitions include porn and hentai
 allow	reference	Watch a sexual health presentation
 block	context	Watch porn videos; education
+# Franco-Arabic (Arabizi) rows, added with the ar-latn seed terms. Synthetic; never private chat.
+block	arabizi	tahmil aflam sks mojani
+block	arabizi-challenge	Watch aflam neek masri free
+block	arabizi	moshahda sharmota w kahba
+block	arabizi	Download fedio sex masri
+block	arabizi	aflam sks arab, tahmil mojani
+block	arabizi	Free sour 3ahra arab
+block	arabizi	tahmil qesas jinsiya
+block	arabizi	Watch sharmota neek videos
+block	arabizi	mawqe3 sks mojani
+block	arabizi	Stream video 3ahra masri
+block	arabizi-challenge	tahmil film neek arabi
+block	arabizi	sowar ebahy arab mojani
+block	arabizi	Watch aflam 3ahra 5aliji free
+block	arabizi	moshahda fedio qahba jadid mojani
+block	arabizi-challenge	tahmil aflam neek 7elwa mojani
+block	arabizi	Watch aba7i mojani
+allow	arabizi-chat	Yalla 3ala el ma7al, free 2ahwa 7elwa
+allow	arabizi-chat	Mabrook! 3ala el sala, el video 7elw 2awi, download it free
+allow	arabizi-chat	Ana 3ayez a7mel el film el gdid mojani
+allow	arabizi-chat	tahmil aghani 7abibi mojani
+allow	arabizi-chat	moshahda mobarat el ahly mojani
+allow	arabizi-chat	sa7 7elw, 2ana 3amel free trial
+allow	arabizi-chat	3ara 3aleik, watch el match free
+allow	arabizi-chat	Watch 5ali w 3ammi, free family photos
+allow	arabizi-chat	Download 97ab photos free
+allow	arabizi-name	Watch Dara and Nika play, free entry
+allow	arabizi-name	Free class with Abhi, Nashwa and Inek
+allow	arabizi-name	Watch Nik Masri live, free
+allow	arabizi-name	tahmil aflam Nik Cage mojani
+allow	arabizi-shared	Watch the video, sex ed for teens
+allow	arabizi-shared	Free speech, sex, Arab media and Saudi news
+allow	arabizi-shared	Abhi free ho? Movie dekhne chalein
+allow	arabizi-shared	Watch inek videos free, ciftlik hayati
+allow	arabizi-shared	Free Kuss fuer Mama, dios mio
+allow	arabizi-shared	Free Kos island travel guide
+allow	arabizi-mixed	Watch pussy cats with Dara and Abhi
+allow	arabizi-mixed	A free OnlyFans budgeting guide by Abhi
+allow	arabizi-mixed	Watch porn addiction recovery with Dara and Nika
+# Everyday chat with digits as letters (2, 3, 5, 7) beside seed spellings such as 3ara, e7a, moms, jins, tabon.
+allow	arabizi-chat	e7a, el match 5ilis? watch el highlights free
+allow	arabizi-chat	Moms w el banat, tahmil el sowar mojani
+allow	arabizi-chat	3ara 3alik ya 2a7mad, watch el 7alaqa free
+allow	arabizi-chat	Tabon w jebna, delivery free, 2alf shokr
+allow	arabizi-chat	Download el app, el jins el gdid mojani
+allow	arabizi-chat	Shofto el film? Mesh 7elw bas el music 7elwa, watch it free
+allow	arabizi-name	Watch Nashwa w Arin, free concert tickets
+allow	arabizi-name	Dios mio, Dara! Watch Abhi sing, free entry
+allow	arabizi-name	Watch Neek and Dara play, free entry
+allow	arabizi-mixed	Watch porn addiction recovery talk, ya 7abibi, free
+# Review fixes: neek phrases are contextual like نيك phrases (challenge rows above stay visible
+# as known misses); the h-spellings of "pornographic" are trusted like aba7i; sksy needs a second signal.
+block	arabizi	tahmil aflam abahi
+block	arabizi	download abahi free
+block	arabizi	aflam abahy mojani tahmil
+block	arabizi	Watch sharmota aflam neek masri free
+block	arabizi	sksy sharmota download free
+block	arabizi-challenge	sksy download free
+allow	arabizi-name	Watch Neek Masri live, free
+allow	arabizi-name	Neek Saudi free download
+allow	arabizi-name	Neek jadid free download
+allow	arabizi-name	Watch Niek and Neik play, free entry
+allow	arabizi-shared	Free download: jadwal SKS semester ini
+allow	arabizi-chat	7abibi, 3ala el 7, free download el app w 2ollo

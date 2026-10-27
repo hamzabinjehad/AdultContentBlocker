@@ -91,7 +91,6 @@
     <string name="rules_saved">Rules saved on this device.</string>
     <string name="rules_invalid">Check the format. Use up to 1,000 domains or word-rule lines. Each word rule can contain at most 128 characters.</string>
     <string name="rules_locked">The change could not be saved. During a commitment you can add restrictions but cannot remove existing ones or shorten the period.</string>
-    <string name="rules_too_many_apps">Choose at most %1$d apps in each list. Nothing was changed.</string>
     <string name="rules_save_failed">The change could not be saved on this device. Try again.</string>
     <string name="policy_unavailable">Protection settings could not be loaded or saved. Protection is unavailable until this is resolved.</string>
     <string name="commitment_setup">Start or extend commitment</string>
@@ -159,10 +158,9 @@
     <string name="adult_mode_off">Built-in adult-text checks · Off</string>
     <string name="adult_mode_enable">Enable built-in adult-text checks</string>
     <string name="adult_mode_disable">Disable built-in adult-text checks</string>
-    <string name="adult_mode_ready">Built-in adult-text policy loaded · %1$d compiled rules · Selected apps only</string>
     <string name="adult_mode_loading">Built-in adult-text policy · Loading verified terms on this device</string>
     <string name="adult_mode_error">Built-in adult-text policy unavailable · Retry loading or install a verified update; custom rules remain independent</string>
-    <string name="adult_mode_disclosure">This opt-in layer checks visible text in apps you select, using English and Arabic adult-promotion evidence from the verified bundled vocabulary. It is separate from your literal custom rules. It can miss content or match harmless text; it does not analyze images or videos. Text stays on your device and is not saved.\n\nChoose apps after enabling it. During an active commitment this setting cannot be turned off inside Hisn. No Android permission is granted by this button.</string>
+    <string name="adult_mode_disclosure">This opt-in layer checks visible text in apps you select, using English, Arabic and Franco-Arabic (Arabic written in Latin letters and digits) adult-promotion evidence from the verified bundled vocabulary. It is separate from your literal custom rules. It can miss content or match harmless text; it does not analyze images or videos. Text stays on your device and is not saved.\n\nChoose apps after enabling it. During an active commitment this setting cannot be turned off inside Hisn. No Android permission is granted by this button.</string>
     <string name="network_check_idle">DNS route check · Not run in this session</string>
     <string name="network_check_button">Check the DNS route</string>
     <string name="network_check_start">Run these checks</string>
@@ -210,4 +208,16 @@
     <string name="commitment_unknown">Commitment stays active · Hisn could not read its saved commitment, so it keeps it for as long as it could still be running: at most %1$s from now. Check that your rules are as you set them; some may be missing. Clearing Hisn’s app data in Android settings removes every rule and this commitment.</string>
     <string name="settings_restored">Hisn’s main settings file could not be read, so it was replaced by the second copy saved beside it. Check that your rules and commitment are as you set them.</string>
     <string name="settings_restored_confirm">My rules are as I set them</string>
+    <!-- Package B, text checks and privacy (0.5.4): private screens, keyboard insets and plurals. -->
+    <string name="private_screens">Your lists stay private on screen: while a domain or word list, an app list or the word tester holding your text is open, Hisn marks the screen secure, so Android leaves it out of screenshots, screen recordings and the recent-apps preview. Anyone who can see the screen, and apps with accessibility access, can still read it.</string>
+    <string name="tester_private">While this tester holds text, this page is left out of screenshots, screen recordings and the recent-apps preview.</string>
+    <string name="rules_editor_private">This list is left out of screenshots, screen recordings and the recent-apps preview while it is open.</string>
+    <plurals name="rules_too_many_apps">
+        <item quantity="one">Choose at most %1$d app in each list. Nothing was changed.</item>
+        <item quantity="other">Choose at most %1$d apps in each list. Nothing was changed.</item>
+    </plurals>
+    <plurals name="adult_mode_ready">
+        <item quantity="one">Built-in adult-text policy loaded · %1$d compiled rule · Selected apps only</item>
+        <item quantity="other">Built-in adult-text policy loaded · %1$d compiled rules · Selected apps only</item>
+    </plurals>
 </resources>

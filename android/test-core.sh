@@ -9,7 +9,7 @@ hisn_test_output=$(mktemp -d "${TMPDIR:-/tmp}/hisn-core.XXXXXX")
 # Test class files stay in a newly created temporary directory; no repo files are changed.
 hisn_java_bin=${JAVA_HOME:+$JAVA_HOME/bin/}
 "${hisn_java_bin}javac" -d "$hisn_test_output" core/src/main/java/app/hisn/core/*.java core/src/test/java/app/hisn/core/*.java
-for hisn_test in WordMatcher VisibleTextSample GuardHealth SetupGuide DomainPolicy BrowserCanary DnsPolicy DnsUdpTruncation DnsExchange DnsTunnelProbe DnsTunnelTcpProbe DnsReplyGuard Ipv4DnsPacket Ipv4TcpPacket DnsTcpServer DnsTcpFallback DnsPacketKind EncryptedDnsProviders DnsHealth DnsNotice ResolverFailover UnderlyingNetwork PolicyChangeError RemainingTime CommitmentClock SettingsIntegrity SavedSettings DailyAppSchedule VisualFrameGate VisualExecutionPolicy InspectionHealth VisualHealth VisualDuty; do
+for hisn_test in WordMatcher VisibleTextSample LabelScan GuardHealth SetupGuide DomainPolicy BrowserCanary DnsPolicy DnsUdpTruncation DnsExchange DnsTunnelProbe DnsTunnelTcpProbe DnsReplyGuard Ipv4DnsPacket Ipv4TcpPacket DnsTcpServer DnsTcpFallback DnsPacketKind EncryptedDnsProviders DnsHealth DnsNotice PolicyChangeError RemainingTime CommitmentClock DailyAppSchedule VisualFrameGate VisualExecutionPolicy InspectionHealth VisualHealth VisualDuty ResolverFailover UnderlyingNetwork SettingsIntegrity SavedSettings; do
     "${hisn_java_bin}java" -cp "$hisn_test_output" "app.hisn.core.${hisn_test}Test"
 done
 # Compile the actual release-only hook separately: it must remain a no-op without Android APIs.
@@ -25,13 +25,15 @@ done
     app/src/debug/java/app/hisn/android/VisualTestHooks.java \
     release-test/java/app/hisn/android/DebugVisualTestHooksTest.java
 "${hisn_java_bin}java" -cp "$hisn_test_output/debug-visual" app.hisn.android.DebugVisualTestHooksTest
+# weight<TAB>language<TAB>phrase, the same subset AdultPolicyAssets loads (English, Arabic,
+# Franco-Arabic "ar-latn" and the negative context).
 python3 - <<'PY' > "$hisn_test_output/adult-terms.tsv"
 import json
 data = json.load(open('../seed/terms.json'))
-rules = [r for r in data['terms'] if r['l'] in ('en', 'ar')] + data['negatives']
+rules = [r for r in data['terms'] if r['l'] in ('en', 'ar', 'ar-latn')] + data['negatives']
 for rule in rules:
     assert not any(c in rule['t'] for c in '\r\n\t')
-    print(str(int(rule['w'])) + '\t' + rule['t'])
+    print(str(int(rule['w'])) + '\t' + rule.get('l', 'neg') + '\t' + rule['t'])
 PY
 "${hisn_java_bin}java" -cp "$hisn_test_output" app.hisn.core.AdultTextPolicyTest "$hisn_test_output/adult-terms.tsv"
 "${hisn_java_bin}java" -cp "$hisn_test_output" app.hisn.core.AdultTextCorpusTest "$hisn_test_output/adult-terms.tsv" core/src/test/resources/adult-text-corpus.tsv
