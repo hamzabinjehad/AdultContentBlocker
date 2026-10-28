@@ -8,6 +8,7 @@ import android.provider.Settings;
 import app.hisn.core.CommitmentClock;
 import app.hisn.core.DailyAppSchedule;
 import app.hisn.core.DomainPolicy;
+import app.hisn.core.UninstallProtection;
 import app.hisn.core.WordMatcher;
 import app.hisn.core.WordRuleList;
 
@@ -30,6 +31,7 @@ public final class PolicyStore {
         public final Set<String> scannedApps;
         public final boolean adultWordsEnabled;
         public final boolean visualEnabled;
+        public final boolean shortVideoEnabled;
         public final DailyAppSchedule schedule;
 
         Snapshot(String domainText, String wordText, Set<String> apps, Set<String> scans) {
@@ -44,6 +46,10 @@ public final class PolicyStore {
         }
         Snapshot(String domainText, String wordText, Set<String> apps, Set<String> scans, boolean adultWordsEnabled,
                 DailyAppSchedule schedule, boolean visualEnabled) {
+            this(domainText, wordText, apps, scans, adultWordsEnabled, schedule, visualEnabled, false);
+        }
+        Snapshot(String domainText, String wordText, Set<String> apps, Set<String> scans, boolean adultWordsEnabled,
+                DailyAppSchedule schedule, boolean visualEnabled, boolean shortVideoEnabled) {
             if (schedule == null) throw new IllegalArgumentException("Missing daily schedule");
             if (domainText.length() > 65536 || wordText.length() > 65536) throw new IllegalArgumentException("Rules too long");
             Set<String> names = lines(domainText);
@@ -60,12 +66,13 @@ public final class PolicyStore {
             scannedApps = packages(scans);
             this.adultWordsEnabled = adultWordsEnabled;
             this.visualEnabled = visualEnabled;
+            this.shortVideoEnabled = shortVideoEnabled;
             this.schedule = schedule;
         }
 
         public boolean hasWordProtection() { return adultWordsEnabled || !words.configuredRules().isEmpty(); }
         public boolean hasConfiguredRestrictions() {
-            return !domains.blockedRules().isEmpty() || !blockedApps.isEmpty()
+            return !domains.blockedRules().isEmpty() || !blockedApps.isEmpty() || shortVideoEnabled
                     || schedule.isConfigured() || (!scannedApps.isEmpty() && (hasWordProtection() || visualEnabled));
         }
 
@@ -92,6 +99,7 @@ public final class PolicyStore {
     private final SharedPreferences prefs;
     private volatile Snapshot snapshot;
     private CommitmentClock commitment;
+    private boolean uninstallLock;
 
     public PolicyStore(Context context) {
         this(context, "hisn_policy");
@@ -108,8 +116,9 @@ public final class PolicyStore {
                     prefs.getBoolean("adult_words", false), new DailyAppSchedule(
                             prefs.getBoolean("schedule_enabled", false), prefs.getInt("schedule_start", 1320),
                             prefs.getInt("schedule_end", 420), prefs.getStringSet("schedule_apps", Collections.emptySet())),
-                    prefs.getBoolean("visual_enabled", false));
+                    prefs.getBoolean("visual_enabled", false), prefs.getBoolean("short_video", false));
             commitment = new CommitmentClock(prefs.getLong("remaining", 0), prefs.getLong("elapsed", 0), prefs.getInt("boot", boot()));
+            uninstallLock = prefs.getBoolean("uninstall_lock", false);
             checkpoint();
         } catch (RuntimeException invalid) {
             throw new IllegalStateException("Cannot read protection settings", invalid);
@@ -138,6 +147,26 @@ public final class PolicyStore {
         commitment = next;
     }
 
+    /** Opt-in "keep Hisn installed" switch used by the device-owner guard. */
+    public synchronized boolean uninstallLock() { return uninstallLock; }
+
+    /**
+     * Turn the persistent uninstall guard on or off.
+     *
+     * Enabling is always allowed. Disabling waits for any commitment to end;
+     * otherwise a person could start a commitment, switch the guard off, and
+     * uninstall Hisn while the saved rules remained ostensibly locked. The
+     * managed device-owner flag itself is still released separately by the
+     * platform controller, only when no commitment and no lock remain.
+     */
+    public synchronized void updateUninstallLock(boolean enabled) {
+        if (!enabled && !UninstallProtection.mayChangeLock(remainingMillis()))
+            throw new IllegalStateException("Commitment prevents disabling uninstall protection");
+        if (!prefs.edit().putBoolean("uninstall_lock", enabled).commit())
+            throw new IllegalStateException("Cannot save uninstall protection");
+        uninstallLock = enabled;
+    }
+
     public synchronized void startCommitment(int days) {
         if (days != 1 && days != 7 && days != 30 && days != 90) throw new IllegalArgumentException("Invalid duration");
         if (!snapshot.hasConfiguredRestrictions()) throw new IllegalStateException("Choose restrictions before a commitment");
@@ -154,18 +183,25 @@ public final class PolicyStore {
     }
 
     public synchronized void update(String domains, String words, Set<String> apps, Set<String> scans, boolean adultWordsEnabled) {
-        save(new Snapshot(domains, words, apps, scans, adultWordsEnabled, snapshot.schedule, snapshot.visualEnabled));
+        save(new Snapshot(domains, words, apps, scans, adultWordsEnabled, snapshot.schedule, snapshot.visualEnabled,
+                snapshot.shortVideoEnabled));
     }
 
     public synchronized void updateVisual(boolean enabled) {
         save(new Snapshot(domainText(), wordText(), snapshot.blockedApps, snapshot.scannedApps,
-                snapshot.adultWordsEnabled, snapshot.schedule, enabled));
+                snapshot.adultWordsEnabled, snapshot.schedule, enabled, snapshot.shortVideoEnabled));
+    }
+
+    /** Shorts, Reels and TikTok: turning it on always works; off waits for a commitment to end. */
+    public synchronized void updateShortVideo(boolean enabled) {
+        save(new Snapshot(domainText(), wordText(), snapshot.blockedApps, snapshot.scannedApps,
+                snapshot.adultWordsEnabled, snapshot.schedule, snapshot.visualEnabled, enabled));
     }
 
     /** Other rule editors never reset a schedule; only this explicit editor changes it. */
     public synchronized void updateSchedule(DailyAppSchedule schedule) {
         save(new Snapshot(domainText(), wordText(), snapshot.blockedApps, snapshot.scannedApps,
-                snapshot.adultWordsEnabled, schedule, snapshot.visualEnabled));
+                snapshot.adultWordsEnabled, schedule, snapshot.visualEnabled, snapshot.shortVideoEnabled));
     }
 
     private void save(Snapshot next) {
@@ -176,6 +212,7 @@ public final class PolicyStore {
                 || !next.scannedApps.containsAll(previous.scannedApps)
                 || (previous.adultWordsEnabled && !next.adultWordsEnabled)
                 || (previous.visualEnabled && !next.visualEnabled)
+                || (previous.shortVideoEnabled && !next.shortVideoEnabled)
                 || !next.schedule.preserves(previous.schedule, next.blockedApps))) {
             throw new IllegalStateException("Commitment prevents weakening rules");
         }
@@ -184,6 +221,7 @@ public final class PolicyStore {
                 .putStringSet("apps", next.blockedApps).putStringSet("scans", next.scannedApps)
                 .putBoolean("adult_words", next.adultWordsEnabled)
                 .putBoolean("visual_enabled", next.visualEnabled)
+                .putBoolean("short_video", next.shortVideoEnabled)
                 .putBoolean("schedule_enabled", next.schedule.enabled)
                 .putInt("schedule_start", next.schedule.startMinute).putInt("schedule_end", next.schedule.endMinute)
                 .putStringSet("schedule_apps", next.schedule.apps).commit()) {

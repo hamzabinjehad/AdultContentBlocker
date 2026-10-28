@@ -13,7 +13,13 @@ public final class WordMatcherTest {
         check(matcher.matches("Essex and sextant").isEmpty(), "whole-word boundaries");
         check(matcher.matches("A SEX education page").contains("sex"), "case normalization");
         check(matcher.matches("adult,   video").contains("adult video"), "phrase separators");
-        check(matcher.matches("إباحي").contains("إباحي"), "Arabic combining marks");
+        check(matcher.matches("إباحي").contains("اباحي"), "Arabic combining marks fold to the signed spelling");
+        check(new WordMatcher(Collections.singleton("سكسي")).matches("سکسی").contains("سكسي"),
+                "Persian keheh and farsi yeh fold to Arabic kaf and yeh");
+        check(new WordMatcher(Collections.singleton("سكسي")).matches("سكسى").contains("سكسي"),
+                "alef maqsura folds to yeh");
+        check(new WordMatcher(Collections.singleton("٣")).matches("3").contains("3"),
+                "Arabic-Indic digits fold to ASCII");
         check(matcher.matches("ｓｅｘ").contains("sex"), "Unicode width normalization");
         check(matcher.matches("s\u200bex").contains("sex"), "zero-width characters");
         check(matcher.matches("safe words").isEmpty(), "benign text");

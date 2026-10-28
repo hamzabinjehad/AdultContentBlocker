@@ -111,18 +111,25 @@ public final class WordMatcher {
     }
 
     static String normalize(String input) {
-        String normalized = Normalizer.normalize(input, Normalizer.Form.NFKC).toLowerCase(Locale.ROOT);
+        // NFD exposes the hamza/vowel marks that NFKC leaves attached, so both
+        // user rules and page text fold أ/إ/آ and their family to bare alef.
+        // The shared TextFolding step then covers the forms decomposition
+        // cannot reach (taa marbuta, alef maqsura, Persian/Urdu letters and
+        // Arabic-Indic digits), matching the signed list's compiler.
+        String normalized = Normalizer.normalize(
+                Normalizer.normalize(input, Normalizer.Form.NFKC), Normalizer.Form.NFD)
+                .toLowerCase(Locale.ROOT);
         StringBuilder out = new StringBuilder();
         boolean separator = true;
         for (int i = 0; i < normalized.length();) {
             int cp = normalized.codePointAt(i);
             i += Character.charCount(cp);
-            int type = Character.getType(cp);
-            // Ignore formatting controls and Arabic combining marks, keeping
-            // words split only by visible punctuation or whitespace.
-            if (type == Character.FORMAT || type == Character.NON_SPACING_MARK
-                    || type == Character.ENCLOSING_MARK) continue;
-            if (Character.isLetterOrDigit(cp) || type == Character.COMBINING_SPACING_MARK) {
+            // Ignore formatting controls, joining marks, tatweel and invisible
+            // fillers, keeping words split only by visible punctuation or space.
+            if (TextFolding.ignored(cp)) continue;
+            cp = TextFolding.fold(cp);
+            if (Character.isLetterOrDigit(cp)
+                    || Character.getType(cp) == Character.COMBINING_SPACING_MARK) {
                 out.appendCodePoint(cp);
                 separator = false;
             } else if (!separator) {
@@ -132,6 +139,6 @@ public final class WordMatcher {
         }
         int length = out.length();
         if (length > 0 && out.charAt(length - 1) == ' ') out.setLength(length - 1);
-        return out.toString();
+        return Normalizer.normalize(out, Normalizer.Form.NFC);
     }
 }

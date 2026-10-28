@@ -14,6 +14,9 @@ owner turns on the layers they choose and gets accurate status for each one:
 3. **Word and adult-text checks** in the apps the owner chooses.
 4. **Opt-in image/video sampling** in the apps the owner chooses.
 5. **Commitments** that refuse to weaken any of the above until they expire.
+6. **Optional managed uninstall protection** on a phone the owner has
+   provisioned as device owner. This is an extra, not a requirement for the
+   ordinary sideloaded build.
 
 Every layer states its scope and shows when it has stopped working, for example
 after a permission is lost, a service is killed or the network changes. It never
@@ -22,8 +25,10 @@ reports protection it does not have.
 Explicitly **not** part of 1.0, and never claimed:
 
 - Full-traffic or always-on lockdown VPN, and coverage of app-encrypted DNS or direct-IP traffic.
-- Uninstall or disable prevention. Device- or profile-owner mode is a separate future product
-  ([tamper scope](ANDROID_TAMPER_RESISTANCE.md)).
+- Uninstall or disable prevention for an ordinary install. Device-owner
+  uninstall blocking is an optional 0.6.0 preview with its own provisioning and
+  recovery requirements; resistance to a device administrator, ADB/root or a
+  factory reset remains out of scope ([tamper scope](ANDROID_TAMPER_RESISTANCE.md)).
 - Pre-display blurring or detection of all adult content.
 - Google Play distribution. Play's Accessibility policy needs a separate review first.
 
@@ -31,14 +36,15 @@ Usage limits (time budgets) are deferred to 1.1. Daily schedules and permanent b
 already cover the self-control case, and budgets add a counter-recovery surface that
 needs its own lifecycle testing.
 
-## Where 0.5.1 stands
+## Where the preview stands (0.6.0)
 
 | Area | State | Remaining to reach 1.0 |
 | --- | --- | --- |
 | DNS layer (UDP + TCP53, DoT upstream, route check) | Implemented; core and Samsung route checks pass | Real Wi-Fi to mobile handover, screen lock, another VPN, resolver loss (M2) |
 | App blocks, schedules, words, adult text | Implemented; fixture and synthetic-corpus evidence | Real-app coverage pass (M3) |
 | Visual sampling | Implemented; benign baseline 0/12 false blocks; WebGL 121 ms median on Samsung | Adult recall, battery, live capture on 0.5.1 (M4) |
-| Commitments | Implemented; clock, boot and isolated-preference tests pass | Disposable short commitment end to end on device (M3) |
+| Commitments | Implemented; clock, boot and isolated-preference tests pass. Device-owner mode can additionally block ordinary uninstall while one runs. | Disposable short commitment end to end on device (M3) |
+| Managed uninstall protection (0.6.0) | Device-owner only; pure state matrix, persistence guard, readback/release controller, UI and boot reconciliation are present | Actual blocked uninstall on a disposable provisioned device; Play/DPC policy review; no provisioning was applied to the owner's phone |
 | Layer health / honest status | Implemented model with 1,280 combinations tested | Service-kill and permission-revoke recovery on device (M2) |
 | Release signing | **Added in 0.5.1**: optional `HISN_ANDROID_*` environment signing | Owner creates and backs up the production key (M5) |
 | Signed list updates | Seed is bundled and pinned at build time | Not started; decide in M1 |
@@ -65,6 +71,23 @@ as a limit. It is never dropped silently.
       positives, image checks on feeds, 60-second hold, commitment reboot clock fix.
       See [0.5.2](ANDROID_0.5.2.md).
 
+### 0.6.0 managed-uninstall preview (source complete; device acceptance pending)
+
+- Pure `UninstallProtection` state matrix, including the readback mismatch and
+  the rule that a commitment blocks disabling the keep switch.
+- `PolicyStore` persists the keep switch and refuses weakening it during a
+  commitment.
+- `UninstallProtectionController` applies/clears only when the app is device
+  owner, reads the flag back, and releases ownership only after both the
+  commitment and switch are off.
+- Status and owner instructions are in Protection and the Guide. Boot and
+  foreground entry reconcile a commitment that expired while the app was not
+  running.
+- Core tests, `assembleDebug`, `assembleDebugAndroidTest` and lint pass. The
+  connected test phone is not device owner, so it must show "Not managed"; the
+  actual refusal must be verified on a disposable provisioned device. Do not
+  provision the owner's daily phone.
+
 ### M2: device lifecycle acceptance (needs the owner's phone and consent)
 
 Run on a fresh 0.5.x debug install, using `test-live-*.py` where possible:
@@ -83,6 +106,8 @@ Run on a fresh 0.5.x debug install, using `test-live-*.py` where possible:
 - [ ] Two feed apps chosen by the owner, using public content only, never private messages.
 - [ ] Disposable 1-day commitment (option added in 0.5.2): restart, stronger-rule update, rejected weakening.
 - [ ] Optional admin step: activation and deactivation UI observed.
+- [ ] Managed uninstall preview on a disposable device owner: blocked uninstall,
+      readback, commitment expiry reconciliation, release and removal.
 
 ### M4: visual and performance numbers
 

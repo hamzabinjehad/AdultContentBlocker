@@ -41,6 +41,7 @@ public final class CoreDeviceTestRunner extends Instrumentation {
             testAdultPolicy();
             testAdultCommitment();
             testVisualCommitment();
+            testUninstallGuard();
             testLegacyEmptyCommitment();
             VisibleTextSample sample = new VisibleTextSample();
             sample.append("blocked " + "ordinary ".repeat(1000));
@@ -50,7 +51,7 @@ public final class CoreDeviceTestRunner extends Instrumentation {
             if (!sample.isPartial() || sample.text().length() > 32768)
                 throw new AssertionError("Inspection budget failed");
             results.putString("stream", "\nPASS: verified APK seed loaded " + seed.domainCount
-                    + " domains; Arabic matching, boundaries, local DNS block, saved rules, Unicode persistence, long-text sampling, verified adult terms, visual settings and commitment checks passed. No VPN was enabled.\n");
+                    + " domains; Arabic matching, boundaries, local DNS block, saved rules, Unicode persistence, long-text sampling, verified adult terms, visual settings, commitment and uninstall-guard checks passed. No VPN, accessibility service, admin or device-owner policy was changed.\n");
             finish(Activity.RESULT_OK, results);
         } catch (Throwable failure) {
             StringBuilder detail = new StringBuilder();
@@ -87,6 +88,44 @@ public final class CoreDeviceTestRunner extends Instrumentation {
         } finally { context.getSharedPreferences(name, android.content.Context.MODE_PRIVATE).edit().clear().commit(); }
     }
 
+    private void testUninstallGuard() {
+        String preferenceName = "hisn_uninstall_test_" + java.util.UUID.randomUUID();
+        android.content.Context context = getTargetContext();
+        try {
+            PolicyStore store = new PolicyStore(context, preferenceName);
+            if (store.uninstallLock()) throw new AssertionError("Uninstall lock defaulted on");
+            store.updateUninstallLock(true);
+            if (!new PolicyStore(context, preferenceName).uninstallLock())
+                throw new AssertionError("Uninstall lock did not persist");
+            store.update("blocked.example", "", Collections.emptySet(), Collections.emptySet());
+            store.startCommitment(1);
+            try {
+                store.updateUninstallLock(false);
+                throw new AssertionError("Commitment allowed disabling uninstall protection");
+            } catch (IllegalStateException expected) { }
+            if (!store.uninstallLock()) throw new AssertionError("Rejected change cleared uninstall lock");
+            UninstallProtectionController.Status status = UninstallProtectionController.read(context);
+            if (status.state() == null) throw new AssertionError("Uninstall status unavailable");
+            if (!status.deviceOwner) {
+                // The normal, non-managed installation must never claim that
+                // Android is blocking uninstall. A managed test device is read
+                // but never changed by this runner.
+                if (status.uninstallBlocked
+                        || status.state() == app.hisn.core.UninstallProtection.State.PROTECTED)
+                    throw new AssertionError("Unmanaged install claimed uninstall protection");
+                UninstallProtectionController.Result result = UninstallProtectionController.sync(context);
+                if (!result.ok || !"not-managed".equals(result.reason))
+                    throw new AssertionError("Unmanaged sync was not a no-op: " + result.reason);
+            }
+            if (!UninstallProtectionController.provisioningCommand(context)
+                    .contains(context.getPackageName()))
+                throw new AssertionError("Provisioning command lost the package name");
+        } finally {
+            context.getSharedPreferences(preferenceName, android.content.Context.MODE_PRIVATE)
+                    .edit().clear().commit();
+        }
+    }
+
     private void testAdultPolicy() throws Exception {
         app.hisn.core.AdultTextPolicy policy;
         try (InputStream input = getTargetContext().getAssets().open("terms.json")) {
@@ -94,7 +133,11 @@ public final class CoreDeviceTestRunner extends Instrumentation {
         }
         if (policy.ruleCount() < 4000 || !policy.blocks("Watch free porn videos now")
                 || !policy.blocks("شاهد سكس مجانا")
-                || policy.blocks("Free sexual health education and addiction recovery support"))
+                || !policy.blocks("شاهد سکسی")
+                || !policy.blocks("Watch nudephotos")
+                || !policy.blocks("Watch p0rnhub")
+                || policy.blocks("Free sexual health education and addiction recovery support")
+                || policy.blocks("شاهد سكسونيا"))
             throw new AssertionError("Actual adult-text seed classification failed");
         try (InputStream input = getTargetContext().getAssets().open("terms.json")) {
             try {

@@ -3,6 +3,8 @@ package app.hisn.android;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.TimePickerDialog;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -11,6 +13,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.text.InputType;
 import android.text.Editable;
@@ -38,6 +41,7 @@ import app.hisn.core.WordRuleList;
 import app.hisn.core.GuardHealth;
 import app.hisn.core.SetupGuide;
 import app.hisn.core.DailyAppSchedule;
+import app.hisn.core.UninstallProtection;
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.view.accessibility.AccessibilityManager;
 
@@ -55,6 +59,9 @@ public final class MainActivity extends Activity {
     private Button startDns;
     private TextView textState;
     private TextView commitmentState;
+    private TextView uninstallState;
+    private Button uninstallAction;
+    private long lastUninstallSyncAt;
     private TextView adminState;
     private TextView setupState;
     private TextView adultState;
@@ -63,6 +70,8 @@ public final class MainActivity extends Activity {
     private TextView scheduleState;
     private TextView networkCheckState;
     private Button adultToggle;
+    private Button shortVideoToggle;
+    private TextView shortVideoState;
     private Button checkNetwork;
     private Button setupNext;
     private SetupGuide.Step currentSetupStep = SetupGuide.Step.CHOOSE_RULES;
@@ -154,6 +163,12 @@ public final class MainActivity extends Activity {
         paragraph(R.string.text_guard_recheck_note);
         visualState = paragraph(R.string.visual);
         commitmentState = paragraph(R.string.commitment);
+        uninstallState = paragraph(R.string.uninstall_state_unavailable);
+        uninstallAction = new Button(this);
+        uninstallAction.setText(R.string.uninstall_action);
+        uninstallAction.setAllCaps(false);
+        root.addView(uninstallAction, layout());
+        uninstallAction.setOnClickListener(view -> showUninstallDialog());
         Button manageRules = new Button(this);
         manageRules.setText(R.string.nav_rules);
         manageRules.setAllCaps(false);
@@ -178,6 +193,13 @@ public final class MainActivity extends Activity {
         visualToggle.setAllCaps(false);
         root.addView(visualToggle, layout());
         visualToggle.setOnClickListener(view -> editVisualMode());
+        shortVideoState = paragraph(R.string.short_video_off);
+        shortVideoToggle = new Button(this);
+        shortVideoToggle.setText(R.string.short_video_enable);
+        shortVideoToggle.setAllCaps(false);
+        shortVideoToggle.setEnabled(settings != null);
+        root.addView(shortVideoToggle, layout());
+        shortVideoToggle.setOnClickListener(view -> editShortVideo());
         scheduleState = paragraph(R.string.schedule_off);
         policyButton(R.string.schedule_edit, view -> editSchedule());
         policyButton(R.string.enable_text_guard, view -> new AlertDialog.Builder(this)
@@ -195,6 +217,10 @@ public final class MainActivity extends Activity {
         paragraph(R.string.guide_limits_body);
         heading(R.string.privacy_heading, 21);
         paragraph(R.string.privacy);
+        heading(R.string.uninstall_title, 21);
+        paragraph(R.string.uninstall_scope);
+        paragraph(R.string.uninstall_guide);
+        policyButton(R.string.uninstall_action, view -> showUninstallDialog());
         heading(R.string.admin_title, 21);
         adminState = paragraph(R.string.admin_off);
         policyButton(R.string.admin_setup, view -> new AlertDialog.Builder(this)
@@ -279,6 +305,10 @@ public final class MainActivity extends Activity {
 
     @Override protected void onResume() {
         super.onResume();
+        // Re-assert managed uninstall state on every foreground visit: a
+        // commitment may have expired, or the owner may have changed it while
+        // another screen was open. This is a no-op on an unmanaged install.
+        UninstallProtectionController.sync(this);
         handler.post(refresh);
     }
 
@@ -408,6 +438,7 @@ public final class MainActivity extends Activity {
             default: textState.setText(R.string.words);
         }
         adminState.setText(CommitmentAdminReceiver.isActive(this) ? R.string.admin_active : R.string.admin_off);
+        refreshUninstallState();
         if (settings != null) {
             try {
                 long remaining = settings.remainingMillis();
@@ -424,7 +455,11 @@ public final class MainActivity extends Activity {
         if (settings == null) { setupState.setText(R.string.policy_unavailable); setupNext.setEnabled(false); return; }
         PolicyStore.Snapshot rules = settings.snapshot();
         boolean appRules = !rules.blockedApps.isEmpty() || (rules.schedule.enabled && rules.schedule.isConfigured())
-                || (!rules.scannedApps.isEmpty() && (rules.hasWordProtection() || rules.visualEnabled));
+                || (!rules.scannedApps.isEmpty() && (rules.hasWordProtection() || rules.visualEnabled))
+                || rules.shortVideoEnabled;
+        shortVideoState.setText(rules.shortVideoEnabled ? R.string.short_video_on : R.string.short_video_off);
+        shortVideoToggle.setText(rules.shortVideoEnabled ? R.string.short_video_disable : R.string.short_video_enable);
+        shortVideoToggle.setEnabled(!rules.shortVideoEnabled || settings.remainingMillis() == 0);
         if (rules.adultWordsEnabled) {
             switch (AdultPolicyAssets.state) {
                 case READY: adultState.setText(getString(R.string.adult_mode_ready, AdultPolicyAssets.policy().ruleCount())); break;
@@ -495,6 +530,21 @@ public final class MainActivity extends Activity {
                         if (!enabled) AdultPolicyAssets.ensureLoaded(this);
                         refreshStatus();
                     } catch (RuntimeException unavailable) { Toast.makeText(this, R.string.rules_locked, Toast.LENGTH_LONG).show(); }
+                }).show();
+    }
+
+    private void editShortVideo() {
+        if (settings == null) return;
+        boolean enabled = settings.snapshot().shortVideoEnabled;
+        new AlertDialog.Builder(this).setTitle(enabled ? R.string.short_video_disable : R.string.short_video_enable)
+                .setMessage(R.string.short_video_disclosure).setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.save_rules, (dialog, which) -> {
+                    try {
+                        settings.updateShortVideo(!enabled);
+                        refreshStatus();
+                    } catch (RuntimeException unavailable) {
+                        Toast.makeText(this, R.string.rules_locked, Toast.LENGTH_LONG).show();
+                    }
                 }).show();
     }
 
@@ -755,6 +805,151 @@ public final class MainActivity extends Activity {
                 }).show();
     }
 
+    private void refreshUninstallState() {
+        if (settings == null) {
+            uninstallState.setText(R.string.policy_unavailable);
+            uninstallAction.setEnabled(false);
+            return;
+        }
+        UninstallProtectionController.Status status = UninstallProtectionController.read(this);
+        UninstallProtection.State state = status.state();
+        // A commitment can expire while this screen is open. Repair a stale
+        // platform flag at most every five seconds, never on every UI tick.
+        if (state == UninstallProtection.State.OUT_OF_SYNC && status.deviceOwner
+                && SystemClock.elapsedRealtime() - lastUninstallSyncAt > 5000) {
+            lastUninstallSyncAt = SystemClock.elapsedRealtime();
+            UninstallProtectionController.sync(this);
+            status = UninstallProtectionController.read(this);
+            state = status.state();
+        }
+        switch (state) {
+            case ADMIN_ONLY:
+                uninstallState.setText(R.string.uninstall_state_admin);
+                break;
+            case READY:
+                uninstallState.setText(R.string.uninstall_state_ready);
+                break;
+            case PROTECTED:
+                if (status.remainingMillis > 0) {
+                    uninstallState.setText(getString(R.string.uninstall_state_protected_commitment,
+                            (status.remainingMillis + 3599999) / 3600000));
+                } else {
+                    uninstallState.setText(R.string.uninstall_state_protected);
+                }
+                break;
+            case OUT_OF_SYNC:
+                uninstallState.setText(R.string.uninstall_state_sync);
+                break;
+            case UNAVAILABLE:
+            default:
+                uninstallState.setText(status.error != null
+                        ? R.string.uninstall_state_error : R.string.uninstall_state_unavailable);
+                break;
+        }
+        uninstallAction.setEnabled(true);
+    }
+
+    private void showUninstallDialog() {
+        if (settings == null) return;
+        UninstallProtectionController.Status status = UninstallProtectionController.read(this);
+        boolean commitment = status.remainingMillis > 0;
+        LinearLayout form = new LinearLayout(this);
+        form.setOrientation(LinearLayout.VERTICAL);
+        form.setPadding(dp(20), dp(8), dp(20), 0);
+        TextView summary = new TextView(this);
+        summary.setText(status.deviceOwner ? R.string.uninstall_dialog_body_owner
+                : R.string.uninstall_dialog_body_unmanaged);
+        summary.setTextSize(15);
+        form.addView(summary);
+
+        CheckBox keep = new CheckBox(this);
+        keep.setText(R.string.uninstall_keep);
+        keep.setChecked(settings.uninstallLock());
+        // Enabling is a tightening and stays available during a commitment.
+        // Disabling is the one direction a commitment refuses.
+        keep.setEnabled(status.deviceOwner && !(commitment && keep.isChecked()));
+        if (status.deviceOwner) form.addView(keep);
+
+        TextView hint = new TextView(this);
+        hint.setText(commitment ? R.string.uninstall_commitment_auto : R.string.uninstall_keep_hint);
+        hint.setTextSize(14);
+        form.addView(hint);
+
+        if (!status.deviceOwner) {
+            TextView command = new TextView(this);
+            command.setText(getString(R.string.uninstall_command_hint,
+                    UninstallProtectionController.provisioningCommand(this)));
+            command.setTextIsSelectable(true);
+            command.setTextSize(13);
+            form.addView(command);
+        }
+        ScrollView scroll = new ScrollView(this);
+        scroll.addView(form, new LinearLayout.LayoutParams(-1, -2));
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this)
+                .setTitle(R.string.uninstall_title).setView(scroll)
+                .setNegativeButton(android.R.string.cancel, null);
+        if (status.deviceOwner) {
+            builder.setPositiveButton(R.string.uninstall_apply,
+                    (dialog, which) -> applyUninstallChoice(keep.isChecked()));
+            if (status.mayRelease()) {
+                builder.setNeutralButton(R.string.uninstall_release,
+                        (dialog, which) -> confirmReleaseManagedMode());
+            }
+        } else {
+            builder.setPositiveButton(R.string.uninstall_copy_command,
+                    (dialog, which) -> copyText(UninstallProtectionController.provisioningCommand(this)));
+            if (!status.adminActive) {
+                builder.setNeutralButton(R.string.admin_setup,
+                        (dialog, which) -> startActivity(UninstallProtectionController.adminIntent(this)));
+            }
+        }
+        builder.show();
+    }
+
+    private void applyUninstallChoice(boolean keepInstalled) {
+        try {
+            settings.updateUninstallLock(keepInstalled);
+        } catch (IllegalStateException locked) {
+            Toast.makeText(this, R.string.uninstall_locked, Toast.LENGTH_LONG).show();
+            return;
+        } catch (RuntimeException unavailable) {
+            Toast.makeText(this, R.string.policy_unavailable, Toast.LENGTH_LONG).show();
+            return;
+        }
+        UninstallProtectionController.Result result = UninstallProtectionController.sync(this);
+        Toast.makeText(this, result.ok ? R.string.uninstall_saved : R.string.uninstall_failed,
+                Toast.LENGTH_LONG).show();
+        refreshStatus();
+    }
+
+    private void confirmReleaseManagedMode() {
+        new AlertDialog.Builder(this).setTitle(R.string.uninstall_release)
+                .setMessage(R.string.uninstall_release_confirm)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.uninstall_release, (dialog, which) -> {
+                    String error = UninstallProtectionController.releaseManagedMode(this);
+                    if (error == null) {
+                        Toast.makeText(this, R.string.uninstall_released, Toast.LENGTH_LONG).show();
+                    } else if ("locked".equals(error)) {
+                        Toast.makeText(this, R.string.uninstall_locked, Toast.LENGTH_LONG).show();
+                    } else {
+                        Toast.makeText(this, R.string.uninstall_failed, Toast.LENGTH_LONG).show();
+                    }
+                    refreshStatus();
+                }).show();
+    }
+
+    private void copyText(String text) {
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+        if (clipboard == null) {
+            Toast.makeText(this, R.string.uninstall_failed, Toast.LENGTH_LONG).show();
+            return;
+        }
+        clipboard.setPrimaryClip(ClipData.newPlainText("Hisn managed setup", text));
+        Toast.makeText(this, R.string.uninstall_copied, Toast.LENGTH_LONG).show();
+    }
+
     private void chooseCommitment() {
         if (settings == null || !settings.snapshot().hasConfiguredRestrictions()) {
             Toast.makeText(this, R.string.commitment_needs_rules, Toast.LENGTH_LONG).show();
@@ -768,8 +963,13 @@ public final class MainActivity extends Activity {
                         .setTitle(labels[index]).setMessage(R.string.commitment_disclosure)
                         .setNegativeButton(android.R.string.cancel, null)
                         .setPositiveButton(R.string.commitment_start, (confirm, which) -> {
-                            try { settings.startCommitment(days[index]); refreshStatus(); }
-                            catch (RuntimeException unavailable) { Toast.makeText(this, R.string.rules_locked, Toast.LENGTH_LONG).show(); }
+                            try {
+                                settings.startCommitment(days[index]);
+                                UninstallProtectionController.sync(this);
+                                refreshStatus();
+                            } catch (RuntimeException unavailable) {
+                                Toast.makeText(this, R.string.rules_locked, Toast.LENGTH_LONG).show();
+                            }
                         }).show()).show();
     }
 

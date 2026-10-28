@@ -23,15 +23,17 @@ public final class AdultTextPolicyTest {
     public static void main(String[] args) throws Exception {
         AdultTextPolicy policy = new AdultTextPolicy(Arrays.asList(
                 rule("porn", 8), rule("porno", 8), rule("pornography", 8), rule("hentai", 8),
-                rule("sex", 6), rule("pussy", 8), rule("onlyfans", 8), rule("adult videos", 8),
-                rule("nude photos", 8), rule("اباحي", 8), rule("اباحيه", 8), rule("سكس", 8),
+                rule("sex", 6), rule("pussy", 8), rule("onlyfans", 8), rule("pornhub", 8),
+                rule("adult videos", 8), rule("nude photos", 8), rule("اباحي", 8),
+                rule("اباحيه", 8), rule("سكس", 8), rule("سكسي", 8),
                 rule("sexual health", -6), rule("sex education", -6), rule("breast cancer", -6),
                 rule("porn addiction", -8), rule("التربيه الجنسيه", -6)));
         for (String sample : Arrays.asList("Watch porn", "FREE hentai now", "Download adult videos",
                 "Stream nude photos", "Watch porn and hentai now", "Watch p0rn and hent41 now",
                 "Watch p\u043ern", "Watch ｐｏｒｎ", "Watch p\u200bo\u00adrn", "شاهد الإباحية الآن",
                 "شاهد إِبَاحِيّ", "تحميل سكس", "مشاهدة اباحي وسكس", "Watch PORN!!!",
-                "لتحميل سكس", "لمشاهدة الإباحية")) {
+                "لتحميل سكس", "لمشاهدة الإباحية", "Watch nudephotos", "شاهد سکسی",
+                "Watch p0rnhub")) {
             check(policy.blocks(sample), "adult promotion detected: " + sample);
         }
         for (String sample : Arrays.asList("", "A normal day", "Essex and sextants", "sex education",
@@ -40,7 +42,8 @@ public final class AdultTextPolicyTest {
                 "Watch porn addiction recovery resources", "Watch pussy cats playing",
                 "A free OnlyFans budgeting guide", "Download photos of ordinary adults",
                 "شاهد التربية الجنسية", "الجنسية في جواز السفر", "Download freeport information",
-                "Watch pornographyresearch", "Watch p0rnographyresearch", "Watch xhent41y")) {
+                "Watch pornographyresearch", "Watch p0rnographyresearch", "Watch xhent41y",
+                "Watch nudephotosresearch", "شاهد سكسونيا")) {
             check(!policy.blocks(sample), "benign/boundary sample stays available: " + sample);
         }
         check(!policy.blocks(null), "null sample is empty");
@@ -55,6 +58,12 @@ public final class AdultTextPolicyTest {
                 "media label cannot invent missing rules");
         check(!new AdultTextPolicy(Arrays.asList(rule("porn", 8), rule("porn videos", -8)))
                 .blocks("Porn videos"), "negative context still applies to exact media labels");
+        AdultTextPolicy owned = new AdultTextPolicy(Arrays.asList(
+                rule("nude photos", 8), rule("nudephotos", 2)));
+        check(owned.ruleCount() == 2 && !owned.blocks("Watch nudephotos"),
+                "a glued alias never overrides an explicitly configured single word");
+        check(new AdultTextPolicy(Collections.singletonList(rule("nude photos", 8))).ruleCount() == 1,
+                "a glued alias does not inflate the rule count");
         String gap = "ordinary ".repeat(40);
         check(policy.blocks("sexual health ".repeat(8) + gap + "Watch porn and hentai" + gap
                 + "sex education ".repeat(8)), "distant benign context cannot cancel local promotion");
@@ -165,13 +174,15 @@ public final class AdultTextPolicyTest {
         rules.addAll(AdultTextPolicy.reviewedContextRules());
         AdultTextPolicy seed = new AdultTextPolicy(rules);
         for (String text : Arrays.asList("Watch porn and hentai", "Download adult videos", "شاهد الإباحية",
-                "مشاهدة سكس", "Watch p0rn", "لتحميل اباحي")) {
+                "مشاهدة سكس", "Watch p0rn", "لتحميل اباحي", "Watch nudephotos", "شاهد سکسی",
+                "Watch p0rnhub")) {
             check(seed.blocks(text), "actual seed recognizes promotional fixture");
         }
         for (String text : Arrays.asList("Watch sex education", "شاهد التربية الجنسية", "Essex council",
                 "Watch porn addiction recovery resources", "Download breast cancer research",
                 "Research definitions include porn and hentai", "Watch pussy cats playing",
-                "شاهد الجنسية في جواز السفر", "علاج ادمان الاباحيه", "Download sexual health advice")) {
+                "شاهد الجنسية في جواز السفر", "علاج ادمان الاباحيه", "Download sexual health advice",
+                "Watch nudephotosresearch", "شاهد سكسونيا")) {
             check(!seed.blocks(text), "actual seed keeps benign fixture available");
         }
         String gap = "ordinary ".repeat(40);

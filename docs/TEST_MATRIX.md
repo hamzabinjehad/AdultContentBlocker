@@ -28,6 +28,8 @@ no automation, and it must be run on a real Mac by a person.
 | Clients download from the same place; requested artifacts are built | config pins | `test_build.py` |
 | Known adult domains blocked, critical infrastructure not blocked, in a real build | built `dist/` | `test_build.py` (CI builds first) |
 | Every test class is discovered | `unittest discover` in `test.sh` | `test.sh python` |
+| Android managed-uninstall state, commitment guard, readback mismatch and release guard | pure matrix + isolated preference fixture | `android/test-core.sh`, `CoreDeviceTestRunner` (device run pending) |
+| Android Arabic/Persian/Urdu folds, custom-rule parity, glued phrase aliases and evasion recovery | shared fold table, actual-seed fixtures and boundary samples | `android/test-core.sh` |
 
 ## Manual (procedures exist; must be run on hardware)
 
@@ -45,6 +47,7 @@ no automation, and it must be run on a real Mac by a person.
 | Interrupted update | kill the app mid-download → previous generation intact (staging dir swap) | inferred from `writeToContainer`; manual |
 | Missing components | delete user native-host manifest → extension strict after 5 min; quit app → filter keeps enforcing | inferred; manual |
 | Connections open before a lock starts | browser: open tabs are navigated to the block page on rule change (`tabsToBlock`); **Mac: existing sockets are not closed** — a stream already playing continues until it reconnects | browser demonstrated in unit tests; Mac limitation documented |
+| Android device-owner uninstall block | disposable device: provision device owner, enable Keep Hisn installed, attempt uninstall; then test commitment-expiry reconciliation, release and removal | **not yet run** — the connected Samsung is not device owner; no blocked state claimed |
 
 ## Isolated environment for disruptive checks
 

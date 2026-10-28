@@ -10,5 +10,9 @@
         <activity android:name="app.hisn.android.GuardTestSetupActivity"
             android:exported="true" android:permission="android.permission.DUMP"
             android:theme="@android:style/Theme.Material.Light.NoActionBar" />
+        <!-- Read-only managed-uninstall status exporter for the shell test. -->
+        <activity android:name="app.hisn.android.ManagedStatusActivity"
+            android:exported="true" android:permission="android.permission.DUMP"
+            android:theme="@android:style/Theme.NoDisplay" />
     </application>
 </manifest>

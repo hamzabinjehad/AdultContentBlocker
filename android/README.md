@@ -1,10 +1,11 @@
-# Hisn Android 0.5.2: protection development preview
+# Hisn Android 0.6.0: protection development preview
 
 The Android app contains an opt-in DNS-only VPN, saved custom rules, selected-app
 accessibility restrictions, opt-in daily app schedules, built-in adult-text checks and
 sampled image/video checks, an in-app
-commitment and an optional legacy-admin confirmation step. The interface supports
-Arabic and English. This remains a development build, not the completed end goal.
+commitment, an optional legacy-admin confirmation step and an opt-in
+device-owner uninstall guard. The interface supports Arabic and English. This
+remains a development build, not the completed end goal.
 Core tests pass; device evidence is version-specific in the release records below.
 The visual model and policy tests ran in a separate Samsung debug installation;
 the owner's existing app and permissions were not replaced or enabled.
@@ -13,8 +14,61 @@ both UDP and reused TCP. On 0.4.2, Brave displayed an ordinary page, search resu
 an IETF documentation page while the VPN was active. These are limited smoke
 tests, not proof that every browser request uses Hisn. Broader real-app coverage
 and VPN/lifecycle testing remain pending. Visual accuracy and real-app capture acceptance
-remain pending; the isolated live fixture sequence passes. Usage limits, full traffic coverage and managed-device uninstall
-blocking are not implemented.
+remain pending; the isolated live fixture sequence passes. Usage limits and full traffic coverage are not implemented. Managed uninstall
+blocking exists only as an opt-in device-owner preview; the ordinary install
+remains removable, and actual blocked-uninstall acceptance needs a disposable
+provisioned device.
+
+## In progress: pause screen and short-video blocking (not yet released)
+
+- The restriction screen opens with a pause: three guided breaths, a reminder,
+  a "What do you need right now?" choice with tips, and today's pause count
+  (a local date and number only). Returning home is never delayed. Checked on
+  the Samsung in Arabic and English in an isolated debug install.
+- **Block short videos** in Rules leaves YouTube Shorts and Instagram Reels with
+  BACK, so the rest of each app stays usable, and closes TikTok. Players are
+  recognised by view ID (`core/.../ShortVideoSurfaces.java`); no screen text is
+  read. Commitment-locked like other layers. On the Samsung with YouTube 21.15
+  (isolated debug install, 2026-10-28): all three Shorts player IDs were present
+  in the Shorts tab and absent from the home feed; opening Shorts showed the
+  restriction screen and left YouTube on its home feed; reopening YouTube and
+  playing an ordinary video caused no intervention. Instagram Reels IDs and
+  TikTok remain unconfirmed on a device (neither app was installed).
+
+## 0.6.0 managed uninstall protection preview
+
+A device owner can make Android refuse to uninstall an app; an ordinary install
+or a legacy admin cannot. Hisn now supports that platform capability as an
+explicit opt-in:
+
+- While a commitment is active, or while **Keep Hisn installed** is on,
+  `DevicePolicyManager.setUninstallBlocked` is applied for the app's user. The
+  app reads the platform flag back and shows "Not managed", "Admin only",
+  "Ready", "Protected" or "Out of sync" rather than guessing.
+- The keep switch cannot be turned off during a commitment. Once both the
+  commitment and the switch are off, **Remove managed mode** clears the block
+  and releases device-owner status so Android can uninstall Hisn again.
+- Boot and foreground entry reconcile a commitment that expired while the app
+  was not running. If the app is never opened again, a stale block may remain;
+  that is the restrictive direction and is documented.
+- Provisioning is not done by the app. The ordinary route is a factory-reset,
+  account-free device followed by
+  `adb shell dpm set-device-owner app.hisn.android/.CommitmentAdminReceiver`.
+  A daily-use phone with accounts or another owner cannot safely be converted
+  in place. No provisioning was applied to the test Samsung.
+
+Arabic matching now shares the signed-list folds with the other clients:
+Persian/Urdu letter variants, taa marbuta, alef maqsura and Arabic-Indic digits
+normalise in both custom word rules and the built-in adult-text policy.
+Multi-word phrases also match their no-space spelling (`nudephotos`). See
+[`TextFolding`](core/src/main/java/app/hisn/core/TextFolding.java).
+
+Core state tests, `assembleDebug`, `assembleDebugAndroidTest` and `lintDebug`
+pass. The connected Samsung is not Hisn's device owner, so the build must show
+managed protection as unavailable there; the actual refusal and release flow
+still require a disposable provisioned device. See
+[the 0.6.0 record](../docs/ANDROID_0.6.0.md) and
+[tamper-resistance scope](../docs/ANDROID_TAMPER_RESISTANCE.md).
 
 ## 0.5.2 blocking hardening and commitment clock fix
 
@@ -118,8 +172,9 @@ justify a new commitment.
 
 Existing in-app VPN-settings links now give a dismissible commitment reminder
 while time remains. It does not intercept system settings opened elsewhere or
-prevent deactivation/uninstall. Stronger managed-device controls are a separate
-consented product scope; see [tamper-resistance limits](../docs/ANDROID_TAMPER_RESISTANCE.md).
+prevent deactivation/uninstall. The separate opt-in device-owner mode added in
+0.6.0 can block ordinary uninstall while a commitment runs; see
+[tamper-resistance scope](../docs/ANDROID_TAMPER_RESISTANCE.md).
 
 `test-live-schedule.py --serial SERIAL` runs isolated persistence/commitment
 checks, then uses a harmless static fixture across a real upcoming local-time
@@ -326,8 +381,10 @@ is recorded separately for 0.4.0; it was not rerun after this update.
   still load without erasing their remaining period and can receive added rules. The
   clock uses elapsed time and Android's boot counter, not the editable date.
   Progress is checkpointed on app pause and periodically during a DNS session;
-  reboot or power-off can extend the period. Android settings, data clearing
-  and uninstall remain outside this in-app lock.
+  reboot or power-off can extend the period. Android settings and data clearing
+  remain outside this in-app lock. Uninstall is outside it too unless the owner
+  separately provisions device-owner mode; that mode blocks ordinary uninstall
+  while a commitment or the keep-installed switch is active.
 - The accessibility service is off until the owner enables it. It acts only in
   explicitly selected apps. Chosen blocked apps, matching literal word rules or
   built-in adult-promotion evidence in the optional mode
@@ -367,8 +424,10 @@ is recorded separately for 0.4.0; it was not rerun after this update.
 - The optional legacy device-admin receiver declares an empty policy set:
   no wipe, password or device-lock capabilities. Android may require admin
   deactivation before uninstalling. The receiver can show a reminder, but it
-  cannot stop deactivation, make the app undeletable, or establish device-owner
-  management. Hisn never uses accessibility to trap the Android uninstall UI.
+  cannot stop deactivation and cannot establish device-owner management on its
+  own. The separate device-owner mode can block ordinary uninstall; it is not a
+  factory-reset or administrator lock. Hisn never uses accessibility to trap the
+  Android uninstall UI.
 
 ## Known coverage gaps
 
@@ -417,7 +476,8 @@ overlap/duplicates, peer MSS/window limits, retransmission, FIN/RST, queue/flow
 caps, deadlines and late completions. Packet mutation/fuzz tests and a validated
 4,096-byte UDP-TC-to-segmented-TCP fixture run without public network access.
 The suite also checks all 1,280 setup-guide combinations, actual-seed adult-text
-fixtures, local context, Unicode/evasion boundaries and bounded classifier work.
+fixtures, local context, Unicode/evasion boundaries, bounded classifier work and
+the managed-uninstall state/commitment matrix.
 DNS-probe tests use loopback responders for route-check response validation,
 timeouts, cancellation and no public query after a failed local check.
 TLS tests generate a disposable localhost certificate, verify hostname and
@@ -438,10 +498,21 @@ adb shell am instrument --user 0 -w app.hisn.android.test/app.hisn.android.CoreD
 ```
 
 This test checks the seeds, Arabic rules, word boundaries, a local DNS block,
-saved settings, built-in opt-in and commitment checks in isolated test preferences without
-enabling services. Actual VPN routing, accessibility interventions, admin
-deactivation behavior and lifecycle need separate controlled device tests after
-approving the corresponding consent screens. On 2026-10-20 the device runner
+saved settings, built-in opt-in, commitment and uninstall-guard checks in
+isolated test preferences without enabling services. To read the managed state
+from a connected debug build without changing it, run:
+
+```sh
+python3 test-live-managed-status.py --serial SERIAL
+```
+
+On an ordinary install it must report not-managed and uninstall not blocked.
+`--expect-managed` is only for a disposable device that has deliberately been
+provisioned as Hisn's device owner. It now also checks the uninstall keep switch and commitment
+guard, and that a non-owner build reports no protection and performs no platform
+change. Actual VPN routing, accessibility interventions, admin deactivation
+behavior, device-owner blocked-uninstall behavior and lifecycle need separate
+controlled device tests after approving the corresponding consent screens. On 2026-10-20 the device runner
 passed on the Samsung with 159,762 bundled domains, Arabic/boundary matching,
 local DNS blocks, Unicode persistence/rejection, long-text sampling and
 commitment checks, verified adult-term loading, custom-rule independence,

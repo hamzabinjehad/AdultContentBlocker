@@ -62,7 +62,10 @@ public final class AdultTextPolicy {
 
     private static final Set<String> EXPLICIT = immutableSet("porn", "porno", "pornography",
             "pornographic", "hentai", "blowjob", "cumshot", "creampie", "gangbang",
-            "handjob", "اباحي", "اباحيه", "بورنو", "سكس", "نيك");
+            "handjob", "pornhub", "xvideos", "redtube", "youporn", "brazzers",
+            "camgirl", "camgirls", "sexcam", "livesex", "sexchat", "milf", "buttplug",
+            "titties", "deepthroat", "اباحي", "اباحيه", "اباحيات", "بورنو", "سكس",
+            "سكسي", "سكسيه", "سيكس", "سكساوي", "نيك");
     // Canonical tokens that are also Nick, Borno (Nigeria), Bourne, couscous or taboon
     // bread; كسكس and كسكسي otherwise fold to the prefix ك plus سكس/سكسي. Two of these
     // never confirm each other ("Nick Bourne" is a name).
@@ -110,6 +113,39 @@ public final class AdultTextPolicy {
             for (String word : words) branch = branch.children.computeIfAbsent(word, unused -> new Trie());
             branch.entry = entry;
             if (words.length == 1) singles.put(rule.getKey(), entry);
+        }
+        // A phrase also matches its no-space spelling: "nudephotos" is one
+        // token, so an exact phrase trie alone would miss it. The alias points
+        // at the SAME Entry, preserving its weight, ambiguity flag and window
+        // counting; it never overrides a real single-word rule.
+        Map<String, Entry> aliases = new HashMap<>();
+        for (Entry entry : compiled) {
+            String[] words = entry.phrase.split(" ");
+            if (words.length < 2) continue;
+            StringBuilder glued = new StringBuilder();
+            boolean letters = true;
+            for (String word : words) {
+                for (int at = 0; at < word.length();) {
+                    int point = word.codePointAt(at);
+                    at += Character.charCount(point);
+                    if (!Character.isLetterOrDigit(point)) { letters = false; break; }
+                    glued.appendCodePoint(point);
+                }
+                if (!letters) break;
+            }
+            if (!letters) continue;
+            String alias = glued.toString();
+            if (alias.isEmpty() || alias.codePointCount(0, alias.length()) > MAX_RULE_CODEPOINTS
+                    || singles.containsKey(alias) || aliases.containsKey(alias)) continue;
+            Trie branch = index.children.get(alias);
+            if (branch != null && branch.entry != null) continue;
+            if (branch == null) {
+                branch = new Trie();
+                index.children.put(alias, branch);
+            }
+            branch.entry = entry;
+            aliases.put(alias, entry);
+            singles.put(alias, entry);
         }
         entries = Collections.unmodifiableList(compiled);
         singleWords = Collections.unmodifiableMap(singles);
@@ -489,13 +525,8 @@ public final class AdultTextPolicy {
         for (int at = 0; at < decomposed.length();) {
             int point = decomposed.codePointAt(at);
             at += Character.charCount(point);
-            int kind = Character.getType(point);
-            if (point == 0x0640 || kind == Character.FORMAT || kind == Character.NON_SPACING_MARK
-                    || kind == Character.ENCLOSING_MARK) continue;
-            if (point == 0x0629) point = 0x0647;
-            else if (point == 0x0649) point = 0x064a;
-            else if (point >= 0x0660 && point <= 0x0669) point = '0' + point - 0x0660;
-            else if (point >= 0x06f0 && point <= 0x06f9) point = '0' + point - 0x06f0;
+            if (TextFolding.ignored(point)) continue;
+            point = TextFolding.fold(point);
             if (Character.isLetterOrDigit(point)) {
                 normalized.appendCodePoint(point);
                 separator = false;

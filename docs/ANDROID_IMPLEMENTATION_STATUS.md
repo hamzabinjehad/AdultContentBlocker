@@ -1,6 +1,6 @@
 # Android implementation and remaining release gates
 
-Updated 2026-10-21. This describes the development work in `android/`, not a
+Updated 2026-10-26. This describes the development work in `android/`, not a
 production release or proof that the connected owner's phone is protected.
 Mac, iOS/iPadOS and browser code were not changed in this Android implementation.
 
@@ -16,7 +16,7 @@ status. Each layer must state its scope and recover from service/permission
 loss without displaying false protection. Absolute detection or resistance to
 a device owner's reset/recovery controls is not an achievable release claim.
 
-## Implemented in the development preview (latest: 0.5.0)
+## Implemented in the development preview (latest: 0.6.0)
 
 | Layer | Code now present | Verification boundary |
 | --- | --- | --- |
@@ -28,11 +28,12 @@ a device owner's reset/recovery controls is not an achievable release claim.
 | Packet diagnostics | Unsupported/malformed/old-network counts, accepted TCP queries, prepared replies and UDP TC signals; no payload retention | UDP/TCP parser and mutation tests pass; counts are diagnostics, not proof that all apps use the virtual endpoint |
 | Saved rules | Domain and literal word lists, selected blocked/scanned apps and separate adult-text opt-in; private persistence | Samsung persistence, Unicode rejection/reload and opt-in checks pass |
 | App/word intervention | Consent-based accessibility service restricted to chosen apps; home/restriction screen; input/password skips | Existing ordinary/editable/password/long-text/wide-tree/rapid-reopen fixtures and 2026-10-20 normal-content fixtures pass; real-app coverage pending |
-| Built-in adult-text checks | Opt-in English/Arabic policy; 4,462 canonical rules including reviewed local protective/recovery context; bounded compact-spelling recovery and complete explicit media labels; custom rules independent | Core actual-seed tests pass; 52 synthetic examples: 23/25 intended blocks, 0/27 benign false blocks, two known challenge misses; not a general accuracy estimate. See 0.4.6 release evidence |
+| Built-in adult-text checks | Opt-in English/Arabic policy; 4,462 canonical rules including reviewed local protective/recovery context; bounded compact-spelling recovery, complete explicit media labels, shared Arabic/Persian/Urdu folds and no-space phrase aliases; custom rules independent | Core actual-seed tests pass, including Persian/Urdu, `nudephotos`, `p0rnhub` and the `سكسونيا` benign boundary; 52 synthetic examples: 23/25 intended blocks, 0/27 benign false blocks, two known challenge misses; not a general accuracy estimate. See 0.4.6 release evidence and the 0.6.0 record |
 | Setup guidance | Shared next-step message/action model separates rules, permission, binding, policy loading/error, limited scans and DNS/check states | All 1,280 enum combinations tested; READY requires every selected setup prerequisite, not universal protection |
 | Commitment | Backend rejects weaker settings and disabling opted-in adult checks for 7/30/90 days; elapsed/boot clock; new empty commitments rejected | Pure clock tests and isolated Samsung preference tests pass; old empty commitments preserve time and permit added restrictions |
 | Daily selected-app schedule | Optional every-day local-time window, separate app set, overnight support, static-screen periodic enforcement and commitment-preserving coverage | Exhaustive/randomized core tests, isolated Samsung persistence/commitment checks and real local-time boundary test pass; clock/timezone/accessibility bypasses remain |
 | Removal friction | Optional legacy admin receiver with no administrative policies | Compiles; latest activation/deactivation test pending |
+| Managed uninstall protection | Device-owner only. Pure state matrix, `PolicyStore` keep switch with commitment guard, `DevicePolicyManager.setUninstallBlocked` readback/repair, in-app setup/release UI and boot reconciliation | Core tests, debug/test builds and lint pass. The connected Samsung is not device owner, so it must report "Not managed"; an actual blocked uninstall, commitment-expiry reconciliation and release still need a disposable provisioned device. |
 | Visual filtering | Opt-in Android 14+ selected-window image/video sampling using the bundled local classifier; generic Home/restriction intervention, explicit capture consent and separate health | Actual local model, policy and stale-frame tests plus nine Samsung live fixture checks pass. A small benign baseline had 0/12 false-blocked views over 36 calls, with 1,984 ms median / 2,290 ms p95 classifier roundtrip. Sources/layouts are limited and correlated; this is not population accuracy. Adult recall, real-app/video and battery acceptance remain pending; no pre-display claim. See [0.5.0](ANDROID_0.5.0.md) and [benchmark](ANDROID_VISUAL_BENCHMARK_2026-10-22.md) |
 
 The 0.3.0 debug APK was installed and opened on the Samsung on 2026-10-19.
@@ -89,7 +90,9 @@ A small separate read-only text corpus yielded 9/16 adult-text hits and 1/18 ben
 false positives. These are fixture-specific counts, not an accuracy estimate or
 a representative benchmark. The misses/false positive require further work.
 No Android image/video detection, full-traffic/always-on VPN, or undeletable
-installation is implemented. The current deliverable remains a tested
+installation for an ordinary install is implemented. Device-owner uninstall
+blocking is an opt-in 0.6.0 preview; it does not survive a factory reset,
+device-owner removal, ADB/root or an administrator. The current deliverable remains a tested
 development preview, not the requested universal end-state protection.
 
 ## 0.4.2 verification boundary (2026-10-20)
@@ -116,11 +119,26 @@ packets correctly leave the session DEGRADED; a route pass does not erase them.
 Physical Wi-Fi/mobile handover and large native UDP-to-TCP fallback remain
 unverified. See [the complete record](ANDROID_0.4.2.md) for the APK identity.
 
+## 0.6.0 managed-uninstall verification boundary (2026-10-26)
+
+The 0.6.0 source adds device-owner-only uninstall blocking, but its device
+acceptance is not complete. Core tests, debug/test APKs and lint pass. The
+connected Samsung is not Hisn's device owner (Samsung Secure Folder is a profile
+owner in user 150), so the build must report managed protection as unavailable
+there and leave Android's uninstall flow unchanged. The device disconnected
+before the 0.6.0 debug/test APKs could be installed, so no 0.6.0 device runner or
+blocked-uninstall result exists yet. A disposable, freshly provisioned device
+owner is required to exercise the real refusal, expiry reconciliation and
+release path. Do not provision the owner's daily phone and do not describe the
+ordinary build as undeletable. See [0.6.0](ANDROID_0.6.0.md) and
+[tamper scope](ANDROID_TAMPER_RESISTANCE.md).
+
 ## Next acceptance gates
 
 The [0.4.1 follow-up](ANDROID_0.4.1.md) adds monitored connection invalidation;
 [0.4.2](ANDROID_0.4.2.md) adds bounded TCP DNS. Neither completes real handover,
-all-protocol coverage, visual filtering or uninstall resistance.
+all-protocol coverage, visual filtering, or device-owner provisioning and
+uninstall-block acceptance on a disposable managed device.
 
 1. Completed: install both development APKs and run `CoreDeviceTestRunner`.
    Repeat these checks for future builds; keep test preferences isolated from

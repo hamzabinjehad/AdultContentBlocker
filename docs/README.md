@@ -36,7 +36,7 @@ past version; *superseded* documents point to their replacement. Start with the
 
 ## Android
 
-- [Android implementation status](ANDROID_IMPLEMENTATION_STATUS.md): Table of each Android protection layer, what code exists and how far it was verified, as of 0.5.0.
+- [Android implementation status](ANDROID_IMPLEMENTATION_STATUS.md): Table of each Android protection layer, what code exists and how far it was verified, as of 0.6.0.
 - [Android tamper resistance scope](ANDROID_TAMPER_RESISTANCE.md): What Android personal mode can and cannot do to resist removal, Play policy limits, and managed-device mode.
 
 ## Network and routers
@@ -89,7 +89,8 @@ Per-version change and verification notes, newest first.
 
 ### Android
 
-- [Android 0.5.2 release notes](ANDROID_0.5.2.md): Latest Android build: DNS bypass hardening, separated-spelling and Arabic name fixes, image checks on feeds, 60-second hold and the commitment reboot fix.
+- [Android 0.6.0 release notes](ANDROID_0.6.0.md): Opt-in device-owner uninstall protection, in-app status/release, boot reconciliation and host tests. Device acceptance pending; the ordinary build is still removable.
+- [Android 0.5.2 release notes](ANDROID_0.5.2.md): DNS bypass hardening, separated-spelling and Arabic name fixes, image checks on feeds, 60-second hold and the commitment reboot fix. *Historical.*
 - [Android 0.5.1 release notes](ANDROID_0.5.1.md): WebGL-first visual classifier with CPU fallback, optional release signing, WebGL versus CPU timings. *Historical.*
 - [Android 0.5.0 release notes](ANDROID_0.5.0.md): Adds opt-in on-device image and video sampling of chosen apps on Android 14+, with live Samsung results. *Historical.*
 - [Android 0.4.6 release notes](ANDROID_0.4.6.md): Detects complete two-word explicit media labels in English and Arabic; synthetic corpus reaches 23/25, zero false blocks. *Historical.*
