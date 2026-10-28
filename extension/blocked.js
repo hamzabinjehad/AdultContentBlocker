@@ -9,11 +9,12 @@
 
 import { initLanguage, t } from "./lib/i18n.js";
 import { renderIcons } from "./lib/icons.js";
+import { BREATH, NEEDS, recordPause, reminderFor } from "./lib/pause.js";
 
 await initLanguage();
 renderIcons();
 
-const REASONS = new Set(["strict", "custom", "terms"]);
+const REASONS = new Set(["strict", "custom", "terms", "shortvideo"]);
 
 function formatRemaining(ms) {
   if (ms <= 0) return null;
@@ -159,6 +160,70 @@ async function setupContentReport() {
     });
   });
 }
+
+/**
+ * Three guided breaths, then a word of encouragement and a button to go again.
+ * The circle grows and shrinks with CSS transitions timed to each phase; with
+ * reduced motion it stays still and only the words change.
+ */
+function breathe() {
+  const circle = document.getElementById("breathCircle");
+  const label = document.getElementById("breathLabel");
+  const again = document.getElementById("breatheAgain");
+  again.hidden = true;
+  let cycle = 0;
+  const phase = (inhale) => {
+    circle.style.transitionDuration = `${inhale ? BREATH.inMs : BREATH.outMs}ms`;
+    circle.classList.toggle("full", inhale);
+    label.textContent = t(inhale ? "pause.breatheIn" : "pause.breatheOut");
+    setTimeout(() => {
+      if (inhale) return phase(false);
+      if (++cycle < BREATH.cycles) return phase(true);
+      label.textContent = t("pause.breathDone");
+      again.hidden = false;
+    }, inhale ? BREATH.inMs : BREATH.outMs);
+  };
+  phase(true);
+}
+
+/** The reminder and today's tally. Counting is best-effort: without storage
+ *  the pause still shows, with the first reminder and no count. */
+async function setupPause() {
+  let tally = null;
+  try {
+    const { pauseTally } = await chrome.storage.local.get("pauseTally");
+    tally = recordPause(pauseTally);
+    await chrome.storage.local.set({ pauseTally: tally });
+  } catch { /* storage unavailable — show the pause without a count */ }
+
+  document.getElementById("reminder").textContent = t(`pause.reminder.${reminderFor(tally?.count)}`);
+  if (tally) {
+    const tallyEl = document.getElementById("tally");
+    tallyEl.textContent = tally.count === 1 ? t("pause.tally.first") : t("pause.tally.many", tally.count);
+    tallyEl.hidden = false;
+  }
+
+  const needsEl = document.getElementById("needs");
+  const tipEl = document.getElementById("needTip");
+  for (const need of NEEDS) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "secondary";
+    button.textContent = t(`pause.need.${need}`);
+    button.setAttribute("aria-pressed", "false");
+    button.addEventListener("click", () => {
+      for (const other of needsEl.children) other.setAttribute("aria-pressed", String(other === button));
+      tipEl.textContent = t(`pause.need.${need}.tip`);
+      tipEl.hidden = false;
+    });
+    needsEl.appendChild(button);
+  }
+
+  document.getElementById("breatheAgain").addEventListener("click", breathe);
+  breathe();
+}
+
+setupPause();
 
 chrome.runtime.sendMessage({ type: "getState" }, (state) => {
   render(state || { lockUntil: 0 });

@@ -35,7 +35,8 @@ globalThis.chrome = {
     registerContentScripts: async (scripts) => {
       if (rejectRegistration) throw new Error("scanner registration rejected");
       if (ignoreRegistration) return;
-      registeredScripts.push(...scripts); registrations++;
+      // Chrome reads `matches` back sorted; so does this mock.
+      registeredScripts.push(...scripts.map(script => ({ ...script, matches: script.matches && [...script.matches].sort() }))); registrations++;
     },
     unregisterContentScripts: async ({ ids } = {}) => { registeredScripts = registeredScripts.filter(script => ids && !ids.includes(script.id)); },
   },
@@ -364,6 +365,23 @@ state.lockUntil = 0;
 check((await message({ type: 'update', patch: { inspectVisual: false, personBlur: 'off' } })).ok, 'unlocked user can disable visual beta');
 check(!registeredScripts.some(script => script.id === 'hisn-visual')
   && ['blocklist', 'keywords', 'safesearch', 'paths', 'web_protection', 'evasion', 'encoded_queries'].every(id => enabled.includes(id)), 'visual off keeps baseline enforcement');
+
+// Short-video blocking: opt-in ruleset plus a top-frame script, on together,
+// read back together, and only switched off outside a lock.
+check(!enabled.includes('short_video') && !registeredScripts.some(script => script.id === 'hisn-short-video'),
+  'short-video blocking is off until chosen');
+r = await message({ type: 'update', patch: { blockShortVideo: true } });
+let shortScript = registeredScripts.find(script => script.id === 'hisn-short-video');
+check(r.ok && enabled.includes('short_video') && shortScript?.allFrames === false
+  && shortScript.matches.includes('*://*.youtube.com/*') && r.state.enforcement?.layers?.shortVideo === 'applied',
+  'turning short-video blocking on enables its rules and in-app script, and the receipt says so');
+state.lockUntil = Date.now() + 60000;
+r = await message({ type: 'update', patch: { blockShortVideo: false } });
+check(!r.ok && r.reason === 'locked' && enabled.includes('short_video'), 'a lock keeps short-video blocking on');
+state.lockUntil = 0;
+r = await message({ type: 'update', patch: { blockShortVideo: false } });
+check(r.ok && !enabled.includes('short_video') && !registeredScripts.some(script => script.id === 'hisn-short-video')
+  && r.state.enforcement?.layers?.shortVideo === 'off', 'outside a lock, short-video blocking switches fully off');
 
 // Healthy delayed IPC stays "checking" beyond the ordinary page-message
 // deadline. Exercise the actual UI helper through the actual worker listener.

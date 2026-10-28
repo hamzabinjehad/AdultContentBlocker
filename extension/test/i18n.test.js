@@ -8,6 +8,7 @@
 import en from "../lib/locale/en.js";
 import ar from "../lib/locale/ar.js";
 import { t, setLanguage, resolveLanguage, locale } from "../lib/i18n.js";
+import { NEEDS, REMINDER_COUNT } from "../lib/pause.js";
 
 let checks = 0, failures = 0;
 function check(ok, label) { checks++; if (!ok) { failures++; print(`  FAIL  ${label}`); } }
@@ -31,9 +32,12 @@ for (const file of ["../popup.html", "../options.html", "../blocked.html"]) {
 for (const file of ["../popup.js", "../options.js", "../blocked.js", "../lib/status.js", "../lib/settings.js", "../lib/site-editor.js"]) {
   for (const m of readFile(file).matchAll(/\bt\("([^"]+)"/g)) used.add(m[1]);
 }
-for (const reason of ["default", "strict", "custom", "terms"]) {           // blocked.js builds these
+for (const reason of ["default", "strict", "custom", "terms", "shortvideo"]) {           // blocked.js builds these
   used.add(`blocked.${reason}.title`); used.add(`blocked.${reason}.subtitle`);
 }
+for (const need of NEEDS) { used.add(`pause.need.${need}`); used.add(`pause.need.${need}.tip`); }  // blocked.js builds these
+for (let i = 1; i <= REMINDER_COUNT; i++) used.add(`pause.reminder.${i}`);
+check(!(`pause.reminder.${REMINDER_COUNT + 1}` in en), "no reminder is written but never shown");
 for (const k of used) check(k in en, `used key exists: ${k}`);
 check(used.size > 120, `the scan found the keys (${used.size})`);
 

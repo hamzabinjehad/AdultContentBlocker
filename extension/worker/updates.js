@@ -67,6 +67,9 @@ export async function guardedUpdate(rawPatch) {
       // every other guard in this file enforces.
       (patch.inspectText === false && state.inspectText) ||
       visualPolicyWeakens(state, patch) ||
+      // Short-video blocking is the person's own choice, and like every other
+      // layer it can be switched on during a lock but not off.
+      (patch.blockShortVideo === false && state.blockShortVideo === true) ||
       (patch.textSensitivity !== undefined &&
         patch.textSensitivity < state.textSensitivity) ||
       // Exempting a host from the text layer is a loosening like any other, so

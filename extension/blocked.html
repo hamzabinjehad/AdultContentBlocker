@@ -14,6 +14,16 @@
     <p class="matched" id="matched" hidden></p>
     <div class="timer" id="timer" hidden></div>
     <p class="note" id="note"></p>
+    <section class="pause" id="pause" aria-labelledby="pauseTitle">
+      <h2 id="pauseTitle" data-i18n="pause.title">Take a moment before you go on</h2>
+      <div class="breath"><div class="breath-circle" id="breathCircle" aria-hidden="true"></div><p class="breath-label" id="breathLabel"></p></div>
+      <button type="button" class="secondary" id="breatheAgain" data-i18n="pause.breatheAgain" hidden>Breathe again</button>
+      <p class="reminder" id="reminder"></p>
+      <p class="need-question" id="needQuestion" data-i18n="pause.needQuestion">What do you need right now?</p>
+      <div class="needs" id="needs" role="group" aria-labelledby="needQuestion"></div>
+      <p class="need-tip" id="needTip" role="status" hidden></p>
+      <p class="tally" id="tally" hidden></p>
+    </section>
     <nav class="actions" aria-label="Next steps" data-i18n-aria-label="blocked.nextSteps"><button type="button" id="leavePage" data-i18n="blocked.newTab">Go to a new tab</button><button type="button" class="secondary" id="openSettings" data-i18n="blocked.reviewSettings">Review settings</button></nav>
     <div class="report" id="reportRow" hidden>
       <p class="report-hint" id="reportHint" data-i18n="blocked.reportHint">Incorrect block? Selecting a word removes it from future text checks on every site. During a lock, your correction waits for review.</p>

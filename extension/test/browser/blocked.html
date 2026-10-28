@@ -19,7 +19,8 @@ try {
     const state = { lockUntil: lockHours ? Date.now() + lockHours * 3600e3 : 0, failClosed };
     const mock = `<script>window.sent = [];
       window.chrome = {
-        storage: { local: { get: async () => (${JSON.stringify(lang)} ? { uiLanguage: ${JSON.stringify(lang)} } : {}) },
+        storage: { local: { get: async () => (${JSON.stringify(lang)} ? { uiLanguage: ${JSON.stringify(lang)} } : {}),
+                            set: async (v) => { window.stored = v; } },
                    session: { get: async () => ({ lastTextBlock: { host: "example.test", terms: ["alpha", "beta"], at: Date.now() } }) } },
         runtime: { openOptionsPage() {}, lastError: null,
           sendMessage(msg, cb) { sent.push(msg); cb(msg.type === "getState" ? ${JSON.stringify(state)}
@@ -48,6 +49,20 @@ try {
   check(d.defaultView.sent.some((m) => m.type === "reportWrongWord" && m.term === "alpha")
         && d.getElementById("reportStatus").textContent.includes("alpha"), "disputing a word reports it and says so");
 
+  check(d.getElementById("pauseTitle").textContent === "Take a moment before you go on", "the pause shows with every block");
+  check(d.getElementById("breathLabel").textContent === "Breathe in…", "the guided breath starts on its own");
+  check(d.getElementById("reminder").textContent.startsWith("An urge rises"), "the first pause gets the first reminder");
+  check(d.getElementById("tally").textContent === "First pause today.", "today's tally shows");
+  check(JSON.stringify(Object.keys(d.defaultView.stored?.pauseTally || {}).sort()) === '["at","count","day"]',
+        "the stored tally has no host or reason");
+  const needs = [...d.querySelectorAll("#needs button")];
+  check(needs.map((b) => b.textContent).join() === "Rest,Company,Calm,Something to do", "the four needs are offered");
+  check(d.getElementById("needTip").hidden, "no tip before a need is chosen");
+  needs[1].click();
+  check(!d.getElementById("needTip").hidden && d.getElementById("needTip").textContent.includes("someone you trust")
+        && needs[1].getAttribute("aria-pressed") === "true", "choosing a need shows its tip");
+  check(!d.getElementById("leavePage").disabled, "leaving is never delayed by the pause");
+
   d = await frame({ reason: "strict" });
   check(d.getElementById("title").textContent === "Not on your allowed list", "strict reason");
   check(d.getElementById("timer").hidden, "no lock, no countdown");
@@ -61,6 +76,8 @@ try {
   check(d.getElementById("title").textContent === "حُجبت بسبب فحص المحتوى", "Arabic reason title");
   check(d.getElementById("timer").textContent.startsWith("ينتهي القفل بعد"), "Arabic countdown");
   check(d.getElementById("leavePage").textContent === "افتح تبويبًا جديدًا", "Arabic static text");
+  check(d.getElementById("pauseTitle").textContent === "خذ لحظة قبل أن تكمل" && d.getElementById("tally").textContent === "أول وقفة اليوم.",
+        "Arabic pause");
 } catch (error) {
   check(false, `threw: ${error.stack || error}`);
 }

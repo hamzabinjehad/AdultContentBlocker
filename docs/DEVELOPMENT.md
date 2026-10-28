@@ -209,6 +209,11 @@ Prepare a clean local copy with
 then choose that folder in **Load unpacked** at `chrome://extensions`. Use a
 fresh output name per browser or update; the tool excludes generated `_metadata`
 caches without changing the pinned identity or overwriting a live folder.
+Loading `extension/` itself works until the manifest's rulesets change: the
+browser caches compiled rulesets by position in `extension/_metadata`, and a
+stale cache once ran the `lockdown` catch-all as `encoded_queries`, blocking
+every site. Add a new static ruleset only at the end of `rule_resources`
+(`test/ruleset-order.test.js` enforces this).
 Needs Chrome 137+ for
 Ed25519 in WebCrypto. `rules/*.json` and `seed/terms.json` are placed by
 `blocklist/seed.py sync`, never by hand — see *Seed bundle* above.

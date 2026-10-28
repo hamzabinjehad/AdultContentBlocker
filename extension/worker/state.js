@@ -52,6 +52,7 @@ export const DEFAULT_STATE = {
   inspectText: true,        // page-text scoring
   inspectVisual: false,     // explicit opt-in; model quality is not universal coverage
   personBlur: "off",        // optional estimated-face preference, not adult content
+  blockShortVideo: false,   // opt-in: Shorts, Reels, Explore, TikTok (rules/short_video.json)
   textSensitivity: 50,      // 0-100, higher = stricter (see lib/score.js)
   textAllow: [],            // hosts the user reported as WRONG page-text blocks;
                             // page-text scoring skips them. Extension-local (the
@@ -97,6 +98,7 @@ export function desiredPolicyKey(state) {
   return JSON.stringify([state.mode, state.lockUntil, state.failClosed, state.allowlist, state.customBlocks,
     state.customTerms, state.inspectText, state.textSensitivity, state.textAllow, state.ignoreTerms,
     state.inspectVisual, state.personBlur, state.personRegion, state.personEffect, state.personMedia,
+    state.blockShortVideo,
     state.listVersion, state.rulesApplied, state.keywordRulesApplied]);
 }
 
