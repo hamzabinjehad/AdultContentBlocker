@@ -16,7 +16,7 @@ public final class SavedSettings {
     public static final String UNKNOWN = "commitment_unknown", RESTORED = "restored_from_copy";
     public final String domains, words;
     public final Set<String> apps, scans;
-    public final boolean adultWords, visual;
+    public final boolean adultWords, visual, shortVideo;
     public final DailyAppSchedule schedule;
 
     private SavedSettings(Map<String, ?> values) {
@@ -26,6 +26,7 @@ public final class SavedSettings {
         scans = names(values, "scans");
         adultWords = flag(values, "adult_words");
         visual = flag(values, "visual_enabled");
+        shortVideo = flag(values, "short_video");
         schedule = new DailyAppSchedule(flag(values, "schedule_enabled"), number(values, "schedule_start", 1320),
                 number(values, "schedule_end", 420), names(values, "schedule_apps"));
     }
@@ -35,7 +36,7 @@ public final class SavedSettings {
 
     /** Every value to save, sealed. */
     public static Map<String, Object> values(String domains, String words, Set<String> apps, Set<String> scans,
-            boolean adultWords, boolean visual, DailyAppSchedule schedule, CommitmentClock clock, boolean unknown,
+            boolean adultWords, boolean visual, boolean shortVideo, DailyAppSchedule schedule, CommitmentClock clock, boolean unknown,
             boolean restored) {
         Map<String, Object> values = new HashMap<>();
         values.put("domains", domains);
@@ -44,6 +45,7 @@ public final class SavedSettings {
         values.put("scans", scans);
         values.put("adult_words", adultWords);
         values.put("visual_enabled", visual);
+        values.put("short_video", shortVideo);
         values.put("schedule_enabled", schedule.enabled);
         values.put("schedule_start", schedule.startMinute);
         values.put("schedule_end", schedule.endMinute);

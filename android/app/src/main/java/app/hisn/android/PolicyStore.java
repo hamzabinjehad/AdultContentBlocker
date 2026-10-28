@@ -37,6 +37,7 @@ public final class PolicyStore {
         public final Set<String> scannedApps;
         public final boolean adultWordsEnabled;
         public final boolean visualEnabled;
+        public final boolean shortVideoEnabled;
         public final DailyAppSchedule schedule;
 
         Snapshot(String domainText, String wordText, Set<String> apps, Set<String> scans) {
@@ -51,6 +52,10 @@ public final class PolicyStore {
         }
         Snapshot(String domainText, String wordText, Set<String> apps, Set<String> scans, boolean adultWordsEnabled,
                 DailyAppSchedule schedule, boolean visualEnabled) {
+            this(domainText, wordText, apps, scans, adultWordsEnabled, schedule, visualEnabled, false);
+        }
+        Snapshot(String domainText, String wordText, Set<String> apps, Set<String> scans, boolean adultWordsEnabled,
+                DailyAppSchedule schedule, boolean visualEnabled, boolean shortVideoEnabled) {
             if (schedule == null) throw new IllegalArgumentException("Missing daily schedule");
             if (domainText.length() > 65536 || wordText.length() > 65536) throw new IllegalArgumentException("Rules too long");
             Set<String> names = lines(domainText);
@@ -67,12 +72,13 @@ public final class PolicyStore {
             scannedApps = packages(scans);
             this.adultWordsEnabled = adultWordsEnabled;
             this.visualEnabled = visualEnabled;
+            this.shortVideoEnabled = shortVideoEnabled;
             this.schedule = schedule;
         }
 
         public boolean hasWordProtection() { return adultWordsEnabled || !words.configuredRules().isEmpty(); }
         public boolean hasConfiguredRestrictions() {
-            return !domains.blockedRules().isEmpty() || !blockedApps.isEmpty()
+            return !domains.blockedRules().isEmpty() || !blockedApps.isEmpty() || shortVideoEnabled
                     || schedule.isConfigured() || (!scannedApps.isEmpty() && (hasWordProtection() || visualEnabled));
         }
 
@@ -202,18 +208,25 @@ public final class PolicyStore {
     }
 
     public synchronized void update(String domains, String words, Set<String> apps, Set<String> scans, boolean adultWordsEnabled) {
-        save(new Snapshot(domains, words, apps, scans, adultWordsEnabled, snapshot.schedule, snapshot.visualEnabled));
+        save(new Snapshot(domains, words, apps, scans, adultWordsEnabled, snapshot.schedule, snapshot.visualEnabled,
+                snapshot.shortVideoEnabled));
     }
 
     public synchronized void updateVisual(boolean enabled) {
         save(new Snapshot(domainText(), wordText(), snapshot.blockedApps, snapshot.scannedApps,
-                snapshot.adultWordsEnabled, snapshot.schedule, enabled));
+                snapshot.adultWordsEnabled, snapshot.schedule, enabled, snapshot.shortVideoEnabled));
+    }
+
+    /** Shorts, Reels and TikTok: turning it on always works; off waits for a commitment to end. */
+    public synchronized void updateShortVideo(boolean enabled) {
+        save(new Snapshot(domainText(), wordText(), snapshot.blockedApps, snapshot.scannedApps,
+                snapshot.adultWordsEnabled, snapshot.schedule, snapshot.visualEnabled, enabled));
     }
 
     /** Other rule editors never reset a schedule; only this explicit editor changes it. */
     public synchronized void updateSchedule(DailyAppSchedule schedule) {
         save(new Snapshot(domainText(), wordText(), snapshot.blockedApps, snapshot.scannedApps,
-                snapshot.adultWordsEnabled, schedule, snapshot.visualEnabled));
+                snapshot.adultWordsEnabled, schedule, snapshot.visualEnabled, snapshot.shortVideoEnabled));
     }
 
     private void save(Snapshot next) {
@@ -224,6 +237,7 @@ public final class PolicyStore {
                 || !next.scannedApps.containsAll(previous.scannedApps)
                 || (previous.adultWordsEnabled && !next.adultWordsEnabled)
                 || (previous.visualEnabled && !next.visualEnabled)
+                || (previous.shortVideoEnabled && !next.shortVideoEnabled)
                 || !next.schedule.preserves(previous.schedule, next.blockedApps))) {
             throw new PolicyChangeError.Refused(PolicyChangeError.COMMITMENT, "Commitment prevents weakening rules");
         }
@@ -238,7 +252,7 @@ public final class PolicyStore {
     private void persist(Snapshot rules, CommitmentClock clock, boolean unknown, boolean restoredNotice) {
         Map<String, Object> values = SavedSettings.values(String.join("\n", rules.domains.blockedRules()),
                 String.join("\n", rules.words.configuredRules()), rules.blockedApps, rules.scannedApps,
-                rules.adultWordsEnabled, rules.visualEnabled, rules.schedule, clock, unknown, restoredNotice);
+                rules.adultWordsEnabled, rules.visualEnabled, rules.shortVideoEnabled, rules.schedule, clock, unknown, restoredNotice);
         if (!write(prefs, values)) throw saveFailed("Cannot save settings");
         saved = values;
         snapshot = rules;
@@ -279,7 +293,8 @@ public final class PolicyStore {
 
     private static Snapshot rules(Map<String, ?> values) {
         SavedSettings saved = SavedSettings.rules(values);
-        return new Snapshot(saved.domains, saved.words, saved.apps, saved.scans, saved.adultWords, saved.schedule, saved.visual);
+        return new Snapshot(saved.domains, saved.words, saved.apps, saved.scans, saved.adultWords, saved.schedule, saved.visual,
+                saved.shortVideo);
     }
 
     private static boolean valid(Map<String, ?> values) { rules(values); return true; }

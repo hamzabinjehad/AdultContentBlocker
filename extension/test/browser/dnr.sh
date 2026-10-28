@@ -136,6 +136,11 @@ for (const url of [
 <img src="https://s3xeducation.hisn.test/ok.png">
 <iframe src="https://www.reddit.com/r/nsfw_gifs/"></iframe>
 <iframe src="https://www.reddit.com/r/nosleep/"></iframe>
+<iframe src="https://www.youtube.com/shorts/hisnshort"></iframe>
+<iframe src="https://www.youtube.com/channel/hisnlong"></iframe>
+<iframe src="https://www.instagram.com/reels/"></iframe>
+<iframe src="https://www.instagram.com/hisnprofile/"></iframe>
+<iframe src="https://www.tiktok.com/@someone"></iframe>
 <p id=done>loaded</p></body>""".replace(b"<p id=done>", CASE_FRAMES + POLICY_FRAMES + b"<p id=done>")
 class H(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
@@ -215,7 +220,7 @@ arrived() {  # every frame that is expected to reach the server has
     for h in 'www\.google\.com' 'www\.bing\.com' 'duckduckgo\.com' 'www\.youtube\.com' \
              'kw\.hisn\.test' 'kw2\.hisn\.test' 'kw6\.hisn\.test' 'kw8\.hisn\.test' \
              'kw9\.hisn\.test' 'kw11\.hisn\.test' 'www\.milford\.hisn\.test' \
-             's3xeducation\.hisn\.test' 'www\.reddit\.com' \
+             's3xeducation\.hisn\.test' 'www\.reddit\.com' 'www\.instagram\.com' \
              'search\.brave\.com' 'mail\.yandex\.ru' 'yandex\.com\.hisn\.test' 'sotwe\.com\.hisn\.test'; do
         grep -q "^$h	" "$WORK/requests.log" 2>/dev/null || return 1
     done
@@ -262,6 +267,11 @@ expect "Milford is not milf (guarded continuation)"        '^www\.milford\.hisn\
 refuse "…while milfs still is"                              '^milfs\.hisn\.test'
 refuse "a Reddit community named nsfw (rules/paths.json)"    '^www\.reddit\.com	/r/nsfw'
 expect "…but not every community (/r/nosleep)"              '^www\.reddit\.com	/r/nosleep'
+refuse "Shorts are blocked even with youtube.com allowed"     '^www\.youtube\.com	/shorts'
+expect "…while an ordinary YouTube page still loads"         '^www\.youtube\.com	/channel/hisnlong'
+refuse "Instagram Reels are blocked"                          '^www\.instagram\.com	/reels'
+expect "…while an Instagram profile still loads"             '^www\.instagram\.com	/hisnprofile'
+refuse "TikTok is blocked when short videos are"             '^www\.tiktok\.com'
 
 for path in search images videos news; do
     # The same endpoints must be protected for fetch(), not just page loads.

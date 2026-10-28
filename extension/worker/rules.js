@@ -16,8 +16,8 @@ import {
 } from "../lib/policy.js";
 import { RULE_DOWNLOADED_KEYWORDS_BASE } from "../lib/generation.js";
 import { WORKER_SESSION, desiredPolicyKey, setState } from "./state.js";
-import { scannerRegistrationMatches, syncTextScanning, syncVisualScanning,
-         TEXT_SCANNER, VISUAL_SCANNER } from "./scanners.js";
+import { scannerRegistrationMatches, shortVideoRegistrationMatches, syncShortVideo, syncTextScanning,
+         syncVisualScanning, SHORT_VIDEO_SCRIPT, TEXT_SCANNER, VISUAL_SCANNER } from "./scanners.js";
 import { enforceOpenTabs } from "./tabs.js";
 
 const RULESET_BLOCKLIST = "blocklist";
@@ -42,6 +42,9 @@ const RULESET_ENCODED_QUERIES = "encoded_queries";
 // "nsfw" in a Reddit community's name. Kept out of the keyword list, which
 // matches every site.
 const RULESET_PATHS = "paths";
+// Opt-in: Shorts, Reels, Explore and TikTok, for people who find short-video
+// feeds a way in. Off unless chosen, so it is not part of the baseline.
+const RULESET_SHORT_VIDEO = "short_video";
 export const BASELINE_RULESETS = [RULESET_BLOCKLIST, RULESET_KEYWORDS, RULESET_SAFESEARCH,
                                   RULESET_PATHS, RULESET_WEB_PROTECTION, RULESET_EVASION,
                                   RULESET_ENCODED_QUERIES];
@@ -80,8 +83,10 @@ export async function applyRules(state) {
     await syncTextScanning(state);
     phase = "visual-scanner";
     await syncVisualScanning(state);
+    phase = "short-video-script";
+    await syncShortVideo(state);
     phase = "scanner-readback";
-    const scripts = await chrome.scripting.getRegisteredContentScripts({ ids: ["hisn-scan", "hisn-visual"] });
+    const scripts = await chrome.scripting.getRegisteredContentScripts({ ids: ["hisn-scan", "hisn-visual", SHORT_VIDEO_SCRIPT.id] });
     for (const [layer, expected, wanted] of [
       ["text", TEXT_SCANNER, state.inspectText || state.failClosed || isLocked(state)],
       ["visual", VISUAL_SCANNER, state.inspectVisual === true || (state.personBlur && state.personBlur !== "off")],
@@ -92,6 +97,12 @@ export async function applyRules(state) {
         throw new Error("scanner registration readback mismatch");
       }
       receipt.layers[layer] = wanted ? "applied" : "off";
+    }
+    const shortVideo = state.blockShortVideo === true;
+    const shortVideoScript = scripts.find(script => script.id === SHORT_VIDEO_SCRIPT.id);
+    if (shortVideo ? !shortVideoRegistrationMatches(shortVideoScript) : !!shortVideoScript) {
+      phase = "short-video-registration-readback";
+      throw new Error("short-video registration readback mismatch");
     }
     // Only replace owned policy ids. Downloaded rules retain their separate
     // band, so lock/settings changes cannot wipe the signed blocklist.
@@ -118,14 +129,17 @@ export async function applyRules(state) {
     // Chrome persists static ruleset enablement. Retire its legacy catch-all
     // only after the dynamic replacement and registrations are verified.
     phase = "ruleset-retirement";
-    await chrome.declarativeNetRequest.updateEnabledRulesets({ enableRulesetIds: BASELINE_RULESETS,
-      disableRulesetIds: [RULESET_LOCKDOWN] });
+    await chrome.declarativeNetRequest.updateEnabledRulesets({
+      enableRulesetIds: shortVideo ? [...BASELINE_RULESETS, RULESET_SHORT_VIDEO] : BASELINE_RULESETS,
+      disableRulesetIds: shortVideo ? [RULESET_LOCKDOWN] : [RULESET_LOCKDOWN, RULESET_SHORT_VIDEO] });
     phase = "ruleset-readback";
     const enabled = await chrome.declarativeNetRequest.getEnabledRulesets();
-    if (BASELINE_RULESETS.some(id => !enabled.includes(id)) || enabled.includes(RULESET_LOCKDOWN)) {
+    if (BASELINE_RULESETS.some(id => !enabled.includes(id)) || enabled.includes(RULESET_LOCKDOWN)
+        || enabled.includes(RULESET_SHORT_VIDEO) !== shortVideo) {
       throw new Error("enabled ruleset readback mismatch");
     }
     receipt.layers.domains = receipt.layers.search = "applied";
+    receipt.layers.shortVideo = shortVideo ? "applied" : "off";
     phase = "open-tabs";
     await enforceOpenTabs(state);
     receipt.status = "applied";

@@ -129,3 +129,40 @@ export async function injectScannerIntoOpenTabs() {
     target: { tabId: t.id, allFrames: true }, files: ["content/feed.js", "content/scan.js"],
   }).catch(() => { /* a tab that closed, or a page we may not script */ })));
 }
+
+/** Short-video blocking inside single-page apps (see content/short-video.js).
+ *  Top frame only, and only on the sites whose in-app navigation the network
+ *  rules cannot see. */
+export const SHORT_VIDEO_SCRIPT = {
+  id: "hisn-short-video", js: ["content/short-video.js"],
+  matches: ["*://*.youtube.com/*", "*://*.instagram.com/*", "*://*.facebook.com/*", "*://*.snapchat.com/*"],
+};
+
+export function shortVideoRegistrationMatches(current) {
+  if (!current || current.id !== SHORT_VIDEO_SCRIPT.id) return false;
+  // Chrome reads `matches` back sorted, so compare as sets of patterns.
+  const sorted = (list) => JSON.stringify([...(list || [])].sort());
+  if (sorted(current.js) !== sorted(SHORT_VIDEO_SCRIPT.js) || sorted(current.matches) !== sorted(SHORT_VIDEO_SCRIPT.matches)) return false;
+  return current.runAt === "document_start" && current.allFrames !== true && current.persistAcrossSessions === true
+    && (current.world === undefined || current.world === "ISOLATED") && !(current.excludeMatches || []).length;
+}
+
+export async function syncShortVideo(state) {
+  const { id, js, matches } = SHORT_VIDEO_SCRIPT;
+  const existing = (await chrome.scripting.getRegisteredContentScripts({ ids: [id] }).catch(() => []))
+    .find((script) => script.id === id);
+  if (state.blockShortVideo !== true) {
+    if (existing) await chrome.scripting.unregisterContentScripts({ ids: [id] });
+    return;
+  }
+  if (shortVideoRegistrationMatches(existing)) return;
+  if (existing) await chrome.scripting.unregisterContentScripts({ ids: [id] });
+  await chrome.scripting.registerContentScripts([{
+    id, js, matches, runAt: "document_start", allFrames: false, persistAcrossSessions: true,
+  }]);
+  // Tabs already open on these sites would otherwise keep playing Shorts.
+  let tabs = [];
+  try { tabs = await chrome.tabs.query({ url: matches }); } catch { return; }
+  await Promise.all(tabs.map((tab) => chrome.scripting.executeScript({ target: { tabId: tab.id }, files: js })
+    .catch(() => { /* a closed or unpermitted tab */ })));
+}

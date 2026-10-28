@@ -45,6 +45,21 @@ public final class GuardTestSetupActivity extends Activity {
                         + " " + DnsVpnService.browserCanaryStatus());
                 return;
             }
+            if ("restriction-screen".equals(mode)) {
+                // Opens the restriction screen and its pause without needing a live guard intervention.
+                startActivity(new android.content.Intent(this, RestrictionActivity.class)
+                        .putExtra("word", getIntent().getBooleanExtra("word", false))
+                        .putExtra("schedule", getIntent().getBooleanExtra("schedule", false))
+                        .putExtra("visual", getIntent().getBooleanExtra("visual", false)));
+                report("PASS " + mode);
+                return;
+            }
+            if ("short-video-on".equals(mode) || "short-video-off".equals(mode)) {
+                PolicyStore.get(this).updateShortVideo("short-video-on".equals(mode));
+                report("PASS " + mode + " SHORT_VIDEO_INTERVENTIONS " + TextGuardService.shortVideoInterventions
+                        + " CONNECTED " + TextGuardService.connected + " OUTCOME " + TextGuardService.inspectionOutcome);
+                return;
+            }
             if ("schedule-policy-test".equals(mode)) {
                 SchedulePolicyChecks.run(this);
                 report("PASS " + mode);

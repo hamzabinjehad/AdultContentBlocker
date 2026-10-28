@@ -69,6 +69,8 @@ public final class MainActivity extends Activity {
     private TextView scheduleState;
     private TextView networkCheckState;
     private Button adultToggle;
+    private Button shortVideoToggle;
+    private TextView shortVideoState;
     private Button checkNetwork;
     private Button setupNext;
     private SetupGuide.Step currentSetupStep = SetupGuide.Step.CHOOSE_RULES;
@@ -207,6 +209,13 @@ public final class MainActivity extends Activity {
         visualToggle.setAllCaps(false);
         root.addView(visualToggle, layout());
         visualToggle.setOnClickListener(view -> editVisualMode());
+        shortVideoState = paragraph(R.string.short_video_off);
+        shortVideoToggle = new Button(this);
+        shortVideoToggle.setText(R.string.short_video_enable);
+        shortVideoToggle.setAllCaps(false);
+        shortVideoToggle.setEnabled(settings != null);
+        root.addView(shortVideoToggle, layout());
+        shortVideoToggle.setOnClickListener(view -> editShortVideo());
         scheduleState = paragraph(R.string.schedule_off);
         policyButton(R.string.schedule_edit, view -> editSchedule());
         policyButton(R.string.enable_text_guard, view -> new AlertDialog.Builder(this)
@@ -506,7 +515,11 @@ public final class MainActivity extends Activity {
         if (settings == null) { setupState.setText(R.string.policy_unavailable); setupNext.setEnabled(false); return; }
         PolicyStore.Snapshot rules = settings.snapshot();
         boolean appRules = !rules.blockedApps.isEmpty() || (rules.schedule.enabled && rules.schedule.isConfigured())
-                || (!rules.scannedApps.isEmpty() && (rules.hasWordProtection() || rules.visualEnabled));
+                || (!rules.scannedApps.isEmpty() && (rules.hasWordProtection() || rules.visualEnabled))
+                || rules.shortVideoEnabled;
+        shortVideoState.setText(rules.shortVideoEnabled ? R.string.short_video_on : R.string.short_video_off);
+        shortVideoToggle.setText(rules.shortVideoEnabled ? R.string.short_video_disable : R.string.short_video_enable);
+        shortVideoToggle.setEnabled(!rules.shortVideoEnabled || settings.remainingMillis() == 0);
         if (rules.adultWordsEnabled) {
             switch (AdultPolicyAssets.state) {
                 case READY:
@@ -590,6 +603,21 @@ public final class MainActivity extends Activity {
                         if (!enabled) AdultPolicyAssets.ensureLoaded(this);
                         refreshStatus();
                     } catch (RuntimeException refused) { showRefusal(refused); }
+                }).show();
+    }
+
+    private void editShortVideo() {
+        if (settings == null) return;
+        boolean enabled = settings.snapshot().shortVideoEnabled;
+        new AlertDialog.Builder(this).setTitle(enabled ? R.string.short_video_disable : R.string.short_video_enable)
+                .setMessage(R.string.short_video_disclosure).setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.save_rules, (dialog, which) -> {
+                    try {
+                        settings.updateShortVideo(!enabled);
+                        refreshStatus();
+                    } catch (RuntimeException unavailable) {
+                        Toast.makeText(this, R.string.rules_locked, Toast.LENGTH_LONG).show();
+                    }
                 }).show();
     }
 

@@ -446,6 +446,7 @@ export const USER_FIELDS = Object.freeze({
   personEffect:    { kind: "enum", values: ["solid", "blur"] },
   personMedia:     { kind: "enum", values: ["both", "images", "videos"] },
   textSensitivity: { kind: "int", min: 0, max: 100 },
+  blockShortVideo: { kind: "bool" },
 });
 
 /** Visual options are browser-owned, but cannot weaken a running commitment.

@@ -16,6 +16,22 @@ and VPN/lifecycle testing remain pending. Visual accuracy and real-app capture a
 remain pending; the isolated live fixture sequence passes. Usage limits, full traffic coverage and managed-device uninstall
 blocking are not implemented.
 
+## In progress: pause screen and short-video blocking (not yet released)
+
+- The restriction screen opens with a pause: three guided breaths, a reminder,
+  a "What do you need right now?" choice with tips, and today's pause count
+  (a local date and number only). Returning home is never delayed. Checked on
+  the Samsung in Arabic and English in an isolated debug install.
+- **Block short videos** in Rules leaves YouTube Shorts and Instagram Reels with
+  BACK, so the rest of each app stays usable, and closes TikTok. Players are
+  recognised by view ID (`core/.../ShortVideoSurfaces.java`); no screen text is
+  read. Commitment-locked like other layers. On the Samsung with YouTube 21.15
+  (isolated debug install, 2026-10-28): all three Shorts player IDs were present
+  in the Shorts tab and absent from the home feed; opening Shorts showed the
+  restriction screen and left YouTube on its home feed; reopening YouTube and
+  playing an ordinary video caused no intervention. Instagram Reels IDs and
+  TikTok remain unconfirmed on a device (neither app was installed).
+
 ## 0.5.3 honest status, notices and housekeeping
 
 The setup guide now reaches ready for DNS alone, the selected-app layer alone, or

@@ -35,6 +35,7 @@ class PrepareUnpackedTests(unittest.TestCase):
             "lib/score.js": b'export {norm} from "./normalize.js";\n',
             "lib/normalize.js": b'export const norm = 1;\n',
             "content/feed.js": b'globalThis.HisnFeed = {};\n', "content/scan.js": b'void 0;\n',
+            "content/short-video.js": b'void 0;\n',
             "seed/terms.json": b'{"fixture":true}\n', "rules/block.json": b'[]\n',
             "icons/icon.png": b'PNG-fixture\x00\xff', "ui.css": b'body { color: blue; }\n',
             "popup.html": b'<link href="ui.css"><img src="icons/icon.png"><script src="popup.js"></script>',
