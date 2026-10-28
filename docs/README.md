@@ -108,6 +108,7 @@ Per-version change and verification notes, newest first.
 
 ### Browser extension
 
+- [Extension 1.2.0 release notes](EXTENSION_1.2.0.md): Signed-list block-page reason, Strict-mode preservation across a mode-less bridge reply, list age plus a manual update action, and Facebook share/reel coverage.
 - [Extension 1.1.12 release notes](EXTENSION_1.1.12.md): Glued phrase matching, Persian/Urdu normalisation, generated obfuscation and encoded-query rulesets, and an organised worker.
 - [Extension 1.1.11 release notes](EXTENSION_1.1.11.md): Text scanner hardening: phrase tree, disguised-word detection, French form fix and corpus checks at three sensitivities. *Historical.*
 - [Extension 1.1.10 release notes](EXTENSION_1.1.10.md): Faster model preparation and a larger verdict cache that removes repeat image checks, with measured results. *Historical.*

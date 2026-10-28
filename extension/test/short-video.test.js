@@ -10,6 +10,7 @@ const blocked = [
   "https://www.youtube.com/shorts/abc123", "https://m.youtube.com/shorts/abc123?feature=share",
   "https://youtube.com/shorts", "https://www.instagram.com/reels/", "https://www.instagram.com/reel/Cx1/",
   "https://www.instagram.com/explore/", "https://www.facebook.com/reel/123", "https://m.facebook.com/watch/reels/",
+  "https://www.facebook.com/share/reel/abc123/",
   "https://www.snapchat.com/spotlight/xyz", "https://WWW.YOUTUBE.COM/Shorts/abc",
 ];
 const allowed = [

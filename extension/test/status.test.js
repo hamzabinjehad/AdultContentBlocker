@@ -51,11 +51,15 @@ for (const missing of [undefined, null, "", 0, { ok: false, reason: "internal-er
   check(s.lock.locked === false && s.lock.headline === "No active lock",
         "standalone: no lock");
   check(/need the Hisn app/.test(s.lock.detail), "standalone: locks need the app");
-  check(s.notices.length === 0, "standalone: no warnings — not a fault");
+  check(s.notices.length === 1 && s.notices[0].kind === "info"
+        && /built-in block list/.test(s.notices[0].text),
+        "standalone: says it is on the built-in list, as information not a warning");
   check(s.details.find(([k]) => k === "Hisn app")[1] === "not connected",
         "standalone: missing connection does not prove app is absent");
   check(s.details.find(([k]) => k === "Block list")[1] === "bundled list only",
         "standalone: no downloaded rules → bundled only, not a version number");
+  check(s.details.find(([k]) => k === "Block list updated")[1] === "not yet",
+        "standalone: never-updated list is named, not guessed");
 }
 
 // ── with the app, connected ───────────────────────────────────────────────
@@ -69,6 +73,8 @@ for (const missing of [undefined, null, "", 0, { ok: false, reason: "internal-er
   check(/Start a lock from the Hisn app/.test(s.lock.detail), "connected: points at the app");
   check(s.details.find(([k]) => k === "Block list")[1] === "v42 · 148000 rules",
         "connected: enforced rules, with version");
+  check(s.details.find(([k]) => k === "Block list updated")[1] === "not yet",
+        "connected: a version without a recorded install time is not shown as fresh");
   check(s.notices.length === 0, "connected: nothing to warn about");
 }
 
@@ -112,6 +118,23 @@ for (const missing of [undefined, null, "", 0, { ok: false, reason: "internal-er
   check(/strict mode automatically/.test(fc.protection.detail), "fail-closed: explains the tightening");
   check(/^Strict mode/.test(fc.lock.detail), "fail-closed: lock line reads strict");
   check(fc.notices.some((n) => /restore/.test(n.text)), "fail-closed: says how to restore");
+}
+
+// ── list freshness ─────────────────────────────────────────────────────────
+{
+  const installed = (days) => ({ ...base, listVersion: 7, rulesApplied: 100,
+    lastListUpdate: NOW - days * 86_400_000,
+    enforcement: { ...base.enforcement, downloadedRules: { domains: 100, keywords: 0, listVersion: 7 } } });
+  const fresh = describe(installed(3));
+  check(!fresh.notices.some((n) => /has not updated/.test(n.text)), "a three-day-old list is not stale");
+  check(fresh.details.find(([k]) => k === "Block list updated")[1] === when(NOW - 3 * 86_400_000),
+        "the install time is shown for a downloaded list");
+  const stale = describe(installed(20));
+  check(stale.notices.some((n) => n.kind === "warn" && /20 days/.test(n.text)),
+        "a twenty-day-old list warns with the age");
+  const future = describe(installed(-5));
+  check(!future.notices.some((n) => /has not updated/.test(n.text)),
+        "a clock-skewed future timestamp does not produce a negative-age warning");
 }
 
 // ── details ────────────────────────────────────────────────────────────────

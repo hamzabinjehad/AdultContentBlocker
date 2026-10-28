@@ -24,7 +24,7 @@
 
 import { send } from "./lib/messages.js";
 import {visualPolicyWeakens} from './lib/policy.js';
-import { describeStatus, describeEnforcement } from "./lib/status.js";
+import { describeStatus, describeEnforcement, formatWhen } from "./lib/status.js";
 import { renderIcons } from "./lib/icons.js";
 import { siteEditor } from "./lib/site-editor.js";
 import { describeVisual } from "./lib/visual-status.js";
@@ -374,6 +374,21 @@ function showState(state, fill = false, verified = true) {
   updateDrafts();
   renderVisualSettings();
   renderShortVideo();
+  renderListUpdate(state);
+}
+
+/** The list's real state beside its Update button: version and install time,
+ *  or plainly that only the bundled list is in use. Never a green "current"
+ *  from a version number alone. */
+function renderListUpdate(state) {
+  const el = $("listUpdateStatus");
+  if (!el) return;
+  if (!state || state.ok === false) { el.textContent = ""; return; }
+  const version = state.listVersion || 0;
+  const at = state.lastListUpdate || 0;
+  el.textContent = !version ? t("opt.list.bundled")
+    : at ? t("opt.list.installed", version, formatWhen(at))
+    : t("opt.list.installedNoTime", version);
 }
 
 function renderShortVideo() {
@@ -589,6 +604,31 @@ $("repairProtection").onclick = async () => {
     button.removeAttribute("aria-busy");
   }
 };
+$("updateList").addEventListener("click", async (event) => {
+  const button = event.currentTarget, message = $("listUpdateMessage");
+  if (button.disabled) return;
+  button.disabled = true;
+  button.setAttribute("aria-busy", "true");
+  message.className = "msg";
+  message.textContent = t("opt.list.updating");
+  try {
+    const result = await send({ type: "updateListNow" });
+    if (result?.ok) {
+      message.className = "msg success";
+      message.textContent = result.updated
+        ? t("opt.list.updated", result.version ?? "")
+        : t("opt.list.current");
+      const state = await send({ type: "getState" });
+      if (state && state.ok !== false) showState(state, !!state.appPresent);
+    } else {
+      message.className = "msg error";
+      message.textContent = t("opt.list.failed");
+    }
+  } finally {
+    button.disabled = false;
+    button.removeAttribute("aria-busy");
+  }
+});
 // Reflect a native connection that happens while Settings is open. Preserve
 // drafts for browser-only edits; app-owned values are always shown read-only.
 chrome.storage.onChanged.addListener((changes, area) => {

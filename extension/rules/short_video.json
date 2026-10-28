@@ -24,7 +24,7 @@
     "priority": 2000,
     "action": { "type": "redirect", "redirect": { "extensionPath": "/blocked.html?reason=shortvideo" } },
     "condition": {
-      "regexFilter": "^https?://([a-z0-9-]+\\.)*facebook\\.com/(reels?|watch/reels?)([/?#]|$)",
+      "regexFilter": "^https?://([a-z0-9-]+\\.)*facebook\\.com/(reels?|watch/reels?|share/reel)([/?#]|$)",
       "isUrlFilterCaseSensitive": false,
       "resourceTypes": ["main_frame", "sub_frame"]
     }

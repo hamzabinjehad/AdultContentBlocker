@@ -40,7 +40,7 @@ distribution and freshness — not a missing feature list.
 
 | Platform | Code state | Release state | The real gap |
 | --- | --- | --- | --- |
-| Chromium extension | 1.1.12 plus the newly committed short-video/pause work | Not on the Chrome Web Store; unpacked only | Store publication, managed force-install, one real-browser acceptance pass |
+| Chromium extension | 1.2.0 development candidate (short-video/pause, list freshness, clearer list blocks) | Not on the Chrome Web Store; unpacked only | Store publication, managed force-install, one real-browser acceptance pass |
 | Mac | 1.1.4; filter, browser guard, guardian split, profile, partner key | Unsigned, unnotarized, no app updater | A signed `.pkg`, an update path, and the hardware checks in `TEST_MATRIX.md` |
 | iPhone/iPad | 1.1.2 development; Screen Time, Safari blockers, vault, supervised profile | No Apple team, no Family Controls entitlement, no device | Entitlement, a disposable iPhone, device acceptance of every lock level |
 | Android | 0.6.0 preview; direct-build uninstall guard and boot shield now committed | No signed production APK; device-owner flow unproven | A disposable device-owner phone, safe-boot/app-control restrictions, signed release |

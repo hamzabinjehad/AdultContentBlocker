@@ -115,10 +115,10 @@ async function fetchGeneration() {
   const probe = await acceptList({ manifestBytes, signatureHex, artifacts: new Map(), heldVersion });
   if (!probe.ok) {
     console.error("[hisn] list rejected:", probe.reason);
-    return null;
+    return { ok: false, reason: "signature" };
   }
   if (probe.manifest.version === state.listVersion && await downloadedRulesIntact(state)) {
-    return null;
+    return { ok: true, current: true };
   }
 
   // The whole generation, fetched together. Every artifact is verified
@@ -131,7 +131,7 @@ async function fetchGeneration() {
   const verified = await acceptList({ manifestBytes, signatureHex, artifacts, heldVersion });
   if (!verified.ok) {
     console.error("[hisn] generation rejected:", verified.reason);
-    return null;
+    return { ok: false, reason: "generation" };
   }
 
   // Shape and plausibility, after the hashes. A validly signed list that
@@ -140,9 +140,9 @@ async function fetchGeneration() {
   const plan = planGeneration(verified.manifest, artifacts);
   if (!plan.ok) {
     console.error("[hisn] generation not installable:", plan.reason, "— keeping current");
-    return null;
+    return { ok: false, reason: "not-installable" };
   }
-  return { plan, version: verified.manifest.version };
+  return { ok: true, current: false, plan, version: verified.manifest.version };
 }
 
 /** Install a verified generation — the only part that takes the lock. */
@@ -170,12 +170,41 @@ async function installGeneration({ plan, version }) {
  * guard then closed a browser whose extension was working. Only the install
  * needs the lock now.
  */
+let updateInFlight = null;
+
+/**
+ * Check for a newer signed generation now. One update at a time: the automatic
+ * six-hour alarm and a person pressing "Update now" must not download and
+ * install twice, and the second caller should see the first one's answer.
+ *
+ * Returns `{ ok, updated, version?, reason? }`. A failed or refused update is
+ * not an error state for protection: the previous signed generation stays in
+ * force, which is why the reply says `updated: false` rather than pretending
+ * the list changed.
+ */
+export function updateListNow(transaction) {
+  if (updateInFlight) return updateInFlight;
+  updateInFlight = (async () => {
+    try {
+      const next = await fetchGeneration();
+      if (!next.ok) return { ok: false, updated: false, reason: next.reason };
+      if (next.current) {
+        return { ok: true, updated: false, reason: "current", version: (await getState()).listVersion };
+      }
+      await transaction(() => installGeneration(next));
+      return { ok: true, updated: true, version: (await getState()).listVersion };
+    } catch (err) {
+      console.warn("[hisn] list update failed, keeping current list:",
+        err?.message ?? err);
+      return { ok: false, updated: false, reason: "update-failed" };
+    } finally {
+      updateInFlight = null;
+    }
+  })();
+  return updateInFlight;
+}
+
+/** The alarm path: fetch and install if there is a newer generation. */
 export async function updateList(transaction) {
-  try {
-    const next = await fetchGeneration();
-    if (next) await transaction(() => installGeneration(next));
-  } catch (err) {
-    console.warn("[hisn] list update failed, keeping current list:",
-      err?.message ?? err);
-  }
+  await updateListNow(transaction);
 }

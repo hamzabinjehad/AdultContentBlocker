@@ -82,6 +82,18 @@ export function describeStatus(state, opts = {}) {
     && now - (state.lastHeartbeat || 0) < HEARTBEAT_GRACE_MS;
   const notices = [];
   const enforcement = describeEnforcement(state);
+  // A list that cannot change is a coverage problem even when every rule that
+  // IS installed is working. Say so plainly; never let a version number imply
+  // freshness. `lastListUpdate` is written only after a verified install.
+  const listVersion = state.listVersion || 0;
+  const listAt = state.lastListUpdate || 0;
+  const listAgeDays = listAt ? Math.max(0, Math.floor((now - listAt) / 86_400_000)) : null;
+  if (enforcement.status === "applied") {
+    if (!listVersion) notices.push({ kind: "info", text: t("status.listBundled") });
+    else if (listAgeDays !== null && listAgeDays >= 14) {
+      notices.push({ kind: "warn", text: t("status.listStale", listAgeDays) });
+    }
+  }
 
   // ── protection ──────────────────────────────────────────────────────────
   // Stored intent or a heartbeat alone is not proof Chrome installed it.
@@ -149,6 +161,7 @@ export function describeStatus(state, opts = {}) {
     [t("details.blockList"), enforcement.layers.domains.level !== "active" ? enforcement.layers.domains.text
       : rules ? listVerified ? t("details.blockListValue", state.enforcement.downloadedRules.listVersion, rules)
         : t("details.downloadedCount", rules) : t("details.bundledOnly")],
+    [t("details.listUpdated"), listAt ? when(listAt) : t("details.never")],
     [t("details.mode"), enforcement.layers.domains.level === "active"
       ? effectiveStrict(state) ? t("mode.strict") : t("mode.standard")
       : t("details.requestedValue", effectiveStrict(state) ? t("mode.strict") : t("mode.standard"))],

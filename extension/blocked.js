@@ -14,7 +14,7 @@ import { BREATH, NEEDS, recordPause, reminderFor } from "./lib/pause.js";
 await initLanguage();
 renderIcons();
 
-const REASONS = new Set(["strict", "custom", "terms", "shortvideo"]);
+const REASONS = new Set(["domain", "strict", "custom", "terms", "shortvideo"]);
 
 function formatRemaining(ms) {
   if (ms <= 0) return null;

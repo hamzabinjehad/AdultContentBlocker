@@ -23,7 +23,7 @@ import { cancelVisualTab, getVisualStatus, handleVisualMessage } from "./visual/
 import { DEFAULT_STATE, getState, toolbarStatus } from "./worker/state.js";
 import { applyRules } from "./worker/rules.js";
 import { pollNative } from "./worker/native.js";
-import { updateList } from "./worker/lists.js";
+import { updateList, updateListNow } from "./worker/lists.js";
 import { guardedUpdate } from "./worker/updates.js";
 import {
   reportWrongBlock, reportWrongWord, resolveDisputed, scoreFeedItem, scoreText,
@@ -135,7 +135,8 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
  * frame in a tab.
  */
 const PAGE_MESSAGES = new Set(["getState", "update", "forceSync", "reportWrongBlock",
-                               "reportWrongWord", "resolveDisputed", "getVisualStatus", "repairProtection"]);
+                               "reportWrongWord", "resolveDisputed", "getVisualStatus", "repairProtection",
+                               "updateListNow"]);
 
 function fromExtensionPage(sender) {
   return sender?.id === chrome.runtime.id
@@ -185,6 +186,9 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         break;
       case "forceSync":
         sendResponse(await transaction(pollNative));
+        break;
+      case "updateListNow":
+        sendResponse(await updateListNow(transaction));
         break;
       case "repairProtection":
         // A browser-only repair reasserts the policy already held here. It

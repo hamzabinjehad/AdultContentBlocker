@@ -19,7 +19,7 @@
   const BLOCKED_PATHS = [
     { host: "youtube.com", path: /^\/shorts(\/|$)/i },
     { host: "instagram.com", path: /^\/(reels?|explore)(\/|$)/i },
-    { host: "facebook.com", path: /^\/(reels?|watch\/reels?)(\/|$)/i },
+    { host: "facebook.com", path: /^\/(reels?|watch\/reels?|share\/reel)(\/|$)/i },
     { host: "snapchat.com", path: /^\/spotlight(\/|$)/i },
   ];
   const HIDDEN = [

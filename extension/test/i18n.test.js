@@ -32,7 +32,7 @@ for (const file of ["../popup.html", "../options.html", "../blocked.html"]) {
 for (const file of ["../popup.js", "../options.js", "../blocked.js", "../lib/status.js", "../lib/settings.js", "../lib/site-editor.js"]) {
   for (const m of readFile(file).matchAll(/\bt\("([^"]+)"/g)) used.add(m[1]);
 }
-for (const reason of ["default", "strict", "custom", "terms", "shortvideo"]) {           // blocked.js builds these
+for (const reason of ["default", "domain", "strict", "custom", "terms", "shortvideo"]) {           // blocked.js builds these
   used.add(`blocked.${reason}.title`); used.add(`blocked.${reason}.subtitle`);
 }
 for (const need of NEEDS) { used.add(`pause.need.${need}`); used.add(`pause.need.${need}.tip`); }  // blocked.js builds these

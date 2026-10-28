@@ -75,7 +75,10 @@ export async function pollNative() {
     // JSON; a malformed list is not an empty list.
     const patch = {
       lockUntil: Math.max(0, Math.floor(reply.lockUntil)),
-      mode: "blocklist",
+      // `mode` is deliberately absent here. The bridge sends it on every reply
+      // today, and a field a reply does not mention must be left alone; a
+      // default of "blocklist" here would rewrite a running Strict lock to
+      // Standard if an older or broken bridge omitted it.
       ...bridgePatch(reply),
       lastHeartbeat: Date.now(),
       failClosed: false,

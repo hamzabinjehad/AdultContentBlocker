@@ -12,6 +12,10 @@ the browser rejects a reserved filename. Alternatively, install the published
 extension when available. Open the Hisn popup and
 choose **Settings**. The bundled domain rules and page-text checking work
 without a native app connection. Verified list updates run in the extension.
+**Settings → Block list updates** shows the installed list version and when it
+was last installed. Automatic checks run every six hours; **Update block list**
+checks now. A failed download or signature check keeps the current list and
+says so, and status calls out a list that has not updated for 14 days.
 
 **Standard** mode blocks listed domains and applies content checks. **Strict**
 mode limits browsing to saved allowed sites; save the sites you need before
@@ -35,8 +39,8 @@ today's pauses. The count is a date and a number in this browser's storage; no
 site or reason is kept.
 
 **Content options → Short videos** blocks YouTube Shorts, Instagram Reels and
-Explore, Facebook Reels, Snapchat Spotlight and TikTok, while ordinary videos,
-posts and profiles stay open. It applies even to a site on the allowed list,
+Explore, Facebook Reels (including shared reels), Snapchat Spotlight and TikTok,
+while ordinary videos, posts and profiles stay open. It applies even to a site on the allowed list,
 and during a lock it can be turned on but not off. Inside YouTube and Instagram
 the switch between feed and Shorts happens without a page load, so a small
 script on those sites watches the address and hides Shorts shelves; it reads

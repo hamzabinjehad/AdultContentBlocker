@@ -220,6 +220,11 @@ dynamic.push({ id: 10000, priority: 3, action: { type: "block" },
 await message({ type: "update", patch: { textSensitivity: 60 } });
 nativeReply = { lockUntil: Date.now() + 3600000, mode: "strict", allowlist: [], customBlocks: [] };
 await message({ type: "forceSync" });
+const strictDeadline = state.lockUntil;
+nativeReply = { lockUntil: strictDeadline, allowlist: [], customBlocks: [] };
+await message({ type: "forceSync" });
+check(state.mode === "strict" && state.lockUntil === strictDeadline,
+      "a bridge reply that omits mode cannot reset Strict to Standard");
 nativeReply = null;
 check(dynamic.some((r) => r.id === 10000), "downloaded rules survive settings and lock changes");
 check(dynamic.some((r) => r.condition.urlFilter === "*"), "and the lock's strict rules are in place beside them");
@@ -268,7 +273,7 @@ check(!(await pending).ok, "a hung native host times out and counts as unreachab
 nativeReply = null;
 
 // Who may send what: a web page's content script only ever scores text.
-for (const type of ["update", "resolveDisputed", "reportWrongWord", "reportWrongBlock", "getState", "forceSync", "repairProtection"]) {
+for (const type of ["update", "resolveDisputed", "reportWrongWord", "reportWrongBlock", "getState", "forceSync", "repairProtection", "updateListNow"]) {
   r = await message({ type, patch: { customBlocks: [] } }, PAGE);
   check(!r.ok && r.reason === "forbidden-sender", `a content script cannot send ${type}`);
 }

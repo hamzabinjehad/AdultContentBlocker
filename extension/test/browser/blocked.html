@@ -65,6 +65,8 @@ try {
 
   d = await frame({ reason: "strict" });
   check(d.getElementById("title").textContent === "Not on your allowed list", "strict reason");
+  d = await frame({ reason: "domain" });
+  check(d.getElementById("title").textContent === "Blocked by the site list", "signed-list reason");
   check(d.getElementById("timer").hidden, "no lock, no countdown");
   check(d.getElementById("reportRow").hidden, "only a content-check block offers a report");
 
