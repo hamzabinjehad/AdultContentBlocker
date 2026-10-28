@@ -47,12 +47,17 @@ build to Google Play.
   - the storage page (clear data)
   - device-admin deactivation
   - Hisn's own accessibility toggle ("Use Hisn")
+  - the power menu's Safe Mode screen or dialog (System UI, or `android` on
+    older AOSP). Power off and restart stay available.
 
-  English and Arabic Settings labels are matched. Pages that only list Hisn
+  English, Arabic and German Settings labels are matched. The Safe Mode label
+  must be a whole line ("Sicherer Modus", "Safe mode"), so a notification that
+  only mentions safe mode is not acted on. Pages that only list Hisn
   stay usable. The matching rules are in `app.hisn.core.SelfProtectionScreens`
   and tested by `SelfProtectionScreensTest`.
 - **Privacy.** While the switch is on, the visible text of those system windows
-  is read on the device to recognise the screens. It is not stored or sent
+  is read on the device to recognise the screens. System UI includes the
+  notification shade, so its text is read too. It is not stored or sent
   anywhere. The direct build shows a separate accessibility disclosure that says
   so.
 - **Device admin.** In the direct build the protection dialog also offers the
@@ -60,7 +65,10 @@ build to Google Play.
   guard leaves that screen too.
 
 It does **not** survive any of these:
-- Safe Mode, which turns third-party accessibility off
+- Safe Mode entered with the hardware keys during boot, which no app can see
+  (Safe Mode turns third-party accessibility off)
+- tapping the Safe Mode button again within the guard's reaction time
+  (about 120 ms plus a screen read; not measured)
 - `adb uninstall`, or root
 - a factory reset
 - Hisn's accessibility service being off or killed by the OEM (the status line
@@ -84,6 +92,10 @@ commitment running.
   - App info for another app
   - the accessibility list and the "Installed apps" list
   - the Settings home and the apps list
+- Safe Mode: long-pressing "Ausschalten" opened Samsung's "Sicherer Modus"
+  screen, and the guard closed it back to the ordinary power menu. The
+  ordinary power menu (Ausschalten, Neustart, Notruf) stayed open. The fast
+  double-tap race was not tried, because losing it would reboot the phone.
 - With the switch off, App info opened normally again.
 - Not yet checked on hardware: the storage page and device-admin deactivation
   (they are covered by the captured-text unit tests). Each block also counts

@@ -57,9 +57,33 @@ public final class SelfProtectionScreensTest {
                 "Hisn\nUninstall", names), "unwatched app blocked");
         check(!SelfProtectionScreens.isTamperScreen(settings, "", names), "empty window blocked");
         check(!SelfProtectionScreens.watches(null), "null package watched");
+        check(!SelfProtectionScreens.isTamperScreen("com.android.systemui",
+                "Hisn\nUninstall", names), "System UI treated as an uninstall surface");
+
+        // Safe Mode prompt in the power menu; ordinary power off and restart stay available.
+        String systemUi = "com.android.systemui";
+        check(SelfProtectionScreens.watches(systemUi), "power menu not watched");
+        check(SelfProtectionScreens.isSafeModePrompt("android",
+                "Reboot to safe mode\nDo you want to reboot into safe mode?\nCancel\nOK"), "AOSP safe mode dialog");
+        check(SelfProtectionScreens.isSafeModePrompt(systemUi, "Safe mode"), "Samsung safe mode button");
+        // Captured from the Samsung power menu in German after long-pressing "Ausschalten".
+        check(SelfProtectionScreens.isSafeModePrompt(systemUi, "Sicherer Modus,\nSicherer Modus\n"
+                + "Tippe erneut darauf, um dein Telefon im sicheren Modus neu zu starten.\nAusschalten-Menü"),
+                "Samsung German safe mode screen");
+        check(SelfProtectionScreens.isSafeModePrompt(systemUi, "Abgesicherter Modus"), "AOSP German safe mode button");
+        check(SelfProtectionScreens.isSafeModePrompt(systemUi, "الوضع الآمن"), "Arabic safe mode button");
+        check(!SelfProtectionScreens.isSafeModePrompt(systemUi,
+                "Power off\nRestart\nEmergency mode"), "ordinary power menu blocked");
+        check(!SelfProtectionScreens.isSafeModePrompt(systemUi, "Ausschalten-Menü\nAusschalten,\nAusschalten\n"
+                + "Neustart,\nNeustart\nNotruf,\nNotruf\nEinstellungen für Funktionstaste"),
+                "Samsung German power menu blocked");
+        check(!SelfProtectionScreens.isSafeModePrompt(systemUi,
+                "Messages\nAnna: my laptop is stuck in safe mode again"), "notification mentioning safe mode blocked");
+        check(!SelfProtectionScreens.isSafeModePrompt(settings, "Safe mode"), "Settings treated as power menu");
+        check(!SelfProtectionScreens.isSafeModePrompt(systemUi, ""), "empty power menu blocked");
 
         System.out.println("SelfProtectionScreens tests passed: uninstall, App info, admin, "
-                + "accessibility and Arabic screens; ordinary Settings pages left usable");
+                + "accessibility, Arabic and Safe Mode screens; ordinary Settings and power menu left usable");
     }
 
     private static void check(boolean condition, String message) {

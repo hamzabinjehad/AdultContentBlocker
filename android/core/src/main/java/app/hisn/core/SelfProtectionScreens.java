@@ -21,6 +21,11 @@ import java.util.Set;
  * A screen qualifies only when it belongs to a watched system package, names
  * Hisn, and shows one of the removal or disable actions. Settings pages that
  * merely list Hisn (the apps list, notifications) stay usable.
+ *
+ * The guard also leaves the power menu's "reboot to safe mode" prompt, since
+ * Safe Mode turns this accessibility service off. Ordinary power off and
+ * restart stay available, and the hardware-key route into Safe Mode at boot
+ * cannot be seen by any app.
  */
 public final class SelfProtectionScreens {
     private SelfProtectionScreens() { }
@@ -29,6 +34,19 @@ public final class SelfProtectionScreens {
             "com.android.settings", "com.google.android.settings",
             "com.android.packageinstaller", "com.google.android.packageinstaller",
             "com.samsung.android.packageinstaller", "com.android.vending"));
+
+    /** The power menu: Samsung and recent AOSP draw it in System UI, older AOSP in the system server. */
+    private static final Set<String> POWER_MENU = new HashSet<>(Arrays.asList(
+            "com.android.systemui", "android"));
+
+    /**
+     * Safe Mode button or dialog titles in English, German and Arabic power menus, lower-cased.
+     * Matched as a whole line, so a notification that merely mentions safe mode is not.
+     */
+    private static final Set<String> SAFE_MODE = new HashSet<>(Arrays.asList(
+            "safe mode", "reboot to safe mode", "sicherer modus", "abgesicherter modus",
+            "im abgesicherten modus neu starten", "الوضع الآمن", "الوضع الامن",
+            "إعادة التشغيل في الوضع الآمن"));
 
     /**
      * Removal or disable actions in English, Arabic and German Settings, lower-cased.
@@ -50,9 +68,22 @@ public final class SelfProtectionScreens {
         return keepInstalled;
     }
 
-    /** Metadata-only pre-check: the window belongs to a system surface that can remove Hisn. */
+    /** Metadata-only pre-check: the window belongs to a system surface that can remove or disarm Hisn. */
     public static boolean watches(String packageName) {
-        return packageName != null && WATCHED.contains(packageName);
+        return packageName != null && (WATCHED.contains(packageName) || POWER_MENU.contains(packageName));
+    }
+
+    /** True when a power-menu window offers to reboot into Safe Mode. */
+    public static boolean isSafeModePrompt(String packageName, String visibleText) {
+        if (packageName == null || !POWER_MENU.contains(packageName)
+                || visibleText == null || visibleText.isEmpty()) return false;
+        for (String line : visibleText.split("\n")) {
+            // Samsung's content descriptions end in a comma ("Sicherer Modus,").
+            String label = line.trim().toLowerCase(Locale.ROOT);
+            if (label.endsWith(",")) label = label.substring(0, label.length() - 1).trim();
+            if (SAFE_MODE.contains(label)) return true;
+        }
+        return false;
     }
 
     /**
@@ -60,7 +91,7 @@ public final class SelfProtectionScreens {
      * or disable screens. {@code names} are Hisn's labels and package name.
      */
     public static boolean isTamperScreen(String packageName, String visibleText, Collection<String> names) {
-        if (!watches(packageName) || visibleText == null || visibleText.isEmpty()) return false;
+        if (packageName == null || !WATCHED.contains(packageName) || visibleText == null || visibleText.isEmpty()) return false;
         String text = visibleText.toLowerCase(Locale.ROOT);
         boolean named = false;
         for (String name : names) {

@@ -284,8 +284,9 @@ public final class TextGuardService extends AccessibilityService {
 
     /**
      * Direct builds only: leave Hisn's uninstall, App info, admin-deactivation or
-     * accessibility-toggle screen while the owner keeps the keep-installed switch on.
-     * Text of watched system windows is read only then, and never retained.
+     * accessibility-toggle screen, or the power menu's Safe Mode prompt, while the owner
+     * keeps the keep-installed switch on. Text of watched system windows is read only
+     * then, and never retained.
      */
     private void checkSelfProtection() {
         if (!BuildConfig.SELF_PROTECTION) return;
@@ -299,7 +300,9 @@ public final class TextGuardService extends AccessibilityService {
             java.util.List<String> names = new java.util.ArrayList<>(SelfProtectionScreens.LABELS);
             names.add(getApplicationInfo().loadLabel(getPackageManager()).toString());
             names.add(getPackageName());
-            if (!SelfProtectionScreens.isTamperScreen(name, leafSample(root).text(), names)) return;
+            String text = leafSample(root).text();
+            if (!SelfProtectionScreens.isTamperScreen(name, text, names)
+                    && !SelfProtectionScreens.isSafeModePrompt(name, text)) return;
             selfProtectionInterventions++;
             inspectionOutcome = "self-protection-intervention";
             // BACK cancels an uninstall dialog; HOME then leaves Settings entirely.
