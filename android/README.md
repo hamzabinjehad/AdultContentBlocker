@@ -70,6 +70,21 @@ still require a disposable provisioned device. See
 [the 0.6.0 record](../docs/ANDROID_0.6.0.md) and
 [tamper-resistance scope](../docs/ANDROID_TAMPER_RESISTANCE.md).
 
+## 0.5.3 honest status, notices and housekeeping
+
+The setup guide now reaches ready for DNS alone, the selected-app layer alone, or
+both, and says which layer is off. "Last screen scan incomplete" clears after any
+later complete inspection, and an image-check failure stays visible until a later
+sample. The DNS notification has a proper channel name and shows the real session
+state. Refused rule changes name their real cause instead of always "locked".
+Image sampling stops while the screen is off and the model is freed after three
+idle minutes. Remaining commitment time uses plurals and switches to days after 48
+hours. Arabic disclosures now say everything the English says, Android 13+ lists
+Hisn under App languages, the DNS section shows the bundled list's version and
+date, and the Guide page has a Licenses and sources screen. `test-core.sh` now
+checks English/Arabic resource parity and list notices; CI builds and lints the
+app. Phone acceptance is pending; see [the 0.5.3 record](../docs/ANDROID_0.5.3.md).
+
 ## 0.5.2 blocking hardening and commitment clock fix
 
 DNS filtering now turns off Firefox's default DNS-over-HTTPS, answers well-known
@@ -313,9 +328,18 @@ is recorded separately for 0.4.0; it was not rerun after this update.
 - Domain matches return local NXDOMAIN without contacting the upstream server.
   Allowed queries go to Cloudflare Families at `1.1.1.3:853` with authenticated
   DNS-over-TLS, certificate and hostname validation, and TLS 1.2/1.3 only.
-  Each worker reuses its connection. There is no plaintext or alternate-resolver
-  fallback. The resolver can see allowed domain requests. Saved domain rules
-  are applied immediately alongside the bundled seed.
+  When `1.1.1.3` refuses or times out, the same exchange moves once to the
+  second Families address, `1.0.0.3:853`, with the same identity
+  (`family.cloudflare-dns.com`); `1.1.1.3` is tried again by one connection
+  after 30 seconds, doubling to at most five minutes, and at once when the
+  network in use changes. TLS identity failures and bad replies never move.
+  Each worker reuses its connection. There is no plaintext fallback and no
+  other resolver. The resolver can see allowed domain requests. Saved domain
+  rules are applied immediately alongside the bundled seed.
+- Only the network that protected resolver sockets use resets connections: on
+  Android 12+ the best-matching non-VPN network Android reports, on Android 8
+  to 11 the one Hisn ranks first the way Android does. A change on a standby
+  network, such as mobile data kept up beside Wi-Fi, keeps them.
 - Upstream sockets must pass `VpnService.protect`. Transaction IDs are randomized
   upstream and restored for clients; mismatched questions, IDs, oversized and
   truncated replies are rejected. A bounded reply parser checks record lengths,
@@ -343,8 +367,8 @@ is recorded separately for 0.4.0; it was not rerun after this update.
   local NXDOMAIN, which turns off Firefox's default DoH. This reduces but does
   not eliminate browser DoH bypass: clients with hard-coded bootstrap IPs,
   IP-literal endpoints, unlisted providers or user-forced Firefox DoH never ask
-  Hisn. Hisn's own upstream is pinned to `1.1.1.3` and uses its hostname only
-  for TLS identity, so it does not depend on resolving these names.
+  Hisn. Hisn's own upstream is pinned to `1.1.1.3` and `1.0.0.3` and uses its
+  hostname only for TLS identity, so it does not depend on resolving these names.
 - Underscore names (SRV, `_dmarc`, DDR) and single-label names can never equal
   a domain rule, so they are forwarded instead of failing and do not degrade
   the session. The hostname part of an underscore name is still checked: one
@@ -385,20 +409,40 @@ is recorded separately for 0.4.0; it was not rerun after this update.
   remain outside this in-app lock. Uninstall is outside it too unless the owner
   separately provisions device-owner mode; that mode blocks ordinary uninstall
   while a commitment or the keep-installed switch is active.
+- Settings are saved twice, in `hisn_policy` and `hisn_policy_copy`, each
+  sealed with a SHA-256 over its values. A damaged or unreadable main file is
+  replaced by its copy and Protection asks the owner to check the rules. If
+  neither can be read although settings were saved, the commitment is kept
+  active, shown as unknown, for at most 90 days of running time, the longest
+  one can last, instead of reading as a new installation. Clearing app data
+  removes both files and resets everything.
 - The accessibility service is off until the owner enables it. It acts only in
   explicitly selected apps. Chosen blocked apps, matching literal word rules or
   built-in adult-promotion evidence in the optional mode
   return to the launcher and show a generic restriction screen. Settings,
   launchers and dialers are excluded. Traversal is bounded and skips editable
-  and password nodes and their descendants. Only leaf labels are read to avoid
-  duplicated parent input values. Sensitive content may still be exposed by
-  other labels; the consent screen discloses this. Screen text is not saved.
+  and password nodes and their descendants. Childless labels are read, and a
+  card or button's own content description only when nothing inside it has text
+  and no input or password field sits inside it, so a parent never repeats an
+  input value (`LabelScan`). Sensitive content may still be exposed by other
+  labels; the consent screen discloses this. Screen text is not saved.
 - Built-in adult-text checks use bounded local context within individual visible
-  leaf labels, rather than exempting a whole screen because of unrelated medical
-  or news wording. Custom rules are checked independently first; built-in benign
+  labels, rather than exempting a whole screen because of unrelated medical
+  or news wording. A label of up to three words that are all explicit terms
+  ("Porn", "سكس") blocks on its own, unless a label on the same screen names
+  recovery, blocking, research or similar context; then only promotions and media
+  labels block there. Custom rules are checked independently first; built-in benign
   context never overrides a chosen literal rule. Opt-in is off by default for
   existing installations and enabling it does not grant any Android permission
   or choose apps automatically.
+- The built-in check uses the seed's English, Arabic and Franco-Arabic (Arabizi)
+  terms. Most single Arabizi spellings are also names or everyday chat, so they
+  count only beside a reviewed clear Arabizi term; see
+  [the text and privacy record](../docs/ANDROID_0.5.4_TEXT_PRIVACY.md).
+- The rule editors, app lists, schedule editor and a word tester holding text
+  are FLAG_SECURE windows: Android leaves them out of screenshots, screen
+  recordings and the recent-apps preview. Anyone looking at the screen and
+  accessibility services can still read them.
 - Long visible labels are sampled rather than skipped above 2,048 characters.
   A global 512-node/child-attempt budget and 32,768-character sample bound work;
   truncated tokens cannot manufacture whole-word matches. The dashboard reports
@@ -413,11 +457,30 @@ is recorded separately for 0.4.0; it was not rerun after this update.
   as no saved restrictions, partial inspection and unreadable settings. A live
   service alone is never presented as configured enforcement.
 - A shared setup guide supplies both the next-step message and its action.
-  Its 1,280 tested state combinations distinguish rules, permission, binding,
-  loading/error states, incomplete app inspections, DNS startup/degradation and
-  the explicit route check. READY requires configured app protection, healthy
-  service state, a ready or disabled optional policy, a running DNS layer and a
-  passed check. It still does not mean complete device protection.
+  Its 7,680 tested state combinations distinguish rules, whether DNS filtering
+  was left on, permission, binding, loading/error states, incomplete app
+  inspections, image-check failures, DNS startup/degradation and the explicit
+  route check. Each layer is optional. Ready for the app layer requires
+  configured app protection, healthy service state, a ready or disabled optional
+  policy and no failing image check; ready for DNS requires a running DNS layer
+  and a passed check. When only one layer is chosen, the guide says the other is
+  off. Unreadable settings are never ready. Ready does not mean complete device
+  protection.
+- "Last screen scan incomplete" is set by a partial or failed inspection and
+  cleared by a later complete one, including blocked-app and schedule
+  decisions. An image-check failure stays on the dashboard until a later sample
+  succeeds or the layer is turned off.
+- Image sampling never runs while the screen is off, and the on-device model is
+  released after three minutes without a sample.
+- The ongoing DNS notification ("DNS filtering status" channel) shows starting,
+  connected, recent failures or a strict Private DNS bypass.
+- A refused rule change names its cause: too many apps (200 per list), invalid
+  input, an active commitment, no saved restrictions, a failed save or
+  unreadable settings.
+- The Guide page's Licenses and sources screen summarises the bundled lists'
+  and engine's origins in English and Arabic and shows each full license text
+  from the APK; nothing is downloaded. The DNS section shows the bundled list's
+  version and build date; lists change only with a new app version.
 - Selected-window root changes receive bounded retries. Warning cooldown never
   suppresses a fresh enforcement action. The explanation screen is delayed until
   after Home to avoid the observed Samsung transition race.
@@ -465,13 +528,20 @@ Gradle 9.3.1. Set `JAVA_HOME` and `ANDROID_HOME`, then run:
 
 ```sh
 sh test-core.sh
-./gradlew --no-daemon assembleDebug assembleDebugAndroidTest lintDebug
+./gradlew --no-daemon assembleDebug assembleDebugAndroidTest lintDebug assembleRelease
 ```
 
 Add `-PhisnDistribution=direct` for the sideload build. It turns on the
 accessibility uninstall-screen guard (`BuildConfig.SELF_PROTECTION`) and adds
 `-direct` to the version name. Never upload a direct build to Google Play; see
 [ANDROID_TAMPER_RESISTANCE.md](../docs/ANDROID_TAMPER_RESISTANCE.md).
+
+CI runs the same commands in its `android` job. `test-core.sh` starts with two
+resource checks: `check-strings.py` (English and Arabic have the same string
+keys, plurals and placeholders, every Arabic plural category, nothing aapt2
+would reject, and every referenced key exists) and `check-notices.py` (every
+bundled list source has its license text and an entry in both summaries). Add
+any new `*Test` class to the loop in `test-core.sh`.
 
 The core suite covers word boundaries, Unicode, bounded lists, seed tampering,
 the actual full seed, domain exceptions, DNS/EDNS packets, packet checksums,
@@ -480,7 +550,7 @@ TCP tests cover framing, pipelining/reuse, sequence wrap, partial/future ACKs,
 overlap/duplicates, peer MSS/window limits, retransmission, FIN/RST, queue/flow
 caps, deadlines and late completions. Packet mutation/fuzz tests and a validated
 4,096-byte UDP-TC-to-segmented-TCP fixture run without public network access.
-The suite also checks all 1,280 setup-guide combinations, actual-seed adult-text
+The suite also checks all 7,680 setup-guide combinations, actual-seed adult-text
 fixtures, local context, Unicode/evasion boundaries, bounded classifier work and
 the managed-uninstall state/commitment matrix.
 DNS-probe tests use loopback responders for route-check response validation,

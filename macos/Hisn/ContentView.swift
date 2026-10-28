@@ -2181,6 +2181,10 @@ private struct SettingsPage: View {
 
             Divider()
 
+            GrayscaleSection(isLocked: isLocked)
+
+            Divider()
+
             LanguageSection()
 
             Divider()
@@ -2207,6 +2211,33 @@ private struct SettingsPage: View {
         } catch {
             isError = true
             message = error.localizedDescription
+        }
+    }
+}
+
+/// The whole screen in gray. See `ScreenGrayscale` for how, and why a lock
+/// keeps it on.
+private struct GrayscaleSection: View {
+    let isLocked: Bool
+    @ObservedObject private var grayscale = ScreenGrayscale.shared
+
+    var body: some View {
+        PageSection(title: "Gray screen",
+                    subtitle: "Shows everything on this Mac in shades of gray. Apps keep working; images and videos lose most of their pull.") {
+            Toggle(isOn: Binding(get: { grayscale.isOn }, set: { grayscale.set($0) })) {
+                Text("Make the screen gray")
+            }
+            .disabled(!ScreenGrayscale.isAvailable || (grayscale.isOn && isLocked))
+
+            if !ScreenGrayscale.isAvailable {
+                Text("This version of macOS does not let Hisn change the screen. Turn on Grayscale in System Settings › Accessibility › Display › Color Filters instead.")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else if grayscale.isOn && isLocked {
+                Text("A lock is running. The screen stays gray until it ends.")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 }

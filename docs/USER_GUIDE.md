@@ -51,6 +51,13 @@ time that occurs twice uses its first occurrence.
 Settings contains the language choice and accountability partner's public key.
 Your partner keeps their private key. You should never ask them to share it.
 
+**Gray screen** (in Settings and in the menu bar) shows the whole Mac in shades
+of gray, the same as Grayscale under System Settings › Accessibility › Display ›
+Color Filters. Images and videos lose most of their pull; apps keep working.
+It can be turned on during a lock, but stays on until the lock ends. On Android
+the same switch is on the Rules page, and on iPhone and iPad the Settings tab
+explains where Apple's own switch is, because iOS does not let apps change it.
+
 ## Browser Extension
 
 The extension follows the app's navigation: Overview, Blocking Rules, Lock,

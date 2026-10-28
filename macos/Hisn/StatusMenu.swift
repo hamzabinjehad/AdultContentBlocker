@@ -178,6 +178,7 @@ final class MenuBarIcon: ObservableObject {
 struct StatusMenu: View {
     @ObservedObject private var lock = LockManager.shared
     @ObservedObject private var filter = FilterController.shared
+    @ObservedObject private var grayscale = ScreenGrayscale.shared
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
@@ -206,6 +207,13 @@ struct StatusMenu: View {
             Button("Start a lock…") { MainWindow.show(.lock, open: openWindow) }
         }
         Button("Block a site…") { QuickBlock.promptAndAdd() }
+        if ScreenGrayscale.isAvailable {
+            // A checkmark item. During a lock it can be ticked, not cleared.
+            Toggle("Gray screen", isOn: Binding(
+                get: { grayscale.isOn },
+                set: { grayscale.set($0) }))
+                .disabled(grayscale.isOn && lock.isLocked)
+        }
         Button("Setup") { MainWindow.show(.setup, open: openWindow) }
         Divider()
         Button("Hide Hisn") { MainWindow.hide() }

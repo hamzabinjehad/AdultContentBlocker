@@ -6,6 +6,8 @@ def seedDigest = seedManifest.artifacts['domains_core.txt'].sha256
 def termsDigest = seedManifest.artifacts['terms.json'].sha256
 if (!(seedDigest ==~ /[0-9a-f]{64}/)) throw new GradleException('Invalid domain seed digest')
 if (!(termsDigest ==~ /[0-9a-f]{64}/)) throw new GradleException('Invalid terms seed digest')
+def seedBuilt = seedManifest.built_at.toString().take(10)
+if (!(seedBuilt ==~ /\d{4}-\d{2}-\d{2}/)) throw new GradleException('Invalid seed build date')
 def verifySeed = tasks.register('verifyAndroidSeed', Exec) {
     workingDir repoRoot
     commandLine 'python3', 'blocklist/seed.py', 'verify'
@@ -51,12 +53,13 @@ android {
         manifestPlaceholders = [hisnAppLabel: '@string/app_name']
         minSdk 26
         targetSdk 36
-        versionCode 15
+        versionCode 18
         versionName '0.6.0'
         testInstrumentationRunner 'app.hisn.android.CoreDeviceTestRunner'
         buildConfigField 'String', 'DOMAIN_SEED_SHA256', '"' + seedDigest + '"'
         buildConfigField 'int', 'DOMAIN_SEED_COUNT', seedManifest.core_domain_count.toString()
         buildConfigField 'int', 'DOMAIN_SEED_VERSION', seedManifest.version.toString()
+        buildConfigField 'String', 'DOMAIN_SEED_BUILT', '"' + seedBuilt + '"'
         buildConfigField 'String', 'TERMS_SEED_SHA256', '"' + termsDigest + '"'
         // Direct (sideload) builds may leave Hisn's uninstall and disable screens. Google Play's
         // Accessibility API policy forbids that for personal self-control, so Play builds never do.

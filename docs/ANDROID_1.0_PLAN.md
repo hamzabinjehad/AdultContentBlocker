@@ -65,11 +65,26 @@ as a limit. It is never dropped silently.
       downloads that reuse `blocklist/` Ed25519 signatures. Record the decision.
 - [x] `PolicyStore` static-context lint warning: already holds the application context; suppressed with reason.
 - [ ] Remaining lint warnings: plural-string candidates and two attributes that need a higher API than minSdk 26.
+      0.5.3 turned the "about N hours" strings into plurals and marks `<application>` with
+      `tools:targetApi="33"`. The 0.5.4 text and privacy work made the last two plural candidates
+      plurals; a local `lintDebug` then reported 0 errors and 13 warnings: the two
+      `text_guard_service.xml` attributes (`canTakeScreenshot`, `isAccessibilityTool`, ignored
+      below API 30/31) and 11 in debug-only visual test screens (`SetTextI18n`, `ApplySharedPref`).
 
 - [x] 0.5.2 blocking hardening: DoH canary and provider names, strict Private DNS warning,
       degraded recovery, resume after reboot, separated spellings, Arabic name false
       positives, image checks on feeds, 60-second hold, commitment reboot clock fix.
       See [0.5.2](ANDROID_0.5.2.md).
+- [x] 0.5.3 honest status: setup guide ready for DNS only, app layer only or both; incomplete-scan
+      and image-check failures clear only after a later success; real DNS notification state and
+      channel name; real refusal reasons; no sampling with the screen off and idle model release;
+      remaining-time plurals; Arabic disclosure parity and a resource parity check; App languages;
+      bundled list version; Licenses and sources screen; Android CI job.
+      See [0.5.3](ANDROID_0.5.3.md).
+- [x] 0.5.4 reliability (code and core tests; phone checks pending): second Cloudflare Families
+      address with bounded failover, connections reset only by the network in use, damaged
+      settings never end a commitment, and `check-release.py` for release APKs.
+      See [0.5.4 part A](ANDROID_0.5.4_RELIABILITY.md).
 
 ### 0.6.0 managed-uninstall preview (source complete; device acceptance pending)
 
@@ -98,6 +113,9 @@ Run on a fresh 0.5.x debug install, using `test-live-*.py` where possible:
 - [ ] Accessibility: force-stop, revoke, and re-grant. Health must report the loss
       and recover after re-grant.
 - [ ] `CoreDeviceTestRunner` passes on the release-candidate APK.
+- [ ] 0.5.3 status checks on device: DNS notification states, image-check failure persistence,
+      no captures with the screen off, model release after idle minutes
+      ([0.5.3 list](ANDROID_0.5.3.md#still-needs-a-phone)).
 
 ### M3: real-app coverage (needs the owner's phone)
 
@@ -122,8 +140,8 @@ Run on a fresh 0.5.x debug install, using `test-live-*.py` where possible:
 
 - [ ] Owner creates the production keystore offline and keeps two backups. Losing it
       means existing installs can never be updated.
-- [ ] Build with the `HISN_ANDROID_*` variables set, then run `apksigner verify --print-certs`
-      and publish the certificate SHA-256 next to the APK hash.
+- [ ] Build with the `HISN_ANDROID_*` variables set, then run `check-release.py` and
+      `apksigner verify --print-certs`, and publish the certificate SHA-256 next to the APK hash.
 - [ ] Set `versionName '1.0.0'` and update the strings, README and `ANDROID_1.0.md` release record.
 - [ ] GitHub release with the signed APK, hash, certificate fingerprint and the
       "not part of 1.0" list above, copied verbatim.
@@ -136,8 +154,13 @@ export HISN_ANDROID_KEYSTORE_PASSWORD=...
 export HISN_ANDROID_KEY_ALIAS=hisn
 export HISN_ANDROID_KEY_PASSWORD=...
 ./gradlew --no-daemon assembleRelease
+python3 check-release.py app/build/outputs/apk/release/app-release.apk
 apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
 ```
+
+`check-release.py` fails when the APK is debuggable or test-only, uses the DUMP permission,
+contains a debug-only component or class, or has a package or version that differs from
+`app/build.gradle`. Run it on `app-release-unsigned.apk` for unsigned builds.
 
 Set all four variables or none of them. A partial set fails the build. With none set,
 `assembleRelease` produces `app-release-unsigned.apk` as before.

@@ -56,6 +56,44 @@ higher one than it can show.
 | English/Arabic, accessibility | 251 matching keys, RTL layout, 48 pt rows, VoiceOver traits | Passcode ignores Dynamic Type; some low-contrast colours; one Arabic arrow |
 | Release | Tests in CI on the simulator | No Apple team, no Family Controls distribution entitlement, no device evidence |
 
+## Audit by layer, with code references
+
+A second read of `ios/` and `shared/apple/` on 2026-10-26, line numbers as of
+`main` at that date. "Works" means the code does it and unit tests cover it, not
+that it was seen working on a phone.
+
+| Layer | Works (code) | Missing or wrong |
+| --- | --- | --- |
+| Screen Time app limits | Always-block shields and one shared daily budget (`ios/Hisn/AppUsageController.swift:60-116`, `ios/Shared/AppUsageConfiguration.swift:127-132`); the monitor shields at the threshold and keeps a reached budget for the day (`ios/HisnActivityMonitor/ActivityMonitor.swift:7-28`); during a commitment only tightening is accepted (`AppUsageConfiguration.swift:116-123`); health separates missing permission from stopped monitoring (`AppUsageConfiguration.swift:24-32`) | The budget day is the wall-clock date (`AppUsageConfiguration.swift:47-50`), so moving the date starts a new day; on iOS 16–17.3 a running budget cannot be edited (`AppUsageController.swift:77-79`); no daily time window like Android's schedule; no notice when access is revoked in the background |
+| Safari content blockers | Four blockers × 40,000 rules (`shared/apple/MobileProtectionPolicy.swift:6`, `:41-47`); each handler refuses a rule file whose SHA-256 or count does not match instead of loading an empty list (`ios/HisnBlocker/ContentBlockerRequestHandler.swift:16-23`); the app re-verifies all four parts once per launch (`ios/Hisn/ProtectionController.swift:413-438`) and reads each switch (`:354-363`) and reload result (`:395-411`) | The list changes only with an app build; about 160k of the published list's domains fit; no proof a page was blocked, only configuration |
+| Safari text and visual extension | The shared on-device scorer replaces a blocked top-frame page with `blocked.html` (`ios/HisnWebExtension/background.js:130-170`); it never receives native messages (`ios/HisnWebExtension/SafariWebExtensionHandler.swift:5-8`) | The app cannot read whether Hisn Text is on, allowed on sites or in Private Browsing, so the guide says so (`ios/Hisn/BrowserFirstSection.swift:10`) |
+| Family DNS | Saves a Cloudflare Family DoH configuration (`ProtectionController.swift:368-393`) and reports absent, saved-but-off, enabled or different (`MobileProtectionPolicy.swift:114-125`, `ProtectionController.swift:345-352`) | Can be switched off in Settings on any unsupervised phone; a supervised profile's DNS is invisible to `NEDNSSettingsManager`, so the row reads "not configured" there |
+| Commitment | 1/7/30/90 days, extend only (`ProtectionController.swift:95-119`); Keychain plus mirror, damaged storage counts as running (`ios/Hisn/MobileCommitmentStore.swift:22-52`); a forward clock jump cannot end a running session (`ProtectionController.swift:82-88`) | After a relaunch the deadline trusts the wall clock; Screen Time is re-applied during a commitment only if chosen in this process (`ProtectionController.swift:150-161`) |
+| Passcode vault | Shown for 15 minutes, then sealed (`ios/Hisn/PasscodeVault.swift:36-43`); reveal needs the date on the device and on Apple's server clock (`:49-54`, `:160-178`); device-only Keychain (`:104-136`) | **Before this pass:** `vault.body` said apps "cannot be deleted" without the condition that the person actually entered the code and turned off deletion; the passcode ignored Dynamic Type (`ios/Hisn/PasscodeVaultSection.swift:83`) and stayed visible in the app-switcher snapshot |
+| My blocked sites | Up to 49 sites in Hisn's Screen Time filter, canonicalised like the Mac and extension (`shared/apple/CustomSitePolicy.swift:13-60`); adding works during a commitment, removing waits (`ProtectionController.swift:193-217`); damaged storage never replaces the filter's list (`:159-167`) | **Before this pass:** with Screen Time access turned off, the row said only "enable Screen Time", as if it had never been set up |
+| Status, language, layout | One verified-setup assessment (`MobileProtectionPolicy.swift:49-70`); 251 English and Arabic keys; iPad split view with an 860 pt readable column (`ios/Hisn/MobileRootView.swift:21-34`, `:97`) | **Before this pass:** a revoked Screen Time permission and a never-requested one read the same; orange and teal status text was about 2:1 on white (`MobileRootView.swift:150`); the setup-issue arrow pointed right in Arabic (`:159`); the step badges were fixed at 28 pt (`BrowserFirstSection.swift:33`); Settings ignored the readable column on iPad (`MobileRootView.swift:279`); no automated check that every looked-up key exists in both languages |
+
+## Android features and what iOS can do with public APIs
+
+Android 0.5.x is the feature reference. iOS gives apps far less reach into other
+apps, so several Android layers have no iOS equivalent at all.
+
+| Android feature | iOS with public APIs | State on iOS |
+| --- | --- | --- |
+| DNS filtering with Hisn's own list and custom domains (local VPN) | Partly. `NEDNSSettingsManager` only points the system at a DNS server; it cannot filter with Hisn's list on the device. A local `NEPacketTunnelProvider` could, at the cost of occupying the one VPN slot | Cloudflare Family DNS only; the domain list runs in Safari's blockers |
+| Block chosen apps entirely | Yes: FamilyControls picker + ManagedSettings shields | Built (always-block mode) |
+| Daily time window for chosen apps | Yes: `DeviceActivitySchedule` with an interval, shields set in `intervalDidStart` and cleared in `intervalDidEnd` | Not built; iOS has a daily usage budget instead |
+| Word rules and adult-text checks in other apps (accessibility) | **No.** No API reads another app's screen text | Safari only, through Hisn Text |
+| Image and video sampling in chosen apps (accessibility screenshots) | **No** for other apps. ReplayKit broadcast capture shows a recording indicator, is memory-capped and is not meant for this | Safari only, through Hisn Text's opt-in visual checks |
+| Commitment that refuses weaker rules | Yes, inside the app | Built |
+| Uninstall friction (device admin) | Yes, stronger than Android: Screen Time "Deleting Apps: Don't Allow" under a passcode Hisn keeps (vault), `.child` authorization, or supervision | Vault and guardian mode built; device acceptance pending |
+| Honest per-layer health and setup guide | Yes | Built; this pass separates revoked from never-requested Screen Time |
+| Alert when protection stops (DNS revoked, VPN replaced) | Partly: no callback when DNS or Screen Time is turned off in Settings; the app or the DeviceActivity monitor can re-check and post a local notification | Not built (M2.4) |
+| DNS route self-check | Partly: a lookup through `URLSession` can show the configured resolver answers, not which apps use it | Not built |
+| Encrypted-DNS canary, Private DNS warning | Not applicable: iOS has one system resolver setting, which Hisn reads | — |
+| App languages (English and Arabic) | Yes: per-app language in Settings comes from the bundle's localizations | Built (`en.lproj`, `ar.lproj`); this pass adds a parity check |
+| Licenses and sources screen | Yes | Not built for the app; the web extension already carries the visual runtime's notices (`ios/prepare_web_extension.py:50-54`) |
+
 ## Milestones
 
 Tags: `[code]` code only, verifiable in CI · `[device]` needs a real iPhone ·
@@ -106,6 +144,48 @@ Exit: team set, entitlement requested, test device ready, both decisions recorde
 
 Exit: unit tests for each rule, `./test.sh ios` green, EN/AR parity check passes.
 
+**Done on `ios/improvements` (2026-10-26)**, all without a device or an Apple team:
+
+- Item 1: `vault.body` now says the lock holds only if the person set the passcode
+  and set Deleting Apps to Don't Allow, and that Hisn cannot check it.
+- Item 8: the passcode scales with Dynamic Type and shows dots whenever the scene
+  is not active, so the app-switcher snapshot does not keep it; warning and
+  success text uses `HisnPalette` colours with at least 4.5:1 on every grouped
+  list background in light and dark mode (tested); the setup-issue arrow is
+  `arrow.forward.circle`, which points the reading direction in Arabic.
+- New, honest status when Screen Time access is lost: `ScreenTimeState`
+  separates access turned off in Settings (Hisn's history knows the filter was
+  set) from never requested, declined and filter off. The readiness row, the
+  commitment section, My blocked sites and the setup issues say what iOS removed
+  and that only the person can turn access back on.
+- New, VoiceOver and Dynamic Type: the Safari readiness detail reads "3 of 4 parts
+  on" instead of "3 / 4"; readiness rows and the blocked-site field stack at
+  accessibility sizes; the Safari setup step badges scale.
+- New, iPad: Settings uses the same 860 pt readable column as the other tabs; a
+  render test covers all three tabs on iPhone and both iPad orientations, at
+  the largest accessibility sizes, in English and Arabic.
+- New, `ios/test_localization.py` (runs in `./test.sh python`, no Xcode): same
+  keys and placeholders in English and Arabic, Arabic text in every Arabic value,
+  and every key the SwiftUI code looks up present in both.
+
+Not done here, and why: items 2, 5 and 6 change the setup flow and want the
+owner's choice of default lock level (M0 decision); item 3 needs the extension to
+report through its native handler, which today accepts no messages by design;
+item 4 needs consent recorded with the commitment, or Hisn could re-enable a
+filter the person turned off before committing; item 7 is not possible: iOS does
+not show an app another configuration's DNS; item 9 is in `extension/`, which
+another change owns.
+
+**Done 2026-10-27 (setup honesty), code and simulator tests only:** item 2 (a
+removal-protection row; levels Hisn cannot read show as confirmed by the person,
+never verified, and confirmations are bound to this device so a restore does not
+carry them), item 5 (the vault offers to stay hidden until the commitment ends,
+shows both dates, applies exactly the confirmed date and warns when it cannot
+reach the end), item 6 (setup lists blocking layers, then the commitment, then
+the vault; a commitment with no blocking layer warns in place and in the
+confirmation). M4 item 1 (vault guide covers Passcode Changes, Account Changes and
+Installing Apps, and says the code can be written down) is also done.
+
 ### M2. A commitment that holds
 
 1. `[code]` Check the commitment deadline against Apple server time, reusing the
@@ -125,6 +205,20 @@ Exit: unit tests for each rule, `./test.sh ios` green, EN/AR parity check passes
 
 Exit: a moved clock and a revoked authorization are both detected on a device,
 and recorded in a dated record.
+
+**Done 2026-10-27, code and simulator tests only; device checks pending:**
+items 1, 2 and 4. A commitment ends only when both the device clock and Apple's
+server time have passed its date, with no early allowance; offline it stays on and
+says so; starting one reads Apple's time first. A confirmed end is saved with the
+commitment so a reboot cannot revive it. Within one boot a new server reading can
+only lower the saved time, so a forged `Date` header cannot move it forward
+(certificate pinning is not done; see `SELF_CONTROL_COMMITMENT.md`). Budget days
+use the same rule, keep the time zone they were reached in, settle once cleared,
+and ignore old calendar markers. The Screen Time filter is restored after a
+relaunch only if the person chose it for the commitment. Optional layer-loss
+alerts (item 4) are posted by the monitor when Hisn's own Screen Time settings
+disappear. Items 3, 5 and 6 remain. Verified: 181 iOS, 490 macOS and the Python
+suites pass.
 
 ### M3. Wider blocking
 
@@ -203,7 +297,7 @@ M0 entitlement request → M1 (in parallel, code only) → device tests for M2 �
 locks → M5 matrix → M6 TestFlight. The entitlement and the device are the slowest
 steps; start them first. M3 can run in parallel with M2 once the device exists.
 
-## Not in this plan
+## Non-goals
 
 - Any claim that Hisn is undeletable, or 100% blocking.
 - Workarounds of Apple's controls, hidden features, or VPN tricks.

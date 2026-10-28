@@ -31,7 +31,7 @@ past version; *superseded* documents point to their replacement. Start with the
 ## iPhone and iPad
 
 - [Apple platform structure](APPLE_PLATFORMS.md): How macOS, iOS and iPadOS code is laid out, what each protects, and cross-platform development rules.
-- [iPhone and iPad end-goal plan](IOS_IMPROVEMENT_PLAN.md): The lock ladder on iPhone (vault, guardian, supervised, time-locked), current gaps per layer, and milestones M0-M6.
+- [iPhone and iPad end-goal plan](IOS_IMPROVEMENT_PLAN.md): The lock ladder on iPhone (vault, guardian, supervised, time-locked), a per-layer audit with code references, which Android features iOS can match with public APIs, and milestones M0-M6 with what is done.
 - [Supervised iPhone or iPad setup](IPHONE_SUPERVISED.md): Step-by-step guardian setup using Apple Configurator so Hisn cannot be removed from a supervised device, plus limits.
 
 ## Android
@@ -66,6 +66,7 @@ past version; *superseded* documents point to their replacement. Start with the
 
 ## Plans and roadmaps
 
+- [Road to 1.0](ROAD_TO_1.0.md): The integrated finish plan: current verified state, the per-platform removal-lock ladder, content-coverage gates, milestones, backlog and owner actions. Start here when deciding what to build next.
 - [Android 1.0 plan](ANDROID_1.0_PLAN.md): Fixed Android 1.0 finish line: what is in and out of scope, current state, milestones M1-M5, signing steps.
 - [End-goal plan](END_GOAL_PLAN.md): Ties all plans to one testable goal: no adult content and no removal before a chosen date, with measurable gates.
 - [Improvement roadmap](HISN_IMPROVEMENT_ROADMAP.md): Ordered next work on word blocking, evasion matching, context scoring and cross-platform verification, plus what each pass delivered.
@@ -90,6 +91,8 @@ Per-version change and verification notes, newest first.
 ### Android
 
 - [Android 0.6.0 release notes](ANDROID_0.6.0.md): Opt-in device-owner uninstall protection, in-app status/release, boot reconciliation and host tests. Device acceptance pending; the ordinary build is still removable.
+- [Android 0.5.4 reliability (part A)](ANDROID_0.5.4_RELIABILITY.md): Second Cloudflare Families address with failover, network changes limited to the network in use, damaged settings that keep a commitment, and a release APK check. *In progress.*
+- [Android 0.5.3 release notes](ANDROID_0.5.3.md): Setup guide ready per chosen layer, failures kept visible, real DNS notification and refusal reasons, screen-off sampling stop, Arabic parity, licenses screen and an Android CI job.
 - [Android 0.5.2 release notes](ANDROID_0.5.2.md): DNS bypass hardening, separated-spelling and Arabic name fixes, image checks on feeds, 60-second hold and the commitment reboot fix. *Historical.*
 - [Android 0.5.1 release notes](ANDROID_0.5.1.md): WebGL-first visual classifier with CPU fallback, optional release signing, WebGL versus CPU timings. *Historical.*
 - [Android 0.5.0 release notes](ANDROID_0.5.0.md): Adds opt-in on-device image and video sampling of chosen apps on Android 14+, with live Samsung results. *Historical.*

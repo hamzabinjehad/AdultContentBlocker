@@ -54,17 +54,18 @@ final class CustomSiteTests: XCTestCase {
         XCTAssertThrowsError(try store.save([]), "A damaged list is never silently replaced")
     }
 
-    @MainActor func testControllerAddsDuringCommitmentButRefusesRemoval() throws {
+    @MainActor func testControllerAddsDuringCommitmentButRefusesRemoval() async throws {
         let storage = EphemeralRuleStorage()
         let commitments = MemoryCommitmentStore()
         let controller = ProtectionController(commitmentStore: commitments,
-                                              customSiteStore: CustomSiteStore(storage: storage))
+                                              customSiteStore: CustomSiteStore(storage: storage),
+                                              serverTime: AppleTimeStub.followingDeviceClock())
         controller.addCustomSite("https://www.first.example/page")
         XCTAssertEqual(controller.customSites, ["first.example"])
         XCTAssertEqual(controller.customSiteMessage, "sites.added")
         controller.addCustomSite("first.example")
         XCTAssertEqual(controller.customSiteMessage, "sites.duplicate")
-        controller.startCommitment(days: 7)
+        await controller.startCommitment(days: 7)
         XCTAssertTrue(controller.customSitesLocked)
         controller.addCustomSite("second.example")
         XCTAssertEqual(controller.customSites, ["first.example", "second.example"])

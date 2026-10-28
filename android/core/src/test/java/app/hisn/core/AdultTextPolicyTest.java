@@ -14,6 +14,17 @@ public final class AdultTextPolicyTest {
         return new AdultTextPolicy.Rule(phrase, weight);
     }
 
+    private static AdultTextPolicy.Rule latin(String phrase, int weight) {
+        return new AdultTextPolicy.Rule(phrase, weight, true);
+    }
+
+    /** One weight<TAB>language<TAB>phrase row of the seed fixture written by test-core.sh. */
+    static AdultTextPolicy.Rule seedRow(String row) {
+        String[] fields = row.split("\t", 3);
+        if (fields.length != 3 || fields[2].isEmpty()) throw new AssertionError("Invalid seed TSV fixture");
+        return new AdultTextPolicy.Rule(fields[2], Integer.parseInt(fields[0]), "ar-latn".equals(fields[1]));
+    }
+
     private static void invalid(Runnable operation, String message) {
         try { operation.run(); }
         catch (IllegalArgumentException expected) { return; }
@@ -64,6 +75,7 @@ public final class AdultTextPolicyTest {
                 "a glued alias never overrides an explicitly configured single word");
         check(new AdultTextPolicy(Collections.singletonList(rule("nude photos", 8))).ruleCount() == 1,
                 "a glued alias does not inflate the rule count");
+        checkLoneTerms(policy);
         String gap = "ordinary ".repeat(40);
         check(policy.blocks("sexual health ".repeat(8) + gap + "Watch porn and hentai" + gap
                 + "sex education ".repeat(8)), "distant benign context cannot cancel local promotion");
@@ -153,10 +165,59 @@ public final class AdultTextPolicyTest {
             check(policy.blocks(text.toString()) == policy.blocks(text.toString()), "deterministic random sample");
         }
         checkSlidingWindows();
+        checkArabizi();
         if (args.length == 1) checkSeed(args[0]);
         System.out.println("AdultTextPolicy tests passed; " + AdultTextPolicy.MAX_RULES
                 + " rules / " + AdultTextPolicy.MAX_TEXT_CODEPOINTS + " code points checked in "
                 + (elapsed / 1_000_000L) + " ms (diagnostic, not a device speed guarantee)");
+    }
+
+    /** A short leaf made only of lone strong explicit terms blocks with no promotion word. */
+    private static void checkLoneTerms(AdultTextPolicy policy) {
+        for (String leaf : Arrays.asList("porn", "PORN!", "#hentai", "p0rn", "p.o.r.n", "h e n t a i",
+                "Porn & hentai", "porn porn", "porn, hentai, porn", "سكس", "#سكس", "إِبَاحِيّ", "اباحية", "سكس اباحي"))
+            check(policy.blocks(leaf), "lone explicit term in a short leaf detected: " + leaf);
+        for (String leaf : Arrays.asList("Porn addiction", "porn porn addiction", "Anti porn", "Quit porn",
+                "Porn research", "porn porn porn porn", "pornography", "Pornography research", "pussy", "onlyfans",
+                "nude photos", "الإباحية", "السكس", "porn x y", "Research about porn", "porn, hentai, more",
+                // Two terms and a third word, which may be protective: never a label (review finding).
+                "Porn, hentai blocker", "Stop porn & hentai", "Anti porn hentai", "Porn/hentai detox",
+                "Porn hentai harms", "Hentai porn effects", "porn porn recovery", "NoFap porn hentai",
+                "Porn & Hentai Blocker", "ضد سكس اباحي", "سكس اباحي ادمان", "لا سكس اباحي",
+                // "porno" is a Romance-language noun and a novel's title; not a lone label.
+                "Porno", "porno porno"))
+            check(!policy.blocks(leaf), "lone-term rule stays narrow: " + leaf);
+        check(policy.blocks("Porno videos") && policy.blocks("Watch porno"), "porno still blocks as a label or promotion");
+        // A screen: each line is judged alone, but protective context on any line keeps a bare term from blocking.
+        for (String screen : Arrays.asList("Home\nPorn\nSettings", "Porn\nSearch", "سكس\nالرئيسية", "Hentai\nNews\nTrending"))
+            check(policy.blocksAnyLine(screen), "a bare term on an ordinary screen blocks: " + screen);
+        for (String screen : Arrays.asList("Study links porn addiction to anxiety\nPorn",
+                "Porn\nHow to quit, one day at a time", "Recovery check-in\nTriggers\nPorn\nHentai",
+                "Porn\nPorn blocker settings", "ضد الإباحية\nسكس", "علاج الإدمان\nاباحي", "Anti-porn campaign\nporn",
+                "Sex education\nPorn", "Accountability partner\nporn", "3ilaj\naba7i", "porn\nporn addiction"))
+            check(!policy.blocksAnyLine(screen), "protective context on the screen keeps a bare term allowed: " + screen);
+        for (String screen : Arrays.asList("Porn addiction recovery\nWatch porn videos free",
+                "Study links porn addiction to anxiety\nPorn videos", "ضد الإباحية\nشاهد سكس"))
+            check(policy.blocksAnyLine(screen), "protective context elsewhere never exempts a promotion or label: " + screen);
+        check(!policy.blocksAnyLine(null) && !policy.blocksAnyLine("") && !policy.blocksAnyLine("\n\n"),
+                "an empty screen never blocks");
+        check(policy.blocksAnyLine("Watch porn") == policy.blocks("Watch porn") && !policy.blocksAnyLine("Porn addiction"),
+                "a one-line screen is judged like a leaf");
+        invalid(() -> policy.blocksAnyLine("a\n".repeat(AdultTextPolicy.MAX_TEXT_CODEPOINTS)), "oversized screen accepted");
+        check(!new AdultTextPolicy(Collections.singletonList(rule("porn", 7))).blocks("porn"),
+                "a lone weak term never blocks");
+        check(!new AdultTextPolicy(Collections.singletonList(rule("hentai", 8))).blocks("porn"),
+                "a lone term must be configured");
+        check(!new AdultTextPolicy(Arrays.asList(rule("porn", 8), rule("porn", -8))).blocks("porn"),
+                "negative context still applies to a lone term");
+        AdultTextPolicy arabic = new AdultTextPolicy(Arrays.asList(rule("سكس", 8), rule("نيك", 8),
+                rule("بورنو", 8), rule("كسكس", 8), latin("aba7i", 8), latin("abahi", 8), latin("sharmota", 8),
+                latin("neek", 8), latin("sks", 8), latin("sksy", 8)));
+        for (String leaf : Arrays.asList("سكس", "aba7i", "ABAHI", "aba7i aba7i"))
+            check(arabic.blocks(leaf), "lone Arabic or Arabizi explicit term detected: " + leaf);
+        for (String leaf : Arrays.asList("نيك", "بورنو", "كسكس", "نيك نيك", "sharmota", "neek", "sks", "sksy",
+                "Nick", "Borno"))
+            check(!arabic.blocks(leaf), "ambiguous or insulting lone word stays allowed: " + leaf);
     }
 
     /** Optional bounded TSV adapter for testing the actual signed seed without
@@ -165,18 +226,23 @@ public final class AdultTextPolicyTest {
         java.nio.file.Path source = java.nio.file.Paths.get(path);
         check(java.nio.file.Files.size(source) <= 4 * 1024 * 1024, "bounded seed fixture");
         List<AdultTextPolicy.Rule> rules = new ArrayList<>();
+        int arabizi = 0;
         for (String row : java.nio.file.Files.readAllLines(source, java.nio.charset.StandardCharsets.UTF_8)) {
-            int tab = row.indexOf('\t');
-            check(tab > 0, "seed TSV entry has weight");
-            rules.add(rule(row.substring(tab + 1), Integer.parseInt(row.substring(0, tab))));
+            rules.add(seedRow(row));
+            if (rules.get(rules.size() - 1).arabizi) arabizi++;
             check(rules.size() <= AdultTextPolicy.MAX_RULES, "bounded seed entry count");
         }
+        check(arabizi > 1000, "actual seed fixture includes the Franco-Arabic terms");
         rules.addAll(AdultTextPolicy.reviewedContextRules());
         AdultTextPolicy seed = new AdultTextPolicy(rules);
         for (String text : Arrays.asList("Watch porn and hentai", "Download adult videos", "شاهد الإباحية",
                 "مشاهدة سكس", "Watch p0rn", "لتحميل اباحي", "Watch nudephotos", "شاهد سکسی",
                 "Watch p0rnhub")) {
             check(seed.blocks(text), "actual seed recognizes promotional fixture");
+        }
+        for (String text : Arrays.asList(                "مشاهدة سكس", "Watch p0rn", "لتحميل اباحي", "tahmil aflam sks mojani", "Watch sharmota w kahba",
+                "moshahda sharmota neek masri")) {
+            check(seed.blocks(text), "actual seed recognizes promotional fixture: " + text);
         }
         for (String text : Arrays.asList("Watch sex education", "شاهد التربية الجنسية", "Essex council",
                 "Watch porn addiction recovery resources", "Download breast cancer research",
@@ -185,11 +251,161 @@ public final class AdultTextPolicyTest {
                 "Watch nudephotosresearch", "شاهد سكسونيا")) {
             check(!seed.blocks(text), "actual seed keeps benign fixture available");
         }
+        for (String text : Arrays.asList(                "Watch Dara and Abhi play, free entry", "Free class with Nika, Nashwa and Inek",
+                "Watch Nik Masri live for free", "tahmil aflam Nik Cage mojani", "Watch the video, sex ed for teens",
+                "Watch pussy cats with Dara and Abhi", "Download 97ab photos free", "Watch Neek and Dara play, free",
+                "Watch Neek Masri live, free", "Neek Saudi free download", "Neek jadid free download",
+                "moshahda neek masri", "Watch Neek HD free", "sksy download free", "Free download: jadwal SKS semester ini")) {
+            check(!seed.blocks(text), "actual seed keeps benign fixture available: " + text);
+        }
+        check(!seed.blocks("Watch sharmota"), "an Arabizi insult alone is not trusted");
+        // Like Arabic: نيك phrases are contextual, سكسي needs a second strong signal.
+        check(!seed.blocks("تحميل نيك سعودي مجانا"), "Arabic نيك phrases stay contextual, as neek ones do");
+        for (String text : Arrays.asList("sksy sharmota download", "Watch sharmota aflam neek masri free")) {
+            check(seed.blocks(text), "a clear Arabizi word confirms a second strong signal: " + text);
+        }
+        for (String text : Arrays.asList("Watch aba7i free", "tahmil ebahia mojani", "moshahda ALABA7YA",
+                "download abahi", "free download abahi", "tahmil aflam abahi", "aflam abahi mojani tahmil",
+                "Watch abahyat free", "moshahda alabahia")) {
+            check(seed.blocks(text), "Arabizi spellings of pornographic are trusted like اباحي: " + text);
+        }
+        for (String text : Arrays.asList("porn", "Hentai", "#سكس", "إباحي", "aba7i", "Creampie"))
+            check(seed.blocks(text), "actual seed: a lone explicit term in a short leaf blocks: " + text);
+        for (String text : Arrays.asList("Porn addiction", "Porn blocker", "Anti-porn campaign", "Pornography",
+                "الإباحية", "حجب الإباحية", "نيك", "بورنو", "كسكس", "Neek", "Nik", "sks", "sksy", "sharmota", "XXX", "Sex",
+                "Porn, hentai blocker", "Stop porn & hentai", "Anti porn hentai", "Porn/hentai detox", "Porn hentai harms",
+                "Hentai porn effects", "porn porn recovery", "NoFap porn hentai", "Porn & Hentai Blocker", "ضد سكس اباحي",
+                "سكس اباحي ادمان", "aba7i sks 3ilaj", "Porno"))
+            check(!seed.blocks(text), "actual seed: lone ambiguous, academic or protective leaf allowed: " + text);
+        check(!seed.blocksAnyLine("Study links porn addiction to anxiety\nPorn")
+                && !seed.blocksAnyLine("أخبار: دراسة عن إدمان الإباحية\nسكس") && seed.blocksAnyLine("Trending\nPorn"),
+                "actual seed: a bare tag chip follows the screen's protective context");
+        checkArabiziChat(rules, seed);
         String gap = "ordinary ".repeat(40);
         check(seed.blocks("sexual health ".repeat(8) + gap + "Watch porn and hentai" + gap
                 + "sex education ".repeat(8)), "actual seed local evidence survives distant negative prose");
         System.out.println("AdultTextPolicy actual seed passed: " + rules.size() + " submitted / "
                 + seed.ruleCount() + " canonical rules");
+    }
+
+    /** Random everyday Arabizi chat, names and every contextual single Arabizi seed spelling, beside
+     * promotion words, never blocks; one clear seed phrase in the same window does. */
+    private static void checkArabiziChat(List<AdultTextPolicy.Rule> rules, AdultTextPolicy seed) {
+        List<String> promotion = Arrays.asList("watch", "free", "download", "tahmil", "mojani", "moshahda");
+        // Words of multi-word Arabizi phrases are left out so no seed phrase can form by chance.
+        java.util.Set<String> phraseWords = new java.util.HashSet<>();
+        for (AdultTextPolicy.Rule rule : rules) {
+            if (rule.arabizi && rule.phrase.contains(" ")) phraseWords.addAll(Arrays.asList(rule.phrase.split(" ")));
+        }
+        List<String> words = new ArrayList<>(Arrays.asList("yalla", "3ala", "el", "ma7al", "2ahwa", "7elwa",
+                "7abibi", "sa7", "2ana", "3amel", "5ali", "3ammi", "ya", "w", "fi", "mesh", "7aga", "ba3d", "2alf",
+                "shokr", "inshallah", "mabrook", "3ayez", "a7mel", "gdid", "7alaqa", "Nashwa", "Dara", "Abhi",
+                "Nika", "Arin", "Nik", "Inek", "97ab", "e7a", "3ara", "moms", "jins", "tabon", "dios", "kos"));
+        int contextual = 0;
+        for (AdultTextPolicy.Rule rule : rules) {
+            if (rule.arabizi && !rule.phrase.contains(" ") && !AdultTextPolicy.ARABIZI_CLEAR.contains(rule.phrase)) {
+                words.add(rule.phrase);
+                contextual++;
+            }
+        }
+        words.removeAll(phraseWords);
+        check(contextual > 700, "the seed's contextual Arabizi spellings are all exercised");
+        java.util.Random random = new java.util.Random(2026);
+        for (int at = 0; at < 3000; at++) {
+            StringBuilder text = new StringBuilder();
+            int length = 5 + random.nextInt(36);
+            for (int token = 0; token < length; token++) {
+                text.append(random.nextInt(4) == 0 ? promotion.get(random.nextInt(promotion.size()))
+                        : words.get(random.nextInt(words.size()))).append(random.nextInt(5) == 0 ? ", " : " ");
+            }
+            check(!seed.blocks(text.toString()), "contextual Arabizi chat never blocks alone: " + text);
+            if (at % 10 == 0) check(seed.blocks(text + "watch aflam 3ahra"), "a clear Arabizi phrase still blocks");
+        }
+    }
+
+    /** Franco-Arabic: reviewed clear words, contextual generated spellings, names and shared English words. */
+    private static void checkArabizi() {
+        List<AdultTextPolicy.Rule> rules = Arrays.asList(rule("porn", 8), rule("pussy", 8), rule("onlyfans", 8),
+                rule("porn addiction", -8), rule("addiction recovery", -8), latin("sharmota", 8), latin("kahba", 8),
+                latin("neek", 8), latin("aba7i", 8), latin("dara", 8), latin("abhi", 8), latin("nika", 8),
+                latin("inek", 8), latin("97ab", 8), latin("seks", 8), latin("sks", 8), latin("zeb", 6), latin("aflam sks", 8),
+                latin("video sex", 8), latin("sex arab", 8), latin("nik masri", 8), latin("aflam nik", 8),
+                latin("neek masri", 8), latin("sks mojani", 8));
+        AdultTextPolicy policy = new AdultTextPolicy(rules);
+        for (String sample : Arrays.asList("Watch sharmota w kahba", "tahmil aflam sks", "aflam sks mojani",
+                "Watch sharmota neek masri", "moshahda sharmota neek", "Watch sharmota with Dara", "SHARMOTA, KAHBA: free",
+                "Watch porn with Dara", "Watch aba7i", "free aba7i with Dara")) {
+            check(policy.blocks(sample), "Arabizi adult promotion detected: " + sample);
+        }
+        for (String sample : Arrays.asList("Watch sharmota", "aflam sks", "Watch Dara and Abhi, free",
+                "Free class with Abhi, Inek and Nika", "Watch Nik Masri live, free", "tahmil aflam Nik Cage",
+                "Watch the video, sex ed for teens", "Free speech, sex, Arab media", "Download 97ab photos free",
+                "Watch seks sks free", "Watch sharmota zeb", "Watch pussy cats with Dara and Abhi",
+                "A free OnlyFans budgeting guide by Abhi and Dara",
+                "Watch porn addiction recovery with Dara, Abhi, Nika and 97ab",
+                "Yalla 3ala el ma7al, free 2ahwa 7elwa", "Download 7abibi playlist free, inshallah",
+                "Watch Neek and Dara play, free", "Watch neek masri", "Watch Neek Masri live, free")) {
+            check(!policy.blocks(sample), "Arabizi chat, names and contextual words stay allowed: " + sample);
+        }
+        check(new AdultTextPolicy(Collections.singletonList(rule("video sex", 8))).blocks("Watch video sex"),
+                "a non-Arabizi phrase keeps its own treatment");
+        check(!new AdultTextPolicy(Arrays.asList(rule("video sex", 8), latin("VIDEO SEX", 8))).blocks("Watch video sex"),
+                "a phrase also submitted as Arabizi keeps the cautious Arabizi treatment");
+        check(!new AdultTextPolicy(Collections.singletonList(latin("sharmota", 7))).blocks("Watch sharmota sharmota"),
+                "weak Arabizi entries never become strong evidence");
+        java.util.Random random = new java.util.Random(77);
+        String[] words = {"ordinary", "ordinary", "ordinary", "ordinary", "porn", "pussy", "sharmota", "kahba", "aba7i", "neek",
+                "dara", "abhi", "zeb", "video", "sex", "aflam", "sks", "watch", "free", "tahmil", "addiction", "recovery",
+                "masri"};
+        for (int at = 0; at < 3000; at++) {
+            String[] sample = new String[5 + random.nextInt(60)];
+            for (int token = 0; token < sample.length; token++) sample[token] = words[random.nextInt(words.length)];
+            check(policy.blocks(String.join(" ", sample)) == referenceArabizi(sample, rules),
+                    "Arabizi sliding windows agree with direct bounded reference");
+        }
+    }
+
+    /** Direct reference for checkArabizi: contextual Arabizi joins only beside a clear strong Arabizi signal. */
+    private static boolean referenceArabizi(String[] text, List<AdultTextPolicy.Rule> rules) {
+        List<String> contextual = Arrays.asList("neek", "dara", "abhi", "nika", "inek", "97ab", "seks", "sks", "zeb",
+                "video sex", "sex arab", "nik masri", "aflam nik", "neek masri");
+        for (int end = 0; end < text.length; end++) {
+            int left = Math.max(0, end - 15);
+            boolean promotion = false;
+            for (int at = left; at <= end; at++) {
+                promotion |= text[at].equals("watch") || text[at].equals("free") || text[at].equals("tahmil");
+            }
+            if (!promotion) continue;
+            int positive = 0, negative = 0, strong = 0, trusted = 0, clearLatin = 0;
+            int latinScore = 0, latinStrong = 0, latinTrusted = 0;
+            for (AdultTextPolicy.Rule rule : rules) {
+                String[] phrase = rule.phrase.split(" ");
+                boolean seen = false;
+                for (int start = 0; start + phrase.length <= text.length && !seen; start++) {
+                    int hitEnd = start + phrase.length - 1;
+                    boolean eligible = rule.weight > 0 ? start >= left && hitEnd <= end
+                            : hitEnd >= Math.max(0, end - 23) && hitEnd <= Math.min(text.length - 1, end + 8);
+                    if (!eligible) continue;
+                    boolean equal = true;
+                    for (int token = 0; token < phrase.length; token++) equal &= phrase[token].equals(text[start + token]);
+                    seen = equal;
+                }
+                if (!seen) continue;
+                if (rule.weight < 0) { negative -= rule.weight; continue; }
+                boolean isStrong = rule.weight >= 8;
+                boolean isTrusted = phrase.length > 1 || rule.phrase.equals("porn") || rule.phrase.equals("aba7i");
+                if (contextual.contains(rule.phrase)) {
+                    latinScore += rule.weight;
+                    if (isStrong) { latinStrong++; if (isTrusted) latinTrusted++; }
+                } else {
+                    positive += rule.weight;
+                    if (isStrong) { strong++; if (isTrusted) trusted++; if (rule.arabizi) clearLatin++; }
+                }
+            }
+            if (clearLatin > 0) { positive += latinScore; strong += latinStrong; trusted += latinTrusted; }
+            if (strong > 0 && (trusted > 0 || strong >= 2) && positive - negative >= (strong >= 2 ? 16 : 8)) return true;
+        }
+        return false;
     }
 
     private static void checkSlidingWindows() {

@@ -13,6 +13,8 @@ import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.net.LinkProperties;
 import android.os.Build;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.ParcelFileDescriptor;
 import android.os.Parcel;
 import android.system.Os;
@@ -21,6 +23,8 @@ import android.system.StructPollfd;
 
 import app.hisn.core.DnsExchange;
 import app.hisn.core.DnsHealth;
+import app.hisn.core.DnsNotice;
+import app.hisn.core.SetupGuide;
 import app.hisn.core.DnsPacketKind;
 import app.hisn.core.DnsPolicy;
 import app.hisn.core.DnsTunnelProbe;
@@ -31,6 +35,7 @@ import app.hisn.core.EncryptedDnsProviders;
 import app.hisn.core.Ipv4DnsPacket;
 import app.hisn.core.Ipv4TcpPacket;
 import app.hisn.core.TlsDnsTransport;
+import app.hisn.core.UnderlyingNetwork;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -74,6 +79,7 @@ public final class DnsVpnService extends VpnService {
     }
     private static final String CHANNEL = "dns_filter";
     private static final String ALERT_CHANNEL = "dns_alerts";
+    private static final int STATUS_ID = 1;
     private static final int ALERT_ID = 2;
     private static final String PREFS = "hisn_dns";
     private static final String RESUME = "resume_after_boot";
@@ -236,15 +242,10 @@ public final class DnsVpnService extends VpnService {
     @Override public int onStartCommand(Intent intent, int flags, int startId) {
         if (session != null) return START_NOT_STICKY;
         try {
+            // Same channel id as before, so existing installs get the corrected name.
             getSystemService(NotificationManager.class).createNotificationChannel(
-                    new NotificationChannel(CHANNEL, getString(R.string.network), NotificationManager.IMPORTANCE_LOW));
-            PendingIntent open = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class),
-                    PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
-            Notification notification = new Notification.Builder(this, CHANNEL)
-                    .setSmallIcon(R.drawable.ic_hisn).setContentTitle(getString(R.string.dns_notification_title))
-                    .setContentText(getString(R.string.dns_notification_body)).setContentIntent(open)
-                    .setOngoing(true).build();
-            startForeground(1, notification);
+                    new NotificationChannel(CHANNEL, getString(R.string.dns_channel), NotificationManager.IMPORTANCE_LOW));
+            startForeground(STATUS_ID, statusNotification(DnsNotice.STARTING));
             setResumeRequested(this, true);
             getSystemService(NotificationManager.class).cancel(ALERT_ID);
             domains = 0; blocked.set(0); forwarded.set(0); errors.set(0); lastDnsFailure = "NONE";
@@ -277,6 +278,24 @@ public final class DnsVpnService extends VpnService {
         state = State.OFF;
         alert(R.string.dns_stopped_body);
         stopSelf();
+    }
+
+    /** The ongoing notification states the session as it is, never more than the dashboard does. */
+    private Notification statusNotification(DnsNotice notice) {
+        int text;
+        switch (notice) {
+            case FILTERING: text = R.string.dns_running; break;
+            case DEGRADED: text = R.string.dns_degraded; break;
+            case PRIVATE_DNS_BYPASS: text = R.string.dns_notification_private_dns; break;
+            default: text = R.string.dns_starting;
+        }
+        PendingIntent open = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class),
+                PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+        return new Notification.Builder(this, CHANNEL)
+                .setSmallIcon(R.drawable.ic_hisn).setContentTitle(getString(R.string.dns_notification_title))
+                .setContentText(getString(text))
+                .setStyle(new Notification.BigTextStyle().bigText(getString(text) + "\n" + getString(R.string.dns_notification_body)))
+                .setContentIntent(open).setOngoing(true).setOnlyAlertOnce(true).build();
     }
 
     private void alert(int body) {
@@ -317,6 +336,8 @@ public final class DnsVpnService extends VpnService {
         // strict mode fails closed, so it is never answered NXDOMAIN.
         private volatile String privateDnsName;
         private volatile boolean closed;
+        // Reader thread only: what the ongoing notification currently says.
+        private DnsNotice postedNotice = DnsNotice.STARTING;
         private volatile ParcelFileDescriptor tunnel;
         private volatile TlsDnsTransport transport;
         private DnsTunnelProbe checkProbe;
@@ -324,16 +345,20 @@ public final class DnsVpnService extends VpnService {
         private long networkEpoch;
         private long failureEpoch;
         private final Object monitorLock = new Object();
-        private final Map<Network, LinkProperties> linkMarks = new HashMap<>();
-        private final Map<Network, Integer> capabilityMarks = new HashMap<>();
+        // Under monitorLock. The network protected resolver sockets use: Android names it on 12+.
+        private final UnderlyingNetwork<Network> underlying = new UnderlyingNetwork<>(Build.VERSION.SDK_INT >= 31);
         private final Map<Network, String> privateDnsNames = new HashMap<>();
         // Under monitorLock. Once callbacks report link properties, the pre-tunnel reading is dropped.
         private boolean privateDnsTracked;
         private ConnectivityManager connectivity;
         private ConnectivityManager.NetworkCallback callback;
+        private HandlerThread monitorThread;
         // Never wait for a response on a packet-processing worker: this query enters the TUN itself.
         private final ThreadPoolExecutor checkWorker = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS,
                 new ArrayBlockingQueue<>(1), job -> new Thread(job, "hisn-dns-self-check"));
+        // Saving commitment progress writes two files with fsync; never on the packet loop. One pending save at most.
+        private final ThreadPoolExecutor saver = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS,
+                new ArrayBlockingQueue<>(1), job -> new Thread(job, "hisn-settings-save"), new ThreadPoolExecutor.DiscardPolicy());
         private final Object outputLock = new Object();
         private final ThreadPoolExecutor workers = new ThreadPoolExecutor(4, 4, 0, TimeUnit.MILLISECONDS,
                 new ArrayBlockingQueue<>(64), new ThreadPoolExecutor.AbortPolicy());
@@ -378,9 +403,9 @@ public final class DnsVpnService extends VpnService {
                     }
                     return rules.evaluate(hostname);
                 });
-                transport = new TlsDnsTransport(
-                        new InetSocketAddress(InetAddress.getByAddress(new byte[]{1, 1, 1, 3}), 853),
-                        "family.cloudflare-dns.com", 2000, DnsVpnService.this::protect);
+                // Cloudflare for Families at 1.1.1.3, or 1.0.0.3 with the same TLS identity when 1.1.1.3
+                // cannot be reached or times out. Never plaintext, never an unfiltered resolver.
+                transport = TlsDnsTransport.cloudflareFamily(2000, DnsVpnService.this::protect);
                 DnsExchange exchange = new DnsExchange(policy, transport);
                 DnsExchange tcpExchange = new DnsExchange(tcpPolicy, transport);
                 try (InputStream input = new ParcelFileDescriptor.AutoCloseInputStream(ParcelFileDescriptor.dup(established.getFileDescriptor()));
@@ -396,11 +421,14 @@ public final class DnsVpnService extends VpnService {
                     byte[] buffer = new byte[1501];
                     long checkpointAt = android.os.SystemClock.elapsedRealtime();
                     while (!closed) {
+                        refreshNotice();
                         emitTcp(tcp.poll(android.os.SystemClock.elapsedRealtime()), tcpExchange, tcpPolicy, output);
                         if (android.os.SystemClock.elapsedRealtime() - checkpointAt >= 60000) {
                             checkpointAt = android.os.SystemClock.elapsedRealtime();
                             // Retried next minute; failing to save commitment progress must not stop DNS filtering.
-                            try { settings.checkpoint(); } catch (RuntimeException unsaved) { /* Keep filtering. */ }
+                            saver.execute(() -> {
+                                try { settings.checkpoint(); } catch (RuntimeException unsaved) { /* Retry next minute. */ }
+                            });
                         }
                         if (Os.poll(new StructPollfd[]{poll}, 250) == 0) continue;
                         if ((poll.revents & (OsConstants.POLLERR | OsConstants.POLLHUP | OsConstants.POLLNVAL)) != 0) {
@@ -493,6 +521,19 @@ public final class DnsVpnService extends VpnService {
             }
         }
 
+        /** Re-posts the ongoing notification only when what it says changes. Posted under CHECK_LOCK
+         * while this session is current, so it can never land after stopForeground removed it. */
+        private void refreshNotice() {
+            synchronized (CHECK_LOCK) {
+                if (closed || session != this) return;
+                DnsNotice next = DnsNotice.of(SetupGuide.Network.valueOf(state.name()), privateDnsStrict);
+                if (next == postedNotice || next == DnsNotice.STOPPED) return;
+                postedNotice = next;
+                try { getSystemService(NotificationManager.class).notify(STATUS_ID, statusNotification(next)); }
+                catch (RuntimeException unavailable) { /* The dashboard still shows the state. */ }
+            }
+        }
+
         private void recordUnsupported(DnsPacketKind kind) {
             synchronized (CHECK_LOCK) {
                 if (closed || session != this) return;
@@ -572,48 +613,67 @@ public final class DnsVpnService extends VpnService {
             synchronized (monitorLock) {
                 if (closed) return;
                 connectivity = getSystemService(ConnectivityManager.class);
+                // Only the network that protected resolver sockets use matters (UnderlyingNetwork):
+                // changes on a standby network, such as mobile data beside Wi-Fi, keep connections.
                 callback = new ConnectivityManager.NetworkCallback() {
                     @Override public void onAvailable(Network network) {
+                        boolean changed;
                         synchronized (monitorLock) {
-                            if (closed || linkMarks.containsKey(network)) return;
-                            linkMarks.put(network, null);
+                            if (closed) return;
+                            changed = underlying.available(network);
                         }
-                        networkChanged();
+                        if (changed) networkChanged();
                     }
                     @Override public void onLost(Network network) {
+                        boolean changed;
                         synchronized (monitorLock) {
-                            if (closed || !linkMarks.containsKey(network)) return;
-                            linkMarks.remove(network); capabilityMarks.remove(network);
+                            if (closed) return;
+                            changed = underlying.lost(network);
                             trackPrivateDns(network, null);
                         }
-                        networkChanged();
+                        if (changed) networkChanged();
                     }
                     @Override public void onLinkPropertiesChanged(Network network, LinkProperties properties) {
+                        boolean changed;
                         synchronized (monitorLock) {
-                            if (closed || !linkMarks.containsKey(network)) return;
+                            if (closed || !underlying.tracks(network)) return;
                             trackPrivateDns(network, properties);
-                            LinkProperties previous = linkMarks.put(network, snapshotLinks(properties));
-                            if (previous == null || previous.equals(properties)) return;
+                            changed = underlying.link(network, snapshotLinks(properties));
                         }
-                        networkChanged();
+                        if (changed) networkChanged();
                     }
                     @Override public void onCapabilitiesChanged(Network network, NetworkCapabilities capabilities) {
-                        // Ignore signal strength/bandwidth churn; only validation/captive changes matter here.
-                        int mark = (capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) ? 1 : 0)
-                                | (capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_CAPTIVE_PORTAL) ? 2 : 0);
+                        // Signal strength and bandwidth churn are ignored: only what ranks the network,
+                        // and its validation and captive-portal state, are passed on.
+                        UnderlyingNetwork.Transport transport =
+                                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) ? UnderlyingNetwork.Transport.ETHERNET
+                                : capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ? UnderlyingNetwork.Transport.WIFI
+                                : capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ? UnderlyingNetwork.Transport.CELLULAR
+                                : UnderlyingNetwork.Transport.OTHER;
+                        boolean foreground = Build.VERSION.SDK_INT < 28
+                                || capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_FOREGROUND);
+                        boolean changed;
                         synchronized (monitorLock) {
-                            if (closed || !linkMarks.containsKey(network)) return;
-                            Integer previous = capabilityMarks.put(network, mark);
-                            if (previous == null || previous == mark) return;
+                            if (closed) return;
+                            changed = underlying.capabilities(network, transport,
+                                    capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED),
+                                    capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_CAPTIVE_PORTAL), foreground);
                         }
-                        networkChanged();
+                        if (changed) networkChanged();
                     }
                 };
                 try {
                     NetworkRequest request = new NetworkRequest.Builder()
                             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
                             .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN).build();
-                    connectivity.registerNetworkCallback(request, callback);
+                    // Callbacks close sockets, so they run on their own thread, never the main one.
+                    monitorThread = new HandlerThread("hisn-dns-network");
+                    monitorThread.start();
+                    Handler handler = new Handler(monitorThread.getLooper());
+                    // Android 12+ reports the best non-VPN network, the one protected sockets use; before
+                    // that every Internet network is reported and UnderlyingNetwork ranks them.
+                    if (Build.VERSION.SDK_INT >= 31) connectivity.registerBestMatchingNetworkCallback(request, callback, handler);
+                    else connectivity.registerNetworkCallback(request, callback, handler);
                     synchronized (CHECK_LOCK) {
                         if (!closed && session == this && activeService == DnsVpnService.this) networkMonitoring = true;
                     }
@@ -643,11 +703,13 @@ public final class DnsVpnService extends VpnService {
         }
 
         // Called with monitorLock held. Only strict mode exposes a provider hostname; the setting
-        // is global, so any tracked underlying network reports the same name. Read-only.
+        // is global, so any tracked underlying network reports the same name. Read-only. A network
+        // no longer followed (lost, or replaced as Android's reported default) no longer counts.
         private void trackPrivateDns(Network network, LinkProperties properties) {
             privateDnsTracked = true;
             String name = privateDnsServerName(properties);
             if (name == null) privateDnsNames.remove(network); else privateDnsNames.put(network, name);
+            privateDnsNames.keySet().removeIf(known -> !underlying.tracks(known));
             publishPrivateDns(privateDnsNames.isEmpty() ? null : privateDnsNames.values().iterator().next());
         }
 
@@ -705,7 +767,9 @@ public final class DnsVpnService extends VpnService {
                     try { connectivity.unregisterNetworkCallback(previous); }
                     catch (RuntimeException alreadyGone) { /* No permission or live callback left. */ }
                 }
-                linkMarks.clear(); capabilityMarks.clear(); privateDnsNames.clear();
+                if (monitorThread != null) monitorThread.quitSafely();
+                monitorThread = null;
+                underlying.clear(); privateDnsNames.clear();
             }
         }
 
@@ -787,6 +851,8 @@ public final class DnsVpnService extends VpnService {
             browserTest.clear();
             tcp.close();
             checkWorker.shutdownNow();
+            // Let a save in progress finish; interrupting it would only lose that minute.
+            saver.shutdown();
             workers.shutdownNow();
             TlsDnsTransport currentTransport = transport;
             if (currentTransport != null) currentTransport.close();

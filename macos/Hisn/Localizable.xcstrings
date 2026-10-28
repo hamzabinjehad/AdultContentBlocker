@@ -21,6 +21,16 @@
         }
       }
     },
+    "A lock is running. The screen stays gray until it ends." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "القفل يعمل. تبقى الشاشة رمادية حتى ينتهي."
+          }
+        }
+      }
+    },
     "Block a site" : {
       "localizations" : {
         "ar" : {
@@ -66,6 +76,16 @@
         }
       }
     },
+    "Gray screen" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شاشة رمادية"
+          }
+        }
+      }
+    },
     "Hisn" : { "localizations" : { "ar" : { "stringUnit" : { "state" : "translated", "value" : "حصن" } } } },
     "design.localPrivacy" : { "localizations" : {
       "en" : { "stringUnit" : { "state" : "translated", "value" : "Protection, with a clear view of every layer." } },
@@ -93,6 +113,16 @@
     } },
     "Connect a supported browser before verifying removal protection." : {
       "localizations" : { "ar" : { "stringUnit" : { "state" : "translated", "value" : "اربط متصفحاً مدعوماً قبل التحقق من الحماية من إزالة الإضافة." } } }
+    },
+    "Make the screen gray" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اجعل الشاشة رمادية"
+          }
+        }
+      }
     },
     "removal.setup.title" : {
       "localizations" : {
@@ -130,6 +160,16 @@
         "ar" : { "stringUnit" : { "state" : "translated", "value" : "دليل إعداد Chrome الرسمي" } }
       }
     },
+    "Shows everything on this Mac in shades of gray. Apps keep working; images and videos lose most of their pull." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يعرض كل ما على هذا الماك بدرجات الرمادي. تبقى التطبيقات تعمل، وتفقد الصور ومقاطع الفيديو معظم جاذبيتها."
+          }
+        }
+      }
+    },
     "That is not a domain." : {
       "localizations" : {
         "ar" : {
@@ -146,6 +186,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "يلتقطه المرشّح وإضافة المتصفح خلال ثوانٍ. أزِله من صفحة قواعد الحجب."
+          }
+        }
+      }
+    },
+    "This version of macOS does not let Hisn change the screen. Turn on Grayscale in System Settings › Accessibility › Display › Color Filters instead." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يسمح هذا الإصدار من macOS لحصن بتغيير الشاشة. فعّل التدرّج الرمادي من إعدادات النظام › تسهيلات الاستخدام › شاشة العرض › مرشحات الألوان بدلًا من ذلك."
           }
         }
       }

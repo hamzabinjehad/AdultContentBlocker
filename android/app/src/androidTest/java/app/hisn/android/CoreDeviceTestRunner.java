@@ -43,6 +43,7 @@ public final class CoreDeviceTestRunner extends Instrumentation {
             testVisualCommitment();
             testUninstallGuard();
             testLegacyEmptyCommitment();
+            testDamagedSettings();
             VisibleTextSample sample = new VisibleTextSample();
             sample.append("blocked " + "ordinary ".repeat(1000));
             if (WordRuleList.compile("blocked").matches(sample.text()).isEmpty())
@@ -51,7 +52,7 @@ public final class CoreDeviceTestRunner extends Instrumentation {
             if (!sample.isPartial() || sample.text().length() > 32768)
                 throw new AssertionError("Inspection budget failed");
             results.putString("stream", "\nPASS: verified APK seed loaded " + seed.domainCount
-                    + " domains; Arabic matching, boundaries, local DNS block, saved rules, Unicode persistence, long-text sampling, verified adult terms, visual settings, commitment and uninstall-guard checks passed. No VPN, accessibility service, admin or device-owner policy was changed.\n");
+                    + " domains; Arabic matching, boundaries, local DNS block, saved rules, Unicode persistence, long-text sampling, verified adult terms, visual settings, commitment, damaged-settings and invalid-settings, and uninstall-guard checks passed. No VPN was enabled; no accessibility service, admin or device-owner policy was changed.\n");
             finish(Activity.RESULT_OK, results);
         } catch (Throwable failure) {
             StringBuilder detail = new StringBuilder();
@@ -85,7 +86,7 @@ public final class CoreDeviceTestRunner extends Instrumentation {
             PolicyStore.Snapshot restored = new PolicyStore(context, name).snapshot();
             if (!restored.visualEnabled || !restored.scannedApps.equals(apps))
                 throw new AssertionError("Rejected update damaged visual rules");
-        } finally { context.getSharedPreferences(name, android.content.Context.MODE_PRIVATE).edit().clear().commit(); }
+        } finally { forget(context, name); }
     }
 
     private void testUninstallGuard() {
@@ -170,9 +171,7 @@ public final class CoreDeviceTestRunner extends Instrumentation {
             PolicyStore restored = new PolicyStore(getTargetContext(), preferenceName);
             if (!restored.snapshot().adultWordsEnabled || !restored.snapshot().hasConfiguredRestrictions())
                 throw new AssertionError("Built-in policy did not persist");
-        } finally {
-            getTargetContext().getSharedPreferences(preferenceName, android.content.Context.MODE_PRIVATE).edit().clear().commit();
-        }
+        } finally { forget(getTargetContext(), preferenceName); }
     }
 
     private void testLegacyEmptyCommitment() {
@@ -194,7 +193,7 @@ public final class CoreDeviceTestRunner extends Instrumentation {
                 migrated.startCommitment(7);
                 throw new AssertionError("Migrated commitment shortened");
             } catch (IllegalStateException expected) { }
-        } finally { prefs.edit().clear().commit(); }
+        } finally { forget(getTargetContext(), name); }
     }
 
     private void testSavedRules() {
@@ -248,10 +247,86 @@ public final class CoreDeviceTestRunner extends Instrumentation {
                 throw new AssertionError("Policy did not persist");
             }
         } finally {
-            // Instrumentation runs under the target UID. Use only this generated
-            // test file, never the real hisn_policy preferences or user commitment.
-            getTargetContext().getSharedPreferences(preferenceName, android.content.Context.MODE_PRIVATE).edit().clear().commit();
+            forget(getTargetContext(), preferenceName);
         }
+    }
+
+    /**
+     * Android reads an unparseable preferences file as empty, like a new installation. A damaged main
+     * file is replaced by its copy; with both damaged the commitment stays active as unknown; deleting
+     * both, as clearing app data does, starts again with nothing.
+     */
+    private void testDamagedSettings() throws java.io.IOException {
+        android.content.Context context = getTargetContext();
+        String name = "hisn_damage_test_" + java.util.UUID.randomUUID();
+        try {
+            PolicyStore store = new PolicyStore(context, name);
+            if (store.remainingMillis() != 0 || store.commitmentUnknown() || store.restoredFromCopy())
+                throw new AssertionError("New settings started with a commitment or notice");
+            store.update("blocked.example", "", Collections.singleton("com.example.fixture"), Collections.emptySet());
+            store.startCommitment(1);
+            corrupt(context, name);
+            PolicyStore restored = new PolicyStore(context, name);
+            if (!restored.restoredFromCopy() || restored.commitmentUnknown() || restored.remainingMillis() <= 0
+                    || restored.remainingMillis() > 86400000L || !restored.snapshot().domains.blocks("blocked.example"))
+                throw new AssertionError("Corrupt main file was not replaced by its copy");
+            restored.confirmRestored();
+            if (new PolicyStore(context, name).restoredFromCopy()) throw new AssertionError("Confirmation was not saved");
+            corrupt(context, name);
+            corrupt(context, name + PolicyStore.COPY_SUFFIX);
+            PolicyStore unknown = new PolicyStore(context, name);
+            if (!unknown.commitmentUnknown() || unknown.remainingMillis() <= 86400000L)
+                throw new AssertionError("Unreadable commitment was not kept active");
+            unknown.update("blocked.example", "", Collections.emptySet(), Collections.emptySet());
+            try {
+                unknown.update("", "", Collections.emptySet(), Collections.emptySet());
+                throw new AssertionError("Unknown commitment allowed weakening");
+            } catch (IllegalStateException expected) { }
+            if (!new PolicyStore(context, name).commitmentUnknown()) throw new AssertionError("Unknown commitment was not saved");
+            // Intact settings that a stricter version cannot accept are refused and left as they are.
+            forget(context, name);
+            java.util.Set<String> apps = new java.util.HashSet<>();
+            for (int i = 0; i <= PolicyStore.MAX_APPS; i++) apps.add("com.example.app" + i);
+            java.util.Map<String, Object> tooMany = app.hisn.core.SavedSettings.values("", "", apps, Collections.emptySet(),
+                    false, false, app.hisn.core.DailyAppSchedule.disabled(), new app.hisn.core.CommitmentClock(0, 0, 0), false, false);
+            for (String file : new String[]{name, name + PolicyStore.COPY_SUFFIX}) {
+                android.content.SharedPreferences.Editor editor = context.getSharedPreferences(file, 0).edit();
+                for (java.util.Map.Entry<String, Object> entry : tooMany.entrySet()) {
+                    Object value = entry.getValue();
+                    if (value instanceof String) editor.putString(entry.getKey(), (String) value);
+                    else if (value instanceof Boolean) editor.putBoolean(entry.getKey(), (Boolean) value);
+                    else if (value instanceof Integer) editor.putInt(entry.getKey(), (Integer) value);
+                    else if (value instanceof Long) editor.putLong(entry.getKey(), (Long) value);
+                    else { @SuppressWarnings("unchecked") java.util.Set<String> set = (java.util.Set<String>) value; editor.putStringSet(entry.getKey(), set); }
+                }
+                if (!editor.commit()) throw new AssertionError("Fixture not saved");
+            }
+            try { new PolicyStore(context, name); throw new AssertionError("Intact but invalid settings loaded"); }
+            catch (IllegalStateException expected) { }
+            if (!context.getSharedPreferences(name, 0).getAll().equals(tooMany))
+                throw new AssertionError("Refused settings were changed");
+        } finally { forget(context, name); }
+        try {
+            PolicyStore cleared = new PolicyStore(context, name);
+            if (cleared.remainingMillis() != 0 || cleared.commitmentUnknown() || cleared.snapshot().hasConfiguredRestrictions())
+                throw new AssertionError("Deleted settings did not start again");
+        } finally { forget(context, name); }
+    }
+
+    // Deleting is the only public way to drop the cached file; then an unparseable file takes its place.
+    private static void corrupt(android.content.Context context, String name) throws java.io.IOException {
+        context.deleteSharedPreferences(name);
+        java.io.File file = new java.io.File(new java.io.File(context.getDataDir(), "shared_prefs"), name + ".xml");
+        try (java.io.FileOutputStream output = new java.io.FileOutputStream(file)) {
+            output.write("<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n<map>\n<long name=".getBytes(StandardCharsets.UTF_8));
+        }
+    }
+
+    // Instrumentation runs under the target UID. Tests use only generated names, never the real
+    // hisn_policy preferences or the owner's commitment, and delete both files afterwards.
+    private static void forget(android.content.Context context, String name) {
+        context.deleteSharedPreferences(name);
+        context.deleteSharedPreferences(name + PolicyStore.COPY_SUFFIX);
     }
 
     private static void expectRejectedRules(PolicyStore store, String domains, String words) {

@@ -96,6 +96,8 @@ APP_SOURCES = SHARED + [
     "Hisn/StatusMenu.swift",
     # The daily lock.
     "Hisn/LockSchedule.swift",
+    # The whole screen in gray, on request.
+    "Hisn/ScreenGrayscale.swift",
 ]
 
 # Every string the app shows, in English and Arabic. A String Catalog: Xcode
@@ -122,6 +124,7 @@ TEST_SOURCES = ["HisnTests/BlocklistStoreTests.swift",
                 "HisnTests/SetupChecklistTests.swift",
                 "HisnTests/ProtectedSetupTests.swift",
                 "HisnTests/LockScheduleTests.swift",
+                "HisnTests/ScreenGrayscaleTests.swift",
                 "HisnTests/FilterActivationTests.swift",
                 "HisnTests/OnboardingTests.swift",
                 "HisnTests/NetworkDNSProbeTests.swift",

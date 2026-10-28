@@ -184,6 +184,13 @@ async function main() {
   }
   for (const type of ["getVisualSettings", "getVisualStatus", "saveVisualSettings"]) {
     check(checkedVisualRequest({ type }, options, api), "Own options visual request permitted");
+    // Safari's "Open full settings" shows the same page in a normal tab.
+    const tabbed = { ...options, tab: { id: 5 }, frameId: 0 };
+    check(checkedVisualRequest({ type }, tabbed, api), "Own options page in a tab permitted");
+    check(checkedVisualRequest({ type }, { ...tabbed, url: options.url + "#visual" }, api), "Options page fragment permitted");
+    if (type !== "getVisualSettings") check(!checkedVisualRequest({ type }, { ...tabbed, url: "https://example.com/options.html" }, api),
+      "Webpage named options.html cannot use options-only messages");
+    check(!checkedVisualRequest({ type }, { ...tabbed, id: "foreign" }, api), "Foreign extension options page rejected");
   }
   check(!checkedVisualRequest({ type: "saveVisualSettings" }, sender, api), "Content cannot change visual preferences");
   check(!checkedVisualRequest({ type: "getVisualStatus" }, sender, api), "Content cannot probe engine status");

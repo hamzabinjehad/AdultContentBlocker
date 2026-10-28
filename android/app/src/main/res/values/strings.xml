@@ -1,18 +1,20 @@
 <resources>
     <string name="app_name">Hisn</string>
     <string name="title">Hisn for Android</string>
-    <string name="subtitle">Protection preview · 0.5.2</string>
+    <string name="subtitle">Protection preview · 0.5.5</string>
     <string name="status_title">Protection is not active</string>
-    <string name="status_body">Enable the layers you choose, then review each status. DNS, selected-app restrictions and sampled image/video checks have different coverage. A commitment alone does not prevent Android from disabling or removing Hisn; optional device-owner mode can block ordinary uninstall while a commitment runs.</string>
+    <string name="status_body">Enable the layers you choose, then review each status. DNS, selected-app restrictions and sampled image/video checks have different coverage. A commitment does not prevent Android from disabling or removing Hisn.</string>
     <string name="layers">Protection layers</string>
     <string name="network">DNS filtering · Off</string>
+    <string name="dns_seed_version">Bundled domain list · Version %1$d · Built %2$s · Updates arrive only with a new Hisn version</string>
     <string name="dns_start">Set up DNS filtering</string>
     <string name="dns_settings">Android VPN settings</string>
     <string name="vpn_settings_reminder_title">Review your active commitment</string>
-    <string name="vpn_settings_reminder_body">About %1$d hours remain in your Hisn commitment. Changing or disconnecting the VPN can weaken your network protection.\n\nYou can continue to Android settings or cancel and return to Hisn. This reminder does not prevent changes made in Android Settings.</string>
+    <string name="vpn_settings_reminder_body_unknown">Hisn could not read its saved commitment, so it keeps it active for at most %1$s from now. Changing or disconnecting the VPN can weaken your network protection.\n\nYou can continue to Android settings or cancel and return to Hisn. This reminder does not prevent changes made in Android Settings.</string>
+    <string name="vpn_settings_reminder_body">Your Hisn commitment has about %1$s remaining. Changing or disconnecting the VPN can weaken your network protection.\n\nYou can continue to Android settings or cancel and return to Hisn. This reminder does not prevent changes made in Android Settings.</string>
     <string name="vpn_settings_continue">Open Android settings</string>
     <string name="dns_consent_title">Enable experimental DNS filtering?</string>
-    <string name="dns_consent_body">Hisn checks supported IPv4 UDP and TCP DNS requests to its virtual DNS server against the bundled list and your saved rules. Allowed requests go to Cloudflare Families (1.1.1.3) over authenticated, encrypted DNS-over-TLS. Cloudflare can see these requests. Hisn does not save a browsing log or fall back to plaintext DNS.\n\nAndroid allows one VPN per profile. Starting Hisn can disconnect your existing VPN.\n\nHisn answers well-known encrypted-DNS provider names and Firefox’s DNS-over-HTTPS canary domain with “not found”. This reduces, but does not stop, apps using their own encrypted DNS: some reach providers at built-in IP addresses. This DNS layer also does not cover direct IP access, cached answers, images or videos. Optional visual checks are a separate layer. TCP is bounded to DNS port 53 and messages up to 4096 bytes; unsupported requests or resolver failures can interrupt loading. Client TLS on port 853 is refused so Android uses port 53 instead. If Android Private DNS is set to a provider hostname, system DNS can bypass Hisn; Hisn warns but does not change that setting. Always-on and lockdown are unsupported. If you leave DNS filtering on, Hisn starts it again after a restart while Android still holds this VPN approval. You can disconnect through Android VPN settings.</string>
+    <string name="dns_consent_body">Hisn checks supported IPv4 UDP and TCP DNS requests to its virtual DNS server against the bundled list and your saved rules. Allowed requests go to Cloudflare Families (1.1.1.3, or its second address 1.0.0.3 when 1.1.1.3 cannot be reached) over authenticated, encrypted DNS-over-TLS. Cloudflare can see these requests. Hisn does not save a browsing log or fall back to plaintext DNS.\n\nAndroid allows one VPN per profile. Starting Hisn can disconnect your existing VPN.\n\nHisn answers well-known encrypted-DNS provider names and Firefox’s DNS-over-HTTPS canary domain with “not found”. This reduces, but does not stop, apps using their own encrypted DNS: some reach providers at built-in IP addresses. This DNS layer also does not cover direct IP access, cached answers, images or videos. Optional visual checks are a separate layer. TCP is bounded to DNS port 53 and messages up to 4096 bytes; unsupported requests or resolver failures can interrupt loading. Client TLS on port 853 is refused so Android uses port 53 instead. If Android Private DNS is set to a provider hostname, system DNS can bypass Hisn; Hisn warns but does not change that setting. Always-on and lockdown are unsupported. If you leave DNS filtering on, Hisn starts it again after a restart while Android still holds this VPN approval. You can disconnect through Android VPN settings.</string>
     <string name="dns_continue">Continue to Android approval</string>
     <string name="dns_starting">DNS · Verifying list and starting</string>
     <string name="dns_running">DNS tunnel connected · Experimental coverage</string>
@@ -30,7 +32,9 @@
     <string name="dns_tcp_stats">TCP DNS queries: %1$d · Replies prepared: %2$d · UDP retry signals: %3$d</string>
     <string name="dns_summary">%1$s\n%2$s\n%3$s\n%4$s\n%5$s\n%6$s\n%7$s</string>
     <string name="dns_notification_title">Hisn DNS preview</string>
-    <string name="dns_notification_body">DNS session running. Open Hisn for connection status and coverage.</string>
+    <string name="dns_notification_body">Open Hisn for connection status and coverage.</string>
+    <string name="dns_channel">DNS filtering status</string>
+    <string name="dns_notification_private_dns">DNS tunnel connected · Android Private DNS can bypass Hisn</string>
     <string name="dns_alert_channel">DNS filtering alerts</string>
     <string name="dns_stopped_title">DNS filtering stopped</string>
     <string name="dns_stopped_body">Android disconnected Hisn’s VPN, for example because another VPN app took over or it was turned off in Android settings. Domains are not filtered until you turn DNS filtering on again in Hisn.</string>
@@ -50,7 +54,7 @@
     <string name="visual_input">Image/video checks · Paused while an input field is focused</string>
     <string name="visual_error">Image/video checks · Model or capture failed; retrying</string>
     <string name="visual_waiting">Image/video checks · Waiting for a selected app</string>
-    <string name="visual_disclosure">Hisn will use Android accessibility screenshots to inspect the active window of apps you explicitly select for inspection. A bundled adult-image model processes downscaled samples on this device. Samples are not saved or uploaded. No camera or microphone is used.\n\nScreenshots can contain private images and messages. Hisn pauses when an identified editable or password field is focused, but sensitive content may still appear elsewhere. Select only apps you want captured.\n\nA sample is requested about every two seconds while a selected app is active, with one request at a time. Flagged samples return you to Home with a restriction notice. This restricts the whole app screen; it does not blur individual images or pause individual videos. Content can appear before intervention. Small images, short video frames, secure windows and classification mistakes leave gaps. Unknown samples are not marked clean. Android 14+ is required.\n\nThis option is off by default. A commitment prevents disabling it inside Hisn or removing selected apps until the period ends; Android can still revoke access or remove Hisn.</string>
+    <string name="visual_disclosure">Hisn will use Android accessibility screenshots to inspect the windows of apps you explicitly select for inspection, including split-screen, pop-up and picture-in-picture windows. A bundled adult-image model processes downscaled samples on this device. Samples are not saved or uploaded. No camera or microphone is used.\n\nScreenshots can contain private images and messages. Hisn skips a window while you are typing in it: while that window has input focus and an identified editable or password field in it is focused. Sensitive content may still appear elsewhere, including in a field of a window you have moved away from. Select only apps you want captured.\n\nWhile a selected app has a window on screen, a sample is requested about every two seconds: about every second while it scrolls or changes, and up to every five seconds while the screen stays still. One window is sampled at a time, with one request at a time; several selected windows take turns. Nothing is sampled while the screen is off. Flagged samples return you to Home with a restriction notice, or close a flagged picture-in-picture window where Android allows it. This restricts the whole app screen; it does not blur individual images or pause individual videos. Content can appear before intervention. Small images, short video frames, secure windows and classification mistakes leave gaps. Unknown samples are not marked clean. Android 14+ is required.\n\nThis option is off by default. A commitment prevents disabling it inside Hisn or removing selected apps until the period ends; Android can still revoke access or remove Hisn.</string>
     <string name="restriction_visual">An image or sampled video frame on this screen was flagged by the experimental adult-content detector. The model can make mistakes.</string>
     <string name="commitment">Commitment · No active period</string>
     <string name="rules_heading">Your protection rules</string>
@@ -78,7 +82,7 @@
     <string name="schedule_invalid">The schedule could not be saved. Check the time window and selected apps.</string>
     <string name="enable_text_guard">Set up app and word protection</string>
     <string name="accessibility_title">Allow protection in selected apps?</string>
-    <string name="accessibility_disclosure">Hisn uses Android accessibility to identify selected apps and inspect their visible text. If you separately enable image/video checks, Hisn also takes transient screenshots of selected app windows; review that option’s separate disclosure in Rules. Your app restrictions, daily schedule or matching words can return you to the home screen and show a restriction notice.\n\nText is processed on this device and is not saved or sent to a server. Input fields, password fields and their child elements are skipped where Android identifies them. Some sensitive text may still appear in ordinary labels or messages. Select only apps you want inspected.\n\nThis cannot read every app or guarantee a block before content appears. Hisn does not use accessibility to prevent uninstalling or disabling services. Enable Hisn manually in the next settings screen if you agree.</string>
+    <string name="accessibility_disclosure">Hisn uses Android accessibility to identify selected apps and inspect their visible text, including in split-screen, pop-up and picture-in-picture windows. If you separately enable image/video checks, Hisn also takes transient screenshots of selected app windows; review that option’s separate disclosure in Rules. Your app restrictions, daily schedule or check results can return you to the home screen and show a restriction notice.\n\nText and screenshots are processed on this device and are not saved or sent to a server. Text checks skip input fields, password fields and their child elements where Android identifies them, and screenshots pause while an identified input field is focused. Some sensitive content may still appear in other labels, messages or images. Select only apps you want inspected.\n\nThis cannot read every app or guarantee a block before content appears. Hisn does not use accessibility to prevent uninstalling or disabling services. Enable Hisn manually in the next settings screen if you agree.</string>
     <string name="accessibility_description">Applies your chosen permanent or scheduled app restrictions and checks visible text in selected apps. It skips identified text input and password fields. Separately enabled visual checks sample selected windows and pause while an identified input is focused. Text and pixels stay on your device and are not saved. Enable only after reviewing the disclosure in Hisn.</string>
     <string name="open_accessibility">Open accessibility settings</string>
     <string name="text_guard_connected">App service connected · Checks selected apps only</string>
@@ -87,14 +91,23 @@
     <string name="rules_saved">Rules saved on this device.</string>
     <string name="rules_invalid">Check the format. Use up to 1,000 domains or word-rule lines. Each word rule can contain at most 128 characters.</string>
     <string name="rules_locked">The change could not be saved. During a commitment you can add restrictions but cannot remove existing ones or shorten the period.</string>
+    <string name="rules_save_failed">The change could not be saved on this device. Try again.</string>
     <string name="policy_unavailable">Protection settings could not be loaded or saved. Protection is unavailable until this is resolved.</string>
     <string name="commitment_setup">Start or extend commitment</string>
     <plurals name="days">
         <item quantity="one">%1$d day</item>
         <item quantity="other">%1$d days</item>
     </plurals>
-    <string name="commitment_remaining">Commitment active · About %1$d hours remaining</string>
-    <string name="commitment_disclosure">This locks the removal of saved domain rules, word rules and selected apps inside Hisn for the chosen period. It also prevents disabling or reducing an enabled daily app schedule inside Hisn. You may add restrictions and extend the period.\n\nCommitment time counts while the device is running, including after a restart. Time while the device is switched off is not counted, so powering off extends the period; Hisn does not trust a changed date. Daily schedules instead follow the device clock and time zone, which can still be changed outside Hisn.\n\nThis does not lock Android settings, permissions or clearing app data, and it does not turn an inactive service on. If Hisn is provisioned as this user’s device owner, an active commitment also blocks ordinary uninstall until it ends; without that managed setup, Android can still remove Hisn. Check your protection layers before starting.</string>
+    <string name="commitment_remaining">Commitment active · About %1$s remaining</string>
+    <plurals name="remaining_hours">
+        <item quantity="one">%1$d hour</item>
+        <item quantity="other">%1$d hours</item>
+    </plurals>
+    <plurals name="remaining_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+    <string name="commitment_disclosure">This locks the removal of saved domain rules, word rules and selected apps inside Hisn for the chosen period. It also prevents disabling or reducing an enabled daily app schedule inside Hisn. You may add restrictions and extend the period.\n\nCommitment time counts while the device is running, including after a restart. Time while the device is switched off is not counted, so powering off extends the period; Hisn does not trust a changed date. Daily schedules instead follow the device clock and time zone, which can still be changed outside Hisn.\n\nThis does not lock Android settings, permissions, app removal or clearing app data. It does not turn an inactive service on. If Hisn is provisioned as this user’s device owner, an active commitment also blocks ordinary uninstall until it ends; without that managed setup, Android can still remove Hisn. Check your protection layers before starting.</string>
     <string name="commitment_start">Start this commitment</string>
     <string name="restriction_title">Your commitment comes first</string>
     <string name="restriction_word">Your selected text protection detected restricted content in this app.</string>
@@ -103,12 +116,13 @@
     <string name="restriction_home">Return to home screen</string>
     <string name="admin_setup">Add an uninstall confirmation step</string>
     <string name="admin_title">Optional uninstall friction</string>
-    <string name="admin_explanation">Android may require deactivating Hisn as a device administrator before uninstalling it. This adds a deliberate step; it does not block uninstall and does not make Hisn undeletable. You can still deactivate it in Android settings.\n\nHisn requests no device-wipe, password-reset or screen-lock powers. This legacy step does not enroll your phone as a managed device; managed uninstall protection is the separate device-owner setup in the Guide.</string>
+    <string name="admin_explanation">Android may require deactivating Hisn as a device administrator before uninstalling it. This adds a deliberate step; it does not make Hisn undeletable. You can still deactivate it in Android settings.\n\nHisn requests no device-wipe, password-reset or screen-lock powers. This does not enroll your phone as a managed device.</string>
     <string name="admin_continue">Review Android activation</string>
     <string name="admin_off">Extra uninstall step · Not active</string>
     <string name="admin_active">Device admin active · Can be deactivated in Android settings</string>
     <string name="admin_disable_warning">Deactivating this administrator removes the extra uninstall step.</string>
-    <string name="admin_commitment_warning">Your Hisn commitment has about %1$d hours remaining. Deactivating this administrator removes the extra uninstall step. Android still allows you to continue.</string>
+    <string name="admin_commitment_warning_unknown">Hisn could not read its saved commitment, so it keeps it active for at most %1$s from now. Deactivating this administrator removes the extra uninstall step. Android still allows you to continue.</string>
+    <string name="admin_commitment_warning">Your Hisn commitment has about %1$s remaining. Deactivating this administrator removes the extra uninstall step. Android still allows you to continue.</string>
     <string name="tester">Try word rules</string>
     <string name="tester_help">Enter one literal word or phrase per line and test them locally. This does not monitor other apps or use the signed protection list.</string>
     <string name="rule_hint">Words or phrases, one per line</string>
@@ -130,20 +144,23 @@
     <string name="setup_heading">Recommended setup</string>
     <string name="setup_first">Choose your protection layers. Permission, connection and a passed check are different steps.</string>
     <string name="setup_next">Continue setup</string>
-    <string name="setup_choose_rules">Step 1 · Choose permanent or scheduled app restrictions, or enable adult-text checks and select apps.</string>
+    <string name="setup_choose_rules">Step 1 · Choose your layers: DNS filtering below, permanent or scheduled app restrictions, or text and image checks in apps you select.</string>
     <string name="setup_connect">Step 2 · Review accessibility permission and connect Hisn.</string>
     <string name="setup_policy_loading">Step 2 · Adult-text policy is loading or unavailable. Review its status below.</string>
     <string name="setup_dns">Step 3 · Review and enable DNS filtering if you want the network layer.</string>
     <string name="setup_test">Step 4 · Run the DNS route check. A connected tunnel is not a passed test.</string>
     <string name="setup_review">The selected app layer reports an incomplete inspection. Review its status before relying on it.</string>
     <string name="setup_ready">Selected app layer connected; last DNS route check passed. Experimental coverage, not complete protection.</string>
+    <string name="setup_review_visual">Image checks report a failure, have no apps to inspect, or cannot read the selected window. Review them in Rules before relying on them.</string>
+    <string name="setup_review_visual_button">Review image checks</string>
+    <string name="setup_ready_apps">Selected app layer connected. DNS filtering is off, so Hisn does not block websites by domain. Experimental coverage, not complete protection.</string>
+    <string name="setup_ready_dns">DNS filtering connected; last DNS route check passed. No app restrictions or checks are chosen. Experimental coverage, not complete protection.</string>
     <string name="adult_mode_off">Built-in adult-text checks · Off</string>
     <string name="adult_mode_enable">Enable built-in adult-text checks</string>
     <string name="adult_mode_disable">Disable built-in adult-text checks</string>
-    <string name="adult_mode_ready">Built-in adult-text policy loaded · %1$d compiled rules · Selected apps only</string>
     <string name="adult_mode_loading">Built-in adult-text policy · Loading verified terms on this device</string>
     <string name="adult_mode_error">Built-in adult-text policy unavailable · Retry loading or install a verified update; custom rules remain independent</string>
-    <string name="adult_mode_disclosure">This opt-in layer checks visible text in apps you select, using English and Arabic adult-promotion evidence from the verified bundled vocabulary. It is separate from your literal custom rules. It can miss content or match harmless text; it does not analyze images or videos. Text stays on your device and is not saved.\n\nChoose apps after enabling it. During an active commitment this setting cannot be turned off inside Hisn. No Android permission is granted by this button.</string>
+    <string name="adult_mode_disclosure">This opt-in layer checks visible text in apps you select, using English, Arabic and Franco-Arabic (Arabic written in Latin letters and digits) adult-promotion evidence from the verified bundled vocabulary. It is separate from your literal custom rules. It can miss content or match harmless text; it does not analyze images or videos. Text stays on your device and is not saved.\n\nChoose apps after enabling it. During an active commitment this setting cannot be turned off inside Hisn. No Android permission is granted by this button.</string>
     <string name="network_check_idle">DNS route check · Not run in this session</string>
     <string name="network_check_button">Check the DNS route</string>
     <string name="network_check_start">Run these checks</string>
@@ -164,13 +181,46 @@
     <string name="app_goal_title">The goal of Hisn</string>
     <string name="app_goal_body">Help you avoid adult websites, explicit text and flagged images or sampled video frames, restrict distracting apps, and keep your chosen boundaries during a commitment. You choose the layers and apps. Hisn reports what is running and what needs attention.</string>
     <string name="guide_steps_title">Set up your protection</string>
-    <string name="guide_steps_body">1. In Rules, choose blocked apps, a daily schedule, or apps to inspect. Built-in adult-text and image/video checks are separate optional layers.\n\n2. Review the accessibility disclosure and enable Hisn in Android settings for app restrictions or inspections. Image/video checks need Android 14+.\n\n3. In Protection, review DNS filtering and approve the Android VPN request for domain blocking. Another VPN may disconnect.\n\n4. Run the DNS route check and review each layer’s status. A passed check verifies only that DNS path.\n\n5. Once your rules are ready, optionally choose a commitment in Rules. Hisn rejects weaker saved restrictions during that period.\n\n6. Optional: in the Guide, review managed uninstall protection. It requires device-owner provisioning outside Hisn and is the only Android-supported way to block ordinary uninstall.</string>
+    <string name="guide_steps_body">1. In Rules, choose blocked apps, a daily schedule, or apps to inspect. Built-in adult-text and image/video checks are separate optional layers.\n\n2. Review the accessibility disclosure and enable Hisn in Android settings for app restrictions or inspections. Image/video checks need Android 14+.\n\n3. In Protection, review DNS filtering and approve the Android VPN request for domain blocking. Another VPN may disconnect.\n\n4. Run the DNS route check and review each layer’s status. A passed check verifies only that DNS path.\n\n5. Once your rules are ready, optionally choose a commitment in Rules. Hisn rejects weaker saved restrictions during that period.</string>
     <string name="guide_limits_title">Understand the coverage</string>
-    <string name="guide_limits_body">DNS blocks matching domains on the supported route. Independent encrypted DNS, cached answers and direct IP connections can bypass it. Text and visual checks inspect only selected apps and may act after content appears. Visual checks classify downscaled window samples, not every image or video frame. Secure windows cannot be inspected.\n\nAndroid can stop services or revoke permissions. Reopen Protection after a restart or permission change. Commitments guard changes inside Hisn; without the separate device-owner setup, Android settings, data clearing and uninstall remain available. This build does not provide always-on or lockdown VPN protection.</string>
+    <string name="guide_limits_body">DNS blocks matching domains on the supported route. Independent encrypted DNS, cached answers and direct IP connections can bypass it. Text and visual checks inspect only selected apps and may act after content appears. Visual checks classify downscaled window samples, not every image or video frame. Secure windows cannot be inspected.\n\nAndroid can stop services or revoke permissions. Reopen Protection after a restart or permission change. Commitments guard changes inside Hisn; Android settings, data clearing and uninstall remain available. This build does not provide always-on or lockdown VPN protection.</string>
     <string name="privacy_heading">Your privacy</string>
     <string name="diagnostics_title">DNS session diagnostics</string>
-
-    <string name="uninstall_title">Managed uninstall protection</string>
+    <string name="notices_title">Licenses and sources</string>
+    <string name="notices_help">Hisn bundles lists and code from other projects under their own licenses. Their full texts are stored in the app, in their original English.</string>
+    <string name="notices_open">Open licenses and sources</string>
+    <string name="notices_unavailable">This notice could not be read from the app. Reinstall Hisn from a trusted copy.</string>
+    <string name="notice_sources">Where the bundled lists and engine come from</string>
+    <string name="notice_sources_body">Hisn includes data and code from other projects. Their licenses apply to those parts. The full license texts are listed after this summary; they are stored in the app and nothing is downloaded.\n\nBundled domain list: Hisn builds it from these sources, then filters and merges them:\n• StevenBlack hosts: the porn-only list and a saved snapshot of the unified list with its porn extension (github.com/StevenBlack/hosts), MIT License\n• Sinfonietta hostfiles: the pornography list (github.com/Sinfonietta/hostfiles), MIT License\n• HaGeZi DNS blocklists: the NSFW list (github.com/hagezi/dns-blocklists), GNU GPL 3.0\n• chadmayfield Pi-hole blocklists: adult domains among the top one million sites (github.com/chadmayfield/my-pihole-blocklists), GNU GPL 3.0\n\nThe list is a plain-text file inside the app (domains_core.txt). The scripts that build it are in the Hisn source repository.\n\nWord list: some German terms in the bundled vocabulary come from the List of Dirty, Naughty, Obscene, and Otherwise Bad Words by its LDNOOBW contributors (github.com/LDNOOBW), Creative Commons Attribution 4.0. Hisn kept only terms that also appear in adult domain names and set its own weights.\n\nImage-check engine: the bundled TensorFlow.js, NSFWJS, Human, MediaPipe and other code and models keep the notices listed after this summary, including the engine’s full third-party license file.</string>
+    <string name="notice_mit_stevenblack">MIT License · StevenBlack hosts</string>
+    <string name="notice_mit_sinfonietta">MIT License · Sinfonietta hostfiles</string>
+    <string name="notice_gpl">GNU GPL 3.0 · HaGeZi and chadmayfield lists</string>
+    <string name="notice_cc_by">CC BY 4.0 · LDNOOBW word list</string>
+    <string name="notice_visual_file">Image-check engine · %1$s</string>
+    <string name="gray_title">Gray screen</string>
+    <string name="gray_off">The screen shows colour. Gray takes most of the pull out of images and videos; apps keep working.</string>
+    <string name="gray_on">The screen is gray.</string>
+    <string name="gray_committed">A commitment is running. The screen stays gray until it ends.</string>
+    <string name="gray_enable">Make the screen gray</string>
+    <string name="gray_disable">Show colour again</string>
+    <string name="gray_manual">Android lets an app switch the screen to gray only after a computer grants it permission once:\n\n%1$s\n\nUntil then, turn it on yourself: Accessibility › Color correction › Grayscale (on some phones under Visibility enhancements or Digital Wellbeing › Bedtime mode).</string>
+    <!-- Package A: reliability (DNS resolver failover, network changes, damaged settings) -->
+    <string name="commitment_unknown">Commitment stays active · Hisn could not read its saved commitment, so it keeps it for as long as it could still be running: at most %1$s from now. Check that your rules are as you set them; some may be missing. Clearing Hisn’s app data in Android settings removes every rule and this commitment.</string>
+    <string name="settings_restored">Hisn’s main settings file could not be read, so it was replaced by the second copy saved beside it. Check that your rules and commitment are as you set them.</string>
+    <string name="settings_restored_confirm">My rules are as I set them</string>
+    <!-- Package B, text checks and privacy (0.5.4): private screens, keyboard insets and plurals. -->
+    <string name="private_screens">Your lists stay private on screen: while a domain or word list, an app list or the word tester holding your text is open, Hisn marks the screen secure, so Android leaves it out of screenshots, screen recordings and the recent-apps preview. Anyone who can see the screen, and apps with accessibility access, can still read it.</string>
+    <string name="tester_private">While this tester holds text, this page is left out of screenshots, screen recordings and the recent-apps preview.</string>
+    <string name="rules_editor_private">This list is left out of screenshots, screen recordings and the recent-apps preview while it is open.</string>
+    <plurals name="rules_too_many_apps">
+        <item quantity="one">Choose at most %1$d app in each list. Nothing was changed.</item>
+        <item quantity="other">Choose at most %1$d apps in each list. Nothing was changed.</item>
+    </plurals>
+    <plurals name="adult_mode_ready">
+        <item quantity="one">Built-in adult-text policy loaded · %1$d compiled rule · Selected apps only</item>
+        <item quantity="other">Built-in adult-text policy loaded · %1$d compiled rules · Selected apps only</item>
+    </plurals>
+<string name="uninstall_title">Managed uninstall protection</string>
     <string name="uninstall_scope">Only a device owner can make Android refuse to uninstall an app. Hisn can apply that while a commitment runs or while you choose to keep it installed. This is a separate, opt-in managed-device setup; the ordinary build and the legacy admin step cannot do it.</string>
     <string name="uninstall_guide">Managed mode requires provisioning device ownership outside Hisn, usually on a factory-reset device with no accounts. It is intended for a phone you control, not for concealing the app. After both the commitment and the keep-installed switch are off, the app offers a release action so Android can remove it again.</string>
     <string name="uninstall_state_unavailable">Uninstall protection · Not managed. Android can uninstall Hisn.</string>

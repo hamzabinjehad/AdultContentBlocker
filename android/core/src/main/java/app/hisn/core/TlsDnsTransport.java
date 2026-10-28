@@ -3,47 +3,99 @@ package app.hisn.core;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.LongSupplier;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
-/** Authenticated DNS-over-TLS with per-worker connection reuse and no plaintext fallback. */
+/**
+ * Authenticated DNS-over-TLS with per-worker connection reuse and no plaintext fallback. With more
+ * than one resolver address, all share one TLS identity, so trying another never weakens what is
+ * accepted. A failure to connect or to complete the TLS handshake (including a certificate or name
+ * that does not verify), or a timeout, moves to the next address (see {@link ResolverFailover}).
+ * A reply timeout on a connection that has already answered is retried once at the next address
+ * without counting against the first, since one slow lookup is not an unreachable resolver. Bad
+ * frames and closed connections fail without moving.
+ */
 public final class TlsDnsTransport implements DnsExchange.Transport, AutoCloseable {
     public interface SocketProtector { boolean protect(Socket socket) throws IOException; }
-    private final InetSocketAddress resolver;
+    /** Cloudflare for Families (malware and adult content filtered), the only upstream Hisn uses. */
+    public static final String FAMILY_NAME = "family.cloudflare-dns.com";
+    private static final byte[][] FAMILY_ADDRESSES = {{1, 1, 1, 3}, {1, 0, 0, 3}};
+    private final InetSocketAddress[] resolvers;
     private final String serverName;
     private final int timeout;
     private final SocketProtector protector;
     private final SSLSocketFactory factory;
+    private final LongSupplier clock;
+    private final ResolverFailover failover;
     private final ThreadLocal<Connection> local = new ThreadLocal<>();
     private final Set<Socket> sockets = ConcurrentHashMap.newKeySet();
-    // Only generation changes and socket registration use this lock. Network I/O,
-    // including socket closure, must never hold it.
+    // Only generation changes, failover records and socket registration use this lock. Network
+    // I/O, including socket closure, must never hold it.
     private final Object lifecycle = new Object();
     private volatile boolean closed;
     private volatile long generation;
 
+    /** 1.1.1.3, then 1.0.0.3 if it cannot be reached, both on port 853 as {@link #FAMILY_NAME}. */
+    public static TlsDnsTransport cloudflareFamily(int timeout, SocketProtector protector) {
+        InetSocketAddress[] family = new InetSocketAddress[FAMILY_ADDRESSES.length];
+        try {
+            for (int i = 0; i < family.length; i++)
+                family[i] = new InetSocketAddress(InetAddress.getByAddress(FAMILY_ADDRESSES[i]), 853);
+        } catch (UnknownHostException impossible) { throw new IllegalStateException(impossible); }
+        return new TlsDnsTransport(Arrays.asList(family), FAMILY_NAME, timeout, protector);
+    }
+
     public TlsDnsTransport(InetSocketAddress resolver, String serverName, int timeout, SocketProtector protector) {
-        this(resolver, serverName, timeout, protector, (SSLSocketFactory) SSLSocketFactory.getDefault());
+        this(Collections.singletonList(resolver), serverName, timeout, protector);
+    }
+
+    public TlsDnsTransport(List<InetSocketAddress> resolvers, String serverName, int timeout, SocketProtector protector) {
+        this(resolvers, serverName, timeout, protector, (SSLSocketFactory) SSLSocketFactory.getDefault(), TlsDnsTransport::now);
     }
 
     // Package-private so protocol tests can trust only their disposable local certificate.
     TlsDnsTransport(InetSocketAddress resolver, String serverName, int timeout, SocketProtector protector, SSLSocketFactory factory) {
-        if (resolver == null || resolver.isUnresolved() || resolver.getPort() == 0 || serverName == null
+        this(Collections.singletonList(resolver), serverName, timeout, protector, factory, TlsDnsTransport::now);
+    }
+
+    TlsDnsTransport(List<InetSocketAddress> resolvers, String serverName, int timeout, SocketProtector protector,
+            SSLSocketFactory factory, LongSupplier clock) {
+        if (resolvers == null || resolvers.isEmpty() || resolvers.size() > 8 || serverName == null
                 || serverName.length() > 253 || !serverName.matches("[A-Za-z0-9]+(?:[.-][A-Za-z0-9]+)*")
-                || timeout < 1 || timeout > 10000 || protector == null || factory == null) {
+                || timeout < 1 || timeout > 10000 || protector == null || factory == null || clock == null) {
             throw new IllegalArgumentException("Invalid TLS resolver configuration");
         }
-        this.resolver = resolver;
+        for (InetSocketAddress resolver : resolvers) {
+            if (resolver == null || resolver.isUnresolved() || resolver.getPort() == 0)
+                throw new IllegalArgumentException("Invalid TLS resolver configuration");
+        }
+        this.resolvers = resolvers.toArray(new InetSocketAddress[0]);
         this.serverName = serverName;
         this.timeout = timeout;
         this.protector = protector;
         this.factory = factory;
+        this.clock = clock;
+        failover = new ResolverFailover(this.resolvers.length);
     }
+
+    private static long now() { return System.nanoTime() / 1000000L; }
+
+    public List<InetSocketAddress> resolvers() { return Collections.unmodifiableList(Arrays.asList(resolvers)); }
+    public String serverName() { return serverName; }
+
+    /** Index of the resolver new connections use now: 0 is the first, -1 while every one is failing. */
+    public int preferredResolver() { return failover.preferred(clock.getAsLong()); }
 
     @Override public byte[] exchange(byte[] query) throws IOException {
         if (query == null || query.length < 12 || query.length > 4096) throw new IOException("DNS transport unavailable");
@@ -53,17 +105,20 @@ public final class TlsDnsTransport implements DnsExchange.Transport, AutoCloseab
             exchangeGeneration = generation;
         }
         Connection connection = local.get();
-        if (connection != null && connection.generation != exchangeGeneration) {
+        int resolver = failover.choose(clock.getAsLong(), connection == null ? -1 : connection.resolver);
+        // Drop a connection from an older network, or to a resolver that is no longer the one to use.
+        if (connection != null && (connection.generation != exchangeGeneration || connection.resolver != resolver)) {
             connection.close();
             local.remove();
             connection = null;
         }
         boolean reused = connection != null;
-        for (int attempt = 0; attempt < 2; attempt++) {
+        int tried = 1 << resolver;
+        while (true) {
             try {
                 requireGeneration(exchangeGeneration);
                 if (connection == null) {
-                    connection = open(exchangeGeneration);
+                    connection = open(resolver, exchangeGeneration);
                     local.set(connection);
                 }
                 connection.output.writeShort(query.length);
@@ -77,29 +132,44 @@ public final class TlsDnsTransport implements DnsExchange.Transport, AutoCloseab
                 // changes. Closing its socket alone cannot invalidate that reply.
                 synchronized (lifecycle) {
                     requireGeneration(exchangeGeneration);
+                    failover.succeeded(resolver);
+                    connection.answered = true;
                     return response;
                 }
-            } catch (IOException failure) {
+            } catch (IOException thrown) {
+                boolean answered = connection != null && connection.answered;
                 if (connection != null) connection.close();
                 connection = null;
                 local.remove();
+                boolean unreachable = thrown instanceof NoSession;
+                IOException failure = unreachable ? (IOException) thrown.getCause() : thrown;
                 // An idle upstream can close a pooled connection. Retry only one
-                // reused EOF/reset, at the SAME authenticated resolver. Fresh
-                // failures, timeouts, TLS identity failures and bad frames fail.
-                boolean stale = failure instanceof java.io.EOFException
-                        || failure instanceof java.net.SocketException;
-                if (attempt != 0 || !reused || !stale || closed
-                        || generation != exchangeGeneration) throw failure;
+                // reused EOF/reset, at the SAME authenticated resolver.
+                boolean stale = failure instanceof java.io.EOFException || failure instanceof java.net.SocketException;
+                if (closed || generation != exchangeGeneration) throw failure;
+                if (reused && stale) { reused = false; continue; }
+                reused = false;
+                // Only a failure before an authenticated session existed, or a timeout, moves on to the
+                // next resolver with the same TLS identity. Bad frames and fresh EOFs fail here.
+                boolean timeout = failure instanceof java.net.SocketTimeoutException;
+                if (!unreachable && !timeout) throw failure;
+                synchronized (lifecycle) {
+                    if (closed || generation != exchangeGeneration) throw failure;
+                    // A connection that already answered reached its resolver: a slow reply is not counted.
+                    if (!(timeout && answered)) failover.failed(resolver, clock.getAsLong());
+                    resolver = failover.next(tried, clock.getAsLong());
+                }
+                if (resolver < 0) throw failure;
+                tried |= 1 << resolver;
             }
         }
-        throw new IOException("DNS transport unavailable");
     }
 
     private void requireGeneration(long expected) throws IOException {
         if (closed || generation != expected) throw new IOException("DNS connection invalidated");
     }
 
-    private Connection open(long expectedGeneration) throws IOException {
+    private Connection open(int resolver, long expectedGeneration) throws IOException {
         Socket raw = new Socket();
         try {
             synchronized (lifecycle) {
@@ -113,9 +183,10 @@ public final class TlsDnsTransport implements DnsExchange.Transport, AutoCloseab
             requireGeneration(expectedGeneration);
             if (!protector.protect(raw)) throw new IOException("Could not protect resolver socket");
             requireGeneration(expectedGeneration);
-            raw.connect(resolver, timeout);
+            try { raw.connect(resolvers[resolver], timeout); }
+            catch (IOException unreachable) { throw new NoSession(unreachable); }
             raw.setSoTimeout(timeout);
-            SSLSocket secure = (SSLSocket) factory.createSocket(raw, serverName, resolver.getPort(), true);
+            SSLSocket secure = (SSLSocket) factory.createSocket(raw, serverName, resolvers[resolver].getPort(), true);
             secure.setSoTimeout(timeout);
             SSLParameters parameters = secure.getSSLParameters();
             parameters.setEndpointIdentificationAlgorithm("HTTPS");
@@ -126,9 +197,10 @@ public final class TlsDnsTransport implements DnsExchange.Transport, AutoCloseab
             }
             if (protocols.isEmpty()) throw new IOException("Modern TLS unavailable");
             secure.setEnabledProtocols(protocols.toArray(new String[0]));
-            secure.startHandshake();
+            // The same identity is required at every address, so a failed handshake may try the next one.
+            try { secure.startHandshake(); } catch (IOException handshake) { throw new NoSession(handshake); }
             requireGeneration(expectedGeneration);
-            return new Connection(raw, secure, expectedGeneration);
+            return new Connection(raw, secure, resolver, expectedGeneration);
         } catch (IOException | RuntimeException failure) {
             sockets.remove(raw);
             try { raw.close(); } catch (IOException ignored) { }
@@ -138,14 +210,16 @@ public final class TlsDnsTransport implements DnsExchange.Transport, AutoCloseab
 
     /**
      * Drops connections from the previous underlying network without closing the
-     * transport. In-flight exchanges fail; a later exchange uses a fresh socket.
-     * This never changes the authenticated resolver or enables a fallback.
+     * transport. In-flight exchanges fail; a later exchange uses a fresh socket,
+     * starting again from the first resolver. This never changes the authenticated
+     * resolver identity or enables a fallback.
      */
     public void invalidateConnections() {
         Socket[] previous;
         synchronized (lifecycle) {
             if (closed) return;
             generation++;
+            failover.reset();
             previous = sockets.toArray(new Socket[0]);
             sockets.clear();
         }
@@ -170,15 +244,23 @@ public final class TlsDnsTransport implements DnsExchange.Transport, AutoCloseab
         for (Socket socket : previous) try { socket.close(); } catch (IOException ignored) { }
     }
 
+    /** A failure to connect or to authenticate the resolver; the cause is what callers see. */
+    private static final class NoSession extends IOException {
+        NoSession(IOException cause) { super(cause); }
+    }
+
     private final class Connection {
         final Socket raw;
         final SSLSocket secure;
+        final int resolver;
         final long generation;
         final DataInputStream input;
         final DataOutputStream output;
-        Connection(Socket raw, SSLSocket secure, long generation) throws IOException {
+        // Set by the exchange thread that owns this connection after a complete reply.
+        boolean answered;
+        Connection(Socket raw, SSLSocket secure, int resolver, long generation) throws IOException {
             this.raw = raw; this.secure = secure;
-            this.generation = generation;
+            this.resolver = resolver; this.generation = generation;
             input = new DataInputStream(secure.getInputStream());
             output = new DataOutputStream(secure.getOutputStream());
         }

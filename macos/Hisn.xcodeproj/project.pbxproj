@@ -245,6 +245,12 @@
 			path = RouterSetupAssistant.swift;
 			sourceTree = "<group>";
 		};
+		2D83067FD31B6A9D060D746D /* ScreenGrayscale.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = ScreenGrayscale.swift;
+			sourceTree = "<group>";
+		};
 		B5ABAB643E4DB0F9EFE758F8 /* SetupChecklist.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -419,6 +425,12 @@
 			path = ProtectionStatusTests.swift;
 			sourceTree = "<group>";
 		};
+		0002AABFEF0D63499AF4B526 /* ScreenGrayscaleTests.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = ScreenGrayscaleTests.swift;
+			sourceTree = "<group>";
+		};
 		4792FDE5CE580FC1212B3EBD /* SelfReleaseTests.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -558,6 +570,7 @@
 				F067F7A8C9A78FADDF06095F,
 				646E3673F30C9F64F8C58CC7,
 				47D7593F13730648AEFF5006,
+				2D83067FD31B6A9D060D746D,
 				B5ABAB643E4DB0F9EFE758F8,
 				9A85D28497AE287B0A4C4E8C,
 				51FD9D9EEE75399A2987D61E,
@@ -608,6 +621,7 @@
 				C15C5BA8E7F3C7A5B3CC9BFB,
 				5F0D9FB6A869FC6B4EA74D95,
 				96BE623FB252DAE97AF70C17,
+				0002AABFEF0D63499AF4B526,
 				4792FDE5CE580FC1212B3EBD,
 				883D07C40E91F1F9B4B56A52,
 				851D93C8FC728A88C285B13F,
@@ -1482,6 +1496,10 @@
 			isa = PBXBuildFile;
 			fileRef = A79D559B5E6A0C557544711E;
 		};
+		445CDE5B1C0DEB3A5A286469 /* ScreenGrayscale.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 2D83067FD31B6A9D060D746D;
+		};
 		079A944B3E87101645898B0C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1525,6 +1543,7 @@
 				E7601A4D6C0B32B4414BCBA8,
 				718274BF2627B7501E55E03D,
 				F3CFEAB96B0EB2308922F407,
+				445CDE5B1C0DEB3A5A286469,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1803,6 +1822,10 @@
 			isa = PBXBuildFile;
 			fileRef = 7A388BAA57DF64855C0A223E;
 		};
+		691101B0A050E4C335C9ACE6 /* ScreenGrayscaleTests.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 0002AABFEF0D63499AF4B526;
+		};
 		6B359C0EDA3B8E5B66561B34 /* FilterActivationTests.swift in Sources */ = {
 			isa = PBXBuildFile;
 			fileRef = 2098ACD4010E242DD587819B;
@@ -1838,6 +1861,7 @@
 				9BC6E69A99DBE1477BB872B9,
 				785C489290CAD4BED01DFA13,
 				CA326A27BE0AA00513073B3E,
+				691101B0A050E4C335C9ACE6,
 				6B359C0EDA3B8E5B66561B34,
 				5332F9043E93BC0DFEA27EAC,
 				DC37F31CB2E6CC1AFC5011B7,

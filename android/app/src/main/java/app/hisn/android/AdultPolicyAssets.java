@@ -72,8 +72,10 @@ public final class AdultPolicyAssets {
         for (int i = 0; i < terms.length(); i++) {
             JSONObject term = terms.getJSONObject(i);
             String language = term.getString("l");
-            if ("en".equals(language) || "ar".equals(language))
-                rules.add(new AdultTextPolicy.Rule(term.getString("t"), weight(term, false)));
+            // Franco-Arabic (Arabizi) is tagged so the policy applies its reviewed context rules.
+            boolean arabizi = "ar-latn".equals(language);
+            if ("en".equals(language) || "ar".equals(language) || arabizi)
+                rules.add(new AdultTextPolicy.Rule(term.getString("t"), weight(term, false), arabizi));
         }
         for (int i = 0; i < negatives.length(); i++) {
             JSONObject term = negatives.getJSONObject(i);

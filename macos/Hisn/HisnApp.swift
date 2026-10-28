@@ -115,6 +115,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         AppLanguage.publish()
         BrowserGuard.shared.start()
         FilterSync.shared.start()
+        Task { @MainActor in ScreenGrayscale.shared.start() }
         Task { @MainActor in
             await FilterController.shared.reassertIfNeeded()
             await ListUpdater.shared.updateIfStale()

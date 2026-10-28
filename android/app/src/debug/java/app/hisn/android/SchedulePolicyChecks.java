@@ -36,12 +36,14 @@ public final class SchedulePolicyChecks {
             checkNormalStore(context, normalName);
             checkCorruptStore(context, corruptName);
         } finally {
-            // These exact generated names are the only preference files touched
-            // by the checks; never clear the owner's hisn_policy preferences.
+            // These exact generated names and their second copies are the only preference
+            // files touched by the checks; never clear the owner's hisn_policy preferences.
             boolean normalCleared = context.getSharedPreferences(normalName, Context.MODE_PRIVATE).edit().clear().commit();
             boolean corruptCleared = context.getSharedPreferences(corruptName, Context.MODE_PRIVATE).edit().clear().commit();
-            boolean normalDeleted = context.deleteSharedPreferences(normalName);
-            boolean corruptDeleted = context.deleteSharedPreferences(corruptName);
+            boolean normalDeleted = context.deleteSharedPreferences(normalName)
+                    && context.deleteSharedPreferences(normalName + PolicyStore.COPY_SUFFIX);
+            boolean corruptDeleted = context.deleteSharedPreferences(corruptName)
+                    && context.deleteSharedPreferences(corruptName + PolicyStore.COPY_SUFFIX);
             require(normalCleared && corruptCleared && normalDeleted && corruptDeleted,
                     "Cannot clean isolated schedule test preferences");
         }
