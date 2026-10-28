@@ -40,8 +40,8 @@ Development candidate, 2026-10-28. Not a store release. It builds on the
   signed-list reason in a real browser.
 - `extension/test/browser/dnr.sh` — every static regex still compiles.
 - `./test.sh extension` — package and evaluation corpus.
-- `python3 extension/test/i18n.test.js` equivalent through the suite: English
-  and Arabic keys, placeholders and every referenced key.
+- The i18n suite in `extension/test/run.sh`: English and Arabic keys,
+  placeholders and every referenced key.
 
 ## Limits
 
