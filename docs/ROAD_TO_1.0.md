@@ -46,12 +46,13 @@ distribution and freshness — not a missing feature list.
 | Android | 0.6.0 preview; direct-build uninstall guard and boot shield now committed | No signed production APK; device-owner flow unproven | A disposable device-owner phone, safe-boot/app-control restrictions, signed release |
 | Lists | Signed seed v4 built 2026-10-01 | **No `lists` branch on origin** | Publish signed daily generations; update iOS and Android |
 
-A Windows policy generator (`profile/make_windows_policy.py`, with a test)
-appeared during this review. It generates Chrome/Edge/Brave/Firefox registry
-policies for a standard Windows account, which is a useful hardening start.
-There is no Windows app, installer, updater or `WINDOWS_SETUP.md`, and the
-README does not list Windows as a platform. Treat Windows as **out of scope for
-1.0** unless the owner decides otherwise; see §7.2.
+A Windows policy generator (`profile/make_windows_policy.py`, with tests) and a
+setup guide ([Windows setup](WINDOWS_SETUP.md)) now exist. The policy
+force-installs the extension and locks Chrome, Edge and Brave for a standard
+Windows account, which is a useful hardening add-on. There is still no Windows
+app, agent, installer, updater or device acceptance, and the platform table does
+not list Windows. Treat Windows as **out of scope for 1.0** unless the owner
+decides otherwise; see §7.2.
 
 ### 1.2 What I verified on 2026-10-28
 
@@ -743,9 +744,10 @@ not in the docs is a bug.
    - *Recommended:* free core + paid managed setup/support, subject to the
      blocklist/model licences. Screen Time features cannot be paywalled.
 9. **Windows?**
-   - *Recommended:* defer past 1.0. The new registry-policy generator is a
-     useful piece, but Windows needs its own app, installer, updater, support
-     and device tests before it can be called a platform.
+   - *Recommended:* defer past 1.0. The registry-policy generator and setup
+     guide are a useful hardening add-on, but Windows needs its own app,
+     installer, updater, support and device tests before it can be called a
+     platform.
 
 ### 7.3 The next ten actions, in order
 
