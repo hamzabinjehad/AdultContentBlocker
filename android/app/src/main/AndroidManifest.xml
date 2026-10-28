@@ -6,6 +6,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SYSTEM_EXEMPTED" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Direct builds: the boot shield covers the screen until the uninstall guard is running. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-feature android:name="android.software.device_admin" android:required="false" />
     <queries>
         <intent><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent>
@@ -38,6 +41,14 @@
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter><action android:name="android.accessibilityservice.AccessibilityService" /></intent-filter>
             <meta-data android:name="android.accessibilityservice" android:resource="@xml/text_guard_service" />
+        </service>
+        <receiver android:name=".BootShieldReceiver" android:exported="false" android:directBootAware="true">
+            <intent-filter><action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" /></intent-filter>
+        </receiver>
+        <service android:name=".BootShieldService" android:exported="false" android:directBootAware="true"
+            android:foregroundServiceType="specialUse">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Owner-enabled boot cover until the app's accessibility guard is running" />
         </service>
         <!-- Resumes DNS filtering after reboot only if left on and VPN approval remains. -->
         <receiver android:name=".VpnBootReceiver" android:exported="false">

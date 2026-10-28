@@ -16,6 +16,8 @@ public final class VpnBootReceiver extends BroadcastReceiver {
         // never keeps a stale uninstall block without a running commitment.
         try { UninstallProtectionController.sync(context); }
         catch (RuntimeException ignored) { /* MainActivity repairs on next open. */ }
+        // Fallback when the direct-boot start was missed; a running shield ignores it.
+        BootShieldService.startIfNeeded(context);
         if (!DnsVpnService.resumeRequested(context)) return;
         try {
             // A non-null consent intent means approval is gone; it is never launched from here.

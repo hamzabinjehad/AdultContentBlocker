@@ -935,8 +935,18 @@ public final class MainActivity extends Activity {
             return;
         }
         UninstallProtectionController.Result result = UninstallProtectionController.sync(this);
-        Toast.makeText(this, result.ok ? R.string.uninstall_saved : R.string.uninstall_failed,
-                Toast.LENGTH_LONG).show();
+        BootShieldService.mirror(this, keepInstalled);
+        if (keepInstalled && BuildConfig.SELF_PROTECTION && !android.provider.Settings.canDrawOverlays(this)) {
+            // The boot shield needs this; without it the first moments after a restart stay open.
+            Toast.makeText(this, R.string.boot_shield_permission, Toast.LENGTH_LONG).show();
+            try {
+                startActivity(new Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        android.net.Uri.parse("package:" + getPackageName())));
+            } catch (RuntimeException unavailable) { /* Settings lacks the page; the guard still works. */ }
+        } else {
+            Toast.makeText(this, result.ok ? R.string.uninstall_saved : R.string.uninstall_failed,
+                    Toast.LENGTH_LONG).show();
+        }
         refreshStatus();
     }
 

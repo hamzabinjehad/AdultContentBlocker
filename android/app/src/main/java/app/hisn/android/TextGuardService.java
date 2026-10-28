@@ -17,6 +17,8 @@ import app.hisn.core.VisibleTextSample;
 /** Explicitly selected apps only. Does not consume event text or retain screen content. */
 public final class TextGuardService extends AccessibilityService {
     public static volatile boolean connected;
+    /** Setup finished and events are handled; the boot shield waits for this. */
+    static volatile boolean ready;
     public static volatile boolean lastInspectionPartial;
     // Ephemeral outcome only: never screen text, matched rules or app identities.
     static volatile String inspectionOutcome = "not-run";
@@ -55,6 +57,9 @@ public final class TextGuardService extends AccessibilityService {
     private boolean pendingVisualReason;
     private boolean pendingShortVideoReason;
     private boolean pendingSelfProtectionReason;
+    private int selfRetries;
+    private boolean selfCheckQueued;
+    private java.util.List<String> selfNames;
     private final Runnable showRestriction = () -> {
         try {
             startActivity(new Intent(this, RestrictionActivity.class)
@@ -73,9 +78,15 @@ public final class TextGuardService extends AccessibilityService {
         handler.removeCallbacks(checkpoint);
         handler.post(checkpoint);
         try {
+            // The uninstall guard needs nothing else, so it is armed before image setup.
+            excluded = ChosenApps.excluded(this);
+            ready = true;
+            // Keeps the boot shield's pre-unlock copy current for installs that predate it.
+            BootShieldService.mirror(this, PolicyStore.get(this).uninstallLock());
+            // A removal screen opened before Android bound this service is left now.
+            if (BuildConfig.SELF_PROTECTION) { selfRetries = 3; handler.post(selfCheck); }
             if (visual != null) visual.close();
             visual = new VisualGuard(this, () -> intervene(false, false, true));
-            excluded = ChosenApps.excluded(this);
             inspectCurrentSelectedWindow();
         } catch (RuntimeException unavailable) {
             lastInspectionPartial = true;
@@ -113,13 +124,26 @@ public final class TextGuardService extends AccessibilityService {
         // window and a fresh sample before acting.
         if (visual != null && event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) visual.windowChanged();
         CharSequence pkg = event.getPackageName();
-        if (pkg == null || excluded == null) return;
+        if (pkg == null) return;
         String name = pkg.toString();
         if (BuildConfig.SELF_PROTECTION && SelfProtectionScreens.watches(name)) {
-            // Coalesce Settings' constant content changes into one check per settled screen.
-            handler.removeCallbacks(selfCheck);
-            handler.postDelayed(selfCheck, 120);
+            // A new window is checked at once, first from the event's own text (no tree walk),
+            // then from the window with a few short retries while Android swaps the active root.
+            // Content changes are throttled, never postponed: an animating screen still gets checked.
+            if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+                if (leaveIfTamperEvent(name, event)) return;
+                handler.removeCallbacks(selfCheck);
+                selfRetries = 3;
+                handler.post(selfCheck);
+            } else if (!selfCheckQueued) {
+                // Settings draws App info before its window-state event arrives, so content
+                // changes are often the first signal; retry while the root is still the old window.
+                selfCheckQueued = true;
+                selfRetries = 5;
+                handler.postDelayed(selfCheck, 20);
+            }
         }
+        if (excluded == null) return;
         if (excluded.contains(name)) {
             // Background/stale events from Settings, the launcher or our own
             // window must not cancel a selected foreground window's queued check.
@@ -289,39 +313,71 @@ public final class TextGuardService extends AccessibilityService {
      * then, and never retained.
      */
     private void checkSelfProtection() {
+        selfCheckQueued = false;
         if (!BuildConfig.SELF_PROTECTION) return;
         AccessibilityNodeInfo root = null;
         try {
             if (!SelfProtectionScreens.active(PolicyStore.get(this).uninstallLock())) return;
             root = getRootInActiveWindow();
-            if (root == null || root.getPackageName() == null) return;
-            String name = root.getPackageName().toString();
-            if (!SelfProtectionScreens.watches(name)) return;
-            java.util.List<String> names = new java.util.ArrayList<>(SelfProtectionScreens.LABELS);
-            names.add(getApplicationInfo().loadLabel(getPackageManager()).toString());
-            names.add(getPackageName());
+            String name = root == null || root.getPackageName() == null ? null : root.getPackageName().toString();
+            if (!SelfProtectionScreens.watches(name)) {
+                // The window-state event can arrive before Android makes that window the active root.
+                if (selfRetries-- > 0) handler.postDelayed(selfCheck, 30);
+                return;
+            }
             String text = leafSample(root).text();
-            if (!SelfProtectionScreens.isTamperScreen(name, text, names)
-                    && !SelfProtectionScreens.isSafeModePrompt(name, text)) return;
-            selfProtectionInterventions++;
-            inspectionOutcome = "self-protection-intervention";
-            // BACK cancels an uninstall dialog; HOME then leaves Settings entirely.
-            performGlobalAction(GLOBAL_ACTION_BACK);
-            if (!performGlobalAction(GLOBAL_ACTION_HOME)) homeFailures++;
-            long now = SystemClock.elapsedRealtime();
-            if (now - lastIntervention < 1500) { cooldownEnforcements++; return; }
-            lastIntervention = now;
-            pendingWordReason = false;
-            pendingScheduleReason = false;
-            pendingVisualReason = false;
-            pendingShortVideoReason = false;
-            pendingSelfProtectionReason = true;
-            handler.removeCallbacks(showRestriction);
-            handler.postDelayed(showRestriction, 350);
+            if (!isTamper(name, text)) return;
+            leaveTamperScreen();
         } catch (RuntimeException unavailable) {
             lastInspectionPartial = true;
             inspectionOutcome = "self-protection-unavailable";
         } finally { if (root != null) root.recycle(); }
+    }
+
+    /** Event text alone (a dialog's title and message) is often enough to act before any tree walk. */
+    private boolean leaveIfTamperEvent(String name, AccessibilityEvent event) {
+        try {
+            if (!SelfProtectionScreens.active(PolicyStore.get(this).uninstallLock())) return false;
+            StringBuilder text = new StringBuilder();
+            for (CharSequence line : event.getText()) if (line != null) text.append(line).append('\n');
+            if (event.getContentDescription() != null) text.append(event.getContentDescription());
+            if (!isTamper(name, text.toString())) return false;
+            leaveTamperScreen();
+            return true;
+        } catch (RuntimeException unavailable) {
+            return false;
+        }
+    }
+
+    private boolean isTamper(String name, String text) {
+        if (selfNames == null) {
+            java.util.List<String> names = new java.util.ArrayList<>(SelfProtectionScreens.LABELS);
+            names.add(getApplicationInfo().loadLabel(getPackageManager()).toString());
+            names.add(getPackageName());
+            selfNames = names;
+        }
+        return SelfProtectionScreens.isTamperScreen(name, text, selfNames)
+                || SelfProtectionScreens.isSafeModePrompt(name, text);
+    }
+
+    private void leaveTamperScreen() {
+        handler.removeCallbacks(selfCheck);
+        selfCheckQueued = false;
+        selfProtectionInterventions++;
+        inspectionOutcome = "self-protection-intervention";
+        // BACK cancels an uninstall dialog; HOME then leaves Settings entirely.
+        performGlobalAction(GLOBAL_ACTION_BACK);
+        if (!performGlobalAction(GLOBAL_ACTION_HOME)) homeFailures++;
+        long now = SystemClock.elapsedRealtime();
+        if (now - lastIntervention < 1500) { cooldownEnforcements++; return; }
+        lastIntervention = now;
+        pendingWordReason = false;
+        pendingScheduleReason = false;
+        pendingVisualReason = false;
+        pendingShortVideoReason = false;
+        pendingSelfProtectionReason = true;
+        handler.removeCallbacks(showRestriction);
+        handler.postDelayed(showRestriction, 350);
     }
 
     private void scheduleHeartbeat() {
@@ -447,12 +503,14 @@ public final class TextGuardService extends AccessibilityService {
         handler.removeCallbacks(showRestriction);
         handler.removeCallbacks(heartbeat);
         handler.removeCallbacks(selfCheck);
+        selfCheckQueued = false;
         inspectPending = false;
         pendingPackage = null;
     }
 
     @Override public boolean onUnbind(Intent intent) {
         connected = false;
+        ready = false;
         handler.removeCallbacks(checkpoint);
         onInterrupt();
         return super.onUnbind(intent);
@@ -460,6 +518,7 @@ public final class TextGuardService extends AccessibilityService {
 
     @Override public void onDestroy() {
         connected = false;
+        ready = false;
         handler.removeCallbacks(checkpoint);
         onInterrupt();
         super.onDestroy();

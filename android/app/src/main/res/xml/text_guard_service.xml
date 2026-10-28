@@ -1,7 +1,7 @@
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
     android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged|typeViewScrolled"
     android:accessibilityFeedbackType="feedbackGeneric"
-    android:notificationTimeout="150"
+    android:notificationTimeout="40"
     android:canRetrieveWindowContent="true"
     android:accessibilityFlags="flagReportViewIds"
     android:canTakeScreenshot="true"

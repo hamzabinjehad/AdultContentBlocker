@@ -189,3 +189,21 @@ requires a disposable, freshly provisioned device or emulator.
   resistance to a device administrator's recovery controls remain out of scope.
 - The battery, boot and service-lifecycle claims are separate from this
   administrative control and are documented in the Android release records.
+
+## Direct build: faster screen guard and boot shield (2026-10-28)
+
+- The uninstall-screen guard now reacts to the window event's own text, retries while
+  Android swaps the active window, and throttles (rather than postpones) Settings' content
+  changes; the accessibility `notificationTimeout` dropped from 150 to 40 ms. On the
+  Samsung SM-G990B2 (Android 16) the uninstall dialog is left about 130 ms after it
+  resumes (was about 410 ms). App info is left about 60 ms after Settings draws it.
+- **Boot shield.** After a reboot Android bound Hisn's accessibility service about 3.5 s
+  after unlock, and BOOT_COMPLETED reached Hisn about 14 s after unlock. While "Keep Hisn
+  installed" is on and Hisn may display over other apps, `BootShieldService` starts at
+  LOCKED_BOOT_COMPLETED (from a device-protected copy of the switch), waits behind the lock
+  screen, and covers the whole screen from `USER_PRESENT` for at least 60 s and until the
+  guard reports ready (cap 3 min). Measured on the Samsung: shield shown at unlock, removed
+  after 60.1 s.
+- Limit: Settings and the package installer hide non-system overlays, so the shield
+  cannot cover them. It covers the launcher; the notification shade's Settings shortcut
+  remains a route during that minute, where the accessibility guard acts once it is bound.
