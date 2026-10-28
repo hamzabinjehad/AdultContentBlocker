@@ -10,6 +10,7 @@ import android.view.accessibility.AccessibilityNodeInfo;
 
 import java.util.ArrayDeque;
 import java.util.Set;
+import app.hisn.core.SelfProtectionScreens;
 import app.hisn.core.ShortVideoSurfaces;
 import app.hisn.core.VisibleTextSample;
 
@@ -28,6 +29,7 @@ public final class TextGuardService extends AccessibilityService {
     static volatile long holdEnforcements;
     static volatile long homeFailures;
     static volatile long inspectionFailures;
+    static volatile long selfProtectionInterventions;
     /** After a word or image block, reopening the same app within this period returns Home again. */
     static final long BLOCK_HOLD_MILLIS = 60000;
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -42,6 +44,7 @@ public final class TextGuardService extends AccessibilityService {
     private VisualGuard visual;
     private final Runnable inspect = this::inspectWindow;
     private final Runnable checkpoint = this::checkpointCommitment;
+    private final Runnable selfCheck = this::checkSelfProtection;
     private final Runnable heartbeat = () -> {
         rootRetries = 5;
         periodicInspections++;
@@ -51,12 +54,14 @@ public final class TextGuardService extends AccessibilityService {
     private boolean pendingScheduleReason;
     private boolean pendingVisualReason;
     private boolean pendingShortVideoReason;
+    private boolean pendingSelfProtectionReason;
     private final Runnable showRestriction = () -> {
         try {
             startActivity(new Intent(this, RestrictionActivity.class)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
                     .putExtra("word", pendingWordReason).putExtra("schedule", pendingScheduleReason)
-                    .putExtra("visual", pendingVisualReason).putExtra("shortvideo", pendingShortVideoReason));
+                    .putExtra("visual", pendingVisualReason).putExtra("shortvideo", pendingShortVideoReason)
+                    .putExtra("selfprotect", pendingSelfProtectionReason));
         } catch (RuntimeException unavailable) {
             lastInspectionPartial = true;
             inspectionOutcome = "restriction-screen-unavailable";
@@ -110,6 +115,11 @@ public final class TextGuardService extends AccessibilityService {
         CharSequence pkg = event.getPackageName();
         if (pkg == null || excluded == null) return;
         String name = pkg.toString();
+        if (BuildConfig.SELF_PROTECTION && SelfProtectionScreens.watches(name)) {
+            // Coalesce Settings' constant content changes into one check per settled screen.
+            handler.removeCallbacks(selfCheck);
+            handler.postDelayed(selfCheck, 120);
+        }
         if (excluded.contains(name)) {
             // Background/stale events from Settings, the launcher or our own
             // window must not cancel a selected foreground window's queued check.
@@ -267,8 +277,48 @@ public final class TextGuardService extends AccessibilityService {
         pendingScheduleReason = false;
         pendingVisualReason = false;
         pendingShortVideoReason = true;
+        pendingSelfProtectionReason = false;
         handler.removeCallbacks(showRestriction);
         handler.postDelayed(showRestriction, 350);
+    }
+
+    /**
+     * Direct builds only: leave Hisn's uninstall, App info, admin-deactivation or
+     * accessibility-toggle screen while the owner keeps the keep-installed switch on.
+     * Text of watched system windows is read only then, and never retained.
+     */
+    private void checkSelfProtection() {
+        if (!BuildConfig.SELF_PROTECTION) return;
+        AccessibilityNodeInfo root = null;
+        try {
+            if (!SelfProtectionScreens.active(PolicyStore.get(this).uninstallLock())) return;
+            root = getRootInActiveWindow();
+            if (root == null || root.getPackageName() == null) return;
+            String name = root.getPackageName().toString();
+            if (!SelfProtectionScreens.watches(name)) return;
+            java.util.List<String> names = new java.util.ArrayList<>(SelfProtectionScreens.LABELS);
+            names.add(getApplicationInfo().loadLabel(getPackageManager()).toString());
+            names.add(getPackageName());
+            if (!SelfProtectionScreens.isTamperScreen(name, leafSample(root).text(), names)) return;
+            selfProtectionInterventions++;
+            inspectionOutcome = "self-protection-intervention";
+            // BACK cancels an uninstall dialog; HOME then leaves Settings entirely.
+            performGlobalAction(GLOBAL_ACTION_BACK);
+            if (!performGlobalAction(GLOBAL_ACTION_HOME)) homeFailures++;
+            long now = SystemClock.elapsedRealtime();
+            if (now - lastIntervention < 1500) { cooldownEnforcements++; return; }
+            lastIntervention = now;
+            pendingWordReason = false;
+            pendingScheduleReason = false;
+            pendingVisualReason = false;
+            pendingShortVideoReason = false;
+            pendingSelfProtectionReason = true;
+            handler.removeCallbacks(showRestriction);
+            handler.postDelayed(showRestriction, 350);
+        } catch (RuntimeException unavailable) {
+            lastInspectionPartial = true;
+            inspectionOutcome = "self-protection-unavailable";
+        } finally { if (root != null) root.recycle(); }
     }
 
     private void scheduleHeartbeat() {
@@ -370,6 +420,7 @@ public final class TextGuardService extends AccessibilityService {
         pendingScheduleReason = schedule;
         pendingVisualReason = visualReason;
         pendingShortVideoReason = false;
+        pendingSelfProtectionReason = false;
         handler.removeCallbacks(showRestriction);
         // HOME is asynchronous. Launching immediately lets its pending task
         // transition cover the explanation screen on Samsung Android 16.
@@ -392,6 +443,7 @@ public final class TextGuardService extends AccessibilityService {
         handler.removeCallbacks(inspect);
         handler.removeCallbacks(showRestriction);
         handler.removeCallbacks(heartbeat);
+        handler.removeCallbacks(selfCheck);
         inspectPending = false;
         pendingPackage = null;
     }

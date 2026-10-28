@@ -58,6 +58,11 @@ android {
         buildConfigField 'int', 'DOMAIN_SEED_COUNT', seedManifest.core_domain_count.toString()
         buildConfigField 'int', 'DOMAIN_SEED_VERSION', seedManifest.version.toString()
         buildConfigField 'String', 'TERMS_SEED_SHA256', '"' + termsDigest + '"'
+        // Direct (sideload) builds may leave Hisn's uninstall and disable screens. Google Play's
+        // Accessibility API policy forbids that for personal self-control, so Play builds never do.
+        def direct = providers.gradleProperty('hisnDistribution').orNull == 'direct'
+        buildConfigField 'boolean', 'SELF_PROTECTION', direct.toString()
+        if (direct) versionNameSuffix '-direct'
     }
 
     sourceSets.main.java.srcDir '../core/src/main/java'

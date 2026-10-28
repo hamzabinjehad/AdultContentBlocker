@@ -468,6 +468,11 @@ sh test-core.sh
 ./gradlew --no-daemon assembleDebug assembleDebugAndroidTest lintDebug
 ```
 
+Add `-PhisnDistribution=direct` for the sideload build. It turns on the
+accessibility uninstall-screen guard (`BuildConfig.SELF_PROTECTION`) and adds
+`-direct` to the version name. Never upload a direct build to Google Play; see
+[ANDROID_TAMPER_RESISTANCE.md](../docs/ANDROID_TAMPER_RESISTANCE.md).
+
 The core suite covers word boundaries, Unicode, bounded lists, seed tampering,
 the actual full seed, domain exceptions, DNS/EDNS packets, packet checksums,
 fragment rejection, malformed inputs, resolver timeouts and local UDP exchanges.

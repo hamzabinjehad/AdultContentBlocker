@@ -53,7 +53,8 @@ public final class RestrictionActivity extends Activity {
         title.setGravity(Gravity.CENTER);
         layout.addView(title);
         TextView body = new TextView(this);
-        body.setText(getIntent().getBooleanExtra("shortvideo", false) ? R.string.restriction_short_video
+        body.setText(getIntent().getBooleanExtra("selfprotect", false) ? R.string.restriction_self_protection
+                : getIntent().getBooleanExtra("shortvideo", false) ? R.string.restriction_short_video
                 : getIntent().getBooleanExtra("visual", false) ? R.string.restriction_visual
                 : getIntent().getBooleanExtra("schedule", false) ? R.string.restriction_schedule
                 : getIntent().getBooleanExtra("word", false) ? R.string.restriction_word : R.string.restriction_app);

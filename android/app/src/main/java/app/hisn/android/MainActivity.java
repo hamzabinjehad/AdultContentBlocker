@@ -203,7 +203,8 @@ public final class MainActivity extends Activity {
         scheduleState = paragraph(R.string.schedule_off);
         policyButton(R.string.schedule_edit, view -> editSchedule());
         policyButton(R.string.enable_text_guard, view -> new AlertDialog.Builder(this)
-                .setTitle(R.string.accessibility_title).setMessage(R.string.accessibility_disclosure)
+                .setTitle(R.string.accessibility_title).setMessage(BuildConfig.SELF_PROTECTION
+                        ? R.string.accessibility_disclosure_direct : R.string.accessibility_disclosure)
                 .setNegativeButton(android.R.string.cancel, null)
                 .setPositiveButton(R.string.open_accessibility, (dialog, which) ->
                         startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))).show());
@@ -502,7 +503,8 @@ public final class MainActivity extends Activity {
                 else chooseApps(true);
                 break;
             case CONNECT_SERVICE:
-                new AlertDialog.Builder(this).setTitle(R.string.accessibility_title).setMessage(R.string.accessibility_disclosure)
+                new AlertDialog.Builder(this).setTitle(R.string.accessibility_title).setMessage(BuildConfig.SELF_PROTECTION
+                        ? R.string.accessibility_disclosure_direct : R.string.accessibility_disclosure)
                     .setNegativeButton(android.R.string.cancel, null).setPositiveButton(R.string.open_accessibility,
                             (dialog, which) -> startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))).show();
                 break;
@@ -822,6 +824,14 @@ public final class MainActivity extends Activity {
             status = UninstallProtectionController.read(this);
             state = status.state();
         }
+        if (BuildConfig.SELF_PROTECTION && !status.deviceOwner) {
+            // Direct build without device ownership: the accessibility screen guard is the protection.
+            uninstallState.setText(!status.keepInstalled ? R.string.self_protection_state_off
+                    : TextGuardService.connected ? R.string.self_protection_state_on
+                    : R.string.self_protection_state_inactive);
+            uninstallAction.setEnabled(true);
+            return;
+        }
         switch (state) {
             case ADMIN_ONLY:
                 uninstallState.setText(R.string.uninstall_state_admin);
@@ -857,25 +867,28 @@ public final class MainActivity extends Activity {
         form.setOrientation(LinearLayout.VERTICAL);
         form.setPadding(dp(20), dp(8), dp(20), 0);
         TextView summary = new TextView(this);
+        boolean screenGuard = BuildConfig.SELF_PROTECTION && !status.deviceOwner;
         summary.setText(status.deviceOwner ? R.string.uninstall_dialog_body_owner
+                : screenGuard ? R.string.self_protection_dialog_body
                 : R.string.uninstall_dialog_body_unmanaged);
         summary.setTextSize(15);
         form.addView(summary);
 
         CheckBox keep = new CheckBox(this);
-        keep.setText(R.string.uninstall_keep);
+        keep.setText(screenGuard ? R.string.self_protection_keep : R.string.uninstall_keep);
         keep.setChecked(settings.uninstallLock());
         // Enabling is a tightening and stays available during a commitment.
         // Disabling is the one direction a commitment refuses.
-        keep.setEnabled(status.deviceOwner && !(commitment && keep.isChecked()));
-        if (status.deviceOwner) form.addView(keep);
+        keep.setEnabled((status.deviceOwner || screenGuard) && !(commitment && keep.isChecked()));
+        if (status.deviceOwner || screenGuard) form.addView(keep);
 
         TextView hint = new TextView(this);
-        hint.setText(commitment ? R.string.uninstall_commitment_auto : R.string.uninstall_keep_hint);
+        hint.setText(screenGuard ? (commitment ? R.string.self_protection_commitment : R.string.uninstall_keep_hint)
+                : commitment ? R.string.uninstall_commitment_auto : R.string.uninstall_keep_hint);
         hint.setTextSize(14);
         form.addView(hint);
 
-        if (!status.deviceOwner) {
+        if (!status.deviceOwner && !screenGuard) {
             TextView command = new TextView(this);
             command.setText(getString(R.string.uninstall_command_hint,
                     UninstallProtectionController.provisioningCommand(this)));
@@ -889,12 +902,16 @@ public final class MainActivity extends Activity {
         AlertDialog.Builder builder = new AlertDialog.Builder(this)
                 .setTitle(R.string.uninstall_title).setView(scroll)
                 .setNegativeButton(android.R.string.cancel, null);
-        if (status.deviceOwner) {
+        if (status.deviceOwner || screenGuard) {
             builder.setPositiveButton(R.string.uninstall_apply,
                     (dialog, which) -> applyUninstallChoice(keep.isChecked()));
             if (status.mayRelease()) {
                 builder.setNeutralButton(R.string.uninstall_release,
                         (dialog, which) -> confirmReleaseManagedMode());
+            } else if (screenGuard && !status.adminActive) {
+                // The admin adds a deactivation screen in front of uninstall, which the guard also leaves.
+                builder.setNeutralButton(R.string.admin_setup,
+                        (dialog, which) -> startActivity(UninstallProtectionController.adminIntent(this)));
             }
         } else {
             builder.setPositiveButton(R.string.uninstall_copy_command,

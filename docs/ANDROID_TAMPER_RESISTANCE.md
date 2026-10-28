@@ -7,6 +7,9 @@ factory reset or OS-level access.
 
 ## Personal self-control preview
 
+This section describes the Play build (the default). The direct sideload build
+adds the uninstall-screen guard described in the next section.
+
 Hisn preserves Android Settings, dialers, launchers and permission controllers
 as excluded surfaces. It does not use accessibility to trap their screens,
 automatically deny consent dialogs or hide the system's controls. During a real
@@ -23,6 +26,68 @@ Do not relabel an adult's personal mode as parental control to evade the policy.
 This is a distribution-policy constraint, distinct from what a sideloaded app
 may attempt technically. See the official
 [Accessibility API policy](https://support.google.com/googleplay/android-developer/answer/16558241?hl=en).
+
+## Direct (sideload) build: uninstall-screen guard
+
+Added 2026-10-28. Building with `-PhisnDistribution=direct` sets
+`BuildConfig.SELF_PROTECTION` and gives a BlockerHero-style guard. Play builds
+compile it out, because the policy above forbids it there. Never upload a direct
+build to Google Play.
+
+- **Opt-in.** The guard runs only while the owner's **Keep Hisn installed**
+  switch is on (Guide → Manage uninstall protection). A commitment does not
+  turn it on by itself, but the switch cannot be turned off while a commitment
+  runs. This is the same direction rule used for saved rules.
+- **What it leaves.** `TextGuardService` watches Settings, the package
+  installers and the Play Store. When a window there names Hisn and shows a
+  removal or disable action, it presses BACK then HOME and shows a restriction
+  notice. These screens are covered:
+  - the uninstall confirmation
+  - App info (uninstall, force stop)
+  - the storage page (clear data)
+  - device-admin deactivation
+  - Hisn's own accessibility toggle ("Use Hisn")
+
+  English and Arabic Settings labels are matched. Pages that only list Hisn
+  stay usable. The matching rules are in `app.hisn.core.SelfProtectionScreens`
+  and tested by `SelfProtectionScreensTest`.
+- **Privacy.** While the switch is on, the visible text of those system windows
+  is read on the device to recognise the screens. It is not stored or sent
+  anywhere. The direct build shows a separate accessibility disclosure that says
+  so.
+- **Device admin.** In the direct build the protection dialog also offers the
+  legacy admin. It puts a deactivation screen in front of uninstall, and the
+  guard leaves that screen too.
+
+It does **not** survive any of these:
+- Safe Mode, which turns third-party accessibility off
+- `adb uninstall`, or root
+- a factory reset
+- Hisn's accessibility service being off or killed by the OEM (the status line
+  says "nothing is guarded")
+- Settings text that the guard does not recognise, such as other OEM skins,
+  other languages, or a renamed action
+
+The VPN settings page (disconnect or forget) and other Android settings are
+still not guarded. Only device-owner mode makes Android itself refuse an
+uninstall.
+
+Hardware check, 2026-10-28, on a Samsung SM-G990B2 (Android 16) with Settings
+in German and Hisn's app language set to Arabic. The test used the isolated
+`-PhisnIsolatedVisualCheck=true` copy, because the main install had a
+commitment running.
+- With the switch on, these screens went straight to the restriction notice:
+  - App info for both Hisn installs
+  - the package-installer uninstall dialog
+  - the Samsung accessibility pages for both Hisn services ("حصن-Shortcut")
+- These screens stayed usable:
+  - App info for another app
+  - the accessibility list and the "Installed apps" list
+  - the Settings home and the apps list
+- With the switch off, App info opened normally again.
+- Not yet checked on hardware: the storage page and device-admin deactivation
+  (they are covered by the captured-text unit tests). Each block also counts
+  as a pause on the restriction screen's daily tally.
 
 ## Legacy device admin: a confirmation step only
 
@@ -76,7 +141,8 @@ changing other Android settings. Clearing app data removes the saved keep
 switch and rules but does not release device ownership by itself; open Hisn and
 use **Remove managed mode** when no commitment remains, or factory-reset the
 device. It protects the uninstall decision only. No claim of "undeletable" is
-absolute, and Hisn does not hide the app or trap the uninstall screen.
+absolute. Hisn does not hide the app. Only the direct build, with the owner's
+switch on, leaves the uninstall screen.
 
 ### Provisioning and current-device status
 
@@ -103,8 +169,8 @@ requires a disposable, freshly provisioned device or emulator.
 
 ## Distribution and product scope
 
-- The ordinary app remains removable. That is an honest platform limit, not a
-  missing toggle.
+- The Play app remains removable. That is an honest platform limit, not a
+  missing toggle. The direct build adds friction, not enforcement.
 - Managed mode is for a phone the owner controls, not for concealment from the
   person using it. Enrollment requires owner-level action.
 - Full-traffic VPN lockdown, disable prevention, data-clearing prevention and
