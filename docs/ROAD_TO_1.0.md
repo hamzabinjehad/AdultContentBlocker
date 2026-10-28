@@ -12,9 +12,12 @@ this folder. It coordinates the existing plans rather than replacing them:
 - [Publishing plan](PUBLISHING_PLAN.md) — release tracks and ship-blockers.
 - [Test matrix](TEST_MATRIX.md) — what is demonstrated, inferred or manual.
 
-The plan assumes one full-time engineer plus an owner who can make account,
-signing and store decisions. If that is not true, keep the order and multiply
-the calendar. Dates are targets, not promises.
+> **Execution update (2026-10-28, W0.1):** `release/1.0` now merges
+> `origin/main` into the 0.6.0/direct line (`ca6fd16`). Python/seed, extension,
+> release, macOS (495 tests), Android core, and the Gradle debug/test/release
+> builds plus lint pass. The iOS hosted suite still does not start: `xcodebuild`
+> hangs before the test-runner handoff on the iOS 26.5 simulator. M0 stays open
+> for that runner; everything below is the plan, not a claim that it is done.
 
 ## Contents
 
@@ -57,9 +60,9 @@ README does not list Windows as a platform. Treat Windows as **out of scope for
 | `./test.sh python seed` | Pass | Blocklist, profile, network, Safari rules, seed verification |
 | `./test.sh extension` | Pass | All JavaScript suites, package check, benign-corpus gate |
 | `./test.sh release` | Pass | Mac installer and configuration checks |
-| `./test.sh macos` | Pass | 490 tests; 516 strings have Arabic |
+| `./test.sh macos` | Pass | 490 before the merge; 495 after it, 521 strings with Arabic |
 | `./test.sh ios` | **Fails at the hosted-test step** | 27 Python tests pass; no iPhone simulator device is available (the iOS 26.5 runtime is installed), so `xcodebuild test` never runs |
-| `android/test-core.sh` | Pass | With Android Studio's JBR; core suite only, not Gradle/lint/APK |
+| `android/test-core.sh` | Pass | With Android Studio's JBR; after the merge, Gradle debug/test/release and lint also pass |
 | `./test.sh browser` | Not run | Needs a Chromium-based browser |
 
 Two environment facts matter for the plan: the machine has **Java 8 on
