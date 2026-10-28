@@ -64,8 +64,11 @@ final class ScreenGrayscale: ObservableObject {
         return .applied
     }
 
+    /// `locked` defaults to the live lock. Read here, not as a default argument:
+    /// Swift evaluates default arguments outside the main actor.
     @discardableResult
-    func set(_ on: Bool, locked: Bool = LockManager.shared.isLocked) -> Change {
+    func set(_ on: Bool, locked: Bool? = nil) -> Change {
+        let locked = locked ?? LockManager.shared.isLocked
         let change = Self.decide(on: on, wasOn: isOn, locked: locked, available: Self.isAvailable)
         guard change == .applied else { return change }
         isOn = on
