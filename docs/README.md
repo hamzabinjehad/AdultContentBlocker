@@ -27,6 +27,7 @@ past version; *superseded* documents point to their replacement. Start with the
 - [Person area, effect and media choices](PERSON_PRESENTATION.md): Face-only versus whole-media masking, blur versus opaque, image/video scope, and appearance-estimate rules through 1.1.9.
 - [Settings inside the popup](POPUP_SETTINGS.md): Protection settings opened inside the toolbar popup, the minimal popup redesign, and one-tap current-site blocking.
 - [Using Hisn in a browser](EXTENSION_USAGE.md): Loading the extension, standard versus strict mode, settings, and how behavior changes when the Mac app connects.
+- [Windows: making the extension hard to remove](WINDOWS_SETUP.md): Registry policy that force-installs the extension and locks Chrome, Edge and Brave, with the account split it depends on.
 
 ## iPhone and iPad
 

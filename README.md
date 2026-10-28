@@ -50,7 +50,9 @@ iPhone/iPad **My blocked sites** (up to 49 sites through the Screen Time filter)
 To make protection hard to delete or switch off, use each platform's own
 lock-down: on a Mac, the guardian account split (`setup_guardian.sh`) with the
 removal-password profile; on iPhone/iPad, a supervised device with
-`profile/make_ios_profile.py` ([guide](docs/IPHONE_SUPERVISED.md)). No setup
+`profile/make_ios_profile.py` ([guide](docs/IPHONE_SUPERVISED.md)); on Windows,
+the browser policy from `profile/make_windows_policy.py` with a standard user
+account ([guide](docs/WINDOWS_SETUP.md)). No setup
 survives someone who holds the admin, recovery or supervision credentials.
 
 ## Repository layout
