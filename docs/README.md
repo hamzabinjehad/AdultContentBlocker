@@ -21,6 +21,7 @@ past version; *superseded* documents point to their replacement. Start with the
 
 ## Browser extension
 
+- [Connecting the extension to the app](EXTENSION_BRIDGE.md): native messaging, the two extension IDs, a read-only connection check, and the managed-policy path that makes removal policy-blocked.
 - [Browser management and guard limits](CHROME_ENFORCEMENT.md): What the Mac browser guard and consented managed browser policies add, supported browsers, and remaining removal limits.
 - [The browser blocking pipeline](BLOCKING_PIPELINE.md): Code map of every browser layer, which generated ruleset owns it, and the invariants a change must keep.
 - [Browser-first protection for mixed sites](BROWSER_FIRST_PROTECTION.md): Hiding single explicit posts on mixed-content sites like X instead of blocking the whole site, plus setup and checks.
