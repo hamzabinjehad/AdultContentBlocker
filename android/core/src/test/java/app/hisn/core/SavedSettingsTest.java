@@ -21,7 +21,7 @@ public final class SavedSettingsTest {
     private static Map<String, Object> saved(long remaining, boolean unknown, boolean restored, String... apps) {
         // As Android returns them: a fresh HashMap and HashSet copies of what was put.
         Map<String, Object> values = SavedSettings.values("blocked.example", "word", set(apps), set("com.example.scan"),
-                true, false, new DailyAppSchedule(true, 1200, 360, set("com.example.night")),
+                true, false, true, new DailyAppSchedule(true, 1200, 360, set("com.example.night")),
                 new CommitmentClock(remaining, 40000, BOOT), unknown, restored);
         Map<String, Object> android = new HashMap<>();
         for (Map.Entry<String, Object> entry : values.entrySet()) {
@@ -50,6 +50,10 @@ public final class SavedSettingsTest {
         SavedSettings rules = SavedSettings.rules(intact.rules);
         check(rules.domains.equals("blocked.example") && rules.words.equals("word") && rules.adultWords && !rules.visual
                 && rules.apps.equals(set("com.example.one")) && rules.scans.equals(set("com.example.scan")), "Rules read back");
+        check(rules.shortVideo, "Short-video blocking reads back");
+        Map<String, Object> older = new HashMap<String, Object>(intact.rules);
+        older.remove("short_video");
+        check(!SavedSettings.rules(older).shortVideo, "Settings saved before short-video blocking read it as off");
         check(rules.schedule.enabled && rules.schedule.startMinute == 1200 && rules.schedule.endMinute == 360
                 && rules.schedule.apps.equals(set("com.example.night")), "Schedule read back");
         check(intact.clock.remainingAtCheckpoint == 3600000 && intact.clock.elapsedAtCheckpoint == 40000

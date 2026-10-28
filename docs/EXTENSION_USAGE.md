@@ -29,6 +29,19 @@ an **Unsaved changes** label distinguishes edits from applied settings, and
 connection as **Browser only**, **App connected**, or **App offline**. Blocked
 pages offer a new-tab action and a shortcut to review settings.
 
+Every block page opens with a short pause: three guided breaths, a reminder,
+a "What do you need right now?" choice with a practical tip, and a count of
+today's pauses. The count is a date and a number in this browser's storage; no
+site or reason is kept.
+
+**Content options → Short videos** blocks YouTube Shorts, Instagram Reels and
+Explore, Facebook Reels, Snapchat Spotlight and TikTok, while ordinary videos,
+posts and profiles stay open. It applies even to a site on the allowed list,
+and during a lock it can be turned on but not off. Inside YouTube and Instagram
+the switch between feed and Shorts happens without a page load, so a small
+script on those sites watches the address and hides Shorts shelves; it reads
+nothing else on the page.
+
 Browser-only filtering covers this browser, not other apps. It does not create
 a tamper-resistant timed lock. Private-window coverage requires the browser's
 extension permission unless private browsing is disabled by managed policy.

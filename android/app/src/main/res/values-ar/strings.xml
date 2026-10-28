@@ -241,4 +241,31 @@
         <item quantity="many">سياسة النصوص الإباحية المدمجة محمّلة · %1$d قاعدة مجمّعة · للتطبيقات المختارة فقط</item>
         <item quantity="other">سياسة النصوص الإباحية المدمجة محمّلة · %1$d قاعدة مجمّعة · للتطبيقات المختارة فقط</item>
     </plurals>
+    <string name="pause_title">خذ لحظة قبل أن تكمل</string>
+    <string name="pause_breathe_in">خذ نفسًا عميقًا…</string>
+    <string name="pause_breathe_out">أخرِج النفس ببطء…</string>
+    <string name="pause_breath_done">أحسنت. الرغبة تزول أسرع مما تشعر.</string>
+    <string name="pause_breathe_again">تنفّس مرة أخرى</string>
+    <string name="pause_reminder_1">الرغبة تشتد ثم تهدأ، وغالبًا خلال دقائق. لست مضطرًا إلى الاستجابة لها.</string>
+    <string name="pause_reminder_2">أعددت هذا في يوم أهدأ، من أجل لحظة كهذه.</string>
+    <string name="pause_reminder_3">الزلّة لا تمحو ما أنجزته. ابتعادك الآن ما زال يُحسب لك.</string>
+    <string name="pause_reminder_4">اسأل نفسك ما الذي أوصلك إلى هنا: الوقت أو المكان أو المزاج. هذا ما تغيّره بعد ذلك.</string>
+    <string name="pause_reminder_5">قم من مكانك، وانتقل إلى غرفة أخرى، واشرب ماءً. حين يتحرك الجسد يتغيّر التفكير.</string>
+    <string name="pause_need_question">ما الذي تحتاجه الآن؟</string>
+    <string name="pause_need_tired">راحة</string>
+    <string name="pause_need_tired_tip">ضع الشاشة جانبًا واستلقِ ولو عشر دقائق. التعب يجعل الرغبة أقوى.</string>
+    <string name="pause_need_lonely">رفقة</string>
+    <string name="pause_need_lonely_tip">راسل شخصًا تثق به أو اتصل به، ولو لتقول له مرحبًا.</string>
+    <string name="pause_need_stressed">هدوء</string>
+    <string name="pause_need_stressed_tip">اخرج قليلًا أو اغسل وجهك، ثم خذ خمسة أنفاس بطيئة.</string>
+    <string name="pause_need_bored">شيء أفعله</string>
+    <string name="pause_need_bored_tip">اختر مهمة صغيرة أجّلتها وامنحها عشر دقائق.</string>
+    <string name="pause_tally_first">أول وقفة اليوم.</string>
+    <string name="pause_tally_many">الوقفة رقم %1$d اليوم. كل مرة تبتعد فيها يضعف هذا الاعتياد.</string>
+    <string name="short_video_off">المقاطع القصيرة · غير محجوبة</string>
+    <string name="short_video_on">المقاطع القصيرة · محجوبة: YouTube Shorts وInstagram Reels وTikTok</string>
+    <string name="short_video_enable">احجب المقاطع القصيرة</string>
+    <string name="short_video_disable">أوقف حجب المقاطع القصيرة</string>
+    <string name="short_video_disclosure">سيغادر حصن YouTube Shorts وInstagram Reels عند فتحهما، ويغلق TikTok. يبقى باقي YouTube وInstagram قابلًا للاستخدام.\n\nيعتمد هذا على خدمة إمكانية الوصول في حصن، ويجب تفعيلها. يتعرّف على مشغّلي Shorts وReels من تخطيط الشاشة، لا من قراءة محتواها. قد يغيّر تحديث التطبيق هذا التخطيط، فتظهر شاشة أحيانًا قبل أن يلاحظها حصن.\n\nأثناء الالتزام يمكن تشغيل هذا الخيار دون إيقافه.</string>
+    <string name="restriction_short_video">اخترت إبعاد خلاصات المقاطع القصيرة مثل Shorts وReels وTikTok.</string>
 </resources>

@@ -245,7 +245,7 @@ public final class CoreDeviceTestRunner extends Instrumentation {
             java.util.Set<String> apps = new java.util.HashSet<>();
             for (int i = 0; i <= PolicyStore.MAX_APPS; i++) apps.add("com.example.app" + i);
             java.util.Map<String, Object> tooMany = app.hisn.core.SavedSettings.values("", "", apps, Collections.emptySet(),
-                    false, false, app.hisn.core.DailyAppSchedule.disabled(), new app.hisn.core.CommitmentClock(0, 0, 0), false, false);
+                    false, false, false, app.hisn.core.DailyAppSchedule.disabled(), new app.hisn.core.CommitmentClock(0, 0, 0), false, false);
             for (String file : new String[]{name, name + PolicyStore.COPY_SUFFIX}) {
                 android.content.SharedPreferences.Editor editor = context.getSharedPreferences(file, 0).edit();
                 for (java.util.Map.Entry<String, Object> entry : tooMany.entrySet()) {

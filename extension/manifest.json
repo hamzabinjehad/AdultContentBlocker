@@ -72,6 +72,11 @@
         "id": "lockdown",
         "enabled": false,
         "path": "rules/lockdown.json"
+      },
+      {
+        "id": "short_video",
+        "enabled": false,
+        "path": "rules/short_video.json"
       }
     ]
   },

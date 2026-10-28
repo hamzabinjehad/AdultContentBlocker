@@ -30,7 +30,7 @@ SKIP_FILES = {"package.sh", "check_package.py", "prepare_unpacked.py", "id_rsa",
 VISUAL_BUILD_FILES = {"visual/engine.js", "visual/build.mjs", "visual/package.json", "visual/pnpm-lock.yaml"}
 SKIP_SUFFIXES = {".py", ".pyc", ".sh", ".pem", ".key", ".p12", ".pfx", ".crx", ".zip",
                  ".mobileprovision", ".provisionprofile"}
-REQUIRED_DYNAMIC = ("content/feed.js", "content/scan.js", "seed/terms.json")
+REQUIRED_DYNAMIC = ("content/feed.js", "content/scan.js", "content/short-video.js", "seed/terms.json")
 VISUAL_REQUIRED = (
     "content/visual.js", "content/visual-effects.js", "content/visual-gate.css", "visual/capture.js", "visual/broker.js", "visual/verdict-cache.js", "visual/offscreen.html",
     "visual/offscreen.js", "visual/engine.bundle.js", "visual/engine.bundle.js.LEGAL.txt", "visual/assets.json",

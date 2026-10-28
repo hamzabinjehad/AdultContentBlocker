@@ -373,7 +373,28 @@ function showState(state, fill = false, verified = true) {
   renderDisputed(state);
   updateDrafts();
   renderVisualSettings();
+  renderShortVideo();
 }
+
+function renderShortVideo() {
+  $("blockShortVideo").checked = current?.blockShortVideo === true;
+  $("blockShortVideo").disabled = !current || saving || (restrictionsActive(current) && current.blockShortVideo === true);
+}
+$("blockShortVideo").addEventListener("change", async () => {
+  if (saving || !current) return;
+  $("msgShortVideo").textContent = t("opt.saving");
+  $("msgShortVideo").className = "msg";
+  saving = true;
+  renderShortVideo();
+  const reply = await send({ type: "update", patch: { blockShortVideo: $("blockShortVideo").checked } });
+  saving = false;
+  if (reply.ok) { showState(reply.state); $("msgShortVideo").textContent = t("opt.saved"); }
+  else {
+    renderShortVideo();
+    $("msgShortVideo").className = "msg error";
+    $("msgShortVideo").textContent = settingsError(reply);
+  }
+});
 
 function renderVisualSettings() {
   const visual = describeVisual(visualEngine, stateUnavailable ? null : current);

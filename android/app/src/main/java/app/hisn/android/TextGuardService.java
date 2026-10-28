@@ -17,6 +17,7 @@ import app.hisn.core.GuardWindows;
 import app.hisn.core.InspectionHealth;
 import app.hisn.core.InterventionRepeat;
 import app.hisn.core.LabelScan;
+import app.hisn.core.ShortVideoSurfaces;
 import app.hisn.core.VisibleTextSample;
 
 /** Explicitly selected apps only, in every application window on screen (split screen, pop-up and
@@ -32,6 +33,7 @@ public final class TextGuardService extends AccessibilityService {
     static volatile long cooldownEnforcements;
     static volatile long periodicInspections;
     static volatile long scheduleInterventions;
+    static volatile long shortVideoInterventions;
     static volatile long holdEnforcements;
     static volatile long homeFailures;
     static volatile long inspectionFailures;
@@ -64,12 +66,13 @@ public final class TextGuardService extends AccessibilityService {
     private boolean pendingWordReason;
     private boolean pendingScheduleReason;
     private boolean pendingVisualReason;
+    private boolean pendingShortVideoReason;
     private final Runnable showRestriction = () -> {
         try {
             startActivity(new Intent(this, RestrictionActivity.class)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
                     .putExtra("word", pendingWordReason).putExtra("schedule", pendingScheduleReason)
-                    .putExtra("visual", pendingVisualReason));
+                    .putExtra("visual", pendingVisualReason).putExtra("shortvideo", pendingShortVideoReason));
         } catch (RuntimeException unavailable) {
             inspection.record(InspectionHealth.Outcome.INCOMPLETE);
             inspectionOutcome = "restriction-screen-unavailable";
@@ -274,20 +277,30 @@ public final class TextGuardService extends AccessibilityService {
             java.time.LocalTime local = java.time.LocalTime.now();
             int minute = local.getHour() * 60 + local.getMinute();
             List<GuardWindows.Window> scanned = new ArrayList<>();
-            boolean scheduledOnScreen = false;
+            boolean scheduledOnScreen = false, shortVideoOnScreen = false;
             for (GuardWindows.Window window : windows) {
                 if (rules.schedule.blocks(window.app, minute)) {
                     inspection.record(InspectionHealth.Outcome.COMPLETE);
                     intervene(window.app, window.id, window.active, false, true, false, false);
                     return;
                 }
+                if (rules.shortVideoEnabled && ShortVideoSurfaces.watches(window.app)) {
+                    boolean wholeApp = ShortVideoSurfaces.wholeApp(window.app);
+                    if (wholeApp || showsShortVideo(window)) {
+                        inspection.record(InspectionHealth.Outcome.COMPLETE);
+                        interveneShortVideo(window, wholeApp);
+                        return;
+                    }
+                    shortVideoOnScreen = true;
+                }
                 if (rules.scannedApps.contains(window.app) && rules.hasWordProtection()) scanned.add(window);
                 scheduledOnScreen |= rules.schedule.isConfigured() && rules.schedule.apps.contains(window.app);
             }
             if (scanned.isEmpty()) {
                 inspection.record(InspectionHealth.Outcome.COMPLETE);
-                // A static allowed screen must still be blocked when its daily window begins.
-                if (scheduledOnScreen || !held.isEmpty()) scheduleHeartbeat();
+                // A static allowed screen must still be blocked when its daily window begins,
+                // and a feed must be rechecked when the person moves into Shorts or Reels.
+                if (scheduledOnScreen || shortVideoOnScreen || !held.isEmpty()) scheduleHeartbeat();
                 return;
             }
             if (rules.adultWordsEnabled) AdultPolicyAssets.ensureLoaded(this);
@@ -346,7 +359,59 @@ public final class TextGuardService extends AccessibilityService {
 
     private static boolean isSelected(PolicyStore.Snapshot rules, String name) {
         return rules.blockedApps.contains(name) || rules.scannedApps.contains(name)
-                || (rules.schedule.isConfigured() && rules.schedule.apps.contains(name));
+                || (rules.schedule.isConfigured() && rules.schedule.apps.contains(name))
+                || (rules.shortVideoEnabled && ShortVideoSurfaces.watches(name));
+    }
+
+    /** A visible Shorts or Reels player in this window, found by its view ID; no text is read. */
+    private boolean showsShortVideo(GuardWindows.Window window) {
+        AccessibilityNodeInfo root = windowRoot(this, window);
+        if (root == null) return false;
+        try {
+            for (String id : ShortVideoSurfaces.surfaceViewIds(window.app)) {
+                List<AccessibilityNodeInfo> found = root.findAccessibilityNodeInfosByViewId(id);
+                if (found == null) continue;
+                boolean visible = false;
+                for (AccessibilityNodeInfo node : found) {
+                    if (node.isVisibleToUser()) visible = true;
+                    node.recycle();
+                }
+                if (visible) return true;
+            }
+            return false;
+        } finally { root.recycle(); }
+    }
+
+    /**
+     * Leave a short-video feed. In the window in use, BACK leaves Shorts or Reels and keeps the
+     * rest of YouTube or Instagram usable. A whole short-video app, or a feed in a window that is
+     * not in use (BACK would act on another app), is left like any blocked app.
+     */
+    private void interveneShortVideo(GuardWindows.Window window, boolean wholeApp) {
+        long now = SystemClock.elapsedRealtime();
+        if (repeat.wait(window.app, window.id, window.active, now) > 0) { repeatHoldOffs++; return; }
+        repeat.acted(window.app, window.id, now);
+        inspectionOutcome = "short-video-intervention";
+        shortVideoInterventions++;
+        handler.removeCallbacks(heartbeat);
+        handler.removeCallbacks(inspect);
+        inspectPending = false;
+        pendingPackage = null;
+        boolean back = !wholeApp && window.active;
+        if (!back && dismissPictureInPicture(window.app, window.id)) inspectionOutcome += "-pip-dismissed";
+        else if (!performGlobalAction(back ? GLOBAL_ACTION_BACK : GLOBAL_ACTION_HOME)) {
+            homeFailures++;
+            inspectionOutcome += "-leave-failed";
+            performGlobalAction(back ? GLOBAL_ACTION_HOME : GLOBAL_ACTION_BACK);
+        }
+        if (now - lastIntervention < 1500) { cooldownEnforcements++; return; }
+        lastIntervention = now;
+        pendingWordReason = false;
+        pendingScheduleReason = false;
+        pendingVisualReason = false;
+        pendingShortVideoReason = true;
+        handler.removeCallbacks(showRestriction);
+        handler.postDelayed(showRestriction, 350);
     }
 
     private void scheduleHeartbeat() {
@@ -425,6 +490,7 @@ public final class TextGuardService extends AccessibilityService {
         pendingWordReason = word;
         pendingScheduleReason = schedule;
         pendingVisualReason = visualReason;
+        pendingShortVideoReason = false;
         handler.removeCallbacks(showRestriction);
         // HOME is asynchronous. Launching immediately lets its pending task
         // transition cover the explanation screen on Samsung Android 16.

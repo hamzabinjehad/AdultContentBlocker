@@ -220,4 +220,31 @@
         <item quantity="one">Built-in adult-text policy loaded · %1$d compiled rule · Selected apps only</item>
         <item quantity="other">Built-in adult-text policy loaded · %1$d compiled rules · Selected apps only</item>
     </plurals>
+    <string name="pause_title">Take a moment before you go on</string>
+    <string name="pause_breathe_in">Breathe in…</string>
+    <string name="pause_breathe_out">Breathe out slowly…</string>
+    <string name="pause_breath_done">Well done. The urge passes faster than it feels.</string>
+    <string name="pause_breathe_again">Breathe again</string>
+    <string name="pause_reminder_1">An urge rises, peaks and fades, usually within minutes. You don’t have to act on it.</string>
+    <string name="pause_reminder_2">You set this up on a calmer day, for a moment like this one.</string>
+    <string name="pause_reminder_3">A slip doesn’t erase your progress. Walking away right now still counts.</string>
+    <string name="pause_reminder_4">Ask what led here: the time, the place, the mood. That is what to change next.</string>
+    <string name="pause_reminder_5">Stand up, change rooms, drink some water. Moving your body moves your mind.</string>
+    <string name="pause_need_question">What do you need right now?</string>
+    <string name="pause_need_tired">Rest</string>
+    <string name="pause_need_tired_tip">Put the screen away and lie down, even for ten minutes. Tiredness makes urges louder.</string>
+    <string name="pause_need_lonely">Company</string>
+    <string name="pause_need_lonely_tip">Message or call someone you trust, even just to say hello.</string>
+    <string name="pause_need_stressed">Calm</string>
+    <string name="pause_need_stressed_tip">Step outside or wash your face, then take five slow breaths.</string>
+    <string name="pause_need_bored">Something to do</string>
+    <string name="pause_need_bored_tip">Pick one small task you have been putting off and give it ten minutes.</string>
+    <string name="pause_tally_first">First pause today.</string>
+    <string name="pause_tally_many">Pause %1$d today. Each time you walk away, the habit gets weaker.</string>
+    <string name="short_video_off">Short videos · Not blocked</string>
+    <string name="short_video_on">Short videos · Blocked: YouTube Shorts, Instagram Reels and TikTok</string>
+    <string name="short_video_enable">Block short videos</string>
+    <string name="short_video_disable">Stop blocking short videos</string>
+    <string name="short_video_disclosure">Hisn will leave YouTube Shorts and Instagram Reels when they open, and close TikTok. The rest of YouTube and Instagram stays usable.\n\nThis uses Hisn accessibility, which must be enabled. It recognises the Shorts and Reels players by their screen layout, not by reading what is on them. An app update can change that layout, so a screen may sometimes open before Hisn notices it.\n\nDuring a commitment this can be turned on but not off.</string>
+    <string name="restriction_short_video">You chose to keep short-video feeds like Shorts, Reels and TikTok out.</string>
 </resources>
