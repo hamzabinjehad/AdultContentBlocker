@@ -1,10 +1,11 @@
-# Hisn Android 0.6.0: protection development preview
+# Hisn Android 0.7.0: protection development preview
 
 The Android app contains an opt-in DNS-only VPN, saved custom rules, selected-app
 accessibility restrictions, opt-in daily app schedules, built-in adult-text checks and
 sampled image/video checks, an in-app
 commitment, an optional legacy-admin confirmation step and an opt-in
-device-owner uninstall guard. The interface supports Arabic and English. This
+device-owner uninstall guard with an optional managed lockdown. The interface
+supports Arabic and English. This
 remains a development build, not the completed end goal.
 Core tests pass; device evidence is version-specific in the release records below.
 The visual model and policy tests ran in a separate Samsung debug installation;
@@ -15,11 +16,28 @@ an IETF documentation page while the VPN was active. These are limited smoke
 tests, not proof that every browser request uses Hisn. Broader real-app coverage
 and VPN/lifecycle testing remain pending. Visual accuracy and real-app capture acceptance
 remain pending; the isolated live fixture sequence passes. Usage limits and full traffic coverage are not implemented. Managed uninstall
-blocking exists only as an opt-in device-owner preview; the ordinary install
-remains removable, and actual blocked-uninstall acceptance needs a disposable
-provisioned device.
+blocking and the broader lockdown exist only as an opt-in device-owner preview;
+the ordinary install remains removable, and actual blocked-uninstall and
+restriction acceptance needs a disposable provisioned device.
 
-## In progress: pause screen and short-video blocking (not yet released)
+## 0.7.0 managed lockdown (optional, device-owner only)
+
+On top of the 0.6.0 uninstall block, a device owner can turn on **Managed
+lockdown**. While a commitment or **Keep Hisn installed** is holding the app,
+Hisn applies and reads back four Android restrictions: no Safe Mode
+(`no_safe_boot`), no app uninstall/disable/clear-data/force-stop for every app
+(`no_apps_control`), no Settings factory reset (`no_factory_reset`), and no VPN
+or private-DNS changes (`no_config_vpn`). App controls is deliberately broad and
+is a separate opt-in with a disclosure. The status screen shows ON, Off, idle or
+out of sync from Android's own readback; release clears the restrictions in
+reverse order, then the uninstall block, then device ownership. Version 0.7.0,
+versionCode 19. See [the 0.7.0 record](../docs/ANDROID_0.7.0.md).
+
+No device-owner provisioning or restriction enforcement has been applied to the
+test Samsung. The actual refusals and the release path still require a
+disposable, factory-reset, account-free phone.
+
+## 0.6.0 pause screen and short-video blocking
 
 - The restriction screen opens with a pause: three guided breaths, a reminder,
   a "What do you need right now?" choice with tips, and today's pause count

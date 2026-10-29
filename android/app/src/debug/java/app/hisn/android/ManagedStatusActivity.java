@@ -36,6 +36,18 @@ public final class ManagedStatusActivity extends Activity {
             json.put("adminActive", status.adminActive);
             json.put("uninstallBlocked", status.uninstallBlocked);
             json.put("keepInstalled", status.keepInstalled);
+            json.put("managedLockdown", status.managedLockdown);
+            json.put("restrictionsMatch", status.restrictionsMatch());
+            org.json.JSONArray held = new org.json.JSONArray();
+            for (app.hisn.core.ManagedRestrictions.Restriction restriction : status.restrictions) {
+                held.put(restriction.key);
+            }
+            json.put("restrictions", held);
+            org.json.JSONArray desired = new org.json.JSONArray();
+            for (app.hisn.core.ManagedRestrictions.Restriction restriction : status.desiredRestrictions()) {
+                desired.put(restriction.key);
+            }
+            json.put("desiredRestrictions", desired);
             json.put("remainingMillis", status.remainingMillis);
             json.put("state", status.state().name());
             json.put("mayRelease", status.mayRelease());

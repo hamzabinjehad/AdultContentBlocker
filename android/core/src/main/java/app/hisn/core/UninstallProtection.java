@@ -53,9 +53,21 @@ public final class UninstallProtection {
     public static State state(boolean deviceOwner, boolean adminActive,
                               boolean uninstallBlocked, boolean keepInstalled,
                               long remainingMillis) {
+        return state(deviceOwner, adminActive, uninstallBlocked, keepInstalled, remainingMillis, true);
+    }
+
+    /**
+     * The same state, plus whether the optional managed-lockdown restrictions
+     * match. An uninstall block that holds while a requested restriction is
+     * missing is not "protected": it is out of sync, and the UI must say so
+     * rather than show a green light over a bypassable setup.
+     */
+    public static State state(boolean deviceOwner, boolean adminActive,
+                              boolean uninstallBlocked, boolean keepInstalled,
+                              long remainingMillis, boolean restrictionsMatch) {
         if (!deviceOwner) return adminActive ? State.ADMIN_ONLY : State.UNAVAILABLE;
         boolean target = shouldBlock(true, keepInstalled, remainingMillis);
-        if (target == uninstallBlocked) return target ? State.PROTECTED : State.READY;
-        return State.OUT_OF_SYNC;
+        if (target != uninstallBlocked || !restrictionsMatch) return State.OUT_OF_SYNC;
+        return target ? State.PROTECTED : State.READY;
     }
 }

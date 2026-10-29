@@ -3,6 +3,7 @@
 
     python3 test-live-managed-status.py --serial SERIAL
     python3 test-live-managed-status.py --serial SERIAL --expect-managed
+    python3 test-live-managed-status.py --serial SERIAL --expect-lockdown
 
 The app runs `ManagedStatusActivity` in its own process; the activity reads the
 same controller the UI uses and writes one JSON line to private storage. This
@@ -15,7 +16,8 @@ On an ordinary install the expected result is: not a device owner, uninstall not
 blocked, state UNAVAILABLE or ADMIN_ONLY. `--expect-managed` is for a disposable
 device that has deliberately been provisioned as Hisn's device owner; it
 requires an active keep switch or commitment and Android's readback saying
-uninstall is blocked.
+uninstall is blocked. `--expect-lockdown` additionally requires the four
+managed-lockdown restrictions to be held and read back exactly.
 """
 from __future__ import annotations
 
@@ -32,11 +34,15 @@ STATUS_FILE = "files/managed-status.json"
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--adb", default="adb", help="adb executable")
 parser.add_argument("--serial", required=True, help="device serial from adb devices")
-parser.add_argument("--min-version-code", type=int, default=15,
-                    help="fail if the installed version code is older (default: 15)")
+parser.add_argument("--min-version-code", type=int, default=19,
+                    help="fail if the installed version code is older (default: 19)")
 parser.add_argument("--expect-managed", action="store_true",
                     help="require a provisioned device owner with an active guard")
+parser.add_argument("--expect-lockdown", action="store_true",
+                    help="also require every managed-lockdown restriction to be held")
 args = parser.parse_args()
+if args.expect_lockdown:
+    args.expect_managed = True
 
 
 def adb(*parts: str, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -84,15 +90,25 @@ except json.JSONDecodeError as exc:
     fail(f"status is not JSON: {exc}: {read.stdout[:400]!r}")
 
 for key in ("deviceOwner", "adminActive", "uninstallBlocked", "keepInstalled",
-            "remainingMillis", "state", "mayRelease"):
+            "managedLockdown", "remainingMillis", "restrictions", "desiredRestrictions",
+            "restrictionsMatch", "state", "mayRelease"):
     if key not in data:
         fail(f"status is missing {key}: {data}")
+if not isinstance(data["restrictions"], list) or not isinstance(data["desiredRestrictions"], list):
+    fail(f"restriction sets are not lists: {data}")
+LOCKDOWN = {"no_safe_boot", "no_apps_control", "no_factory_reset", "no_config_vpn"}
 
 print(f"Hisn {data.get('versionName')} ({data.get('versionCode')}) on {args.serial}")
 print(f"device owner: {data['deviceOwner']}  admin: {data['adminActive']}  "
       f"uninstall blocked: {data['uninstallBlocked']}")
 print(f"keep installed: {data['keepInstalled']}  remaining: {data['remainingMillis']} ms  "
       f"state: {data['state']}  may release: {data['mayRelease']}")
+print(f"managed lockdown: {data['managedLockdown']}  held: {sorted(data['restrictions'])}  "
+      f"desired: {sorted(data['desiredRestrictions'])}  match: {data['restrictionsMatch']}")
+if data["managedLockdown"] and (data["keepInstalled"] or data["remainingMillis"] > 0) \
+        and data["deviceOwner"]:
+    if not data["restrictionsMatch"] or set(data["restrictions"]) != LOCKDOWN:
+        fail("managed lockdown is on but Android does not hold all four restrictions")
 if data.get("error"):
     fail(f"app reported a status error: {data['error']}")
 
@@ -103,6 +119,12 @@ if args.expect_managed:
         fail("managed mode expected, but neither a keep switch nor a commitment is active")
     if not data["uninstallBlocked"] or data["state"] != "PROTECTED":
         fail("managed mode expected, but Android does not report uninstall blocked")
+    if args.expect_lockdown:
+        if not data["managedLockdown"] or not data["restrictionsMatch"] \
+                or set(data["restrictions"]) != LOCKDOWN:
+            fail("managed lockdown expected, but the restrictions were not held and read back")
+        print("PASS: device owner with uninstall blocked and managed lockdown held")
+        raise SystemExit(0)
     print("PASS: device owner with the uninstall guard applied and read back")
     raise SystemExit(0)
 

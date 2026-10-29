@@ -117,6 +117,7 @@ public final class PolicyStore {
     private volatile Snapshot snapshot;
     private CommitmentClock commitment;
     private boolean uninstallLock;
+    private boolean managedLockdown;
     // Saved with the rules: the commitment could not be read and runs for the longest possible time,
     // and the main file was replaced by its copy and the owner has not yet confirmed the rules.
     private boolean commitmentUnknown, restored;
@@ -151,6 +152,7 @@ public final class PolicyStore {
             SavedSettings loadedSettings = SavedSettings.rules(load.rules);
             snapshot = snapshot(loadedSettings);
             uninstallLock = loadedSettings.uninstallLock;
+            managedLockdown = loadedSettings.managedLockdown;
             commitment = load.clock;
             commitmentUnknown = load.unknown;
             restored = load.restored;
@@ -200,25 +202,49 @@ public final class PolicyStore {
     public synchronized boolean uninstallLock() { return uninstallLock; }
 
     /**
-     * Turn the persistent uninstall guard on or off.
-     *
-     * Enabling is always allowed. Disabling waits for any commitment to end;
-     * otherwise a person could start a commitment, switch the guard off, and
-     * uninstall Hisn while the saved rules remained ostensibly locked. The
-     * managed device-owner flag itself is still released separately by the
-     * platform controller, only when no commitment and no lock remain.
+     * Opt-in managed lockdown: while it is on and the app is held by a
+     * commitment or the keep-installed switch, the device owner also blocks
+     * Safe Mode, app uninstall/clear-data/force-stop for every app, the
+     * Settings factory reset and VPN configuration changes. Off by default;
+     * the UI must disclose how broad it is before turning it on.
      */
-    public synchronized void updateUninstallLock(boolean enabled) {
-        if (!enabled && !UninstallProtection.mayChangeLock(remainingMillis()))
+    public synchronized boolean managedLockdown() { return managedLockdown; }
+
+    /**
+     * Save both managed-device choices together so a failure cannot leave the
+     * uninstall block and the restrictions describing different states.
+     *
+     * Tightening is always allowed. Loosening either switch waits for any
+     * commitment to end; otherwise a person could start a commitment, switch
+     * protection off, and uninstall Hisn while the saved rules remained
+     * ostensibly locked.
+     */
+    public synchronized void updateManagedChoice(boolean keepInstalled, boolean lockdown) {
+        long remaining = remainingMillis();
+        if (!keepInstalled && uninstallLock && !UninstallProtection.mayChangeLock(remaining))
             throw new IllegalStateException("Commitment prevents disabling uninstall protection");
-        boolean previous = uninstallLock;
-        uninstallLock = enabled;
+        if (!lockdown && managedLockdown && !UninstallProtection.mayChangeLock(remaining))
+            throw new IllegalStateException("Commitment prevents disabling managed lockdown");
+        boolean previousKeep = uninstallLock, previousLockdown = managedLockdown;
+        uninstallLock = keepInstalled;
+        managedLockdown = lockdown;
         try {
             persist(snapshot, commitment.checkpoint(SystemClock.elapsedRealtime(), boot()), commitmentUnknown, restored);
         } catch (RuntimeException failed) {
-            uninstallLock = previous;
+            uninstallLock = previousKeep;
+            managedLockdown = previousLockdown;
             throw failed;
         }
+    }
+
+    /** Turn the persistent uninstall guard on or off, leaving managed lockdown unchanged. */
+    public synchronized void updateUninstallLock(boolean enabled) {
+        updateManagedChoice(enabled, managedLockdown);
+    }
+
+    /** Turn managed lockdown on or off, leaving the uninstall keep switch unchanged. */
+    public synchronized void updateManagedLockdown(boolean enabled) {
+        updateManagedChoice(uninstallLock, enabled);
     }
 
     public synchronized void startCommitment(int days) {
@@ -282,7 +308,7 @@ public final class PolicyStore {
         Map<String, Object> values = SavedSettings.values(String.join("\n", rules.domains.blockedRules()),
                 String.join("\n", rules.words.configuredRules()), rules.blockedApps, rules.scannedApps,
                 rules.adultWordsEnabled, rules.visualEnabled, rules.shortVideoEnabled, uninstallLock,
-                rules.schedule, clock, unknown, restoredNotice);
+                managedLockdown, rules.schedule, clock, unknown, restoredNotice);
         if (!write(prefs, values)) throw saveFailed("Cannot save settings");
         saved = values;
         snapshot = rules;

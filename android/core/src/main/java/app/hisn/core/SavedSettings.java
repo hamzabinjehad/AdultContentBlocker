@@ -16,7 +16,7 @@ public final class SavedSettings {
     public static final String UNKNOWN = "commitment_unknown", RESTORED = "restored_from_copy";
     public final String domains, words;
     public final Set<String> apps, scans;
-    public final boolean adultWords, visual, shortVideo, uninstallLock;
+    public final boolean adultWords, visual, shortVideo, uninstallLock, managedLockdown;
     public final DailyAppSchedule schedule;
 
     private SavedSettings(Map<String, ?> values) {
@@ -28,6 +28,7 @@ public final class SavedSettings {
         visual = flag(values, "visual_enabled");
         shortVideo = flag(values, "short_video");
         uninstallLock = flag(values, "uninstall_lock");
+        managedLockdown = flag(values, "managed_lockdown");
         schedule = new DailyAppSchedule(flag(values, "schedule_enabled"), number(values, "schedule_start", 1320),
                 number(values, "schedule_end", 420), names(values, "schedule_apps"));
     }
@@ -46,6 +47,17 @@ public final class SavedSettings {
     public static Map<String, Object> values(String domains, String words, Set<String> apps, Set<String> scans,
             boolean adultWords, boolean visual, boolean shortVideo, boolean uninstallLock,
             DailyAppSchedule schedule, CommitmentClock clock, boolean unknown, boolean restored) {
+        return values(domains, words, apps, scans, adultWords, visual, shortVideo, uninstallLock, false,
+                schedule, clock, unknown, restored);
+    }
+
+    /**
+     * Every value to save, with the 0.7 managed-lockdown opt-in. Missing fields
+     * read as off, so settings written by 0.6 and earlier upgrade in place.
+     */
+    public static Map<String, Object> values(String domains, String words, Set<String> apps, Set<String> scans,
+            boolean adultWords, boolean visual, boolean shortVideo, boolean uninstallLock, boolean managedLockdown,
+            DailyAppSchedule schedule, CommitmentClock clock, boolean unknown, boolean restored) {
         Map<String, Object> values = new HashMap<>();
         values.put("domains", domains);
         values.put("words", words);
@@ -55,6 +67,7 @@ public final class SavedSettings {
         values.put("visual_enabled", visual);
         values.put("short_video", shortVideo);
         values.put("uninstall_lock", uninstallLock);
+        values.put("managed_lockdown", managedLockdown);
         values.put("schedule_enabled", schedule.enabled);
         values.put("schedule_start", schedule.startMinute);
         values.put("schedule_end", schedule.endMinute);

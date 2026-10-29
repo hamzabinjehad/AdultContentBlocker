@@ -1,0 +1,42 @@
+{
+  "branch": "release/1.0",
+  "updated": "2026-10-29",
+  "platforms": [
+    {
+      "id": "extension",
+      "name": "Browser extension (Chromium)",
+      "version": "1.2.0",
+      "build": null,
+      "state": "development · unpacked, no store listing",
+      "source": "extension/manifest.json",
+      "notes": "The packaged zip strips the development key; the Chrome Web Store ID will differ from the unpacked ID."
+    },
+    {
+      "id": "macos",
+      "name": "Mac",
+      "version": "1.1.4",
+      "build": 8,
+      "state": "development · unsigned, needs Developer ID and notarization",
+      "source": "macos/Hisn.xcodeproj/project.pbxproj",
+      "notes": "Every target must carry the same MARKETING_VERSION and CURRENT_PROJECT_VERSION."
+    },
+    {
+      "id": "ios",
+      "name": "iPhone & iPad",
+      "version": "1.1.2",
+      "build": 3,
+      "state": "development · no Apple team, Family Controls entitlement or test device",
+      "source": "ios/HisnMobile.xcodeproj/project.pbxproj",
+      "notes": "The app, Safari blockers and HisnActivityMonitor share one version set."
+    },
+    {
+      "id": "android",
+      "name": "Android",
+      "version": "0.7.0",
+      "build": 19,
+      "state": "preview · unsigned; direct builds add the -direct suffix",
+      "source": "android/app/build.gradle",
+      "notes": "versionCode is monotonic and must increase for every uploaded or side-loaded update. 19 adds the managed-lockdown opt-in on top of the 0.6.0 uninstall guard."
+    }
+  ]
+}

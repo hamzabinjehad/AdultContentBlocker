@@ -267,6 +267,12 @@
     <string name="uninstall_locked">يمنع الالتزام النشط إيقاف حماية الإزالة.</string>
     <string name="uninstall_failed">لم يطبّق أندرويد التغيير. تحقق من حالة مالك الجهاز وحاول مجددًا.</string>
     <string name="uninstall_saved">تم حفظ إعداد حماية الإزالة.</string>
+    <string name="managed_lockdown_off">الحماية المُدارة · متوقفة. يُمنع حذف حصن فقط.</string>
+    <string name="managed_lockdown_on">الحماية المُدارة · مفعّلة. يمنع أندرويد الوضع الآمن وأدوات حذف التطبيقات ومسح بياناتها وإعادة ضبط المصنع من الإعدادات وتغيير VPN.</string>
+    <string name="managed_lockdown_idle">الحماية المُدارة · مفعّلة لكنها غير مطبقة. ابدأ التزامًا أو أبقِ حصن مثبتًا لتُطبّق.</string>
+    <string name="managed_lockdown_sync">الحماية المُدارة · قيود أندرويد لا تطابق حصن. افتح للإصلاح.</string>
+    <string name="managed_lockdown_switch">الحماية المُدارة: امنع أيضًا الوضع الآمن وأدوات التطبيقات وإعادة ضبط المصنع وتغيير VPN</string>
+    <string name="managed_lockdown_hint">هذا أوسع من إبقاء حصن مثبتًا: يمنع حذف أي تطبيق أو تعطيله أو إيقافه قسريًا أو مسح بياناته، ويمنع الوضع الآمن والمسح من الإعدادات، ويمنع تغيير VPN أو DNS الخاص. يتاح فقط عندما يكون حصن مالك هذا الجهاز، ويُطبّق ما دام التزام نشطًا أو خيار «إبقاء حصن مثبتًا» مفعّلًا، ويمكن إيقافه عندما لا يوجد التزام. يبقى وضع الاسترداد وADB وإزالة ملكية الجهاز قادرة على تجاوزه.</string>
     <string name="pause_title">خذ لحظة قبل أن تكمل</string>
     <string name="pause_breathe_in">خذ نفسًا عميقًا…</string>
     <string name="pause_breathe_out">أخرِج النفس ببطء…</string>

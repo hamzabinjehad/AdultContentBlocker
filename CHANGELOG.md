@@ -1,0 +1,114 @@
+# Changelog
+
+Newest first. Versions are per platform; the pinned set is checked in
+[versions.json](versions.json) and rendered in [docs/VERSIONS.md](docs/VERSIONS.md).
+Per-release evidence lives in `docs/` and is linked from each entry. A version
+bump without an entry here is an unfinished release.
+
+## Unreleased — `release/1.0`, 2026-10-29
+
+### Added
+
+- **Android 0.7.0 (versionCode 19): optional managed lockdown.** On a
+  device-owner phone, a second explicit opt-in applies and reads back four
+  Android restrictions: Safe Mode, app uninstall/disable/clear-data/force-stop
+  for every app, the Settings factory reset, and VPN/private-DNS changes. Both
+  managed choices are saved in one write; release clears restrictions in reverse
+  order, then the uninstall block, then device ownership. Status shows ON, Off,
+  idle or out of sync from Android's own readback. The broad app-controls
+  restriction is disclosed before it is applied. No device acceptance is
+  claimed. See [the 0.7.0 record](docs/ANDROID_0.7.0.md).
+- **One machine-checked version set.** `versions.json` pins the extension, Mac,
+  iOS/iPad and Android versions; `script/versions.py` checks each platform
+  manifest and regenerates [docs/VERSIONS.md](docs/VERSIONS.md). A conflict in
+  an Xcode target or a mismatch with the manifest fails `./test.sh python`.
+- **Per-surface coverage page.** `script/coverage.py` derives
+  [docs/COVERAGE.md](docs/COVERAGE.md) from the signed seed and the static DNR
+  ruleset: 159,768 core domains, 5,248,731 full-list domains, 5,831 terms, 320
+  static and 116 keyword DNR rules. It states which client carries which tier.
+- **Privacy policy and support page.** [PRIVACY.md](PRIVACY.md) records the
+  on-device matching, the absence of accounts/telemetry, the only routine
+  network requests and every permission. [SUPPORT.md](SUPPORT.md) has setup
+  links, troubleshooting, safe reporting and the consent/emergency rules.
+- **Android live managed checker.** `test-live-managed-status.py
+  --expect-lockdown` reads the four restrictions back without changing policy;
+  the debug exporter now includes the held and desired sets.
+
+### Changed
+
+- The full list count in the docs is corrected to the signed artifact
+  (5,248,731 domains, not 982k). The core tier is 159,768 and the keyword layer
+  is 5,831 terms; see [COVERAGE.md](docs/COVERAGE.md).
+- The iOS hosted suite now runs to completion on the iOS 26.5 simulator
+  (181 tests, `** TEST SUCCEEDED **`), closing the M0 runner gap recorded in the
+  1.0 plan. The suite is slow because the render tests are real UI passes; that
+  is time, not a hang.
+- The macOS suite is green at 495 tests plus the Arabic-string check; Python,
+  seed, extension, release and Android core suites are green on the same tree.
+
+### Fixed
+
+- Android managed-mode status can no longer show PROTECTED when a requested
+  restriction is missing, or READY while an old restriction remains. The
+  combined state is OUT_OF_SYNC and the periodic repair runs.
+- Managed-mode release now clears restrictions before the uninstall block, so a
+  failed ownership release cannot leave the phone hardened but unmanaged.
+
+## 2026-10-28 — Extension 1.2.0
+
+- The block page explains a signed-list block (`reason=domain`) in English and
+  Arabic, instead of falling through to the generic message.
+- A native-messaging reply that omits `mode` can no longer reset Strict to
+  Standard; `pollNative` leaves absent fields alone.
+- The status shows the installed list version/date, warns after 14 days, and
+  names the bundled-only state. Settings has **Update block list**, serialised
+  against the automatic alarm; a failed update keeps the current generation.
+- Facebook `share/reel/…` links are covered by the short-video rules and the
+  in-page matcher.
+- Version 1.2.0. Tests: extension unit suites, block page/settings/popup and DNR
+  browser harnesses, package and evaluation corpus. See
+  [EXTENSION_1.2.0.md](docs/EXTENSION_1.2.0.md).
+
+## 2026-10-28 — Android 0.6.0
+
+- Opt-in device-owner uninstall protection, with platform readback, an in-app
+  status/release path and boot/foreground reconciliation after a commitment
+  expires.
+- The uninstall-screen guard and boot shield for the direct build; the pause
+  tally and short-video blocking.
+- Device evidence on the Samsung SM-G990B2 is recorded as far as it goes; the
+  phone was not a device owner, so no blocked-uninstall result is claimed. See
+  [ANDROID_0.6.0.md](docs/ANDROID_0.6.0.md).
+
+## 2026-10-26 — iOS/iPadOS 1.1.2
+
+- A commitment that holds: trusted Apple server time, a restored filter,
+  layer-loss alerts and the passcode vault for a date-limited exit without a
+  second person.
+- Honest Screen Time status, readable colours, Dynamic Type and iPad layout;
+  **My blocked sites** through the Screen Time adult-content filter.
+- HisnActivityMonitor app shields, usage budgets and the selected-app picker.
+- Development build; no Apple team, Family Controls entitlement or device
+  acceptance is claimed. See [UPDATE_1_1_2.md](docs/UPDATE_1_1_2.md) and the
+  [iOS plan](docs/IOS_IMPROVEMENT_PLAN.md).
+
+## 2026-10-26 — macOS 1.1.4 (build 8)
+
+- Ships the Persian/Urdu text folds to installed Macs, so the Mac filter and the
+  extension make the same decision on the shared normalisation cases.
+- Reads the lock inside `ScreenGrayscale.set` rather than as a default argument,
+  fixing the grayscale state read.
+- Unsigned, unnotarized development build; the guardrail and filter tests pass
+  (495 tests, Arabic-string check). See [ROAD_TO_1.0.md](docs/ROAD_TO_1.0.md).
+
+## 2026-10-01 — signed seed bundle v4
+
+- Core tier: 159,768 high-confidence domains; full build: 5,248,731 domains;
+  keyword layer: 5,831 terms (4,100 Arabic, 1,447 Franco-Arabic, 145
+  English, 100 German and 39 French/Spanish/Italian/Portuguese) plus 116 host
+  terms.
+- Ed25519-signed manifest, rollback floor and a fail-closed client. No `lists`
+  branch has been published yet, so every client is still on this seed.
+
+Earlier per-version records (Android 0.3.1 through 0.5.5, extension 1.1.8
+through 1.1.12, and the 1.1.1/1.1.2 updates) are in the [docs index](docs/README.md).

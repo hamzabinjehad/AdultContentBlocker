@@ -63,6 +63,7 @@ public final class MainActivity extends Activity {
     private TextView textState;
     private TextView commitmentState;
     private TextView uninstallState;
+    private TextView managedState;
     private Button uninstallAction;
     private long lastUninstallSyncAt;
     private Button restoredConfirm;
@@ -192,6 +193,8 @@ public final class MainActivity extends Activity {
             refreshStatus();
         });
         uninstallState = paragraph(R.string.uninstall_state_unavailable);
+        managedState = paragraph(R.string.managed_lockdown_off);
+        managedState.setVisibility(View.GONE);
         uninstallAction = new Button(this);
         uninstallAction.setText(R.string.uninstall_action);
         uninstallAction.setAllCaps(false);
@@ -958,6 +961,7 @@ public final class MainActivity extends Activity {
             uninstallState.setText(!status.keepInstalled ? R.string.self_protection_state_off
                     : TextGuardService.connected ? R.string.self_protection_state_on
                     : R.string.self_protection_state_inactive);
+            managedState.setVisibility(View.GONE);
             uninstallAction.setEnabled(true);
             return;
         }
@@ -986,6 +990,30 @@ public final class MainActivity extends Activity {
                 break;
         }
         uninstallAction.setEnabled(true);
+        refreshManagedState(status);
+    }
+
+    /**
+     * The managed lockdown is a second opt-in on top of the uninstall block.
+     * Show the platform readback, never the saved switch alone: a restriction
+     * Android did not accept is described as out of sync, not as protection.
+     */
+    private void refreshManagedState(UninstallProtectionController.Status status) {
+        if (managedState == null) return;
+        if (!status.deviceOwner) {
+            managedState.setVisibility(View.GONE);
+            return;
+        }
+        managedState.setVisibility(View.VISIBLE);
+        if (!status.managedLockdown) {
+            managedState.setText(R.string.managed_lockdown_off);
+        } else if (!status.restrictionsMatch()) {
+            managedState.setText(R.string.managed_lockdown_sync);
+        } else if (status.desiredRestrictions().isEmpty()) {
+            managedState.setText(R.string.managed_lockdown_idle);
+        } else {
+            managedState.setText(R.string.managed_lockdown_on);
+        }
     }
 
     private void showUninstallDialog() {
@@ -1017,6 +1045,21 @@ public final class MainActivity extends Activity {
         hint.setTextSize(14);
         form.addView(hint);
 
+        // A second, broader opt-in. Shown only to a device owner, because only
+        // a device owner can add user restrictions; a saved choice on an
+        // ordinary install would do nothing and must not look like protection.
+        CheckBox lockdown = new CheckBox(this);
+        lockdown.setText(R.string.managed_lockdown_switch);
+        lockdown.setChecked(settings.managedLockdown());
+        lockdown.setEnabled(!(settings.managedLockdown() && commitment));
+        if (status.deviceOwner) {
+            form.addView(lockdown);
+            TextView lockdownHint = new TextView(this);
+            lockdownHint.setText(R.string.managed_lockdown_hint);
+            lockdownHint.setTextSize(13);
+            form.addView(lockdownHint);
+        }
+
         if (!status.deviceOwner && !screenGuard) {
             TextView command = new TextView(this);
             command.setText(getString(R.string.uninstall_command_hint,
@@ -1033,7 +1076,8 @@ public final class MainActivity extends Activity {
                 .setNegativeButton(android.R.string.cancel, null);
         if (status.deviceOwner || screenGuard) {
             builder.setPositiveButton(R.string.uninstall_apply,
-                    (dialog, which) -> applyUninstallChoice(keep.isChecked()));
+                    (dialog, which) -> applyUninstallChoice(keep.isChecked(),
+                            status.deviceOwner && lockdown.isChecked()));
             if (status.mayRelease()) {
                 builder.setNeutralButton(R.string.uninstall_release,
                         (dialog, which) -> confirmReleaseManagedMode());
@@ -1053,9 +1097,11 @@ public final class MainActivity extends Activity {
         builder.show();
     }
 
-    private void applyUninstallChoice(boolean keepInstalled) {
+    private void applyUninstallChoice(boolean keepInstalled, boolean managedLockdown) {
         try {
-            settings.updateUninstallLock(keepInstalled);
+            // Both choices are saved in one write, so the uninstall block and
+            // the restrictions can never describe different states.
+            settings.updateManagedChoice(keepInstalled, managedLockdown);
         } catch (IllegalStateException locked) {
             Toast.makeText(this, R.string.uninstall_locked, Toast.LENGTH_LONG).show();
             return;

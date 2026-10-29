@@ -95,18 +95,35 @@ public final class CoreDeviceTestRunner extends Instrumentation {
         try {
             PolicyStore store = new PolicyStore(context, preferenceName);
             if (store.uninstallLock()) throw new AssertionError("Uninstall lock defaulted on");
+            if (store.managedLockdown()) throw new AssertionError("Managed lockdown defaulted on");
             store.updateUninstallLock(true);
+            store.updateManagedLockdown(true);
             if (!new PolicyStore(context, preferenceName).uninstallLock())
                 throw new AssertionError("Uninstall lock did not persist");
+            if (!new PolicyStore(context, preferenceName).managedLockdown())
+                throw new AssertionError("Managed lockdown did not persist");
             store.update("blocked.example", "", Collections.emptySet(), Collections.emptySet());
             store.startCommitment(1);
             try {
                 store.updateUninstallLock(false);
                 throw new AssertionError("Commitment allowed disabling uninstall protection");
             } catch (IllegalStateException expected) { }
-            if (!store.uninstallLock()) throw new AssertionError("Rejected change cleared uninstall lock");
+            try {
+                store.updateManagedLockdown(false);
+                throw new AssertionError("Commitment allowed disabling managed lockdown");
+            } catch (IllegalStateException expected) { }
+            try {
+                store.updateManagedChoice(false, false);
+                throw new AssertionError("Commitment allowed clearing both managed choices");
+            } catch (IllegalStateException expected) { }
+            if (!store.uninstallLock() || !store.managedLockdown())
+                throw new AssertionError("Rejected change cleared a managed choice");
             UninstallProtectionController.Status status = UninstallProtectionController.read(context);
             if (status.state() == null) throw new AssertionError("Uninstall status unavailable");
+            if (status.restrictions.size() != 0 && !status.deviceOwner)
+                throw new AssertionError("Unmanaged install reported held restrictions");
+            if (!status.restrictionsMatch() && !status.deviceOwner)
+                throw new AssertionError("Unmanaged install reported a restriction mismatch");
             if (!status.deviceOwner) {
                 // The normal, non-managed installation must never claim that
                 // Android is blocking uninstall. A managed test device is read
