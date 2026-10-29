@@ -538,7 +538,7 @@ licences require it.
 
 | Milestone | Target | Exit gate |
 | --- | --- | --- |
-| **M0 One repo, one baseline** | 2026-11-08 | `main` + `android-0.6.0` merged; WIP committed; bare `./test.sh` green on a clean Mac; CI covers Android and iOS; `release/1.0` branch exists. **Achieved 2026-10-29:** bare `./test.sh` and the browser suite both pass; CI keeps both jobs. The `lists`/store/signing/device gates are M1-M5 |
+| **M0 One repo, one baseline** | 2026-11-08 | `main` + `android-0.6.0` merged; WIP committed; bare `./test.sh` green on a clean Mac; CI covers Android and iOS; `release/1.0` branch exists. **Achieved locally 2026-10-29:** bare `./test.sh` and the browser suite both pass; CI keeps both jobs. A CI run on the pushed branch is still needed. The `lists`/store/signing/device gates are M1-M5 |
 | **M1 Fresh lists everywhere** | 2026-11-22 | `lists` branch 200; Mac, Chromium, iOS and Android install a generation; stale clients say so |
 | **M2 Locked editions** | 2026-12-20 | Android device-owner refusal + restrictions proven on a disposable phone; iPhone supervised profile proven on a disposable phone; Mac guardian split + daemon proven on a standard account; Chromium force-install proven |
 | **M3 Coverage** | 2027-01-10 | 500-case text gate; visual benchmark; short-video release; Mac native text guard; iOS URL-filter decision recorded |
