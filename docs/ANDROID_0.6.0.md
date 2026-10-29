@@ -1,6 +1,6 @@
 # Hisn Android 0.6.0 — optional managed uninstall protection
 
-Development candidate, 26 October 2026. Not a Play release, not a signed
+Development candidate, 28 October 2026. Not a Play release, not a signed
 production build, and not a claim that the connected owner's phone is
 undeletable. No device-owner appointment, factory reset, account removal or
 administrative policy was applied to that phone.
@@ -65,16 +65,17 @@ Builds and lint:
 - `./gradlew --no-daemon assembleRelease`: **PASS** (unsigned; no production key
   was provided). The release manifest contains no `ManagedStatusActivity`, and
   its resources contain the managed-uninstall strings. Release APK SHA-256:
-  `3f93edc050734c1255c93af0d0ddbf36f20bb6409f3ace1aef9ebde672cea017`.
-- `./gradlew --no-daemon lintDebug`: **PASS**, 0 errors and 18 warnings. The
+  `84d5a3d58cc50cb6c1df68f95a794292dbe9b741220e5d391e4bc5043c10c578`.
+- `./gradlew --no-daemon lintDebug`: **PASS**, 0 errors and 19 warnings. The
   warnings are the existing debug-activity/preference, API-level attribute,
-  plural-heuristic and debug `setText` findings; the new hour string adds one
-  plural-heuristic warning and follows the existing hours-string pattern.
-- Debug APK: `android/app/build/outputs/apk/debug/app-debug.apk`
-  - versionName `0.6.0`, versionCode `15`
-  - SHA-256 `fde8f10e1ab786a1e33696793a72d42d3776a5342ed924ee3debb8ad8d7f47f4`
+  plural-heuristic and debug `setText` findings, plus the direct-build guard;
+  the new hour string follows the existing hours-string pattern.
+- Debug APK used for device testing (direct sideload build):
+  `android/app/build/outputs/apk/debug/app-debug.apk`
+  - versionName `0.6.0-direct`, versionCode `15`
+  - SHA-256 `f674d7b375ef34b448382226f424b361b4da0934400234d998166416553552b7`
   - Test APK SHA-256
-    `6358d600b2b67391b4686cf34b5017bd240b04dc19830859f14264ed63b0c608`
+    `62de24512cdd81c42d907565ff041c0d004d7b91e7f052a5a9866ff4d5f23021`
   - debug certificate SHA-256
     `ca819da2f204fdaecb5fde95fd3f6e22b05f80843d625a99439f7f8eee8f6c61`
   - This is a development certificate, not a production release key.
@@ -84,12 +85,25 @@ as JSON to private storage. `android/test-live-managed-status.py --serial SERIAL
 checks it without applying, clearing or releasing anything; use
 `--expect-managed` only on a disposable provisioned device.
 
-Connected device check: the Samsung SM-G990B2 (Android 16) was detected over
-ADB. `dpm list-owners` showed Samsung Secure Folder as a profile owner in user
-150, not Hisn; the app was not a device owner. Installing the 0.6.0 debug APK
-and running `CoreDeviceTestRunner` was attempted, but the device disconnected
-from ADB before the install. **No 0.6.0 device or blocked-uninstall result is
-claimed yet.**
+Connected device check, 2026-10-28, Samsung SM-G990B2 (Android 16):
+
+- The installed APK is the current direct build above; its bytes match the
+  pulled device APK SHA-256 exactly (`f674d7…`). The test APK
+  (`62de2451…`) was installed over ADB.
+- `adb shell am instrument --user 0 -w
+  app.hisn.android.test/app.hisn.android.CoreDeviceTestRunner` returned
+  **PASS**. It loaded 159,762 domains and passed Arabic matching, boundaries,
+  local DNS block, saved rules, Unicode persistence, long-text sampling, the
+  actual adult-text seed, visual settings, commitment and uninstall-guard
+  checks. It did not enable a VPN, accessibility, admin or device-owner policy.
+- `test-live-managed-status.py` returned **PASS**:
+  `deviceOwner=false`, `adminActive=false`, `uninstallBlocked=false`,
+  `keepInstalled=true`, `remainingMillis=0`, state `UNAVAILABLE`. The ordinary
+  install is honestly not managed; Android can still uninstall it.
+- `dpm list-owners` still shows only Samsung Secure Folder's profile owner in
+  user 150, not Hisn. **An actual device-owner uninstall refusal, expiry
+  reconciliation and release still require a disposable provisioned device.**
+  That remains a documented external limit, not a claimed phone result.
 
 ## How it is meant to be used
 
