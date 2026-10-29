@@ -1,9 +1,9 @@
 # Android tamper resistance: personal, admin and managed modes
 
-Reviewed 2026-10-21, updated 2026-10-26 for the 0.6.0 managed-uninstall
-preview. This describes what the Android app can actually enforce. It is not a
-claim that an installed app can survive a determined device administrator, a
-factory reset or OS-level access.
+Reviewed 2026-10-21, updated 2026-10-26 for the 0.6.0 managed-uninstall preview
+and 2026-10-29 for the 0.7.0 managed lockdown. This describes what the Android
+app can actually enforce. It is not a claim that an installed app can survive a
+determined device administrator, a factory reset or OS-level access.
 
 ## Personal self-control preview
 
@@ -109,11 +109,11 @@ administrative policies. A legacy admin **cannot block uninstall**: Android
 allows the owner to deactivate it and remove Hisn. The app labels this mode
 "Device admin only", not protected.
 
-## Optional device-owner mode: 0.6.0 preview
+## Optional device-owner mode: 0.6.0 uninstall guard and 0.7.0 lockdown
 
-Android exposes uninstall blocking only to a device owner (or, inside its own
-profile, a profile owner). Hisn implements the device-owner path as an explicit,
-opt-in managed-device mode:
+Android exposes uninstall blocking and user restrictions only to a device
+owner (or, inside its own profile, a profile owner). Hisn implements the
+device-owner path as two explicit, opt-in layers:
 
 - `UninstallProtectionController` reads `DevicePolicyManager.isDeviceOwnerApp`
   and Android's own `isUninstallBlocked` readback. It applies
@@ -134,27 +134,46 @@ opt-in managed-device mode:
   commitment. If a commitment expires while the app is not running, the block
   may remain until Hisn next runs; that is stricter than the promise and is
   stated in the UI/disclosure.
+- **0.7.0 managed lockdown** is a second switch, off by default and shown only
+  to a device owner. While it is on and a commitment or the keep switch holds,
+  Hisn applies and reads back `no_safe_boot`, `no_apps_control`,
+  `no_factory_reset` and `no_config_vpn`. `no_apps_control` stops uninstalling,
+  disabling, force-stopping or clearing the data of **every** app, so it is
+  disclosed as broad before it is saved. The two managed choices are saved in
+  one write, and release clears the restrictions in reverse apply order before
+  the uninstall block and device ownership.
+- The status combines both layers: a missing or extra restriction is
+  **out of sync**, never a green light. The periodic repair runs only while the
+  app is in the foreground; it is not a background watchdog.
 
 ### What this does and does not survive
 
 While device owner and the guard is on, Android's ordinary uninstall flow
-refuses to remove Hisn in the user where it is owner. It does **not** survive:
+refuses to remove Hisn in the user where it is owner. With managed lockdown on,
+the four restrictions above also hold. This does **not** survive:
 
-- a factory reset (the supported recovery from a lost device-owner app);
+- a factory reset from recovery (the supported recovery from a lost
+  device-owner app; the Settings erase is what `no_factory_reset` blocks);
 - an administrator removing device ownership through Android management,
   ADB, root or a platform vulnerability;
 - removal of the device-owner app by the OS, a managed-device console or a
   user with those privileges;
 - a different Android user/profile that is not managed. Profile-owner scope
-  does not automatically protect the personal profile.
+  does not automatically protect the personal profile;
+- a force-stopped or uninstalled Hisn: the restrictions are held by Android
+  while they are set, but the app cannot repair them if it never runs again.
 
-It also does not prevent force-stop, clearing app data, disabling services or
-changing other Android settings. Clearing app data removes the saved keep
-switch and rules but does not release device ownership by itself; open Hisn and
-use **Remove managed mode** when no commitment remains, or factory-reset the
-device. It protects the uninstall decision only. No claim of "undeletable" is
-absolute. Hisn does not hide the app. Only the direct build, with the owner's
-switch on, leaves the uninstall screen.
+Without managed lockdown, the uninstall guard also does not prevent
+force-stop, clearing app data, disabling services or changing other Android
+settings. Clearing app data removes the saved keep switch and rules but does
+not release device ownership by itself; open Hisn and use **Remove managed
+mode** when no commitment remains, or factory-reset the device. With lockdown
+on, `no_apps_control` blocks those app-control actions and `no_config_vpn`
+blocks VPN configuration changes, but it is not a general Settings
+lock and does not cover an OEM screen it does not recognise. It protects the
+uninstall and restriction decisions, not every setting. No claim of
+"undeletable" is absolute. Hisn does not hide the app. Only the direct build,
+with the owner's switch on, leaves the uninstall screen.
 
 ### Provisioning and current-device status
 

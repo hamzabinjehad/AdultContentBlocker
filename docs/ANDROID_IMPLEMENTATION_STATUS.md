@@ -16,7 +16,7 @@ status. Each layer must state its scope and recover from service/permission
 loss without displaying false protection. Absolute detection or resistance to
 a device owner's reset/recovery controls is not an achievable release claim.
 
-## Implemented in the development preview (latest: 0.6.0)
+## Implemented in the development preview (latest: 0.7.0)
 
 | Layer | Code now present | Verification boundary |
 | --- | --- | --- |
@@ -33,7 +33,7 @@ a device owner's reset/recovery controls is not an achievable release claim.
 | Commitment | Backend rejects weaker settings and disabling opted-in adult checks for 7/30/90 days; elapsed/boot clock; new empty commitments rejected | Pure clock tests and isolated Samsung preference tests pass; old empty commitments preserve time and permit added restrictions |
 | Daily selected-app schedule | Optional every-day local-time window, separate app set, overnight support, static-screen periodic enforcement and commitment-preserving coverage | Exhaustive/randomized core tests, isolated Samsung persistence/commitment checks and real local-time boundary test pass; clock/timezone/accessibility bypasses remain |
 | Removal friction | Optional legacy admin receiver with no administrative policies | Compiles; latest activation/deactivation test pending |
-| Managed uninstall protection | Device-owner only. Pure state matrix, `PolicyStore` keep switch with commitment guard, `DevicePolicyManager.setUninstallBlocked` readback/repair, in-app setup/release UI and boot reconciliation | Core tests, debug/test builds and lint pass. The connected Samsung is not device owner, so it must report "Not managed"; an actual blocked uninstall, commitment-expiry reconciliation and release still need a disposable provisioned device. |
+| Managed uninstall protection | Device-owner only. Pure state matrix, `PolicyStore` keep switch with commitment guard, `DevicePolicyManager.setUninstallBlocked` readback/repair, in-app setup/release UI and boot reconciliation. 0.7.0 adds an opt-in managed lockdown (`no_safe_boot`, `no_apps_control`, `no_factory_reset`, `no_config_vpn`), saved in the same write, read back from `UserManager` and released in reverse order. | Core `UninstallProtection`/`ManagedRestrictions`/`SavedSettings` tests, debug/test builds and lint pass. The Samsung is not device owner, so it reports "Not managed"; an actual blocked uninstall and the four restrictions, expiry reconciliation and release still need a disposable provisioned device. |
 | Visual filtering | Opt-in Android 14+ selected-window image/video sampling using the bundled local classifier; generic Home/restriction intervention, explicit capture consent and separate health | Actual local model, policy and stale-frame tests plus nine Samsung live fixture checks pass. A small benign baseline had 0/12 false-blocked views over 36 calls, with 1,984 ms median / 2,290 ms p95 classifier roundtrip. Sources/layouts are limited and correlated; this is not population accuracy. Adult recall, real-app/video and battery acceptance remain pending; no pre-display claim. See [0.5.0](ANDROID_0.5.0.md) and [benchmark](ANDROID_VISUAL_BENCHMARK_2026-10-22.md) |
 
 The 0.3.0 debug APK was installed and opened on the Samsung on 2026-10-19.
@@ -89,11 +89,12 @@ not prove all apps use Hisn DNS even when it passes.
 A small separate read-only text corpus yielded 9/16 adult-text hits and 1/18 benign
 false positives. These are fixture-specific counts, not an accuracy estimate or
 a representative benchmark. The misses/false positive require further work.
-No Android image/video detection, full-traffic/always-on VPN, or undeletable
-installation for an ordinary install is implemented. Device-owner uninstall
-blocking is an opt-in 0.6.0 preview; it does not survive a factory reset,
-device-owner removal, ADB/root or an administrator. The current deliverable remains a tested
-development preview, not the requested universal end-state protection.
+No full-traffic or always-on VPN, and no undeletable installation for an
+ordinary install, is implemented. Device-owner uninstall blocking and the
+managed lockdown are opt-in 0.7.0 previews; they do not survive a factory
+reset, device-owner removal, ADB/root or an administrator. The current
+deliverable remains a tested development preview, not the requested universal
+end-state protection.
 
 ## 0.4.2 verification boundary (2026-10-20)
 
@@ -122,9 +123,11 @@ unverified. See [the complete record](ANDROID_0.4.2.md) for the APK identity.
 ## 0.6.0 managed-uninstall verification boundary (2026-10-28)
 
 The 0.6.0 source adds device-owner-only uninstall blocking. On 2026-10-28 the
-current `0.6.0-direct` debug build (version code 15) was installed on the
-Samsung SM-G990B2 (Android 16); the pulled device APK matched the build output
-SHA-256 `f674d7b375ef34b448382226f424b361b4da0934400234d998166416553552b7`.
+current `0.6.0-direct` debug build (version code 15, from the `android-0.6.0`
+branch before the 0.5.5 merge; release/1.0 builds 0.6.0 as version code 18) was
+installed on the Samsung SM-G990B2 (Android 16); the pulled device APK matched
+the build output SHA-256
+`f674d7b375ef34b448382226f424b361b4da0934400234d998166416553552b7`.
 The test APK `62de24512cdd81c42d907565ff041c0d004d7b91e7f052a5a9866ff4d5f23021`
 was installed and `CoreDeviceTestRunner` passed, including the uninstall-guard
 checks. The read-only `test-live-managed-status.py` also passed and reported
@@ -138,6 +141,30 @@ commitment-expiry reconciliation and release path still require a disposable,
 freshly provisioned device owner. Do not provision the owner's daily phone and
 do not describe the ordinary install as undeletable. See
 [0.6.0](ANDROID_0.6.0.md) and [tamper scope](ANDROID_TAMPER_RESISTANCE.md).
+
+## 0.7.0 managed-lockdown verification boundary (2026-10-29)
+
+0.7.0 adds the second opt-in: `no_safe_boot`, `no_apps_control`,
+`no_factory_reset` and `no_config_vpn`, applied only while a device owner, the
+lockdown switch and a commitment or keep lock all hold. The code builds, lints
+and its pure matrix passes:
+
+- `ManagedRestrictionsTest` checks the opt-in matrix, exact set equality,
+  missing/extra detection, apply and reverse-release order, the four Android
+  keys, and the combined uninstall state (a missing or extra restriction is
+  `OUT_OF_SYNC`, never `PROTECTED`/`READY`).
+- `SavedSettingsTest` checks the `managed_lockdown` round trip and that settings
+  saved before 0.7.0 load with it off.
+- `PolicyStore.updateManagedChoice` saves both choices in one write and refuses
+  to loosen either during a commitment.
+- `JAVA_HOME=<JBR> sh test-core.sh`, `assembleDebug`,
+  `assembleDebugAndroidTest` and `lintDebug` pass.
+
+No managed phone was provisioned. The four real refusals, the readback on a
+device-owner build, the expiry repair and the release path are **not** claimed.
+`test-live-managed-status.py --expect-lockdown` is the read-only check to run on
+a disposable provisioned device; it does not apply or clear policy. See
+[0.7.0](ANDROID_0.7.0.md).
 
 ## Next acceptance gates
 

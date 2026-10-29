@@ -7,7 +7,7 @@ clean Mac works. Record those results before distributing a beta.
 
 ## Current External Blockers
 
-Checked on 2026-10-01:
+Checked on 2026-10-29:
 
 - No Developer ID Application signing identity was found on the development Mac.
 - HisnChromeStoreURL and HisnEdgeStoreURL are not configured.
@@ -15,8 +15,10 @@ Checked on 2026-10-01:
   `https://raw.githubusercontent.com/hamzabinjehad/AdultContentBlocker/lists/manifest.json`
   returned HTTP 404. Make the list channel publicly readable and verify signed
   updates from a fresh account.
-- List licensing, a signed app updater, privacy/support pages, and signed
-  hardware validation remain open in PUBLISHING_PLAN.md.
+- List licensing, a signed app updater, hosted privacy/support pages, and
+  signed hardware validation remain open in PUBLISHING_PLAN.md. The policy text
+  is written ([PRIVACY.md](../PRIVACY.md), [SUPPORT.md](../SUPPORT.md)) but no
+  public URL is live yet.
 
 ## Prepare
 
@@ -30,7 +32,13 @@ Checked on 2026-10-01:
 3. Bump MARKETING_VERSION and CURRENT_PROJECT_VERSION for the app and filter
    in `macos/generate_xcodeproj.py`, then regenerate the Xcode project. Every
    update must increase the build number. Keep old signed installers and archives.
-4. Run the tests:
+   Change the same version in `versions.json`, run `python3 script/versions.py`,
+   and add the `CHANGELOG.md` entry. `python3 script/versions.py --check` must be
+   clean before the build.
+4. Confirm `PRIVACY.md`, `SUPPORT.md` and `docs/VERSIONS.md` describe this exact
+   build, and that the store privacy answers match `PRIVACY.md`. A signed build
+   must not link a policy that is still a repository-only draft.
+5. Run the tests:
 
 ```bash
 ./test.sh python seed extension release macos browser

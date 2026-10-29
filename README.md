@@ -97,7 +97,8 @@ Building, signing, the seed bundle, the extension, the Mac app, the native
 messaging host and lock lengths are covered in
 [development notes](docs/DEVELOPMENT.md). Maintainers releasing a build follow
 the [release runbook](docs/RELEASE_RUNBOOK.md) and record results in
-[release validation](docs/RELEASE_VALIDATION.md).
+[release validation](docs/RELEASE_VALIDATION.md); every change is summarized in
+the [changelog](CHANGELOG.md).
 
 ## Privacy
 

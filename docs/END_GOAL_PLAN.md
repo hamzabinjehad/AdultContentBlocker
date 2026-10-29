@@ -38,7 +38,7 @@ Each workstream below ends in a measurable gate. The scoreboard:
 
 ## Workstream A — sites and network (blocking)
 
-Already: signed 160k-domain seed and 982k published list, strict allowlist
+Already: signed 160k-domain core seed and 5.25M-domain full list, strict allowlist
 mode, SafeSearch, custom sites on every platform (this release), Mac socket
 filter, family DNS profiles, router guidance.
 

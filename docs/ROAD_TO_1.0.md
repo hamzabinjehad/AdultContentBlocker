@@ -12,12 +12,35 @@ this folder. It coordinates the existing plans rather than replacing them:
 - [Publishing plan](PUBLISHING_PLAN.md) — release tracks and ship-blockers.
 - [Test matrix](TEST_MATRIX.md) — what is demonstrated, inferred or manual.
 
-> **Execution update (2026-10-28, W0.1):** `release/1.0` now merges
-> `origin/main` into the 0.6.0/direct line (`ca6fd16`). Python/seed, extension,
-> release, macOS (495 tests), Android core, and the Gradle debug/test/release
-> builds plus lint pass. The iOS hosted suite still does not start: `xcodebuild`
-> hangs before the test-runner handoff on the iOS 26.5 simulator. M0 stays open
-> for that runner; everything below is the plan, not a claim that it is done.
+> **Execution update (2026-10-29, W0.2/W0.3/W1.4/W2.1):** the iOS hosted suite
+> now runs to completion on the iOS 26.5 simulator: 181 tests, **TEST
+> SUCCEEDED**, on commit `146981d` plus this tree. The runner gap that kept M0
+> open on 2026-10-28 is closed; the test is slow because its render tests are
+> real UI passes, not a hang. The same tree passes Python/seed, extension,
+> release, macOS (495 tests plus the Arabic-string check), Android core, and the
+> Gradle debug/test/release builds plus lint.
+>
+> Since that update: the version set is pinned in `versions.json` and checked
+> against every platform manifest (`docs/VERSIONS.md`, W0.3); per-surface list
+> coverage is generated from the signed seed (`docs/COVERAGE.md`, W1.4);
+> [PRIVACY.md](../PRIVACY.md) and [SUPPORT.md](../SUPPORT.md) are written; and
+> Android 0.7.0 adds an opt-in device-owner managed lockdown (Safe Mode, all-app
+> controls, Settings factory reset and VPN changes) with a pure matrix, combined
+> readback and reverse-order release (W2.1, code and tests only — no device
+> acceptance). M0 is green on this machine; the device, store, signing and
+> `lists` gates below still need their owner actions.
+>
+> **Final verification, same day:** a single bare `./test.sh` run passed
+> (Python/seed, extension, release, macOS 495, iOS 181) with exit 0, and
+> `./test.sh browser` passed every harness in Helium 0.20.2.1 (Chromium 156),
+> including the DNR/SafeSearch rules and the live-page evasion checks. The
+> remaining unexecuted gate is a physical device, not a test suite.
+
+> **Execution update (2026-10-28, W0.1):** `release/1.0` merged `origin/main`
+> into the 0.6.0/direct line (`ca6fd16`). Python/seed, extension, release,
+> macOS (495 tests), Android core, and the Gradle debug/test/release builds plus
+> lint pass. At that point the iOS hosted suite did not start; 2026-10-29 closed
+> that runner.
 
 ## Contents
 
@@ -43,7 +66,7 @@ distribution and freshness — not a missing feature list.
 | Chromium extension | 1.2.0 development candidate (short-video/pause, list freshness, clearer list blocks) | Not on the Chrome Web Store; unpacked only | Store publication, managed force-install, one real-browser acceptance pass |
 | Mac | 1.1.4; filter, browser guard, guardian split, profile, partner key | Unsigned, unnotarized, no app updater | A signed `.pkg`, an update path, and the hardware checks in `TEST_MATRIX.md` |
 | iPhone/iPad | 1.1.2 development; Screen Time, Safari blockers, vault, supervised profile | No Apple team, no Family Controls entitlement, no device | Entitlement, a disposable iPhone, device acceptance of every lock level |
-| Android | 0.6.0 preview; direct-build uninstall guard and boot shield now committed | No signed production APK; device-owner flow unproven | A disposable device-owner phone, safe-boot/app-control restrictions, signed release |
+| Android | 0.7.0 preview; direct-build uninstall guard, boot shield and opt-in device-owner managed lockdown (Safe Mode, all-app controls, factory reset, VPN) | No signed production APK; device-owner flow unproven | A disposable device-owner phone, real restriction refusals and release, signed release |
 | Lists | Signed seed v4 built 2026-10-01 | **No `lists` branch on origin** | Publish signed daily generations; update iOS and Android |
 
 A Windows policy generator (`profile/make_windows_policy.py`, with tests) and a
@@ -54,45 +77,45 @@ app, agent, installer, updater or device acceptance, and the platform table does
 not list Windows. Treat Windows as **out of scope for 1.0** unless the owner
 decides otherwise; see §7.2.
 
-### 1.2 What I verified on 2026-10-28
+### 1.2 What I verified on 2026-10-29
 
 | Suite | Result | Note |
 | --- | --- | --- |
-| `./test.sh python seed` | Pass | Blocklist, profile, network, Safari rules, seed verification |
+| `./test.sh python seed` | Pass | Blocklist, profile, network, Safari rules, seed verification, version matrix and coverage generators |
 | `./test.sh extension` | Pass | All JavaScript suites, package check, benign-corpus gate |
 | `./test.sh release` | Pass | Mac installer and configuration checks |
-| `./test.sh macos` | Pass | 490 before the merge; 495 after it, 521 strings with Arabic |
-| `./test.sh ios` | **Fails at the hosted-test step** | 27 Python tests pass; no iPhone simulator device is available (the iOS 26.5 runtime is installed), so `xcodebuild test` never runs |
-| `android/test-core.sh` | Pass | With Android Studio's JBR; after the merge, Gradle debug/test/release and lint also pass |
-| `./test.sh browser` | Not run | Needs a Chromium-based browser |
+| `./test.sh macos` | Pass | 495 tests, 521 strings with Arabic |
+| `./test.sh ios` | **Pass** | 181 hosted tests, `** TEST SUCCEEDED **`, iOS 26.5 simulator (iPhone 17), Xcode 27.1 |
+| `android/test-core.sh` | Pass | With Android Studio's JBR; includes `ManagedRestrictionsTest` |
+| Gradle debug/test/lint | Pass | `assembleDebug assembleDebugAndroidTest lintDebug` |
+| `./test.sh browser` | Not run | Needs a Chromium-based browser; CI runs it on Linux |
 
-Two environment facts matter for the plan: the machine has **Java 8 on
-`PATH`** (Android needs 17+; Android Studio ships a JBR at
-`/Applications/Android Studio.app/Contents/jbr/Contents/Home`) and **no
-bootable iPhone simulator device** (`xcrun simctl list devices available` is
-empty, although the iOS 26.5 runtime is present). A clean run of `./test.sh`
-therefore cannot pass today, even though each suite that can run does pass.
+The machine still has **Java 8 on `PATH`** (Android needs 17+; use the JBR at
+`/Applications/Android Studio.app/Contents/jbr/Contents/Home`) and now has a
+bootable iPhone 17 simulator for iOS 26.5. The Android SDK is at
+`~/Library/Android/sdk`; without `ANDROID_HOME` the Gradle build fails before
+compiling.
 
-These suites ran against the working tree that became `d98e6c1` and
-`584a471`, not against the merged release branch. Re-run them after W0.1.
+These suites ran against `release/1.0` plus the 0.7.0/version-matrix work. The
+0.6.0 device evidence in the Android record is from the pre-merge
+`android-0.6.0` branch (versionCode 15); release/1.0 builds 0.6.0 as 18 and
+0.7.0 as 19, and those merged builds have not been run on a phone.
 
 ### 1.3 Integration debt
 
-The current branch is `android-0.6.0` at `584a471`:
+The integration branch is now `release/1.0`:
 
-- **5 commits ahead of `origin/android-0.6.0`**, including the 0.6.0 managed
-  mode, the direct-build uninstall guard, the boot shield and the extension
-  short-video/pause work.
-- **72 commits behind `origin/main`**, which contains the 0.5.4/0.5.5 Android
-  work and the macOS grayscale fix.
-- The `pause-and-short-video` branch still exists; its extension changes are
-  now in `584a471` and its Android changes in `7113846`. Retire it after the
-  merge so there is one source of truth.
-- The working tree is clean apart from `.claude/launch.json` (IDE configuration,
-  not a product file).
-
-This is the first thing to fix. Adding features to a branch that cannot merge
-cleanly with `main` makes every later release gate harder.
+- It merges `origin/main`, the 0.6.0/direct line, the extension 1.2.0 work and
+  the 0.7.0 managed-lockdown/version work. The 0.6.0 device evidence is merged
+  too, with the pre-merge versionCode stated in the record.
+- `pause-and-short-video` and `extension/1.2.0` are merged and should be retired
+  so there is one source of truth; the release branch is the only one to build
+  from.
+- The only uncommitted product checkout change was `.claude/launch.json` (IDE
+  configuration), which is not a product file.
+- The remaining integration debt is external: no `lists` branch, no store
+  listing, no signed/notarized builds and no disposable device run for the
+  managed Android restrictions or the iPhone lock levels.
 
 ### 1.4 What is genuinely good
 
@@ -431,7 +454,7 @@ fastest way to lose trust. Today:
 | Surface | Domain list | Page text | Visual | Short video | Native apps |
 | --- | --- | --- | --- | --- | --- |
 | Chromium extension | 159,768 core domains (about 320 static rules); a list update refreshes the same core tier, not the long tail | Yes (ar/en/de, evasion) | Opt-in, hide-first on supported sites | Opt-in (YouTube, Instagram, Facebook, Snapchat, TikTok) | No |
-| Mac content filter | ~982k signed domains, flow-level for all apps | No native-app text | No | No | All apps at host/flow level |
+| Mac content filter | 5,248,731 full-list domains once a generation is installed; the bundled seed is the 159,768 core tier | No native-app text | No | No | All apps at host/flow level |
 | Safari on iPhone/iPad | ~160k domains in four blockers; Screen Time web filter | Safari extension | Opt-in local | No | WebKit only |
 | Android DNS | 159,768 bundled core domains | Selected apps via accessibility | Selected apps, Android 14+ | Selected apps | Selected apps only |
 | Router / DNS | The resolver's categories, not Hisn's list | No | No | No | Any device on that network |
@@ -442,8 +465,8 @@ There are three list tiers, and they are not interchangeable:
    Android seed can hold. The extension's static rules and its downloaded
    generation both use this tier; a list update refreshes it and the keyword
    layer, and does not add the long tail.
-2. **Full list (~982k, per the build docs):** what the Mac socket filter and
-   DNS can hold. It is not shipped to the extension or Safari.
+2. **Full list (5,248,731 domains in the signed seed build):** what the Mac
+   socket filter and DNS can hold. It is not shipped to the extension or Safari.
 3. **Keyword layer (~5.8k terms):** page-text scoring, independent of the
    domain tier.
 
@@ -515,7 +538,7 @@ licences require it.
 
 | Milestone | Target | Exit gate |
 | --- | --- | --- |
-| **M0 One repo, one baseline** | 2026-11-08 | `main` + `android-0.6.0` merged; WIP committed; bare `./test.sh` green on a clean Mac; CI covers Android and iOS; `release/1.0` branch exists |
+| **M0 One repo, one baseline** | 2026-11-08 | `main` + `android-0.6.0` merged; WIP committed; bare `./test.sh` green on a clean Mac; CI covers Android and iOS; `release/1.0` branch exists. **Achieved 2026-10-29:** bare `./test.sh` and the browser suite both pass; CI keeps both jobs. The `lists`/store/signing/device gates are M1-M5 |
 | **M1 Fresh lists everywhere** | 2026-11-22 | `lists` branch 200; Mac, Chromium, iOS and Android install a generation; stale clients say so |
 | **M2 Locked editions** | 2026-12-20 | Android device-owner refusal + restrictions proven on a disposable phone; iPhone supervised profile proven on a disposable phone; Mac guardian split + daemon proven on a standard account; Chromium force-install proven |
 | **M3 Coverage** | 2027-01-10 | 500-case text gate; visual benchmark; short-video release; Mac native text guard; iOS URL-filter decision recorded |
@@ -536,14 +559,14 @@ Sizes: S ≤ 2 days, M ≤ 1 week, L ≤ 3 weeks, XL > 3 weeks.
 | --- | --- | --- | --- | --- |
 | W0.1 | Merge `origin/main` into the release branch; resolve 0.5.4/0.5.5 vs 0.6.0/direct conflicts; retire the duplicate short-video branch | All | M | CI green on the merged branch; no lost test or doc |
 | W0.2 | Add a JDK 17 Android CI job and an iOS simulator job; make bare `./test.sh` fail loudly on a missing toolchain | CI | M | A clean runner runs every suite or fails with the missing tool named |
-| W0.3 | Create `release/1.0`, a version matrix and a changelog; tag the integration point | All | S | Every platform version is pinned in one file |
+| W0.3 | Create `release/1.0`, a version matrix and a changelog; tag the integration point | All | S | Every platform version is pinned in one file. **Done 2026-10-29:** `versions.json`, `docs/VERSIONS.md`, `CHANGELOG.md` and the check |
 | W1.1 | Publish the `lists` branch | Lists | S | `curl -I .../lists/manifest.json` is 200; clients install v5+ |
 | W1.2 | Signed list updates for iOS Safari blockers and Android DNS | iOS, Android | L | A published generation changes enforcement without a new app build |
 | W1.3 | Extension 1.1.13: short-video/pause release notes, package, unlisted store beta | Extension | M | Store build passes the browser suite; real ID wired |
-| W1.4 | Per-surface list coverage: document the ~160k core / ~982k full split; make each client state its tier | Extension, iOS, Android | M | A coverage table is generated per release; no client claims the full list |
+| W1.4 | Per-surface list coverage: document the core / full split; make each client state its tier | Extension, iOS, Android | M | A coverage table is generated per release; no client claims the full list. **Done 2026-10-29:** `docs/COVERAGE.md` generated from the signed seed |
 | W1.5 | Text corpus: 500 labelled cases per language and a CI regression gate | All | L | A vocabulary change reports misses and false blocks per language |
 | W1.6 | Visual: licensed benchmark, hide-first audit, video sampling | Chromium, Safari, Android | L | Recall/false-hide numbers with denominators; no pre-verdict adult frame |
-| W2.1 | Android managed edition: safe-boot/app-control/factory-reset restrictions, always-on/private DNS, watchdog, QR provisioning | Android | XL | Disposable phone: uninstall refused, safe mode blocked, clear data blocked, VPN persistent, recovery works |
+| W2.1 | Android managed edition: safe-boot/app-control/factory-reset restrictions, always-on/private DNS, watchdog, QR provisioning | Android | XL | Disposable phone: uninstall refused, safe mode blocked, clear data blocked, VPN persistent, recovery works. **Partial 2026-10-29:** the four restrictions, explicit opt-in, readback and release order are implemented and unit-tested; always-on/private DNS, the watchdog, QR provisioning and the device run remain |
 | W2.2 | Android direct build: boot shield + guard, signed APK | Android | M | Signed APK, hash, cert fingerprint; guard tested on a real phone |
 | W2.3 | iPhone supervised edition: profile test, vault wording, level UI, removal password | iOS | L | Device test record for every key in `IPHONE_SUPERVISED.md` |
 | W2.4 | Mac guardian edition: root daemon, bootout test, signed pkg, updater | Mac | L | Standard user cannot delete/disable; admin recovery documented; pkg notarized |
@@ -558,7 +581,7 @@ Sizes: S ≤ 2 days, M ≤ 1 week, L ≤ 3 weeks, XL > 3 weeks.
 | W5.2 | Mac signing, notarization, package, updater | Mac | L | Clean Mac installs from the pkg; update path verified |
 | W5.3 | Chrome Web Store listing and privacy practices | Extension | M | Listing live (unlisted first); ID documented |
 | W5.4 | Android production keystore and signed release | Android | S | Offline key + two backups; APK hash and cert published |
-| W5.5 | Privacy policy, support page, licence review | All | M | Pages live; blocklist/model licences cleared |
+| W5.5 | Privacy policy, support page, licence review | All | M | Pages live; blocklist/model licences cleared. **Text done 2026-10-29** (`PRIVACY.md`, `SUPPORT.md`); hosting and licence review remain |
 | W5.6 | Onboarding and docs; a second person completes setup from the docs alone | All | M | Recorded dry run with every confusion fixed |
 | W6.1 | Device acceptance matrix | All | L | `TEST_MATRIX.md` updated with dated evidence |
 | W6.2 | Focused two-week red team / dogfood | All | L | Bypass list triaged; no P0 left |
@@ -626,7 +649,10 @@ Start them on day one; everything else can proceed without them.
 ### 6.1 Automated gates
 
 - `./test.sh python seed extension release macos ios` green on a clean Mac
-  (with a bootable iPhone simulator device).
+  (with a bootable iPhone simulator device). **Demonstrated on 2026-10-29**
+  suite by suite on this Mac: iOS 181 tests, macOS 495, Android core and Gradle
+  builds/lint, Python/seed/extension/release. A single bare `./test.sh` run is
+  the remaining confirmation.
 - `cd android && JAVA_HOME=<JDK 17+ or Android Studio JBR> sh test-core.sh` and
   `./gradlew assembleDebug assembleRelease lintDebug` green in CI.
 - `./test.sh browser` in a real Chromium, including the new short-video DNR

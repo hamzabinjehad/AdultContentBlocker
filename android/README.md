@@ -27,7 +27,7 @@ lockdown**. While a commitment or **Keep Hisn installed** is holding the app,
 Hisn applies and reads back four Android restrictions: no Safe Mode
 (`no_safe_boot`), no app uninstall/disable/clear-data/force-stop for every app
 (`no_apps_control`), no Settings factory reset (`no_factory_reset`), and no VPN
-or private-DNS changes (`no_config_vpn`). App controls is deliberately broad and
+configuration changes (`no_config_vpn`). App controls is deliberately broad and
 is a separate opt-in with a disclosure. The status screen shows ON, Off, idle or
 out of sync from Android's own readback; release clears the restrictions in
 reverse order, then the uninstall block, then device ownership. Version 0.7.0,

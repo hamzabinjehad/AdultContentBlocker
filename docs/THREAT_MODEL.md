@@ -29,7 +29,7 @@ Coverage is the bigger gap in practice, and it is the one most tools ignore.
 
 | Route | Status | Handled by |
 |---|---|---|
-| Known adult domain | Closed | 982k-domain signed blocklist, all layers |
+| Known adult domain | Closed | 5.25M-domain signed full list, 160k core tier in the clients, all layers |
 | New domain, registered today | **Open in blocklist mode** | Strict allowlist mode |
 | Mirrors, proxies, "unblock" sites | **Partly open** | Strict mode; upstream lists chase these forever |
 | Adult content inside X, Reddit, Telegram | **Open in blocklist mode** | Strict mode only |

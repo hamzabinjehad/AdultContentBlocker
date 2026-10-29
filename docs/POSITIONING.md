@@ -45,7 +45,7 @@ subset. Four gaps are the reason to exist:
    catches those.
 
 3. **Transparency and tuning.** Apple will not say what it blocks or let you
-   change it. This list is auditable (982k domains from five sources, signed)
+   change it. This list is auditable (5.25M domains from ten sources, signed)
    and the user adds their own words and domains and tunes sensitivity.
 
 4. **The Mac non-Safari gap.** On **Mac specifically** Apple's web filter is

@@ -5,6 +5,12 @@ production build, and not a claim that the connected owner's phone is
 undeletable. No device-owner appointment, factory reset, account removal or
 administrative policy was applied to that phone.
 
+> **Branch note:** this record was cut from `android-0.6.0` before the 0.5.5
+> merge, so its tested APK is versionCode 15. `release/1.0` builds 0.6.0 as
+> versionCode 18; the merged build has not been run on a phone. 0.7.0
+> (versionCode 19) adds the managed lockdown and is in
+> [ANDROID_0.7.0.md](ANDROID_0.7.0.md).
+
 ## What changed
 
 - Add a pure `UninstallProtection` state model for the device-owner uninstall

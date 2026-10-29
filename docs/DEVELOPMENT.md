@@ -140,6 +140,24 @@ normal blocklist mode and are denied in strict mode; already-open flows are not
 re-evaluated by the current implementation. Verify the supported VPN/proxy and
 essential-service cases on a signed installed Mac before relying on them.
 
+## Versioning and release notes
+
+A version lives in the platform's own manifest: `extension/manifest.json`,
+`android/app/build.gradle`, or the Xcode target's `MARKETING_VERSION` and
+`CURRENT_PROJECT_VERSION`. `versions.json` pins the expected set and
+`docs/VERSIONS.md` is generated from it:
+
+```bash
+python3 script/versions.py           # regenerate the matrix
+python3 script/versions.py --check   # what ./test.sh python runs
+```
+
+A platform bump without a matching `versions.json` change fails the check, and
+an Xcode project whose targets disagree on a version is refused. Add the entry
+to `CHANGELOG.md` at the same time; a version bump without release notes is an
+unfinished release. The list tiers and their per-client counts are regenerated
+from the signed seed with `python3 script/coverage.py` and checked the same way.
+
 ## Building
 
 ### Blocklist
@@ -151,11 +169,13 @@ python3 build.py --out ../dist --sign-key ../keys/blocklist_ed25519.pem
 python3 keys.py verify --dist ../dist --pub ../keys/blocklist_ed25519.pub
 ```
 
-Produces ~982k domains from the upstream sources in under a minute.
-`domains_core.txt` (~148k, high-confidence sources only) is what the browser
-extension ships; the full list goes to the network filter, which has no rule
-budget. `terms.json`, the keyword layer, is compiled from `blocklist/terms/`
-in the same build and covered by the same signature.
+Produces the full 5,248,731-domain list from the upstream sources (the bundled
+core tier is 159,768). `domains_core.txt` (159,768 high-confidence domains,
+collapsed across subdomains) is what the browser extension, Safari blockers and
+Android seed ship; the full list goes to the Mac filter and network DNS, which
+have no rule budget. `terms.json`, the keyword layer, is compiled from
+`blocklist/terms/` in the same build and covered by the same signature. The
+checked split and the per-client tier are in [COVERAGE.md](COVERAGE.md).
 
 For CI, put the PEM in the `BLOCKLIST_SIGNING_KEY` secret of the `list-signing`
 environment, which admits `main` only (docs/SETUP.md). The workflow runs the

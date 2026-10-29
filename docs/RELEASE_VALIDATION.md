@@ -16,6 +16,8 @@ passed only after it was actually performed.
 
 | Check | Result | Evidence / Issue |
 | --- | --- | --- |
+| Version matrix and changelog (`script/versions.py --check`) | Pending | |
+| Privacy/support pages match the build and are live | Pending | |
 | Automated tests | Pending | |
 | Intel and Apple silicon package build | Pending | |
 | App, filter, and bridge signature validation | Pending | |

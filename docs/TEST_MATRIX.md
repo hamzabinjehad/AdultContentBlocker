@@ -23,12 +23,18 @@ no automation, and it must be run on a real Mac by a person.
 | Generated evasion/encoded-query rules are the output of the reviewed tables and signed vocabulary | `--check` generators | `evasion.py --check`, `encoded_queries.py --check`, `test_evasion.py`, `test_encoded_queries.py` |
 | The service worker stays split into focused modules without import cycles | source-shape assertions | `worker-layout.test.js` |
 | Same scanner scenarios in a real Chromium DOM | harness page, headless Chrome in CI | `test/browser/run.sh` |
+| Extension scanner, signature page, settings, popup, block page, DNR/SafeSearch and live-page evasion in a real Chromium | Helium 0.20.2.1 (Chromium 156) on 2026-10-29, every harness PASS | `./test.sh browser` |
 | A generation is installed whole or not at all (browser) | planner refusals | `generation.test.js` |
 | Every shipped artifact matches the signed seed manifest and the sources | `seed.py verify` | `test_seed.py`, CI |
 | Clients download from the same place; requested artifacts are built | config pins | `test_build.py` |
 | Known adult domains blocked, critical infrastructure not blocked, in a real build | built `dist/` | `test_build.py` (CI builds first) |
 | Every test class is discovered | `unittest discover` in `test.sh` | `test.sh python` |
+| The default suite runs end to end on this Mac | `./test.sh` (python, seed, extension, release, macOS, iOS) on 2026-10-29, exit 0 | `./test.sh` |
+| The pinned version set matches every platform manifest, and the coverage page matches the signed seed/ruleset | `versions.py --check`, `coverage.py --check` | `test_versions.py`, `test_coverage.py`, `test.sh python` |
+| iOS/iPadOS app, Safari blockers and activity monitor build and run their hosted tests | iOS 26.5 simulator (iPhone 17), Xcode 27.1, `** TEST SUCCEEDED **` on 2026-10-29 | `./test.sh ios` (181 tests) |
+| macOS app, filter and strings | Xcode test + Arabic export on 2026-10-29 | `./test.sh release macos` (495 tests) |
 | Android managed-uninstall state, commitment guard, readback mismatch and release guard | pure matrix + isolated preference fixture | `android/test-core.sh`, `CoreDeviceTestRunner` on the 0.6.0-direct Samsung build |
+| Android managed lockdown: opt-in matrix, exact held set, missing/extra detection, apply/release order and combined state | pure `ManagedRestrictions` + `UninstallProtection` + settings round trip | `android/test-core.sh` (`ManagedRestrictionsTest`, `UninstallProtectionTest`, `SavedSettingsTest`) |
 | Android Arabic/Persian/Urdu folds, custom-rule parity, glued phrase aliases and evasion recovery | shared fold table, actual-seed fixtures and boundary samples | `android/test-core.sh` |
 
 ## Manual (procedures exist; must be run on hardware)
@@ -48,6 +54,9 @@ no automation, and it must be run on a real Mac by a person.
 | Missing components | delete user native-host manifest → extension strict after 5 min; quit app → filter keeps enforcing | inferred; manual |
 | Connections open before a lock starts | browser: open tabs are navigated to the block page on rule change (`tabsToBlock`); **Mac: existing sockets are not closed** — a stream already playing continues until it reconnects | browser demonstrated in unit tests; Mac limitation documented |
 | Android device-owner uninstall block | disposable device: provision device owner, enable Keep Hisn installed, attempt uninstall; then test commitment-expiry reconciliation, release and removal | **not yet run** — the connected Samsung is not device owner; no blocked state claimed |
+| Android managed lockdown | disposable device owner: enable Keep + Managed lockdown; try uninstall, Safe Mode, Settings erase and a VPN change; read back with `test-live-managed-status.py --expect-lockdown`; then release and verify the four restrictions are gone | **not yet run** — code, lint and pure tests only; no provisioned device |
+| iPhone/iPad lock levels | disposable device: vault seal/reveal, Screen Time readback, supervised profile removal password, app deletion refusal | **not yet run** — simulator tests only; no physical device or entitlement |
+| Second-person onboarding | a non-developer follows `docs/SETUP.md` on a clean Mac and iPhone/Android | **not yet run** |
 
 ## Isolated environment for disruptive checks
 

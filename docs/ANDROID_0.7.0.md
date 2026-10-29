@@ -20,7 +20,7 @@ lockdown**.
   | Safe Mode | `no_safe_boot` | Safe Mode from the power menu and the hardware-key prompt |
   | App controls | `no_apps_control` | Uninstall, disable, clear-data and force-stop for **every** app |
   | Factory reset | `no_factory_reset` | The Settings erase flow (recovery mode still works) |
-  | VPN configuration | `no_config_vpn` | Adding, removing or changing VPN and private-DNS configuration |
+  | VPN configuration | `no_config_vpn` | Adding, removing or changing VPN configuration |
 
 - **App controls is deliberately broad.** It changes what the person can do to
   every app, not only Hisn. The switch is off by default, appears only for a
@@ -71,6 +71,9 @@ factory-reset, account-free phone. Do not provision the owner's daily phone.
   supported setting; it is not a default.
 - It does not set always-on VPN or global Private DNS. The DNS-only `VpnService`
   is not made always-on; the network decision in the 1.0 plan is still open.
+- `no_config_vpn` is not a separate Private DNS lock. Hisn does not apply
+  `no_config_private_dns` (Android 10+, API 29), so a person may still change Private DNS
+  directly on versions and OEM builds that expose it.
 - `no_config_vpn` does not cover every OEM's renamed network screen, a
   per-app VPN that was already configured, or an OS-level private-DNS path that
   the platform does not route through the restriction.

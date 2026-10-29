@@ -12,7 +12,7 @@ bump without an entry here is an unfinished release.
 - **Android 0.7.0 (versionCode 19): optional managed lockdown.** On a
   device-owner phone, a second explicit opt-in applies and reads back four
   Android restrictions: Safe Mode, app uninstall/disable/clear-data/force-stop
-  for every app, the Settings factory reset, and VPN/private-DNS changes. Both
+  for every app, the Settings factory reset and VPN configuration changes. Both
   managed choices are saved in one write; release clears restrictions in reverse
   order, then the uninstall block, then device ownership. Status shows ON, Off,
   idle or out of sync from Android's own readback. The broad app-controls
@@ -43,6 +43,11 @@ bump without an entry here is an unfinished release.
   (181 tests, `** TEST SUCCEEDED **`), closing the M0 runner gap recorded in the
   1.0 plan. The suite is slow because the render tests are real UI passes; that
   is time, not a hang.
+- A single bare `./test.sh` run passes end to end, and `./test.sh browser`
+  passes every harness in Helium 0.20.2.1 (Chromium 156), including the DNR and
+  SafeSearch rules and the live-page evasion checks. Android
+  `assembleDebug assembleDebugAndroidTest lintDebug` passes with the final
+  strings.
 - The macOS suite is green at 495 tests plus the Arabic-string check; Python,
   seed, extension, release and Android core suites are green on the same tree.
 

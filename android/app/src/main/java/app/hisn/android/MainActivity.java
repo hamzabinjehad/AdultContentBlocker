@@ -1077,7 +1077,7 @@ public final class MainActivity extends Activity {
         if (status.deviceOwner || screenGuard) {
             builder.setPositiveButton(R.string.uninstall_apply,
                     (dialog, which) -> applyUninstallChoice(keep.isChecked(),
-                            status.deviceOwner && lockdown.isChecked()));
+                            status.deviceOwner ? lockdown.isChecked() : settings.managedLockdown()));
             if (status.mayRelease()) {
                 builder.setNeutralButton(R.string.uninstall_release,
                         (dialog, which) -> confirmReleaseManagedMode());
