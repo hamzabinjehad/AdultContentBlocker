@@ -504,8 +504,9 @@ adb shell am instrument --user 0 -w app.hisn.android.test/app.hisn.android.CoreD
 
 This test checks the seeds, Arabic rules, word boundaries, a local DNS block,
 saved settings, built-in opt-in, commitment and uninstall-guard checks in
-isolated test preferences without enabling services. To read the managed state
-from a connected debug build without changing it, run:
+isolated test preferences without enabling services. It passed on the Samsung
+`0.6.0-direct` build on 2026-10-28. To read the managed state from a connected
+debug build without changing it, run:
 
 ```sh
 python3 test-live-managed-status.py --serial SERIAL
@@ -517,7 +518,9 @@ provisioned as Hisn's device owner. It now also checks the uninstall keep switch
 guard, and that a non-owner build reports no protection and performs no platform
 change. Actual VPN routing, accessibility interventions, admin deactivation
 behavior, device-owner blocked-uninstall behavior and lifecycle need separate
-controlled device tests after approving the corresponding consent screens. On 2026-10-20 the device runner
+controlled device tests after approving the corresponding consent screens. On
+2026-10-28 the 0.6.0-direct runner passed the uninstall-guard checks and the
+read-only managed-status check reported the phone as not managed. On 2026-10-20 the device runner
 passed on the Samsung with 159,762 bundled domains, Arabic/boundary matching,
 local DNS blocks, Unicode persistence/rejection, long-text sampling and
 commitment checks, verified adult-term loading, custom-rule independence,

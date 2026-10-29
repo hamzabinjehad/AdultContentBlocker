@@ -172,11 +172,12 @@ profile would protect only that profile. Google Play distribution of a device
 policy controller needs its own declarations and review; this preview is for
 sideloaded, owner-controlled devices.
 
-The connected Samsung used for testing on 2026-10-26 is **not** Hisn's device
-owner (Samsung Secure Folder is a profile owner in user 150). No device-owner
-appointment, factory reset, account removal or administrative policy was applied
-to it. The 0.6.0 build therefore reports managed protection as unavailable on
-that phone, and Android can still uninstall it. Testing the actual blocked state
+The connected Samsung used for testing on 2026-10-28 is **not** Hisn's device
+owner (Samsung Secure Folder is a profile owner in user 150). The installed
+`0.6.0-direct` build reports managed protection as unavailable; the read-only
+device check returned `deviceOwner=false`, `uninstallBlocked=false`, state
+`UNAVAILABLE`, and Android can still uninstall it. No device-owner appointment,
+factory reset, account removal or administrative policy was applied to it. Testing the actual blocked state
 requires a disposable, freshly provisioned device or emulator.
 
 ## Distribution and product scope

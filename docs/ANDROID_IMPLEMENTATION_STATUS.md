@@ -119,19 +119,25 @@ packets correctly leave the session DEGRADED; a route pass does not erase them.
 Physical Wi-Fi/mobile handover and large native UDP-to-TCP fallback remain
 unverified. See [the complete record](ANDROID_0.4.2.md) for the APK identity.
 
-## 0.6.0 managed-uninstall verification boundary (2026-10-26)
+## 0.6.0 managed-uninstall verification boundary (2026-10-28)
 
-The 0.6.0 source adds device-owner-only uninstall blocking, but its device
-acceptance is not complete. Core tests, debug/test APKs and lint pass. The
-connected Samsung is not Hisn's device owner (Samsung Secure Folder is a profile
-owner in user 150), so the build must report managed protection as unavailable
-there and leave Android's uninstall flow unchanged. The device disconnected
-before the 0.6.0 debug/test APKs could be installed, so no 0.6.0 device runner or
-blocked-uninstall result exists yet. A disposable, freshly provisioned device
-owner is required to exercise the real refusal, expiry reconciliation and
-release path. Do not provision the owner's daily phone and do not describe the
-ordinary build as undeletable. See [0.6.0](ANDROID_0.6.0.md) and
-[tamper scope](ANDROID_TAMPER_RESISTANCE.md).
+The 0.6.0 source adds device-owner-only uninstall blocking. On 2026-10-28 the
+current `0.6.0-direct` debug build (version code 15) was installed on the
+Samsung SM-G990B2 (Android 16); the pulled device APK matched the build output
+SHA-256 `f674d7b375ef34b448382226f424b361b4da0934400234d998166416553552b7`.
+The test APK `62de24512cdd81c42d907565ff041c0d004d7b91e7f052a5a9866ff4d5f23021`
+was installed and `CoreDeviceTestRunner` passed, including the uninstall-guard
+checks. The read-only `test-live-managed-status.py` also passed and reported
+`deviceOwner=false`, `uninstallBlocked=false`, keep switch on, state
+`UNAVAILABLE`: the ordinary install is honestly not managed.
+
+Hisn is still **not** this phone's device owner; Samsung Secure Folder owns a
+managed profile for user 150. No factory reset, account removal, device-owner
+appointment or administrative policy was applied. An actual blocked uninstall,
+commitment-expiry reconciliation and release path still require a disposable,
+freshly provisioned device owner. Do not provision the owner's daily phone and
+do not describe the ordinary install as undeletable. See
+[0.6.0](ANDROID_0.6.0.md) and [tamper scope](ANDROID_TAMPER_RESISTANCE.md).
 
 ## Next acceptance gates
 

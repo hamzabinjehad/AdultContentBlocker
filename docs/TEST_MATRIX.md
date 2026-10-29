@@ -28,7 +28,7 @@ no automation, and it must be run on a real Mac by a person.
 | Clients download from the same place; requested artifacts are built | config pins | `test_build.py` |
 | Known adult domains blocked, critical infrastructure not blocked, in a real build | built `dist/` | `test_build.py` (CI builds first) |
 | Every test class is discovered | `unittest discover` in `test.sh` | `test.sh python` |
-| Android managed-uninstall state, commitment guard, readback mismatch and release guard | pure matrix + isolated preference fixture | `android/test-core.sh`, `CoreDeviceTestRunner` (device run pending) |
+| Android managed-uninstall state, commitment guard, readback mismatch and release guard | pure matrix + isolated preference fixture | `android/test-core.sh`, `CoreDeviceTestRunner` on the 0.6.0-direct Samsung build |
 | Android Arabic/Persian/Urdu folds, custom-rule parity, glued phrase aliases and evasion recovery | shared fold table, actual-seed fixtures and boundary samples | `android/test-core.sh` |
 
 ## Manual (procedures exist; must be run on hardware)
