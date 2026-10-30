@@ -37,7 +37,7 @@ no automation, and it must be run on a real Mac by a person.
 | Apple apps bundle complete, current third-party notices | generated files + Swift bundle reads | `script/test_notices.py`, `testBundledThirdPartyNoticesArePresent` |
 | iOS signed Safari list age and 90-day warning | signed `built_at` in metadata + Swift age/clamp/boundary tests | `ios/test_rules.py`, `testSeedFreshness…` |
 | Supervised iOS profile optional hardening keys are opt-in and written only when asked | profile generator tests for default absence and explicit values | `profile/test_make_ios_profile.py`, `test.sh python` |
-| macOS app, filter and strings | Xcode test + Arabic export on 2026-10-30 | `./test.sh release macos` (497 tests) |
+| macOS app, filter and strings | Xcode test + Arabic export on 2026-10-30 | `./test.sh release macos` (498 tests) |
 | Android managed-uninstall state, commitment guard, readback mismatch and release guard | pure matrix + isolated preference fixture | `android/test-core.sh`, `CoreDeviceTestRunner` on the 0.6.0-direct Samsung build |
 | Android managed lockdown: opt-in matrix, API-29 Private DNS, exact held set, missing/extra detection, apply/release order and combined state | pure `ManagedRestrictions` + `UninstallProtection` + settings round trip | `android/test-core.sh` (`ManagedRestrictionsTest`, `UninstallProtectionTest`, `SavedSettingsTest`) |
 | Android layer watchdog: expected/running sets, lost layers, stable signature and 12-hour notification cadence | pure `LayerWatch` decisions | `android/test-core.sh` (`LayerWatchTest`) |

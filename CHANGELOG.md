@@ -45,6 +45,9 @@ bump without an entry here is an unfinished release.
 - The package `postinstall` and `macos/install_update.sh` install the daemon and
   its config; the release package carries the daemon files;
   `macos/install.sh --remove-agent` removes the daemon as well as the agent.
+- **Guardian status is visible.** Details shows whether the root daemon is
+  installed and the last local action (agent restored, reload failed, account
+  missing or config unreadable).
 - **Details shows list freshness.** The last update time, a warning after seven
   days without an update, and a failed-update line; the previous signed
   generation remains enforced.
@@ -61,7 +64,7 @@ bump without an entry here is an unfinished release.
   `release/test_guardian.py` (9 tests: plist shape, config parsing, refused
   accounts, logged-out quiet, missing-agent reload, failed reload, healthy agent,
   installer wiring, shell syntax).
-- `./test.sh macos` passes (497 tests plus the Arabic-string check, 527 strings).
+- `./test.sh macos` passes (498 tests plus the Arabic-string check, 536 strings).
 - `release.sh --smoke` builds the unsigned package; its scripts payload contains
   the daemon script, plist and helper. Nothing was installed.
 - No root install, standard-account bootout, reboot or notarized-package result

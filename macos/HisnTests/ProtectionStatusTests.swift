@@ -316,4 +316,24 @@ final class LockStatusTests: XCTestCase {
         XCTAssertFalse(text.contains("engine bundle legal notice"))
     }
 
+    func testGuardianLogStatusReadsTheLastActionWithoutClaimingMore() throws {
+        let folder = FileManager.default.temporaryDirectory
+            .appendingPathComponent("hisn-guardian-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let plist = folder.appendingPathComponent("app.hisn.guardian.plist")
+        let log = folder.appendingPathComponent("guardian.log")
+        FileManager.default.createFile(atPath: plist.path, contents: Data())
+        try "2026-10-30T12:00:00Z agent-reloaded user=someone\n".write(to: log, atomically: true, encoding: .utf8)
+        let status = GuardianLogStatus.read(plistURL: plist, logURL: log)
+        XCTAssertTrue(status.installed)
+        XCTAssertEqual(status.action, "agent-reloaded")
+        XCTAssertNotNil(status.at)
+        XCTAssertFalse(GuardianLogStatus.label(for: "agent-reloaded").isEmpty)
+        XCTAssertFalse(GuardianLogStatus.label(for: "unknown-action").isEmpty)
+        let missing = GuardianLogStatus.read(plistURL: folder.appendingPathComponent("missing.plist"), logURL: log)
+        XCTAssertFalse(missing.installed)
+        XCTAssertNil(missing.action)
+    }
+
 }

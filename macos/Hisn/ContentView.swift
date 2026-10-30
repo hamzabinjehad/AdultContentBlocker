@@ -2309,12 +2309,21 @@ private struct DetailsSection: View {
                         .formatted(date: .abbreviated, time: .shortened) ?? String(localized: "never"))
                 row("App version",
                     value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—")
+                row("Guardian daemon",
+                    value: guardian.installed ? String(localized: "Installed") : String(localized: "Not installed"))
+                if let action = guardian.action {
+                    let when = guardian.at?.formatted(date: .abbreviated, time: .shortened) ?? ""
+                    row("Last guardian event",
+                        value: GuardianLogStatus.label(for: action) + (when.isEmpty ? "" : " · " + when))
+                }
             }
             .font(.callout)
             Button("Licenses and sources") { showingNotices = true }
         }
         .sheet(isPresented: $showingNotices) { MacNoticesView() }
     }
+
+    private var guardian: GuardianLogStatus { .read() }
 
     private var lastListUpdate: Date? {
         defaults?.object(forKey: "lastListUpdate") as? Date

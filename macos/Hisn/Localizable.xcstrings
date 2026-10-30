@@ -2876,6 +2876,96 @@
         }
       }
     },
+    "Guardian daemon" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خدمة الحراسة"
+          }
+        }
+      }
+    },
+    "Installed" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مثبّتة"
+          }
+        }
+      }
+    },
+    "Not installed" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "غير مثبّتة"
+          }
+        }
+      }
+    },
+    "Last guardian event" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "آخر حدث للحراسة"
+          }
+        }
+      }
+    },
+    "Login agent restored" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أُعيد وكيل تسجيل الدخول"
+          }
+        }
+      }
+    },
+    "Guardian could not restore the login agent" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّر على الحراسة إعادة وكيل تسجيل الدخول"
+          }
+        }
+      }
+    },
+    "Protected account missing" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حساب الحماية مفقود"
+          }
+        }
+      }
+    },
+    "Guardian config unreadable" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّرت قراءة إعداد الحراسة"
+          }
+        }
+      }
+    },
+    "Guardian activity" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نشاط الحراسة"
+          }
+        }
+      }
+    },
     "Last list update" : {
       "localizations" : {
         "ar" : {

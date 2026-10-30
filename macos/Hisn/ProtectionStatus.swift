@@ -383,3 +383,50 @@ enum ListUpdateFreshness {
         return now.timeIntervalSince(lastUpdate) > staleAfter
     }
 }
+
+/// What the root guardian daemon left in its local log, read-only for the app.
+///
+/// The log is root-owned and mode 644; the Mac app is not sandboxed, so a
+/// standard user can read it but not change it. Only the last action is shown:
+/// an account name, an action token and a timestamp. No browsing data exists in
+/// the file.
+struct GuardianLogStatus: Equatable {
+    let installed: Bool
+    let action: String?
+    let at: Date?
+
+    static let daemonPlist = URL(fileURLWithPath: "/Library/LaunchDaemons/app.hisn.guardian.plist")
+    static let logURL = URL(fileURLWithPath: "/Library/Application Support/Hisn/guardian.log")
+
+    static func read(plistURL: URL = daemonPlist, logURL: URL = logURL) -> GuardianLogStatus {
+        let installed = FileManager.default.fileExists(atPath: plistURL.path)
+        guard installed, let text = try? String(contentsOf: logURL, encoding: .utf8) else {
+            return GuardianLogStatus(installed: installed, action: nil, at: nil)
+        }
+        let last = text.split(separator: "\n").last.map(String.init)
+        guard let last, !last.isEmpty else {
+            return GuardianLogStatus(installed: true, action: nil, at: nil)
+        }
+        let parts = last.split(separator: " ", maxSplits: 1).map(String.init)
+        guard parts.count == 2 else {
+            return GuardianLogStatus(installed: true, action: nil, at: nil)
+        }
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        let date = formatter.date(from: parts[0])
+        let action = parts[1].split(separator: " ").first.map(String.init)
+        return GuardianLogStatus(installed: true, action: action, at: date)
+    }
+
+    /// Known daemon actions become text a person can read; an unknown action is
+    /// shown as generic activity rather than hidden or rendered as a token.
+    static func label(for action: String) -> String {
+        switch action {
+        case "agent-reloaded": return String(localized: "Login agent restored")
+        case "agent-reload-failed": return String(localized: "Guardian could not restore the login agent")
+        case "account-missing": return String(localized: "Protected account missing")
+        case "config-unreadable": return String(localized: "Guardian config unreadable")
+        default: return String(localized: "Guardian activity")
+        }
+    }
+}

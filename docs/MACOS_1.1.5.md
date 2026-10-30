@@ -24,6 +24,8 @@ runs in the system domain and puts the agent back.
 - It logs `agent-reloaded`, `agent-reload-failed`, `account-missing` or
   `config-unreadable` with a UTC timestamp to
   `/Library/Application Support/Hisn/guardian.log`. No browsing data is logged.
+  The app's Details page reads the last action and whether the daemon is
+  installed, so a tamper event is visible without opening the file.
 - It does **not** relaunch an app the person quit normally outside a lock. The
   agent's `KeepAlive` handles a crash or force-quit; Hisn already refuses Quit
   during a lock. Restarting a normal quit would fight a legitimate control.
@@ -69,7 +71,7 @@ On 30 October 2026:
   config, refused accounts (`root`, `loginwindow`, a space and a shell
   injection), a logged-out session being quiet, bootstrapping a missing agent,
   a failed reload, a healthy agent left alone, installer wiring and shell syntax.
-- `./test.sh macos`: **497 app tests** plus the Arabic-string check (527 strings).
+- `./test.sh macos`: **498 app tests** plus the Arabic-string check (536 strings).
 - `bash macos/release/release.sh --smoke /tmp/…`: **unsigned package structure
   passed**. The expanded package's `Scripts/` contains `postinstall`,
   `install_guardian.sh`, `hisn-guardian` and `app.hisn.guardian.plist`; nothing
@@ -94,8 +96,8 @@ functions replaced, not against a live system domain.
   lost Full Disk Access. The app's status reports those; an administrator must
   restore them.
 - The log is local and contains only account/action/time. It does not prove the
-  filter was enforcing, and it is not yet surfaced in the app; an administrator
-  reads it directly.
+  filter was enforcing. The app shows the last action; an administrator can read
+  the full log directly.
 - The package is still unsigned and unnotarized; a Developer ID and notarization
   remain owner actions.
 
