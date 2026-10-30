@@ -16,11 +16,12 @@ status. Each layer must state its scope and recover from service/permission
 loss without displaying false protection. Absolute detection or resistance to
 a device owner's reset/recovery controls is not an achievable release claim.
 
-## Implemented in the development preview (latest: 0.8.0)
+## Implemented in the development preview (latest: 0.8.1)
 
 | Layer | Code now present | Verification boundary |
 | --- | --- | --- |
 | List authenticity | Signature verification at build; APK-pinned hashes checked at load; 159,762 domain rules plus bounded adult-term assets | Actual domain/term seeds loaded in core tests and Samsung instrumentation |
+| List updates | Bundled only; the signed APK is the update path. The UI says so and `SeedFreshness` warns after 90 days with the signed build date. There is no runtime list download. | `SeedFreshnessTest` covers age/date/clamping; no network path exists. The 90-day warning on a device is pending. |
 | Network | IPv4 UDP plus bounded TCP53 at the virtual DNS endpoint, shared bounded workers, authenticated TLS upstream, local blocks and alias checks | Core UDP/TLS/TCP tests and Samsung UDP/TCP route checks pass; large UDP-to-TCP fallback is core-only evidence; physical transition reliability remains pending |
 | Route verification | Explicit owner-confirmed virtual-DNS check: blocked `.invalid` then `example.com` over UDP and reused TCP; four queries on success; session-bound results | Loopback validation/cancellation and complete Samsung checks pass; this does not verify all traffic |
 | Browser diagnostic (debug only) | Fixed `www.example.org` additive deny, memory-only 120-second lease; separate release no-op; no saved-rule changes | [0.4.3 core/release-hook tests](ANDROID_0.4.3.md) pass; Samsung policy count rose during private navigation and owner confirmed DNS error in Brave; this verifies only that tested path |
@@ -34,7 +35,7 @@ a device owner's reset/recovery controls is not an achievable release claim.
 | Daily selected-app schedule | Optional every-day local-time window, separate app set, overnight support, static-screen periodic enforcement and commitment-preserving coverage | Exhaustive/randomized core tests, isolated Samsung persistence/commitment checks and real local-time boundary test pass; clock/timezone/accessibility bypasses remain |
 | Removal friction | Optional legacy admin receiver with no administrative policies | Compiles; latest activation/deactivation test pending |
 | Managed uninstall protection | Device-owner only. Pure state matrix, `PolicyStore` keep switch with commitment guard, `DevicePolicyManager.setUninstallBlocked` readback/repair, in-app setup/release UI and boot reconciliation. 0.7.0 adds an opt-in managed lockdown (`no_safe_boot`, `no_apps_control`, `no_factory_reset`, `no_config_vpn`), saved in the same write, read back from `UserManager` and released in reverse order. 0.8.0 adds `disallow_config_private_dns` on API 29+. | Core `UninstallProtection`/`ManagedRestrictions`/`SavedSettings` tests, debug/test builds and lint pass. The Samsung is not device owner, so it reports "Not managed"; an actual blocked uninstall and the restrictions, expiry reconciliation and release still need a disposable provisioned device. |
-| Background layer watchdog | A persistent 15-minute `JobScheduler` job compares expected layers (direct-build accessibility while keep is on, DNS while left on) with the live state; a lost layer gets one local notice, repeated at most every 12 hours, cleared on recovery. It never restarts a service. Scheduled from app open, DNS start/stop, boot and keep changes. | Pure `LayerWatch` tests cover expected/running sets, lost detection, signature and notification cadence; the app builds and lints. A real service loss, Doze delay and notification permission are device checks. |
+| Background layer watchdog | A persistent 15-minute `JobScheduler` job compares expected layers (direct-build accessibility while keep is on, DNS while left on) with the live state; a lost layer gets one local notice, repeated at most every 12 hours, cleared on recovery. It never restarts a service. Protection shows the last run, a lost layer or notifications being off; enabling Keep on Android 13+ requests the notification permission. | Pure `LayerWatch` tests cover expected/running sets, lost detection, signature and notification cadence; the app builds and lints. A real service loss, Doze delay and notification permission are device checks. |
 | Visual filtering | Opt-in Android 14+ selected-window image/video sampling using the bundled local classifier; generic Home/restriction intervention, explicit capture consent and separate health | Actual local model, policy and stale-frame tests plus nine Samsung live fixture checks pass. A small benign baseline had 0/12 false-blocked views over 36 calls, with 1,984 ms median / 2,290 ms p95 classifier roundtrip. Sources/layouts are limited and correlated; this is not population accuracy. Adult recall, real-app/video and battery acceptance remain pending; no pre-display claim. See [0.5.0](ANDROID_0.5.0.md) and [benchmark](ANDROID_VISUAL_BENCHMARK_2026-10-22.md) |
 
 The 0.3.0 debug APK was installed and opened on the Samsung on 2026-10-19.
@@ -92,7 +93,7 @@ false positives. These are fixture-specific counts, not an accuracy estimate or
 a representative benchmark. The misses/false positive require further work.
 No full-traffic or always-on VPN, and no undeletable installation for an
 ordinary install, is implemented. Device-owner uninstall blocking and the
-managed lockdown are opt-in 0.8.0 previews; they do not survive a factory
+managed lockdown are opt-in 0.8.1 previews; they do not survive a factory
 reset, device-owner removal, ADB/root or an administrator. The current
 deliverable remains a tested development preview, not the requested universal
 end-state protection.
@@ -166,6 +167,29 @@ device-owner build, the expiry repair and the release path are **not** claimed.
 `test-live-managed-status.py --expect-lockdown` is the read-only check to run on
 a disposable provisioned device; it does not apply or clear policy. See
 [0.7.0](ANDROID_0.7.0.md).
+
+## 0.8.1 list age and visible watchdog verification boundary (2026-10-30)
+
+0.8.1 records the Android 1.0 list-update decision: no runtime list download,
+the signed APK is the update. `SeedFreshness` reads the signed seed's
+`built_at`, computes a clamped whole-day age and drives a warning after 90 days.
+The UI already stated that updates arrive only with a new version; the warning
+makes a stale build visible rather than implied.
+
+The watchdog now stores and shows `last_checked`, the last lost signature and
+whether notifications are enabled. Enabling **Keep Hisn installed** on Android
+13+ requests `POST_NOTIFICATIONS`; a denial is shown in the watchdog line, not
+treated as protection. The in-app Guide was updated for the managed lockdown,
+the watchdog, the lack of always-on/lockdown VPN and the APK-only list path.
+
+Verified on 30 October 2026: `SeedFreshnessTest`, `LayerWatchTest`, the
+API-aware `ManagedRestrictionsTest`, English/Arabic string parity (280 strings),
+`assembleDebug`, `assembleDebugAndroidTest`, `assembleRelease` and `lintDebug`
+pass.
+
+**No device run is claimed.** The stale-list warning, the watchdog status line,
+the permission request and a real layer loss need a phone. See
+[0.8.1](ANDROID_0.8.1.md).
 
 ## 0.8.0 Private DNS and watchdog verification boundary (2026-10-30)
 

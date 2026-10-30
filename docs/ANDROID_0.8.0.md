@@ -1,5 +1,9 @@
 # Hisn Android 0.8.0 — Private DNS lock and a layer-loss watchdog
 
+> Superseded by [0.8.1](ANDROID_0.8.1.md), which adds the list-update decision,
+> the bundled-list age warning and the visible watchdog status. This record
+> stays as the 0.8.0 evidence.
+
 Development candidate, 30 October 2026. Not a Play release, not a signed
 production build, and not a claim that the connected owner's phone is locked.
 No device-owner appointment, factory reset or layer-loss device run was made on

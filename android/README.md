@@ -1,4 +1,4 @@
-# Hisn Android 0.8.0: protection development preview
+# Hisn Android 0.8.1: protection development preview
 
 The Android app contains an opt-in DNS-only VPN, saved custom rules, selected-app
 accessibility restrictions, opt-in daily app schedules, built-in adult-text checks and
@@ -21,6 +21,21 @@ blocking and the broader lockdown exist only as an opt-in device-owner preview;
 the ordinary install remains removable, and actual blocked-uninstall and
 restriction acceptance needs a disposable provisioned device.
 
+## 0.8.1 List age, visible watchdog and the update decision
+
+- **Android 1.0 updates the list only through a new signed APK.** The bundled
+  list's signed build date is checked in `SeedFreshness`; after 90 days the
+  Protection page says how old it is and that a newer signed build is the only
+  update path. There is no runtime list download and no second trust path.
+- **The background check is visible.** Protection shows the last run time, a
+  lost layer, or notifications being off. Enabling **Keep Hisn installed** on
+  Android 13+ requests the notification permission that the closed-app warning
+  depends on.
+- The in-app Guide now covers the optional managed lockdown, the 15-minute
+  check, the lack of always-on/lockdown VPN, and the APK-only list update.
+- Version 0.8.1, versionCode 21. See
+  [the 0.8.1 record](../docs/ANDROID_0.8.1.md).
+
 ## 0.8.0 Private DNS lock and the layer watchdog
 
 - **Private DNS joins managed lockdown** on Android 10+ (API 29):
@@ -34,7 +49,7 @@ restriction acceptance needs a disposable provisioned device.
   hours, and clears when the layer is back. It never restarts a service and
   sends nothing to a server. Scheduling is refreshed on app open, DNS
   start/stop, boot and keep-switch changes.
-- Version 0.8.0, versionCode 20. See
+- Version 0.8.0, versionCode 20. *Historical.* See
   [the 0.8.0 record](../docs/ANDROID_0.8.0.md).
 
 No device-owner provisioning, restriction enforcement or layer-loss device run

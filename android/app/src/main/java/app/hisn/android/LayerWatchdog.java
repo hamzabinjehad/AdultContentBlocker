@@ -38,6 +38,7 @@ final class LayerWatchdog {
     private static final String PREFS = "hisn_watchdog";
     private static final String LAST_SIGNATURE = "last_signature";
     private static final String LAST_NOTIFIED = "last_notified";
+    private static final String LAST_CHECKED = "last_checked";
     static final long REPEAT_MILLIS = 12 * 3600000L;
     /** Android's minimum periodic interval. */
     static final long PERIOD_MILLIS = 15 * 60 * 1000L;
@@ -74,7 +75,7 @@ final class LayerWatchdog {
             if (!expected) {
                 if (scheduled) scheduler.cancel(JOB_ID);
                 // A notice from before the last layer was turned off must not linger.
-                clear(context);
+                reset(context);
             } else if (!scheduled) {
                 scheduler.schedule(new JobInfo.Builder(JOB_ID,
                         new ComponentName(context, LayerWatchdogJobService.class))
@@ -96,16 +97,23 @@ final class LayerWatchdog {
         Set<LayerWatch.Layer> lost = LayerWatch.lost(expected, running());
         String signature = LayerWatch.signature(lost);
         SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        long now = System.currentTimeMillis();
+        // The check ran even when everything is healthy; this is what the status shows.
+        prefs.edit().putLong(LAST_CHECKED, now).apply();
         if (signature.isEmpty()) {
-            clear(context);
+            clearLoss(context);
             return;
         }
-        long now = System.currentTimeMillis();
         boolean due = LayerWatch.shouldNotify(prefs.getString(LAST_SIGNATURE, ""),
                 prefs.getLong(LAST_NOTIFIED, 0), signature, now, REPEAT_MILLIS);
         if (!due) return;
+        // The status line must show a loss even when no notification could be
+        // posted. The repeat time is stored only on a successful notice, so the
+        // job retries until permission or the channel is available.
         if (notify(context, lost)) {
             prefs.edit().putString(LAST_SIGNATURE, signature).putLong(LAST_NOTIFIED, now).apply();
+        } else {
+            prefs.edit().putString(LAST_SIGNATURE, signature).apply();
         }
     }
 
@@ -135,8 +143,18 @@ final class LayerWatchdog {
         }
     }
 
-    private static void clear(Context context) {
+    private static void clearLoss(Context context) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                .remove(LAST_SIGNATURE).remove(LAST_NOTIFIED).apply();
+        cancelNotice(context);
+    }
+
+    private static void reset(Context context) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().clear().apply();
+        cancelNotice(context);
+    }
+
+    private static void cancelNotice(Context context) {
         NotificationManager notifications = context.getSystemService(NotificationManager.class);
         if (notifications != null) {
             try { notifications.cancel(NOTIFICATION_ID); }
@@ -144,8 +162,13 @@ final class LayerWatchdog {
         }
     }
 
-    /** Only for diagnostics: how long since the last observed check, not a protection claim. */
-    static long lastNotifiedAt(Context context) {
-        return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getLong(LAST_NOTIFIED, 0);
+    /** When the last check ran, or 0; informational, never a protection claim. */
+    static long lastCheckedAt(Context context) {
+        return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getLong(LAST_CHECKED, 0);
+    }
+
+    /** The layers the last check found missing, or an empty string. */
+    static String lostSignature(Context context) {
+        return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(LAST_SIGNATURE, "");
     }
 }

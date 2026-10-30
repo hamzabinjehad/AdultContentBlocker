@@ -36,18 +36,18 @@ Usage limits (time budgets) are deferred to 1.1. Daily schedules and permanent b
 already cover the self-control case, and budgets add a counter-recovery surface that
 needs its own lifecycle testing.
 
-## Where the preview stands (0.8.0)
+## Where the preview stands (0.8.1)
 
 | Area | State | Remaining to reach 1.0 |
 | --- | --- | --- |
 | DNS layer (UDP + TCP53, DoT upstream, route check) | Implemented; core and Samsung route checks pass | Real Wi-Fi to mobile handover, screen lock, another VPN, resolver loss (M2) |
 | App blocks, schedules, words, adult text | Implemented; fixture and synthetic-corpus evidence | Real-app coverage pass (M3) |
 | Visual sampling | Implemented; benign baseline 0/12 false blocks; WebGL 121 ms median on Samsung | Adult recall, battery, live capture on 0.5.1 (M4) |
-| Commitments | Implemented; clock, boot and isolated-preference tests pass. Device-owner mode can additionally block ordinary uninstall while one runs, and managed lockdown can hold the four restrictions. | Disposable short commitment end to end on device (M3) |
-| Managed uninstall protection (0.8.0) | Device-owner only; pure state matrix, persistence guard, readback/release controller, UI and boot reconciliation are present. Optional lockdown adds `no_safe_boot`, `no_apps_control`, `no_factory_reset`, `no_config_vpn` and, on Android 10+, `disallow_config_private_dns`; saved with the uninstall block and released in reverse order. | Actual blocked uninstall and restriction refusals on a disposable provisioned device; Play/DPC policy review; no provisioning was applied to the owner's phone |
-| Layer health / honest status | Implemented model with 1,280 combinations tested. 0.8.0 adds a persistent 15-minute JobScheduler watchdog that notices a stopped DNS VPN or accessibility guard, posts one local notice and clears it on recovery. | Service-kill, Doze delay, notification permission and permission-revoke recovery on device (M2) |
+| Commitments | Implemented; clock, boot and isolated-preference tests pass. Device-owner mode can additionally block ordinary uninstall while one runs, and managed lockdown can hold the restrictions (five on Android 10+). | Disposable short commitment end to end on device (M3) |
+| Managed uninstall protection (0.8.1) | Device-owner only; pure state matrix, persistence guard, readback/release controller, UI and boot reconciliation are present. Optional lockdown adds `no_safe_boot`, `no_apps_control`, `no_factory_reset`, `no_config_vpn` and, on Android 10+, `disallow_config_private_dns`; saved with the uninstall block and released in reverse order. | Actual blocked uninstall and restriction refusals on a disposable provisioned device; Play/DPC policy review; no provisioning was applied to the owner's phone |
+| Layer health / honest status | Implemented model with 1,280 combinations tested. 0.8.0 adds a persistent 15-minute JobScheduler watchdog that notices a stopped DNS VPN or accessibility guard, posts one local notice and clears it on recovery. 0.8.1 shows the last run, a lost layer or notifications being off, and requests the notification permission when Keep is enabled. | Service-kill, Doze delay, notification permission and permission-revoke recovery on device (M2) |
 | Release signing | **Added in 0.5.1**: optional `HISN_ANDROID_*` environment signing | Owner creates and backs up the production key (M5) |
-| Signed list updates | Seed is bundled and pinned at build time | Not started; decide in M1 |
+| Signed list updates | **Decision: APK-only for 1.0.** The signed seed is bundled and pinned at build time; `SeedFreshness` warns after 90 days and the UI states a new build is the update. No runtime list download. | Runtime generation deferred to 1.1 (needs a reviewed Ed25519 verifier and a published `lists` branch); stale warning on a device |
 
 ## Milestones
 
@@ -60,9 +60,11 @@ as a limit. It is never dropped silently.
 - [x] Visual runtime: WebGL first, one fresh CPU retry on load failure, failed frames
       never replayed, and stale runtime replies rejected (`VisualExecutionPolicy`).
 - [x] Optional production signing config, with keystores git-ignored.
-- [ ] Decision on list updates: either ship list changes only through signed APK
-      releases (recommended for 1.0, simplest trust model) or add verified
-      downloads that reuse `blocklist/` Ed25519 signatures. Record the decision.
+- [x] Decision on list updates: ship list changes only through signed APK releases
+      for 1.0. Android has no runtime list download; the UI states it and warns
+      after 90 days from the signed seed's build date. Runtime downloads wait for
+      a reviewed Ed25519 verifier, a rollback floor and a published `lists` branch
+      (1.1). Recorded in [0.8.1](ANDROID_0.8.1.md).
 - [x] `PolicyStore` static-context lint warning: already holds the application context; suppressed with reason.
 - [ ] Remaining lint warnings: plural-string candidates and two attributes that need a higher API than minSdk 26.
       0.5.3 turned the "about N hours" strings into plurals and marks `<application>` with

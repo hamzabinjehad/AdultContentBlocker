@@ -12,6 +12,14 @@ this folder. It coordinates the existing plans rather than replacing them:
 - [Publishing plan](PUBLISHING_PLAN.md) — release tracks and ship-blockers.
 - [Test matrix](TEST_MATRIX.md) — what is demonstrated, inferred or manual.
 
+> **Execution update (2026-10-30, W1.2/W2.1 continued):** Android 0.8.1 records
+> the 1.0 list-update decision: no runtime list download; the signed APK is the
+> update, the UI says so, and `SeedFreshness` warns after 90 days from the signed
+> seed. The watchdog is now visible in Protection (last run, lost layer, or
+> notifications off), and enabling Keep on Android 13+ requests the notification
+> permission. `SeedFreshnessTest`, the watchdog/managed tests, string parity and
+> the Gradle debug/test/release/lint builds pass. Device checks remain.
+
 > **Execution update (2026-10-30, W2.1 continued):** Android 0.8.0 adds the
 > Android 10+ `disallow_config_private_dns` restriction to managed lockdown and
 > a persistent 15-minute `JobScheduler` layer watchdog. The watchdog notices a
@@ -75,7 +83,7 @@ distribution and freshness — not a missing feature list.
 | Chromium extension | 1.2.0 development candidate (short-video/pause, list freshness, clearer list blocks) | Not on the Chrome Web Store; unpacked only | Store publication, managed force-install, one real-browser acceptance pass |
 | Mac | 1.1.4; filter, browser guard, guardian split, profile, partner key | Unsigned, unnotarized, no app updater | A signed `.pkg`, an update path, and the hardware checks in `TEST_MATRIX.md` |
 | iPhone/iPad | 1.1.2 development; Screen Time, Safari blockers, vault, supervised profile | No Apple team, no Family Controls entitlement, no device | Entitlement, a disposable iPhone, device acceptance of every lock level |
-| Android | 0.8.0 preview; direct-build uninstall guard, boot shield, opt-in device-owner managed lockdown (Safe Mode, all-app controls, factory reset, VPN and Android 10+ Private DNS) and a 15-minute layer watchdog | No signed production APK; device-owner flow unproven | A disposable device-owner phone, real restriction refusals and release, layer-loss device run, signed release |
+| Android | 0.8.1 preview; direct-build uninstall guard, boot shield, opt-in device-owner managed lockdown (Safe Mode, all-app controls, factory reset, VPN and Android 10+ Private DNS), a visible 15-minute layer watchdog, and a 90-day bundled-list warning | No signed production APK; device-owner flow unproven | A disposable device-owner phone, real restriction refusals and release, layer-loss device run, signed release |
 | Lists | Signed seed v4 built 2026-10-01 | **No `lists` branch on origin** | Publish signed daily generations; update iOS and Android |
 
 A Windows policy generator (`profile/make_windows_policy.py`, with tests) and a
@@ -107,7 +115,7 @@ compiling.
 
 These suites ran against `release/1.0` plus the 0.7.0/0.8.0 work. The 0.6.0
 device evidence in the Android record is from the pre-merge `android-0.6.0`
-branch (versionCode 15); the current Android build is 0.8.0 (versionCode 20),
+branch (versionCode 15); the current Android build is 0.8.1 (versionCode 21),
 and that build has not been run on a phone.
 
 ### 1.3 Integration debt
@@ -572,12 +580,12 @@ Sizes: S ≤ 2 days, M ≤ 1 week, L ≤ 3 weeks, XL > 3 weeks.
 | W0.2 | Add a JDK 17 Android CI job and an iOS simulator job; make bare `./test.sh` fail loudly on a missing toolchain | CI | M | A clean runner runs every suite or fails with the missing tool named |
 | W0.3 | Create `release/1.0`, a version matrix and a changelog; tag the integration point | All | S | Every platform version is pinned in one file. **Done 2026-10-29:** `versions.json`, `docs/VERSIONS.md`, `CHANGELOG.md` and the check |
 | W1.1 | Publish the `lists` branch | Lists | S | `curl -I .../lists/manifest.json` is 200; clients install v5+ |
-| W1.2 | Signed list updates for iOS Safari blockers and Android DNS | iOS, Android | L | A published generation changes enforcement without a new app build |
+| W1.2 | Signed list updates for iOS Safari blockers and Android DNS | iOS, Android | L | A published generation changes enforcement without a new app build. **Android decision 2026-10-30:** APK-only for 1.0; the UI states it and warns at 90 days. Runtime Android downloads deferred to 1.1. iOS still open |
 | W1.3 | Extension 1.1.13: short-video/pause release notes, package, unlisted store beta | Extension | M | Store build passes the browser suite; real ID wired |
 | W1.4 | Per-surface list coverage: document the core / full split; make each client state its tier | Extension, iOS, Android | M | A coverage table is generated per release; no client claims the full list. **Done 2026-10-29:** `docs/COVERAGE.md` generated from the signed seed |
 | W1.5 | Text corpus: 500 labelled cases per language and a CI regression gate | All | L | A vocabulary change reports misses and false blocks per language |
 | W1.6 | Visual: licensed benchmark, hide-first audit, video sampling | Chromium, Safari, Android | L | Recall/false-hide numbers with denominators; no pre-verdict adult frame |
-| W2.1 | Android managed edition: safe-boot/app-control/factory-reset restrictions, always-on/private DNS, watchdog, QR provisioning | Android | XL | Disposable phone: uninstall refused, safe mode blocked, clear data blocked, VPN persistent, recovery works. **Partial 2026-10-30:** the four restrictions plus Android 10+ Private DNS (`disallow_config_private_dns`), explicit opt-in, readback and release order are implemented and unit-tested; the 15-minute layer watchdog is implemented; always-on VPN/lockdown, QR provisioning and the device run remain |
+| W2.1 | Android managed edition: safe-boot/app-control/factory-reset restrictions, always-on/private DNS, watchdog, QR provisioning | Android | XL | Disposable phone: uninstall refused, safe mode blocked, clear data blocked, VPN persistent, recovery works. **Partial 2026-10-30:** the four restrictions plus Android 10+ Private DNS (`disallow_config_private_dns`), explicit opt-in, readback and release order are implemented and unit-tested; the 15-minute layer watchdog is implemented and visible (0.8.1), with the notification permission requested when Keep is enabled; always-on VPN/lockdown, QR provisioning and the device run remain |
 | W2.2 | Android direct build: boot shield + guard, signed APK | Android | M | Signed APK, hash, cert fingerprint; guard tested on a real phone |
 | W2.3 | iPhone supervised edition: profile test, vault wording, level UI, removal password | iOS | L | Device test record for every key in `IPHONE_SUPERVISED.md` |
 | W2.4 | Mac guardian edition: root daemon, bootout test, signed pkg, updater | Mac | L | Standard user cannot delete/disable; admin recovery documented; pkg notarized |

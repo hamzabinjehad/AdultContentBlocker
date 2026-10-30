@@ -5,6 +5,36 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
+## Android 0.8.1 — 2026-10-30
+
+### Added
+
+- **The 1.0 list-update decision is recorded and visible.** Android receives
+  list changes only with a new signed APK; there is no runtime list download.
+  `SeedFreshness` reads the signed seed's build date and warns after 90 days
+  with the age and the update path. A plain date or ISO offset timestamp is
+  accepted, future times clamp to zero, and an unparsable time shows no warning
+  rather than a wrong one.
+- **The watchdog is visible and can ask for notification permission.**
+  Protection shows the last check time, a lost layer, or notifications being
+  off. Enabling **Keep Hisn installed** on Android 13+ requests
+  `POST_NOTIFICATIONS`; a denial is shown, not treated as protection. A healthy
+  check no longer erases the last-run time.
+- The in-app Guide now covers the optional managed lockdown, the 15-minute
+  check, the lack of always-on/lockdown VPN, and the APK-only list path.
+- Version 0.8.1, versionCode 21. See
+  [the 0.8.1 record](docs/ANDROID_0.8.1.md).
+
+### Verification
+
+- `android/test-core.sh` passes with `SeedFreshnessTest`, `LayerWatchTest`, the
+  API-aware `ManagedRestrictionsTest` and English/Arabic parity (280 strings).
+- `assembleDebug assembleDebugAndroidTest assembleRelease lintDebug` passes.
+- `check-release.py` passes on the unsigned release APK: 0.8.1 (21), no
+  debuggable/test-only flags, no DUMP permission, no debug components.
+  SHA-256 `a9100517628385358351802b604da51a7a8009756755b0a39321bd799fccce83`.
+- No device run is claimed.
+
 ## Android 0.8.0 — 2026-10-30
 
 ### Added

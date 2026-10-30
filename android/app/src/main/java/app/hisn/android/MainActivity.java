@@ -14,6 +14,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.app.NotificationManager;
+import android.text.format.DateUtils;
 import android.provider.Settings;
 import android.text.InputType;
 import android.text.Editable;
@@ -45,6 +47,7 @@ import app.hisn.core.SetupGuide;
 import app.hisn.core.DailyAppSchedule;
 import app.hisn.core.UninstallProtection;
 import app.hisn.core.PolicyChangeError;
+import app.hisn.core.SeedFreshness;
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.view.accessibility.AccessibilityManager;
 
@@ -69,6 +72,7 @@ public final class MainActivity extends Activity {
     private Button restoredConfirm;
     private TextView adminState;
     private TextView setupState;
+    private TextView seedFreshness;
     private TextView adultState;
     private TextView visualState;
     private Button visualToggle;
@@ -76,6 +80,7 @@ public final class MainActivity extends Activity {
     private Button grayToggle;
     private TextView scheduleState;
     private TextView networkCheckState;
+    private TextView watchdogState;
     private Button adultToggle;
     private Button shortVideoToggle;
     private TextView shortVideoState;
@@ -158,6 +163,13 @@ public final class MainActivity extends Activity {
         networkState = paragraph(R.string.network);
         paragraph(R.string.network).setText(getString(R.string.dns_seed_version,
                 BuildConfig.DOMAIN_SEED_VERSION, seedDate(BuildConfig.DOMAIN_SEED_BUILT)));
+        seedFreshness = paragraph(R.string.dns_seed_stale);
+        seedFreshness.setVisibility(View.GONE);
+        Long seedAge = SeedFreshness.ageDays(BuildConfig.DOMAIN_SEED_BUILT, System.currentTimeMillis());
+        if (seedAge != null && seedAge >= SeedFreshness.WARN_DAYS) {
+            seedFreshness.setText(getString(R.string.dns_seed_stale, seedAge));
+            seedFreshness.setVisibility(View.VISIBLE);
+        }
         startDns = new Button(this);
         startDns.setText(R.string.dns_start);
         startDns.setAllCaps(false);
@@ -172,6 +184,7 @@ public final class MainActivity extends Activity {
         root.addView(vpnSettings, layout());
         vpnSettings.setOnClickListener(v -> reviewVpnSettings());
         networkCheckState = paragraph(R.string.network_check_idle);
+        watchdogState = paragraph(R.string.watchdog_not_run);
         checkNetwork = new Button(this);
         checkNetwork.setText(R.string.network_check_button);
         checkNetwork.setAllCaps(false);
@@ -414,6 +427,7 @@ public final class MainActivity extends Activity {
     @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] results) {
         super.onRequestPermissionsResult(requestCode, permissions, results);
         if (requestCode == 101) prepareDns();
+        else if (requestCode == 102) refreshStatus();
     }
 
     private void prepareDns() {
@@ -539,6 +553,43 @@ public final class MainActivity extends Activity {
                 statusTitle.setText(R.string.protection_attention);
             }
         }
+        refreshWatchdogState();
+    }
+
+    /**
+     * Show what the background check last saw. This is informational: the live
+     * DNS/accessibility status above is the real state, and the notice is the
+     * closed-app signal. A lost signature is read from the same store the job
+     * writes, never guessed from the saved switches.
+     */
+    private void refreshWatchdogState() {
+        if (watchdogState == null) return;
+        long last = LayerWatchdog.lastCheckedAt(this);
+        if (last <= 0) {
+            watchdogState.setText(R.string.watchdog_not_run);
+            watchdogState.setTextColor(Color.rgb(201, 210, 222));
+            return;
+        }
+        CharSequence when = DateUtils.getRelativeTimeSpanString(last, System.currentTimeMillis(),
+                DateUtils.MINUTE_IN_MILLIS);
+        String lost = LayerWatchdog.lostSignature(this);
+        if (!lost.isEmpty()) {
+            watchdogState.setText(getString(R.string.watchdog_lost, when));
+            watchdogState.setTextColor(Color.rgb(232, 178, 92));
+        } else if (!notificationsEnabled()) {
+            watchdogState.setText(R.string.watchdog_notifications_off);
+            watchdogState.setTextColor(Color.rgb(232, 178, 92));
+        } else {
+            watchdogState.setText(getString(R.string.watchdog_last, when));
+            watchdogState.setTextColor(Color.rgb(201, 210, 222));
+        }
+    }
+
+    private boolean notificationsEnabled() {
+        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) return false;
+        NotificationManager manager = getSystemService(NotificationManager.class);
+        return manager != null && manager.areNotificationsEnabled();
     }
 
     private void refreshSetup(GuardHealth guard, DnsVpnService.State network) {
@@ -1128,6 +1179,12 @@ public final class MainActivity extends Activity {
         }
         try { LayerWatchdog.syncSchedule(this); }
         catch (RuntimeException unavailable) { /* The next open retries. */ }
+        if (keepInstalled && Build.VERSION.SDK_INT >= 33
+                && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            // The watchdog's only signal for a closed app is a notification.
+            requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 102);
+        }
         refreshStatus();
     }
 

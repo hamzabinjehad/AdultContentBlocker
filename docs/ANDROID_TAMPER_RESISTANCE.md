@@ -1,7 +1,7 @@
 # Android tamper resistance: personal, admin and managed modes
 
 Reviewed 2026-10-21, updated 2026-10-26 for the 0.6.0 managed-uninstall preview,
-2026-10-29 for the 0.7.0 managed lockdown and 2026-10-30 for 0.8.0. This describes what the Android
+2026-10-29 for the 0.7.0 managed lockdown and 2026-10-30 for 0.8.x. This describes what the Android
 app can actually enforce. It is not a claim that an installed app can survive a
 determined device administrator, a factory reset or OS-level access.
 

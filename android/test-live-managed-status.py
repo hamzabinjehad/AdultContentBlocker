@@ -35,8 +35,8 @@ STATUS_FILE = "files/managed-status.json"
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--adb", default="adb", help="adb executable")
 parser.add_argument("--serial", required=True, help="device serial from adb devices")
-parser.add_argument("--min-version-code", type=int, default=20,
-                    help="fail if the installed version code is older (default: 20)")
+parser.add_argument("--min-version-code", type=int, default=21,
+                    help="fail if the installed version code is older (default: 21)")
 parser.add_argument("--expect-managed", action="store_true",
                     help="require a provisioned device owner with an active guard")
 parser.add_argument("--expect-lockdown", action="store_true",

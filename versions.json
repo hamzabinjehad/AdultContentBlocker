@@ -1,6 +1,6 @@
 {
   "branch": "release/1.0",
-  "updated": "2026-10-29",
+  "updated": "2026-10-30",
   "platforms": [
     {
       "id": "extension",
@@ -32,11 +32,11 @@
     {
       "id": "android",
       "name": "Android",
-      "version": "0.8.0",
-      "build": 20,
+      "version": "0.8.1",
+      "build": 21,
       "state": "preview · unsigned; direct builds add the -direct suffix",
       "source": "android/app/build.gradle",
-      "notes": "versionCode is monotonic and must increase for every uploaded or side-loaded update. 20 adds the API-29 Private DNS restriction and the background layer-health watchdog on top of the 0.7.0 managed lockdown."
+      "notes": "versionCode is monotonic and must increase for every uploaded or side-loaded update. 21 adds the bundled-list freshness warning, watchdog status, the list-update decision and notification permission on top of 0.8.0 (API-29 Private DNS and the layer watchdog)."
     }
   ]
 }
