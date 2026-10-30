@@ -66,9 +66,14 @@ On 30 October 2026, with Android Studio's JBR and the local Android SDK:
   -PhisnDistribution=direct` also passes, so the direct build's self-protection
   code still compiles. The device runner now also checks the watchdog
   expectations and the bundled-list age read-only; it was compiled, not run.
-- `python3 check-release.py app/build/outputs/apk/release/app-release-unsigned.apk`:
-  **PASS**, app `app.hisn.android` 0.8.1 (21), not debuggable or test-only,
-  no DUMP permission, no debug-only component or class.
+- `python3 check-release.py --expect-distribution play
+  app/build/outputs/apk/release/app-release-unsigned.apk`: **PASS**, app
+  `app.hisn.android` 0.8.1 (21), not debuggable or test-only, no DUMP
+  permission, no debug-only component or class.
+- `assembleRelease -PhisnDistribution=direct` then
+  `check-release.py --expect-distribution direct`: **PASS**, versionName
+  `0.8.1-direct`. The checker now refuses a `-direct` artifact checked as Play,
+  and the standard artifact was rebuilt afterwards.
 
 **No device run is claimed.** The stale-list warning, the watchdog status line,
 the permission request and a real layer loss still need a disposable or the
@@ -83,6 +88,7 @@ owner's phone.
 | Size | 4.6 MB |
 | SHA-256 | `4351d42f24792ce7890f6a8f91daed8e57974d4a7f09853c5d82e4ededc1bb47` |
 | Debug APK SHA-256 | `c7ec91e459ddc111065786839fe61d90bb09224111bcf0c8d647e77144578593` |
+| Direct release APK SHA-256 | `c91854c88628e8bafe0c68bc2284bfa2296240d0f8a55cfec5b002dcb7292719` (versionName `0.8.1-direct`; never upload to Play) |
 | Signing | **None** — this is the unsigned release check artifact, not distributable. |
 
 The production keystore is still an owner action; without it this APK cannot

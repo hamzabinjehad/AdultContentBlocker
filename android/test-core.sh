@@ -5,6 +5,8 @@ cd "$(dirname "$0")"
 python3 check-strings.py
 # Every bundled list source has its license text and an English and Arabic summary entry.
 python3 check-notices.py
+# The Play/direct split is enforceable before an APK is uploaded.
+python3 test_check_release.py
 hisn_test_output=$(mktemp -d "${TMPDIR:-/tmp}/hisn-core.XXXXXX")
 # Test class files stay in a newly created temporary directory; no repo files are changed.
 hisn_java_bin=${JAVA_HOME:+$JAVA_HOME/bin/}

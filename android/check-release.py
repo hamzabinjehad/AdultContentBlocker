@@ -4,11 +4,16 @@
 Fails when the APK is debuggable or test-only, declares or requires the DUMP
 permission anywhere, contains a component or class that exists only in the
 debug source set, or carries a package name, versionCode or versionName that
-differs from app/build.gradle. Uses aapt2 and dexdump from the Android SDK
-build-tools; nothing is installed or changed.
+differs from app/build.gradle. `--expect-distribution` also makes the Play/direct
+split enforceable: a Play artifact must not carry the `-direct` suffix, and a
+direct artifact must. Uses aapt2 and dexdump from the Android SDK build-tools;
+nothing is installed or changed.
 
     ./gradlew --no-daemon assembleRelease
-    python3 check-release.py app/build/outputs/apk/release/app-release-unsigned.apk
+    python3 check-release.py --expect-distribution play app/build/outputs/apk/release/app-release-unsigned.apk
+
+    ./gradlew --no-daemon assembleRelease -PhisnDistribution=direct
+    python3 check-release.py --expect-distribution direct app/build/outputs/apk/release/app-release-unsigned.apk
 
 Without an argument it checks app-release.apk if present, else
 app-release-unsigned.apk. Tools come from --build-tools DIR, else the newest
@@ -64,6 +69,17 @@ def gradle_values():
     return found
 
 
+def distribution_problem(version_name, expected_version, distribution):
+    """The Play/direct split is a version-name suffix, checked before upload."""
+    if distribution == "direct":
+        wanted = expected_version + "-direct"
+        return None if version_name == wanted else f"direct artifact has versionName {version_name!r}, expected {wanted!r}"
+    if distribution == "play":
+        return None if version_name == expected_version else (
+            f"Play artifact has versionName {version_name!r}; a direct build must never be uploaded to Play")
+    return f"unknown distribution {distribution!r}"
+
+
 def manifest_elements(xmltree):
     """(element name, {attribute: value}) for every element in aapt2's xmltree dump."""
     elements = []
@@ -100,6 +116,8 @@ def main():
     parser = argparse.ArgumentParser(description="Check a built release APK for debug-only content.")
     parser.add_argument("apk", nargs="?", help="APK to inspect")
     parser.add_argument("--build-tools", help="SDK build-tools folder that holds aapt2 and dexdump")
+    parser.add_argument("--expect-distribution", choices=("play", "direct"), default="play",
+                        help="require the Play version name, or its -direct suffix (default: play)")
     arguments = parser.parse_args()
     if arguments.apk:
         apk = pathlib.Path(arguments.apk)
@@ -119,9 +137,15 @@ def main():
     package = re.search(r"^package: name='([^']*)' versionCode='([^']*)' versionName='([^']*)'", badging, re.M)
     if not package:
         sys.exit("check-release: aapt2 badging has no package line")
-    for key, actual in zip(("package", "versionCode", "versionName"), package.groups()):
+    expected_version = expected["versionName"]
+    if arguments.expect_distribution == "direct":
+        expected_version += "-direct"
+    for key, actual in zip(("package", "versionCode"), package.groups()):
         if actual != expected[key]:
-            failures.append(f"{key} is {actual!r}, app/build.gradle says {expected[key]!r}")
+            failures.append(f"{key} is {actual!r}, expected {expected[key]!r}")
+    problem = distribution_problem(package.group(3), expected["versionName"], arguments.expect_distribution)
+    if problem:
+        failures.append(problem)
     if re.search(r"^application-debuggable", badging, re.M):
         failures.append("aapt2 reports the application as debuggable")
 
@@ -156,7 +180,7 @@ def main():
         for failure in failures:
             print("  - " + failure)
         sys.exit(1)
-    print(f"Release check passed: {apk.name} is {expected['package']} {expected['versionName']} ({expected['versionCode']}), "
+    print(f"Release check passed: {apk.name} is {expected['package']} {expected_version} ({expected['versionCode']}), "
           f"not debuggable or test-only, no DUMP permission; {len(shipped)} activities and {len(descriptors)} classes "
           f"hold none of the {len(components)} debug-only components or {len(classes)} debug-only classes. SHA-256 {digest}")
 

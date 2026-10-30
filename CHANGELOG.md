@@ -40,6 +40,11 @@ bump without an entry here is an unfinished release.
 - `check-release.py` passes on the unsigned release APK: 0.8.1 (21), no
   debuggable/test-only flags, no DUMP permission, no debug components.
   SHA-256 `4351d42f24792ce7890f6a8f91daed8e57974d4a7f09853c5d82e4ededc1bb47`.
+- `check-release.py --expect-distribution play` or `direct` makes the Play/direct
+  split enforceable; both a Play and a direct artifact check pass, and the
+  direct artifact is refused as Play. Its SHA-256 is
+  `c91854c88628e8bafe0c68bc2284bfa2296240d0f8a55cfec5b002dcb7292719`.
+- `test_check_release.py` covers the suffix rule in `test-core.sh`.
 - No device run is claimed.
 
 ## Android 0.8.0 — 2026-10-30

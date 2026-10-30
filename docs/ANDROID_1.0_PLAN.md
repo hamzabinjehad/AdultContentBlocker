@@ -187,7 +187,7 @@ distribution, not another layer:
 | Version 1.0.0 | 0.8.1 (21) | Bump to 1.0.0, write `ANDROID_1.0.md`, copy the known limits into the release notes |
 | QR provisioning | Deferred | Needs a hosted APK URL and a reviewed QR payload; the ADB route is the supported 1.0 setup |
 | Always-on / full tunnel | Explicitly out of 1.0 | Revisit with a full-tunnel forwarder in 2.0 |
-| Play vs direct | Separate builds exist (`-PhisnDistribution=direct`) | Never upload the direct build to Play; keep the accessibility guard out of Play |
+| Play vs direct | Separate builds exist (`-PhisnDistribution=direct`) and `check-release.py --expect-distribution play` or `direct` refuses a mismatched artifact | Never upload the direct build to Play; keep the accessibility guard out of Play |
 
 Until the signed artifact and the device records exist, the honest label is
 **0.8.1 development preview**, not Android 1.0.
