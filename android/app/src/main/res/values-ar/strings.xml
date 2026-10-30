@@ -7,7 +7,15 @@
     <string name="layers">طبقات الحماية</string>
     <string name="network">فلترة DNS · متوقفة</string>
     <string name="dns_seed_version">قائمة النطاقات المضمّنة · الإصدار %1$d · بُنيت في %2$s · تصل التحديثات مع إصدار جديد من حصن فقط</string>
-    <string name="dns_seed_stale">القائمة المضمّنة عمرها %1$d يومًا. إصدار حصن الجديد الموقّع هو وسيلة تحديث القائمة الوحيدة في أندرويد؛ ثبّته عند توفره.</string>
+    <string name="dns_seed_stale">القائمة المضمّنة عمرها %1$s. إصدار حصن الجديد الموقّع هو وسيلة تحديث القائمة الوحيدة في أندرويد؛ ثبّته عند توفره.</string>
+    <plurals name="seed_age_days">
+        <item quantity="zero">أقل من يوم</item>
+        <item quantity="one">يوم واحد</item>
+        <item quantity="two">يومان</item>
+        <item quantity="few">%1$d أيام</item>
+        <item quantity="many">%1$d يومًا</item>
+        <item quantity="other">%1$d يوم</item>
+    </plurals>
     <string name="dns_start">إعداد فلترة DNS</string>
     <string name="dns_settings">إعدادات VPN في أندرويد</string>
     <string name="vpn_settings_reminder_title">راجع التزامك النشط</string>

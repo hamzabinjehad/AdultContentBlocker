@@ -167,7 +167,9 @@ public final class MainActivity extends Activity {
         seedFreshness.setVisibility(View.GONE);
         Long seedAge = SeedFreshness.ageDays(BuildConfig.DOMAIN_SEED_BUILT, System.currentTimeMillis());
         if (seedAge != null && seedAge >= SeedFreshness.WARN_DAYS) {
-            seedFreshness.setText(getString(R.string.dns_seed_stale, seedAge));
+            int days = (int) Math.min(seedAge, Integer.MAX_VALUE);
+            String age = getResources().getQuantityString(R.plurals.seed_age_days, days, days);
+            seedFreshness.setText(getString(R.string.dns_seed_stale, age));
             seedFreshness.setVisibility(View.VISIBLE);
         }
         startDns = new Button(this);

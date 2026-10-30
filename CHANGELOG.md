@@ -39,7 +39,7 @@ bump without an entry here is an unfinished release.
   the direct flavor (`-PhisnDistribution=direct`).
 - `check-release.py` passes on the unsigned release APK: 0.8.1 (21), no
   debuggable/test-only flags, no DUMP permission, no debug components.
-  SHA-256 `a9100517628385358351802b604da51a7a8009756755b0a39321bd799fccce83`.
+  SHA-256 `4351d42f24792ce7890f6a8f91daed8e57974d4a7f09853c5d82e4ededc1bb47`.
 - No device run is claimed.
 
 ## Android 0.8.0 — 2026-10-30
