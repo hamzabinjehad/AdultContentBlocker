@@ -38,10 +38,12 @@ past version; *superseded* documents point to their replacement. Start with the
 
 - [Apple platform structure](APPLE_PLATFORMS.md): How macOS, iOS and iPadOS code is laid out, what each protects, and cross-platform development rules.
 - [iPhone and iPad end-goal plan](IOS_IMPROVEMENT_PLAN.md): The lock ladder on iPhone (vault, guardian, supervised, time-locked), a per-layer audit with code references, which Android features iOS can match with public APIs, and milestones M0-M6 with what is done.
+- [App Store readiness](IOS_STORE.md): Entitlement, listing copy, privacy label, App Review notes, screenshots, TestFlight and submission checklist.
 - [Supervised iPhone or iPad setup](IPHONE_SUPERVISED.md): Step-by-step guardian setup using Apple Configurator so Hisn cannot be removed from a supervised device, plus limits.
 
 ## Android
 
+- [Google Play readiness](ANDROID_STORE.md): Play vs direct builds, listing copy, Data safety answers, permission declarations, reviewer steps and submission checklist.
 - [Android implementation status](ANDROID_IMPLEMENTATION_STATUS.md): Table of each Android protection layer, what code exists and how far it was verified, as of 0.8.1.
 - [Android tamper resistance scope](ANDROID_TAMPER_RESISTANCE.md): What Android personal mode can and cannot do to resist removal, Play policy limits, and managed-device mode including the 0.8.0 lockdown restrictions and layer watchdog.
 
