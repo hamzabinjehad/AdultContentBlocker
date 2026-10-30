@@ -100,3 +100,15 @@ start time, straight from the process that holds them (`FilterSync.status`,
 refreshed every 20 s). An answer at all is the heartbeat; no answer within a
 second is "not reachable". The defaults keys remain as a fallback for a
 development build and are never trusted over an XPC answer.
+
+## Guardian daemon
+
+Since Mac 1.1.5 a root LaunchDaemon (`app.hisn.guardian`) watches the login
+agent, not the filter. It logs `agent-reloaded`, `agent-reload-failed`,
+`account-missing` or `config-unreadable` with a UTC timestamp to
+`/Library/Application Support/Hisn/guardian.log`. A logged-out account is
+normal and produces no entry.
+
+This log is **not** filter health. A reloaded agent can still be followed by a
+provider that never returns; the app's XPC status above is the authoritative
+filter signal. The daemon's success only means the login agent was restored.

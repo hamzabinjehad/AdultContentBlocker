@@ -1,0 +1,106 @@
+#!/bin/bash
+#
+# Root LaunchDaemon side of the Mac guardian edition.
+#
+# A root-owned LaunchAgent in /Library/LaunchAgents still loads into the user's
+# GUI session, and a standard user can `launchctl bootout` it for that session.
+# This daemon runs in the system domain and puts the agent back when it is
+# removed. It does not relaunch an app the person quit normally outside a lock:
+# the agent's KeepAlive handles crashes, and Hisn refuses Quit while locked.
+#
+#   /Library/Application Support/Hisn/hisn-guardian --daemon
+#   /Library/Application Support/Hisn/hisn-guardian --once
+#
+# The protected account is in /Library/Application Support/Hisn/guardian.conf,
+# root-owned. Events go to guardian.log next to it: an account name, an action
+# and a timestamp only. Nothing about browsing is written.
+set -u
+
+ROOT="${HISN_GUARDIAN_ROOT:-}"
+CONF="${ROOT}/Library/Application Support/Hisn/guardian.conf"
+AGENT="${ROOT}/Library/LaunchAgents/app.hisn.agent.plist"
+LOG="${ROOT}/Library/Application Support/Hisn/guardian.log"
+LABEL="app.hisn.agent"
+INTERVAL="${HISN_GUARDIAN_INTERVAL:-30}"
+
+log_event() {
+    /bin/mkdir -p "$(/usr/bin/dirname "$LOG")" 2>/dev/null || true
+    printf '%s %s\n' "$(/bin/date -u '+%Y-%m-%dT%H:%M:%SZ')" "$*" >> "$LOG" 2>/dev/null || true
+}
+
+# A root-owned file names the one account this daemon protects. Reject any
+# value that could become a shell word or a different account selector.
+protected_user() {
+    [ -f "$CONF" ] || return 1
+    local user
+    user="$(/usr/bin/sed -n 's/^USER_NAME=//p' "$CONF" 2>/dev/null | /usr/bin/head -1)"
+    [ -n "$user" ] || return 1
+    case "$user" in
+        root|loginwindow|_mbsetupuser) return 1 ;;
+    esac
+    [[ "$user" =~ ^[a-zA-Z0-9._-]+$ ]] || return 1
+    /usr/bin/id -u "$user" >/dev/null 2>&1 || return 1
+    printf '%s\n' "$user"
+}
+
+gui_domain_loaded() {
+    /bin/launchctl print "gui/$1" >/dev/null 2>&1
+}
+
+agent_loaded() {
+    /bin/launchctl print "gui/$1/$LABEL" >/dev/null 2>&1
+}
+
+reload_agent() {
+    /bin/launchctl asuser "$1" /bin/launchctl bootstrap "gui/$1" "$AGENT" >/dev/null 2>&1
+}
+
+check_once() {
+    local user uid
+    if ! user="$(protected_user)"; then
+        log_event "config-unreadable"
+        return 1
+    fi
+    if ! uid="$(/usr/bin/id -u "$user" 2>/dev/null)"; then
+        log_event "account-missing user=$user"
+        return 1
+    fi
+    # Logged out: there is no GUI session to hold the agent. This is normal,
+    # not tampering; do not fill the log while the person is away.
+    if ! gui_domain_loaded "$uid"; then
+        return 0
+    fi
+    if agent_loaded "$uid"; then
+        return 0
+    fi
+    if reload_agent "$uid"; then
+        log_event "agent-reloaded user=$user"
+        return 0
+    fi
+    log_event "agent-reload-failed user=$user"
+    return 1
+}
+
+main() {
+    case "${1:-}" in
+        --once) check_once ;;
+        --daemon)
+            while :; do
+                check_once || true
+                /bin/sleep "$INTERVAL"
+            done
+            ;;
+        *)
+            echo "usage: hisn-guardian --daemon|--once" >&2
+            exit 2
+            ;;
+    esac
+}
+
+# Tests source the file and replace the three boundary functions; the daemon
+# itself never takes this branch.
+if [ "${HISN_GUARDIAN_SOURCE_ONLY:-0}" = "1" ]; then
+    :
+else
+    main "$@"
+fi

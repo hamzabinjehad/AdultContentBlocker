@@ -14,11 +14,11 @@
     {
       "id": "macos",
       "name": "Mac",
-      "version": "1.1.4",
-      "build": 8,
+      "version": "1.1.5",
+      "build": 9,
       "state": "development · unsigned, needs Developer ID and notarization",
       "source": "macos/Hisn.xcodeproj/project.pbxproj",
-      "notes": "Every target must carry the same MARKETING_VERSION and CURRENT_PROJECT_VERSION."
+      "notes": "Every target must carry the same MARKETING_VERSION and CURRENT_PROJECT_VERSION; 1.1.5 adds the root guardian daemon packaging."
     },
     {
       "id": "ios",

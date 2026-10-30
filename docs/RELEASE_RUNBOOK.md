@@ -111,10 +111,14 @@ notarized package:
 8. Have a person unfamiliar with the code follow USER_GUIDE.md. Record any step
    requiring developer help. Do not call onboarding complete while those remain.
 
-The package creates a root-owned login agent for the protected account. A fresh
-install requires someone signed in; an update retains the existing agent's
-account. It does not change account roles, install a removal-password profile,
-or set a Screen Time passcode automatically.
+The package creates a root-owned login agent and a root guardian daemon for the
+protected account. A fresh install requires someone signed in; an update retains
+the existing agent's account and refreshes the daemon config. The daemon puts the
+agent back if a standard user boots it out; it does not restart a normal quit or
+probe the filter. Its log is local and contains only account/action/time. On a
+standard-account Mac, record the bootout, logout/login, reboot and admin-recovery
+checks in RELEASE_VALIDATION.md. The package does not change account roles,
+install a removal-password profile, or set a Screen Time passcode automatically.
 
 For a local development update, build and test as the ordinary account before
 running `macos/install.sh --built-app /absolute/path/to/Hisn.app` with administrator

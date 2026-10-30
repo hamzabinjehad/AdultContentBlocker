@@ -5,6 +5,36 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
+## Mac 1.1.5 — 2026-10-30
+
+### Added
+
+- **A root LaunchDaemon backs the login agent.** `/Library/LaunchDaemons/app.hisn.guardian.plist`
+  runs a root-owned `/Library/Application Support/Hisn/hisn-guardian` loop. It
+  reads the protected account from a root-owned config, checks the GUI domain and
+  re-bootstraps `gui/<uid>/app.hisn.agent` when a standard user has booted it
+  out. It logs only account/action/time to `guardian.log`, waits quietly while
+  the account is logged out, and refuses `root`/`loginwindow`/malformed names.
+- The package `postinstall` and `macos/install_update.sh` install the daemon and
+  its config; the release package carries the daemon files;
+  `macos/install.sh --remove-agent` removes the daemon as well as the agent.
+- **It does not fight a normal quit.** The login agent's `KeepAlive` handles a
+  crash or force-quit; a normal quit outside a lock stays quit. The daemon does
+  not duplicate the app's filter-health XPC model.
+- Version 1.1.5, build 9. See [the 1.1.5 record](docs/MACOS_1.1.5.md).
+
+### Verification
+
+- `./test.sh release` passes (33 tests), including the new
+  `release/test_guardian.py` (9 tests: plist shape, config parsing, refused
+  accounts, logged-out quiet, missing-agent reload, failed reload, healthy agent,
+  installer wiring, shell syntax).
+- `./test.sh macos` passes (495 tests plus the Arabic-string check).
+- `release.sh --smoke` builds the unsigned package; its scripts payload contains
+  the daemon script, plist and helper. Nothing was installed.
+- No root install, standard-account bootout, reboot or notarized-package result
+  is claimed.
+
 ## iOS/iPadOS 1.1.3 — 2026-10-30
 
 ### Added

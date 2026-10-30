@@ -93,6 +93,10 @@ past version; *superseded* documents point to their replacement. Start with the
 
 Per-version change and verification notes, newest first.
 
+### Mac
+
+- [Mac 1.1.5 release notes](MACOS_1.1.5.md): A root LaunchDaemon restores the login agent if a standard user boots it out, with installer wiring, tamper logging and a removal path. Unsigned/unnotarized; standard-account and reboot checks pending.
+
 ### iPhone and iPad
 
 - [iOS 1.1.3 release notes](IOS_1.1.3.md): A privacy manifest in the app and every extension, export-compliance declaration, the signed Safari list's build date with a 90-day warning, and privacy/support/version rows in Settings. Simulator-tested; no device, team or entitlement yet.

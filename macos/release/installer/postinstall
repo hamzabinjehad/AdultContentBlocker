@@ -6,6 +6,7 @@ LABEL=app.hisn.agent
 AGENT="/Library/LaunchAgents/$LABEL.plist"
 PLIST="$APP/Contents/Info.plist"
 SCRIPTS="$(cd "$(dirname "$0")" && pwd)"
+. "$SCRIPTS/install_guardian.sh"
 
 USER_NAME=""
 if [ -f "$AGENT" ]; then
@@ -57,4 +58,9 @@ if launchctl print "$DOMAIN" >/dev/null 2>&1; then
     launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null || true
     launchctl bootstrap "$DOMAIN" "$AGENT"
 fi
+
+# Root daemon: puts the login agent back if a standard user boots it out.
+install_guardian "$SCRIPTS" "$USER_NAME" || {
+    echo "Hisn installed, but the guardian daemon did not load. The login agent is still active." >&2
+}
 echo "Hisn installed. Open Hisn in Applications to complete setup."

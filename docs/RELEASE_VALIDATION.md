@@ -24,6 +24,9 @@ passed only after it was actually performed.
 | Notarization, stapling, and Gatekeeper | Pending | |
 | Clean install into Applications | Pending | |
 | Root-owned app, agent, and browser manifests | Pending | |
+| Root guardian daemon loaded; agent restored after a standard-user bootout | Pending | |
+| Guardian log contains account/action/time only | Pending | |
+| Admin recovery: daemon removed, app and agent state explained | Pending | |
 | First visible launch opens Setup | Pending | |
 | System approval and restart flow | Pending | |
 | Filter authority reachable and persistent | Pending | |

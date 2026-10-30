@@ -12,6 +12,15 @@ this folder. It coordinates the existing plans rather than replacing them:
 - [Publishing plan](PUBLISHING_PLAN.md) — release tracks and ship-blockers.
 - [Test matrix](TEST_MATRIX.md) — what is demonstrated, inferred or manual.
 
+> **Execution update (2026-10-30, Mac 1.1.5):** the Mac app now ships a root
+> LaunchDaemon in `/Library/LaunchDaemons` that restores the login agent if a
+> standard user boots it out, with a root-owned protected-account config, a
+> local action log and a removal path. Both installers install it; the release
+> package carries the daemon files. The daemon does not relaunch a normal quit
+> and does not duplicate the app's filter health model. It is tested with
+> boundary functions, not on a live standard account; signing/notarization and
+> the bootout/reboot device checks remain. See [the 1.1.5 record](MACOS_1.1.5.md).
+
 > **Execution update (2026-10-30, iOS 1.1.3):** the iOS app now ships a privacy
 > manifest in the app and every extension (no tracking, no collected data,
 > UserDefaults and boot-time reasons), declares non-exempt encryption false, and
@@ -92,7 +101,7 @@ distribution and freshness — not a missing feature list.
 | Platform | Code state | Release state | The real gap |
 | --- | --- | --- | --- |
 | Chromium extension | 1.2.0 development candidate (short-video/pause, list freshness, clearer list blocks) | Not on the Chrome Web Store; unpacked only | Store publication, managed force-install, one real-browser acceptance pass |
-| Mac | 1.1.4; filter, browser guard, guardian split, profile, partner key | Unsigned, unnotarized, no app updater | A signed `.pkg`, an update path, and the hardware checks in `TEST_MATRIX.md` |
+| Mac | 1.1.5; filter, browser guard, guardian split, profile, partner key and root guardian daemon | Unsigned, unnotarized, no app updater | A signed `.pkg`, an update path, and the hardware checks in `TEST_MATRIX.md` |
 | iPhone/iPad | 1.1.3 development; Screen Time, Safari blockers, vault, supervised profile, privacy manifest, signed-list age and settings policy links | No Apple team, no Family Controls entitlement, no device | Entitlement, a disposable iPhone, device acceptance of every lock level |
 | Android | 0.8.1 preview; direct-build uninstall guard, boot shield, opt-in device-owner managed lockdown (Safe Mode, all-app controls, factory reset, VPN and Android 10+ Private DNS), a visible 15-minute layer watchdog, and a 90-day bundled-list warning | No signed production APK; device-owner flow unproven | A disposable device-owner phone, real restriction refusals and release, layer-loss device run, signed release |
 | Lists | Signed seed v4 built 2026-10-01 | **No `lists` branch on origin** | Publish signed daily generations; update iOS and Android |
@@ -376,6 +385,10 @@ cannot mix them.
    - restarts the app/agent if it disappears,
    - records a local-only tamper event that the app can show,
    - reports a filter/provider loss instead of showing green.
+   **Implemented 1.1.5** for the agent-restore and local log. A normal quit is
+   not fought (the agent's `KeepAlive` handles crashes); filter/provider health
+   stays the app's XPC model. A real standard-account bootout/reboot test is
+   still required.
 2. **A signed, notarized installer and an updater.** The release runbook and
    `macos/release/release.sh` exist; the missing pieces are a Developer ID
    identity, a notarized `.pkg`, and an update path. A filter without an
@@ -599,7 +612,7 @@ Sizes: S ≤ 2 days, M ≤ 1 week, L ≤ 3 weeks, XL > 3 weeks.
 | W2.1 | Android managed edition: safe-boot/app-control/factory-reset restrictions, always-on/private DNS, watchdog, QR provisioning | Android | XL | Disposable phone: uninstall refused, safe mode blocked, clear data blocked, VPN persistent, recovery works. **Partial 2026-10-30:** the four restrictions plus Android 10+ Private DNS (`disallow_config_private_dns`), explicit opt-in, readback and release order are implemented and unit-tested; the 15-minute layer watchdog is implemented and visible (0.8.1), with the notification permission requested when Keep is enabled; always-on VPN/lockdown are explicitly deferred (Android 1.0 network decision); QR provisioning and the device run remain |
 | W2.2 | Android direct build: boot shield + guard, signed APK | Android | M | Signed APK, hash, cert fingerprint; guard tested on a real phone |
 | W2.3 | iPhone supervised edition: profile test, vault wording, level UI, removal password | iOS | L | Device test record for every key in `IPHONE_SUPERVISED.md` |
-| W2.4 | Mac guardian edition: root daemon, bootout test, signed pkg, updater | Mac | L | Standard user cannot delete/disable; admin recovery documented; pkg notarized |
+| W2.4 | Mac guardian edition: root daemon, bootout test, signed pkg, updater | Mac | L | Standard user cannot delete/disable; admin recovery documented; pkg notarized. **Partial 2026-10-30:** the root daemon, installer wiring, removal path and unit tests exist; standard-account bootout, signing/notarization and the updater remain |
 | W2.5 | Chromium managed edition: force-install, `"*": blocked`, policy verification | Extension/Mac | M | `chrome://policy` shows every key; standard user cannot disable |
 | W2.6 | Removal-protection status: verified / attested / unavailable on every platform | All | M | No screen can claim a higher level than it can read back |
 | W3.1 | Layer-health model: detect permission/service/VPN/profile loss, alert locally, fail closed | All | L | Each layer has a test for loss and recovery |

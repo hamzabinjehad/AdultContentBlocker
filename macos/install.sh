@@ -18,7 +18,8 @@
 #      home-folder app is the user's own file and deletes without a password,
 #      and the system extension will only activate from /Applications.
 #   3. Installs a LaunchAgent that starts Hisn at login, in the background,
-#      and brings it back after a crash or force-quit. Closing its window or
+#      and brings it back after a crash or force-quit, plus a root LaunchDaemon
+#      that restores the agent if a standard user boots it out. Closing its window or
 #      an ordinary Quit leaves protection running throughout the signed-in
 #      session. Logout, restart and shutdown still work normally.
 #   4. Launches it once, which registers the browser link (native messaging)
@@ -60,7 +61,10 @@ if [ "$REMOVE_AGENT" -eq 1 ]; then
     launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null || true
     sudo rm -f "$AGENT"
     rm -f "$USER_AGENT"
-    echo "LaunchAgent removed. Hisn will no longer start at login or come back when quit."
+    sudo launchctl bootout system/app.hisn.guardian 2>/dev/null || true
+    sudo rm -f /Library/LaunchDaemons/app.hisn.guardian.plist
+    sudo rm -f "/Library/Application Support/Hisn/hisn-guardian"         "/Library/Application Support/Hisn/guardian.conf"
+    echo "LaunchAgent and guardian daemon removed. Hisn will no longer start at login or come back when quit."
     exit 0
 fi
 

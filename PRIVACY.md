@@ -22,7 +22,9 @@ iPhone/iPad app and the Android app. Contact: the repository's support route in
 
 Hisn keeps its settings, rules, selected apps, commitment deadline, installed
 list version, local health state and the pause-screen count in the app's own
-storage. On iPhone/iPad the sealed Screen Time passcode is kept in the
+storage. On a Mac with the guardian edition, a root-owned local log records the
+protected account name, a guardian action and a timestamp (for example,
+"agent-reloaded"); it never records a site, a page or screen content. On iPhone/iPad the sealed Screen Time passcode is kept in the
 device-only Keychain (`ThisDeviceOnly`), outside iCloud and outside backups.
 Nothing in that storage is uploaded by Hisn.
 
@@ -122,5 +124,5 @@ If this policy changes, the change is recorded in [CHANGELOG.md](CHANGELOG.md)
 and the effective date below is updated. A change that adds collection would
 need a new consent, not a silent edit.
 
-**Effective:** 2026-10-29 · **Applies to:** extension 1.2.0, Mac 1.1.4, iOS
+**Effective:** 2026-10-29 · **Applies to:** extension 1.2.0, Mac 1.1.5, iOS
 1.1.3, Android 0.8.1 and later builds that link to this policy.

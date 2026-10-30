@@ -63,6 +63,7 @@ no automation, and it must be run on a real Mac by a person.
 | Android stale bundled-list warning | set the device date forward past 90 days after the signed seed build, reopen Protection | **not yet run** — `SeedFreshnessTest` covers the decision only |
 | Android managed lockdown | disposable device owner: enable Keep + Managed lockdown; try uninstall, Safe Mode, Settings erase, a VPN change and (Android 10+) a Private DNS change; read back with `test-live-managed-status.py --expect-lockdown`; then release and verify the expected restrictions are gone | **not yet run** — code, lint and pure tests only; no provisioned device |
 | iPhone/iPad lock levels | disposable device: vault seal/reveal, Screen Time readback, supervised profile removal password, app deletion refusal | **not yet run** — simulator tests only; no physical device or entitlement |
+| Mac daemon on a standard account | standard user boots out `gui/<uid>/app.hisn.agent`; daemon restores it; log out/in; reboot; admin bootout recovery | **not yet run** — unit tests only |
 | Second-person onboarding | a non-developer follows `docs/SETUP.md` on a clean Mac and iPhone/Android | **not yet run** |
 
 ## Isolated environment for disruptive checks

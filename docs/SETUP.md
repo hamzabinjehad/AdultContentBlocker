@@ -71,8 +71,9 @@ Builds Hisn, puts it in **`/Applications`** owned by root (a home-folder app,
 or one its user owns, can be changed or deleted without a password, and the
 system extension only activates from `/Applications`), installs a LaunchAgent
 in `/Library/LaunchAgents` that starts it at login and brings it back if it is
-force-quit or crashes, registers the browser link for every Chromium browser,
-and runs the verifier. Hisn stays in the background when you close its window
+force-quit or crashes, installs a root LaunchDaemon in `/Library/LaunchDaemons`
+that restores the agent if a standard user boots it out, registers the browser
+link for every Chromium browser, and runs the verifier. Hisn stays in the background when you close its window
 or use Quit, with or without an active lock. Open the window again from the
 menu bar or Applications. It runs while the protected Mac account is signed
 in; logout, restart and shutdown are allowed. Sleep pauses its work, which
@@ -98,9 +99,13 @@ Sleep/wake gets a visible recovery window. Standard-profile checks do not verify
 custom paths, guest/private windows or unreadable preferences.
 
 The agent is scoped to the account that ran the installer. It exits cleanly
-in other accounts, so they do not run a second guard. An administrator can
-remove automatic startup using `macos/install.sh --remove-agent` before
-uninstalling the app.
+in other accounts, so they do not run a second guard. The daemon logs only the
+protected account, an action and a timestamp to
+`/Library/Application Support/Hisn/guardian.log`; it does not log sites or
+screen content. An administrator can remove automatic startup using
+`macos/install.sh --remove-agent`, which also removes the daemon, before
+uninstalling the app. Removing the daemon is the documented admin recovery, not
+a hidden switch.
 
 ### Installed is not the same as protection working
 

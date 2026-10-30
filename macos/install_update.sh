@@ -6,6 +6,8 @@ set -euo pipefail
 APP=/Applications/Hisn.app
 AGENT=/Library/LaunchAgents/app.hisn.agent.plist
 LABEL=app.hisn.agent
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$SCRIPT_DIR/release/installer/install_guardian.sh"
 BACKUP_ROOT='/Library/Application Support/Hisn Updates'
 LOCK=/var/run/app.hisn.install.lock
 
@@ -207,6 +209,11 @@ if [[ ! -f "$AGENT" ]]; then
     /usr/bin/install -o root -g wheel -m 644 "$TEMP_AGENT" "$AGENT"
 fi
 /bin/launchctl bootstrap "$DOMAIN" "$AGENT"
+# Root daemon: restores the login agent if a standard user boots it out. A
+# daemon failure must not roll back a valid app update, but it is reported.
+if ! install_guardian "$SCRIPT_DIR/release/installer" "$USER_NAME"; then
+    echo "warning: Hisn updated, but the guardian daemon did not load." >&2
+fi
 COMMITTED=1
 echo "Installed Hisn $(plist_value "$APP/Contents/Info.plist" CFBundleShortVersionString) (build $(plist_value "$APP/Contents/Info.plist" CFBundleVersion)) for $USER_NAME."
 echo "Previous bundle and agent retained at: $BACKUP"

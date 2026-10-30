@@ -80,6 +80,9 @@ fi
 mkdir -p "$STAGE/scripts"
 cp "$ROOT/macos/release/installer/preinstall" "$STAGE/scripts/preinstall"
 cp "$ROOT/macos/release/installer/postinstall" "$STAGE/scripts/postinstall"
+cp "$ROOT/macos/release/installer/install_guardian.sh" "$STAGE/scripts/install_guardian.sh"
+cp "$ROOT/macos/release/installer/hisn-guardian" "$STAGE/scripts/hisn-guardian"
+cp "$ROOT/macos/release/installer/app.hisn.guardian.plist" "$STAGE/scripts/app.hisn.guardian.plist"
 cp "$ROOT/macos/install_native_host.sh" "$STAGE/scripts/install_native_host.sh"
 chmod 755 "$STAGE/scripts/"*
 VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist")
