@@ -5,6 +5,33 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
+## Browser extension 1.2.1 — 2026-10-30
+
+### Added
+
+- **Store-ready metadata.** `short_name` and `homepage_url` in the manifest;
+  version 1.2.1. The packaging script still strips the development key and
+  comments, so the published ID differs from the unpacked ID.
+- **An honest options footer.** Settings states that matching stays on the
+  device, shows the installed version, links the privacy policy and support
+  page, and says that browser policy can make the extension non-removable
+  without Hisn being able to detect it from the page.
+- **A full store-readiness record.** [EXTENSION_STORE.md](docs/EXTENSION_STORE.md)
+  has listing copy, permission justifications, privacy answers, the managed
+  `ExtensionSettings` policy, reviewer steps and post-publication ID wiring.
+- Removed the unused `offscreen` permission. The extension now declares only
+  `declarativeNetRequest`, `storage`, `alarms`, `nativeMessaging`, `scripting`
+  and `<all_urls>`.
+
+### Verification
+
+- `extension/test/run.sh` passes, including English/Arabic key and placeholder
+  parity.
+- `./test.sh extension` passes (unit suites, package check, benign corpus).
+- `./test.sh browser` settings page and related harnesses pass in Helium
+  0.20.2.1; `package.sh` produces a store-clean zip.
+- No store listing, real ID, review result or managed force-install is claimed.
+
 ## Mac 1.1.5 — 2026-10-30
 
 ### Added

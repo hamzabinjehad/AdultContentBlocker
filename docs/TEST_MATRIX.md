@@ -24,6 +24,7 @@ no automation, and it must be run on a real Mac by a person.
 | The service worker stays split into focused modules without import cycles | source-shape assertions | `worker-layout.test.js` |
 | Same scanner scenarios in a real Chromium DOM | harness page, headless Chrome in CI | `test/browser/run.sh` |
 | Extension scanner, signature page, settings, popup, block page, DNR/SafeSearch and live-page evasion in a real Chromium | Helium 0.20.2.1 (Chromium 156) on 2026-10-29, every harness PASS | `./test.sh browser` |
+| Extension store metadata, footer wording and permission set are present and localized | i18n key/placeholder parity, options footer assertions, packaged-manifest check | `extension/test/run.sh`, `check_package.py` |
 | A generation is installed whole or not at all (browser) | planner refusals | `generation.test.js` |
 | Every shipped artifact matches the signed seed manifest and the sources | `seed.py verify` | `test_seed.py`, CI |
 | Clients download from the same place; requested artifacts are built | config pins | `test_build.py` |

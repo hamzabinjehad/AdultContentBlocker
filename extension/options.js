@@ -664,4 +664,5 @@ $("uiLanguage").onchange = async () => {
   overviewSignature = undefined;
   if (current) showState(current, false, false);
 };
+$("extensionVersion").textContent = chrome.runtime.getManifest?.().version ?? "";
 init();

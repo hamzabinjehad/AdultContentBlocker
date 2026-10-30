@@ -12,6 +12,14 @@ this folder. It coordinates the existing plans rather than replacing them:
 - [Publishing plan](PUBLISHING_PLAN.md) — release tracks and ship-blockers.
 - [Test matrix](TEST_MATRIX.md) — what is demonstrated, inferred or manual.
 
+> **Execution update (2026-10-30, Extension 1.2.1):** the extension is
+> store-ready in the repository: `short_name`/`homepage_url`, an options footer
+> with the on-device statement, version and privacy/support links, the unused
+> `offscreen` permission removed, and a full listing/permission/privacy/
+> managed-policy/reviewer record in [EXTENSION_STORE.md](EXTENSION_STORE.md).
+> Unit, package, evaluation and browser settings-page suites pass. No store
+> listing, real ID or managed force-install is claimed.
+
 > **Execution update (2026-10-30, Mac 1.1.5):** the Mac app now ships a root
 > LaunchDaemon in `/Library/LaunchDaemons` that restores the login agent if a
 > standard user boots it out, with a root-owned protected-account config, a
@@ -100,7 +108,7 @@ distribution and freshness — not a missing feature list.
 
 | Platform | Code state | Release state | The real gap |
 | --- | --- | --- | --- |
-| Chromium extension | 1.2.0 development candidate (short-video/pause, list freshness, clearer list blocks) | Not on the Chrome Web Store; unpacked only | Store publication, managed force-install, one real-browser acceptance pass |
+| Chromium extension | 1.2.1 development candidate (short-video/pause, list freshness, clearer list blocks, store metadata and footer) | Not on the Chrome Web Store; unpacked only | Store publication, managed force-install, real store-ID wiring and a clean-profile acceptance pass |
 | Mac | 1.1.5; filter, browser guard, guardian split, profile, partner key and root guardian daemon | Unsigned, unnotarized, no app updater | A signed `.pkg`, an update path, and the hardware checks in `TEST_MATRIX.md` |
 | iPhone/iPad | 1.1.3 development; Screen Time, Safari blockers, vault, supervised profile, privacy manifest, signed-list age and settings policy links | No Apple team, no Family Controls entitlement, no device | Entitlement, a disposable iPhone, device acceptance of every lock level |
 | Android | 0.8.1 preview; direct-build uninstall guard, boot shield, opt-in device-owner managed lockdown (Safe Mode, all-app controls, factory reset, VPN and Android 10+ Private DNS), a visible 15-minute layer watchdog, and a 90-day bundled-list warning | No signed production APK; device-owner flow unproven | A disposable device-owner phone, real restriction refusals and release, layer-loss device run, signed release |
@@ -605,7 +613,7 @@ Sizes: S ≤ 2 days, M ≤ 1 week, L ≤ 3 weeks, XL > 3 weeks.
 | W0.3 | Create `release/1.0`, a version matrix and a changelog; tag the integration point | All | S | Every platform version is pinned in one file. **Done 2026-10-29:** `versions.json`, `docs/VERSIONS.md`, `CHANGELOG.md` and the check |
 | W1.1 | Publish the `lists` branch | Lists | S | `curl -I .../lists/manifest.json` is 200; clients install v5+ |
 | W1.2 | Signed list updates for iOS Safari blockers and Android DNS | iOS, Android | L | A published generation changes enforcement without a new app build. **Android decision 2026-10-30:** APK-only for 1.0; the UI states it and warns at 90 days. Runtime Android downloads deferred to 1.1. iOS still open |
-| W1.3 | Extension 1.1.13: short-video/pause release notes, package, unlisted store beta | Extension | M | Store build passes the browser suite; real ID wired |
+| W1.3 | Extension store beta: 1.2.1 metadata/footer/package, unlisted listing | Extension | M | Store build passes the browser suite; real ID wired. **Repository side done 2026-10-30:** 1.2.1 packaged and documented; account/upload/review and ID wiring remain |
 | W1.4 | Per-surface list coverage: document the core / full split; make each client state its tier | Extension, iOS, Android | M | A coverage table is generated per release; no client claims the full list. **Done 2026-10-29:** `docs/COVERAGE.md` generated from the signed seed |
 | W1.5 | Text corpus: 500 labelled cases per language and a CI regression gate | All | L | A vocabulary change reports misses and false blocks per language |
 | W1.6 | Visual: licensed benchmark, hide-first audit, video sampling | Chromium, Safari, Android | L | Recall/false-hide numbers with denominators; no pre-verdict adult frame |

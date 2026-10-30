@@ -5,11 +5,11 @@
     {
       "id": "extension",
       "name": "Browser extension (Chromium)",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "build": null,
       "state": "development · unpacked, no store listing",
       "source": "extension/manifest.json",
-      "notes": "The packaged zip strips the development key; the Chrome Web Store ID will differ from the unpacked ID."
+      "notes": "The packaged zip strips the development key; the Chrome Web Store ID will differ from the unpacked ID. 1.2.1 adds the options footer, store metadata and store-readiness record."
     },
     {
       "id": "macos",

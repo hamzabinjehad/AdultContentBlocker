@@ -34,7 +34,8 @@ try {
       window.chrome = { storage: { onChanged: { addListener(fn) { changeHandlers.push(fn); } },
           local: { get: async () => (${JSON.stringify(uiLanguage ?? null)} ? { uiLanguage: ${JSON.stringify(uiLanguage ?? null)} } : {}),
                    set: async () => {} } },
-        runtime: { sendMessage(msg, cb) {
+        runtime: { getManifest() { return { version: '1.2.1' }; },
+          sendMessage(msg, cb) {
           if (workerUnavailable) return cb({ok:false,reason:'unavailable'});
           if (msg.type === 'getState') { reads++; return cb(structuredClone(fixture)); }
           if (msg.type === 'getVisualStatus') return cb({state:'disabled',available:true,supportedPersonModes:['off','all','female','male']});
@@ -67,6 +68,12 @@ try {
   const solo = await frame(false);
   const s = solo.contentDocument, w = solo.contentWindow;
   check(s.getElementById("modeTitle").textContent === "Browser-only protection", "standalone identity");
+  const footer = s.querySelector(".extension-footer");
+  check(footer && footer.textContent.includes("1.2.1"), "settings footer shows the installed version");
+  const footerLinks = [...footer.querySelectorAll("a")].map((a) => a.getAttribute("href"));
+  check(footerLinks.some((h) => h.includes("PRIVACY.md")) && footerLinks.some((h) => h.includes("SUPPORT.md")),
+    "settings footer links privacy and support");
+  check(footer.textContent.includes("browser policy"), "settings footer states the managed-removal limit");
   check(!s.getElementById("custom").disabled, "standalone fields editable");
   check(!s.getElementById("overview").hidden && s.getElementById("rules").hidden, "overview is the first screen");
   check(s.getElementById("repairProtection").getBoundingClientRect().height >= 44,

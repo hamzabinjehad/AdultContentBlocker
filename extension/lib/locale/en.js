@@ -337,6 +337,11 @@ export default {
   "opt.saved": "Saved and applied in this browser.",
   "opt.badLines": "Not saved. Fix domain entries on lines {0}. Use a domain or a full web address.",
   "opt.strictConfirm": "Switch to Strict mode? Sites outside your saved allowed list will close or be blocked. Save the sites you need in Always allowed first. You can change this mode here while no app lock is active.",
+  "opt.footer.local": "Hisn runs on this device. It does not send your browsing history, page text or media to a server.",
+  "opt.footer.version": "Version",
+  "opt.footer.privacy": "Privacy policy",
+  "opt.footer.support": "Support",
+  "opt.footer.policy": "If browser policy installed Hisn, only a policy administrator can remove or disable it. Hisn cannot detect that from this page.",
   "opt.connected": "Connected. App settings are in use.",
   "opt.notConnected": "Could not connect. Open Hisn on your Mac and try again. Browser filtering continues with its current settings.",
 };

@@ -244,3 +244,7 @@ body.popup.popup-editing{height:600px;max-height:100vh;min-height:0;overflow:hid
   .popup .lang-switch{max-width:100%;padding-inline:8px}
   .popup .actions button{padding-inline:8px}
 }
+/* Store and support links belong to the settings page, not the popup. */
+.extension-footer{border-top:1px solid var(--line,#d9dde5);margin:24px 0 8px;padding-top:12px;max-width:760px}
+.extension-footer .hint{margin:4px 0}
+.extension-footer a{color:inherit;text-underline-offset:2px}
