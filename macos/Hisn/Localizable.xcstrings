@@ -2846,6 +2846,36 @@
         }
       }
     },
+    "Last list update" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "آخر تحديث للقائمة"
+          }
+        }
+      }
+    },
+    "The block list has not updated in over a week. The previous signed list is still enforced." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم تتحدث قائمة الحجب منذ أكثر من أسبوع. القائمة الموقّعة السابقة لا تزال مطبقة."
+          }
+        }
+      }
+    },
+    "The last block-list update failed. The previous signed list is still enforced." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فشل آخر تحديث لقائمة الحجب. القائمة الموقّعة السابقة لا تزال مطبقة."
+          }
+        }
+      }
+    },
     "Last list check" : {
       "localizations" : {
         "ar" : {

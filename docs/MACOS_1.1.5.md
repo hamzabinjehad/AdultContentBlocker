@@ -31,6 +31,13 @@ runs in the system domain and puts the agent back.
   XPC and reports a missing/stale provider; the daemon's job is the system
   domain, not a second health model.
 
+### List freshness is visible
+
+The Details page now shows **Last list update** and says when the downloaded
+generation is more than seven days old or when the last update failed. The
+previous signed list is still enforced; the note is freshness, not a missing
+layer. `ListUpdateFreshness` is a small tested rule, not a second updater.
+
 ### Installer changes
 
 - The package `postinstall` installs the daemon, its script and config after the
@@ -53,7 +60,7 @@ On 30 October 2026:
   config, refused accounts (`root`, `loginwindow`, a space and a shell
   injection), a logged-out session being quiet, bootstrapping a missing agent,
   a failed reload, a healthy agent left alone, installer wiring and shell syntax.
-- `./test.sh macos`: **495 app tests** plus the Arabic-string check.
+- `./test.sh macos`: **496 app tests** plus the Arabic-string check (524 strings).
 - `bash macos/release/release.sh --smoke /tmp/…`: **unsigned package structure
   passed**. The expanded package's `Scripts/` contains `postinstall`,
   `install_guardian.sh`, `hisn-guardian` and `app.hisn.guardian.plist`; nothing

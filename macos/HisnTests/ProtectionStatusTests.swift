@@ -300,4 +300,12 @@ final class LockStatusTests: XCTestCase {
         let s = LockStatus(state: state, now: now, pendingRelease: release)
         XCTAssertTrue(s.detail?.contains("early release arrives") ?? false)
     }
+    func testListUpdateFreshnessWarnsAfterAWeekAndNeverForAFutureStamp() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        XCTAssertFalse(ListUpdateFreshness.isStale(lastUpdate: nil, now: now))
+        XCTAssertFalse(ListUpdateFreshness.isStale(lastUpdate: now.addingTimeInterval(-6 * 86_400), now: now))
+        XCTAssertTrue(ListUpdateFreshness.isStale(lastUpdate: now.addingTimeInterval(-8 * 86_400), now: now))
+        XCTAssertFalse(ListUpdateFreshness.isStale(lastUpdate: now.addingTimeInterval(3600), now: now))
+    }
+
 }

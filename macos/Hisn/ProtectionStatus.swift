@@ -371,3 +371,15 @@ public struct LockStatus: Equatable {
         detail = parts.joined(separator: " · ")
     }
 }
+
+/// Whether the downloaded generation is old enough that the Details page should
+/// say so. The bundled seed is always present; a missing update is not a missing
+/// layer. HEALTH.md sets seven days as the freshness line.
+enum ListUpdateFreshness {
+    static let staleAfter: TimeInterval = 7 * 86_400
+
+    static func isStale(lastUpdate: Date?, now: Date = Date()) -> Bool {
+        guard let lastUpdate else { return false }
+        return now.timeIntervalSince(lastUpdate) > staleAfter
+    }
+}

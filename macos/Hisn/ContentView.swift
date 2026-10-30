@@ -2292,6 +2292,17 @@ private struct DetailsSection: View {
                 row("Last list check",
                     value: (defaults?.object(forKey: "lastListCheck") as? Date)?
                         .formatted(date: .abbreviated, time: .shortened) ?? String(localized: "never"))
+                row("Last list update",
+                    value: lastListUpdate?.formatted(date: .abbreviated, time: .shortened)
+                        ?? String(localized: "never"))
+                if ListUpdateFreshness.isStale(lastUpdate: lastListUpdate) {
+                    Text("The block list has not updated in over a week. The previous signed list is still enforced.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                if listUpdateFailed {
+                    Text("The last block-list update failed. The previous signed list is still enforced.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
                 row("Browser last connected",
                     value: (defaults?.object(forKey: "extensionLastSeen") as? Date)?
                         .formatted(date: .abbreviated, time: .shortened) ?? String(localized: "never"))
@@ -2300,6 +2311,14 @@ private struct DetailsSection: View {
             }
             .font(.callout)
         }
+    }
+
+    private var lastListUpdate: Date? {
+        defaults?.object(forKey: "lastListUpdate") as? Date
+    }
+
+    private var listUpdateFailed: Bool {
+        defaults?.string(forKey: "lastListError") != nil
     }
 
     private func row(_ label: LocalizedStringKey, value: String) -> some View {
