@@ -8,6 +8,22 @@ The plan to finish the iPhone/iPad app, including which Apple-supported lock
 level stops deletion and what each one cannot stop, is in
 [the iOS end-goal plan](../docs/IOS_IMPROVEMENT_PLAN.md).
 
+## 1.1.3 privacy readiness and list age
+
+- **Privacy manifest:** `Hisn/PrivacyInfo.xcprivacy` is included in the app,
+  all four Safari blockers, `HisnActivityMonitor` and `HisnText`. It declares no
+  tracking and no collected data, with required reasons for app-only and
+  app-group `UserDefaults` and for the monotonic boot clock. `Info.plist`
+  declares `ITSAppUsesNonExemptEncryption` false.
+- **Signed list age:** `prepare_rules.py` copies the signed seed's `built_at`
+  into `rules-metadata.json`; the list section shows **Built** and warns after
+  90 days that a newer signed build is the only Safari list update. There is no
+  runtime list download.
+- **Settings:** app version/build, plus privacy-policy and support links.
+- Version 1.1.3, build 4. Simulator-tested only; no Apple team, entitlement or
+  physical-device acceptance is claimed. See
+  [the 1.1.3 record](../docs/IOS_1.1.3.md).
+
 ## Open and run
 
 For the separately labeled free-development Safari-only candidate, see

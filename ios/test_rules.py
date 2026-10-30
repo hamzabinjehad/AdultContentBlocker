@@ -33,6 +33,7 @@ class SafariRuleTests(unittest.TestCase):
         raw = ("# signed fixture\n" + "\n".join(domains) + "\n").encode()
         (directory / "domains_core.txt").write_bytes(raw)
         manifest = json.dumps({"schema": 1, "version": 7, "core_domain_count": len(domains),
+            "built_at": "2026-10-01T20:29:42+00:00",
             "artifacts": {"domains_core.txt": {"sha256": hashlib.sha256(raw).hexdigest(), "bytes": len(raw)}}}).encode()
         (directory / "manifest.json").write_bytes(manifest)
         (directory / "manifest.json.sig").write_text(key.sign(manifest).hex())
@@ -42,7 +43,8 @@ class SafariRuleTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
             key = self.fixture(directory, ["a.example.net", "b.example.net"])
-            self.assertEqual(rules.verified_domains(directory, key), (["a.example.net", "b.example.net"], 7))
+            self.assertEqual(rules.verified_domains(directory, key),
+                             (["a.example.net", "b.example.net"], 7, "2026-10-01T20:29:42+00:00"))
             (directory / "domains_core.txt").write_text("a.example.net\nevil.example.net\n")
             with self.assertRaises(Rejected): rules.verified_domains(directory, key)
 

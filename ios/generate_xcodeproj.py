@@ -52,8 +52,12 @@ def main(safari_only: bool = False, domain_only: bool = False,
         scanner: ["HisnWebExtension/SafariWebExtensionHandler.swift"],
         **{name: ["HisnBlocker/ContentBlockerRequestHandler.swift"] for name in blockers},
     }
-    resources = {app: ["Hisn/en.lproj/Localizable.strings", "Hisn/ar.lproj/Localizable.strings", "Hisn/Assets.xcassets"],
-                 tests: ["fixtures/safari_cases.json"]}
+    privacy = "Hisn/PrivacyInfo.xcprivacy"
+    resources = {app: ["Hisn/en.lproj/Localizable.strings", "Hisn/ar.lproj/Localizable.strings",
+                       "Hisn/Assets.xcassets", privacy],
+                 tests: ["fixtures/safari_cases.json"],
+                 monitor: [privacy], scanner: [privacy],
+                 **{blocker: [privacy] for blocker in blockers}}
     if safari_only:
         sources[app] = ["HisnSafariOnly/SafariOnlyApp.swift", "../shared/apple/MobileProtectionPolicy.swift"]
         sources = {name: sources[name] for name in names}
@@ -64,7 +68,8 @@ def main(safari_only: bool = False, domain_only: bool = False,
             raise SystemExit(f"Missing project input: {path}")
     refs = {}
     for path in paths:
-        kind = {".swift": "sourcecode.swift", ".strings": "text.plist.strings", ".json": "text.json", ".xcassets": "folder.assetcatalog"}[Path(path).suffix]
+        kind = {".swift": "sourcecode.swift", ".strings": "text.plist.strings", ".json": "text.json",
+                ".xcassets": "folder.assetcatalog", ".xcprivacy": "text.xml"}[Path(path).suffix]
         refs[path] = p.add(oid("ios-file", path), "PBXFileReference", {
             "lastKnownFileType": kind, "path": q(path), "sourceTree": '"<group>"',
         })
@@ -95,7 +100,7 @@ def main(safari_only: bool = False, domain_only: bool = False,
     })
     base = {"SDKROOT": "iphoneos", "IPHONEOS_DEPLOYMENT_TARGET": "16.0", "SWIFT_VERSION": "5.0",
             "TARGETED_DEVICE_FAMILY": q("1,2"), "CODE_SIGN_STYLE": "Automatic",
-            "DEVELOPMENT_TEAM": '""', "CURRENT_PROJECT_VERSION": "3", "MARKETING_VERSION": "1.1.2",
+            "DEVELOPMENT_TEAM": '""', "CURRENT_PROJECT_VERSION": "4", "MARKETING_VERSION": "1.1.3",
             "CLANG_ENABLE_MODULES": "YES", "CLANG_ENABLE_OBJC_ARC": "YES",
             "ENABLE_USER_SCRIPT_SANDBOXING": "NO", "SUPPORTED_PLATFORMS": q("iphoneos iphonesimulator"),
             "SUPPORTS_MACCATALYST": "NO", "PRODUCT_NAME": q("$(TARGET_NAME)"),
@@ -132,7 +137,7 @@ def main(safari_only: bool = False, domain_only: bool = False,
     for name in names:
         phases = [phase(name, "PBXSourcesBuildPhase", [refs[path] for path in sources[name]]),
                   phase(name, "PBXFrameworksBuildPhase", []),
-                  phase(name, "PBXResourcesBuildPhase", [loc, refs["Hisn/Assets.xcassets"]] if name == app else
+                  phase(name, "PBXResourcesBuildPhase", [loc, refs["Hisn/Assets.xcassets"], refs[privacy]] if name == app else
                         [refs[path] for path in resources.get(name, [])])]
         extra = {"PRODUCT_BUNDLE_IDENTIFIER": q(app_identifier if name == app else
                  "app.hisn.mobile.tests" if name == tests else "app.hisn.mobile.activity" if name == monitor

@@ -12,6 +12,14 @@ this folder. It coordinates the existing plans rather than replacing them:
 - [Publishing plan](PUBLISHING_PLAN.md) — release tracks and ship-blockers.
 - [Test matrix](TEST_MATRIX.md) — what is demonstrated, inferred or manual.
 
+> **Execution update (2026-10-30, iOS 1.1.3):** the iOS app now ships a privacy
+> manifest in the app and every extension (no tracking, no collected data,
+> UserDefaults and boot-time reasons), declares non-exempt encryption false, and
+> shows the signed Safari list's build date with a 90-day warning. Settings has
+> the app version plus privacy-policy and support links. The simulator suite
+> passes; no Apple team, entitlement, TestFlight or physical-device result is
+> claimed. See [the 1.1.3 record](IOS_1.1.3.md).
+
 > **Execution update (2026-10-30, W1.2/W2.1 continued):** Android 0.8.1 records
 > the 1.0 list-update decision: no runtime list download; the signed APK is the
 > update, the UI says so, and `SeedFreshness` warns after 90 days from the signed
@@ -85,7 +93,7 @@ distribution and freshness — not a missing feature list.
 | --- | --- | --- | --- |
 | Chromium extension | 1.2.0 development candidate (short-video/pause, list freshness, clearer list blocks) | Not on the Chrome Web Store; unpacked only | Store publication, managed force-install, one real-browser acceptance pass |
 | Mac | 1.1.4; filter, browser guard, guardian split, profile, partner key | Unsigned, unnotarized, no app updater | A signed `.pkg`, an update path, and the hardware checks in `TEST_MATRIX.md` |
-| iPhone/iPad | 1.1.2 development; Screen Time, Safari blockers, vault, supervised profile | No Apple team, no Family Controls entitlement, no device | Entitlement, a disposable iPhone, device acceptance of every lock level |
+| iPhone/iPad | 1.1.3 development; Screen Time, Safari blockers, vault, supervised profile, privacy manifest, signed-list age and settings policy links | No Apple team, no Family Controls entitlement, no device | Entitlement, a disposable iPhone, device acceptance of every lock level |
 | Android | 0.8.1 preview; direct-build uninstall guard, boot shield, opt-in device-owner managed lockdown (Safe Mode, all-app controls, factory reset, VPN and Android 10+ Private DNS), a visible 15-minute layer watchdog, and a 90-day bundled-list warning | No signed production APK; device-owner flow unproven | A disposable device-owner phone, real restriction refusals and release, layer-loss device run, signed release |
 | Lists | Signed seed v4 built 2026-10-01 | **No `lists` branch on origin** | Publish signed daily generations; update iOS and Android |
 

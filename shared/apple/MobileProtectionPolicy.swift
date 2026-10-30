@@ -333,3 +333,37 @@ enum MobileProtectionPolicy {
                      selfTested: false, stale: stale)
     }
 }
+
+// MARK: - Bundled list age
+
+/// Safari list changes arrive only with a new signed app build. The signed
+/// seed's build date lets the app say when that starting point is old, without
+/// adding a runtime download or a second trust path.
+enum SeedFreshness {
+    /// Warn after this many whole days.
+    static let warnDays = 90
+
+    /// The signed seed uses an ISO offset timestamp; accept a plain date too.
+    static func date(from text: String) -> Date? {
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime]
+        if let parsed = iso.date(from: text) { return parsed }
+        let day = DateFormatter()
+        day.calendar = Calendar(identifier: .gregorian)
+        day.locale = Locale(identifier: "en_US_POSIX")
+        day.timeZone = TimeZone(secondsFromGMT: 0)
+        day.dateFormat = "yyyy-MM-dd"
+        return day.date(from: text)
+    }
+
+    /// Whole days since the build, clamped at zero; a bad interval reads as zero.
+    static func ageDays(built: Date, now: Date) -> Int {
+        let seconds = now.timeIntervalSince(built)
+        guard seconds.isFinite else { return 0 }
+        return max(0, Int(seconds / 86_400))
+    }
+
+    static func stale(built: Date, now: Date, warnDays: Int = SeedFreshness.warnDays) -> Bool {
+        ageDays(built: built, now: now) >= warnDays
+    }
+}

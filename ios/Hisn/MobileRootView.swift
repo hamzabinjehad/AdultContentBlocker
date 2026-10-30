@@ -94,6 +94,12 @@ struct MobileRootView: View {
                     Text("browserfirst.unverified").font(.footnote).foregroundStyle(.secondary)
                     LabeledContent("list.domains", value: protection.listCount.formatted())
                     LabeledContent("list.version", value: String(protection.listVersion))
+                    if let built = protection.listBuilt {
+                        LabeledContent("list.built", value: built.formatted(date: .abbreviated, time: .omitted))
+                        if SeedFreshness.stale(built: built, now: Date()) {
+                            Text("list.stale").font(.footnote).foregroundStyle(HisnPalette.warning)
+                        }
+                    }
                     Text("list.body").font(.footnote).foregroundStyle(.secondary)
                     Button("setup.continue") { selectedTab = 1 }
                 }
@@ -369,6 +375,13 @@ struct MobileRootView: View {
         }
     }
 
+    private var appVersion: String {
+        let info = Bundle.main.infoDictionary
+        let version = info?["CFBundleShortVersionString"] as? String ?? "?"
+        let build = info?["CFBundleVersion"] as? String ?? "?"
+        return "\(version) (\(build))"
+    }
+
     private var settings: some View {
         Form {
             Section("language.title") {
@@ -396,9 +409,16 @@ struct MobileRootView: View {
                 Text("gray.automation").font(.footnote).foregroundStyle(.secondary)
             }
             .accessibilityIdentifier("settings.grayScreen")
-            Section("privacy.title") { Text("privacy.body") }
+            Section("privacy.title") {
+                Text("privacy.body")
+                Link("privacy.policy", destination: URL(string: "https://github.com/hamzabinjehad/AdultContentBlocker/blob/main/PRIVACY.md")!)
+                Link("support.page", destination: URL(string: "https://github.com/hamzabinjehad/AdultContentBlocker/blob/main/SUPPORT.md")!)
+            }
             Section("coverage.title") { Text("coverage.body") }
             Section("apple.title") { Text("apple.body") }
+            Section("about.title") {
+                LabeledContent("about.version", value: appVersion)
+            }
         }
         // The same readable column as the other tabs on a wide iPad.
         .frame(maxWidth: horizontalSizeClass == .regular ? 860 : .infinity)

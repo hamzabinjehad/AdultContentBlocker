@@ -67,6 +67,8 @@
 "list.title" = "Shared signed list";
 "list.domains" = "Domains bundled";
 "list.version" = "List version";
+"list.built" = "Built";
+"list.stale" = "This built-in list is more than 90 days old. A newer Hisn build is the only list update for Safari.";
 "list.body" = "Built from the same verified core list as the Mac app. Updates currently require a new app build.";
 "family.title" = "Apple's family protection";
 "commitment.title" = "My self-control commitment";
@@ -149,6 +151,10 @@
 "language.title" = "Language";
 "language.system" = "Follow device language";
 "privacy.title" = "Privacy";
+"privacy.policy" = "Privacy policy";
+"support.page" = "Support";
+"about.title" = "About";
+"about.version" = "Version";
 "privacy.body" = "Hisn does not record visited sites or blocked browsing attempts. Safari applies declarative rules without sending browsing history to Hisn. Family DNS is handled by Cloudflare under its own privacy policy. To check commitment, daily budget and passcode dates, Hisn reads the time from apple.com over HTTPS; nothing about you is sent.";
 "coverage.title" = "What this version protects";
 "coverage.body" = "A self-control commitment, Safari domain blockers, separately enabled Hisn Text webpage checking, selected-app shields, optional family DNS and Apple's adult-content web filter. These do not guarantee all content, all apps, VPN resistance or protection that cannot be disabled. Hisn works independently of your Mac; settings do not sync yet.";

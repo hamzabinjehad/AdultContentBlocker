@@ -37,6 +37,7 @@ def verified_domains(bundle: Path, public_key: Path) -> tuple[list[str], int]:
     key, _ = load_key(public_key)
     raw = read_small(bundle / "manifest.json")
     verify_signature(raw, read_small(bundle / "manifest.json.sig", 256), key)
+    manifest = json.loads(raw)
     _, version, entry, count = validate_manifest(raw, "domains_core.txt")
     content = read_small(bundle / "domains_core.txt", 16 << 20)
     if len(content) != entry["bytes"] or hashlib.sha256(content).hexdigest() != entry["sha256"]:
@@ -53,7 +54,10 @@ def verified_domains(bundle: Path, public_key: Path) -> tuple[list[str], int]:
         safety.check(domain)
     if count > PARTS * RULE_LIMIT:
         raise Rejected("core list exceeds Safari shard capacity; add explicit targets, never truncate")
-    return domains, version
+    built = manifest.get("built_at")
+    if not isinstance(built, str) or not built:
+        built = None
+    return domains, version, built
 
 
 def compile_part(domains: list[str], part: int) -> bytes:
@@ -70,15 +74,15 @@ def main() -> None:
     parser.add_argument("--part", type=int, default=0)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    domains, version = verified_domains(ROOT / "seed", ROOT / "blocklist/public_key.hex")
+    domains, version, built = verified_domains(ROOT / "seed", ROOT / "blocklist/public_key.hex")
     args.output.mkdir(parents=True, exist_ok=True)
     if args.part:
         raw = compile_part(domains, args.part)
         (args.output / "rules.json").write_bytes(raw)
         metadata = {"version": version, "count": min(RULE_LIMIT, len(domains) - (args.part - 1) * RULE_LIMIT),
-                    "sha256": hashlib.sha256(raw).hexdigest()}
+                    "sha256": hashlib.sha256(raw).hexdigest(), "built": built}
     else:
-        metadata = {"version": version, "count": len(domains), "parts": PARTS}
+        metadata = {"version": version, "count": len(domains), "parts": PARTS, "built": built}
     (args.output / "rules-metadata.json").write_text(json.dumps(metadata, sort_keys=True))
 
 

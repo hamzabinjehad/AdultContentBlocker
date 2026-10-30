@@ -1,6 +1,6 @@
 # Hisn for iPhone and iPad: end-goal plan
 
-Written 2026-10-26 against 1.1.2. This is the iPhone/iPad part of the
+Written 2026-10-26 against 1.1.2 and updated 2026-10-30 for 1.1.3. This is the iPhone/iPad part of the
 [end-goal plan](END_GOAL_PLAN.md) and builds on it. Evidence comes from a code
 read of `ios/`, `shared/apple/` and `profile/`, and from Apple's documentation and
 forums (links inline). Nothing here has been tested on a real iPhone yet.
@@ -40,7 +40,7 @@ clears every setting Hisn made
 The app must always say which level the person is on, and must never claim a
 higher one than it can show.
 
-## Where 1.1.2 stands
+## Where 1.1.3 stands
 
 | Layer | Works today | Main gap |
 | --- | --- | --- |
@@ -55,6 +55,13 @@ higher one than it can show.
 | Supervised profile | DoH with `ProhibitDisablement`, built-in filter with 500 deny URLs, removal restrictions, removal password | Some Apple restriction keys unused; password not time-locked; untested on a device |
 | English/Arabic, accessibility | 251 matching keys, RTL layout, 48 pt rows, VoiceOver traits | Passcode ignores Dynamic Type; some low-contrast colours; one Arabic arrow |
 | Release | Tests in CI on the simulator | No Apple team, no Family Controls distribution entitlement, no device evidence |
+
+**1.1.3 (2026-10-30), simulator-only:** a privacy manifest in the app and every
+extension (no tracking, no collected data, UserDefaults and boot-time reasons),
+`ITSAppUsesNonExemptEncryption=false`, the signed Safari list's build date with a
+90-day warning, and Settings links to the privacy policy/support page plus the
+app version. See [the 1.1.3 record](IOS_1.1.3.md). Nothing below is changed by
+that release; the device and entitlement gaps remain.
 
 ## Audit by layer, with code references
 

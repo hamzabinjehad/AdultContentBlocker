@@ -93,6 +93,11 @@ past version; *superseded* documents point to their replacement. Start with the
 
 Per-version change and verification notes, newest first.
 
+### iPhone and iPad
+
+- [iOS 1.1.3 release notes](IOS_1.1.3.md): A privacy manifest in the app and every extension, export-compliance declaration, the signed Safari list's build date with a 90-day warning, and privacy/support/version rows in Settings. Simulator-tested; no device, team or entitlement yet.
+- [Hisn 1.1.2 update notes](UPDATE_1_1_2.md): New popup and visual-check interface, detection changes and limits, and how to update Mac, browser and phone. *Historical.*
+
 ### Android
 
 - [Android 0.8.1 release notes](ANDROID_0.8.1.md): The APK-only list-update decision with a 90-day bundled-list age warning, a visible background-check line, and the notification permission request when Keep Hisn installed is enabled. Device acceptance pending; the ordinary build is still removable.
@@ -124,7 +129,6 @@ Per-version change and verification notes, newest first.
 
 ### Cross-platform updates
 
-- [Hisn 1.1.2 update notes](UPDATE_1_1_2.md): New popup and visual-check interface, detection changes and limits, and how to update Mac, browser and phone. *Historical.*
 - [Hisn 1.1.1 update notes](UPDATE_1_1_1.md): Installing the 1.1.1 Mac build, reloading browser extensions, and the signed-list publishing key prerequisite. *Historical.*
 
 Raw device evidence for the Android records is kept next to them as JSON:

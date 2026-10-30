@@ -10,6 +10,7 @@
 <key>CFBundleShortVersionString</key><string>$(MARKETING_VERSION)</string>
 <key>CFBundleVersion</key><string>$(CURRENT_PROJECT_VERSION)</string>
 <key>LSRequiresIPhoneOS</key><true/>
+<key>ITSAppUsesNonExemptEncryption</key><false/>
 <key>HisnLimitedDomainOnly</key><string>$(HISN_SAFARI_DOMAIN_ONLY)</string>
 <key>HisnLimitedReuseTextID</key><string>$(HISN_SAFARI_REUSE_TEXT_ID)</string>
 <key>UILaunchScreen</key><dict/>

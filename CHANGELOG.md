@@ -5,6 +5,33 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
+## iOS/iPadOS 1.1.3 — 2026-10-30
+
+### Added
+
+- **Privacy manifest in every bundle.** `Hisn/PrivacyInfo.xcprivacy` ships in the
+  app, four Safari blockers, `HisnActivityMonitor` and `HisnText`: no tracking,
+  no collected data, and required reasons for app-only/app-group `UserDefaults`
+  and the monotonic boot clock. `Info.plist` declares
+  `ITSAppUsesNonExemptEncryption` false.
+- **Signed Safari list age.** `prepare_rules.py` copies the signed seed's
+  `built_at` into `rules-metadata.json`; the list section shows **Built** and
+  warns after 90 days that a newer signed build is the only Safari list update.
+  `SeedFreshness` accepts ISO offset timestamps and plain dates, clamps future
+  dates to zero and has Swift tests for the boundary.
+- **Settings links and version.** Settings shows the app version/build and links
+  to the repository privacy policy and support page.
+- `ios/test_privacy.py` checks the manifest, export declaration, required
+  reasons and membership in all seven bundles.
+- Version 1.1.3, build 4. See [the 1.1.3 record](docs/IOS_1.1.3.md).
+
+### Verification
+
+- `./test.sh ios` passes on the iPhone 17 / iOS 26.5 simulator (182 hosted
+  tests) and the 32 Python rule, privacy and localization checks pass.
+- No Apple team, Family Controls entitlement, TestFlight build or physical-device
+  result is claimed.
+
 ## Android 0.8.1 — 2026-10-30
 
 ### Added

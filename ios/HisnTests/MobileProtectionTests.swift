@@ -547,8 +547,9 @@ final class MobileProtectionTests: XCTestCase {
             total += rules.count
         }
         let metadata = try JSONSerialization.jsonObject(with:
-            Data(contentsOf: bundle.appendingPathComponent("rules-metadata.json"))) as! [String: Int]
-        XCTAssertEqual(total, metadata["count"])
+            Data(contentsOf: bundle.appendingPathComponent("rules-metadata.json"))) as! [String: Any]
+        XCTAssertEqual(total, metadata["count"] as? Int)
+        XCTAssertNotNil(metadata["built"] as? String, "the signed build date must reach the app metadata")
     }
 
     @MainActor
@@ -1310,4 +1311,20 @@ final class SetupHonestyTests: XCTestCase {
         XCTAssertFalse(try text("ar", "lock.confirm.hint").contains("يُحفظ تأكيدك على هذا الجهاز"))
         XCTAssertTrue(try text("ar", "lock.confirm.hint").contains("الاستعادة"))
     }
+    func testSeedFreshnessReadsTheSignedBuildDateAndWarnsAfterNinetyDays() throws {
+        let built = try XCTUnwrap(SeedFreshness.date(from: "2026-10-01T20:29:42+00:00"))
+        let now = try XCTUnwrap(SeedFreshness.date(from: "2026-10-30T12:00:00Z"))
+        XCTAssertEqual(SeedFreshness.ageDays(built: built, now: now), 28)
+        XCTAssertFalse(SeedFreshness.stale(built: built, now: now))
+        XCTAssertEqual(SeedFreshness.ageDays(built: built, now: built.addingTimeInterval(-3600)), 0,
+                       "a future build date must clamp to zero")
+        let plain = try XCTUnwrap(SeedFreshness.date(from: "2026-10-01"))
+        XCTAssertEqual(SeedFreshness.ageDays(built: plain, now: now), 29)
+        let old = try XCTUnwrap(SeedFreshness.date(from: "2026-07-01T00:00:00Z"))
+        XCTAssertTrue(SeedFreshness.stale(built: old, now: now))
+        let recent = try XCTUnwrap(SeedFreshness.date(from: "2026-08-02T00:00:00Z"))
+        XCTAssertFalse(SeedFreshness.stale(built: recent, now: now))
+        XCTAssertNil(SeedFreshness.date(from: "not-a-date"))
+    }
+
 }

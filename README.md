@@ -18,7 +18,7 @@ you the lock; Hisn adds the coverage those built-in filters miss. Read
 | --- | --- | --- | --- |
 | Browser extension (Chromium) | Blocks listed domains, checks page text, optional local image/video checks | 1.2.0 | [Using the extension](docs/EXTENSION_USAGE.md) |
 | Mac | Content-filter system extension, browser guard, locks and accountability partner | 1.1.4, needs a signed build | [Mac setup](docs/SETUP.md) |
-| iPhone & iPad | Safari blockers, Safari text extension, Screen Time app limits, optional family DNS | 1.1.2, development | [iOS README](ios/README.md) |
+| iPhone & iPad | Safari blockers, Safari text extension, Screen Time app limits, optional family DNS, privacy manifest | 1.1.3, development | [iOS README](ios/README.md) |
 | Android | DNS filtering, selected-app and word restrictions, optional image checks, commitments, opt-in device-owner uninstall guard and managed lockdown, background layer watchdog and bundled-list freshness warning | 0.8.1 preview | [Android README](android/README.md) · [1.0 plan](docs/ANDROID_1.0_PLAN.md) |
 | Network / router | Verified signed DNS rules for administrator import | Tools only | [Network tools](network/README.md) |
 

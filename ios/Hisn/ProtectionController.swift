@@ -18,6 +18,7 @@ final class ProtectionController: ObservableObject {
     @Published private(set) var errorKey: String?
     @Published private(set) var listCount = 0
     @Published private(set) var listVersion = 0
+    @Published private(set) var listBuilt: Date?
     @Published private(set) var listIntegrityVerified = false
     private var listChecked = false
     private let resourceBundleURL: URL
@@ -103,6 +104,7 @@ final class ProtectionController: ObservableObject {
         if let data = try? Data(contentsOf: resourceBundleURL.appendingPathComponent("rules-metadata.json")),
            let metadata = try? JSONDecoder().decode(Metadata.self, from: data) {
             listCount = metadata.count; listVersion = metadata.version
+            if let built = metadata.built { listBuilt = SeedFreshness.date(from: built) }
         }
         #if targetEnvironment(simulator)
         removal = .unavailable
@@ -753,7 +755,7 @@ final class ProtectionController: ObservableObject {
             MobileProtectionPolicy.safariListReady(count: summary.count, version: summary.version, parts: parts))
     }
 
-    private struct Metadata: Decodable { let count: Int; let version: Int; let parts: Int }
+    private struct Metadata: Decodable { let count: Int; let version: Int; let parts: Int; let built: String? }
     private struct PartMetadata: Decodable { let count: Int; let version: Int; let sha256: String }
 }
 
