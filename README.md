@@ -24,8 +24,9 @@ you the lock; Hisn adds the coverage those built-in filters miss. Read
 
 Each platform's start link is in the table; Mac users can also follow the
 [Mac user guide](docs/USER_GUIDE.md). Every document is listed in the
-[docs index](docs/README.md). The pinned version of every platform, and the
-honest release state behind it, is in [versions](docs/VERSIONS.md); per-surface
+[docs index](docs/README.md). The pinned version of every platform, and the honest release state behind it,
+is in [versions](docs/VERSIONS.md); the single finish line, including what is
+still unproven, is [1.0 readiness](docs/1.0_READINESS.md); per-surface
 list coverage is in [coverage](docs/COVERAGE.md). The
 [privacy policy](PRIVACY.md) and [support page](SUPPORT.md) are the public
 statements to check before a release.

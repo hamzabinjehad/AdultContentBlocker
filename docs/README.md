@@ -7,6 +7,7 @@ past version; *superseded* documents point to their replacement. Start with the
 ## Start here
 
 - [Setting it up, in order](SETUP.md): The ordered setup steps: second person, network, Mac app, extension, profile, Screen Time, phone and account split.
+- [1.0 readiness](1.0_READINESS.md): One finish line across the four platforms: versions, local evidence, artifacts, unproven claims and the owner/device actions that remain.
 - [Versions and release state](VERSIONS.md): The pinned version/build of every platform, generated and checked from the manifests.
 - [Content coverage by surface](COVERAGE.md): The core, full and keyword tiers, what each client actually carries, and what the table does not claim.
 - [Privacy policy](../PRIVACY.md) and [support](../SUPPORT.md): The public statements, troubleshooting and safe reporting route.
