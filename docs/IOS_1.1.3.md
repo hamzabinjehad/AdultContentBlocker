@@ -69,6 +69,7 @@ On 30 October 2026:
   boundary.
 - `ios/test_rules.py` covers the signed manifest, and the metadata now carries
   the signed `built_at`.
+- `profile/test_make_ios_profile.py` passes (14 tests) for the optional supervised keys.
 - `ios/test_localization.py` passes with the new English/Arabic keys, and
   `ios/test_privacy.py` checks the manifest, export declaration, reasons and
   membership in all seven bundles.
