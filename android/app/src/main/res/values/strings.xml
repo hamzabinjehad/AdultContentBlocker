@@ -236,7 +236,7 @@
     <string name="uninstall_state_admin">Uninstall protection · Device admin only. Android can still uninstall Hisn after deactivation.</string>
     <string name="uninstall_state_ready">Uninstall protection · Device owner ready. No active commitment or keep-installed lock.</string>
     <string name="uninstall_state_protected">Uninstall protection · ON. Android is refusing ordinary uninstall while you keep Hisn installed.</string>
-    <string name="uninstall_state_protected_commitment">Uninstall protection · ON for the active commitment (about %1$d hours remain). Android is refusing ordinary uninstall.</string>
+    <string name="uninstall_state_protected_commitment">Uninstall protection · ON for the active commitment (%1$s). Android is refusing ordinary uninstall.</string>
     <string name="uninstall_state_sync">Uninstall protection · Android state does not match Hisn. Open to repair.</string>
     <string name="uninstall_state_error">Uninstall protection · Status unavailable. Check Android device policy access.</string>
     <string name="uninstall_action">Manage uninstall protection</string>
@@ -286,7 +286,7 @@
     <string name="pause_need_bored">Something to do</string>
     <string name="pause_need_bored_tip">Pick one small task you have been putting off and give it ten minutes.</string>
     <string name="pause_tally_first">First pause today.</string>
-    <string name="pause_tally_many">Pause %1$d today. Each time you walk away, the habit gets weaker.</string>
+    <string name="pause_tally_many">Today’s pauses: %1$d. Each time you walk away, the habit gets weaker.</string>
     <string name="short_video_off">Short videos · Not blocked</string>
     <string name="short_video_on">Short videos · Blocked: YouTube Shorts, Instagram Reels and TikTok</string>
     <string name="short_video_enable">Block short videos</string>

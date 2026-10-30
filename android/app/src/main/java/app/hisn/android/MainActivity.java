@@ -1032,7 +1032,7 @@ public final class MainActivity extends Activity {
             case PROTECTED:
                 if (status.remainingMillis > 0) {
                     uninstallState.setText(getString(R.string.uninstall_state_protected_commitment,
-                            (status.remainingMillis + 3599999) / 3600000));
+                            Durations.remaining(this, status.remainingMillis)));
                 } else {
                     uninstallState.setText(R.string.uninstall_state_protected);
                 }

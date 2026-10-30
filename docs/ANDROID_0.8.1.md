@@ -86,9 +86,9 @@ owner's phone.
 | Version / build | 0.8.1 / 21 |
 | File | `app/build/outputs/apk/release/app-release-unsigned.apk` |
 | Size | 4.6 MB |
-| SHA-256 | `4351d42f24792ce7890f6a8f91daed8e57974d4a7f09853c5d82e4ededc1bb47` |
-| Debug APK SHA-256 | `c7ec91e459ddc111065786839fe61d90bb09224111bcf0c8d647e77144578593` |
-| Direct release APK SHA-256 | `c91854c88628e8bafe0c68bc2284bfa2296240d0f8a55cfec5b002dcb7292719` (versionName `0.8.1-direct`; never upload to Play) |
+| SHA-256 | `1e00bf2eb870f693a8e49d097835b516ca20780cea343436b1023624452813c4` |
+| Debug APK SHA-256 | `2a160a593649e1e07e27697f1047bf2982f874f914ed2c857fad096f5e1ce947` |
+| Direct release APK SHA-256 | `16878b73c66d0501a5735980a1dad96b58b9a2bef71dfb832fc2a172c41485b0` (versionName `0.8.1-direct`; never upload to Play) |
 | Signing | **None** — this is the unsigned release check artifact, not distributable. |
 
 The production keystore is still an owner action; without it this APK cannot

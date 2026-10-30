@@ -261,7 +261,7 @@
     <string name="uninstall_state_admin">حماية الإزالة · مسؤول الجهاز فقط. يظل بإمكان أندرويد إزالة حصن بعد إلغاء التفعيل.</string>
     <string name="uninstall_state_ready">حماية الإزالة · مالك الجهاز جاهز. لا يوجد التزام نشط أو قفل إبقاء التثبيت.</string>
     <string name="uninstall_state_protected">حماية الإزالة · مفعّلة. يرفض أندرويد الإزالة العادية ما دمت تُبقي حصن مثبتًا.</string>
-    <string name="uninstall_state_protected_commitment">حماية الإزالة · مفعّلة للالتزام النشط (تبقّى نحو %1$d ساعة). يرفض أندرويد الإزالة العادية.</string>
+    <string name="uninstall_state_protected_commitment">حماية الإزالة · مفعّلة للالتزام النشط (%1$s). يرفض أندرويد الإزالة العادية.</string>
     <string name="uninstall_state_sync">حماية الإزالة · حالة أندرويد لا تطابق حصن. افتح للإصلاح.</string>
     <string name="uninstall_state_error">حماية الإزالة · الحالة غير متاحة. تحقق من صلاحية إدارة الجهاز في أندرويد.</string>
     <string name="uninstall_action">إدارة حماية الإزالة</string>
@@ -311,7 +311,7 @@
     <string name="pause_need_bored">شيء أفعله</string>
     <string name="pause_need_bored_tip">اختر مهمة صغيرة أجّلتها وامنحها عشر دقائق.</string>
     <string name="pause_tally_first">أول وقفة اليوم.</string>
-    <string name="pause_tally_many">الوقفة رقم %1$d اليوم. كل مرة تبتعد فيها يضعف هذا الاعتياد.</string>
+    <string name="pause_tally_many">وقفات اليوم: %1$d. كل مرة تبتعد فيها يضعف هذا الاعتياد.</string>
     <string name="short_video_off">المقاطع القصيرة · غير محجوبة</string>
     <string name="short_video_on">المقاطع القصيرة · محجوبة: YouTube Shorts وInstagram Reels وTikTok</string>
     <string name="short_video_enable">احجب المقاطع القصيرة</string>
