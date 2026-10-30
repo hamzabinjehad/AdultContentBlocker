@@ -26,11 +26,25 @@ Explicitly **not** part of 1.0, and never claimed:
 
 - Full-traffic or always-on lockdown VPN, and coverage of app-encrypted DNS or direct-IP traffic.
 - Uninstall or disable prevention for an ordinary install. Device-owner
-  uninstall blocking and managed lockdown are optional 0.8.0 previews with their own provisioning and
+  uninstall blocking and managed lockdown are optional 0.8.1 previews with their own provisioning and
   recovery requirements; resistance to a device administrator, ADB/root or a
   factory reset remains out of scope ([tamper scope](ANDROID_TAMPER_RESISTANCE.md)).
 - Pre-display blurring or detection of all adult content.
 - Google Play distribution. Play's Accessibility policy needs a separate review first.
+
+## Network decision (1.0)
+
+Android 1.0 keeps the DNS-only VPN owner-started and start-on-boot; it does **not**
+turn on always-on VPN or lockdown. A device owner's managed lockdown blocks VPN and
+Private DNS configuration changes, but the tunnel itself remains the user-approved
+Hisn service. `setGlobalPrivateDns` (the 1.0 plan's Option A) is deferred: it would
+enforce the resolver's categories, not Hisn's signed list, and needs its own setup,
+readback and release path. A full tunnel is the 2.0 project.
+
+The consequence is honest: if the VPN stops, DNS protection is lost until it
+restarts. The 0.8.x watchdog makes that visible with a local notification, and
+`no_config_vpn` stops an ordinary user replacing the tunnel. The app never claims
+always-on coverage.
 
 Usage limits (time budgets) are deferred to 1.1. Daily schedules and permanent blocks
 already cover the self-control case, and budgets add a counter-recovery surface that
@@ -157,6 +171,26 @@ Run on a fresh 0.5.x debug install, using `test-live-*.py` where possible:
 - [ ] Set `versionName '1.0.0'` and update the strings, README and `ANDROID_1.0.md` release record.
 - [ ] GitHub release with the signed APK, hash, certificate fingerprint and the
       "not part of 1.0" list above, copied verbatim.
+
+## Remaining before calling it 1.0
+
+The 0.8.1 code covers the 1.0 feature scope. What is left is evidence and
+distribution, not another layer:
+
+| Item | State | Owner action |
+| --- | --- | --- |
+| Signed APK | Unsigned release artifact checked (`check-release.py`, SHA-256 recorded in [0.8.1](ANDROID_0.8.1.md)) | Create the production keystore offline, build with `HISN_ANDROID_*`, record the certificate fingerprint and APK hash |
+| Device lifecycle (M2) | Pure tests only | Disposable phone: VPN handover, accessibility revoke, reboot, service kill, watch the watchdog |
+| Real-app coverage (M3) | Fixtures only | Disposable phone and public content: browsers and two feed apps |
+| Visual benchmark (M4) | Benign baseline and WebKit/CPU timings | Licensed adult/benign corpus with denominators; battery run |
+| Managed device proof | Code, readback and tests only | Factory-reset, account-free device owner: uninstall, Safe Mode, app controls, factory reset, VPN and Private DNS refusals; release restores |
+| Version 1.0.0 | 0.8.1 (21) | Bump to 1.0.0, write `ANDROID_1.0.md`, copy the known limits into the release notes |
+| QR provisioning | Deferred | Needs a hosted APK URL and a reviewed QR payload; the ADB route is the supported 1.0 setup |
+| Always-on / full tunnel | Explicitly out of 1.0 | Revisit with a full-tunnel forwarder in 2.0 |
+| Play vs direct | Separate builds exist (`-PhisnDistribution=direct`) | Never upload the direct build to Play; keep the accessibility guard out of Play |
+
+Until the signed artifact and the device records exist, the honest label is
+**0.8.1 development preview**, not Android 1.0.
 
 ## Building a signed release
 

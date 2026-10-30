@@ -8,6 +8,8 @@ import app.hisn.core.DnsExchange;
 import app.hisn.core.DnsPolicy;
 import app.hisn.core.DomainPolicy;
 import app.hisn.core.DomainSeed;
+import app.hisn.core.LayerWatch;
+import app.hisn.core.SeedFreshness;
 import app.hisn.core.WordRuleList;
 import app.hisn.core.VisibleTextSample;
 
@@ -44,6 +46,7 @@ public final class CoreDeviceTestRunner extends Instrumentation {
             testUninstallGuard();
             testLegacyEmptyCommitment();
             testDamagedSettings();
+            testLayerHealthAndSeedAge();
             VisibleTextSample sample = new VisibleTextSample();
             sample.append("blocked " + "ordinary ".repeat(1000));
             if (WordRuleList.compile("blocked").matches(sample.text()).isEmpty())
@@ -52,7 +55,7 @@ public final class CoreDeviceTestRunner extends Instrumentation {
             if (!sample.isPartial() || sample.text().length() > 32768)
                 throw new AssertionError("Inspection budget failed");
             results.putString("stream", "\nPASS: verified APK seed loaded " + seed.domainCount
-                    + " domains; Arabic matching, boundaries, local DNS block, saved rules, Unicode persistence, long-text sampling, verified adult terms, visual settings, commitment, damaged-settings and invalid-settings, and uninstall-guard checks passed. No VPN was enabled; no accessibility service, admin or device-owner policy was changed.\n");
+                    + " domains; Arabic matching, boundaries, local DNS block, saved rules, Unicode persistence, long-text sampling, verified adult terms, visual settings, commitment, damaged-settings and invalid-settings, uninstall-guard, layer-watch expectation and seed-age checks passed. No VPN was enabled; no accessibility service, admin or device-owner policy was changed.\n");
             finish(Activity.RESULT_OK, results);
         } catch (Throwable failure) {
             StringBuilder detail = new StringBuilder();
@@ -142,6 +145,25 @@ public final class CoreDeviceTestRunner extends Instrumentation {
             context.getSharedPreferences(preferenceName, android.content.Context.MODE_PRIVATE)
                     .edit().clear().commit();
         }
+    }
+
+    /** Read-only checks for the 0.8.x watchdog expectations and the bundled-list age. */
+    private void testLayerHealthAndSeedAge() {
+        android.content.Context context = getTargetContext();
+        Long age = SeedFreshness.ageDays(BuildConfig.DOMAIN_SEED_BUILT, System.currentTimeMillis());
+        if (age == null || age < 0) throw new AssertionError("Bundled seed age is unreadable or negative");
+        boolean keep = PolicyStore.get(context).uninstallLock();
+        java.util.Set<LayerWatch.Layer> expected = LayerWatchdog.expected(context);
+        boolean accessibility = BuildConfig.SELF_PROTECTION && keep;
+        if (expected.contains(LayerWatch.Layer.ACCESSIBILITY) != accessibility)
+            throw new AssertionError("Watchdog accessibility expectation disagrees with the keep switch");
+        if (expected.contains(LayerWatch.Layer.DNS) != DnsVpnService.resumeRequested(context))
+            throw new AssertionError("Watchdog DNS expectation disagrees with the resume flag");
+        if (LayerWatchdog.running() == null) throw new AssertionError("Watchdog running set is null");
+        if (!LayerWatchdog.lostSignature(context).isEmpty() && LayerWatchdog.lastCheckedAt(context) == 0)
+            throw new AssertionError("A lost-layer signature has no recorded check time");
+        if (LayerWatchdog.lastCheckedAt(context) < 0)
+            throw new AssertionError("Watchdog last-check time is negative");
     }
 
     private void testAdultPolicy() throws Exception {

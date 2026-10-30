@@ -22,6 +22,12 @@ bump without an entry here is an unfinished release.
   check no longer erases the last-run time.
 - The in-app Guide now covers the optional managed lockdown, the 15-minute
   check, the lack of always-on/lockdown VPN, and the APK-only list path.
+- **The Android 1.0 network decision is recorded.** The DNS-only VPN stays
+  owner-started/start-on-boot, not always-on or lockdown. `setGlobalPrivateDns`
+  and a full tunnel are deferred; a stopped VPN is made visible by the watchdog
+  and cannot be replaced by an ordinary user when managed lockdown holds
+  `no_config_vpn`.
+- The device runner compiles read-only watchdog-expectation and seed-age checks.
 - Version 0.8.1, versionCode 21. See
   [the 0.8.1 record](docs/ANDROID_0.8.1.md).
 
@@ -29,7 +35,8 @@ bump without an entry here is an unfinished release.
 
 - `android/test-core.sh` passes with `SeedFreshnessTest`, `LayerWatchTest`, the
   API-aware `ManagedRestrictionsTest` and English/Arabic parity (280 strings).
-- `assembleDebug assembleDebugAndroidTest assembleRelease lintDebug` passes.
+- `assembleDebug assembleDebugAndroidTest assembleRelease lintDebug` passes; so does
+  the direct flavor (`-PhisnDistribution=direct`).
 - `check-release.py` passes on the unsigned release APK: 0.8.1 (21), no
   debuggable/test-only flags, no DUMP permission, no debug components.
   SHA-256 `a9100517628385358351802b604da51a7a8009756755b0a39321bd799fccce83`.

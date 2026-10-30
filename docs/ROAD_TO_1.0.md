@@ -17,8 +17,11 @@ this folder. It coordinates the existing plans rather than replacing them:
 > update, the UI says so, and `SeedFreshness` warns after 90 days from the signed
 > seed. The watchdog is now visible in Protection (last run, lost layer, or
 > notifications off), and enabling Keep on Android 13+ requests the notification
-> permission. `SeedFreshnessTest`, the watchdog/managed tests, string parity and
-> the Gradle debug/test/release/lint builds pass. Device checks remain.
+> permission. The Android 1.0 network decision is recorded: the DNS-only VPN is
+> owner-started/start-on-boot, not always-on or lockdown; `setGlobalPrivateDns`
+> and a full tunnel are deferred. `SeedFreshnessTest`, the watchdog/managed
+> tests, string parity and the Gradle debug/test/release/lint builds pass.
+> Device checks remain.
 
 > **Execution update (2026-10-30, W2.1 continued):** Android 0.8.0 adds the
 > Android 10+ `disallow_config_private_dns` restriction to managed lockdown and
@@ -585,7 +588,7 @@ Sizes: S ≤ 2 days, M ≤ 1 week, L ≤ 3 weeks, XL > 3 weeks.
 | W1.4 | Per-surface list coverage: document the core / full split; make each client state its tier | Extension, iOS, Android | M | A coverage table is generated per release; no client claims the full list. **Done 2026-10-29:** `docs/COVERAGE.md` generated from the signed seed |
 | W1.5 | Text corpus: 500 labelled cases per language and a CI regression gate | All | L | A vocabulary change reports misses and false blocks per language |
 | W1.6 | Visual: licensed benchmark, hide-first audit, video sampling | Chromium, Safari, Android | L | Recall/false-hide numbers with denominators; no pre-verdict adult frame |
-| W2.1 | Android managed edition: safe-boot/app-control/factory-reset restrictions, always-on/private DNS, watchdog, QR provisioning | Android | XL | Disposable phone: uninstall refused, safe mode blocked, clear data blocked, VPN persistent, recovery works. **Partial 2026-10-30:** the four restrictions plus Android 10+ Private DNS (`disallow_config_private_dns`), explicit opt-in, readback and release order are implemented and unit-tested; the 15-minute layer watchdog is implemented and visible (0.8.1), with the notification permission requested when Keep is enabled; always-on VPN/lockdown, QR provisioning and the device run remain |
+| W2.1 | Android managed edition: safe-boot/app-control/factory-reset restrictions, always-on/private DNS, watchdog, QR provisioning | Android | XL | Disposable phone: uninstall refused, safe mode blocked, clear data blocked, VPN persistent, recovery works. **Partial 2026-10-30:** the four restrictions plus Android 10+ Private DNS (`disallow_config_private_dns`), explicit opt-in, readback and release order are implemented and unit-tested; the 15-minute layer watchdog is implemented and visible (0.8.1), with the notification permission requested when Keep is enabled; always-on VPN/lockdown are explicitly deferred (Android 1.0 network decision); QR provisioning and the device run remain |
 | W2.2 | Android direct build: boot shield + guard, signed APK | Android | M | Signed APK, hash, cert fingerprint; guard tested on a real phone |
 | W2.3 | iPhone supervised edition: profile test, vault wording, level UI, removal password | iOS | L | Device test record for every key in `IPHONE_SUPERVISED.md` |
 | W2.4 | Mac guardian edition: root daemon, bootout test, signed pkg, updater | Mac | L | Standard user cannot delete/disable; admin recovery documented; pkg notarized |

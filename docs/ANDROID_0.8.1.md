@@ -26,6 +26,17 @@ decision explicit and visible:
 - The warning is informational. The bundled list still enforces; the UI does
   not claim it is fresh or complete.
 
+### The 1.0 network decision is recorded
+
+Android 1.0 keeps the DNS-only VPN owner-started and start-on-boot; it does not
+enable always-on or lockdown. A device owner's managed lockdown blocks VPN and
+Private DNS configuration changes, but the tunnel stays the user-approved Hisn
+service. `setGlobalPrivateDns` (Option A in the 1.0 plan) is deferred because it
+would enforce the resolver's categories, not Hisn's signed list, and needs its
+own setup/readback/release path. A full tunnel is the 2.0 project. A stopped VPN
+is therefore a leak; the 0.8.x watchdog makes it visible and `no_config_vpn`
+stops an ordinary user replacing it. The app never claims always-on coverage.
+
 ### The watchdog is visible, and its notification is requested
 
 - `LayerWatchdog` stores `last_checked` on every run and exposes the last lost
@@ -51,7 +62,10 @@ On 30 October 2026, with Android Studio's JBR and the local Android SDK:
   API-aware `ManagedRestrictionsTest` and English/Arabic string parity
   (280 strings).
 - `./gradlew --no-daemon assembleDebug assembleDebugAndroidTest
-  assembleRelease lintDebug`: **PASS**.
+  assembleRelease lintDebug`: **PASS**. `assembleDebug assembleRelease
+  -PhisnDistribution=direct` also passes, so the direct build's self-protection
+  code still compiles. The device runner now also checks the watchdog
+  expectations and the bundled-list age read-only; it was compiled, not run.
 - `python3 check-release.py app/build/outputs/apk/release/app-release-unsigned.apk`:
   **PASS**, app `app.hisn.android` 0.8.1 (21), not debuggable or test-only,
   no DUMP permission, no debug-only component or class.
