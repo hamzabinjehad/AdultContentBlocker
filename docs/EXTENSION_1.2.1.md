@@ -34,6 +34,20 @@ On 30 October 2026:
 - `package.sh`: the staged zip contains no `key`, test files, PEM or `_comment`
   keys.
 
+## Package artifact
+
+`extension/package.sh` produced `dist/hisn-extension-1.2.1.zip`:
+
+| Field | Value |
+| --- | --- |
+| Version | 1.2.1 |
+| Size | 5.3 MB |
+| Files | 90 |
+| SHA-256 | `0033f0df70d6930584c31a3e6e946a50b5be4e35205771380dee4e376cdb82bb` |
+
+The zip contains no `key`, PEM, test file or `_comment_*` key. It is not signed
+by the store; the store assigns its own ID and signature.
+
 ## Limits
 
 - No store listing, real store ID, review result or managed force-install test is
