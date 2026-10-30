@@ -37,6 +37,17 @@ There is still no runtime list download on iOS. A Safari rule change ships in a
 new signed app build; the app says so and never claims a fresher list than the
 metadata.
 
+### Optional supervised-profile hardening
+
+`profile/make_ios_profile.py` now offers six explicit, supervised-only keys:
+account changes, passcode changes, app installation, App Clips, enabling
+restrictions and automatic date/time. Each is off unless its flag is passed,
+because each can remove a recovery path. The existing keys (`allowAppRemoval`,
+device erase, profile installation, VPN creation, Private Relay, marketplace and
+web-distribution apps, Safari private browsing, explicit content) are unchanged.
+`profile/test_make_ios_profile.py` covers both the default absence and the
+explicit values. The guide documents every flag and its tradeoff.
+
 ### Settings links and version
 
 Settings now shows the app version and build, plus links to the repository

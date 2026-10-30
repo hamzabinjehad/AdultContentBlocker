@@ -34,6 +34,7 @@ no automation, and it must be run on a real Mac by a person.
 | iOS/iPadOS app, Safari blockers and activity monitor build and run their hosted tests | iOS 26.5 simulator (iPhone 17), Xcode 27.1, `** TEST SUCCEEDED **` on 2026-10-30, 182 tests | `./test.sh ios` |
 | iOS privacy manifest and export declaration match the code and every bundle | plist checks + generator/project membership | `ios/test_privacy.py`, `test.sh python` |
 | iOS signed Safari list age and 90-day warning | signed `built_at` in metadata + Swift age/clamp/boundary tests | `ios/test_rules.py`, `testSeedFreshness…` |
+| Supervised iOS profile optional hardening keys are opt-in and written only when asked | profile generator tests for default absence and explicit values | `profile/test_make_ios_profile.py`, `test.sh python` |
 | macOS app, filter and strings | Xcode test + Arabic export on 2026-10-29 | `./test.sh release macos` (495 tests) |
 | Android managed-uninstall state, commitment guard, readback mismatch and release guard | pure matrix + isolated preference fixture | `android/test-core.sh`, `CoreDeviceTestRunner` on the 0.6.0-direct Samsung build |
 | Android managed lockdown: opt-in matrix, API-29 Private DNS, exact held set, missing/extra detection, apply/release order and combined state | pure `ManagedRestrictions` + `UninstallProtection` + settings round trip | `android/test-core.sh` (`ManagedRestrictionsTest`, `UninstallProtectionTest`, `SavedSettingsTest`) |

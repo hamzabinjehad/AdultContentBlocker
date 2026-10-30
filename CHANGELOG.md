@@ -21,6 +21,11 @@ bump without an entry here is an unfinished release.
   dates to zero and has Swift tests for the boundary.
 - **Settings links and version.** Settings shows the app version/build and links
   to the repository privacy policy and support page.
+- **Optional supervised-profile hardening.** `make_ios_profile.py` gains six
+  opt-in, supervised-only keys: account changes, passcode changes, app
+  installation, App Clips, enabling restrictions and automatic date/time. Each
+  is off by default because it can remove a recovery path; the guide documents
+  the tradeoff and the Python tests cover both states.
 - `ios/test_privacy.py` checks the manifest, export declaration, required
   reasons and membership in all seven bundles.
 - Version 1.1.3, build 4. See [the 1.1.3 record](docs/IOS_1.1.3.md).

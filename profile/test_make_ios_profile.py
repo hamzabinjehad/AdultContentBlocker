@@ -55,6 +55,25 @@ class TestRemovalProtection(unittest.TestCase):
                     "allowWebDistributionAppInstallation", "allowSafariPrivateBrowsing"]:
             self.assertIs(restrictions[key], False, key)
 
+    def test_optional_hardening_is_absent_by_default(self):
+        """Each extra can remove a recovery path; installing must be a choice."""
+        restrictions = by_type(generate()[0])["com.apple.applicationaccess"]
+        for key in ["allowAccountModification", "allowPasscodeModification",
+                    "allowAppInstallation", "allowAppClips",
+                    "allowEnablingRestrictions", "forceAutomaticDateAndTime"]:
+            self.assertNotIn(key, restrictions, key)
+
+    def test_optional_hardening_is_written_only_when_asked(self):
+        restrictions = by_type(generate(
+            "--deny-account-modification", "--deny-passcode-modification",
+            "--deny-app-installation", "--deny-app-clips",
+            "--deny-enabling-restrictions", "--force-automatic-date-time")[0])["com.apple.applicationaccess"]
+        for key in ["allowAccountModification", "allowPasscodeModification",
+                    "allowAppInstallation", "allowAppClips", "allowEnablingRestrictions"]:
+            self.assertIs(restrictions[key], False, key)
+        self.assertIs(restrictions["forceAutomaticDateAndTime"], True)
+        self.assertIs(restrictions["allowAppRemoval"], False)
+
     def test_app_removal_can_be_left_allowed_explicitly(self):
         """iOS has no per-app removal switch; someone may need to delete other apps."""
         restrictions = by_type(generate("--allow-app-removal")[0])["com.apple.applicationaccess"]

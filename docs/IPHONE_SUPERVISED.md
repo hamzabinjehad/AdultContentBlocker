@@ -31,6 +31,22 @@ still not absolute. See **Limits** below.
    only) and not printed. Use `--print-password` only if the protected person
    cannot see the screen, and store it the way you store other recovery secrets.
 
+   Optional supervised-only hardening, each off by default because it can take
+   away a recovery path:
+
+   | Flag | Key set | What it closes |
+   | --- | --- | --- |
+   | `--deny-account-modification` | `allowAccountModification=false` | Adding or removing accounts |
+   | `--deny-passcode-modification` | `allowPasscodeModification=false` | Changing the device passcode |
+   | `--deny-app-installation` | `allowAppInstallation=false` | Installing any new app, including needed ones |
+   | `--deny-app-clips` | `allowAppClips=false` | App Clips |
+   | `--deny-enabling-restrictions` | `allowEnablingRestrictions=false` | Changing Content & Privacy restrictions |
+   | `--force-automatic-date-time` | `forceAutomaticDateAndTime=true` | Manual clock changes that could move a date |
+
+   Add only the ones the person and guardian have agreed to. `allowAppRemoval`
+   is controlled separately by `--allow-app-removal`; leaving it unset keeps app
+   deletion blocked. None of these keys apply on an unsupervised device.
+
 2. **Supervise the device.** In Apple Configurator: connect the device, choose
    **Prepare**, select **Manual configuration**, tick **Supervise devices** and
    **untick "Allow devices to pair with other computers"**, create an

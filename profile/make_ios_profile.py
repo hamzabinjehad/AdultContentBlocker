@@ -115,7 +115,7 @@ def p_web_filter(blocked_hosts: list[str]) -> dict:
     )
 
 
-def p_restrictions(allow_app_removal: bool) -> dict:
+def p_restrictions(allow_app_removal: bool, extra: dict | None = None) -> dict:
     keys = {
         # Each is ignored on an unsupervised device (Apple: "supervised only").
         "allowAppRemoval": allow_app_removal,
@@ -128,6 +128,10 @@ def p_restrictions(allow_app_removal: bool) -> dict:
         "allowSafariPrivateBrowsing": False,
         "allowExplicitContent": False,
     }
+    # Optional, explicit hardening. These are not defaults: denying app
+    # installation, account changes or passcode changes can leave a person
+    # unable to install a needed app or recover an account.
+    keys.update(extra or {})
     return payload(
         "com.apple.applicationaccess", "restrictions", "Removal Protection",
         "Supervised devices only: blocks deleting apps, erasing the device, installing other "
@@ -144,12 +148,23 @@ def p_removal_password(password: str) -> dict:
     )
 
 
+def hardening(args: argparse.Namespace) -> dict:
+    keys = {}
+    if args.deny_account_modification: keys["allowAccountModification"] = False
+    if args.deny_passcode_modification: keys["allowPasscodeModification"] = False
+    if args.deny_app_installation: keys["allowAppInstallation"] = False
+    if args.deny_app_clips: keys["allowAppClips"] = False
+    if args.deny_enabling_restrictions: keys["allowEnablingRestrictions"] = False
+    if args.force_automatic_date_time: keys["forceAutomaticDateAndTime"] = True
+    return keys
+
+
 def build(args: argparse.Namespace) -> tuple[dict, str]:
     password = args.removal_password or mac.gen_password()
     content = [
         p_dns(args.doh, args.dns_addresses),
         p_web_filter(args.blocked_hosts),
-        p_restrictions(args.allow_app_removal),
+        p_restrictions(args.allow_app_removal, hardening(args)),
         p_removal_password(password),
     ]
     profile = {
@@ -199,6 +214,20 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--print-password", action="store_true",
                     help="Print the removal password. Do not, if the person it protects can read your terminal.")
     ap.add_argument("--allow-unreachable-resolver", action="store_true")
+    # Optional supervised-only hardening. Off by default because each can take
+    # away a recovery path the person may need.
+    ap.add_argument("--deny-account-modification", action="store_true",
+                    help="Supervised only: block adding or removing accounts.")
+    ap.add_argument("--deny-passcode-modification", action="store_true",
+                    help="Supervised only: keep the device passcode as it is.")
+    ap.add_argument("--deny-app-installation", action="store_true",
+                    help="Supervised only: block installing new apps, including needed ones.")
+    ap.add_argument("--deny-app-clips", action="store_true",
+                    help="Supervised only: block App Clips.")
+    ap.add_argument("--deny-enabling-restrictions", action="store_true",
+                    help="Supervised only: block changes to Content & Privacy restrictions.")
+    ap.add_argument("--force-automatic-date-time", action="store_true",
+                    help="Supervised only: keep automatic date and time on.")
     ap.add_argument("--out", default="../dist/hisn-iphone.mobileconfig")
     args = ap.parse_args(argv)
 

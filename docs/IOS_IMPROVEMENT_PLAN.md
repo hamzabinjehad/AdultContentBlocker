@@ -257,12 +257,13 @@ Safari, and (if built) an adult path on an allowed host is blocked by the URL fi
    `denyAppRemoval` for all apps, shield other browsers, and add a
    `ShieldConfiguration` extension with English and Arabic text. Each extension
    needs its own entitlement.
-3. `[code]` Supervised profile options, each opt-in with tests, from Apple's
+3. `[code]` **Done 2026-10-30** for the six optional keys from Apple's
    [restriction schema](https://github.com/apple/device-management/blob/release/mdm/profiles/com.apple.applicationaccess.yaml):
    `forceAutomaticDateAndTime`, `allowAccountModification`, `allowPasscodeModification`,
    `allowAppInstallation`, `allowAppClips` and `allowEnablingRestrictions`.
-   Keep the profile generator a Mac or command-line tool, not inside the app
-   (guideline 5.5).
+   Each has its own flag, is off by default and is covered by
+   `profile/test_make_ios_profile.py`. The generator stays a command-line tool,
+   not inside the app (guideline 5.5).
 4. `[code]` Time-locked removal password (end-goal step D2): the profile's removal
    password is encrypted to the commitment date with drand timelock encryption, so a
    person without a second human can still use supervision, with the date as the exit.
