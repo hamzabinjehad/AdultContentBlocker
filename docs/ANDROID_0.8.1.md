@@ -74,6 +74,10 @@ On 30 October 2026, with Android Studio's JBR and the local Android SDK:
   `check-release.py --expect-distribution direct`: **PASS**, versionName
   `0.8.1-direct`. The checker now refuses a `-direct` artifact checked as Play,
   and the standard artifact was rebuilt afterwards.
+- `bundleRelease`: **PASS**, unsigned `app-release.aab` 4.6 MB, SHA-256
+  `b45ab915c176910d4e6b49f91f94a466a7c524ca163a7ed5cc4acb404369bfcc`. An AAB is
+  not installable without signing and a store; it confirms the Play packaging
+  path builds.
 
 **No device run is claimed.** The stale-list warning, the watchdog status line,
 the permission request and a real layer loss still need a disposable or the

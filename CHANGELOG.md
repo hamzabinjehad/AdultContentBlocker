@@ -45,6 +45,8 @@ bump without an entry here is an unfinished release.
   direct artifact is refused as Play. Its SHA-256 is
   `16878b73c66d0501a5735980a1dad96b58b9a2bef71dfb832fc2a172c41485b0`.
 - `test_check_release.py` covers the suffix rule in `test-core.sh`.
+- `bundleRelease` passes (unsigned AAB SHA-256
+  `b45ab915c176910d4e6b49f91f94a466a7c524ca163a7ed5cc4acb404369bfcc`).
 - No device run is claimed.
 
 ## Android 0.8.0 — 2026-10-30
