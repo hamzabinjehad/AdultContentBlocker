@@ -1327,4 +1327,12 @@ final class SetupHonestyTests: XCTestCase {
         XCTAssertNil(SeedFreshness.date(from: "not-a-date"))
     }
 
+    func testBundledThirdPartyNoticesArePresent() throws {
+        let url = try XCTUnwrap(Bundle.main.url(forResource: "Notices", withExtension: "txt"))
+        let text = try String(contentsOf: url, encoding: .utf8)
+        XCTAssertTrue(text.contains("stevenblack-porn"))
+        XCTAssertTrue(text.contains("GNU General Public License 3.0"))
+        XCTAssertTrue(text.contains("engine bundle legal notice"))
+    }
+
 }

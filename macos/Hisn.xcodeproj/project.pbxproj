@@ -191,6 +191,12 @@
 			path = NetworkSetupGuide.swift;
 			sourceTree = "<group>";
 		};
+		256824293978001618E4571E /* Notices.txt */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = text;
+			path = Notices.txt;
+			sourceTree = "<group>";
+		};
 		0DDFAADBE7361D65F79BE5B5 /* PartnerService.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -561,6 +567,7 @@
 				212E78320A736FEF56423B79,
 				FB31DC7B17B7C3A5D9C86771,
 				A87B5F224701DC1CE3D36F1D,
+				256824293978001618E4571E,
 				0DDFAADBE7361D65F79BE5B5,
 				0E75CDFA3B3510AD8AFAB3D9,
 				6151ACEC3813F8DDB9D11983,
@@ -1306,6 +1313,10 @@
 			isa = PBXBuildFile;
 			fileRef = 9C216322626B1D2E4CDE23CB;
 		};
+		2633003E1538D81A7D23C6F4 /* Notices.txt in Resources */ = {
+			isa = PBXBuildFile;
+			fileRef = 256824293978001618E4571E;
+		};
 		7E4B2B42202196B8DEDF4BBA /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1313,6 +1324,7 @@
 				BDF8914226C025CC49ED6309,
 				91B0E4A037ED6B45D67BDE50,
 				10477D2365ED64C6DA83289A,
+				2633003E1538D81A7D23C6F4,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -103,7 +103,8 @@ APP_SOURCES = SHARED + [
 # Every string the app shows, in English and Arabic. A String Catalog: Xcode
 # compiles it into en.lproj / ar.lproj at build time, plural forms included.
 # `macos/check_localization.py` fails the tests when a string has no Arabic.
-APP_RESOURCES = ["Hisn/Localizable.xcstrings", "Hisn/Assets.xcassets", "Hisn/AppIcon.icon"]
+APP_RESOURCES = ["Hisn/Localizable.xcstrings", "Hisn/Assets.xcassets", "Hisn/AppIcon.icon",
+                 "Hisn/Notices.txt"]
 FILTER_SOURCES = SHARED + ["HisnFilter/FilterDataProvider.swift",
                            "HisnFilter/FilterXPCService.swift",
                            "HisnFilter/main.swift"]

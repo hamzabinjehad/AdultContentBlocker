@@ -54,7 +54,7 @@ def main(safari_only: bool = False, domain_only: bool = False,
     }
     privacy = "Hisn/PrivacyInfo.xcprivacy"
     resources = {app: ["Hisn/en.lproj/Localizable.strings", "Hisn/ar.lproj/Localizable.strings",
-                       "Hisn/Assets.xcassets", privacy],
+                       "Hisn/Assets.xcassets", privacy, "Hisn/Notices.txt"],
                  tests: ["fixtures/safari_cases.json"],
                  monitor: [privacy], scanner: [privacy],
                  **{blocker: [privacy] for blocker in blockers}}
@@ -69,7 +69,8 @@ def main(safari_only: bool = False, domain_only: bool = False,
     refs = {}
     for path in paths:
         kind = {".swift": "sourcecode.swift", ".strings": "text.plist.strings", ".json": "text.json",
-                ".xcassets": "folder.assetcatalog", ".xcprivacy": "text.xml"}[Path(path).suffix]
+                ".xcassets": "folder.assetcatalog", ".xcprivacy": "text.xml",
+                ".txt": "text"}[Path(path).suffix]
         refs[path] = p.add(oid("ios-file", path), "PBXFileReference", {
             "lastKnownFileType": kind, "path": q(path), "sourceTree": '"<group>"',
         })
@@ -137,7 +138,7 @@ def main(safari_only: bool = False, domain_only: bool = False,
     for name in names:
         phases = [phase(name, "PBXSourcesBuildPhase", [refs[path] for path in sources[name]]),
                   phase(name, "PBXFrameworksBuildPhase", []),
-                  phase(name, "PBXResourcesBuildPhase", [loc, refs["Hisn/Assets.xcassets"], refs[privacy]] if name == app else
+                  phase(name, "PBXResourcesBuildPhase", [loc, refs["Hisn/Assets.xcassets"], refs[privacy], refs["Hisn/Notices.txt"]] if name == app else
                         [refs[path] for path in resources.get(name, [])])]
         extra = {"PRODUCT_BUNDLE_IDENTIFIER": q(app_identifier if name == app else
                  "app.hisn.mobile.tests" if name == tests else "app.hisn.mobile.activity" if name == monitor

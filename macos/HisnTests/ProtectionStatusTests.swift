@@ -308,4 +308,12 @@ final class LockStatusTests: XCTestCase {
         XCTAssertFalse(ListUpdateFreshness.isStale(lastUpdate: now.addingTimeInterval(3600), now: now))
     }
 
+    func testBundledThirdPartyNoticesArePresent() throws {
+        let url = try XCTUnwrap(Bundle.main.url(forResource: "Notices", withExtension: "txt"))
+        let text = try String(contentsOf: url, encoding: .utf8)
+        XCTAssertTrue(text.contains("stevenblack-porn"))
+        XCTAssertTrue(text.contains("GNU General Public License 3.0"))
+        XCTAssertFalse(text.contains("engine bundle legal notice"))
+    }
+
 }

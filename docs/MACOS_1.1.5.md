@@ -31,6 +31,15 @@ runs in the system domain and puts the agent back.
   XPC and reports a missing/stale provider; the daemon's job is the system
   domain, not a second health model.
 
+### Licenses and sources
+
+Details now opens **Licenses and sources** from a bundled `Notices.txt` generated
+by `script/notices.py`: every enabled list source with its licence and upstream
+URL, the redistributed MIT/GPL/CC-BY texts, and the upstream terms not
+redistributed. The Mac app does not bundle the visual runtime, so its notices
+are not included. This mirrors the Android screen and closes the Mac attribution
+gap.
+
 ### List freshness is visible
 
 The Details page now shows **Last list update** and says when the downloaded
@@ -60,11 +69,13 @@ On 30 October 2026:
   config, refused accounts (`root`, `loginwindow`, a space and a shell
   injection), a logged-out session being quiet, bootstrapping a missing agent,
   a failed reload, a healthy agent left alone, installer wiring and shell syntax.
-- `./test.sh macos`: **496 app tests** plus the Arabic-string check (524 strings).
+- `./test.sh macos`: **497 app tests** plus the Arabic-string check (527 strings).
 - `bash macos/release/release.sh --smoke /tmp/…`: **unsigned package structure
   passed**. The expanded package's `Scripts/` contains `postinstall`,
   `install_guardian.sh`, `hisn-guardian` and `app.hisn.guardian.plist`; nothing
   was installed. The package remains unsigned.
+- `script/test_notices.py` checks both Apple notice files are current and
+  complete; a Swift test reads the bundled Mac file.
 - `./test.sh python seed` and the version/coverage checks pass.
 
 **No root install, standard-account `launchctl bootout`, reboot, or

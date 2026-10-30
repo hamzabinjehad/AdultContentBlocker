@@ -32,11 +32,12 @@ no automation, and it must be run on a real Mac by a person.
 | Every test class is discovered | `unittest discover` in `test.sh` | `test.sh python` |
 | The default suite runs end to end on this Mac | `./test.sh` (python, seed, extension, release, macOS, iOS) on 2026-10-29, exit 0 | `./test.sh` |
 | The pinned version set matches every platform manifest, and the coverage page matches the signed seed/ruleset | `versions.py --check`, `coverage.py --check` | `test_versions.py`, `test_coverage.py`, `test.sh python` |
-| iOS/iPadOS app, Safari blockers and activity monitor build and run their hosted tests | iOS 26.5 simulator (iPhone 17), Xcode 27.1, `** TEST SUCCEEDED **` on 2026-10-30, 182 tests | `./test.sh ios` |
+| iOS/iPadOS app, Safari blockers and activity monitor build and run their hosted tests | iOS 26.5 simulator (iPhone 17), Xcode 27.1, `** TEST SUCCEEDED **` on 2026-10-30, 183 tests | `./test.sh ios` |
 | iOS privacy manifest and export declaration match the code and every bundle | plist checks + generator/project membership | `ios/test_privacy.py`, `test.sh python` |
+| Apple apps bundle complete, current third-party notices | generated files + Swift bundle reads | `script/test_notices.py`, `testBundledThirdPartyNoticesArePresent` |
 | iOS signed Safari list age and 90-day warning | signed `built_at` in metadata + Swift age/clamp/boundary tests | `ios/test_rules.py`, `testSeedFreshness…` |
 | Supervised iOS profile optional hardening keys are opt-in and written only when asked | profile generator tests for default absence and explicit values | `profile/test_make_ios_profile.py`, `test.sh python` |
-| macOS app, filter and strings | Xcode test + Arabic export on 2026-10-29 | `./test.sh release macos` (496 tests) |
+| macOS app, filter and strings | Xcode test + Arabic export on 2026-10-30 | `./test.sh release macos` (497 tests) |
 | Android managed-uninstall state, commitment guard, readback mismatch and release guard | pure matrix + isolated preference fixture | `android/test-core.sh`, `CoreDeviceTestRunner` on the 0.6.0-direct Samsung build |
 | Android managed lockdown: opt-in matrix, API-29 Private DNS, exact held set, missing/extra detection, apply/release order and combined state | pure `ManagedRestrictions` + `UninstallProtection` + settings round trip | `android/test-core.sh` (`ManagedRestrictionsTest`, `UninstallProtectionTest`, `SavedSettingsTest`) |
 | Android layer watchdog: expected/running sets, lost layers, stable signature and 12-hour notification cadence | pure `LayerWatch` decisions | `android/test-core.sh` (`LayerWatchTest`) |

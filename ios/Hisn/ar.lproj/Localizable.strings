@@ -151,6 +151,10 @@
 "language.title" = "اللغة";
 "language.system" = "اتباع لغة الجهاز";
 "privacy.title" = "الخصوصية";
+"notices.title" = "التراخيص والمصادر";
+"notices.open" = "افتح التراخيص والمصادر";
+"notices.close" = "تم";
+"notices.unavailable" = "تعذّرت قراءة الإشعارات من هذا التطبيق. أعد تثبيت حصن من نسخة موثوقة.";
 "privacy.policy" = "سياسة الخصوصية";
 "support.page" = "الدعم";
 "about.title" = "حول";

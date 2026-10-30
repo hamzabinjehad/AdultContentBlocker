@@ -2846,6 +2846,36 @@
         }
       }
     },
+    "Close" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إغلاق"
+          }
+        }
+      }
+    },
+    "Licenses and sources" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التراخيص والمصادر"
+          }
+        }
+      }
+    },
+    "The notices could not be read from this app. Reinstall Hisn from a trusted copy." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّرت قراءة الإشعارات من هذا التطبيق. أعد تثبيت حصن من نسخة موثوقة."
+          }
+        }
+      }
+    },
     "Last list update" : {
       "localizations" : {
         "ar" : {

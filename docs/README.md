@@ -95,11 +95,11 @@ Per-version change and verification notes, newest first.
 
 ### Mac
 
-- [Mac 1.1.5 release notes](MACOS_1.1.5.md): A root LaunchDaemon restores the login agent if a standard user boots it out, with installer wiring, tamper logging and a removal path. Unsigned/unnotarized; standard-account and reboot checks pending.
+- [Mac 1.1.5 release notes](MACOS_1.1.5.md): A root LaunchDaemon restores the login agent if a standard user boots it out, with installer wiring, tamper logging, list-freshness and licenses rows, and a removal path. Unsigned/unnotarized; standard-account and reboot checks pending.
 
 ### iPhone and iPad
 
-- [iOS 1.1.3 release notes](IOS_1.1.3.md): A privacy manifest in the app and every extension, export-compliance declaration, the signed Safari list's build date with a 90-day warning, and privacy/support/version rows in Settings. Simulator-tested; no device, team or entitlement yet.
+- [iOS 1.1.3 release notes](IOS_1.1.3.md): A privacy manifest in the app and every extension, export-compliance declaration, the signed Safari list's build date with a 90-day warning, an offline licenses-and-sources screen, and privacy/support/version rows in Settings. Simulator-tested; no device, team or entitlement yet.
 - [Hisn 1.1.2 update notes](UPDATE_1_1_2.md): New popup and visual-check interface, detection changes and limits, and how to update Mac, browser and phone. *Historical.*
 
 ### Android

@@ -125,6 +125,12 @@
 			path = "Hisn/MobileRootView.swift";
 			sourceTree = "<group>";
 		};
+		4FBC244AD919421502A7BBD6  = {
+			isa = PBXFileReference;
+			lastKnownFileType = text;
+			path = "Hisn/Notices.txt";
+			sourceTree = "<group>";
+		};
 		87FCFE1D32D633AB88DE35AC  = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -332,6 +338,7 @@
 				9B58D6F32A0B01CC13845E15,
 				FCE2B547D5D74B8316E364F7,
 				5F9265D85EAD1C04BD50005C,
+				4FBC244AD919421502A7BBD6,
 				87FCFE1D32D633AB88DE35AC,
 				368028F82BE73865E23337BC,
 				6CB3CEF61F360B26D4CD8F00,
@@ -488,6 +495,10 @@
 			isa = PBXBuildFile;
 			fileRef = 6CB3CEF61F360B26D4CD8F00;
 		};
+		135A41FF702DD46D00207B8D  = {
+			isa = PBXBuildFile;
+			fileRef = 4FBC244AD919421502A7BBD6;
+		};
 		953CC888EC97B82BA9E79C30  = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -495,6 +506,7 @@
 				D149D6CD528FC431C29A3BC0,
 				6B43281553FE8E2D9017CADA,
 				641429C6AD0AEDA866D5713D,
+				135A41FF702DD46D00207B8D,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

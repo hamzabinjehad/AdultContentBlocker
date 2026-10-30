@@ -17,6 +17,12 @@
 			path = "Hisn/Assets.xcassets";
 			sourceTree = "<group>";
 		};
+		4FBC244AD919421502A7BBD6  = {
+			isa = PBXFileReference;
+			lastKnownFileType = text;
+			path = "Hisn/Notices.txt";
+			sourceTree = "<group>";
+		};
 		6CB3CEF61F360B26D4CD8F00  = {
 			isa = PBXFileReference;
 			lastKnownFileType = text.xml;
@@ -110,6 +116,7 @@
 			children = (
 				B68499C7EA29DC064714AED1,
 				50D5E2EE75626431AAA2BD98,
+				4FBC244AD919421502A7BBD6,
 				6CB3CEF61F360B26D4CD8F00,
 				1349496B0BFBD6AE9C197419,
 				1AE0F1DCF32D9A544B737270,
@@ -154,6 +161,10 @@
 			isa = PBXBuildFile;
 			fileRef = 6CB3CEF61F360B26D4CD8F00;
 		};
+		634F72778F1B91FBA139DFD9  = {
+			isa = PBXBuildFile;
+			fileRef = 4FBC244AD919421502A7BBD6;
+		};
 		E1D1EF7C016E176146B652A9  = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -161,6 +172,7 @@
 				9FDFAAA8AC36F47751D8F961,
 				A8783FF3EB250C6DF3D91A82,
 				61EEF9C978BF863E977DD1B2,
+				634F72778F1B91FBA139DFD9,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

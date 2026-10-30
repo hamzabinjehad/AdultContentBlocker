@@ -151,6 +151,10 @@
 "language.title" = "Language";
 "language.system" = "Follow device language";
 "privacy.title" = "Privacy";
+"notices.title" = "Licenses and sources";
+"notices.open" = "Open licenses and sources";
+"notices.close" = "Done";
+"notices.unavailable" = "The notices could not be read from this app. Reinstall Hisn from a trusted copy.";
 "privacy.policy" = "Privacy policy";
 "support.page" = "Support";
 "about.title" = "About";
