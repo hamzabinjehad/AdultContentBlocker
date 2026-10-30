@@ -8,13 +8,14 @@ import java.util.Set;
  * Pure decisions for the optional managed-lockdown restrictions.
  *
  * A device owner can add user restrictions that ordinary apps cannot. Hisn uses
- * four, and only while the person has explicitly turned on managed lockdown and
+ * five, and only while the person has explicitly turned on managed lockdown and
  * an active commitment or the keep-installed switch is holding the app:
  *
- *   SAFE_BOOT       no Safe Mode from the power menu or hardware keys
- *   APPS_CONTROL    no uninstall, disable, clear-data or force-stop for any app
- *   FACTORY_RESET   no Settings erase (recovery mode still works)
- *   CONFIG_VPN      no VPN or private-DNS configuration changes
+ *   SAFE_BOOT            no Safe Mode from the power menu or hardware keys
+ *   APPS_CONTROL         no uninstall, disable, clear-data or force-stop for any app
+ *   FACTORY_RESET        no Settings erase (recovery mode still works)
+ *   CONFIG_VPN           no VPN configuration changes
+ *   CONFIG_PRIVATE_DNS   no Private DNS changes (Android 10+, API 29)
  *
  * APPS_CONTROL is deliberately broad: it changes what the person can do to
  * every app, not only Hisn. That is why it is a separate opt-in and why the
@@ -29,7 +30,8 @@ public final class ManagedRestrictions {
         SAFE_BOOT("no_safe_boot"),
         APPS_CONTROL("no_apps_control"),
         FACTORY_RESET("no_factory_reset"),
-        CONFIG_VPN("no_config_vpn");
+        CONFIG_VPN("no_config_vpn"),
+        CONFIG_PRIVATE_DNS("disallow_config_private_dns");
 
         public final String key;
 
@@ -37,7 +39,7 @@ public final class ManagedRestrictions {
 
         /** Apply order, and the reverse of it is the release order. */
         public static final Restriction[] APPLY_ORDER = {
-                SAFE_BOOT, APPS_CONTROL, FACTORY_RESET, CONFIG_VPN
+                SAFE_BOOT, APPS_CONTROL, FACTORY_RESET, CONFIG_VPN, CONFIG_PRIVATE_DNS
         };
     }
 
@@ -47,13 +49,26 @@ public final class ManagedRestrictions {
         return deviceOwner && managedLockdown && (keepInstalled || remainingMillis > 0);
     }
 
-    /** The exact set Android should hold, given the person's choices and platform facts. */
+    /** The exact set Android should hold, assuming every platform key is supported. */
     public static Set<Restriction> desired(boolean deviceOwner, boolean managedLockdown,
                                            boolean keepInstalled, long remainingMillis) {
+        return desired(deviceOwner, managedLockdown, keepInstalled, remainingMillis, true);
+    }
+
+    /**
+     * The exact set Android should hold. {@code privateDnsSupported} is true only
+     * on Android 10+ (API 29), where the Private DNS restriction exists; older
+     * versions must not be asked for a key they do not know.
+     */
+    public static Set<Restriction> desired(boolean deviceOwner, boolean managedLockdown,
+                                           boolean keepInstalled, long remainingMillis,
+                                           boolean privateDnsSupported) {
         if (!shouldApply(deviceOwner, managedLockdown, keepInstalled, remainingMillis)) {
             return Collections.emptySet();
         }
-        return Collections.unmodifiableSet(EnumSet.allOf(Restriction.class));
+        Set<Restriction> wanted = EnumSet.allOf(Restriction.class);
+        if (!privateDnsSupported) wanted.remove(Restriction.CONFIG_PRIVATE_DNS);
+        return Collections.unmodifiableSet(wanted);
     }
 
     /** True when Android's readback matches the policy exactly: none missing and none extra. */

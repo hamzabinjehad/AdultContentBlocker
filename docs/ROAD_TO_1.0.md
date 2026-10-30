@@ -12,6 +12,15 @@ this folder. It coordinates the existing plans rather than replacing them:
 - [Publishing plan](PUBLISHING_PLAN.md) — release tracks and ship-blockers.
 - [Test matrix](TEST_MATRIX.md) — what is demonstrated, inferred or manual.
 
+> **Execution update (2026-10-30, W2.1 continued):** Android 0.8.0 adds the
+> Android 10+ `disallow_config_private_dns` restriction to managed lockdown and
+> a persistent 15-minute `JobScheduler` layer watchdog. The watchdog notices a
+> stopped DNS VPN or direct-build accessibility guard, posts one local notice
+> per loss (repeat at most every 12 hours) and clears it on recovery; it never
+> restarts a service. Pure `LayerWatch`/`ManagedRestrictions` tests, string
+> parity and the Gradle debug/test/lint builds pass. No provisioned phone or
+> real layer-loss run is claimed; the device gate is still open.
+
 > **Execution update (2026-10-29, W0.2/W0.3/W1.4/W2.1):** the iOS hosted suite
 > now runs to completion on the iOS 26.5 simulator: 181 tests, **TEST
 > SUCCEEDED**, on commit `146981d` plus this tree. The runner gap that kept M0
@@ -66,7 +75,7 @@ distribution and freshness — not a missing feature list.
 | Chromium extension | 1.2.0 development candidate (short-video/pause, list freshness, clearer list blocks) | Not on the Chrome Web Store; unpacked only | Store publication, managed force-install, one real-browser acceptance pass |
 | Mac | 1.1.4; filter, browser guard, guardian split, profile, partner key | Unsigned, unnotarized, no app updater | A signed `.pkg`, an update path, and the hardware checks in `TEST_MATRIX.md` |
 | iPhone/iPad | 1.1.2 development; Screen Time, Safari blockers, vault, supervised profile | No Apple team, no Family Controls entitlement, no device | Entitlement, a disposable iPhone, device acceptance of every lock level |
-| Android | 0.7.0 preview; direct-build uninstall guard, boot shield and opt-in device-owner managed lockdown (Safe Mode, all-app controls, factory reset, VPN) | No signed production APK; device-owner flow unproven | A disposable device-owner phone, real restriction refusals and release, signed release |
+| Android | 0.8.0 preview; direct-build uninstall guard, boot shield, opt-in device-owner managed lockdown (Safe Mode, all-app controls, factory reset, VPN and Android 10+ Private DNS) and a 15-minute layer watchdog | No signed production APK; device-owner flow unproven | A disposable device-owner phone, real restriction refusals and release, layer-loss device run, signed release |
 | Lists | Signed seed v4 built 2026-10-01 | **No `lists` branch on origin** | Publish signed daily generations; update iOS and Android |
 
 A Windows policy generator (`profile/make_windows_policy.py`, with tests) and a
@@ -86,7 +95,7 @@ decides otherwise; see §7.2.
 | `./test.sh release` | Pass | Mac installer and configuration checks |
 | `./test.sh macos` | Pass | 495 tests, 521 strings with Arabic |
 | `./test.sh ios` | **Pass** | 181 hosted tests, `** TEST SUCCEEDED **`, iOS 26.5 simulator (iPhone 17), Xcode 27.1 |
-| `android/test-core.sh` | Pass | With Android Studio's JBR; includes `ManagedRestrictionsTest` |
+| `android/test-core.sh` | Pass | With Android Studio's JBR; includes `ManagedRestrictionsTest` and `LayerWatchTest` |
 | Gradle debug/test/lint | Pass | `assembleDebug assembleDebugAndroidTest lintDebug` |
 | `./test.sh browser` | Not run | Needs a Chromium-based browser; CI runs it on Linux |
 
@@ -96,10 +105,10 @@ bootable iPhone 17 simulator for iOS 26.5. The Android SDK is at
 `~/Library/Android/sdk`; without `ANDROID_HOME` the Gradle build fails before
 compiling.
 
-These suites ran against `release/1.0` plus the 0.7.0/version-matrix work. The
-0.6.0 device evidence in the Android record is from the pre-merge
-`android-0.6.0` branch (versionCode 15); release/1.0 builds 0.6.0 as 18 and
-0.7.0 as 19, and those merged builds have not been run on a phone.
+These suites ran against `release/1.0` plus the 0.7.0/0.8.0 work. The 0.6.0
+device evidence in the Android record is from the pre-merge `android-0.6.0`
+branch (versionCode 15); the current Android build is 0.8.0 (versionCode 20),
+and that build has not been run on a phone.
 
 ### 1.3 Integration debt
 
@@ -243,10 +252,12 @@ The app is the control panel and the health display. It must never be the lock.
    plus the existing ADB route for developers. Never provision the owner's
    daily phone; never enroll silently.
 3. **A watchdog, not a prayer.** A foreground service plus boot receivers is
-   not enough if the OEM kills the app. Add a periodic `WorkManager` health
-   check that notices a disabled accessibility service or a dropped VPN and
-   posts a local notification. A killed app cannot restart itself; the app
-   must say "nothing is guarding" rather than stay green.
+   not enough if the OEM kills the app. **Implemented in 0.8.0** as a persistent
+   15-minute `JobScheduler` check (Android's minimum): it compares the expected
+   direct-build accessibility guard and DNS VPN with the live state, posts one
+   local notice per loss (repeat at most every 12 hours) and clears it on
+   recovery. It does not restart a service. Device proof under Doze and a real
+   service kill is still pending.
 4. **The network decision.** Hisn's `VpnService` is DNS-only. Always-on
    *lockdown* with a DNS-only tunnel can black-hole ordinary traffic, so:
    - **Option A (recommended for 1.0):** device-owner `setGlobalPrivateDns`
@@ -566,7 +577,7 @@ Sizes: S ≤ 2 days, M ≤ 1 week, L ≤ 3 weeks, XL > 3 weeks.
 | W1.4 | Per-surface list coverage: document the core / full split; make each client state its tier | Extension, iOS, Android | M | A coverage table is generated per release; no client claims the full list. **Done 2026-10-29:** `docs/COVERAGE.md` generated from the signed seed |
 | W1.5 | Text corpus: 500 labelled cases per language and a CI regression gate | All | L | A vocabulary change reports misses and false blocks per language |
 | W1.6 | Visual: licensed benchmark, hide-first audit, video sampling | Chromium, Safari, Android | L | Recall/false-hide numbers with denominators; no pre-verdict adult frame |
-| W2.1 | Android managed edition: safe-boot/app-control/factory-reset restrictions, always-on/private DNS, watchdog, QR provisioning | Android | XL | Disposable phone: uninstall refused, safe mode blocked, clear data blocked, VPN persistent, recovery works. **Partial 2026-10-29:** the four restrictions, explicit opt-in, readback and release order are implemented and unit-tested; always-on/private DNS, the watchdog, QR provisioning and the device run remain |
+| W2.1 | Android managed edition: safe-boot/app-control/factory-reset restrictions, always-on/private DNS, watchdog, QR provisioning | Android | XL | Disposable phone: uninstall refused, safe mode blocked, clear data blocked, VPN persistent, recovery works. **Partial 2026-10-30:** the four restrictions plus Android 10+ Private DNS (`disallow_config_private_dns`), explicit opt-in, readback and release order are implemented and unit-tested; the 15-minute layer watchdog is implemented; always-on VPN/lockdown, QR provisioning and the device run remain |
 | W2.2 | Android direct build: boot shield + guard, signed APK | Android | M | Signed APK, hash, cert fingerprint; guard tested on a real phone |
 | W2.3 | iPhone supervised edition: profile test, vault wording, level UI, removal password | iOS | L | Device test record for every key in `IPHONE_SUPERVISED.md` |
 | W2.4 | Mac guardian edition: root daemon, bootout test, signed pkg, updater | Mac | L | Standard user cannot delete/disable; admin recovery documented; pkg notarized |

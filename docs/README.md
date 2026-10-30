@@ -41,8 +41,8 @@ past version; *superseded* documents point to their replacement. Start with the
 
 ## Android
 
-- [Android implementation status](ANDROID_IMPLEMENTATION_STATUS.md): Table of each Android protection layer, what code exists and how far it was verified, as of 0.7.0.
-- [Android tamper resistance scope](ANDROID_TAMPER_RESISTANCE.md): What Android personal mode can and cannot do to resist removal, Play policy limits, and managed-device mode including the 0.7.0 lockdown restrictions.
+- [Android implementation status](ANDROID_IMPLEMENTATION_STATUS.md): Table of each Android protection layer, what code exists and how far it was verified, as of 0.8.0.
+- [Android tamper resistance scope](ANDROID_TAMPER_RESISTANCE.md): What Android personal mode can and cannot do to resist removal, Play policy limits, and managed-device mode including the 0.8.0 lockdown restrictions and layer watchdog.
 
 ## Network and routers
 
@@ -95,7 +95,8 @@ Per-version change and verification notes, newest first.
 
 ### Android
 
-- [Android 0.7.0 release notes](ANDROID_0.7.0.md): Optional managed lockdown on a device-owner phone: Safe Mode, all-app uninstall/data controls, Settings factory reset and VPN changes, saved together with the uninstall block and read back from Android. Device acceptance pending; the ordinary build is still removable.
+- [Android 0.8.0 release notes](ANDROID_0.8.0.md): Private DNS joins managed lockdown on Android 10+, and a persistent 15-minute watchdog notices a stopped accessibility guard or DNS VPN and posts a local layer-loss notice. Device acceptance pending; the ordinary build is still removable.
+- [Android 0.7.0 release notes](ANDROID_0.7.0.md): Optional managed lockdown on a device-owner phone: Safe Mode, all-app uninstall/data controls, Settings factory reset and VPN changes, saved together with the uninstall block and read back from Android. *Historical.*
 - [Android 0.6.0 release notes](ANDROID_0.6.0.md): Opt-in device-owner uninstall protection, in-app status/release, boot reconciliation and host tests. Device acceptance pending; the ordinary build is still removable. *Historical.*
 - [Android 0.5.4 reliability (part A)](ANDROID_0.5.4_RELIABILITY.md): Second Cloudflare Families address with failover, network changes limited to the network in use, damaged settings that keep a commitment, and a release APK check. *In progress.*
 - [Android 0.5.3 release notes](ANDROID_0.5.3.md): Setup guide ready per chosen layer, failures kept visible, real DNS notification and refusal reasons, screen-off sampling stop, Arabic parity, licenses screen and an Android CI job.

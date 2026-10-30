@@ -13,7 +13,7 @@ signed artifact has shipped. The state column is the honest release state.
 | Browser extension (Chromium) | 1.2.0 | — | development · unpacked, no store listing | `extension/manifest.json` |
 | Mac | 1.1.4 | 8 | development · unsigned, needs Developer ID and notarization | `macos/Hisn.xcodeproj/project.pbxproj` |
 | iPhone & iPad | 1.1.2 | 3 | development · no Apple team, Family Controls entitlement or test device | `ios/HisnMobile.xcodeproj/project.pbxproj` |
-| Android | 0.7.0 | 19 | preview · unsigned; direct builds add the -direct suffix | `android/app/build.gradle` |
+| Android | 0.8.0 | 20 | preview · unsigned; direct builds add the -direct suffix | `android/app/build.gradle` |
 
 ## Seed bundle
 
@@ -35,7 +35,7 @@ generation must beat; clients refuse a lower one.
 - **Browser extension (Chromium)** (`extension`): The packaged zip strips the development key; the Chrome Web Store ID will differ from the unpacked ID.
 - **Mac** (`macos`): Every target must carry the same MARKETING_VERSION and CURRENT_PROJECT_VERSION.
 - **iPhone & iPad** (`ios`): The app, Safari blockers and HisnActivityMonitor share one version set.
-- **Android** (`android`): versionCode is monotonic and must increase for every uploaded or side-loaded update. 19 adds the managed-lockdown opt-in on top of the 0.6.0 uninstall guard.
+- **Android** (`android`): versionCode is monotonic and must increase for every uploaded or side-loaded update. 20 adds the API-29 Private DNS restriction and the background layer-health watchdog on top of the 0.7.0 managed lockdown.
 
 ## Bumping a version
 

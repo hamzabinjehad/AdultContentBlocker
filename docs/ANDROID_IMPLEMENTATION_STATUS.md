@@ -16,7 +16,7 @@ status. Each layer must state its scope and recover from service/permission
 loss without displaying false protection. Absolute detection or resistance to
 a device owner's reset/recovery controls is not an achievable release claim.
 
-## Implemented in the development preview (latest: 0.7.0)
+## Implemented in the development preview (latest: 0.8.0)
 
 | Layer | Code now present | Verification boundary |
 | --- | --- | --- |
@@ -33,7 +33,8 @@ a device owner's reset/recovery controls is not an achievable release claim.
 | Commitment | Backend rejects weaker settings and disabling opted-in adult checks for 7/30/90 days; elapsed/boot clock; new empty commitments rejected | Pure clock tests and isolated Samsung preference tests pass; old empty commitments preserve time and permit added restrictions |
 | Daily selected-app schedule | Optional every-day local-time window, separate app set, overnight support, static-screen periodic enforcement and commitment-preserving coverage | Exhaustive/randomized core tests, isolated Samsung persistence/commitment checks and real local-time boundary test pass; clock/timezone/accessibility bypasses remain |
 | Removal friction | Optional legacy admin receiver with no administrative policies | Compiles; latest activation/deactivation test pending |
-| Managed uninstall protection | Device-owner only. Pure state matrix, `PolicyStore` keep switch with commitment guard, `DevicePolicyManager.setUninstallBlocked` readback/repair, in-app setup/release UI and boot reconciliation. 0.7.0 adds an opt-in managed lockdown (`no_safe_boot`, `no_apps_control`, `no_factory_reset`, `no_config_vpn`), saved in the same write, read back from `UserManager` and released in reverse order. | Core `UninstallProtection`/`ManagedRestrictions`/`SavedSettings` tests, debug/test builds and lint pass. The Samsung is not device owner, so it reports "Not managed"; an actual blocked uninstall and the four restrictions, expiry reconciliation and release still need a disposable provisioned device. |
+| Managed uninstall protection | Device-owner only. Pure state matrix, `PolicyStore` keep switch with commitment guard, `DevicePolicyManager.setUninstallBlocked` readback/repair, in-app setup/release UI and boot reconciliation. 0.7.0 adds an opt-in managed lockdown (`no_safe_boot`, `no_apps_control`, `no_factory_reset`, `no_config_vpn`), saved in the same write, read back from `UserManager` and released in reverse order. 0.8.0 adds `disallow_config_private_dns` on API 29+. | Core `UninstallProtection`/`ManagedRestrictions`/`SavedSettings` tests, debug/test builds and lint pass. The Samsung is not device owner, so it reports "Not managed"; an actual blocked uninstall and the restrictions, expiry reconciliation and release still need a disposable provisioned device. |
+| Background layer watchdog | A persistent 15-minute `JobScheduler` job compares expected layers (direct-build accessibility while keep is on, DNS while left on) with the live state; a lost layer gets one local notice, repeated at most every 12 hours, cleared on recovery. It never restarts a service. Scheduled from app open, DNS start/stop, boot and keep changes. | Pure `LayerWatch` tests cover expected/running sets, lost detection, signature and notification cadence; the app builds and lints. A real service loss, Doze delay and notification permission are device checks. |
 | Visual filtering | Opt-in Android 14+ selected-window image/video sampling using the bundled local classifier; generic Home/restriction intervention, explicit capture consent and separate health | Actual local model, policy and stale-frame tests plus nine Samsung live fixture checks pass. A small benign baseline had 0/12 false-blocked views over 36 calls, with 1,984 ms median / 2,290 ms p95 classifier roundtrip. Sources/layouts are limited and correlated; this is not population accuracy. Adult recall, real-app/video and battery acceptance remain pending; no pre-display claim. See [0.5.0](ANDROID_0.5.0.md) and [benchmark](ANDROID_VISUAL_BENCHMARK_2026-10-22.md) |
 
 The 0.3.0 debug APK was installed and opened on the Samsung on 2026-10-19.
@@ -91,7 +92,7 @@ false positives. These are fixture-specific counts, not an accuracy estimate or
 a representative benchmark. The misses/false positive require further work.
 No full-traffic or always-on VPN, and no undeletable installation for an
 ordinary install, is implemented. Device-owner uninstall blocking and the
-managed lockdown are opt-in 0.7.0 previews; they do not survive a factory
+managed lockdown are opt-in 0.8.0 previews; they do not survive a factory
 reset, device-owner removal, ADB/root or an administrator. The current
 deliverable remains a tested development preview, not the requested universal
 end-state protection.
@@ -142,7 +143,7 @@ freshly provisioned device owner. Do not provision the owner's daily phone and
 do not describe the ordinary install as undeletable. See
 [0.6.0](ANDROID_0.6.0.md) and [tamper scope](ANDROID_TAMPER_RESISTANCE.md).
 
-## 0.7.0 managed-lockdown verification boundary (2026-10-29)
+## 0.7.0 managed-lockdown verification boundary (2026-10-29) *Historical*
 
 0.7.0 adds the second opt-in: `no_safe_boot`, `no_apps_control`,
 `no_factory_reset` and `no_config_vpn`, applied only while a device owner, the
@@ -165,6 +166,27 @@ device-owner build, the expiry repair and the release path are **not** claimed.
 `test-live-managed-status.py --expect-lockdown` is the read-only check to run on
 a disposable provisioned device; it does not apply or clear policy. See
 [0.7.0](ANDROID_0.7.0.md).
+
+## 0.8.0 Private DNS and watchdog verification boundary (2026-10-30)
+
+0.8.0 extends the managed lockdown on Android 10+ with the separate
+`disallow_config_private_dns` key. The pure policy takes the device API level,
+so Android 8/9 expect four keys and Android 10+ expect five; the debug exporter
+and `test-live-managed-status.py --expect-lockdown` use the same rule. The
+existing exact-readback, out-of-sync and reverse-release rules apply unchanged.
+
+The layer watchdog is a persistent periodic `JobScheduler` job (15-minute
+minimum). It reports a stopped DNS VPN or a disconnected direct-build
+accessibility guard with one local notification, repeats at most every twelve
+hours, and clears when the layer is back. It never restarts a service.
+
+Verified on 30 October 2026: `LayerWatchTest`, the updated
+`ManagedRestrictionsTest`, English/Arabic string parity (275 strings),
+`assembleDebug`, `assembleDebugAndroidTest` and `lintDebug` pass.
+
+**No device run is claimed.** The real Private DNS refusal, a genuine service
+loss and recovery, Doze/battery delay and Android 13+ notification permission
+need a disposable device. See [0.8.0](ANDROID_0.8.0.md).
 
 ## Next acceptance gates
 

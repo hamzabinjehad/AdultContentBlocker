@@ -1,10 +1,11 @@
-# Hisn Android 0.7.0: protection development preview
+# Hisn Android 0.8.0: protection development preview
 
 The Android app contains an opt-in DNS-only VPN, saved custom rules, selected-app
 accessibility restrictions, opt-in daily app schedules, built-in adult-text checks and
 sampled image/video checks, an in-app
 commitment, an optional legacy-admin confirmation step and an opt-in
-device-owner uninstall guard with an optional managed lockdown. The interface
+device-owner uninstall guard with an optional managed lockdown, and a background
+layer-health watchdog. The interface
 supports Arabic and English. This
 remains a development build, not the completed end goal.
 Core tests pass; device evidence is version-specific in the release records below.
@@ -20,6 +21,27 @@ blocking and the broader lockdown exist only as an opt-in device-owner preview;
 the ordinary install remains removable, and actual blocked-uninstall and
 restriction acceptance needs a disposable provisioned device.
 
+## 0.8.0 Private DNS lock and the layer watchdog
+
+- **Private DNS joins managed lockdown** on Android 10+ (API 29):
+  `disallow_config_private_dns` is applied and read back with the four existing
+  keys. Android 8/9 are asked for four, Android 10+ for five; a missing or extra
+  key is out of sync, never a green light.
+- **A persistent 15-minute JobScheduler check** compares the layers the owner
+  left armed (the direct build's accessibility guard while **Keep Hisn
+  installed** is on, and DNS while it is left on) with what is actually running.
+  A stopped layer raises one local notification, repeats at most every twelve
+  hours, and clears when the layer is back. It never restarts a service and
+  sends nothing to a server. Scheduling is refreshed on app open, DNS
+  start/stop, boot and keep-switch changes.
+- Version 0.8.0, versionCode 20. See
+  [the 0.8.0 record](../docs/ANDROID_0.8.0.md).
+
+No device-owner provisioning, restriction enforcement or layer-loss device run
+has been applied to the test Samsung. The actual refusals, the watchdog notice
+and the release path still require a disposable, factory-reset, account-free
+phone.
+
 ## 0.7.0 managed lockdown (optional, device-owner only)
 
 On top of the 0.6.0 uninstall block, a device owner can turn on **Managed
@@ -31,11 +53,7 @@ configuration changes (`no_config_vpn`). App controls is deliberately broad and
 is a separate opt-in with a disclosure. The status screen shows ON, Off, idle or
 out of sync from Android's own readback; release clears the restrictions in
 reverse order, then the uninstall block, then device ownership. Version 0.7.0,
-versionCode 19. See [the 0.7.0 record](../docs/ANDROID_0.7.0.md).
-
-No device-owner provisioning or restriction enforcement has been applied to the
-test Samsung. The actual refusals and the release path still require a
-disposable, factory-reset, account-free phone.
+versionCode 19. *Historical.* See [the 0.7.0 record](../docs/ANDROID_0.7.0.md).
 
 ## 0.6.0 pause screen and short-video blocking
 

@@ -4,6 +4,7 @@ import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.UserManager;
 import android.util.Log;
@@ -71,7 +72,9 @@ final class UninstallProtectionController {
 
         /** The restrictions the person's choices and the platform facts call for right now. */
         Set<ManagedRestrictions.Restriction> desiredRestrictions() {
-            return ManagedRestrictions.desired(deviceOwner, managedLockdown, keepInstalled, remainingMillis);
+            // Private DNS is a separate restriction from Android 10 (API 29).
+            return ManagedRestrictions.desired(deviceOwner, managedLockdown, keepInstalled,
+                    remainingMillis, Build.VERSION.SDK_INT >= 29);
         }
 
         /** True when the platform holds exactly the desired set, with nothing missing or extra. */

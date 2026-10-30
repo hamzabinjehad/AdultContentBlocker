@@ -26,7 +26,7 @@ Explicitly **not** part of 1.0, and never claimed:
 
 - Full-traffic or always-on lockdown VPN, and coverage of app-encrypted DNS or direct-IP traffic.
 - Uninstall or disable prevention for an ordinary install. Device-owner
-  uninstall blocking and managed lockdown are optional 0.7.0 previews with their own provisioning and
+  uninstall blocking and managed lockdown are optional 0.8.0 previews with their own provisioning and
   recovery requirements; resistance to a device administrator, ADB/root or a
   factory reset remains out of scope ([tamper scope](ANDROID_TAMPER_RESISTANCE.md)).
 - Pre-display blurring or detection of all adult content.
@@ -36,7 +36,7 @@ Usage limits (time budgets) are deferred to 1.1. Daily schedules and permanent b
 already cover the self-control case, and budgets add a counter-recovery surface that
 needs its own lifecycle testing.
 
-## Where the preview stands (0.7.0)
+## Where the preview stands (0.8.0)
 
 | Area | State | Remaining to reach 1.0 |
 | --- | --- | --- |
@@ -44,8 +44,8 @@ needs its own lifecycle testing.
 | App blocks, schedules, words, adult text | Implemented; fixture and synthetic-corpus evidence | Real-app coverage pass (M3) |
 | Visual sampling | Implemented; benign baseline 0/12 false blocks; WebGL 121 ms median on Samsung | Adult recall, battery, live capture on 0.5.1 (M4) |
 | Commitments | Implemented; clock, boot and isolated-preference tests pass. Device-owner mode can additionally block ordinary uninstall while one runs, and managed lockdown can hold the four restrictions. | Disposable short commitment end to end on device (M3) |
-| Managed uninstall protection (0.7.0) | Device-owner only; pure state matrix, persistence guard, readback/release controller, UI and boot reconciliation are present. Optional lockdown adds `no_safe_boot`, `no_apps_control`, `no_factory_reset` and `no_config_vpn`, saved with the uninstall block and released in reverse order. | Actual blocked uninstall and restriction refusals on a disposable provisioned device; Play/DPC policy review; no provisioning was applied to the owner's phone |
-| Layer health / honest status | Implemented model with 1,280 combinations tested | Service-kill and permission-revoke recovery on device (M2) |
+| Managed uninstall protection (0.8.0) | Device-owner only; pure state matrix, persistence guard, readback/release controller, UI and boot reconciliation are present. Optional lockdown adds `no_safe_boot`, `no_apps_control`, `no_factory_reset`, `no_config_vpn` and, on Android 10+, `disallow_config_private_dns`; saved with the uninstall block and released in reverse order. | Actual blocked uninstall and restriction refusals on a disposable provisioned device; Play/DPC policy review; no provisioning was applied to the owner's phone |
+| Layer health / honest status | Implemented model with 1,280 combinations tested. 0.8.0 adds a persistent 15-minute JobScheduler watchdog that notices a stopped DNS VPN or accessibility guard, posts one local notice and clears it on recovery. | Service-kill, Doze delay, notification permission and permission-revoke recovery on device (M2) |
 | Release signing | **Added in 0.5.1**: optional `HISN_ANDROID_*` environment signing | Owner creates and backs up the production key (M5) |
 | Signed list updates | Seed is bundled and pinned at build time | Not started; decide in M1 |
 
@@ -86,7 +86,7 @@ as a limit. It is never dropped silently.
       settings never end a commitment, and `check-release.py` for release APKs.
       See [0.5.4 part A](ANDROID_0.5.4_RELIABILITY.md).
 
-### 0.6.0–0.7.0 managed preview (source complete; device acceptance pending)
+### 0.6.0–0.8.0 managed preview (source complete; device acceptance pending)
 
 - Pure `UninstallProtection` state matrix, including the readback mismatch and
   the rule that a commitment blocks disabling the keep switch.
@@ -100,9 +100,13 @@ as a limit. It is never dropped silently.
   running.
 - 0.7.0 adds the second opt-in: while a device owner, the lockdown switch and a
   commitment or keep lock all hold, `DevicePolicyManager.addUserRestriction`
-  applies `no_safe_boot`, `no_apps_control`, `no_factory_reset` and
-  `no_config_vpn`; `UserManager` readback drives an out-of-sync state rather
-  than a green light.
+  applies `no_safe_boot`, `no_apps_control`, `no_factory_reset`,
+  `no_config_vpn` and, on Android 10+, `disallow_config_private_dns`;
+  `UserManager` readback drives an out-of-sync state rather than a green light.
+- 0.8.0 adds the persistent 15-minute `JobScheduler` layer watchdog. It compares
+  the expected accessibility/DNS layers with the live state, posts one local
+  notice per loss (repeat at most every 12 hours) and clears it on recovery. It
+  never restarts a service.
 - Core tests (including `ManagedRestrictionsTest`), `assembleDebug`,
   `assembleDebugAndroidTest` and lint pass. The connected test phone is not
   device owner, so it must show "Not managed"; the actual refusals and release

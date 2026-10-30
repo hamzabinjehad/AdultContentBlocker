@@ -1,5 +1,9 @@
 # Hisn Android 0.7.0 — optional managed lockdown
 
+> Superseded by [0.8.0](ANDROID_0.8.0.md), which adds the Android 10+ Private
+> DNS restriction and the background layer watchdog. This record stays as the
+> 0.7.0 evidence.
+
 Development candidate, 29 October 2026. Not a Play release, not a signed
 production build, and not a claim that the connected owner's phone is locked.
 No device-owner appointment, factory reset, account removal or managed

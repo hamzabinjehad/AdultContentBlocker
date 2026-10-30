@@ -34,7 +34,8 @@ no automation, and it must be run on a real Mac by a person.
 | iOS/iPadOS app, Safari blockers and activity monitor build and run their hosted tests | iOS 26.5 simulator (iPhone 17), Xcode 27.1, `** TEST SUCCEEDED **` on 2026-10-29 | `./test.sh ios` (181 tests) |
 | macOS app, filter and strings | Xcode test + Arabic export on 2026-10-29 | `./test.sh release macos` (495 tests) |
 | Android managed-uninstall state, commitment guard, readback mismatch and release guard | pure matrix + isolated preference fixture | `android/test-core.sh`, `CoreDeviceTestRunner` on the 0.6.0-direct Samsung build |
-| Android managed lockdown: opt-in matrix, exact held set, missing/extra detection, apply/release order and combined state | pure `ManagedRestrictions` + `UninstallProtection` + settings round trip | `android/test-core.sh` (`ManagedRestrictionsTest`, `UninstallProtectionTest`, `SavedSettingsTest`) |
+| Android managed lockdown: opt-in matrix, API-29 Private DNS, exact held set, missing/extra detection, apply/release order and combined state | pure `ManagedRestrictions` + `UninstallProtection` + settings round trip | `android/test-core.sh` (`ManagedRestrictionsTest`, `UninstallProtectionTest`, `SavedSettingsTest`) |
+| Android layer watchdog: expected/running sets, lost layers, stable signature and 12-hour notification cadence | pure `LayerWatch` decisions | `android/test-core.sh` (`LayerWatchTest`) |
 | Android Arabic/Persian/Urdu folds, custom-rule parity, glued phrase aliases and evasion recovery | shared fold table, actual-seed fixtures and boundary samples | `android/test-core.sh` |
 
 ## Manual (procedures exist; must be run on hardware)
@@ -54,7 +55,8 @@ no automation, and it must be run on a real Mac by a person.
 | Missing components | delete user native-host manifest → extension strict after 5 min; quit app → filter keeps enforcing | inferred; manual |
 | Connections open before a lock starts | browser: open tabs are navigated to the block page on rule change (`tabsToBlock`); **Mac: existing sockets are not closed** — a stream already playing continues until it reconnects | browser demonstrated in unit tests; Mac limitation documented |
 | Android device-owner uninstall block | disposable device: provision device owner, enable Keep Hisn installed, attempt uninstall; then test commitment-expiry reconciliation, release and removal | **not yet run** — the connected Samsung is not device owner; no blocked state claimed |
-| Android managed lockdown | disposable device owner: enable Keep + Managed lockdown; try uninstall, Safe Mode, Settings erase and a VPN change; read back with `test-live-managed-status.py --expect-lockdown`; then release and verify the four restrictions are gone | **not yet run** — code, lint and pure tests only; no provisioned device |
+| Android layer watchdog | disposable device: turn on Keep, disable the accessibility service, run `adb shell cmd jobscheduler run -f app.hisn.android 1401`; repeat with DNS stopped; re-enable each layer and run the job again | **not yet run** — pure tests and build only |
+| Android managed lockdown | disposable device owner: enable Keep + Managed lockdown; try uninstall, Safe Mode, Settings erase, a VPN change and (Android 10+) a Private DNS change; read back with `test-live-managed-status.py --expect-lockdown`; then release and verify the expected restrictions are gone | **not yet run** — code, lint and pure tests only; no provisioned device |
 | iPhone/iPad lock levels | disposable device: vault seal/reveal, Screen Time readback, supervised profile removal password, app deletion refusal | **not yet run** — simulator tests only; no physical device or entitlement |
 | Second-person onboarding | a non-developer follows `docs/SETUP.md` on a clean Mac and iPhone/Android | **not yet run** |
 

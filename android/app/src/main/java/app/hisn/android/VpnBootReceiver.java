@@ -18,12 +18,17 @@ public final class VpnBootReceiver extends BroadcastReceiver {
         catch (RuntimeException ignored) { /* MainActivity repairs on next open. */ }
         // Fallback when the direct-boot start was missed; a running shield ignores it.
         BootShieldService.startIfNeeded(context);
+        // Re-arm the periodic loss check for the keep switch and any DNS session.
+        try { LayerWatchdog.syncSchedule(context); }
+        catch (RuntimeException ignored) { /* The next app open retries. */ }
         if (!DnsVpnService.resumeRequested(context)) return;
         try {
             // A non-null consent intent means approval is gone; it is never launched from here.
             if (VpnService.prepare(context) != null) {
                 DnsVpnService.setResumeRequested(context, false);
                 DnsVpnService.notifyStopped(context, R.string.dns_not_resumed_body);
+                try { LayerWatchdog.syncSchedule(context); }
+                catch (RuntimeException ignored) { /* The next app open retries. */ }
                 return;
             }
             context.startForegroundService(new Intent(context, DnsVpnService.class));

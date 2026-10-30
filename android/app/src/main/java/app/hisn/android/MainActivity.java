@@ -139,6 +139,10 @@ public final class MainActivity extends Activity {
 
         try { settings = PolicyStore.get(this); }
         catch (RuntimeException unavailable) { paragraph(R.string.policy_unavailable); }
+        // Keep the background layer check alive for the choices already saved:
+        // a DNS session the owner left on, or the direct build's keep switch.
+        try { LayerWatchdog.syncSchedule(this); }
+        catch (RuntimeException unavailable) { /* The next open retries. */ }
 
         paragraph(R.string.app_goal_short);
         statusTitle = heading(R.string.status_title, 21);
@@ -1122,6 +1126,8 @@ public final class MainActivity extends Activity {
             Toast.makeText(this, result.ok ? R.string.uninstall_saved : R.string.uninstall_failed,
                     Toast.LENGTH_LONG).show();
         }
+        try { LayerWatchdog.syncSchedule(this); }
+        catch (RuntimeException unavailable) { /* The next open retries. */ }
         refreshStatus();
     }
 

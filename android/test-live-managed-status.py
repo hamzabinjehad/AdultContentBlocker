@@ -16,8 +16,9 @@ On an ordinary install the expected result is: not a device owner, uninstall not
 blocked, state UNAVAILABLE or ADMIN_ONLY. `--expect-managed` is for a disposable
 device that has deliberately been provisioned as Hisn's device owner; it
 requires an active keep switch or commitment and Android's readback saying
-uninstall is blocked. `--expect-lockdown` additionally requires the four
-managed-lockdown restrictions to be held and read back exactly.
+uninstall is blocked. `--expect-lockdown` additionally requires the expected
+managed-lockdown restrictions (four, or five on Android 10+) to be held and
+read back exactly.
 """
 from __future__ import annotations
 
@@ -34,8 +35,8 @@ STATUS_FILE = "files/managed-status.json"
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--adb", default="adb", help="adb executable")
 parser.add_argument("--serial", required=True, help="device serial from adb devices")
-parser.add_argument("--min-version-code", type=int, default=19,
-                    help="fail if the installed version code is older (default: 19)")
+parser.add_argument("--min-version-code", type=int, default=20,
+                    help="fail if the installed version code is older (default: 20)")
 parser.add_argument("--expect-managed", action="store_true",
                     help="require a provisioned device owner with an active guard")
 parser.add_argument("--expect-lockdown", action="store_true",
@@ -96,7 +97,15 @@ for key in ("deviceOwner", "adminActive", "uninstallBlocked", "keepInstalled",
         fail(f"status is missing {key}: {data}")
 if not isinstance(data["restrictions"], list) or not isinstance(data["desiredRestrictions"], list):
     fail(f"restriction sets are not lists: {data}")
+sdk_text = adb("shell", "getprop", "ro.build.version.sdk").stdout.strip()
+try:
+    sdk = int(sdk_text)
+except ValueError:
+    fail(f"cannot read the device API level: {sdk_text!r}")
+# Android 10 (API 29) adds the separate Private DNS restriction.
 LOCKDOWN = {"no_safe_boot", "no_apps_control", "no_factory_reset", "no_config_vpn"}
+if sdk >= 29:
+    LOCKDOWN.add("disallow_config_private_dns")
 
 print(f"Hisn {data.get('versionName')} ({data.get('versionCode')}) on {args.serial}")
 print(f"device owner: {data['deviceOwner']}  admin: {data['adminActive']}  "
@@ -108,7 +117,7 @@ print(f"managed lockdown: {data['managedLockdown']}  held: {sorted(data['restric
 if data["managedLockdown"] and (data["keepInstalled"] or data["remainingMillis"] > 0) \
         and data["deviceOwner"]:
     if not data["restrictionsMatch"] or set(data["restrictions"]) != LOCKDOWN:
-        fail("managed lockdown is on but Android does not hold all four restrictions")
+        fail(f"managed lockdown is on but Android does not hold the expected restrictions: {sorted(LOCKDOWN)}")
 if data.get("error"):
     fail(f"app reported a status error: {data['error']}")
 
@@ -122,7 +131,8 @@ if args.expect_managed:
     if args.expect_lockdown:
         if not data["managedLockdown"] or not data["restrictionsMatch"] \
                 or set(data["restrictions"]) != LOCKDOWN:
-            fail("managed lockdown expected, but the restrictions were not held and read back")
+            fail(f"managed lockdown expected, but the restrictions were not held and read back: "
+                 f"expected {sorted(LOCKDOWN)}")
         print("PASS: device owner with uninstall blocked and managed lockdown held")
         raise SystemExit(0)
     print("PASS: device owner with the uninstall guard applied and read back")

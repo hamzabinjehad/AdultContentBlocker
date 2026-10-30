@@ -247,6 +247,9 @@ public final class DnsVpnService extends VpnService {
                     new NotificationChannel(CHANNEL, getString(R.string.dns_channel), NotificationManager.IMPORTANCE_LOW));
             startForeground(STATUS_ID, statusNotification(DnsNotice.STARTING));
             setResumeRequested(this, true);
+            // The owner has now left DNS on; keep the background loss check scheduled.
+            try { LayerWatchdog.syncSchedule(this); }
+            catch (RuntimeException ignored) { /* The next app open retries. */ }
             getSystemService(NotificationManager.class).cancel(ALERT_ID);
             domains = 0; blocked.set(0); forwarded.set(0); errors.set(0); lastDnsFailure = "NONE";
             unsupportedPackets.set(0); malformedPackets.set(0); unsupportedTcpPackets.set(0);
@@ -307,6 +310,9 @@ public final class DnsVpnService extends VpnService {
         closeSession();
         if (state != State.ERROR) state = State.OFF;
         stopForeground(STOP_FOREGROUND_REMOVE);
+        // DNS may have been stopped or revoked; cancel the check when nothing else is armed.
+        try { LayerWatchdog.syncSchedule(this); }
+        catch (RuntimeException ignored) { /* A stale periodic check is harmless. */ }
         super.onDestroy();
     }
 

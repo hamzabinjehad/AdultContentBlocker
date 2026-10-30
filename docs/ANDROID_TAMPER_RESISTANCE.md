@@ -1,7 +1,7 @@
 # Android tamper resistance: personal, admin and managed modes
 
-Reviewed 2026-10-21, updated 2026-10-26 for the 0.6.0 managed-uninstall preview
-and 2026-10-29 for the 0.7.0 managed lockdown. This describes what the Android
+Reviewed 2026-10-21, updated 2026-10-26 for the 0.6.0 managed-uninstall preview,
+2026-10-29 for the 0.7.0 managed lockdown and 2026-10-30 for 0.8.0. This describes what the Android
 app can actually enforce. It is not a claim that an installed app can survive a
 determined device administrator, a factory reset or OS-level access.
 
@@ -134,23 +134,26 @@ device-owner path as two explicit, opt-in layers:
   commitment. If a commitment expires while the app is not running, the block
   may remain until Hisn next runs; that is stricter than the promise and is
   stated in the UI/disclosure.
-- **0.7.0 managed lockdown** is a second switch, off by default and shown only
-  to a device owner. While it is on and a commitment or the keep switch holds,
-  Hisn applies and reads back `no_safe_boot`, `no_apps_control`,
-  `no_factory_reset` and `no_config_vpn`. `no_apps_control` stops uninstalling,
+- **0.7.0–0.8.0 managed lockdown** is a second switch, off by default and shown
+  only to a device owner. While it is on and a commitment or the keep switch
+  holds, Hisn applies and reads back `no_safe_boot`, `no_apps_control`,
+  `no_factory_reset`, `no_config_vpn` and, on Android 10+ (API 29),
+  `disallow_config_private_dns`. `no_apps_control` stops uninstalling,
   disabling, force-stopping or clearing the data of **every** app, so it is
   disclosed as broad before it is saved. The two managed choices are saved in
   one write, and release clears the restrictions in reverse apply order before
   the uninstall block and device ownership.
 - The status combines both layers: a missing or extra restriction is
-  **out of sync**, never a green light. The periodic repair runs only while the
-  app is in the foreground; it is not a background watchdog.
+  **out of sync**, never a green light. The restriction readback repair runs
+  only while the app is in the foreground. Separately, the 0.8.0 layer watchdog
+  checks the accessibility guard and DNS every 15 minutes and posts a local
+  notice; it does not repair restrictions or restart a service.
 
 ### What this does and does not survive
 
 While device owner and the guard is on, Android's ordinary uninstall flow
 refuses to remove Hisn in the user where it is owner. With managed lockdown on,
-the four restrictions above also hold. This does **not** survive:
+the restrictions above (five on Android 10+) also hold. This does **not** survive:
 
 - a factory reset from recovery (the supported recovery from a lost
   device-owner app; the Settings erase is what `no_factory_reset` blocks);

@@ -15,10 +15,15 @@ public final class ManagedRestrictionsTest {
         check(ManagedRestrictions.shouldApply(true, true, true, 0), "keep-installed did not apply restrictions");
         check(ManagedRestrictions.shouldApply(true, true, false, 1), "commitment did not apply restrictions");
 
-        Set<ManagedRestrictions.Restriction> all = ManagedRestrictions.desired(true, true, true, 0);
-        check(all.equals(EnumSet.allOf(ManagedRestrictions.Restriction.class)), "not all four restrictions desired");
-        check(ManagedRestrictions.desired(true, true, false, 0).isEmpty(), "idle desired set not empty");
-        check(ManagedRestrictions.desired(false, true, true, 0).isEmpty(), "unmanaged desired set not empty");
+        Set<ManagedRestrictions.Restriction> all = ManagedRestrictions.desired(true, true, true, 0, true);
+        check(all.equals(EnumSet.allOf(ManagedRestrictions.Restriction.class)),
+                "not all five restrictions desired on a supported Android");
+        Set<ManagedRestrictions.Restriction> older = EnumSet.allOf(ManagedRestrictions.Restriction.class);
+        older.remove(ManagedRestrictions.Restriction.CONFIG_PRIVATE_DNS);
+        check(ManagedRestrictions.desired(true, true, true, 0, false).equals(older),
+                "Android 8/9 was asked for the Private DNS restriction");
+        check(ManagedRestrictions.desired(true, true, false, 0, true).isEmpty(), "idle desired set not empty");
+        check(ManagedRestrictions.desired(false, true, true, 0, true).isEmpty(), "unmanaged desired set not empty");
 
         // Readback is exact: one missing or one extra restriction is out of sync.
         check(ManagedRestrictions.matches(all, EnumSet.allOf(ManagedRestrictions.Restriction.class)),
@@ -27,16 +32,12 @@ public final class ManagedRestrictionsTest {
                 "a partial readback matched");
         check(!ManagedRestrictions.matches(EnumSet.noneOf(ManagedRestrictions.Restriction.class), all),
                 "extra restrictions matched an empty policy");
+        Set<ManagedRestrictions.Restriction> missing = EnumSet.allOf(ManagedRestrictions.Restriction.class);
+        missing.remove(ManagedRestrictions.Restriction.SAFE_BOOT);
         check(ManagedRestrictions.missing(all, EnumSet.of(ManagedRestrictions.Restriction.SAFE_BOOT))
-                        .equals(EnumSet.of(ManagedRestrictions.Restriction.APPS_CONTROL,
-                                ManagedRestrictions.Restriction.FACTORY_RESET,
-                                ManagedRestrictions.Restriction.CONFIG_VPN)),
-                "missing set wrong");
+                .equals(missing), "missing set wrong");
         check(ManagedRestrictions.extra(EnumSet.of(ManagedRestrictions.Restriction.SAFE_BOOT), all)
-                        .equals(EnumSet.of(ManagedRestrictions.Restriction.APPS_CONTROL,
-                                ManagedRestrictions.Restriction.FACTORY_RESET,
-                                ManagedRestrictions.Restriction.CONFIG_VPN)),
-                "extra set wrong");
+                .equals(missing), "extra set wrong");
 
         // Apply order is stable and release order is its reverse, so Safe Mode
         // stays blocked until the last moment of a release.
@@ -45,21 +46,23 @@ public final class ManagedRestrictionsTest {
                         ManagedRestrictions.Restriction.SAFE_BOOT,
                         ManagedRestrictions.Restriction.APPS_CONTROL,
                         ManagedRestrictions.Restriction.FACTORY_RESET,
-                        ManagedRestrictions.Restriction.CONFIG_VPN}),
+                        ManagedRestrictions.Restriction.CONFIG_VPN,
+                        ManagedRestrictions.Restriction.CONFIG_PRIVATE_DNS}),
                 "apply order changed");
         check(java.util.Arrays.equals(ManagedRestrictions.releaseOrder(all),
                 new ManagedRestrictions.Restriction[]{
+                        ManagedRestrictions.Restriction.CONFIG_PRIVATE_DNS,
                         ManagedRestrictions.Restriction.CONFIG_VPN,
                         ManagedRestrictions.Restriction.FACTORY_RESET,
                         ManagedRestrictions.Restriction.APPS_CONTROL,
                         ManagedRestrictions.Restriction.SAFE_BOOT}),
                 "release order is not the reverse of apply");
         check(java.util.Arrays.equals(ManagedRestrictions.applyOrder(
-                        EnumSet.of(ManagedRestrictions.Restriction.CONFIG_VPN,
+                        EnumSet.of(ManagedRestrictions.Restriction.CONFIG_PRIVATE_DNS,
                                 ManagedRestrictions.Restriction.SAFE_BOOT)),
                 new ManagedRestrictions.Restriction[]{
                         ManagedRestrictions.Restriction.SAFE_BOOT,
-                        ManagedRestrictions.Restriction.CONFIG_VPN}),
+                        ManagedRestrictions.Restriction.CONFIG_PRIVATE_DNS}),
                 "subset apply order wrong");
 
         // The uninstall state must not read PROTECTED over a restriction that
@@ -78,9 +81,11 @@ public final class ManagedRestrictionsTest {
         check(ManagedRestrictions.Restriction.APPS_CONTROL.key.equals("no_apps_control"), "apps-control key");
         check(ManagedRestrictions.Restriction.FACTORY_RESET.key.equals("no_factory_reset"), "factory-reset key");
         check(ManagedRestrictions.Restriction.CONFIG_VPN.key.equals("no_config_vpn"), "config-vpn key");
+        check(ManagedRestrictions.Restriction.CONFIG_PRIVATE_DNS.key.equals("disallow_config_private_dns"),
+                "private-DNS key");
 
-        System.out.println("ManagedRestrictions tests passed: opt-in matrix, exact readback, "
-                + "apply/release order and combined protection state");
+        System.out.println("ManagedRestrictions tests passed: opt-in matrix, API-29 Private DNS, "
+                + "exact readback, apply/release order and combined protection state");
     }
 
     private static void check(boolean value, String message) {

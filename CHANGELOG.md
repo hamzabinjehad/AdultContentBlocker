@@ -5,6 +5,33 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
+## Android 0.8.0 — 2026-10-30
+
+### Added
+
+- **Private DNS in managed lockdown.** On Android 10+ (API 29), the device-owner
+  lockdown now applies and reads back `disallow_config_private_dns` as a fifth
+  restriction. Android 8/9 expect four keys; the policy takes the API level, and
+  the live checker builds the expected set from the device SDK. One missing or
+  extra key is out of sync, never a protected state.
+- **A background layer watchdog.** A persistent 15-minute `JobScheduler` job
+  compares the layers the owner left armed (the direct build's accessibility
+  guard while **Keep Hisn installed** is on, and DNS while left on) with the live
+  state. A lost layer gets one local notification, repeats at most every twelve
+  hours and clears on recovery; it never restarts a service, reads screen text
+  or contacts a server. Scheduling is refreshed on app open, DNS start/stop,
+  boot and keep-switch changes.
+- Version 0.8.0, versionCode 20. See
+  [the 0.8.0 record](docs/ANDROID_0.8.0.md).
+
+### Verification
+
+- `android/test-core.sh` passes with `LayerWatchTest`, the API-aware
+  `ManagedRestrictionsTest` and English/Arabic string parity (275 strings).
+- `assembleDebug assembleDebugAndroidTest assembleRelease lintDebug` passes.
+- No device-owner or real layer-loss result is claimed; the disposable-device
+  checklist is in the 0.8.0 record.
+
 ## Unreleased — `release/1.0`, 2026-10-29
 
 ### Added
