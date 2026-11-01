@@ -18,7 +18,11 @@ sys.path.insert(0, str(ROOT))
 from network.publish import (Rejected, SafetyPolicy, load_key, read_small,
                              validate_manifest, verify_signature, valid_domain)
 
-PARTS = 4
+# Six parts of the proven 40,000-rule size, not four. Adding parts keeps each
+# blocker at the size Hisn already ships and tests; raising the per-blocker
+# limit would be the unmeasured change. The bundled core is capped to
+# PARTS * RULE_LIMIT by build.py and script/coverage.py.
+PARTS = 6
 RULE_LIMIT = 40_000
 
 

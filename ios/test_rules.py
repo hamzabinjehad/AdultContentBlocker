@@ -72,7 +72,7 @@ class SafariRuleTests(unittest.TestCase):
     def test_capacity_never_silently_truncates(self):
         with tempfile.TemporaryDirectory() as temporary, patch.object(rules, "RULE_LIMIT", 1):
             directory = Path(temporary)
-            key = self.fixture(directory, [f"site{i}.example.net" for i in range(5)])
+            key = self.fixture(directory, [f"site{i}.example.net" for i in range(rules.PARTS + 1)])
             with self.assertRaises(Rejected): rules.verified_domains(directory, key)
 
     def test_shards_are_complete_disjoint_and_deterministic(self):
@@ -84,7 +84,7 @@ class SafariRuleTests(unittest.TestCase):
                 self.assertEqual(raw, rules.compile_part(domains, part))
                 combined.extend(json.loads(raw))
             self.assertEqual(combined, [rules.rule(domain) for domain in domains])
-            for part in [0, 5]:
+            for part in [0, rules.PARTS + 1]:
                 with self.assertRaises(Rejected): rules.compile_part(domains, part)
             with self.assertRaises(Rejected): rules.compile_part(["a.example.net"], 2)
 

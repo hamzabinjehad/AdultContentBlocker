@@ -18,6 +18,7 @@ past version; *superseded* documents point to their replacement. Start with the
 ## Using Hisn
 
 - [Using Hisn on a Mac](USER_GUIDE.md): Installing the Mac app, trying a lock, changing rules, connecting a browser, and fixing common problems.
+- [Apps to consider blocking](APPS_TO_CONSIDER.md): A category-based, consent-aware checklist for Android app blocking and iPhone/iPad app shields, including TV/catch-up, generic players and live chat/cam services, with what each block costs and what not to block.
 
 ## Mac
 
@@ -45,6 +46,8 @@ past version; *superseded* documents point to their replacement. Start with the
 
 - [Google Play readiness](ANDROID_STORE.md): Play vs direct builds, listing copy, Data safety answers, permission declarations, reviewer steps and submission checklist.
 - [Android implementation status](ANDROID_IMPLEMENTATION_STATUS.md): Table of each Android protection layer, what code exists and how far it was verified, as of 0.8.1.
+- [Android live protection test](ANDROID_LIVE_TEST_2026-10-30.md): Emulator-only 2026-10-30 evidence for text and whole-app blocking, the DNS local-block/route checks and a verified one-day device-owner uninstall lock. Records the test-only fixture limitation and why the physical Samsung was not touched.
+- [Android UI and UX refresh](ANDROID_UI_REFRESH.md): The 2026-10-30 presentation pass: bottom navigation, a status-first Protection page with a concrete attention list, switches, searchable app lists, day/night palette, adaptive icon and splash, and the accessibility work. No policy or consent text changed.
 - [Android tamper resistance scope](ANDROID_TAMPER_RESISTANCE.md): What Android personal mode can and cannot do to resist removal, Play policy limits, and managed-device mode including the 0.8.0 lockdown restrictions and layer watchdog.
 
 ## Network and routers
@@ -96,17 +99,24 @@ past version; *superseded* documents point to their replacement. Start with the
 
 Per-version change and verification notes, newest first.
 
+### Cross-platform
+
+- [Seed v5 coverage pass](COVERAGE_PASS_2026-10-30.md): The bundled core grows from 159,768 to 239,885 domains on the extension, six Safari blockers and the Android seed; the full list refreshes to 5,276,448. Selection rules, licensing boundary, deferred domains, hashes and every suite are recorded. No signed build, device or `lists` branch is claimed.
+
 ### Mac
 
+- [Mac 1.1.6 release notes](COVERAGE_PASS_2026-10-30.md): Seed v5 and its 239,885-domain core fallback, with notices naming the selected fill sources. The full list still needs a published generation. Unsigned/unnotarized.
 - [Mac 1.1.5 release notes](MACOS_1.1.5.md): A root LaunchDaemon restores the login agent if a standard user boots it out, with installer wiring, tamper logging, list-freshness and licenses rows, and a removal path. Unsigned/unnotarized; standard-account and reboot checks pending.
 
 ### iPhone and iPad
 
+- [iOS 1.1.4 release notes](COVERAGE_PASS_2026-10-30.md): Six 40,000-rule Safari blockers instead of four, seed v5, and capacity/readiness checks derived from one blocker count. Simulator-tested; no device, team or entitlement yet.
 - [iOS 1.1.3 release notes](IOS_1.1.3.md): A privacy manifest in the app and every extension, export-compliance declaration, the signed Safari list's build date with a 90-day warning, an offline licenses-and-sources screen, and privacy/support/version rows in Settings. Simulator-tested; no device, team or entitlement yet.
 - [Hisn 1.1.2 update notes](UPDATE_1_1_2.md): New popup and visual-check interface, detection changes and limits, and how to update Mac, browser and phone. *Historical.*
 
 ### Android
 
+- [Android 0.8.2 release notes](COVERAGE_PASS_2026-10-30.md): Seed v5's 239,885-domain core, and the two selected fill sources named in the licenses/sources screen. Unsigned preview; device-owner run still pending.
 - [Android 0.8.1 release notes](ANDROID_0.8.1.md): The APK-only list-update decision with a 90-day bundled-list age warning, a visible background-check line, and the notification permission request when Keep Hisn installed is enabled. Device acceptance pending; the ordinary build is still removable.
 - [Android 0.8.0 release notes](ANDROID_0.8.0.md): Private DNS joins managed lockdown on Android 10+, and a persistent 15-minute watchdog notices a stopped accessibility guard or DNS VPN and posts a local layer-loss notice. *Historical.*
 - [Android 0.7.0 release notes](ANDROID_0.7.0.md): Optional managed lockdown on a device-owner phone: Safe Mode, all-app uninstall/data controls, Settings factory reset and VPN changes, saved together with the uninstall block and read back from Android. *Historical.*
@@ -127,6 +137,7 @@ Per-version change and verification notes, newest first.
 
 ### Browser extension
 
+- [Extension 1.2.2 release notes](COVERAGE_PASS_2026-10-30.md): Seed v5's 239,885-domain core tier and 480 static DNR rules; the packaged zip is hashed in the record. Development candidate; no listing yet.
 - [Extension 1.2.1 release notes](EXTENSION_1.2.1.md): Store metadata, an options footer with the on-device statement, version and privacy/support links, and a store-readiness record. Development candidate; no listing yet.
 - [Chrome Web Store readiness](EXTENSION_STORE.md): Listing copy, permission justifications, privacy answers, managed force-install policy, reviewer steps and post-publication ID wiring.
 - [Extension 1.2.0 release notes](EXTENSION_1.2.0.md): Signed-list block-page reason, Strict-mode preservation across a mode-less bridge reply, list age plus a manual update action, and Facebook share/reel coverage. *Historical.*

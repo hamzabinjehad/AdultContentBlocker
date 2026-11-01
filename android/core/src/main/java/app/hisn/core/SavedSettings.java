@@ -30,7 +30,8 @@ public final class SavedSettings {
         uninstallLock = flag(values, "uninstall_lock");
         managedLockdown = flag(values, "managed_lockdown");
         schedule = new DailyAppSchedule(flag(values, "schedule_enabled"), number(values, "schedule_start", 1320),
-                number(values, "schedule_end", 420), names(values, "schedule_apps"));
+                number(values, "schedule_end", 420), names(values, "schedule_apps"),
+                flag(values, "schedule_all_apps"));
     }
 
     /** The rule fields of saved values. Missing fields read as the defaults of Hisn 0.5.3 and earlier. */
@@ -72,6 +73,7 @@ public final class SavedSettings {
         values.put("schedule_start", schedule.startMinute);
         values.put("schedule_end", schedule.endMinute);
         values.put("schedule_apps", schedule.apps);
+        values.put("schedule_all_apps", schedule.allApps);
         values.put("remaining", clock.remainingAtCheckpoint);
         values.put("elapsed", clock.elapsedAtCheckpoint);
         values.put("boot", clock.bootAtCheckpoint);

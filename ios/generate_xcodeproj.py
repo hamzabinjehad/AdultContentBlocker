@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the universal app, four blockers, web scanner and hosted tests.
+"""Generate the universal app, six blockers, web scanner and hosted tests.
 
 Reuses the repository's deterministic pbxproj writer, not macOS targets or
 entitlements. Does not delete existing projects or user Xcode settings.
@@ -16,6 +16,9 @@ writer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(writer)
 Project, oid, q = writer.Project, writer.oid, writer.q
 
+# Must match MobileProtectionPolicy.blockerIdentifiers and prepare_rules.PARTS.
+BLOCKERS = 6
+
 
 def main(safari_only: bool = False, domain_only: bool = False,
          reuse_text_id: bool = False) -> None:
@@ -27,7 +30,7 @@ def main(safari_only: bool = False, domain_only: bool = False,
     if reuse_text_id and not domain_only:
         raise SystemExit("--reuse-text-id-for-part-one requires separate --safari-only --domain-only")
     app_identifier = "app.hisn.safari" if safari_only else "app.hisn.mobile"
-    blockers = [f"Hisn{i}" for i in range(1, 5)]
+    blockers = [f"Hisn{i}" for i in range(1, BLOCKERS + 1)]
     monitor = "HisnActivityMonitor"
     scanner = "HisnText"
     names = [app, *blockers, *([] if domain_only else [scanner])] if safari_only else [app, *blockers, monitor, scanner, tests]
@@ -101,7 +104,7 @@ def main(safari_only: bool = False, domain_only: bool = False,
     })
     base = {"SDKROOT": "iphoneos", "IPHONEOS_DEPLOYMENT_TARGET": "16.0", "SWIFT_VERSION": "5.0",
             "TARGETED_DEVICE_FAMILY": q("1,2"), "CODE_SIGN_STYLE": "Automatic",
-            "DEVELOPMENT_TEAM": '""', "CURRENT_PROJECT_VERSION": "4", "MARKETING_VERSION": "1.1.3",
+            "DEVELOPMENT_TEAM": '""', "CURRENT_PROJECT_VERSION": "5", "MARKETING_VERSION": "1.1.4",
             "CLANG_ENABLE_MODULES": "YES", "CLANG_ENABLE_OBJC_ARC": "YES",
             "ENABLE_USER_SCRIPT_SANDBOXING": "NO", "SUPPORTED_PLATFORMS": q("iphoneos iphonesimulator"),
             "SUPPORTS_MACCATALYST": "NO", "PRODUCT_NAME": q("$(TARGET_NAME)"),
@@ -236,7 +239,7 @@ def main(safari_only: bool = False, domain_only: bool = False,
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--safari-only", action="store_true", help="Separate Personal Team candidate, no DNS/Family Controls/Device Activity")
-    parser.add_argument("--domain-only", action="store_true", help="Four Safari domain parts only, no text/visual scanner")
+    parser.add_argument("--domain-only", action="store_true", help="Six Safari domain parts only, no text/visual scanner")
     parser.add_argument("--reuse-text-id-for-part-one", action="store_true", help="Use an existing limited scanner ID for part one; domain-only edition only")
     args = parser.parse_args()
     main(args.safari_only, args.domain_only, args.reuse_text_id_for_part_one)

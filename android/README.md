@@ -1,4 +1,4 @@
-# Hisn Android 0.8.1: protection development preview
+# Hisn Android 0.8.4: protection development preview
 
 The Android app contains an opt-in DNS-only VPN, saved custom rules, selected-app
 accessibility restrictions, opt-in daily app schedules, built-in adult-text checks and
@@ -6,7 +6,8 @@ sampled image/video checks, an in-app
 commitment, an optional legacy-admin confirmation step and an opt-in
 device-owner uninstall guard with an optional managed lockdown, and a background
 layer-health watchdog. The interface
-supports Arabic and English. This
+follows the system light/dark appearance, uses bottom navigation for
+Protection, Rules and Guide, and supports Arabic and English. This
 remains a development build, not the completed end goal.
 Core tests pass; device evidence is version-specific in the release records below.
 The visual model and policy tests ran in a separate Samsung debug installation;
@@ -20,6 +21,101 @@ remain pending; the isolated live fixture sequence passes. Usage limits and full
 blocking and the broader lockdown exist only as an opt-in device-owner preview;
 the ordinary install remains removable, and actual blocked-uninstall and
 restriction acceptance needs a disposable provisioned device.
+
+## UI and UX refresh (development, unversioned)
+
+This pass changes presentation only. It adds no protection rule and relaxes no
+consent text; the version and list changes in the current tree belong to the
+separate seed update and are recorded there.
+
+- **Protection answers three questions first.** A hero headline says whether the
+  selected layers are active or need attention, three tiles name Network, Apps
+  and Images as On, Off, Needs attention or Not supported, and a short
+  **What needs attention** list names the concrete reasons behind a warning.
+  The existing explanatory text moves into a disclosure rather than disappearing.
+- **Real bottom navigation.** Protection, Rules and Guide have icons, labels and
+  a selected state; back returns to Protection, page scroll positions survive a
+  rotation, and pages cap their reading width on tablets and landscape.
+- **Switches and searchable lists.** Layer buttons became switches whose summary
+  says what the layer does or what the policy is doing. App lists gained search,
+  icons, a live count and an accessible checked state; editors count lines and
+  keep their refusal reason inline. The schedule form is grouped and keeps the
+  same validation.
+- **A calmer, legible surface.** Semantic day/night colours, one type scale,
+  rounded cards, vector icons, notification colour and the white shield small
+  icon, an adaptive launcher icon, an Android 12 splash theme and two launcher
+  shortcuts for Rules and Guide. The stale 0.5.5 subtitle now formats the real
+  version name.
+- **The pause screen.** The reason, an immediate **Return to home screen**
+  action and the breathing card are separated; the breathing exercise gained a
+  step counter and cycle dots. Every reminder, need choice and the daily tally
+  remain.
+- **Accessibility.** Headings, live regions that do not repeat unchanged text,
+  switches that read their summary, checkable app rows, 48 dp targets, RTL
+  mirroring and colour-plus-text state. Private screens keep `FLAG_SECURE`;
+  every consent dialog keeps its original words.
+
+Verification is local: debug and release builds, lint (0 errors; the 11
+debug-only warnings already present), string parity (351 strings, 13 plurals),
+core tests, and both release-distribution checks pass. Twenty API 36 emulator
+captures cover light, dark, Arabic, attention, restriction, commitment,
+dialogs, keyboard insets, 130% text and landscape in
+[design/android-ui-2026-10-30](../design/android-ui-2026-10-30/README.md);
+secure app chooser and editor windows were checked through their accessibility
+tree. Physical-device, TalkBack and Arabic OEM acceptance remain open. See
+[the UI refresh record](../docs/ANDROID_UI_REFRESH.md).
+
+## 0.8.4 Schedule allowlist
+
+- **The daily schedule can now block every app except a keep list.** The editor
+  has two modes: block the apps you choose, or block everything and keep the
+  apps you choose available. The keep list is what the same app picker edits,
+  and the schedule line in Rules says which mode is active.
+- Coverage rules are unchanged in spirit. Switching from a blocklist to an
+  allowlist during a commitment is refused unless every previously blocked app
+  is still blocked, an allowlist can only become another allowlist whose keep
+  list did not grow, and the window may not shrink.
+- The guard watches an allowlist only inside its window and for ten minutes
+  before it, so the one-second checks do not run all day; a once-a-minute
+  metadata sweep covers an app opened earlier and left untouched. Settings,
+  launchers, the dialer, installers and Hisn itself stay reachable in both
+  modes.
+- Version 0.8.4, versionCode 24. Verified by unit tests and a live allowlist
+  window on the Samsung SM-G990B2 (blocked app refused, kept browser opened);
+  the owner's saved schedule was restored afterwards.
+
+## 0.8.3 Browser coverage
+
+- **Rules → Browsers without protection** lists the installed apps that can
+  open ordinary web links and names the layer that covers each one: blocked,
+  inspected for text and images, DNS filtering only, or no layer. Browsers with
+  no covering layer start checked, so one tap blocks them all.
+- The screen states its limits in place: DNS filters names only, so a browser
+  with its own VPN, Tor or private resolver can leave that path and should be
+  blocked as an app. Blocking a browser does not stop installing another one,
+  and Android settings can still change it.
+- Version 0.8.3, versionCode 23. New package-visibility queries for `http` and
+  `https` handlers are the only manifest change. Device acceptance is still
+  pending beyond the local debug install.
+
+## 0.8.2 Seed v5 coverage
+
+- Bundles seed v5's **239,885-domain core tier** (239,880 after the client's
+  five IP-entry exclusions), up from 159,768. The seed still changes only with
+  a new signed APK; the 90-day freshness warning is unchanged.
+- The licenses/sources screen names `blocklistproject-porn` (Unlicense) and
+  `oisd-nsfw` (free commercial), whose selected subsets are now in the bundled
+  core. The mixed ad/tracker snapshot is no longer in the core; it remains in
+  the full Mac/DNS list.
+- Version 0.8.2, versionCode 22. See the
+  [coverage pass record](../docs/COVERAGE_PASS_2026-10-30.md). Device
+  acceptance is still pending.
+
+A 2026-10-30 emulator record covers live text and whole-app blocking, the DNS
+local-block and route checks, and a one-day device-owner uninstall lock. It also
+records the test-only fixture limitation and the read-only physical-phone
+inspection. See
+[the live test record](../docs/ANDROID_LIVE_TEST_2026-10-30.md).
 
 ## 0.8.1 List age, visible watchdog and the update decision
 
@@ -348,7 +444,7 @@ is recorded separately for 0.4.0; it was not rerun after this update.
   loading checks SHA-256, UTF-8, count, duplicates and domain validity. This is
   build-time signature verification plus runtime digest verification, not a
   runtime signed-update client. No downloaded list updates are implemented.
-- The current seed loads 159,762 domain rules. Six IPv4 entries in the shared
+- The current seed loads 239,880 domain rules. Five IP entries in the shared
   seed are explicitly excluded because a domain-only policy cannot enforce them.
 - The opt-in adult-text loader pins the terms seed's SHA-256, checks its version,
   UTF-8, size and rule bounds, and compiles English/Arabic terms and negative
@@ -468,7 +564,9 @@ is recorded separately for 0.4.0; it was not rerun after this update.
   one can last, instead of reading as a new installation. Clearing app data
   removes both files and resets everything.
 - The accessibility service is off until the owner enables it. It acts only in
-  explicitly selected apps. Chosen blocked apps, matching literal word rules or
+  explicitly selected apps. For a category-based checklist of apps to consider
+  — not an "adult app" verdict — see
+  [apps to consider blocking](../docs/APPS_TO_CONSIDER.md). Chosen blocked apps, matching literal word rules or
   built-in adult-promotion evidence in the optional mode
   return to the launcher and show a generic restriction screen. Settings,
   launchers and dialers are excluded. Traversal is bounded and skips editable

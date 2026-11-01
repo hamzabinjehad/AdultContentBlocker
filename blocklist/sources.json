@@ -1,5 +1,14 @@
 {
   "_comment": "Blocklist sources. 'format' is one of: hosts | plain | adblock. Set enabled=false to drop a source without deleting it. 'weight' is informational only.",
+  "_core_capacity_comment": "The bundled core tier must fit the Safari blockers: 6 parts x 40,000 rules. build.py refuses a core source union above this; the fill selection below is capped, never silently truncated.",
+  "core_capacity": 240000,
+  "_core_fill_comment": "The core tier is no longer only the four hand-picked sources. It also takes every domain that appears in both independently curated, permissively licensed fill sources AND carries an adult-only signal: an adult TLD, a reviewed adult token, or an IDN (xn--). Consensus is the precision gate; the signal tells a real adult domain from a shared CDN or a dead parking entry. Terms that are not permissively licensed (the UT1 lists) are never used as fill sources and stay in the full Mac/DNS build only.",
+  "core_fill": {
+    "sources": ["blocklistproject-porn", "oisd-nsfw"],
+    "min_sources": 2,
+    "adult_tlds": ["adult", "cam", "porn", "sex", "xxx"],
+    "adult_tokens": ["adult", "anal", "bdsm", "cam", "erotic", "escort", "fetish", "hentai", "jav", "milf", "naked", "nsfw", "nude", "onlyfan", "orgy", "porn", "sex", "teen", "xxx"]
+  },
   "sources": [
     {
       "id": "stevenblack-porn",
@@ -91,8 +100,8 @@
       "format": "plain",
       "enabled": true,
       "license": "MIT",
-      "tier": "core",
-      "note": "Snapshot of the existing laptop hosts list, including ads and trackers; enforced by Hisn instead of globally through /etc/hosts."
+      "tier": "extended",
+      "note": "Snapshot of the existing laptop hosts list, including ads and trackers. It stays in the full Mac/DNS list, but is no longer bundled in the core tier: those slots now go to adult domains, and a mixed ad/tracker snapshot would spend a sixth of the Safari budget on non-adult hosts."
     }
   ],
   "_never_block_comment": "SAFETY RAIL, applied last, after every upstream source. A poisoned or sloppy upstream list that blocks apple.com would brick the machine AND lock the user out of asking for help. Two tiers, because they are NOT the same problem.",
@@ -163,5 +172,5 @@
     "paheal.net",
     "thothub.tv"
   ],
-  "_tier_comment": "core = high-confidence, curated, low false-positive. Ships in the browser extension's static ruleset, which has a hard rule budget. extended = broad long-tail coverage. Used by the network/DNS layer only, where there is no rule-count ceiling."
+  "_tier_comment": "core = bundled: every core-tier source plus the core_fill selection. Ships in the browser extension's static ruleset, the Safari blockers and the Android seed, all of which have a hard capacity. extended = broad long-tail coverage; used by the full Mac/DNS list, where there is no rule-count ceiling. A source can be extended and still contribute a selected subset through core_fill."
 }

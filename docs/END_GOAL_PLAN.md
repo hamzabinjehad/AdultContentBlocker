@@ -38,7 +38,7 @@ Each workstream below ends in a measurable gate. The scoreboard:
 
 ## Workstream A — sites and network (blocking)
 
-Already: signed 160k-domain core seed and 5.25M-domain full list, strict allowlist
+Already: signed 240k-domain core seed and 5.28M-domain full list, strict allowlist
 mode, SafeSearch, custom sites on every platform (this release), Mac socket
 filter, family DNS profiles, router guidance.
 
@@ -49,7 +49,7 @@ filter, family DNS profiles, router guidance.
 2. **New-domain coverage.** Ship the published list's daily delta to the iOS
    Safari blockers through an app update path with signature checks (today the
    phone list only changes with a new app build). Gate: rollback rejected,
-   unsigned delta rejected, four parts stay under capacity.
+   unsigned delta rejected, six parts stay under capacity.
 3. **Direct-IP and encrypted-DNS gaps.** On Mac strict mode already drops
    unnamed flows; add an opt-in "unknown destinations need a name" rule outside
    strict mode with an exception list for system services. Gate: no break of

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Stable IDs let ScrollView pages keep their position across rotation and tab switches. -->
+<resources>
+    <item name="page_protection" type="id" />
+    <item name="page_rules" type="id" />
+    <item name="page_guide" type="id" />
+    <item name="nav_protection" type="id" />
+    <item name="nav_rules" type="id" />
+    <item name="nav_guide" type="id" />
+    <item name="content_scroll" type="id" />
+</resources>

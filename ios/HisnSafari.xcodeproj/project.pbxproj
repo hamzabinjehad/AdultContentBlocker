@@ -99,6 +99,20 @@
 			sourceTree = BUILT_PRODUCTS_DIR;
 			includeInIndex = 0;
 		};
+		B21C5A749CD200E79C0CAB5F  = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.cfbundle;
+			path = Hisn5.appex;
+			sourceTree = BUILT_PRODUCTS_DIR;
+			includeInIndex = 0;
+		};
+		23882EB39BFEF6FBB19EB5B6  = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.cfbundle;
+			path = Hisn6.appex;
+			sourceTree = BUILT_PRODUCTS_DIR;
+			includeInIndex = 0;
+		};
 		B9A01987720A964863B71216  = {
 			isa = PBXGroup;
 			children = (
@@ -107,6 +121,8 @@
 				FF327485B10172D704987CE1,
 				4EBF2B2D008D1DFE6CF00CBB,
 				5FB357DD48BE21500641536B,
+				B21C5A749CD200E79C0CAB5F,
+				23882EB39BFEF6FBB19EB5B6,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -256,6 +272,40 @@
 			target = FB57806DAC021B26192C5C34;
 			targetProxy = 9D1A0FDA6F7A60238AF86E1F;
 		};
+		EBEAD2720422C2CB5271FA78  = {
+			isa = PBXBuildFile;
+			fileRef = B21C5A749CD200E79C0CAB5F;
+			settings = {ATTRIBUTES = (RemoveHeadersOnCopy, );};
+		};
+		65BC49BC910B186F6F5F423A  = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97FC7254CB7BA92C8E24EF04;
+			proxyType = 1;
+			remoteGlobalIDString = 6D5F703C67CE157926357A25;
+			remoteInfo = Hisn5;
+		};
+		74BBDD68C730EB035889DB1C  = {
+			isa = PBXTargetDependency;
+			target = 6D5F703C67CE157926357A25;
+			targetProxy = 65BC49BC910B186F6F5F423A;
+		};
+		901AABA60D6FAB97A72478ED  = {
+			isa = PBXBuildFile;
+			fileRef = 23882EB39BFEF6FBB19EB5B6;
+			settings = {ATTRIBUTES = (RemoveHeadersOnCopy, );};
+		};
+		DC90017B47A8DB0466116007  = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97FC7254CB7BA92C8E24EF04;
+			proxyType = 1;
+			remoteGlobalIDString = D2AC943AAA542C8370742C0B;
+			remoteInfo = Hisn6;
+		};
+		B6995AC200FC0C903EB02AD6  = {
+			isa = PBXTargetDependency;
+			target = D2AC943AAA542C8370742C0B;
+			targetProxy = DC90017B47A8DB0466116007;
+		};
 		FF30F53173E32C0B2BD5EA05  = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -266,6 +316,8 @@
 				B9031EE20E73F8B23CBE2208,
 				A66C5D9B584A942C463541AE,
 				CC8C4C5A0855CC2BF9919DEB,
+				EBEAD2720422C2CB5271FA78,
+				901AABA60D6FAB97A72478ED,
 			);
 			name = "Embed Safari Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -280,8 +332,8 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "";
-				CURRENT_PROJECT_VERSION = 4;
-				MARKETING_VERSION = 1.1.3;
+				CURRENT_PROJECT_VERSION = 5;
+				MARKETING_VERSION = 1.1.4;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -309,8 +361,8 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "";
-				CURRENT_PROJECT_VERSION = 4;
-				MARKETING_VERSION = 1.1.3;
+				CURRENT_PROJECT_VERSION = 5;
+				MARKETING_VERSION = 1.1.4;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -355,6 +407,8 @@
 				59A2003B5ADE7C91347368F6,
 				763ED79B52A637E04AA06FF7,
 				E6F81EFAE980C99911AC4103,
+				74BBDD68C730EB035889DB1C,
+				B6995AC200FC0C903EB02AD6,
 			);
 			buildRules = ();
 		};
@@ -406,8 +460,8 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "";
-				CURRENT_PROJECT_VERSION = 4;
-				MARKETING_VERSION = 1.1.3;
+				CURRENT_PROJECT_VERSION = 5;
+				MARKETING_VERSION = 1.1.4;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -435,8 +489,8 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "";
-				CURRENT_PROJECT_VERSION = 4;
-				MARKETING_VERSION = 1.1.3;
+				CURRENT_PROJECT_VERSION = 5;
+				MARKETING_VERSION = 1.1.4;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -527,8 +581,8 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "";
-				CURRENT_PROJECT_VERSION = 4;
-				MARKETING_VERSION = 1.1.3;
+				CURRENT_PROJECT_VERSION = 5;
+				MARKETING_VERSION = 1.1.4;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -556,8 +610,8 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "";
-				CURRENT_PROJECT_VERSION = 4;
-				MARKETING_VERSION = 1.1.3;
+				CURRENT_PROJECT_VERSION = 5;
+				MARKETING_VERSION = 1.1.4;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -648,8 +702,8 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "";
-				CURRENT_PROJECT_VERSION = 4;
-				MARKETING_VERSION = 1.1.3;
+				CURRENT_PROJECT_VERSION = 5;
+				MARKETING_VERSION = 1.1.4;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -677,8 +731,8 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "";
-				CURRENT_PROJECT_VERSION = 4;
-				MARKETING_VERSION = 1.1.3;
+				CURRENT_PROJECT_VERSION = 5;
+				MARKETING_VERSION = 1.1.4;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -769,8 +823,8 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "";
-				CURRENT_PROJECT_VERSION = 4;
-				MARKETING_VERSION = 1.1.3;
+				CURRENT_PROJECT_VERSION = 5;
+				MARKETING_VERSION = 1.1.4;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -798,8 +852,8 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "";
-				CURRENT_PROJECT_VERSION = 4;
-				MARKETING_VERSION = 1.1.3;
+				CURRENT_PROJECT_VERSION = 5;
+				MARKETING_VERSION = 1.1.4;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -842,6 +896,248 @@
 			);
 			buildRules = ();
 		};
+		2DBC60E8747A53B043C2B012  = {
+			isa = PBXBuildFile;
+			fileRef = 1349496B0BFBD6AE9C197419;
+		};
+		6D43E53A0CEA928EEEA84AFB  = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2DBC60E8747A53B043C2B012,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		63CD053E3DB06F8C0B1F4E40  = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1831992399C9902CC6E75827  = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		48BEF4E42A5483A95574DA6B  = {
+			isa = PBXShellScriptBuildPhase;
+			name = "Verify signed seed and compile Safari rules";
+			buildActionMask = 2147483647;
+			files = ();
+			inputPaths = ();
+			outputPaths = ();
+			alwaysOutOfDate = 1;
+			shellPath = /bin/sh;
+			shellScript = "set -eu\nPYTHON=\"${HISN_PYTHON:-python3}\"\n\"$PYTHON\" \"$SRCROOT/prepare_rules.py\" --part 5 --output \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH\"\n";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7901C674A581DE40DF154902  = {
+			isa = XCBuildConfiguration;
+			name = Debug;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 5;
+				MARKETING_VERSION = 1.1.4;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.hisn.safari.blocker5;
+				INFOPLIST_FILE = "HisnBlocker/Info.plist";
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				SKIP_INSTALL = YES;
+				HISN_PART = 5;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				ENABLE_TESTABILITY = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+			};
+		};
+		D2AE4D9C9E3D1B4BD054D917  = {
+			isa = XCBuildConfiguration;
+			name = Release;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 5;
+				MARKETING_VERSION = 1.1.4;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.hisn.safari.blocker5;
+				INFOPLIST_FILE = "HisnBlocker/Info.plist";
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				SKIP_INSTALL = YES;
+				HISN_PART = 5;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				ENABLE_TESTABILITY = NO;
+			};
+		};
+		444D2AEB2D71DC87C169E04E  = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7901C674A581DE40DF154902,
+				D2AE4D9C9E3D1B4BD054D917,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		6D5F703C67CE157926357A25  = {
+			isa = PBXNativeTarget;
+			name = Hisn5;
+			productName = Hisn5;
+			productReference = B21C5A749CD200E79C0CAB5F;
+			productType = "com.apple.product-type.app-extension";
+			buildConfigurationList = 444D2AEB2D71DC87C169E04E;
+			buildPhases = (
+				6D43E53A0CEA928EEEA84AFB,
+				63CD053E3DB06F8C0B1F4E40,
+				1831992399C9902CC6E75827,
+				48BEF4E42A5483A95574DA6B,
+			);
+			dependencies = (
+			);
+			buildRules = ();
+		};
+		B911F36D47D7D587D0144E9C  = {
+			isa = PBXBuildFile;
+			fileRef = 1349496B0BFBD6AE9C197419;
+		};
+		8D7F028464973A5AF2F9F35F  = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B911F36D47D7D587D0144E9C,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6308AAD721D6D5386EF37269  = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5BBEED3492739033F2713720  = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5D91A468D070F8F031D577B3  = {
+			isa = PBXShellScriptBuildPhase;
+			name = "Verify signed seed and compile Safari rules";
+			buildActionMask = 2147483647;
+			files = ();
+			inputPaths = ();
+			outputPaths = ();
+			alwaysOutOfDate = 1;
+			shellPath = /bin/sh;
+			shellScript = "set -eu\nPYTHON=\"${HISN_PYTHON:-python3}\"\n\"$PYTHON\" \"$SRCROOT/prepare_rules.py\" --part 6 --output \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH\"\n";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6FF28475C4EFB02F1F1FD1AB  = {
+			isa = XCBuildConfiguration;
+			name = Debug;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 5;
+				MARKETING_VERSION = 1.1.4;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.hisn.safari.blocker6;
+				INFOPLIST_FILE = "HisnBlocker/Info.plist";
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				SKIP_INSTALL = YES;
+				HISN_PART = 6;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				ENABLE_TESTABILITY = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+			};
+		};
+		62E2BAE30FAB6638BD271DA2  = {
+			isa = XCBuildConfiguration;
+			name = Release;
+			buildSettings = {
+				SDKROOT = iphoneos;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				CURRENT_PROJECT_VERSION = 5;
+				MARKETING_VERSION = 1.1.4;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = app.hisn.safari.blocker6;
+				INFOPLIST_FILE = "HisnBlocker/Info.plist";
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				SKIP_INSTALL = YES;
+				HISN_PART = 6;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				ENABLE_TESTABILITY = NO;
+			};
+		};
+		5243E3549F2315153145DFC6  = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6FF28475C4EFB02F1F1FD1AB,
+				62E2BAE30FAB6638BD271DA2,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D2AC943AAA542C8370742C0B  = {
+			isa = PBXNativeTarget;
+			name = Hisn6;
+			productName = Hisn6;
+			productReference = 23882EB39BFEF6FBB19EB5B6;
+			productType = "com.apple.product-type.app-extension";
+			buildConfigurationList = 5243E3549F2315153145DFC6;
+			buildPhases = (
+				8D7F028464973A5AF2F9F35F,
+				6308AAD721D6D5386EF37269,
+				5BBEED3492739033F2713720,
+				5D91A468D070F8F031D577B3,
+			);
+			dependencies = (
+			);
+			buildRules = ();
+		};
 		8B3A49B266233207DB9FB810  = {
 			isa = XCBuildConfiguration;
 			name = Debug;
@@ -852,8 +1148,8 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "";
-				CURRENT_PROJECT_VERSION = 4;
-				MARKETING_VERSION = 1.1.3;
+				CURRENT_PROJECT_VERSION = 5;
+				MARKETING_VERSION = 1.1.4;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -876,8 +1172,8 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "";
-				CURRENT_PROJECT_VERSION = 4;
-				MARKETING_VERSION = 1.1.3;
+				CURRENT_PROJECT_VERSION = 5;
+				MARKETING_VERSION = 1.1.4;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
@@ -916,6 +1212,8 @@
 				05115B778B0506C7AE023E92,
 				BB1C2D1BC66CA79222500205,
 				FB57806DAC021B26192C5C34,
+				6D5F703C67CE157926357A25,
+				D2AC943AAA542C8370742C0B,
 			);
 		};
 	};

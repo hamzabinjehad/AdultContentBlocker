@@ -5,6 +5,133 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
+## Android 0.8.4 — 2026-11-01
+
+### Added
+
+- **The daily schedule has two modes.** It can keep blocking the apps you
+  choose, or block every app except a keep list you choose. The same searchable
+  picker edits either list, the row in Rules names the mode, and the editor
+  explains both. In allowlist mode the guard keeps the system windows it already
+  excludes (settings, launchers, dialer, installers, Hisn) reachable; keeping at
+  least one app available is required before the schedule can be saved.
+- **Commitment coverage is preserved across a mode switch.** A blocklist may
+  become an allowlist only when every app it blocked is still blocked, an
+  allowlist may only become another allowlist whose keep list did not grow, and
+  the window may not shrink; switching to a mode that blocks fewer apps is
+  refused while a commitment runs.
+- **The one-second checks stay bounded.** An allowlist is watched inside its
+  window and for ten minutes before it; a once-a-minute metadata sweep covers an
+  app opened earlier and left untouched, so a window start is still enforced
+  without an all-day heartbeat.
+
+### Verification
+
+- Core tests cover allowlist blocking, the ten-minute arming rule, mode-switch
+  preservation, the new saved field and the 0.5.3 upgrade default; string parity
+  passes (369 strings, 14 plurals).
+- Live on the Samsung SM-G990B2 with a sealed test policy for a 12:45–13:15
+  window: the kept browser opened normally and a non-kept app was refused by the
+  restriction screen. The owner's original schedule was restored byte for byte
+  afterwards.
+- Version 0.8.4, versionCode 24. No signed store build or broader device
+  acceptance is claimed.
+
+## Android 0.8.3 — 2026-11-01
+
+### Added
+
+- **Rules → Browsers without protection names the layer that covers each
+  installed app that can open ordinary web links**, or says that none does. The
+  answer comes from one pure `BrowserCoverage` rule: blocked wins, then the
+  accessibility inspection while the guard is connected, then the DNS layer
+  while it runs; otherwise the browser is uncovered. Browsers with no covering
+  layer start checked, so **Block selected** refuses them in one tap without
+  touching app blocks that are not browsers.
+- The screen states its own limits where the decision is made: DNS filters
+  names only, so a browser with its own VPN, Tor or private resolver can leave
+  that path and belongs in the app block; blocking a browser does not prevent
+  installing another one.
+- New manifest package-visibility queries for `http` and `https` handlers, used
+  only to enumerate what is installed. The example.com probe keeps apps that
+  handle a single site out of the list.
+
+### Verification
+
+- `BrowserCoverageTest` passes with the other core tests; string parity holds
+  (362 strings, 13 plurals); the debug APK builds and was side-loaded on the
+  Samsung SM-G990B2 for a browser-list and one-tap block check.
+- Version 0.8.3, versionCode 23. No signed store build or physical-device
+  acceptance beyond that local debug install is claimed.
+
+## Seed v5 — 2026-10-30
+
+### Added
+
+- **The bundled core grows from 159,768 to 239,885 domains (+50.1%).** The four
+  hand-picked adult sources collapse to 125,309 domains; `core_fill` adds
+  114,691 domains that both `blocklistproject-porn` (Unlicense) and
+  `oisd-nsfw` (free for personal and commercial use) carry and that also carry
+  an adult TLD, a reviewed token, or an IDN label. Selection, capacity and the
+  1,261 deferred domains are recorded in the signed manifest and explained in
+  [the coverage pass record](docs/COVERAGE_PASS_2026-10-30.md).
+- **Safari capacity rises from four to six 40,000-rule parts**, from 160,000 to
+  240,000 entries. The bundled core fits with 115 entries of headroom. The
+  browser's static ruleset grows from 320 to 480 rules.
+- **The mixed ad/tracker snapshot moves out of the core tier.** It stays in the
+  full Mac/DNS list; the bundled slots now go to adult domains. The UT1 lists
+  remain extended-only because their terms are non-commercial.
+- The full list refreshes from 5,248,731 to 5,276,448 domains; the keyword
+  layer stays at 5,831 terms.
+
+### Verification
+
+- `./test.sh python seed extension release macos ios` passes; Android core and
+  the Gradle debug/release/bundle/lint builds pass. See the coverage record for
+  counts and hashes.
+- No signed store build, physical-device run, published `lists` generation or
+  full-list Mac bundle is claimed.
+
+## Browser extension 1.2.2 — 2026-10-30
+
+### Changed
+
+- Bundles seed v5's 239,885-domain core tier and 480 static DNR rules. The
+  packaged store zip is `dist/hisn-extension-1.2.2.zip`, 90 files, 5.9 MB,
+  SHA-256 `6db421dccec745218f178d717bfbac9a948c1e91752a64dde863afce66fc24bd`.
+- No store listing, real store ID or managed force-install is claimed.
+
+## Mac 1.1.6 — 2026-10-30
+
+### Changed
+
+- Bundles seed v5 and its 239,885-domain core fallback, plus regenerated
+  third-party notices naming the two selected fill sources.
+- The full 5,276,448-domain list still arrives only through a published
+  generation; this build does not bundle it. Version 1.1.6, build 10. No
+  signed package or device result is claimed.
+
+## iPhone & iPad 1.1.4 — 2026-10-30
+
+### Changed
+
+- **Six Safari blockers instead of four**, each still capped at 40,000 rules.
+  The project generator, readiness model, setup copy (English and Arabic) and
+  tests all derive from the blocker count. Seed v5 fits with 115 entries of
+  headroom.
+- Version 1.1.4, build 5. Simulator-tested only; no Apple team, Family Controls
+  entitlement, TestFlight build or physical-device acceptance is claimed.
+
+## Android 0.8.2 — 2026-10-30
+
+### Changed
+
+- Bundles seed v5's 239,885-domain core tier (239,880 after the client's
+  IP-entry exclusion) and names `blocklistproject-porn` and `oisd-nsfw` in the
+  English and Arabic licenses/sources screen.
+- Version 0.8.2, versionCode 22. Unsigned preview; no signed production build,
+  Play listing or device-owner run is claimed.
+
 ## Browser extension 1.2.1 — 2026-10-30
 
 ### Added

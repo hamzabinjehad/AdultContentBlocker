@@ -116,7 +116,7 @@ substitutes for these tests.
   not something a healthy bridge or unsigned test build proves.
 - iPhone/iPad: Hisn Text packages the canonical scanner and local engine where
   supported. Safari extension activation, website access and visual preferences
-  are separate from the app's Screen Time shields and four domain blockers.
+  are separate from the app's Screen Time shields and six domain blockers.
   Test permissions/model support on physical devices. The Mac process
   termination guard is not available on iOS, and settings do not synchronize
   across devices.

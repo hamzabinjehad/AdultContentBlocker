@@ -3,7 +3,7 @@
 | Platform | Location | Implemented protection | State |
 |---|---|---|---|
 | macOS | `macos/` | Existing socket filter, browser integration, network setup | Existing app; its prior signing/deployment path is unchanged |
-| iOS | `ios/` | Native app, four Safari domain blockers, optional family DNS, Screen Time content filtering and selected-app restrictions | Development version; physical signing/activation still required |
+| iOS | `ios/` | Native app, six Safari domain blockers, optional family DNS, Screen Time content filtering and selected-app restrictions | Development version; physical signing/activation still required |
 | iPadOS | `ipados/` + the universal `ios/` target | Same layers and seed as iPhone | Shared target, not duplicate source |
 | Shared Apple code | `shared/apple/` | Platform-neutral mobile configuration/status policy | No macOS daemon/XPC dependencies |
 | Shared content | `seed/`, `blocklist/` | Signed core domain seed and infrastructure safety policy | One source of truth; no independently edited mobile list |

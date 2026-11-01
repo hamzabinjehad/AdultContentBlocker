@@ -16,11 +16,17 @@ you the lock; Hisn adds the coverage those built-in filters miss. Read
 
 | Platform | What it does | State | Start here |
 | --- | --- | --- | --- |
-| Browser extension (Chromium) | Blocks listed domains, checks page text, optional local image/video checks | 1.2.1 | [Using the extension](docs/EXTENSION_USAGE.md) |
-| Mac | Content-filter system extension, browser guard, locks, accountability partner and root guardian daemon | 1.1.5, needs a signed build | [Mac setup](docs/SETUP.md) |
-| iPhone & iPad | Safari blockers, Safari text extension, Screen Time app limits, optional family DNS, privacy manifest | 1.1.3, development | [iOS README](ios/README.md) |
-| Android | DNS filtering, selected-app and word restrictions, optional image checks, commitments, opt-in device-owner uninstall guard and managed lockdown, background layer watchdog and bundled-list freshness warning | 0.8.1 preview | [Android README](android/README.md) · [1.0 plan](docs/ANDROID_1.0_PLAN.md) |
+| Browser extension (Chromium) | Blocks listed domains, checks page text, optional local image/video checks | 1.2.2 | [Using the extension](docs/EXTENSION_USAGE.md) |
+| Mac | Content-filter system extension, browser guard, locks, accountability partner and root guardian daemon | 1.1.6, needs a signed build | [Mac setup](docs/SETUP.md) |
+| iPhone & iPad | Six Safari blockers, Safari text extension, Screen Time app limits, optional family DNS, privacy manifest | 1.1.4, development | [iOS README](ios/README.md) |
+| Android | DNS filtering, selected-app and word restrictions, optional image checks, browser-coverage screen that blocks browsers no layer covers, daily schedule that can block every app except a keep list, commitments, opt-in device-owner uninstall guard and managed lockdown, background layer watchdog and bundled-list freshness warning | 0.8.4 preview | [Android README](android/README.md) · [1.0 plan](docs/ANDROID_1.0_PLAN.md) |
 | Network / router | Verified signed DNS rules for administrator import | Tools only | [Network tools](network/README.md) |
+
+Seed **v5** raises the bundled core from 159,768 to **239,885 domains** on every
+surface, the largest tier the browser, six Safari blockers and the Android seed
+can hold without truncation. The selection rules, the 1,261 domains deferred by
+capacity and the licensing boundary are in the
+[coverage pass record](docs/COVERAGE_PASS_2026-10-30.md).
 
 Each platform's start link is in the table; Mac users can also follow the
 [Mac user guide](docs/USER_GUIDE.md). Every document is listed in the
@@ -47,6 +53,11 @@ model cannot replace a device/network control, while DNS and socket decisions
 cannot classify every encrypted post. No combination guarantees all-content
 coverage or prevents a device owner with administrator/recovery access from
 undoing protections.
+
+For the app-level layer, [apps to consider blocking](docs/APPS_TO_CONSIDER.md)
+is a category-based checklist, not an "adult app" verdict: it explains what
+each block costs, why browsers and messaging are high-cost choices, and what
+must stay accessible.
 
 Blocking your own sites works the same way everywhere: the extension popup's
 **Block** button for the current tab, the Mac menu bar's **Block a site…**, and

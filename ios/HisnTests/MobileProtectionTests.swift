@@ -8,9 +8,9 @@ import XCTest
 
 final class MobileProtectionTests: XCTestCase {
     private func setupAssessment(checked: Bool = true, busy: Bool = false,
-                                 listVerified: Bool = true, listCount: Int = 4, listVersion: Int = 1,
-                                 safari: [Bool?] = [true, true, true, true],
-                                 lastReload: [Bool?] = [nil, nil, nil, nil],
+                                 listVerified: Bool = true, listCount: Int = 6, listVersion: Int = 1,
+                                 safari: [Bool?] = [true, true, true, true, true, true],
+                                 lastReload: [Bool?] = [nil, nil, nil, nil, nil, nil],
                                  screenTime: Bool = true, dns: MobileProtectionPolicy.DNSState = .enabled,
                                  storageHealthy: Bool = true) -> MobileProtectionPolicy.SetupAssessment {
         MobileProtectionPolicy.setupAssessment(checked: checked, busy: busy,
@@ -30,21 +30,26 @@ final class MobileProtectionTests: XCTestCase {
     }
 
     func testVerifiedSetupRejectsMissingEmptyAndUnverifiedSafariLists() {
-        for count in [0, -1, 160_001, Int.max] {
+        for count in [0, -1, MobileProtectionPolicy.bundledRuleLimit + 1, Int.max] {
             XCTAssertEqual(setupAssessment(listCount: count).issues, [.list])
         }
-        XCTAssertEqual(setupAssessment(listVersion: 0).issues, [.list])
+        XCTAssertEqual(setupAssessment(listCount: 6, listVersion: 0).issues, [.list])
         XCTAssertEqual(setupAssessment(listVerified: false).state, .needsSetup)
         XCTAssertEqual(setupAssessment(listVerified: false).issues, [.list])
     }
 
     func testVerifiedSetupLosesReadyStateOnSafariOffUnknownOrReloadFailure() {
-        for enabled: [Bool?] in [[], [true], [true, true, true, false], [true, true, true, nil]] {
+        let parts = MobileProtectionPolicy.blockerIdentifiers.count
+        let allOn: [Bool?] = Array(repeating: true, count: parts)
+        for enabled: [Bool?] in [[], [true], Array(repeating: true, count: parts - 1),
+                                 Array(repeating: true, count: parts - 1) + [false],
+                                 Array(repeating: true, count: parts - 1) + [nil]] {
             XCTAssertEqual(setupAssessment(safari: enabled).state, .needsSetup)
             XCTAssertEqual(setupAssessment(safari: enabled).issues, [.safari])
         }
-        XCTAssertEqual(setupAssessment(lastReload: [true, false, true, true]).issues, [.safari])
+        XCTAssertEqual(setupAssessment(lastReload: Array(repeating: true, count: parts - 1) + [false]).issues, [.safari])
         XCTAssertEqual(setupAssessment(lastReload: []).issues, [.safari])
+        XCTAssertTrue(setupAssessment(safari: allOn, lastReload: allOn).issues.isEmpty)
     }
 
     func testVerifiedSetupLosesReadyStateOnScreenTimeRevocation() {
@@ -69,19 +74,21 @@ final class MobileProtectionTests: XCTestCase {
             dns: .absent, storageHealthy: false).issues, [.list, .safari, .screenTime, .dns, .storage])
     }
 
-    func testSafariListReadinessRequiresFourNonemptyMatchingVerifiedParts() {
+    func testSafariListReadinessRequiresEveryNonemptyMatchingVerifiedPart() {
         typealias Part = MobileProtectionPolicy.SafariListPart
-        let valid = Array(repeating: Part(count: 1, version: 1, integrityMatches: true), count: 4)
-        XCTAssertTrue(MobileProtectionPolicy.safariListReady(count: 4, version: 1, parts: valid))
+        let parts = MobileProtectionPolicy.blockerIdentifiers.count
+        let valid = Array(repeating: Part(count: 1, version: 1, integrityMatches: true), count: parts)
+        XCTAssertTrue(MobileProtectionPolicy.safariListReady(count: parts, version: 1, parts: valid))
         XCTAssertFalse(MobileProtectionPolicy.safariListReady(count: 0, version: 1, parts: valid))
-        XCTAssertFalse(MobileProtectionPolicy.safariListReady(count: 4, version: 0, parts: valid))
-        XCTAssertFalse(MobileProtectionPolicy.safariListReady(count: 5, version: 1, parts: valid))
-        XCTAssertFalse(MobileProtectionPolicy.safariListReady(count: 4, version: 1, parts: Array(valid.prefix(3))))
+        XCTAssertFalse(MobileProtectionPolicy.safariListReady(count: parts, version: 0, parts: valid))
+        XCTAssertFalse(MobileProtectionPolicy.safariListReady(count: parts + 1, version: 1, parts: valid))
+        XCTAssertFalse(MobileProtectionPolicy.safariListReady(count: parts, version: 1, parts: Array(valid.prefix(parts - 1))))
         for bad in [Part(count: 0, version: 1, integrityMatches: true),
-                    Part(count: 40_001, version: 1, integrityMatches: true),
+                    Part(count: MobileProtectionPolicy.perBlockerRuleLimit + 1, version: 1, integrityMatches: true),
                     Part(count: 1, version: 2, integrityMatches: true),
                     Part(count: 1, version: 1, integrityMatches: false)] {
-            XCTAssertFalse(MobileProtectionPolicy.safariListReady(count: 4, version: 1, parts: [bad] + Array(valid.prefix(3))))
+            XCTAssertFalse(MobileProtectionPolicy.safariListReady(count: parts, version: 1,
+                parts: [bad] + Array(valid.prefix(parts - 1))))
         }
     }
 
@@ -90,13 +97,14 @@ final class MobileProtectionTests: XCTestCase {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
         XCTAssertFalse(ProtectionController.checkBundledList(at: directory).verified)
-        let summary = try JSONSerialization.data(withJSONObject: ["count": 4, "version": 1, "parts": 4])
+        let parts = MobileProtectionPolicy.blockerIdentifiers.count
+        let summary = try JSONSerialization.data(withJSONObject: ["count": parts, "version": 1, "parts": parts])
         try summary.write(to: directory.appendingPathComponent("rules-metadata.json"))
         XCTAssertFalse(ProtectionController.checkBundledList(at: directory).verified)
         let raw = Data("[{\"trigger\":{\"url-filter\":\"example.com\"},\"action\":{\"type\":\"block\"}}]".utf8)
         let digest = SHA256.hash(data: raw).map { String(format: "%02x", $0) }.joined()
         let metadata = try JSONSerialization.data(withJSONObject: ["count": 1, "version": 1, "sha256": digest])
-        for part in 1...4 {
+        for part in 1...parts {
             let partURL = directory.appendingPathComponent("PlugIns/Hisn\(part).appex")
             try FileManager.default.createDirectory(at: partURL, withIntermediateDirectories: true)
             try raw.write(to: partURL.appendingPathComponent("rules.json"))
@@ -104,9 +112,9 @@ final class MobileProtectionTests: XCTestCase {
         }
         let verified = ProtectionController.checkBundledList(at: directory)
         XCTAssertTrue(verified.verified)
-        XCTAssertEqual(verified.count, 4)
+        XCTAssertEqual(verified.count, parts)
         XCTAssertEqual(verified.version, 1)
-        try Data("[]".utf8).write(to: directory.appendingPathComponent("PlugIns/Hisn4.appex/rules.json"))
+        try Data("[]".utf8).write(to: directory.appendingPathComponent("PlugIns/Hisn\(parts).appex/rules.json"))
         XCTAssertFalse(ProtectionController.checkBundledList(at: directory).verified)
     }
 
@@ -481,13 +489,15 @@ final class MobileProtectionTests: XCTestCase {
         XCTAssertEqual(MobileProtectionPolicy.safariPartState(enabled: nil, lastReload: true), .unknown)
         XCTAssertEqual(MobileProtectionPolicy.safariPartState(enabled: false, lastReload: true), .disabled)
         XCTAssertEqual(MobileProtectionPolicy.safariPartState(enabled: true, lastReload: nil), .enabled)
-        XCTAssertFalse(MobileProtectionPolicy.safariConfigurationReady(enabled: [true, true, true, true],
-            lastReload: [true, true, false, true]))
-        XCTAssertFalse(MobileProtectionPolicy.safariConfigurationReady(enabled: [true, true, true, true], lastReload: []))
-        XCTAssertTrue(MobileProtectionPolicy.safariConfigurationReady(enabled: [true, true, true, true],
-            lastReload: [nil, nil, nil, nil]))
-        XCTAssertFalse(MobileProtectionPolicy.safariConfigurationReady(enabled: [true, true, nil, true],
-            lastReload: [true, true, true, true]))
+        let parts = MobileProtectionPolicy.blockerIdentifiers.count
+        let allOn: [Bool?] = Array(repeating: true, count: parts)
+        XCTAssertFalse(MobileProtectionPolicy.safariConfigurationReady(
+            enabled: allOn, lastReload: Array(repeating: true, count: parts - 1) + [false]))
+        XCTAssertFalse(MobileProtectionPolicy.safariConfigurationReady(enabled: allOn, lastReload: []))
+        XCTAssertTrue(MobileProtectionPolicy.safariConfigurationReady(
+            enabled: allOn, lastReload: Array(repeating: nil, count: parts)))
+        XCTAssertFalse(MobileProtectionPolicy.safariConfigurationReady(
+            enabled: Array(repeating: true, count: parts - 1) + [nil], lastReload: allOn))
     }
 
     func testSavingDNSIsNotTheSameAsEnablingIt() {
@@ -517,10 +527,14 @@ final class MobileProtectionTests: XCTestCase {
         }
     }
 
-    func testAllFourSafariPartsAreRequiredIncludingUnknownStates() {
-        XCTAssertTrue(MobileProtectionPolicy.allSafariLayersEnabled([true, true, true, true]))
-        for values: [Bool?] in [[], [true], [true, true, true], [true, true, true, false],
-                               [true, true, true, nil], [true, true, true, true, true]] {
+    func testAllSafariPartsAreRequiredIncludingUnknownStates() {
+        let parts = MobileProtectionPolicy.blockerIdentifiers.count
+        XCTAssertTrue(MobileProtectionPolicy.allSafariLayersEnabled(
+            Array(repeating: true, count: parts)))
+        for values: [Bool?] in [[], [true], Array(repeating: true, count: parts - 1),
+                               Array(repeating: true, count: parts - 1) + [false],
+                               Array(repeating: true, count: parts - 1) + [nil],
+                               Array(repeating: true, count: parts + 1)] {
             XCTAssertFalse(MobileProtectionPolicy.allSafariLayersEnabled(values))
         }
     }
@@ -531,14 +545,14 @@ final class MobileProtectionTests: XCTestCase {
             "The same resource evidence used by live setup must verify the shipped bundle")
         var total = 0
         var patterns = Set<String>()
-        for part in 1...4 {
+        for part in 1...MobileProtectionPolicy.blockerIdentifiers.count {
             let directory = bundle.appendingPathComponent("PlugIns/Hisn\(part).appex")
             let data = try Data(contentsOf: directory.appendingPathComponent("rules.json"))
             let metadata = try JSONDecoder().decode(Metadata.self,
                 from: Data(contentsOf: directory.appendingPathComponent("rules-metadata.json")))
             let rules = try JSONSerialization.jsonObject(with: data) as! [[String: Any]]
             XCTAssertEqual(rules.count, metadata.count)
-            XCTAssertTrue((1...40_000).contains(rules.count))
+            XCTAssertTrue((1...MobileProtectionPolicy.perBlockerRuleLimit).contains(rules.count))
             XCTAssertEqual(SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined(), metadata.sha256)
             for rule in rules {
                 let trigger = rule["trigger"] as! [String: Any]
@@ -555,7 +569,7 @@ final class MobileProtectionTests: XCTestCase {
     @MainActor
     func testAppleCompilesEveryFullBundledSafariPart() async throws {
         let store = WKContentRuleListStore.default()!
-        for part in 1...4 {
+        for part in 1...MobileProtectionPolicy.blockerIdentifiers.count {
             let url = Bundle.main.bundleURL.appendingPathComponent("PlugIns/Hisn\(part).appex/rules.json")
             let json = try String(contentsOf: url, encoding: .utf8)
             let identifier = "hisn-part-test-\(UUID().uuidString)"

@@ -35,6 +35,7 @@ import re
 import sys
 import urllib.request
 import zlib
+from collections import Counter
 from pathlib import Path
 
 from terms import compile_terms, lang_counts, serialize_terms
@@ -188,6 +189,128 @@ def collapse_subdomains(domains: set[str]) -> set[str]:
         if not covered:
             kept.add(d)
     return kept
+
+
+def covered_by_ancestor(domain: str, blocked: set[str]) -> bool:
+    """True when `domain` or one of its parents is in `blocked`.
+
+    The same walk every client performs at lookup time. A candidate covered by
+    an existing core domain adds nothing to the list and must not consume a
+    capacity slot.
+    """
+    parts = domain.split(".")
+    return any(".".join(parts[i:]) in blocked for i in range(len(parts)))
+
+
+def core_fill_signal(domain: str, fill: dict) -> int:
+    """How strongly a candidate looks like an adult host, not a shared CDN.
+
+    This is a selection aid, never the only reason a domain is blocked: every
+    candidate has already appeared in at least `min_sources` independent adult
+    lists. The signal only decides which corroborated domains fit the Safari
+    budget first, and it keeps a two-list CDN or parking entry out.
+    """
+    tld = domain.rsplit(".", 1)[-1]
+    score = 0
+    if tld in set(fill["adult_tlds"]):
+        score += 4
+    if any(token in domain for token in fill["adult_tokens"]):
+        score += 2
+    if "xn--" in domain:
+        # An IDN is disproportionately likely to be a non-English adult site;
+        # the ASCII token check cannot see its script. It outranks a plain
+        # ASCII token so a capacity squeeze cannot silently drop every
+        # international domain in favour of English-token long tail.
+        score += 3
+    return score
+
+
+def select_core_fill(core: set[str], raw: dict[str, set[str]], cfg: dict,
+                     tier_of: dict[str, str]) -> tuple[set[str], dict]:
+    """Add corroborated adult domains from permissively licensed sources.
+
+    Why this exists: the four hand-picked core sources cover the major English
+    brands and little of the international long tail, while the full list has
+    5.2M domains the browser and Safari cannot hold. This selection spends the
+    spare core capacity on domains two independent adult lists agree about,
+    not on the first alphabetical slice of a 4.6M academic list.
+
+    A candidate must be:
+      * present in `min_sources` distinct scoring sources (the core adult
+        sources plus the configured fill sources);
+      * present in at least one fill source;
+      * not already covered by a core domain;
+      * carrying an adult TLD, a reviewed token, or an IDN label.
+
+    Selection is capped at `core_capacity`. When more candidates qualify than
+    fit, the lowest-signal/longest ones are deferred and counted in the
+    manifest; the core sources themselves are never truncated. A core source
+    union above capacity is a fatal configuration error, not a silent cut.
+    """
+    fill = cfg.get("core_fill")
+    if not fill:
+        return set(), {"enabled": False}
+    fill_sources = list(fill.get("sources", []))
+    if not fill_sources:
+        raise SystemExit("FATAL: core_fill.sources is empty")
+    missing = [sid for sid in fill_sources if sid not in raw]
+    if missing:
+        print(f"WARNING: core-fill source(s) unavailable: {', '.join(missing)}",
+              file=sys.stderr)
+    min_sources = int(fill.get("min_sources", 2))
+    if min_sources < 1:
+        raise SystemExit("FATAL: core_fill.min_sources must be at least 1")
+    for key in ("adult_tlds", "adult_tokens"):
+        values = fill.get(key)
+        if not isinstance(values, list) or not values:
+            raise SystemExit(f"FATAL: core_fill.{key} must be a nonempty list")
+        if any(not isinstance(v, str) or not v or v != v.lower() for v in values):
+            raise SystemExit(f"FATAL: core_fill.{key} entries must be lowercase strings")
+
+    capacity = int(cfg.get("core_capacity", 0))
+    if capacity <= 0:
+        raise SystemExit("FATAL: sources.json core_capacity is missing or not positive")
+
+    scoring_sources = [sid for sid in raw if tier_of.get(sid) == "core"] + fill_sources
+    scoring_sources = list(dict.fromkeys(scoring_sources))
+    membership = Counter()
+    for sid in scoring_sources:
+        membership.update(raw[sid])
+
+    union: set[str] = set()
+    for sid in fill_sources:
+        union |= raw.get(sid, set())
+
+    candidates = {d for d in union if membership[d] >= min_sources
+                  and not covered_by_ancestor(d, core)}
+    candidates, _ = apply_never_block(
+        candidates, cfg.get("never_block_suffix", []), cfg.get("never_block_apex", []))
+
+    eligible = {d for d in candidates if core_fill_signal(d, fill) > 0}
+    ranked = sorted(eligible, key=lambda d: (-core_fill_signal(d, fill), len(d), d))
+
+    selected: set[str] = set()
+    room = capacity - len(core)
+    for domain in ranked:
+        if len(selected) >= room:
+            break
+        if covered_by_ancestor(domain, core) or covered_by_ancestor(domain, selected):
+            continue
+        selected.add(domain)
+
+    stats = {
+        "enabled": True,
+        "capacity": capacity,
+        "core_sources_collapsed": len(core),
+        "sources": fill_sources,
+        "min_sources": min_sources,
+        "candidates": len(candidates),
+        "eligible": len(eligible),
+        "selected": len(selected),
+        "deferred": len(ranked) - len(selected),
+        "room": max(0, room),
+    }
+    return selected, stats
 
 
 def apply_never_block(
@@ -553,7 +676,44 @@ def main() -> int:
           f"(-{len(merged) - len(collapsed):,})", file=sys.stderr)
 
     domains = sorted(collapsed)
+
+    # The bundled core is a budgeted artifact: six Safari parts of 40,000
+    # rules. Refuse a core source union above it — a silent cut would remove
+    # domains from every browser and phone while the build still looked green.
+    capacity = int(cfg.get("core_capacity", 0))
+    if capacity <= 0:
+        print("FATAL: sources.json core_capacity is missing or not positive.",
+              file=sys.stderr)
+        return 1
+    core_collapsed = collapse_subdomains(core)
+    if len(core_collapsed) > capacity:
+        print(f"FATAL: the core-tier sources alone collapse to "
+              f"{len(core_collapsed):,} domains, above the {capacity:,} bundled "
+              f"capacity. Narrow the core or raise the Safari part count; "
+              f"nothing is truncated.", file=sys.stderr)
+        return 1
+
+    fill, fill_stats = select_core_fill(core_collapsed, raw, cfg, tier_of)
+    if fill:
+        core |= fill
+        core, _ = apply_never_block(
+            core,
+            cfg.get("never_block_suffix", []),
+            cfg.get("never_block_apex", []),
+        )
     core_domains = sorted(collapse_subdomains(core))
+    if len(core_domains) > capacity:
+        print(f"FATAL: core tier is {len(core_domains):,} domains after fill, "
+              f"above the {capacity:,} capacity. Nothing is truncated.",
+              file=sys.stderr)
+        return 1
+    fill_stats["core_after"] = len(core_domains)
+    fill_stats["headroom"] = capacity - len(core_domains)
+    if fill_stats.get("enabled"):
+        print(f"Core fill: {fill_stats['selected']:,} selected from "
+              f"{fill_stats['eligible']:,} eligible "
+              f"({fill_stats['deferred']:,} deferred) — core now "
+              f"{len(core_domains):,}/{capacity:,}", file=sys.stderr)
     print(f"Core tier after collapse: {len(core_domains):,}", file=sys.stderr)
 
     # Version: monotonic, never reused.
@@ -650,6 +810,8 @@ def main() -> int:
         "built_at": built_at,
         "domain_count": len(domains),
         "core_domain_count": len(core_domains),
+        "core_capacity": capacity,
+        "core_fill": fill_stats,
         "dnr_rule_count": n_rules,
         "dnr_keyword_rule_count": n_keyword_rules,
         "term_count": len(terms_payload["terms"]),

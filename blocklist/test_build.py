@@ -26,11 +26,13 @@ sys.path.insert(0, str(Path(__file__).parent))
 from build import (                                    # noqa: E402
     apply_never_block,
     clean,
+    core_fill_signal,
     fetch_source,
     collapse_subdomains,
     parse_adblock,
     parse_hosts,
     parse_plain,
+    select_core_fill,
     write_dnr_rules,
     write_keyword_rules,
 )
@@ -446,6 +448,90 @@ class TestClientConfig(unittest.TestCase):
         swift_wanted = set(re.findall(r'"([a-z_.]+)"', swift.split("generationFiles")[1].split("]")[0]))
         for name in js_wanted | swift_wanted - {"manifest.json", "manifest.json.sig"}:
             self.assertIn(name, produced, f"{name} is requested by a client but not built")
+
+
+class TestCoreFill(unittest.TestCase):
+    """The bundled core is budgeted; the fill must be explainable, not arbitrary."""
+
+    def cfg(self, **overrides):
+        base = {
+            "core_capacity": 10,
+            "core_fill": {
+                "sources": ["fill-a", "fill-b"],
+                "min_sources": 2,
+                "adult_tlds": ["xxx"],
+                "adult_tokens": ["porn", "sex"],
+            },
+            "never_block_suffix": [],
+            "never_block_apex": [],
+        }
+        base.update(overrides)
+        return base
+
+    def select(self, core, raw, cfg=None):
+        return select_core_fill(core, raw, cfg or self.cfg(),
+                                {"core-a": "core", "fill-a": "extended", "fill-b": "extended"})
+
+    def test_a_domain_must_be_corroborated_and_carry_a_signal(self):
+        raw = {
+            "core-a": {"news.example"},
+            "fill-a": {"porn-one.example", "quiet.example"},
+            "fill-b": {"porn-one.example", "quiet.example"},
+        }
+        selected, stats = self.select({"news.example"}, raw)
+        self.assertEqual(selected, {"porn-one.example"},
+                         "two adult lists agreeing is not enough without an adult signal; "
+                         "one list alone is never enough")
+        self.assertEqual(stats["eligible"], 1)
+
+    def test_an_existing_core_parent_covers_the_candidate(self):
+        raw = {"core-a": {"example.net"}, "fill-a": {"sub.example.net"},
+               "fill-b": {"sub.example.net"}}
+        selected, _ = self.select({"example.net"}, raw)
+        self.assertEqual(selected, set())
+
+    def test_capacity_is_respected_and_the_overflow_is_counted_not_hidden(self):
+        raw = {
+            "core-a": {"news.example"},
+            "fill-a": {f"porn{i}.example" for i in range(20)},
+            "fill-b": {f"porn{i}.example" for i in range(20)},
+        }
+        selected, stats = self.select({"news.example"}, raw,
+                                      self.cfg(core_capacity=6))
+        self.assertEqual(len(selected), 5)
+        self.assertGreater(stats["deferred"], 0)
+        self.assertEqual(stats["selected"] + stats["deferred"], stats["eligible"])
+        self.assertEqual(len(selected), stats["selected"])
+
+    def test_selection_is_deterministic(self):
+        raw = {
+            "core-a": {"news.example"},
+            "fill-a": {"b-porn.example", "a-porn.example", "c.xxx"},
+            "fill-b": {"b-porn.example", "a-porn.example", "c.xxx"},
+        }
+        first, _ = self.select({"news.example"}, raw)
+        second, _ = self.select({"news.example"}, raw)
+        self.assertEqual(first, second)
+        self.assertEqual(first, {"a-porn.example", "b-porn.example", "c.xxx"})
+
+    def test_signal_prefers_an_adult_tld_then_an_idn_then_a_token(self):
+        fill = self.cfg()["core_fill"]
+        self.assertEqual(core_fill_signal("shop.xxx", fill), 4)
+        self.assertEqual(core_fill_signal("xn--abc.example", fill), 3)
+        self.assertEqual(core_fill_signal("pornshop.example", fill), 2)
+        self.assertEqual(core_fill_signal("quiet.example", fill), 0)
+
+    def test_a_malformed_fill_configuration_fails_loudly(self):
+        for cfg in (self.cfg(core_capacity=0),
+                    self.cfg(core_fill={"sources": [], "min_sources": 2,
+                                        "adult_tlds": ["xxx"], "adult_tokens": ["porn"]}),
+                    self.cfg(core_fill={"sources": ["fill-a"], "min_sources": 0,
+                                        "adult_tlds": ["xxx"], "adult_tokens": ["porn"]}),
+                    self.cfg(core_fill={"sources": ["fill-a"], "min_sources": 2,
+                                        "adult_tlds": [], "adult_tokens": ["porn"]})):
+            with self.subTest(cfg=cfg), self.assertRaises(SystemExit):
+                self.select({"news.example"},
+                            {"fill-a": {"porn.example"}, "fill-b": {"porn.example"}}, cfg)
 
 
 if __name__ == "__main__":

@@ -1,43 +1,61 @@
 {
   "artifacts": {
     "dnr_block_rules.json": {
-      "bytes": 5945541,
-      "sha256": "463861e8809d2169e5d0c6145e5545defb9c2ecd2d048b0c578b0138c0aafb6c"
+      "bytes": 9617635,
+      "sha256": "bd2cfc8224b2b0c7f68077d9753e73848a0c26e2827b4c336517cd727cf1f95e"
     },
     "dnr_keyword_rules.json": {
       "bytes": 79908,
-      "sha256": "a514609121a9a77bc91050bda75d9be18d6fbc13562695c4e39af28843c254d9"
+      "sha256": "efb2750c8e92e08992cd1aa47d5f16825bc6938a1fa2e93172b4ccc39a55e45d"
     },
     "domains.index": {
       "bytes": 8192,
       "sha256": "7d2c7ac4888bfd75cd5f56e8d61f69595121183afc81556c876732fd3782c62f"
     },
     "domains.packed": {
-      "bytes": 135020477,
-      "sha256": "862ea5794ab69f205586704e8dccd9d58d7d3274975739fea9a437dec4176d87"
+      "bytes": 135370919,
+      "sha256": "d2182946a9a454385f7a6193eac656b86f35491b274fde09c8e569a1adc339fe"
     },
     "domains.packed.deflate": {
-      "bytes": 21249029,
-      "sha256": "76b2bcd075a31606b50d09749027de2322029ecb7c11f2093b7bd5259876b2e7"
+      "bytes": 21373172,
+      "sha256": "8a2a65ec1a8e539f9d58f74669d1bbb236f9a473a0090ae441b5e4b42134d5eb"
     },
     "domains.txt": {
-      "bytes": 135020609,
-      "sha256": "816ae43645e0ffc9604c68b59349cdf70b918f2ba6413212d4d788fd0e608d73"
+      "bytes": 135371051,
+      "sha256": "5b7ebd1e51a30728727846922471163828ef98d8f35abe1a8fe80aaa034fd341"
     },
     "domains_core.txt": {
-      "bytes": 2624139,
-      "sha256": "2c0b684ff34e85fb317a53c4e5c78a3c1b8eb0cfddb427122242990f183b60ba"
+      "bytes": 4285312,
+      "sha256": "afe96421f9941153f300dc03a1962535d33e943db0f37d0d1d79111ea4765d50"
     },
     "terms.json": {
       "bytes": 288545,
-      "sha256": "c7caf064946841384502136787b97f4996577d9835319f06fda9c076af6f7859"
+      "sha256": "70a59c9d3089ff9d0e39f34ab49dc489597eca889e9c18e161418ea797b18d9b"
     }
   },
-  "built_at": "2026-10-01T20:29:42+00:00",
-  "core_domain_count": 159768,
+  "built_at": "2026-10-30T17:33:25+00:00",
+  "core_capacity": 240000,
+  "core_domain_count": 239885,
+  "core_fill": {
+    "candidates": 269625,
+    "capacity": 240000,
+    "core_after": 239885,
+    "core_sources_collapsed": 125309,
+    "deferred": 1261,
+    "eligible": 115952,
+    "enabled": true,
+    "headroom": 115,
+    "min_sources": 2,
+    "room": 114691,
+    "selected": 114691,
+    "sources": [
+      "blocklistproject-porn",
+      "oisd-nsfw"
+    ]
+  },
   "dnr_keyword_rule_count": 116,
-  "dnr_rule_count": 320,
-  "domain_count": 5248731,
+  "dnr_rule_count": 480,
+  "domain_count": 5276448,
   "host_term_count": 116,
   "never_block_removed": 20,
   "schema": 1,
@@ -53,12 +71,12 @@
       "ok": true
     },
     {
-      "domains": 83461,
+      "domains": 92336,
       "id": "hagezi-nsfw",
       "ok": true
     },
     {
-      "domains": 467397,
+      "domains": 490036,
       "id": "oisd-nsfw",
       "ok": true
     },
@@ -73,12 +91,12 @@
       "ok": true
     },
     {
-      "domains": 64287,
+      "domains": 64295,
       "id": "stevenblack-porn",
       "ok": true
     },
     {
-      "domains": 4597566,
+      "domains": 4597564,
       "id": "ut1-adult",
       "ok": true
     },
@@ -104,5 +122,5 @@
     "it": 9,
     "pt": 4
   },
-  "version": 4
+  "version": 5
 }

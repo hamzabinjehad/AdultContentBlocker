@@ -53,8 +53,11 @@ final class AccessibilityTests: XCTestCase {
 
     func testAccessTurnedOffIsItsOwnSetupIssue() {
         func issues(screenTime: Bool, removed: Bool) -> [MobileProtectionPolicy.SetupIssue] {
-            MobileProtectionPolicy.setupAssessment(checked: true, busy: false, listVerified: true,
-                listCount: 4, listVersion: 1, safari: [true, true, true, true], lastReload: [nil, nil, nil, nil],
+            let count = MobileProtectionPolicy.blockerIdentifiers.count
+            return MobileProtectionPolicy.setupAssessment(checked: true, busy: false, listVerified: true,
+                listCount: count, listVersion: 1,
+                safari: Array(repeating: true, count: count),
+                lastReload: Array(repeating: nil, count: count),
                 screenTime: screenTime, dns: .enabled, storageHealthy: true, screenTimeAccessRemoved: removed).issues
         }
         XCTAssertEqual(issues(screenTime: false, removed: false), [.screenTime])

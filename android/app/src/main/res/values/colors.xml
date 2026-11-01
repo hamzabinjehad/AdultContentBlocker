@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Day palette. Every foreground/background pair here keeps at least 4.5:1 for body text. -->
+<resources>
+    <color name="background">#F5F7FA</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="surface_alt">#EDF1F7</color>
+    <color name="surface_sunken">#E4EAF2</color>
+    <color name="text_primary">#101828</color>
+    <color name="text_secondary">#4A5568</color>
+    <color name="text_tertiary">#5D6B80</color>
+    <color name="divider">#DCE2EC</color>
+    <color name="accent">#1D5BD8</color>
+    <color name="accent_soft">#E6EEFF</color>
+    <color name="on_accent">#FFFFFF</color>
+    <color name="success">#157347</color>
+    <color name="warning">#8A5300</color>
+    <color name="warning_soft">#FDF0D8</color>
+    <color name="danger">#B42318</color>
+    <color name="danger_soft">#FDECEA</color>
+    <color name="hero_start">#EAF1FF</color>
+    <color name="hero_end">#FFFFFF</color>
+    <color name="control_highlight">#331D5BD8</color>
+    <color name="ripple_on_accent">#33FFFFFF</color>
+    <color name="warning_border">#EBD3A4</color>
+    <color name="danger_border">#F3C4C0</color>
+    <color name="accent_border">#C9DBFF</color>
+    <color name="ic_launcher_background">#0F2744</color>
+</resources>

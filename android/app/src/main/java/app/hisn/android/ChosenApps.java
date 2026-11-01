@@ -37,6 +37,39 @@ public final class ChosenApps {
         return excluded;
     }
 
+    /** Installed apps that can open ordinary web links, which is how this screen finds browsers.
+     *
+     * <p>The query uses example.com, so an app that only handles its own hosts (a video app
+     * opening youtube.com links) is not listed. A generic handler that is not a general
+     * browser can still appear, which is why the screen says "can open web links" and leaves
+     * the choice to the owner. */
+    public static List<Entry> browsers(Context context) {
+        Set<String> excluded = excluded(context);
+        Map<String, Entry> entries = new HashMap<>();
+        Intent launcher = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER);
+        for (ResolveInfo info : context.getPackageManager().queryIntentActivities(launcher, 0)) {
+            if (info.activityInfo == null || excluded.contains(info.activityInfo.packageName)) continue;
+            String name = info.activityInfo.packageName;
+            entries.put(name, new Entry(name, info.loadLabel(context.getPackageManager()).toString()));
+        }
+        Set<String> handlers = new java.util.LinkedHashSet<>();
+        for (String scheme : new String[]{"https", "http"}) {
+            Intent view = new Intent(Intent.ACTION_VIEW, Uri.parse(scheme + "://example.com/"));
+            view.addCategory(Intent.CATEGORY_BROWSABLE);
+            for (ResolveInfo info : context.getPackageManager().queryIntentActivities(view, 0)) {
+                if (info.activityInfo != null && !excluded.contains(info.activityInfo.packageName))
+                    handlers.add(info.activityInfo.packageName);
+            }
+        }
+        List<Entry> result = new ArrayList<>();
+        for (String name : handlers) {
+            Entry entry = entries.get(name);
+            result.add(entry != null ? entry : new Entry(name, name));
+        }
+        result.sort((left, right) -> left.label.compareToIgnoreCase(right.label));
+        return result;
+    }
+
     public static List<Entry> list(Context context) {
         Set<String> excluded = excluded(context);
         Map<String, Entry> entries = new HashMap<>();

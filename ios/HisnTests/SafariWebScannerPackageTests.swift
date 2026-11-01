@@ -1,6 +1,7 @@
 import CryptoKit
 import Foundation
 import XCTest
+@testable import HisnMobile
 
 final class SafariWebScannerPackageTests: XCTestCase {
     private var scannerURL: URL {
@@ -17,7 +18,7 @@ final class SafariWebScannerPackageTests: XCTestCase {
         XCTAssertEqual(info["CFBundleIdentifier"] as? String, "app.hisn.mobile.HisnText")
         let configuration = try XCTUnwrap(info["NSExtension"] as? [String: Any])
         XCTAssertEqual(configuration["NSExtensionPointIdentifier"] as? String, "com.apple.Safari.web-extension")
-        for part in 1...4 {
+        for part in 1...MobileProtectionPolicy.blockerIdentifiers.count {
             XCTAssertTrue(FileManager.default.fileExists(atPath:
                 Bundle.main.bundleURL.appendingPathComponent("PlugIns/Hisn\(part).appex/rules.json").path))
         }

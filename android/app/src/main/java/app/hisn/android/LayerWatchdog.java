@@ -130,11 +130,12 @@ final class LayerWatchdog {
             PendingIntent open = PendingIntent.getActivity(context, 0,
                     new Intent(context, MainActivity.class), PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
             notifications.notify(NOTIFICATION_ID, new Notification.Builder(context, CHANNEL)
-                    .setSmallIcon(R.drawable.ic_hisn)
+                    .setSmallIcon(R.drawable.ic_shield).setColor(context.getColor(R.color.accent))
                     .setContentTitle(context.getString(R.string.layer_health_title))
                     .setContentText(context.getString(body))
                     .setStyle(new Notification.BigTextStyle().bigText(context.getString(body)))
-                    .setContentIntent(open).setAutoCancel(true).build());
+                    .setContentIntent(open).setAutoCancel(true)
+                    .setCategory(Notification.CATEGORY_STATUS).build());
             return true;
         } catch (RuntimeException unavailable) {
             // Notifications denied or unavailable: the app status is still honest.

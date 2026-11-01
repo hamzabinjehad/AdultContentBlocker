@@ -1,17 +1,23 @@
 # Hisn for iPhone and iPad
 
 **نسخة أولية فعلية:** تطبيق موحّد للهاتف والآيباد، مستقل عن الماك، بواجهة
-عربية وإنجليزية. يحوي أربع إضافات لحجب مواقع Safari من قائمة حصن الأساسية،
+عربية وإنجليزية. يحوي ست إضافات لحجب مواقع Safari من قائمة حصن الأساسية،
 ومسارًا اختياريًا لإعداد DNS عائلي. لا يعني ذلك حجب كل التطبيقات أو كل المحتوى.
 
 The plan to finish the iPhone/iPad app, including which Apple-supported lock
 level stops deletion and what each one cannot stop, is in
 [the iOS end-goal plan](../docs/IOS_IMPROVEMENT_PLAN.md).
 
-## 1.1.3 privacy readiness and list age
+## 1.1.4 coverage pass
 
+- **Six Safari blockers:** the four 40,000-rule parts became six, raising the
+  bundled capacity from 160,000 to 240,000 domains. Seed v5 carries 239,885,
+  including every high-confidence adult domain that two permissively licensed
+  lists agree on. Each part is still 40,000 rules; no per-blocker limit was
+  raised without a device measurement. See the
+  [coverage pass record](../docs/COVERAGE_PASS_2026-10-30.md).
 - **Privacy manifest:** `Hisn/PrivacyInfo.xcprivacy` is included in the app,
-  all four Safari blockers, `HisnActivityMonitor` and `HisnText`. It declares no
+  all six Safari blockers, `HisnActivityMonitor` and `HisnText`. It declares no
   tracking and no collected data, with required reasons for app-only and
   app-group `UserDefaults` and for the monotonic boot clock. `Info.plist`
   declares `ITSAppUsesNonExemptEncryption` false.
@@ -20,9 +26,10 @@ level stops deletion and what each one cannot stop, is in
   90 days that a newer signed build is the only Safari list update. There is no
   runtime list download.
 - **Settings:** app version/build, plus privacy-policy and support links.
-- Version 1.1.3, build 4. Simulator-tested only; no Apple team, entitlement or
-  physical-device acceptance is claimed. See
-  [the 1.1.3 record](../docs/IOS_1.1.3.md).
+- Version 1.1.4, build 5. Simulator-tested only; no Apple team, entitlement or
+  physical-device acceptance is claimed. See the
+  [coverage pass record](../docs/COVERAGE_PASS_2026-10-30.md) and
+  [the 1.1.3 history](../docs/IOS_1.1.3.md).
 
 ## Open and run
 
@@ -51,9 +58,9 @@ runner, for example `platform=iOS Simulator,name=iPhone 17 Pro`.
 ## What ships
 
 - Native SwiftUI tabs for protection status, guided setup, privacy and language.
-- Four Safari content blockers, each capped at 40,000 rules. The signed core
+- Six Safari content blockers, each capped at 40,000 rules. The signed core
   seed is fully included, never silently truncated. The current seed has
-  159,768 domains; increasing capacity requires explicit additional targets.
+  239,885 domains; increasing capacity requires explicit additional targets.
 - Domain requests and descendant hostnames are matched with host boundaries.
   Safari applies rules without reporting visited sites to Hisn.
 - A separate **Hisn Text** Safari Web Extension uses the shared on-device text
@@ -86,7 +93,7 @@ shipping a new seed requires rebuilding and redistributing the app.
 
 ## Activate on a real device
 
-1. Set your Apple development team on the app, all four Safari domain targets,
+1. Set your Apple development team on the app, all six Safari domain targets,
    and the separate Hisn Text target.
    Keep extension bundle IDs prefixed by the app ID. If changing the app ID,
    also change `shared/apple/MobileProtectionPolicy.swift` and the generator.
@@ -129,7 +136,7 @@ below is optional and only appropriate for genuine child-device use.
 See [the shared self-control design](../docs/SELF_CONTROL_COMMITMENT.md) for
 actual enforcement layers, clock/persistence limits and real-device tests.
 
-The four Safari domain blockers do not read page text. Hisn Text separately
+The six Safari domain blockers do not read page text. Hisn Text separately
 checks permitted Safari pages. Its optional visual models inspect readable
 images and bounded, sampled video frames locally. They cannot inspect every
 frame, protected media, unreadable cross-origin pixels, other apps or every
@@ -230,6 +237,11 @@ The app and monitor must both have Family Controls and the same App Group
 (`group.app.hisn.mobile`) in their signed provisioning profiles. Apple distribution
 approval is needed for each appropriate target. Simulator registration/build
 tests do not establish real enforcement or callback reliability.
+
+For a category-based checklist of apps to consider, including what each block
+costs and what must stay accessible, see
+[apps to consider blocking](../docs/APPS_TO_CONSIDER.md). Apple's picker returns
+opaque tokens, so the app cannot preselect or name the apps from a bundled list.
 
 During a commitment, including 90 days, selections can grow but cannot shrink;
 daily limits can tighten but not increase, and always-block cannot become a daily
@@ -344,7 +356,7 @@ signing and real Safari/DNS behavior still require a provisioned physical device
 
 Overview and Setup now show a live, non-persisted configuration assessment.
 It requires nonempty bundled Safari parts with matching hashes, counts and
-versions, all four Safari blockers enabled, Hisn Screen Time readback, and
+versions, all six Safari blockers enabled, Hisn Screen Time readback, and
 matching enabled Family DNS before reporting all three layer configurations
 verified. A saved-but-disabled DNS configuration, revoked permission, failed
 reload, empty rules or unreadable commitment/history remains incomplete.

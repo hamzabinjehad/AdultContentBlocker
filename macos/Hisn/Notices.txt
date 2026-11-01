@@ -10,6 +10,7 @@ Domain-list sources
 blocklistproject-porn  [extended]
   Licence: Unlicense
   Upstream: https://raw.githubusercontent.com/blocklistproject/Lists/master/porn.txt
+  Bundled: a selected, corroborated subset is in the core tier.
   Note: Very large (~26MB). Broad coverage, slightly higher false-positive rate.
 
 chadmayfield-top1m  [core]
@@ -25,6 +26,7 @@ hagezi-nsfw  [core]
 oisd-nsfw  [extended]
   Licence: see oisd.nl — free for personal and commercial use
   Upstream: https://nsfw.oisd.nl/domainswild
+  Bundled: a selected, corroborated subset is in the core tier.
   Note: ~480k domains, the largest single source here and the only one that is not US/English-centric. Added because the other five between them carried 578 Arabic-audience domains out of 148k core (0.39%), which is close to blind for ~400M speakers. Publishes the `*.domain` wildcard form; `clean()` strips the prefix, and every consumer already blocks subdomains, so nothing is lost.
 
 sinfonietta-porn  [core]
@@ -32,10 +34,10 @@ sinfonietta-porn  [core]
   Upstream: https://raw.githubusercontent.com/Sinfonietta/hostfiles/master/pornography-hosts
   Note: Small, stable, well-curated.
 
-stevenblack-laptop  [core]
+stevenblack-laptop  [extended]
   Licence: MIT
   Upstream: local/stevenblack-laptop.txt
-  Note: Snapshot of the existing laptop hosts list, including ads and trackers; enforced by Hisn instead of globally through /etc/hosts.
+  Note: Snapshot of the existing laptop hosts list, including ads and trackers. It stays in the full Mac/DNS list, but is no longer bundled in the core tier: those slots now go to adult domains, and a mixed ad/tracker snapshot would spend a sixth of the Safari budget on non-adult hosts.
 
 stevenblack-porn  [core]
   Licence: MIT
@@ -57,7 +59,7 @@ ut1-strong-redirector  [extended]
   Upstream: https://dsi.ut-capitole.fr/blacklists/download/strong_redirector.tar.gz
   Note: 132k proxy, anonymiser and 'unblock' services. Not adult content itself — it is the standard way around a filter, and docs/THREAT_MODEL.md marks that row 'Partly open: upstream lists chase these forever'. This is the one list that chases them.
 
-A source marked extended is not bundled in the browser or Safari core tier; it is used by the full Mac/DNS list build. The upstream terms above still apply to that build.
+A source marked extended is not bundled in full: it is used by the full Mac/DNS list build. Sources marked Bundled above also contribute a selected subset to the browser, Safari and Android core tier; the signed manifest records how many. The upstream terms above apply to every build.
 Licence texts
 =============
 

@@ -118,7 +118,28 @@ public final class TextGuardService extends AccessibilityService {
     private void checkpointCommitment() {
         try { PolicyStore.get(this).checkpoint(); } catch (RuntimeException unsaved) { /* Retry next minute. */ }
         ScreenGray.reassert(this);
+        enforceSchedule();
         handler.postDelayed(checkpoint, 60000);
+    }
+
+    /** A scheduled window can open while a static app is on screen and produce no event.
+     *  One metadata-only sweep a minute closes that gap, so an allowlist does not need the
+     *  one-second heartbeat running all day. */
+    private void enforceSchedule() {
+        if (excluded == null || inspectPending) return;
+        try {
+            PolicyStore.Snapshot rules = PolicyStore.get(this).snapshot();
+            if (!rules.schedule.isConfigured()) return;
+            List<GuardWindows.Window> windows = selectedWindows(this, excluded, app -> isSelected(rules, app));
+            if (windows == null || windows.isEmpty()) return;
+            pendingPackage = windows.get(0).app;
+            rootRetries = 5;
+            inspectPending = true;
+            handler.removeCallbacks(heartbeat);
+            handler.post(inspect);
+        } catch (RuntimeException unavailable) {
+            inspection.record(InspectionHealth.Outcome.INCOMPLETE);
+        }
     }
 
     /** Rebinding, or a window opening (picture-in-picture, split screen), should not require an event
@@ -319,7 +340,7 @@ public final class TextGuardService extends AccessibilityService {
                     return;
                 }
                 if (rules.scannedApps.contains(window.app) && rules.hasWordProtection()) scanned.add(window);
-                scheduledOnScreen |= rules.schedule.isConfigured() && rules.schedule.apps.contains(window.app);
+                scheduledOnScreen |= rules.schedule.selects(window.app, minute);
             }
             boolean shortVideoOnScreen = false;
             if (rules.shortVideoEnabled) {
@@ -403,8 +424,13 @@ public final class TextGuardService extends AccessibilityService {
 
     private static boolean isSelected(PolicyStore.Snapshot rules, String name) {
         return rules.blockedApps.contains(name) || rules.scannedApps.contains(name)
-                || (rules.schedule.isConfigured() && rules.schedule.apps.contains(name))
+                || rules.schedule.selects(name, minuteOfDay())
                 || (rules.shortVideoEnabled && ShortVideoSurfaces.watches(name));
+    }
+
+    private static int minuteOfDay() {
+        java.time.LocalTime now = java.time.LocalTime.now();
+        return now.getHour() * 60 + now.getMinute();
     }
 
     /** A visible Shorts or Reels player, found by its view ID; no text is read. */

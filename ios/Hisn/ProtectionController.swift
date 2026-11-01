@@ -11,8 +11,10 @@ import CryptoKit
 @MainActor
 final class ProtectionController: ObservableObject {
     @Published private(set) var dns: MobileProtectionPolicy.DNSState = .unknown
-    @Published private(set) var safari: [Bool?] = Array(repeating: nil, count: 4)
-    @Published private(set) var safariReloads: [Bool?] = Array(repeating: nil, count: 4)
+    @Published private(set) var safari: [Bool?] = Array(
+        repeating: nil, count: MobileProtectionPolicy.blockerIdentifiers.count)
+    @Published private(set) var safariReloads: [Bool?] = Array(
+        repeating: nil, count: MobileProtectionPolicy.blockerIdentifiers.count)
     @Published private(set) var checkedAt: Date?
     @Published private(set) var busy = false
     @Published private(set) var errorKey: String?

@@ -11,7 +11,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.ServiceInfo;
-import android.graphics.Color;
+import android.content.res.ColorStateList;
 import android.graphics.PixelFormat;
 import android.os.Build;
 import android.os.Handler;
@@ -22,7 +22,9 @@ import android.provider.Settings;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 /**
@@ -44,6 +46,7 @@ public final class BootShieldService extends Service {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private View shield;
     private TextView countdown;
+    private ProgressBar progress;
     private long startedAt;
 
     private BroadcastReceiver unlockWait;
@@ -72,8 +75,10 @@ public final class BootShieldService extends Service {
         notifications.createNotificationChannel(new NotificationChannel(CHANNEL,
                 getString(R.string.boot_shield_title), NotificationManager.IMPORTANCE_LOW));
         Notification notification = new Notification.Builder(this, CHANNEL)
-                .setSmallIcon(R.drawable.ic_hisn).setContentTitle(getString(R.string.boot_shield_title))
-                .setContentText(getString(R.string.boot_shield_body)).build();
+                .setSmallIcon(R.drawable.ic_shield).setColor(getColor(R.color.accent))
+                .setContentTitle(getString(R.string.boot_shield_title))
+                .setContentText(getString(R.string.boot_shield_body))
+                .setShowWhen(false).setCategory(Notification.CATEGORY_SERVICE).build();
         if (Build.VERSION.SDK_INT >= 34) {
             startForeground(3, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
         } else {
@@ -101,29 +106,48 @@ public final class BootShieldService extends Service {
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setGravity(Gravity.CENTER);
-        layout.setBackgroundColor(Color.rgb(16, 20, 28));
-        int pad = (int) (32 * getResources().getDisplayMetrics().density);
-        int under = (int) (200 * getResources().getDisplayMetrics().density);
+        layout.setBackgroundColor(Ui.color(this, R.color.background));
+        int pad = Ui.dp(this, 32);
+        int under = Ui.dp(this, 200);
         // The window extends past the screen bottom by "under"; padding keeps the text centred.
         layout.setPadding(pad, pad, pad, pad + under);
-        TextView title = new TextView(this);
-        title.setText(R.string.boot_shield_title);
-        title.setTextColor(Color.WHITE);
-        title.setTextSize(24);
+
+        ImageView mark = Ui.iconInTile(this, R.drawable.ic_shield, R.color.accent, 68, 40);
+        LinearLayout.LayoutParams markParams = (LinearLayout.LayoutParams) mark.getLayoutParams();
+        markParams.gravity = Gravity.CENTER_HORIZONTAL;
+        layout.addView(mark);
+
+        TextView title = Ui.text(this, getString(R.string.boot_shield_title), 24, R.color.text_primary);
+        title.setTypeface(Ui.medium());
         title.setGravity(Gravity.CENTER);
-        TextView body = new TextView(this);
-        body.setText(R.string.boot_shield_body);
-        body.setTextColor(Color.rgb(200, 204, 212));
-        body.setTextSize(16);
-        body.setGravity(Gravity.CENTER);
-        body.setPadding(0, pad / 2, 0, pad / 2);
-        countdown = new TextView(this);
-        countdown.setTextColor(Color.WHITE);
-        countdown.setTextSize(40);
-        countdown.setGravity(Gravity.CENTER);
+        title.setPadding(0, Ui.dp(this, 20), 0, 0);
         layout.addView(title);
+        TextView body = Ui.text(this, getString(R.string.boot_shield_body), 16, R.color.text_secondary);
+        body.setGravity(Gravity.CENTER);
+        body.setPadding(0, Ui.dp(this, 10), 0, 0);
         layout.addView(body);
+
+        countdown = Ui.text(this, "", 48, R.color.accent);
+        countdown.setTypeface(Ui.medium());
+        countdown.setGravity(Gravity.CENTER);
+        countdown.setPadding(0, Ui.dp(this, 18), 0, 0);
+        countdown.setFontFeatureSettings("tnum");
         layout.addView(countdown);
+
+        ProgressBar progress = new ProgressBar(this, null,
+                android.R.attr.progressBarStyleHorizontal);
+        progress.setMax(1000);
+        progress.setProgress(0);
+        progress.setProgressTintList(ColorStateList.valueOf(Ui.color(this, R.color.accent)));
+        progress.setProgressBackgroundTintList(ColorStateList.valueOf(
+                Ui.color(this, R.color.surface_alt)));
+        LinearLayout.LayoutParams progressParams = new LinearLayout.LayoutParams(
+                Ui.dp(this, 180), Ui.dp(this, 4));
+        progressParams.gravity = Gravity.CENTER_HORIZONTAL;
+        progressParams.topMargin = Ui.dp(this, 16);
+        layout.addView(progress, progressParams);
+        this.progress = progress;
+
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
@@ -156,6 +180,9 @@ public final class BootShieldService extends Service {
             long left = Math.max(0, MIN_MILLIS - elapsed);
             countdown.setText(left > 0 ? String.valueOf((left + 999) / 1000)
                     : getString(R.string.boot_shield_waiting));
+            if (progress != null) {
+                progress.setProgress((int) Math.min(1000, elapsed * 1000 / MIN_MILLIS));
+            }
             handler.postDelayed(this, 250);
         }
     };

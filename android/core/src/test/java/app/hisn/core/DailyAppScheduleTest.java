@@ -94,6 +94,30 @@ public final class DailyAppScheduleTest {
         check(!disabled.preserves(daytime, apps(ONE)), "partial permanent coverage is insufficient");
         check(new DailyAppSchedule(true, 540, 1020, apps(ONE)).preserves(daytime, apps(TWO)), "mixed schedule and permanent coverage");
         check(!new DailyAppSchedule(true, 541, 1020, apps(ONE)).preserves(daytime, apps(TWO)), "mixed coverage cannot lose minutes");
+
+        // Allowlist mode: every app except the kept ones is blocked inside the window.
+        DailyAppSchedule night = new DailyAppSchedule(true, 1320, 420, apps(ONE), true);
+        check(night.isConfigured() && night.allApps, "allowlist schedule not configured");
+        check(new DailyAppSchedule(true, 1320, 420, apps(), true).isConfigured(), "empty allowlist has no coverage");
+        check(night.blocks(TWO, 1320) && !night.blocks(ONE, 1320), "allowlist blocks the unkept app only");
+        check(!night.blocks(TWO, 600) && !night.blocks(ONE, 600), "allowlist blocks nothing outside its window");
+        check(!night.blocks(null, 1320), "allowlist blocked a null package");
+        check(night.targets(TWO) && !night.targets(ONE) && night.selects(TWO, 1320), "allowlist targets wrong app");
+        check(!night.selects(TWO, 1200), "allowlist armed too early");
+        check(night.selects(TWO, 1310), "allowlist not armed before the window");
+        check(!night.selects(ONE, 1320), "allowlist watched a kept app");
+        check(daytime.selects(ONE, 0) && daytime.selects(ONE, 600), "blocklist no longer watched all day");
+        check(!new DailyAppSchedule(false, 1320, 420, apps(ONE), true).blocks(TWO, 1320), "disabled allowlist blocked");
+
+        // Mode changes are judged by coverage, not by the menu used.
+        check(!new DailyAppSchedule(true, 540, 1020, apps(ONE), true).preserves(daytime, apps()), "blocklist moved to keep list");
+        check(new DailyAppSchedule(true, 480, 1080, apps(THREE), true).preserves(daytime, apps()), "blocklist became a wider allowlist");
+        check(!night.preserves(daytime, apps()), "blocklist became a narrower allowlist");
+        check(!daytime.preserves(night, apps()), "allowlist cannot become a blocklist");
+        check(new DailyAppSchedule(true, 1320, 420, apps(), true).preserves(night, apps()), "allowlist exemptions can shrink");
+        check(!new DailyAppSchedule(true, 1320, 420, apps(ONE, TWO), true).preserves(night, apps()), "allowlist exemption can grow");
+        check(!new DailyAppSchedule(true, 1321, 420, apps(ONE), true).preserves(night, apps()), "allowlist window can shrink");
+        check(new DailyAppSchedule(true, 1260, 480, apps(ONE), true).preserves(night, apps()), "allowlist window can expand");
         check(new DailyAppSchedule(true, 1260, 480, apps(ONE)).preserves(overnight, apps()), "overnight window can expand");
         check(!new DailyAppSchedule(true, 1321, 420, apps(ONE)).preserves(overnight, apps()), "overnight start cannot shrink");
         check(!new DailyAppSchedule(true, 1320, 419, apps(ONE)).preserves(overnight, apps()), "overnight end cannot shrink");

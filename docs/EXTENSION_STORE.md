@@ -1,4 +1,4 @@
-# Chrome Web Store readiness — Hisn Protection 1.2.1
+# Chrome Web Store readiness — Hisn Protection 1.2.2
 
 This is the owner-facing record for publishing the extension. It is not a
 listing that exists yet. The packaged zip is built by `extension/package.sh`;
@@ -136,7 +136,7 @@ the previous generation on failure.
 ## Checklist
 
 - [ ] Chrome Web Store developer account and fee.
-- [ ] Upload `dist/hisn-extension-1.2.1.zip`; unlisted first.
+- [ ] Upload `dist/hisn-extension-1.2.2.zip`; unlisted first.
 - [ ] Fill listing, privacy practices and permission justifications from above.
 - [ ] Add 128 px icon and at least one screenshot; the package already has icons.
 - [ ] Read the assigned store ID and wire both native messaging and policy.

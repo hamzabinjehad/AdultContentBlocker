@@ -31,6 +31,12 @@ TEXTS = [
 ]
 
 
+def core_fill_sources():
+    """Sources whose selected subset is bundled in the core tier."""
+    data = json.loads(SOURCES.read_text())
+    return set((data.get("core_fill") or {}).get("sources", []))
+
+
 def sources():
     data = json.loads(SOURCES.read_text())
     entries = []
@@ -61,17 +67,22 @@ Domain-list sources
 
 
 def source_section():
+    fill = core_fill_sources()
     lines = []
     for entry in sources():
         lines.append(f"{entry['id']}  [{entry['tier']}]")
         lines.append(f"  Licence: {entry['license']}")
         lines.append(f"  Upstream: {entry['url']}")
+        if entry["id"] in fill:
+            lines.append("  Bundled: a selected, corroborated subset is in the core tier.")
         if entry["note"]:
             lines.append(f"  Note: {entry['note']}")
         lines.append("")
-    lines.append("A source marked extended is not bundled in the browser or Safari "
-                 "core tier; it is used by the full Mac/DNS list build. The upstream "
-                 "terms above still apply to that build.")
+    lines.append("A source marked extended is not bundled in full: it is used by "
+                 "the full Mac/DNS list build. Sources marked Bundled above also "
+                 "contribute a selected subset to the browser, Safari and Android "
+                 "core tier; the signed manifest records how many. The upstream "
+                 "terms above apply to every build.")
     return "\n".join(lines) + "\n"
 
 

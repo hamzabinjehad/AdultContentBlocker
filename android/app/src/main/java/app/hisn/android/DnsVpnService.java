@@ -132,10 +132,12 @@ public final class DnsVpnService extends VpnService {
         PendingIntent open = PendingIntent.getActivity(context, 0, new Intent(context, MainActivity.class),
                 PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         notifications.notify(ALERT_ID, new Notification.Builder(context, ALERT_CHANNEL)
-                .setSmallIcon(R.drawable.ic_hisn).setContentTitle(context.getString(R.string.dns_stopped_title))
+                .setSmallIcon(R.drawable.ic_shield).setColor(context.getColor(R.color.accent))
+                .setContentTitle(context.getString(R.string.dns_stopped_title))
                 .setContentText(context.getString(body))
                 .setStyle(new Notification.BigTextStyle().bigText(context.getString(body)))
-                .setContentIntent(open).setAutoCancel(true).build());
+                .setContentIntent(open).setAutoCancel(true)
+                .setCategory(Notification.CATEGORY_ERROR).build());
     }
 
     /** Debug fixture only: simulate a callback without changing Android network settings. */
@@ -295,10 +297,12 @@ public final class DnsVpnService extends VpnService {
         PendingIntent open = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class),
                 PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         return new Notification.Builder(this, CHANNEL)
-                .setSmallIcon(R.drawable.ic_hisn).setContentTitle(getString(R.string.dns_notification_title))
+                .setSmallIcon(R.drawable.ic_shield).setColor(getColor(R.color.accent))
+                .setContentTitle(getString(R.string.dns_notification_title))
                 .setContentText(getString(text))
                 .setStyle(new Notification.BigTextStyle().bigText(getString(text) + "\n" + getString(R.string.dns_notification_body)))
-                .setContentIntent(open).setOngoing(true).setOnlyAlertOnce(true).build();
+                .setContentIntent(open).setOngoing(true).setOnlyAlertOnce(true)
+                .setShowWhen(false).setCategory(Notification.CATEGORY_SERVICE).build();
     }
 
     private void alert(int body) {

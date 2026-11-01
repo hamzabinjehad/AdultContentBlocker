@@ -12,6 +12,19 @@ this folder. It coordinates the existing plans rather than replacing them:
 - [Publishing plan](PUBLISHING_PLAN.md) — release tracks and ship-blockers.
 - [Test matrix](TEST_MATRIX.md) — what is demonstrated, inferred or manual.
 
+> **Execution update (2026-10-30, seed v5 coverage pass):** the bundled core
+> grows from 159,768 to **239,885 domains** (+50.1%) on the extension, six
+> Safari blockers and the Android seed. Safari capacity rises from 4 × 40,000
+> to 6 × 40,000 rules; the extension's static ruleset goes from 320 to 480.
+> 114,691 of the new domains come from `core_fill`: domains that both
+> `blocklistproject-porn` (Unlicense) and `oisd-nsfw` (free commercial) carry
+> and that also carry an adult TLD, token or IDN label. The 1,261 deferred
+> domains and the 115-entry headroom are in the signed manifest.
+> [The coverage pass record](COVERAGE_PASS_2026-10-30.md) lists every suite and
+> the honest limits. The Mac still falls back to the core tier until a
+> published generation installs the 5,276,448-domain full list; no signed
+> build, device or `lists` branch is claimed.
+
 > **Execution update (2026-10-30, Extension 1.2.1):** the extension is
 > store-ready in the repository: `short_name`/`homepage_url`, an options footer
 > with the on-device statement, version and privacy/support links, the unused
@@ -108,11 +121,11 @@ distribution and freshness — not a missing feature list.
 
 | Platform | Code state | Release state | The real gap |
 | --- | --- | --- | --- |
-| Chromium extension | 1.2.1 development candidate (short-video/pause, list freshness, clearer list blocks, store metadata and footer) | Not on the Chrome Web Store; unpacked only | Store publication, managed force-install, real store-ID wiring and a clean-profile acceptance pass |
-| Mac | 1.1.5; filter, browser guard, guardian split, profile, partner key and root guardian daemon | Unsigned, unnotarized, no app updater | A signed `.pkg`, an update path, and the hardware checks in `TEST_MATRIX.md` |
-| iPhone/iPad | 1.1.3 development; Screen Time, Safari blockers, vault, supervised profile, privacy manifest, signed-list age and settings policy links | No Apple team, no Family Controls entitlement, no device | Entitlement, a disposable iPhone, device acceptance of every lock level |
-| Android | 0.8.1 preview; direct-build uninstall guard, boot shield, opt-in device-owner managed lockdown (Safe Mode, all-app controls, factory reset, VPN and Android 10+ Private DNS), a visible 15-minute layer watchdog, and a 90-day bundled-list warning | No signed production APK; device-owner flow unproven | A disposable device-owner phone, real restriction refusals and release, layer-loss device run, signed release |
-| Lists | Signed seed v4 built 2026-10-01 | **No `lists` branch on origin** | Publish signed daily generations; update iOS and Android |
+| Chromium extension | 1.2.2 development candidate; seed v5 core, 480 static rules, short-video/pause, list freshness, store metadata and footer | Not on the Chrome Web Store; unpacked only | Store publication, managed force-install, real store-ID wiring and a clean-profile acceptance pass |
+| Mac | 1.1.6; seed v5 core fallback, filter, browser guard, guardian split, profile, partner key and root guardian daemon | Unsigned, unnotarized, no app updater | A signed `.pkg`, an update path, the full published list, and the hardware checks in `TEST_MATRIX.md` |
+| iPhone/iPad | 1.1.4 development; six Safari blockers (239,885 domains), Screen Time, vault, supervised profile, privacy manifest, signed-list age and settings policy links | No Apple team, no Family Controls entitlement, no device | Entitlement, a disposable iPhone, device acceptance of every lock level and all six blockers |
+| Android | 0.8.2 preview; seed v5 core, direct-build uninstall guard, boot shield, opt-in device-owner managed lockdown (Safe Mode, all-app controls, factory reset, VPN and Android 10+ Private DNS), a visible 15-minute layer watchdog, and a 90-day bundled-list warning | No signed production APK; device-owner flow unproven | A disposable device-owner phone, real restriction refusals and release, layer-loss device run, signed release |
+| Lists | Signed seed v5 built 2026-10-30 | **No `lists` branch on origin** | Publish signed daily generations; update iOS and Android |
 
 A Windows policy generator (`profile/make_windows_policy.py`, with tests) and a
 setup guide ([Windows setup](WINDOWS_SETUP.md)) now exist. The policy
@@ -143,7 +156,7 @@ compiling.
 
 These suites ran against `release/1.0` plus the 0.7.0/0.8.0 work. The 0.6.0
 device evidence in the Android record is from the pre-merge `android-0.6.0`
-branch (versionCode 15); the current Android build is 0.8.1 (versionCode 21),
+branch (versionCode 15); the current Android build is 0.8.2 (versionCode 22),
 and that build has not been run on a phone.
 
 ### 1.3 Integration debt
@@ -504,24 +517,24 @@ fastest way to lose trust. Today:
 
 | Surface | Domain list | Page text | Visual | Short video | Native apps |
 | --- | --- | --- | --- | --- | --- |
-| Chromium extension | 159,768 core domains (about 320 static rules); a list update refreshes the same core tier, not the long tail | Yes (ar/en/de, evasion) | Opt-in, hide-first on supported sites | Opt-in (YouTube, Instagram, Facebook, Snapchat, TikTok) | No |
-| Mac content filter | 5,248,731 full-list domains once a generation is installed; the bundled seed is the 159,768 core tier | No native-app text | No | No | All apps at host/flow level |
-| Safari on iPhone/iPad | ~160k domains in four blockers; Screen Time web filter | Safari extension | Opt-in local | No | WebKit only |
-| Android DNS | 159,768 bundled core domains | Selected apps via accessibility | Selected apps, Android 14+ | Selected apps | Selected apps only |
+| Chromium extension | 239,885 core domains (480 static rules); a list update refreshes the same core tier, not the long tail | Yes (ar/en/de, evasion) | Opt-in, hide-first on supported sites | Opt-in (YouTube, Instagram, Facebook, Snapchat, TikTok) | No |
+| Mac content filter | 5,276,448 full-list domains once a generation is installed; the bundled seed is the 239,885 core tier | No native-app text | No | No | All apps at host/flow level |
+| Safari on iPhone/iPad | ~240k domains in six blockers; Screen Time web filter | Safari extension | Opt-in local | No | WebKit only |
+| Android DNS | 239,885 bundled core domains | Selected apps via accessibility | Selected apps, Android 14+ | Selected apps | Selected apps only |
 | Router / DNS | The resolver's categories, not Hisn's list | No | No | No | Any device on that network |
 
 There are three list tiers, and they are not interchangeable:
 
-1. **Core tier (~160k):** what the browser, the four Safari blockers and the
+1. **Core tier (~240k):** what the browser, the six Safari blockers and the
    Android seed can hold. The extension's static rules and its downloaded
    generation both use this tier; a list update refreshes it and the keyword
    layer, and does not add the long tail.
-2. **Full list (5,248,731 domains in the signed seed build):** what the Mac
+2. **Full list (5,276,448 domains in the signed seed build):** what the Mac
    socket filter and DNS can hold. It is not shipped to the extension or Safari.
 3. **Keyword layer (~5.8k terms):** page-text scoring, independent of the
    domain tier.
 
-Until the `lists` branch exists, every client is frozen at the 2026-10-01
+Until the `lists` branch exists, every client is frozen at the 2026-10-30
 seed. That is the single largest freshness gap. It is not a 3× extension gap:
 the extension is not supposed to carry the full list.
 
@@ -551,7 +564,7 @@ licences require it.
 2. **Signed updates for iOS and Android.** Today only Mac and Chromium
    download generations. The iOS Safari blockers and the Android DNS seed
    change only with a new app build. Add signature checks, rollback
-   rejection and capacity checks (four Safari parts under 40k each).
+   rejection and capacity checks (six Safari parts under 40k each).
 3. **Text quality.** Expand the labelled corpus, keep the evasion rules
    bounded, and make context scoring local. Never lower thresholds to make
    the numbers look better.
@@ -613,7 +626,7 @@ Sizes: S ≤ 2 days, M ≤ 1 week, L ≤ 3 weeks, XL > 3 weeks.
 | W0.3 | Create `release/1.0`, a version matrix and a changelog; tag the integration point | All | S | Every platform version is pinned in one file. **Done 2026-10-29:** `versions.json`, `docs/VERSIONS.md`, `CHANGELOG.md` and the check |
 | W1.1 | Publish the `lists` branch | Lists | S | `curl -I .../lists/manifest.json` is 200; clients install v5+ |
 | W1.2 | Signed list updates for iOS Safari blockers and Android DNS | iOS, Android | L | A published generation changes enforcement without a new app build. **Android decision 2026-10-30:** APK-only for 1.0; the UI states it and warns at 90 days. Runtime Android downloads deferred to 1.1. iOS still open |
-| W1.3 | Extension store beta: 1.2.1 metadata/footer/package, unlisted listing | Extension | M | Store build passes the browser suite; real ID wired. **Repository side done 2026-10-30:** 1.2.1 packaged and documented; account/upload/review and ID wiring remain |
+| W1.3 | Extension store beta: 1.2.2 metadata/footer/package, unlisted listing | Extension | M | Store build passes the browser suite; real ID wired. **Repository side done 2026-10-30:** 1.2.2 packaged with seed v5 and documented; account/upload/review and ID wiring remain |
 | W1.4 | Per-surface list coverage: document the core / full split; make each client state its tier | Extension, iOS, Android | M | A coverage table is generated per release; no client claims the full list. **Done 2026-10-29:** `docs/COVERAGE.md` generated from the signed seed |
 | W1.5 | Text corpus: 500 labelled cases per language and a CI regression gate | All | L | A vocabulary change reports misses and false blocks per language |
 | W1.6 | Visual: licensed benchmark, hide-first audit, video sampling | Chromium, Safari, Android | L | Recall/false-hide numbers with denominators; no pre-verdict adult frame |

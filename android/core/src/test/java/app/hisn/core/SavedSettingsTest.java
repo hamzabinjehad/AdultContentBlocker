@@ -52,7 +52,13 @@ public final class SavedSettingsTest {
                 && rules.apps.equals(set("com.example.one")) && rules.scans.equals(set("com.example.scan")), "Rules read back");
         check(rules.managedLockdown, "Managed lockdown read back");
         check(rules.schedule.enabled && rules.schedule.startMinute == 1200 && rules.schedule.endMinute == 360
-                && rules.schedule.apps.equals(set("com.example.night")), "Schedule read back");
+                && rules.schedule.apps.equals(set("com.example.night")) && !rules.schedule.allApps, "Schedule read back");
+        Map<String, Object> allowValues = new HashMap<>(SavedSettings.values("", "", set(), set(), false, false,
+                false, false, false, new DailyAppSchedule(true, 1200, 360, set("com.example.keep"), true),
+                new CommitmentClock(0, 40000, BOOT), false, false));
+        check(SavedSettings.rules(allowValues).schedule.allApps
+                && SavedSettings.rules(allowValues).schedule.apps.equals(set("com.example.keep")),
+                "Allowlist schedule read back");
         check(intact.clock.remainingAtCheckpoint == 3600000 && intact.clock.elapsedAtCheckpoint == 40000
                 && intact.clock.bootAtCheckpoint == BOOT && !intact.unknown && !intact.restored, "Commitment read back");
         SavedSettings.Load flagged = load(saved(1000, true, true, "com.example.one"), none, true);
@@ -109,6 +115,7 @@ public final class SavedSettingsTest {
         check(upgrade.source == SettingsIntegrity.Source.UNSEALED && upgrade.rewrite && !upgrade.unknown && !upgrade.restored
                 && upgrade.clock.remainingAtCheckpoint == 86400000L && upgrade.clock.bootAtCheckpoint == 3
                 && SavedSettings.rules(upgrade.rules).schedule.startMinute == 1320
+                && !SavedSettings.rules(upgrade.rules).schedule.allApps
                 && !SavedSettings.rules(upgrade.rules).managedLockdown, "Upgrade from 0.5.3");
         Map<String, Object> legacyInvalid = new HashMap<>(legacy);
         legacyInvalid.put("remaining", 5);

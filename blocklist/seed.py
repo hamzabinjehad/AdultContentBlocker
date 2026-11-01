@@ -100,8 +100,12 @@ HEX64 = re.compile(r"\b[0-9a-f]{64}\b")
 MIN_DOMAIN_COUNT = 100_000
 
 # The core tier is what the filter starts from and all the browser carries. A
-# normal build has ~117,000; a seed far below that lost its core sources.
+# normal build has ~240,000; a seed far below that lost its core sources.
 MIN_CORE_COUNT = 50_000
+
+# Six Safari parts of 40,000 rules. Kept here as a backstop for a seed cut by
+# an older builder; build.py enforces the same number from sources.json.
+CORE_CAPACITY = 240_000
 
 
 def sha256_file(path: Path) -> str:
@@ -229,6 +233,11 @@ def verify(repo: Path = REPO) -> list[str]:
         if claimed is not None and claimed != len(core):
             problems.append(f"seed/domains_core.txt: {len(core):,} domains, the signed "
                             f"manifest says {claimed:,}")
+        capacity = int(manifest.get("core_capacity", CORE_CAPACITY))
+        if len(core) > capacity:
+            problems.append(f"seed/domains_core.txt: {len(core):,} domains exceeds "
+                            f"the {capacity:,} bundled capacity — the Safari parts "
+                            f"cannot carry it")
         rules = dnr_rules(core, "block", limit=max(len(core), 1))
         if serialize_dnr(rules).encode("utf-8") != rules_path.read_bytes():
             problems.append("extension/rules/dnr_block_rules.json is not what "

@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """The APK's "Licenses and sources" screen must cover every list source it bundles.
 
-The APK ships seed/domains_core.txt, built from the enabled core-tier sources in
-blocklist/sources.json. A source added there without a notice here fails this
-check, as does a bundled license file the screen does not list, or a summary
-that names a source in one language only. Run by test-core.sh.
+The APK ships seed/domains_core.txt, built from the enabled core-tier sources
+plus the selected `core_fill` subset in blocklist/sources.json. A source added
+there without a notice here fails this check, as does a bundled license file
+the screen does not list, or a summary that names a source in one language
+only. Run by test-core.sh.
 """
 import json
 import pathlib
@@ -21,6 +22,11 @@ SOURCES = {
     "sinfonietta-porn": ("Sinfonietta/hostfiles", "licenses/Sinfonietta-hostfiles-MIT.txt"),
     "hagezi-nsfw": ("hagezi/dns-blocklists", "licenses/GPL-3.0.txt"),
     "chadmayfield-top1m": ("chadmayfield/my-pihole-blocklists", "licenses/GPL-3.0.txt"),
+    # The two fill sources are partly bundled. Their upstream terms are linked
+    # in the summary; neither asks Hisn to reproduce a full text in the APK,
+    # so the path is None and only the summary name is checked.
+    "blocklistproject-porn": ("The Block List Project", None),
+    "oisd-nsfw": ("oisd", None),
 }
 # Imported German terms in seed/terms.json (blocklist/terms/terms.de-import.tsv).
 TERMS = ("LDNOOBW", "licenses/LDNOOBW-CC-BY-4.0.txt")
@@ -37,15 +43,18 @@ def main():
     core = [s["id"] for s in config["sources"] if s.get("enabled", True) and s.get("tier") == "core"]
     if not core:
         problems.append("blocklist/sources.json lists no enabled core-tier source")
+    fill = (config.get("core_fill") or {}).get("sources", [])
+    if not fill:
+        problems.append("blocklist/sources.json has no core_fill sources")
     summaries = {"en": summary("values"), "ar": summary("values-ar")}
     required = [TERMS]
-    for source in core:
+    for source in core + fill:
         if source not in SOURCES:
-            problems.append(f"core source {source} is bundled in the APK but has no notice")
+            problems.append(f"bundled source {source} has no notice")
         else:
             required.append(SOURCES[source])
     for name, path in required:
-        if not (ASSETS / path).is_file():
+        if path is not None and not (ASSETS / path).is_file():
             problems.append(f"{path}: license text missing")
         for language, text in summaries.items():
             if name not in text:
@@ -64,8 +73,9 @@ def main():
         problems.append("extension/visual: engine license file or notices missing")
     if problems:
         raise SystemExit("Notice check failed:\n" + "\n".join(problems))
-    print(f"Notices passed ({len(core)} core list sources, the imported word list and "
-          f"{len(listed)} list license files, English and Arabic summaries)")
+    print(f"Notices passed ({len(core)} core list sources, {len(fill)} fill sources, "
+          f"the imported word list and {len(listed)} list license files, "
+          f"English and Arabic summaries)")
 
 
 if __name__ == "__main__":

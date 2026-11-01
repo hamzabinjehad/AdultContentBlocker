@@ -4,7 +4,7 @@
 "setup.status.checking" = "Checking the current layers";
 "setup.status.incomplete" = "Protection setup needs attention";
 "setup.status.configured" = "All three layer configurations verified";
-"setup.status.scope" = "This checks nonempty Safari rules, all four Safari switches, Hisn's Screen Time web filter and enabled Family DNS. It does not verify Hisn Text's website access or selected-app shields. It is configuration evidence—not proof of device-wide blocking or removal prevention. No button marks setup complete.";
+"setup.status.scope" = "This checks nonempty Safari rules, all six Safari switches, Hisn's Screen Time web filter and enabled Family DNS. It does not verify Hisn Text's website access or selected-app shields. It is configuration evidence—not proof of device-wide blocking or removal prevention. No button marks setup complete.";
 "setup.status.mixedcontent" = "Mixed-content apps such as X can still contain adult content. In Setup, you can block only the native app and use its website with Hisn Text enabled and permitted in Safari. Optional local visual checks are experimental; neither text nor visual checks inspect every app, image or video.";
 "setup.next.check" = "Check the live state first. Downloading Hisn or starting a commitment does not activate these layers.";
 "setup.next.list" = "The bundled Safari rules are missing, empty or could not be verified. Install a verified Hisn build; do not rely on Safari switches alone.";
@@ -58,12 +58,12 @@
 "dns.simulator" = "DNS activation needs a signed build on a real iPhone or iPad. The simulator cannot verify it.";
 "dns.failed" = "DNS setup did not finish. Check your signing capabilities and device Settings, then try again.";
 "safari.title" = "Safari protection";
-"safari.enabled" = "All four Safari parts are enabled. This is an extension-state check, not a browsing test.";
-"safari.partial" = "Full Safari coverage is not verified. Enable all four Hisn parts in Safari Settings, then check again.";
+"safari.enabled" = "All six Safari parts are enabled. This is an extension-state check, not a browsing test.";
+"safari.partial" = "Full Safari coverage is not verified. Enable all six Hisn parts in Safari Settings, then check again.";
 "safari.steps" = "In Settings → Apps → Safari → Extensions (or Content Blockers), enable Hisn 1, 2, 3 and 4. Reload the rules here, then check status. Menu labels may differ by iOS version.";
 "safari.reload" = "Reload Safari rules";
 "safari.scope" = "Hisn's domain list blocks matching Safari requests. It does not read page text or filter other apps.";
-"safari.failed" = "At least one Safari part could not reload. Check that all four are enabled and retry. No successful empty list was substituted.";
+"safari.failed" = "At least one Safari part could not reload. Check that all six are enabled and retry. No successful empty list was substituted.";
 "list.title" = "Shared signed list";
 "list.domains" = "Domains bundled";
 "list.version" = "List version";
@@ -189,7 +189,7 @@
 "browserfirst.visual.appearance" = "Person blur uses detected faces. Women and men are appearance estimates, not identity or an adult-content judgment. The estimate can be wrong and people can be missed.";
 "browserfirst.visual.unverified" = "Visual settings belong to Safari; this app does not verify them. Physical-device visual detection is not yet verified. Only accessible images and sampled video frames can be checked.";
 "browserfirst.details" = "App blocking and coverage limits";
-"safari.parts.details" = "Review all four domain blockers";
+"safari.parts.details" = "Review all six domain blockers";
 "removal.setup.title" = "Set up removal protection";
 "removal.setup.mobile" = "On iPhone and iPad, Chrome management policies do not protect Hisn. A parent can restrict app deletion using Screen Time. Individual self-control authorization does not prevent deletion. This app cannot verify every manual Screen Time restriction; follow the Apple guide and test the settings with your guardian. Keep recovery access available.";
 "overview.details" = "About your protection";
@@ -198,7 +198,7 @@
 "limited.listReady" = "Bundled domain list verified";
 "limited.listUnavailable" = "Bundled list could not be verified";
 "limited.configOnly" = "Enabled status is a configuration check, not proof that every page or media item is blocked. Hisn Text access is checked separately in Safari.";
-"limited.steps" = "Open Settings → Apps → Safari → Extensions. Enable Hisn 1, 2, 3 and 4. Use all four parts for the complete bundled domain list. Reload Safari tabs afterward.";
+"limited.steps" = "Open Settings → Apps → Safari → Extensions. Enable Hisn 1–6. Use all six parts for the complete bundled domain list. Reload Safari tabs afterward.";
 "limited.textSteps" = "Also enable Hisn Text and grant access to the websites you want checked. Its settings offer local text checks and optional experimental visual checks. Detection can miss content.";
 "limited.appleGuide" = "Apple’s Safari extension guide";
 "limited.limitsTitle" = "What this edition cannot do";
@@ -206,7 +206,7 @@
 "limited.expiry" = "Personal Team builds are temporary. When the development signing expires, reconnect to Xcode to rebuild and reinstall. Do not rely on expired builds for protection.";
 "limited.privacy" = "Checks stay on your device. This edition does not record browsing history or configure a DNS service.";
 "limited.domainOnlyScope" = "This build checks configuration of Safari domain blocking only. It does not inspect page text, images or videos. Enabled does not mean every route is blocked.";
-"limited.domainOnlySteps" = "This build contains four domain blockers only. There is no Hisn Text scanner in this edition; unsuitable content inside mixed-content sites can remain accessible.";
+"limited.domainOnlySteps" = "This build contains six domain blockers only. There is no Hisn Text scanner in this edition; unsuitable content inside mixed-content sites can remain accessible.";
 "design.safari.configured" = "Safari parts enabled";
 "design.safari.attention" = "Review your Safari setup";
 "design.safari.parts" = "parts enabled";

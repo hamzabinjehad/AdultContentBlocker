@@ -4,26 +4,26 @@
 > manifests. Do not edit by hand: change `versions.json` and the platform
 > manifest together, then run `python3 script/versions.py`.
 
-Pinned on `release/1.0`, updated 2026-10-30. A platform
+Pinned on `release/1.0`, updated 2026-11-01. A platform
 version means what that platform's own manifest says; it is not a claim that a
 signed artifact has shipped. The state column is the honest release state.
 
 | Platform | Version | Build | State | Source of truth |
 | --- | --- | --- | --- | --- |
-| Browser extension (Chromium) | 1.2.1 | — | development · unpacked, no store listing | `extension/manifest.json` |
-| Mac | 1.1.5 | 9 | development · unsigned, needs Developer ID and notarization | `macos/Hisn.xcodeproj/project.pbxproj` |
-| iPhone & iPad | 1.1.3 | 4 | development · no Apple team, Family Controls entitlement or test device | `ios/HisnMobile.xcodeproj/project.pbxproj` |
-| Android | 0.8.1 | 21 | preview · unsigned; direct builds add the -direct suffix | `android/app/build.gradle` |
+| Browser extension (Chromium) | 1.2.2 | — | development · unpacked, no store listing | `extension/manifest.json` |
+| Mac | 1.1.6 | 10 | development · unsigned, needs Developer ID and notarization | `macos/Hisn.xcodeproj/project.pbxproj` |
+| iPhone & iPad | 1.1.4 | 5 | development · no Apple team, Family Controls entitlement or test device | `ios/HisnMobile.xcodeproj/project.pbxproj` |
+| Android | 0.8.4 | 24 | preview · unsigned; direct builds add the -direct suffix | `android/app/build.gradle` |
 
 ## Seed bundle
 
 | Field | Value |
 | --- | --- |
-| Version | 4 |
-| Built | 2026-10-01T20:29:42+00:00 |
+| Version | 5 |
+| Built | 2026-10-30T17:33:25+00:00 |
 | Schema | 1 |
-| Core tier (clients) | 159,768 domains |
-| Full list (Mac/DNS) | 5,248,731 domains |
+| Core tier (clients) | 239,885 domains |
+| Full list (Mac/DNS) | 5,276,448 domains |
 | Keyword layer | 5,831 terms |
 
 The seed is signed (`seed/manifest.json.sig`) and verified by
@@ -32,10 +32,10 @@ generation must beat; clients refuse a lower one.
 
 ## Version notes
 
-- **Browser extension (Chromium)** (`extension`): The packaged zip strips the development key; the Chrome Web Store ID will differ from the unpacked ID. 1.2.1 adds the options footer, store metadata and store-readiness record.
-- **Mac** (`macos`): Every target must carry the same MARKETING_VERSION and CURRENT_PROJECT_VERSION; 1.1.5 adds the root guardian daemon packaging.
-- **iPhone & iPad** (`ios`): The app, Safari blockers and HisnActivityMonitor share one version set; 1.1.3 adds the privacy manifest, export compliance, signed list age and policy links.
-- **Android** (`android`): versionCode is monotonic and must increase for every uploaded or side-loaded update. 21 adds the bundled-list freshness warning, watchdog status, the list-update decision and notification permission on top of 0.8.0 (API-29 Private DNS and the layer watchdog).
+- **Browser extension (Chromium)** (`extension`): The packaged zip strips the development key; the Chrome Web Store ID will differ from the unpacked ID. 1.2.2 ships the expanded 239,885-domain core tier (480 static rules) from seed v5.
+- **Mac** (`macos`): Every target must carry the same MARKETING_VERSION and CURRENT_PROJECT_VERSION; 1.1.6 bundles seed v5 and its expanded core tier while keeping the guardian-daemon packaging.
+- **iPhone & iPad** (`ios`): The app, six Safari blockers and HisnActivityMonitor share one version set; 1.1.4 raises Safari capacity from four to six 40,000-rule parts and bundles seed v5 (239,885 domains).
+- **Android** (`android`): versionCode is monotonic and must increase for every uploaded or side-loaded update. 24 lets the daily schedule block every app except a chosen keep list, and adds the browser-coverage screen from 23.
 
 ## Bumping a version
 

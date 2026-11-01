@@ -1,6 +1,7 @@
 # Hisn design guide — Apple HIG-informed
 
-Reviewed 2026-10-12. Applies to macOS, iOS, iPadOS and the browser extension.
+Reviewed 2026-10-12 and extended to Android on 2026-10-30. Applies to macOS,
+iOS, iPadOS, Android and the browser extension.
 This is a project design specification, not a claim that the current product
 passes every HIG or accessibility requirement. It does not change enforcement.
 
@@ -52,6 +53,32 @@ The redesigned builds have not replaced the installed Mac/phone apps. Test
 simulators were shut down; real browser profiles and device policies were not
 modified. Do not present this design pass as stronger content classification.
 
+### Android implementation pass — 2026-10-30
+
+Android now follows the shared hierarchy with three bottom-navigation
+destinations. Protection leads with one assessment headline, three layer tiles
+that pair a state word with colour, and a short list of the concrete reasons
+behind a warning; the long explanation is disclosed rather than removed. Rules
+uses switches whose summaries describe the layer, searchable app lists with an
+accessible checked state, line-counted editors and one grouped schedule form.
+Guide holds numbered setup steps, coverage limits, privacy, diagnostics, the
+local tester and notices. Day/night semantic surfaces, a single type scale,
+48 dp targets, heading traits and polite live regions replace hard-coded colours
+and one-second status rewrites. The system light/dark appearance is followed
+without an in-app override. Consent dialogs, `FLAG_SECURE` private screens and
+every coverage claim are unchanged.
+
+Evidence: debug and release builds pass, lint reports 0 errors (11 debug-only
+warnings remain), English/Arabic parity and core suites pass, and both Play and
+direct release APKs pass the release check. Twenty API 36 emulator captures
+cover light, dark, Arabic RTL, attention, restriction, commitment, dialogs,
+keyboard insets, 130% text and landscape; secure app chooser and editor windows were inspected
+through their accessibility tree instead. The capture folder and results are
+recorded in [ANDROID_UI_REFRESH.md](ANDROID_UI_REFRESH.md) and
+[design/android-ui-2026-10-30](../design/android-ui-2026-10-30/README.md).
+Physical-device, TalkBack, maximum-text-size and Arabic OEM rendering
+acceptance remain pending.
+
 ### Grouped-surface redesign — 2026-10-13
 
 The popup now separates summary, grouped layer rows and persistent actions with
@@ -96,6 +123,7 @@ all-device shield based on DNS configuration, app installation or one heartbeat.
 | Mac | Keep the existing sidebar: Overview, Protected Setup, Blocking Rules, Lock, Settings. Preserve selection and drafts; support resizing and keyboard navigation. |
 | iPhone | Keep familiar tab navigation. Give commitment and blocking rules clear destinations within the current structure before adding more tabs. Use stacked content, not squeezed desktop columns. |
 | iPad | Adapt to available width: sidebar/detail where useful, compact navigation in narrow multitasking. Do not depend on a fullscreen device size. |
+| Android | Bottom navigation with Protection, Rules and Guide. Lead with the assessment, then one next action; keep detailed evidence reachable. Cap reading width on tablets and landscape; preserve scroll positions and return to Protection on back. |
 | Extension | Status-first popup with in-popup editing and an optional full settings page. Preserve drafts while navigating; clearly distinguish browser-only and app-managed settings. |
 
 Apple references: [sidebars](https://developer.apple.com/design/human-interface-guidelines/sidebars),

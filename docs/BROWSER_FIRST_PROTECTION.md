@@ -124,7 +124,7 @@ Use synthetic fixtures, not live adult content or user browsing history:
 4. Test benign medical/educational discussion and exact host boundaries.
 5. On signed real iPhone and iPad, enable Hisn Text, grant/deny/revoke website
    permission, reload Safari, exercise private/profile settings, and confirm the
-   four domain blockers still work independently.
+   six domain blockers still work independently.
 6. Test intentional domain/strict rules and commitment app-selection restrictions
    separately. Preserve essential communication and recovery access.
 7. With visual opt-in, run the actual packaged engine on benign image/video

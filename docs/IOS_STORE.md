@@ -1,4 +1,4 @@
-# App Store readiness — Hisn iPhone & iPad 1.1.3
+# App Store readiness — Hisn iPhone & iPad 1.1.4
 
 Repository-side record for a TestFlight/App Store submission. It is not a
 listing and does not claim App Review approval. No Apple team or Family Controls
@@ -6,7 +6,7 @@ entitlement exists yet.
 
 ## Build and entitlement
 
-- Bundle: `app.hisn.mobile`, version **1.1.3 (4)**.
+- Bundle: `app.hisn.mobile`, version **1.1.4 (5)**.
 - The app and `HisnActivityMonitor` need the **Family Controls distribution
   entitlement**. The Safari blockers and `HisnText` are app extensions; the
   activity monitor has its own entitlement.
@@ -110,7 +110,7 @@ boot clock.
 4. Supervised device: install the profile, verify app removal is blocked and the
    profile needs its removal password; test the removal path.
 5. Record every result in [RELEASE_VALIDATION.md](RELEASE_VALIDATION.md) and
-   [IOS_1.1.3.md](IOS_1.1.3.md).
+   [the coverage pass record](COVERAGE_PASS_2026-10-30.md).
 
 ## Release checklist
 

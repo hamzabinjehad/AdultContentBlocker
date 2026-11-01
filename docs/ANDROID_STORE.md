@@ -1,4 +1,4 @@
-# Google Play readiness — Hisn Android 0.8.1
+# Google Play readiness — Hisn Android 0.8.2
 
 Repository-side record for a Play submission. It is **not** a Play listing and
 does not claim Play approval. The direct build and the Play build are different
@@ -113,6 +113,6 @@ because that feature is not Play-compliant.
       URLs and enter them in Play Console.
 - [ ] Internal testing on a clean phone; then closed testing.
 - [ ] Record the signed artifact hash, version code and certificate in
-      [ANDROID_0.8.1.md](ANDROID_0.8.1.md) or the 1.0 record.
+      [the coverage pass record](COVERAGE_PASS_2026-10-30.md) or the 1.0 record.
 - [ ] If Play rejects the accessibility declaration, ship the direct build and
       say so; do not remove the in-app disclosure to pass review.

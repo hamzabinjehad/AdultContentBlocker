@@ -46,7 +46,7 @@ higher one than it can show.
 | --- | --- | --- |
 | Screen Time web filter | Apple's automatic adult filter plus 49 custom sites in a named store; status reads it back | Not restored after relaunch if the filter was lost; revocation is silent in the background |
 | App limits | Always-on shields or daily budget through DeviceActivity; commitment allows only tightening | Moving the date forward starts a new budget day |
-| Safari content blockers | 4 × 40,000 rules from the signed seed, hash-checked, never truncated | 232 free slots; covers about 3% of the full list; list changes only with an app build |
+| Safari content blockers | 6 × 40,000 rules from the signed seed, hash-checked, never truncated | 115 free slots; covers about 4.5% of the full list; list changes only with an app build |
 | Safari text and image extension | Signed terms, per-post X/Twitter hiding, optional local visual checks | The app cannot see if it is on, allowed on sites or in Private Browsing |
 | Family DNS | Cloudflare Family DoH with honest enabled/saved status | The user can turn it off in Settings (only supervision locks it) |
 | Commitment | 1/7/30/90 days, extend only, Keychain plus mirror, unreadable counts as active | Trusts the wall clock after relaunch; does not lock Safari, extension or DNS layers |
@@ -72,7 +72,7 @@ that it was seen working on a phone.
 | Layer | Works (code) | Missing or wrong |
 | --- | --- | --- |
 | Screen Time app limits | Always-block shields and one shared daily budget (`ios/Hisn/AppUsageController.swift:60-116`, `ios/Shared/AppUsageConfiguration.swift:127-132`); the monitor shields at the threshold and keeps a reached budget for the day (`ios/HisnActivityMonitor/ActivityMonitor.swift:7-28`); during a commitment only tightening is accepted (`AppUsageConfiguration.swift:116-123`); health separates missing permission from stopped monitoring (`AppUsageConfiguration.swift:24-32`) | The budget day is the wall-clock date (`AppUsageConfiguration.swift:47-50`), so moving the date starts a new day; on iOS 16–17.3 a running budget cannot be edited (`AppUsageController.swift:77-79`); no daily time window like Android's schedule; no notice when access is revoked in the background |
-| Safari content blockers | Four blockers × 40,000 rules (`shared/apple/MobileProtectionPolicy.swift:6`, `:41-47`); each handler refuses a rule file whose SHA-256 or count does not match instead of loading an empty list (`ios/HisnBlocker/ContentBlockerRequestHandler.swift:16-23`); the app re-verifies all four parts once per launch (`ios/Hisn/ProtectionController.swift:413-438`) and reads each switch (`:354-363`) and reload result (`:395-411`) | The list changes only with an app build; about 160k of the published list's domains fit; no proof a page was blocked, only configuration |
+| Safari content blockers | Six blockers × 40,000 rules (`shared/apple/MobileProtectionPolicy.swift:8-10`, `:46-53`); each handler refuses a rule file whose SHA-256 or count does not match instead of loading an empty list (`ios/HisnBlocker/ContentBlockerRequestHandler.swift:16-23`); the app re-verifies all six parts once per launch (`ios/Hisn/ProtectionController.swift:733-760`) and reads each switch (`:675-682`) and reload result (`:720-727`) | The list changes only with an app build; 239,885 of the published list's domains fit; no proof a page was blocked, only configuration |
 | Safari text and visual extension | The shared on-device scorer replaces a blocked top-frame page with `blocked.html` (`ios/HisnWebExtension/background.js:130-170`); it never receives native messages (`ios/HisnWebExtension/SafariWebExtensionHandler.swift:5-8`) | The app cannot read whether Hisn Text is on, allowed on sites or in Private Browsing, so the guide says so (`ios/Hisn/BrowserFirstSection.swift:10`) |
 | Family DNS | Saves a Cloudflare Family DoH configuration (`ProtectionController.swift:368-393`) and reports absent, saved-but-off, enabled or different (`MobileProtectionPolicy.swift:114-125`, `ProtectionController.swift:345-352`) | Can be switched off in Settings on any unsupervised phone; a supervised profile's DNS is invisible to `NEDNSSettingsManager`, so the row reads "not configured" there |
 | Commitment | 1/7/30/90 days, extend only (`ProtectionController.swift:95-119`); Keychain plus mirror, damaged storage counts as running (`ios/Hisn/MobileCommitmentStore.swift:22-52`); a forward clock jump cannot end a running session (`ProtectionController.swift:82-88`) | After a relaunch the deadline trusts the wall clock; Screen Time is re-applied during a commitment only if chosen in this process (`ProtectionController.swift:150-161`) |
@@ -245,7 +245,7 @@ suites pass.
 6. Keep DNS as defence in depth, not the lock: it can be turned off on any
    unsupervised phone.
 
-Exit: on a device, a listed adult domain beyond the current 160k is blocked in
+Exit: on a device, a listed adult domain beyond the current 240k is blocked in
 Safari, and (if built) an adult path on an allowed host is blocked by the URL filter.
 
 ### M4. Stronger locks, all Apple-supported

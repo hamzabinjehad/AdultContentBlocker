@@ -72,8 +72,8 @@ class PrivacyManifestTests(unittest.TestCase):
                               r"\t\t\tlastKnownFileType = text\.xml;\n"
                               r'\t\t\tpath = "Hisn/PrivacyInfo\.xcprivacy";', project)
         self.assertIsNotNone(reference, "privacy manifest file reference missing from the project")
-        # app + four blockers + monitor + scanner
-        self.assertEqual(project.count(f"fileRef = {reference.group(1)};"), 7)
+        # app + six blockers + monitor + scanner
+        self.assertEqual(project.count(f"fileRef = {reference.group(1)};"), 9)
 
 
 if __name__ == "__main__":

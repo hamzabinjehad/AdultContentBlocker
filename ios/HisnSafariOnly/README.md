@@ -4,7 +4,7 @@ Separate app identity `app.hisn.safari`, not the full `app.hisn.mobile` app.
 No Family Controls, DeviceActivity monitor, App Group or Network Extension
 entitlements are requested. The full project and protection logic are unchanged.
 
-Generate the standard Safari-only candidate (four domain blockers + optional
+Generate the standard Safari-only candidate (six domain blockers + optional
 text/visual scanner):
 
 ```
@@ -12,9 +12,9 @@ python3 ios/generate_xcodeproj.py --safari-only
 ```
 
 The free account hit Apple's ten-new-App-IDs-per-seven-days quota during device
-setup on 2026-10-13. A separately labeled domain-only candidate uses four already
-registered child IDs under the limited app, including its unused text-scanner ID
-for domain part one. It does not include the scanner or shorten the domain list:
+setup on 2026-10-13. A separately labeled domain-only candidate reuses the
+limited app's child IDs, including its unused text-scanner ID for domain part
+one. It does not include the scanner or shorten the six-part domain list:
 
 ```
 python3 ios/generate_xcodeproj.py --safari-only --domain-only --reuse-text-id-for-part-one
@@ -22,7 +22,7 @@ python3 ios/generate_xcodeproj.py --safari-only --domain-only --reuse-text-id-fo
 
 This reuse is only for this limited app's own IDs; it never borrows another app's
 identity or installs over the full edition. The Info.plist flags inform the UI
-and the exact four blocker identifiers. All four parts retain the normal signed
+and the exact six blocker identifiers. All six parts retain the normal signed
 seed verification during build and resource-integrity checks in their handlers.
 
 Open `ios/HisnSafari.xcodeproj`, select HisnSafari, and sign with the user's own
@@ -32,7 +32,8 @@ trust still apply. Do not remove full-edition entitlements to conceal failures.
 ## Device evidence — 2026-10-13
 
 - Built and verified the development-signed domain-only bundle, version 1.1.2,
-  build 6. Bundle contains exactly Hisn1–4, no text or DeviceActivity extension.
+  build 6. That 1.1.2 bundle contained exactly Hisn1–4, no text or DeviceActivity
+  extension; the current 1.1.4 project has six parts.
 - Installed on the connected iPhone 11; device app listing confirms identity
   and version. Launch was denied with the OS security/profile-trust error.
   User developer trust and successful launch remain to be confirmed.
@@ -43,8 +44,8 @@ trust still apply. Do not remove full-edition entitlements to conceal failures.
 
 ## Activation and limits
 
-Trust the user's own developer profile if iOS requests it. Then enable Hisn 1,
-2, 3 and 4 in Settings → Apps → Safari → Extensions and reload Safari pages.
+Trust the user's own developer profile if iOS requests it. Then enable Hisn 1–6
+in Settings → Apps → Safari → Extensions and reload Safari pages.
 Installation does not enable these switches. Enabled-state readback is not a
 traffic/classification acceptance test. Do not label this build fully protected.
 

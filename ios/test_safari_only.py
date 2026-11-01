@@ -6,6 +6,8 @@ import sys
 import unittest
 
 ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT))
+import prepare_rules  # noqa: E402  (shard count must match the generator)
 
 
 class SafariOnlyTests(unittest.TestCase):
@@ -26,8 +28,8 @@ class SafariOnlyTests(unittest.TestCase):
         for forbidden in ["import FamilyControls", "import ManagedSettings", "import NetworkExtension"]:
             self.assertNotIn(forbidden, source)
 
-    def test_complete_four_parts_and_shared_scanner(self):
-        for index in range(1, 5):
+    def test_complete_parts_and_shared_scanner(self):
+        for index in range(1, prepare_rules.PARTS + 1):
             self.assertIn(f"app.hisn.safari.blocker{index}", self.project)
         self.assertIn("app.hisn.safari.HisnText", self.project)
         self.assertIn("prepare_rules.py", self.project)
@@ -51,11 +53,12 @@ class SafariOnlyTests(unittest.TestCase):
         project = (ROOT / "HisnSafari.xcodeproj/project.pbxproj").read_text()
         self.assertNotIn("SafariWebExtensionHandler.swift", project)
         self.assertNotIn("prepare_web_extension.py", project)
-        self.assertEqual(project.count('productType = "com.apple.product-type.app-extension"'), 4)
+        self.assertEqual(project.count('productType = "com.apple.product-type.app-extension"'),
+                         prepare_rules.PARTS)
         self.assertIn("HISN_SAFARI_DOMAIN_ONLY = YES", project)
         self.assertIn("HISN_SAFARI_REUSE_TEXT_ID = YES", project)
         self.assertIn("app.hisn.safari.HisnText", project)
-        for index in range(2, 5):
+        for index in range(2, prepare_rules.PARTS + 1):
             self.assertIn(f"app.hisn.safari.blocker{index}", project)
 
     def test_alias_rejected_without_limited_domain_mode(self):

@@ -13,7 +13,7 @@ device that was never provisioned as managed.
 | Browser extension | [EXTENSION_USAGE.md](docs/EXTENSION_USAGE.md) |
 | Mac | [Mac user guide](docs/USER_GUIDE.md) · [Mac setup](docs/SETUP.md) |
 | iPhone and iPad | [iOS README](ios/README.md) · [supervised setup](docs/IPHONE_SUPERVISED.md) |
-| Android | [Android README](android/README.md) · [0.8.1 release record](docs/ANDROID_0.8.1.md) |
+| Android | [Android README](android/README.md) · [0.8.2 coverage record](docs/COVERAGE_PASS_2026-10-30.md) |
 | Windows browser policy | [WINDOWS_SETUP.md](docs/WINDOWS_SETUP.md) |
 | Routers and DNS | [ROUTER_COMPATIBILITY.md](docs/ROUTER_COMPATIBILITY.md) |
 | What is verified vs. still manual | [TEST_MATRIX.md](docs/TEST_MATRIX.md) |

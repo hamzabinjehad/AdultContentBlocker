@@ -3,7 +3,11 @@ import Foundation
 /// Shared, platform-neutral configuration. No macOS enforcement assumptions.
 enum MobileProtectionPolicy {
     static let appIdentifier = "app.hisn.mobile"
-    static let blockerIdentifiers = (1...4).map { "\(appIdentifier).blocker\($0)" }
+    /// Six blockers of the proven 40,000-rule size. The bundled core is
+    /// capped to `perBlockerRuleLimit * blockerIdentifiers.count`.
+    static let blockerIdentifiers = (1...6).map { "\(appIdentifier).blocker\($0)" }
+    static let perBlockerRuleLimit = 40_000
+    static let bundledRuleLimit = perBlockerRuleLimit * blockerIdentifiers.count
     static let dnsURL = URL(string: "https://family.cloudflare-dns.com/dns-query")!
     static let dnsServers = ["1.1.1.3", "1.0.0.3", "2606:4700:4700::1113", "2606:4700:4700::1003"]
 
@@ -40,9 +44,9 @@ enum MobileProtectionPolicy {
     }
 
     static func safariListReady(count: Int, version: Int, parts: [SafariListPart]) -> Bool {
-        guard (1...(40_000 * blockerIdentifiers.count)).contains(count), version > 0,
+        guard (1...bundledRuleLimit).contains(count), version > 0,
               parts.count == blockerIdentifiers.count else { return false }
-        guard parts.allSatisfy({ (1...40_000).contains($0.count) && $0.version == version && $0.integrityMatches })
+        guard parts.allSatisfy({ (1...perBlockerRuleLimit).contains($0.count) && $0.version == version && $0.integrityMatches })
             else { return false }
         return parts.reduce(0) { $0 + $1.count } == count
     }
@@ -55,7 +59,7 @@ enum MobileProtectionPolicy {
         if busy { return .init(state: .checking, issues: []) }
         guard checked else { return .init(state: .unchecked, issues: []) }
         var issues: [SetupIssue] = []
-        if !listVerified || !(1...(40_000 * blockerIdentifiers.count)).contains(listCount) || listVersion <= 0 {
+        if !listVerified || !(1...bundledRuleLimit).contains(listCount) || listVersion <= 0 {
             issues.append(.list)
         }
         if !safariConfigurationReady(enabled: safari, lastReload: lastReload) { issues.append(.safari) }
