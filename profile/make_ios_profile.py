@@ -214,6 +214,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--print-password", action="store_true",
                     help="Print the removal password. Do not, if the person it protects can read your terminal.")
     ap.add_argument("--allow-unreachable-resolver", action="store_true")
+    ap.add_argument("--maximum", action="store_true",
+                    help="Turn on every supervised hardening switch below. It blocks new apps, "
+                         "account and passcode changes and Content & Privacy edits; read the "
+                         "recovery limits in docs/IPHONE_SUPERVISED.md first.")
     # Optional supervised-only hardening. Off by default because each can take
     # away a recovery path the person may need.
     ap.add_argument("--deny-account-modification", action="store_true",
@@ -230,6 +234,15 @@ def main(argv: list[str] | None = None) -> int:
                     help="Supervised only: keep automatic date and time on.")
     ap.add_argument("--out", default="../dist/hisn-iphone.mobileconfig")
     args = ap.parse_args(argv)
+    if args.maximum:
+        if args.allow_app_removal:
+            ap.error("--maximum cannot be combined with --allow-app-removal")
+        args.deny_account_modification = True
+        args.deny_passcode_modification = True
+        args.deny_app_installation = True
+        args.deny_app_clips = True
+        args.deny_enabling_restrictions = True
+        args.force_automatic_date_time = True
 
     preset = mac.RESOLVERS[args.resolver]
     args.doh, args.dns_addresses = preset["doh"], preset["addresses"]

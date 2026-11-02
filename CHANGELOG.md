@@ -5,6 +5,230 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
+## Guardian console — unreleased
+
+### Added
+
+- **Phone–laptop pairing and signed policy.** A P-256 reference protocol in
+  `script/guardian_protocol.py`: a `hisn://pair/1` offer, a six-digit SAS that
+  both sides derive from ECDH, a device-signed response, and a policy envelope
+  with device binding, a replay counter, issue/expiry windows and an ECDSA
+  signature. `docs/PAIRING_PROTOCOL.md` is the wire format and threat model;
+  `script/test_guardian_protocol.py` has 33 tests and
+  `script/test_guardian_console.py` adds 11 file-level tests for a laptop
+  console (`keygen`, `offer`, `verify-response`, `sign-policy`,
+  `verify-policy`). `android/core/.../GuardianPairing.java` adds the phone-side
+  offer parser, response builder/verifier and SAS, checked against a
+  Python-generated fixture in both directions; a Java policy verifier checks
+  the version-2 flat envelope and its replay/expiry/tamper rules. A
+  `android/test-live-pairing.py` run on the API 36 emulator exchanged a Python
+  offer with the debug activity, verified the Java response and SAS, and had
+  the activity verify a Python-signed policy. On API 31+ the debug identity is
+  an EC P-256 key inside AndroidKeyStore (sign + key agreement), persisted
+  across runs; older runtimes use an AES-256-GCM-wrapped software key. The
+  QR/product pairing UI and applying domain rules are still missing. With
+  `--apply-policy`, the same emulator run verified a Python-signed policy and
+  applied its tighten-only rules: keep installed, lockdown, strict, blocked-app
+  suspension, a blocked package and a blocked domain. The sync read back
+  `protected` and Chrome was suspended. Applying a signed domain list with hash
+  verification and the product pairing UI remain open.
+- **Laptop Android provisioning helper.** `script/guardian_provision.py` reads
+  a factory-reset phone, refuses accounts, secondary users, another device
+  owner and an unfinished setup wizard, then installs Hisn and appoints it
+  device owner only after a typed confirmation. It never wipes, removes
+  accounts or uninstalls, and it verifies the appointment by readback.
+
+- **iOS supervised guardian pack.** `profile/make_guardian_pack.py` writes the
+  `.mobileconfig` (mode 0600, password inside), a manifest with its SHA-256,
+  `GUARDIAN.md` (supervision, verification and recovery steps) and
+  `SHA256SUMS`. It refuses `--maximum --allow-app-removal` and never writes the
+  password to the manifest or checklist. 12 tests.
+
+## Android 0.9.0 — 2026-11-02
+
+### The protection lock
+
+- **Saved rules are fully frozen while the lock runs.** The in-app commitment
+  is now presented as the **protection lock**. Starting one makes every rule on
+  the Rules page read-only in both directions: domains, words, blocked and
+  inspected apps, the daily schedule, the built-in adult/visual/short-video
+  switches, SafeSearch and the gray-screen choice. The earlier rule allowed
+  adding restrictions during a commitment; that path is closed because the
+  product promise is now "the rules cannot change", not "they cannot weaken".
+  Extending the lock is still allowed. `ProtectionLock` holds the pure decision
+  and `PolicyStore` refuses the write for every caller, not only the UI.
+- **The guardian path remains the one exception.** A verified, signed policy
+  from the paired laptop may still add blocked domains and apps while the lock
+  runs, through `PolicyStore.updateFromGuardian`. It is tighten-only; it cannot
+  remove a rule, turn a switch off or loosen the schedule.
+- **The lock arms removal protection on its own.** In the direct build the
+  accessibility removal guard now watches Hisn's uninstall, App info, disable,
+  Safe Mode and VPN screens whenever a protection lock runs, even if the
+  keep-installed switch is off. The boot shield copy and the 15-minute layer
+  watchdog follow the same effective state. On a device-owner install Android's
+  uninstall block was already applied for the lock; managed lockdown remains
+  the separate opt-in. The Play build still cannot block its own removal, and
+  the app now says so in the attention list while a lock runs.
+- **UI.** Rules gains a visible "Rules are locked" card with the remaining
+  time; every editor, switch, row and the schedule button is disabled while it
+  is true. The Protection hero names the lock and remaining time, and when
+  rules exist without a lock it points to the lock action. The copy across the
+  app now says "protection lock" instead of "commitment". The uninstall card
+  distinguishes guard-on-for-the-lock, guard-disconnected and ordinary off
+  states, and the uninstall dialog explains that the guard is on even when its
+  switch reads off. Version 0.9.0, versionCode 25. The Android
+  core suite, string parity, debug/test builds, lint and both release
+  distribution checks pass; no physical-device run of the lock is claimed.
+
+### Fixed
+- **Faster blocking paths.** `DomainPolicy` now keeps a bounded cache of
+  repeated DNS decisions, so a familiar hostname skips IDNA/validation and two
+  parent lookups. The accessibility guard inspects changed content after 50 ms
+  instead of 150 ms and discovers new windows after 250 ms instead of 500 ms.
+  Window-state changes were already inspected immediately. This is a latency
+  improvement, not a guarantee: an unlisted domain or an uninspected app still
+  gets through until another layer acts.
+
+- **`no_control_apps`, not `no_apps_control`.** The managed-lockdown app-control
+  restriction used the wrong Android key, so it was silently missing from the
+  device-owner readback while every other key was held. An API 36 emulator run
+  caught it; the key and every status/test/doc reference were corrected.
+- **Emulator evidence recorded.** The same run proved the nine-key managed
+  lockdown, strict mode, blocked-app suspension readback and
+  `DELETE_FAILED_DEVICE_POLICY_MANAGER` on the app's own uninstall. A fresh
+  wiped run also proved release cleanup: suspension resumed, always-on cleared,
+  device ownership removed and an ordinary uninstall succeeded. The Settings
+  screens were then inspected: Force stop showed “Blocked by work policy”, date
+  and time showed “Enabled by admin”, VPN showed the policy block, and Users
+  showed Add user/guest “Controlled by admin”. Safe Mode, erase, Private DNS,
+  default apps, the tunnel and a physical phone remain unproven.
+
+### Added
+
+- **Physical guard evidence.** On a Samsung SM-G990B2 (Android 16) with the
+  direct build, accessibility on and Keep Hisn installed, opening Hisn's App
+  info produced the Arabic shield page, and `adb shell pm uninstall
+  app.hisn.android` returned `DELETE_FAILED_DEVICE_POLICY_MANAGER` while the
+  legacy admin was active. This is physical friction/admin evidence, not a
+  device-owner claim. The shield delay was then reduced from 250 ms to 100 ms;
+  the physical App-info run still reached `ShieldActivity` reliably at 100 ms.
+- **Immediate touch-blocking overlay.** On Android 11+, the accessibility
+  service now draws a short-lived `TYPE_ACCESSIBILITY_OVERLAY` over the watched
+  Settings screen before pressing Back/Home and starting the shield. It consumes
+  taps during the transition, so a second tap cannot reach Uninstall or Force
+  stop before the explanation appears. The overlay is removed as the shield
+  starts and on service teardown; the system bars are excluded.
+- **Release-shaped Android build.** Both the Play-style and `-direct` release
+  APKs build and pass `android/check-release.py`; the direct one was then
+  test-signed with the debug key and installed on the SM-G990B2. It is
+  non-debuggable, has no DUMP permission or debug-only components, and preserves
+  app data. The signing key is still a **debug** key, so this is a test install,
+  not a publishable artifact.
+- **Less text, clearer first screen.** Protection now shows status, three layer
+  tiles, a collapsed attention row, one DNS action and app checks. Advanced DNS
+  options, guide details, limits, privacy detail and uninstall explanations are
+  progressive disclosures. A duplicate DNS recommendation card is hidden when
+  the DNS card already owns the next action. The status paragraph and seed line
+  are shortened. Principles and sources are recorded in
+  [docs/UI_PRINCIPLES.md](docs/UI_PRINCIPLES.md).
+- **VPN settings guard.** While **Keep Hisn installed** is on, a Settings VPN
+  screen that names Hisn and offers disconnect, forget, always-on, edit or
+  settings is closed and replaced by the shield page. It is text/package based
+  friction, not system enforcement.
+- **Unrestricted-battery setup.** Guide now has **Keep protection running**,
+  which opens Android's battery-optimization exemption request and reports
+  whether Hisn is exempt. The app does not force the exemption.
+- **Direct-build protection page.** When the accessibility screen guard closes
+  Hisn's uninstall, App info, storage, device-admin, accessibility or Safe Mode
+  screen, a full-screen page now names the reason and holds *Back to Hisn* and
+  *Go to home screen* for eight seconds before enabling them. It reads nothing
+  itself, never returns to Settings, and the system Home button, dialler and
+  emergency screens stay reachable. The previous in-app restriction notice
+  remains as the fallback if the page cannot start.
+- **Opt-in new-app install lock.** A separate switch, **Also stop new app
+  installs (downloads)**, closes the package installer's Install confirmation
+  and any Play Store page that offers Install (home, search result or app page)
+  so another browser or VPN cannot be installed from those screens. It is
+  separate from the keep-installed switch; app updates, Hisn's own update page
+  and the update list stay usable. The switch is sealed with the other settings
+  and cannot be turned off during a commitment.
+- The layer watchdog counts either screen-guard switch as an armed accessibility
+  layer, and the status line reports installs-only, both switches and the
+  service-off state separately.
+- **Managed lockdown closes three more routes.** On a device-owner phone,
+  managed lockdown now also holds `no_add_user` on every supported version, on
+  Android 9+ (API 28) `no_config_date_time` and, on Android 14+ (API 34),
+  `disallow_config_default_apps`; the existing Safe Mode, all-app controls,
+  factory reset, VPN and Android 10+ Private DNS keys remain.
+  The desired set is gated by API so Android 8 is never asked for a key it does
+  not know, and the read-only live status reader expects the same set. A
+  device-wide install block (`no_install_apps`) is still not used because it
+  would freeze Play updates too. Physical device acceptance is still pending.
+- **Optional strict install block.** A separate **Strict** switch adds
+  `no_install_unknown_sources_globally` on Android 10+ while managed lockdown
+  holds. It is off by default because it also blocks a manual sideloaded Hisn
+  update. USB debugging stays available, so ADB verification and recovery still
+  work. The status, live reader, readback, release order and English/Arabic
+  disclosures include it; a device-wide install block is still excluded.
+  Physical device acceptance is still pending.
+- **Opt-in blocked-app suspension.** A separate **Also suspend blocked apps in
+  Android** switch suspends every installed app in Hisn's block list while
+  managed lockdown holds. Suspended apps disappear from the launcher and cannot
+  be opened; their data is kept. The status reads `FLAG_SUSPENDED` back;
+  unblocking, turning the switch off or releasing managed mode resumes them.
+  Cleanup depends on Android listing installed (including suspended) packages,
+  and no physical device has been tested.
+- **Manual guardian pairing screen.** Guide → **Guardian pairing** now opens a
+  product screen where the owner pastes a `hisn://pair/1` offer, sees the
+  six-digit SAS and device ID, and copies the response JSON for the laptop. It
+  uses the EC-in-AndroidKeyStore identity and sends nothing over the network.
+  On the API 36 emulator a pasted Python offer produced a displayed SAS and a
+  copied 439-byte response that Python verified. The same screen now accepts a
+  signed policy and applies tighten-only rules through a shared applier. On the
+  API 36 emulator a Python-signed policy pasted into the product screen reported
+  “Policy applied (already-protected)”. Policies may also carry a canonical
+  `blocked_domains_sha256`; Python and Java now compute the same hash and the
+  applier refuses a mismatch. A camera QR scanner and separate laptop-side
+  response/policy transport are still missing.
+- **Browser allowlist action.** The browser coverage screen now has **Keep only
+  this** on each installed browser. It selects every other installed browser
+  for blocking in one tap; saving applies the block and, with suspension on,
+  suspends the others. The selection is pure-tested (`BrowserAllowlist`) and is
+  explicitly limited to browsers visible at that moment.
+- **Optional SafeSearch DNS rewrite.** The Network section has **Force SafeSearch
+  on search engines**, off by default. While DNS filtering is on, Hisn answers
+  exact Google, Bing, DuckDuckGo and YouTube hostnames with a local CNAME to the
+  restricted target; country domains, YouTube APIs and other app endpoints are
+  not guessed. The answer is built locally, preserves the question, is limited
+  to A/AAAA and never reaches the upstream resolver. `SafeSearchTest` and
+  `DnsPolicyRewriteTest` cover the mapping and response; a device test of the
+  target certificates and search/playback behavior is still pending.
+- **Always-on DNS VPN.** On a device-owner phone with managed lockdown and DNS
+  filtering both on, Hisn now asks Android to keep the DNS-only tunnel always
+  on (`setAlwaysOnVpnPackage(..., false)`), reads the package back, and clears
+  it when DNS is turned off, the lockdown is released or the VPN is revoked.
+  The manifest advertises always-on support. This is not a full tunnel and does
+  not enable VPN lockdown; non-DNS traffic is never routed through Hisn. The
+  live status reports the always-on request separately from the seven user
+  restrictions. Physical device acceptance is still pending.
+
+### Verification
+
+- Core tests compile and pass, including new `SelfProtectionScreensTest` cases
+  for the installer confirmation, a Play Store detail page, updates, Hisn's own
+  reinstall, the store home and switch-independent classification, plus
+  `SavedSettingsTest` round-trip and 0.5.3-upgrade checks for `install_lock`.
+  String parity passes (383 strings, 14 plurals); the direct debug and
+  debug-androidTest APKs build.
+- Live on the API 36 emulator (`hisn_ui`) with the direct debug build: Hisn's
+  App info was closed and the uninstall reason page appeared; a Play Store app
+  page for Chrome was closed and the install reason page appeared; the Arabic
+  page rendered RTL; the eight-second hold disabled both buttons; *Back to
+  Hisn* opened the app.
+- Not checked: the real package-installer confirmation, the switch dialog,
+  TalkBack, an OEM skin and a physical device. No version bump, signed build or
+  store submission is part of this entry.
+
 ## Android 0.8.4 — 2026-11-01
 
 ### Added

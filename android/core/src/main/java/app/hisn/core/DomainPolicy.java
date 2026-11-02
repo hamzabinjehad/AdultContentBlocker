@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /** Domain-only policy; this does not capture or block network traffic. */
 public final class DomainPolicy {
@@ -12,6 +13,9 @@ public final class DomainPolicy {
     private static final int MAX_RULES = 250000;
     private final Set<String> blocked;
     private final Set<String> allowed;
+    /** Repeated DNS questions skip IDNA/validation; bounded so a hostile stream cannot grow it. */
+    private final ConcurrentHashMap<String, Decision> decisions = new ConcurrentHashMap<>();
+    private static final int DECISION_CACHE_LIMIT = 8192;
 
     public Set<String> blockedRules() { return blocked; }
 
@@ -22,15 +26,28 @@ public final class DomainPolicy {
 
     /** Invalid input is distinct from a valid name that is allowed. */
     public Decision evaluate(String hostname) {
+        if (hostname == null) return Decision.INVALID;
+        Decision cached = decisions.get(hostname);
+        if (cached != null) return cached;
         final String name;
         try {
             name = normalize(hostname);
         } catch (IllegalArgumentException invalid) {
+            remember(hostname, Decision.INVALID);
             return Decision.INVALID;
         }
-        return !containsParent(allowed, name) && containsParent(blocked, name)
+        Decision result = !containsParent(allowed, name) && containsParent(blocked, name)
                 ? Decision.BLOCK : Decision.ALLOW;
+        remember(hostname, result);
+        return result;
     }
+
+    private void remember(String hostname, Decision decision) {
+        if (decisions.size() >= DECISION_CACHE_LIMIT) decisions.clear();
+        decisions.put(hostname, decision);
+    }
+
+    int cacheSize() { return decisions.size(); }
 
     /** Convenience for callers that already handle invalid names separately. */
     public boolean blocks(String hostname) {

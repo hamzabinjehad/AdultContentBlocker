@@ -6,14 +6,18 @@ import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.CheckBox;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.List;
 import java.util.Set;
 
+import app.hisn.core.BrowserAllowlist;
 import app.hisn.core.BrowserCoverage;
 
 /**
@@ -37,6 +41,10 @@ final class BrowserBlock {
 
         root.addView(Ui.body(activity, activity.getString(R.string.browsers_help)),
                 Ui.margins(activity, 0, 8));
+        root.addView(Ui.caption(activity, activity.getString(R.string.browsers_keep_only_note)),
+                Ui.margins(activity, 0, 0));
+        List<CheckBox> boxes = new ArrayList<>();
+        List<String> names = new ArrayList<>();
 
         for (ChosenApps.Entry browser : browsers) {
             BrowserCoverage.Layer layer = BrowserCoverage.layer(browser.packageName, blocked, inspected,
@@ -46,7 +54,8 @@ final class BrowserBlock {
             if (layer == BrowserCoverage.Layer.BLOCKED || layer == BrowserCoverage.Layer.NONE) {
                 checked.add(browser.packageName);
             }
-            root.addView(row(activity, browser, layer, checked), Ui.margins(activity, 0, 0));
+            root.addView(row(activity, browser, layer, checked, boxes, names),
+                    Ui.margins(activity, 0, 0));
             root.addView(Ui.divider(activity));
         }
         root.addView(Ui.caption(activity, activity.getString(R.string.browsers_limit_note)),
@@ -70,7 +79,7 @@ final class BrowserBlock {
     }
 
     private static View row(Activity activity, ChosenApps.Entry browser, BrowserCoverage.Layer layer,
-            Set<String> checked) {
+            Set<String> checked, List<CheckBox> boxes, List<String> names) {
         LinearLayout row = new LinearLayout(activity);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
@@ -96,7 +105,17 @@ final class BrowserBlock {
         column.addView(Ui.caption(activity, activity.getString(stateRes(layer))));
         row.addView(column, new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
 
+        Button keepOnly = Ui.button(activity, R.string.browsers_keep_only, Ui.ButtonKind.GHOST);
+        keepOnly.setOnClickListener(view -> {
+            Set<String> block = BrowserAllowlist.blockAllExcept(names, browser.packageName);
+            for (int i = 0; i < boxes.size(); i++) {
+                boxes.get(i).setChecked(block.contains(names.get(i)));
+            }
+        });
+        column.addView(keepOnly);
         CheckBox box = new CheckBox(activity);
+        boxes.add(box);
+        names.add(browser.packageName);
         box.setChecked(checked.contains(browser.packageName));
         box.setContentDescription(browser.label);
         box.setPadding(0, 0, 0, 0);

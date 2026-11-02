@@ -51,6 +51,25 @@ public final class SavedSettingsTest {
         check(rules.domains.equals("blocked.example") && rules.words.equals("word") && rules.adultWords && !rules.visual
                 && rules.apps.equals(set("com.example.one")) && rules.scans.equals(set("com.example.scan")), "Rules read back");
         check(rules.managedLockdown, "Managed lockdown read back");
+        check(!rules.managedStrict, "Strict lockdown defaulted on");
+        check(!rules.suspendBlocked, "Blocked-app suspension defaulted on");
+        check(!rules.installLock, "Install lock defaulted on");
+        Map<String, Object> installValues = new HashMap<>(SavedSettings.values("", "", set(), set(), false, false,
+                false, false, true, false, DailyAppSchedule.disabled(),
+                new CommitmentClock(0, 40000, BOOT), false, false));
+        check(SavedSettings.rules(installValues).installLock, "Install lock read back");
+        check(!SavedSettings.rules(installValues).uninstallLock, "Install lock changed the keep switch");
+        Map<String, Object> strictValues = new HashMap<>(SavedSettings.values("", "", set(), set(), false, false,
+                false, false, false, true, true, DailyAppSchedule.disabled(),
+                new CommitmentClock(0, 40000, BOOT), false, false));
+        check(SavedSettings.rules(strictValues).managedStrict, "Strict lockdown read back");
+        check(SavedSettings.rules(strictValues).managedLockdown, "Strict lockdown changed managed lockdown");
+        Map<String, Object> suspendValues = new HashMap<>(SavedSettings.values("", "", set(), set(), false, false,
+                false, false, false, true, false, true, DailyAppSchedule.disabled(),
+                new CommitmentClock(0, 40000, BOOT), false, false));
+        check(SavedSettings.rules(suspendValues).suspendBlocked, "Blocked-app suspension read back");
+        check(SavedSettings.rules(suspendValues).managedLockdown,
+                "Blocked-app suspension changed managed lockdown");
         check(rules.schedule.enabled && rules.schedule.startMinute == 1200 && rules.schedule.endMinute == 360
                 && rules.schedule.apps.equals(set("com.example.night")) && !rules.schedule.allApps, "Schedule read back");
         Map<String, Object> allowValues = new HashMap<>(SavedSettings.values("", "", set(), set(), false, false,
@@ -116,7 +135,10 @@ public final class SavedSettingsTest {
                 && upgrade.clock.remainingAtCheckpoint == 86400000L && upgrade.clock.bootAtCheckpoint == 3
                 && SavedSettings.rules(upgrade.rules).schedule.startMinute == 1320
                 && !SavedSettings.rules(upgrade.rules).schedule.allApps
-                && !SavedSettings.rules(upgrade.rules).managedLockdown, "Upgrade from 0.5.3");
+                && !SavedSettings.rules(upgrade.rules).managedLockdown
+                && !SavedSettings.rules(upgrade.rules).managedStrict
+                && !SavedSettings.rules(upgrade.rules).suspendBlocked
+                && !SavedSettings.rules(upgrade.rules).installLock, "Upgrade from 0.5.3");
         Map<String, Object> legacyInvalid = new HashMap<>(legacy);
         legacyInvalid.put("remaining", 5);
         try { load(legacyInvalid, none, false); throw new AssertionError("Invalid 0.5.3 settings loaded"); }

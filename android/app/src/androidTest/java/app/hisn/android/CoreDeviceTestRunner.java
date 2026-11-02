@@ -98,11 +98,15 @@ public final class CoreDeviceTestRunner extends Instrumentation {
         try {
             PolicyStore store = new PolicyStore(context, preferenceName);
             if (store.uninstallLock()) throw new AssertionError("Uninstall lock defaulted on");
+            if (store.installLock()) throw new AssertionError("Install lock defaulted on");
             if (store.managedLockdown()) throw new AssertionError("Managed lockdown defaulted on");
             store.updateUninstallLock(true);
+            store.updateInstallLock(true);
             store.updateManagedLockdown(true);
             if (!new PolicyStore(context, preferenceName).uninstallLock())
                 throw new AssertionError("Uninstall lock did not persist");
+            if (!new PolicyStore(context, preferenceName).installLock())
+                throw new AssertionError("Install lock did not persist");
             if (!new PolicyStore(context, preferenceName).managedLockdown())
                 throw new AssertionError("Managed lockdown did not persist");
             store.update("blocked.example", "", Collections.emptySet(), Collections.emptySet());
@@ -112,6 +116,10 @@ public final class CoreDeviceTestRunner extends Instrumentation {
                 throw new AssertionError("Commitment allowed disabling uninstall protection");
             } catch (IllegalStateException expected) { }
             try {
+                store.updateInstallLock(false);
+                throw new AssertionError("Commitment allowed disabling install protection");
+            } catch (IllegalStateException expected) { }
+            try {
                 store.updateManagedLockdown(false);
                 throw new AssertionError("Commitment allowed disabling managed lockdown");
             } catch (IllegalStateException expected) { }
@@ -119,7 +127,7 @@ public final class CoreDeviceTestRunner extends Instrumentation {
                 store.updateManagedChoice(false, false);
                 throw new AssertionError("Commitment allowed clearing both managed choices");
             } catch (IllegalStateException expected) { }
-            if (!store.uninstallLock() || !store.managedLockdown())
+            if (!store.uninstallLock() || !store.installLock() || !store.managedLockdown())
                 throw new AssertionError("Rejected change cleared a managed choice");
             UninstallProtectionController.Status status = UninstallProtectionController.read(context);
             if (status.state() == null) throw new AssertionError("Uninstall status unavailable");
@@ -226,11 +234,15 @@ public final class CoreDeviceTestRunner extends Instrumentation {
             if (migrated.remainingMillis() <= 0 || migrated.remainingMillis() > 3600000
                     || migrated.snapshot().hasConfiguredRestrictions() || migrated.snapshot().adultWordsEnabled)
                 throw new AssertionError("Legacy empty commitment migration changed protection");
-            migrated.update("blocked.example", "", Collections.emptySet(), Collections.emptySet());
-            migrated.startCommitment(30);
             try {
-                migrated.startCommitment(7);
-                throw new AssertionError("Migrated commitment shortened");
+                // The 0.9.0 protection lock is absolute: an inherited lock
+                // refuses additions too, even though it holds no rules.
+                migrated.update("blocked.example", "", Collections.emptySet(), Collections.emptySet());
+                throw new AssertionError("Migrated lock allowed adding rules");
+            } catch (IllegalStateException expected) { }
+            try {
+                migrated.startCommitment(30);
+                throw new AssertionError("Empty locked policy started a longer lock");
             } catch (IllegalStateException expected) { }
         } finally { forget(getTargetContext(), name); }
     }
@@ -280,10 +292,17 @@ public final class CoreDeviceTestRunner extends Instrumentation {
                 store.update("", "", Collections.emptySet(), Collections.emptySet());
                 throw new AssertionError("Commitment allowed removal");
             } catch (IllegalStateException expected) { }
-            store.update("blocked.example\nmore.example", "example\nother", Collections.singleton("com.example.fixture"), Collections.emptySet());
+            try {
+                // The protection lock freezes additions too, not only weakening.
+                store.update("blocked.example\nmore.example", "example\nother",
+                        Collections.singleton("com.example.fixture"), Collections.emptySet());
+                throw new AssertionError("Commitment allowed adding rules");
+            } catch (IllegalStateException expected) { }
             PolicyStore restored = new PolicyStore(getTargetContext(), preferenceName);
-            if (!restored.snapshot().domains.blocks("more.example") || restored.remainingMillis() <= 0) {
-                throw new AssertionError("Policy did not persist");
+            if (!restored.snapshot().domains.blocks("blocked.example")
+                    || restored.snapshot().domains.blocks("more.example")
+                    || restored.remainingMillis() <= 0) {
+                throw new AssertionError("Rejected additions changed the locked policy");
             }
         } finally {
             forget(getTargetContext(), preferenceName);
@@ -316,11 +335,13 @@ public final class CoreDeviceTestRunner extends Instrumentation {
             PolicyStore unknown = new PolicyStore(context, name);
             if (!unknown.commitmentUnknown() || unknown.remainingMillis() <= 86400000L)
                 throw new AssertionError("Unreadable commitment was not kept active");
-            unknown.update("blocked.example", "", Collections.emptySet(), Collections.emptySet());
             try {
-                unknown.update("", "", Collections.emptySet(), Collections.emptySet());
-                throw new AssertionError("Unknown commitment allowed weakening");
+                // A lock read as unknown still freezes every rule in both directions.
+                unknown.update("blocked.example", "", Collections.emptySet(), Collections.emptySet());
+                throw new AssertionError("Unknown commitment allowed adding rules");
             } catch (IllegalStateException expected) { }
+            // An identical save is not a rule change; it must not clear the unknown state.
+            unknown.update("", "", Collections.emptySet(), Collections.emptySet());
             if (!new PolicyStore(context, name).commitmentUnknown()) throw new AssertionError("Unknown commitment was not saved");
             // Intact settings that a stricter version cannot accept are refused and left as they are.
             forget(context, name);

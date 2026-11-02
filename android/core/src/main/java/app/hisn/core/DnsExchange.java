@@ -8,7 +8,13 @@ public final class DnsExchange {
     public static final class Resolution {
         public final byte[] answer;
         public final boolean blocked;
-        Resolution(byte[] answer, boolean blocked) { this.answer = answer; this.blocked = blocked; }
+        public final boolean rewrite;
+        Resolution(byte[] answer, boolean blocked) { this(answer, blocked, false); }
+        Resolution(byte[] answer, boolean blocked, boolean rewrite) {
+            this.answer = answer;
+            this.blocked = blocked;
+            this.rewrite = rewrite;
+        }
     }
     public interface Transport {
         byte[] exchange(byte[] query) throws IOException;
@@ -34,6 +40,9 @@ public final class DnsExchange {
         DnsPolicy.Result result = policy.evaluate(request);
         if (result.action == DnsPolicy.Action.UNSUPPORTED) throw new IOException("Unsupported DNS request");
         if (result.action == DnsPolicy.Action.BLOCK) return new Resolution(result.response, true);
+        if (result.action == DnsPolicy.Action.REWRITE) {
+            return new Resolution(result.response, false, true);
+        }
         byte originalHigh = request[0], originalLow = request[1];
         int upstreamId = random.nextInt(65536);
         request[0] = (byte) (upstreamId >>> 8);

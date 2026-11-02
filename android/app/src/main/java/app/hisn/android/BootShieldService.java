@@ -30,9 +30,10 @@ import android.widget.TextView;
 /**
  * Direct builds only: after a reboot, Android starts accessibility services seconds (on a busy
  * boot, minutes) after unlock, which leaves Hisn's uninstall screens unguarded. While the owner
- * keeps Hisn installed, this covers the screen from BOOT_COMPLETED for at least a minute and
- * until the guard is running. A cap stops a switched-off accessibility service from holding the
- * phone. Needs "Display over other apps"; without it the boot gap stays open.
+ * keeps Hisn installed or a protection lock is running, this covers the screen from
+ * BOOT_COMPLETED for at least a minute and until the guard is running. A cap stops a
+ * switched-off accessibility service from holding the phone. Needs "Display over other apps";
+ * without it the boot gap stays open.
  *
  * Settings and the package installer hide other apps' overlays, so the shield cannot cover
  * them; it covers the launcher (icons, long-press uninstall) while the guard comes up. It starts
@@ -51,10 +52,12 @@ public final class BootShieldService extends Service {
 
     private BroadcastReceiver unlockWait;
 
-    /** Copies the keep-installed switch to storage readable before the first unlock. */
-    static void mirror(Context context, boolean keepInstalled) {
+    /** Copies the effective keep-installed state to storage readable before the first unlock. */
+    static void mirror(Context context, boolean armed) {
         if (!BuildConfig.SELF_PROTECTION) return;
-        bootPrefs(context).edit().putBoolean("armed", keepInstalled).apply();
+        SharedPreferences prefs = bootPrefs(context);
+        if (prefs.getBoolean("armed", false) == armed) return;
+        prefs.edit().putBoolean("armed", armed).apply();
     }
 
     private static SharedPreferences bootPrefs(Context context) {

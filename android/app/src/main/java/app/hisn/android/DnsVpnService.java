@@ -27,6 +27,7 @@ import app.hisn.core.DnsNotice;
 import app.hisn.core.SetupGuide;
 import app.hisn.core.DnsPacketKind;
 import app.hisn.core.DnsPolicy;
+import app.hisn.core.SafeSearch;
 import app.hisn.core.DnsTunnelProbe;
 import app.hisn.core.DnsTcpServer;
 import app.hisn.core.DomainSeed;
@@ -81,7 +82,8 @@ public final class DnsVpnService extends VpnService {
     private static final String ALERT_CHANNEL = "dns_alerts";
     private static final int STATUS_ID = 1;
     private static final int ALERT_ID = 2;
-    private static final String PREFS = "hisn_dns";
+    static final String PREFS = "hisn_dns";
+    static final String SAFE_SEARCH = "safe_search";
     private static final String RESUME = "resume_after_boot";
     private static final byte[] SERVER = {10, 111, 0, 2};
     private static final Object CHECK_LOCK = new Object();
@@ -91,6 +93,7 @@ public final class DnsVpnService extends VpnService {
     public static volatile int domains;
     public static final AtomicLong blocked = new AtomicLong();
     public static final AtomicLong forwarded = new AtomicLong();
+    public static final AtomicLong rewritten = new AtomicLong();
     public static final AtomicLong errors = new AtomicLong();
     public static final AtomicLong unsupportedPackets = new AtomicLong();
     public static final AtomicLong malformedPackets = new AtomicLong();
@@ -122,6 +125,13 @@ public final class DnsVpnService extends VpnService {
 
     static void setResumeRequested(Context context, boolean resume) {
         context.getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean(RESUME, resume).apply();
+    }
+
+    /** Optional SafeSearch CNAME rewriting; off by default and read per query.
+     *  Writes go through {@link PolicyStore#updateSafeSearch} so the protection
+     *  lock covers this rule like every other one. */
+    static boolean safeSearchEnabled(Context context) {
+        return context.getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(SAFE_SEARCH, false);
     }
 
     /** A visible notice that filtering is off, so a vanished VPN key icon is not the only signal. */
@@ -253,7 +263,7 @@ public final class DnsVpnService extends VpnService {
             try { LayerWatchdog.syncSchedule(this); }
             catch (RuntimeException ignored) { /* The next app open retries. */ }
             getSystemService(NotificationManager.class).cancel(ALERT_ID);
-            domains = 0; blocked.set(0); forwarded.set(0); errors.set(0); lastDnsFailure = "NONE";
+            domains = 0; blocked.set(0); forwarded.set(0); rewritten.set(0); errors.set(0); lastDnsFailure = "NONE";
             unsupportedPackets.set(0); malformedPackets.set(0); unsupportedTcpPackets.set(0);
             ignoredPackets.set(0); refusedTlsConnections.set(0); recoveries.set(0);
             networkChanges.set(0); networkMonitoring = false; privateDnsStrict = false;
@@ -267,6 +277,10 @@ public final class DnsVpnService extends VpnService {
                 activeService = this;
             }
             new Thread(next::run, "hisn-dns-reader").start();
+            // A device owner can keep this DNS-only tunnel always on while managed
+            // lockdown holds. A non-owner is a no-op; the VPN must already be prepared.
+            try { UninstallProtectionController.sync(this); }
+            catch (RuntimeException ignored) { /* The status screen reports any gap. */ }
         } catch (RuntimeException unavailable) {
             state = State.ERROR;
             alert(R.string.dns_failed_body);
@@ -282,6 +296,8 @@ public final class DnsVpnService extends VpnService {
         closeSession();
         state = State.OFF;
         alert(R.string.dns_stopped_body);
+        try { UninstallProtectionController.sync(this); }
+        catch (RuntimeException ignored) { /* The next app open retries. */ }
         stopSelf();
     }
 
@@ -392,6 +408,10 @@ public final class DnsVpnService extends VpnService {
                 if (established == null) throw new IOException("VPN permission unavailable");
                 tunnel = established;
                 if (closed) { established.close(); return; }
+                // The tunnel exists now, so a device owner's always-on request can be
+                // applied without racing the VPN preparation. Non-owners are a no-op.
+                try { UninstallProtectionController.sync(DnsVpnService.this); }
+                catch (RuntimeException ignored) { /* The status screen reports any gap. */ }
                 PolicyStore settings = PolicyStore.get(DnsVpnService.this);
                 DnsPolicy.Rules savedRules = hostname -> {
                     DomainPolicy.Decision custom = settings.snapshot().domains.evaluate(hostname);
@@ -406,13 +426,15 @@ public final class DnsVpnService extends VpnService {
                         return DomainPolicy.Decision.BLOCK;
                     }
                     return rules.evaluate(hostname);
-                });
+                }, hostname -> safeSearchEnabled(DnsVpnService.this)
+                        ? SafeSearch.target(hostname) : null);
                 DnsPolicy tcpPolicy = new DnsPolicy(hostname -> {
                     if (DnsTunnelProbe.BLOCKED_HOST.equalsIgnoreCase(hostname)) {
                         selfCheckTcpSeen.incrementAndGet(); return DomainPolicy.Decision.BLOCK;
                     }
                     return rules.evaluate(hostname);
-                });
+                }, hostname -> safeSearchEnabled(DnsVpnService.this)
+                        ? SafeSearch.target(hostname) : null);
                 // Cloudflare for Families at 1.1.1.3, or 1.0.0.3 with the same TLS identity when 1.1.1.3
                 // cannot be reached or times out. Never plaintext, never an unfiltered resolver.
                 transport = TlsDnsTransport.cloudflareFamily(2000, DnsVpnService.this::protect);
@@ -596,7 +618,8 @@ public final class DnsVpnService extends VpnService {
                     if (closed || session != this || !tcp.isPending(request)) return;
                     if (requestEpoch != networkEpoch) throw new IOException("DNS connection invalidated");
                     tcpReplies.incrementAndGet();
-                    if (resolution.blocked) blocked.incrementAndGet();
+                    if (resolution.rewrite) rewritten.incrementAndGet();
+                    else if (resolution.blocked) blocked.incrementAndGet();
                     else { forwarded.incrementAndGet(); markSuccess(); }
                 }
                 finishTcp(request, resolution.answer, exchange, policy, output);
@@ -807,7 +830,8 @@ public final class DnsVpnService extends VpnService {
                 synchronized (CHECK_LOCK) {
                     if (closed || session != this || activeService != DnsVpnService.this) return;
                     if (truncated) udpTruncated.incrementAndGet();
-                    if (resolution.blocked) blocked.incrementAndGet();
+                    if (resolution.rewrite) rewritten.incrementAndGet();
+                    else if (resolution.blocked) blocked.incrementAndGet();
                     else { forwarded.incrementAndGet(); markSuccess(); }
                 }
             } catch (IOException | IllegalArgumentException failure) {

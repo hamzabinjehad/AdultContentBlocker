@@ -19,7 +19,7 @@ the owner's phone.
 | Restriction | Android key | Applies on |
 | --- | --- | --- |
 | Safe Mode | `no_safe_boot` | Android 8+ (minSdk 26) |
-| App controls | `no_apps_control` | Android 8+ |
+| App controls | `no_control_apps` | Android 8+ |
 | Settings factory reset | `no_factory_reset` | Android 8+ |
 | VPN configuration | `no_config_vpn` | Android 8+ |
 | Private DNS | `disallow_config_private_dns` | Android 10+ (API 29) |

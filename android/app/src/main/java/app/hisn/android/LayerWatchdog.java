@@ -14,13 +14,14 @@ import android.content.SharedPreferences;
 import java.util.Set;
 
 import app.hisn.core.LayerWatch;
+import app.hisn.core.ProtectionLock;
 
 /**
  * Background health check for the layers that live outside the app window.
  *
  * A periodic JobScheduler job compares what the owner left armed (the direct
- * build's accessibility guard while "Keep Hisn installed" is on, and the DNS
- * VPN while it is left on) with what is actually running. A lost layer raises
+ * build's accessibility guard while a screen-guard switch or protection lock is
+ * on, and the DNS VPN while it is left on) with what is actually running. A lost layer raises
  * one local notification, repeats at most once every twelve hours, and clears
  * as soon as the layer is back. It never restarts a service, never reads screen
  * text and never contacts a server.
@@ -47,13 +48,18 @@ final class LayerWatchdog {
 
     /** The layers the owner's saved choices expect to be running. */
     static Set<LayerWatch.Layer> expected(Context context) {
-        boolean keep = false;
+        boolean armed = false;
         try {
-            keep = PolicyStore.get(context).uninstallLock();
+            PolicyStore store = PolicyStore.get(context);
+            // Either screen-guard switch keeps the accessibility service worth
+            // watching, and a running protection lock arms the removal guard by
+            // itself even when both switches are off.
+            armed = store.uninstallLock() || store.installLock()
+                    || ProtectionLock.locked(store.remainingMillis());
         } catch (RuntimeException unavailable) {
             // Unreadable settings are not a reason to claim a layer is armed.
         }
-        return LayerWatch.expected(BuildConfig.SELF_PROTECTION, keep,
+        return LayerWatch.expected(BuildConfig.SELF_PROTECTION, armed,
                 DnsVpnService.resumeRequested(context));
     }
 

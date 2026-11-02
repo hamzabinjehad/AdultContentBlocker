@@ -1,6 +1,9 @@
 package app.hisn.android;
 
 import android.app.admin.DevicePolicyManager;
+import android.net.VpnService;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -11,8 +14,11 @@ import android.util.Log;
 
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
+import app.hisn.core.AlwaysOnVpn;
+import app.hisn.core.BlockedAppSuspension;
 import app.hisn.core.ManagedRestrictions;
 import app.hisn.core.UninstallProtection;
 
@@ -51,35 +57,59 @@ final class UninstallProtectionController {
         final boolean uninstallBlocked;
         final boolean keepInstalled;
         final boolean managedLockdown;
+        final boolean managedStrict;
+        final boolean suspendBlocked;
         final long remainingMillis;
         final Set<ManagedRestrictions.Restriction> restrictions;
+        final boolean alwaysOnDesired;
+        final boolean alwaysOnActive;
+        final boolean alwaysOnMatch;
+        final Set<String> suspendedApps;
+        final Set<String> desiredSuspended;
+        final boolean suspensionMatch;
         final String error;
 
         Status(boolean deviceOwner, boolean adminActive, boolean uninstallBlocked,
-               boolean keepInstalled, boolean managedLockdown, long remainingMillis,
-               Set<ManagedRestrictions.Restriction> restrictions, String error) {
+               boolean keepInstalled, boolean managedLockdown, boolean managedStrict,
+               boolean suspendBlocked, long remainingMillis,
+               Set<ManagedRestrictions.Restriction> restrictions,
+               boolean alwaysOnDesired, boolean alwaysOnActive, boolean alwaysOnMatch,
+               Set<String> suspendedApps, Set<String> desiredSuspended, boolean suspensionMatch,
+               String error) {
             this.deviceOwner = deviceOwner;
             this.adminActive = adminActive;
             this.uninstallBlocked = uninstallBlocked;
             this.keepInstalled = keepInstalled;
             this.managedLockdown = managedLockdown;
+            this.managedStrict = managedStrict;
+            this.suspendBlocked = suspendBlocked;
             this.remainingMillis = remainingMillis;
             Set<ManagedRestrictions.Restriction> copy = EnumSet.noneOf(ManagedRestrictions.Restriction.class);
             copy.addAll(restrictions);
             this.restrictions = Collections.unmodifiableSet(copy);
+            this.alwaysOnDesired = alwaysOnDesired;
+            this.alwaysOnActive = alwaysOnActive;
+            this.alwaysOnMatch = alwaysOnMatch;
+            this.suspendedApps = Collections.unmodifiableSet(new LinkedHashSet<>(suspendedApps));
+            this.desiredSuspended = Collections.unmodifiableSet(new LinkedHashSet<>(desiredSuspended));
+            this.suspensionMatch = suspensionMatch;
             this.error = error;
         }
 
         /** The restrictions the person's choices and the platform facts call for right now. */
         Set<ManagedRestrictions.Restriction> desiredRestrictions() {
-            // Private DNS is a separate restriction from Android 10 (API 29).
             return ManagedRestrictions.desired(deviceOwner, managedLockdown, keepInstalled,
-                    remainingMillis, Build.VERSION.SDK_INT >= 29);
+                    remainingMillis, Build.VERSION.SDK_INT, managedStrict);
         }
 
         /** True when the platform holds exactly the desired set, with nothing missing or extra. */
         boolean restrictionsMatch() {
             return ManagedRestrictions.matches(desiredRestrictions(), restrictions);
+        }
+
+        /** True when both the restrictions and the always-on DNS VPN match the policy. */
+        boolean managedMatches() {
+            return restrictionsMatch() && alwaysOnMatch && suspensionMatch;
         }
 
         UninstallProtection.State state() {
@@ -110,7 +140,12 @@ final class UninstallProtectionController {
         boolean blocked = false;
         boolean keep = false;
         boolean lockdown = false;
+        boolean strict = false;
+        boolean suspend = false;
+        Set<String> blockedApps = Collections.emptySet();
         long remaining = 0;
+        boolean dnsOn = false;
+        boolean vpnPrepared = false;
         String error = null;
         Set<ManagedRestrictions.Restriction> held = EnumSet.noneOf(ManagedRestrictions.Restriction.class);
         DevicePolicyManager manager = context.getSystemService(DevicePolicyManager.class);
@@ -125,10 +160,16 @@ final class UninstallProtectionController {
             PolicyStore store = PolicyStore.get(context);
             keep = store.uninstallLock();
             lockdown = store.managedLockdown();
+            strict = store.managedStrict();
+            suspend = store.suspendBlocked();
+            blockedApps = store.snapshot().blockedApps;
             remaining = store.remainingMillis();
+            dnsOn = DnsVpnService.resumeRequested(context);
+            vpnPrepared = VpnService.prepare(context) == null;
         } catch (RuntimeException unavailable) {
             error = error == null ? "settings" : error;
         }
+        String alwaysCurrent = null;
         if (owner && manager != null) {
             try {
                 blocked = manager.isUninstallBlocked(CommitmentAdminReceiver.component(context),
@@ -150,8 +191,35 @@ final class UninstallProtectionController {
                     error = error == null ? "restrictions" : error;
                 }
             }
+            try {
+                alwaysCurrent = manager.getAlwaysOnVpnPackage(CommitmentAdminReceiver.component(context));
+            } catch (RuntimeException unavailable) {
+                error = error == null ? "always-on-readback" : error;
+            }
         }
-        return new Status(owner, admin, blocked, keep, lockdown, remaining, held, error);
+        boolean alwaysDesired = AlwaysOnVpn.shouldApply(owner, lockdown, keep, remaining, dnsOn,
+                vpnPrepared);
+        boolean alwaysActive = AlwaysOnVpn.isOurs(alwaysCurrent, context.getPackageName());
+        boolean alwaysMatch = AlwaysOnVpn.matches(alwaysDesired, alwaysCurrent,
+                context.getPackageName());
+
+        Set<String> installed = new LinkedHashSet<>();
+        Set<String> suspended = new LinkedHashSet<>();
+        PackageManager packages = context.getPackageManager();
+        try {
+            for (ApplicationInfo info : packages.getInstalledApplications(0)) {
+                installed.add(info.packageName);
+                if ((info.flags & ApplicationInfo.FLAG_SUSPENDED) != 0) suspended.add(info.packageName);
+            }
+        } catch (RuntimeException unavailable) {
+            error = error == null ? "packages" : error;
+        }
+        Set<String> desiredSuspended = BlockedAppSuspension.desired(owner, lockdown, suspend, keep,
+                remaining, blockedApps, installed);
+        boolean suspensionMatch = BlockedAppSuspension.matches(desiredSuspended, suspended);
+        return new Status(owner, admin, blocked, keep, lockdown, strict, suspend, remaining, held,
+                alwaysDesired, alwaysActive, alwaysMatch, suspended, desiredSuspended,
+                suspensionMatch, error);
     }
 
     /**
@@ -169,7 +237,8 @@ final class UninstallProtectionController {
         boolean desiredBlock = UninstallProtection.shouldBlock(true, status.keepInstalled,
                 status.remainingMillis);
         Set<ManagedRestrictions.Restriction> desired = status.desiredRestrictions();
-        if (desiredBlock == status.uninstallBlocked && status.restrictionsMatch()) {
+        if (desiredBlock == status.uninstallBlocked && status.restrictionsMatch()
+                && status.alwaysOnMatch) {
             return new Result(true, desiredBlock ? "already-protected" : "already-clear", status);
         }
         DevicePolicyManager manager = context.getSystemService(DevicePolicyManager.class);
@@ -194,14 +263,53 @@ final class UninstallProtectionController {
                 failure = failure == null ? "apply" : failure;
             }
         }
+        if (status.alwaysOnDesired != status.alwaysOnActive) {
+            try {
+                manager.setAlwaysOnVpnPackage(admin, status.alwaysOnDesired
+                        ? context.getPackageName() : null, false);
+            } catch (SecurityException denied) {
+                Log.w(TAG, "Always-on DNS policy was not accepted by the platform", denied);
+                failure = failure == null ? "not-owner" : failure;
+            } catch (android.content.pm.PackageManager.NameNotFoundException missing) {
+                Log.w(TAG, "The VPN package could not be resolved", missing);
+                failure = failure == null ? "always-on" : failure;
+            } catch (RuntimeException unavailable) {
+                Log.w(TAG, "Always-on DNS policy could not be applied", unavailable);
+                failure = failure == null ? "always-on" : failure;
+            }
+        }
+
+        Set<String> toSuspend = BlockedAppSuspension.toSuspend(status.desiredSuspended,
+                status.suspendedApps);
+        Set<String> toResume = BlockedAppSuspension.toResume(status.desiredSuspended,
+                status.suspendedApps);
+        if (failure == null) failure = setSuspension(manager, admin, toSuspend, true);
+        if (failure == null) failure = setSuspension(manager, admin, toResume, false);
 
         Status after = read(context);
         boolean matches = after.error == null && after.uninstallBlocked == desiredBlock
-                && after.restrictionsMatch();
+                && after.restrictionsMatch() && after.alwaysOnMatch && after.suspensionMatch;
         if (failure != null || !matches) {
             return new Result(false, failure == null ? "readback" : failure, after);
         }
         return new Result(true, desiredBlock ? "protected" : "cleared", after);
+    }
+
+    private static String setSuspension(DevicePolicyManager manager, ComponentName admin,
+                                        Set<String> packages, boolean suspended) {
+        if (packages.isEmpty()) return null;
+        try {
+            String[] failed = manager.setPackagesSuspended(admin,
+                    packages.toArray(new String[0]), suspended);
+            if (failed != null && failed.length > 0) return "suspend";
+            return null;
+        } catch (SecurityException denied) {
+            Log.w(TAG, "Package suspension was not accepted by the platform", denied);
+            return "not-owner";
+        } catch (RuntimeException unavailable) {
+            Log.w(TAG, "Package suspension could not be applied", unavailable);
+            return "suspend";
+        }
     }
 
     private static String applyRestrictions(DevicePolicyManager manager, ComponentName admin,
@@ -238,14 +346,15 @@ final class UninstallProtectionController {
      * the commitment and the keep switch. Returns an error string, or null.
      *
      * Restrictions are cleared first in reverse apply order (safe boot last),
-     * then the uninstall block, then ownership itself. Without this recovery
-     * path, a voluntary self-control enrollment would be a one-way change
-     * nobody could undo from the app.
+     * then Hisn's always-on DNS request, the uninstall block, then ownership
+     * itself. Without this recovery path, a voluntary self-control enrollment
+     * would be a one-way change nobody could undo from the app.
      */
     static String releaseManagedMode(Context context) {
         Status status = read(context);
         if (!status.deviceOwner) return "not-managed";
         if (!status.mayRelease()) return "locked";
+        if (status.error != null) return status.error;
         DevicePolicyManager manager = context.getSystemService(DevicePolicyManager.class);
         UserManager users = context.getSystemService(UserManager.class);
         if (manager == null || users == null) return "policy-service";
@@ -253,10 +362,19 @@ final class UninstallProtectionController {
             String failure = clearRestrictions(manager, CommitmentAdminReceiver.component(context),
                     status.restrictions);
             if (failure != null) return failure;
+            if (status.alwaysOnActive) {
+                manager.setAlwaysOnVpnPackage(CommitmentAdminReceiver.component(context), null, false);
+            }
+            String suspension = setSuspension(manager, CommitmentAdminReceiver.component(context),
+                    status.suspendedApps, false);
+            if (suspension != null) return suspension;
             manager.setUninstallBlocked(CommitmentAdminReceiver.component(context),
                     context.getPackageName(), false);
             manager.clearDeviceOwnerApp(context.getPackageName());
             return null;
+        } catch (android.content.pm.PackageManager.NameNotFoundException missing) {
+            Log.w(TAG, "The VPN package could not be resolved during release", missing);
+            return "always-on";
         } catch (RuntimeException unavailable) {
             Log.w(TAG, "Managed mode could not be released", unavailable);
             return "release";

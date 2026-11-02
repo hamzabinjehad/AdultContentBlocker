@@ -2,12 +2,19 @@ package app.hisn.android;
 
 import android.accessibilityservice.AccessibilityService;
 import android.content.Intent;
+import android.graphics.PixelFormat;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.Gravity;
+import android.view.View;
+import android.view.WindowInsets;
+import android.view.WindowManager;
 import android.view.accessibility.AccessibilityWindowInfo;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,7 +24,9 @@ import app.hisn.core.GuardWindows;
 import app.hisn.core.InspectionHealth;
 import app.hisn.core.InterventionRepeat;
 import app.hisn.core.LabelScan;
+import app.hisn.core.ProtectionLock;
 import app.hisn.core.SelfProtectionScreens;
+import app.hisn.core.SelfProtectionScreens.Guard;
 import app.hisn.core.ShortVideoSurfaces;
 import app.hisn.core.VisibleTextSample;
 
@@ -54,6 +63,8 @@ public final class TextGuardService extends AccessibilityService {
     private int rootRetries;
     private Set<String> excluded;
     private VisualGuard visual;
+    private View guardOverlay;
+    private WindowManager guardOverlayManager;
     /** A window Home left on screen (pop-up, refused PiP dismiss) is not acted on again at once. */
     private final InterventionRepeat repeat = new InterventionRepeat();
     /** The selected windows of the last inspection; a windows-changed event with the same set
@@ -72,20 +83,45 @@ public final class TextGuardService extends AccessibilityService {
     private boolean pendingScheduleReason;
     private boolean pendingVisualReason;
     private boolean pendingShortVideoReason;
-    private boolean pendingSelfProtectionReason;
     private int selfRetries;
     private boolean selfCheckQueued;
     private java.util.List<String> selfNames;
+    /** What the last self-protection check found, until the shield page is launched. */
+    private Guard pendingGuard = Guard.NONE;
     private final Runnable showRestriction = () -> {
         try {
             startActivity(new Intent(this, RestrictionActivity.class)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
                     .putExtra("word", pendingWordReason).putExtra("schedule", pendingScheduleReason)
-                    .putExtra("visual", pendingVisualReason).putExtra("shortvideo", pendingShortVideoReason)
-                    .putExtra("selfprotect", pendingSelfProtectionReason));
+                    .putExtra("visual", pendingVisualReason).putExtra("shortvideo", pendingShortVideoReason));
         } catch (RuntimeException unavailable) {
             inspection.record(InspectionHealth.Outcome.INCOMPLETE);
             inspectionOutcome = "restriction-screen-unavailable";
+        }
+    };
+    /** Direct build: the full-screen page that replaces the closed settings screen. */
+    private final Runnable showShield = () -> {
+        Guard guard = pendingGuard;
+        pendingGuard = Guard.NONE;
+        removeGuardOverlay();
+        if (guard == Guard.NONE) return;
+        Intent shield = new Intent(this, ShieldActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP
+                        | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
+                .putExtra(ShieldActivity.EXTRA_GUARD, guard.name());
+        try {
+            startActivity(shield);
+        } catch (RuntimeException unavailable) {
+            // Never leave a closed screen with no explanation.
+            try {
+                startActivity(new Intent(this, RestrictionActivity.class)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP
+                                | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
+                        .putExtra("selfprotect", true));
+            } catch (RuntimeException alsoUnavailable) {
+                inspection.record(InspectionHealth.Outcome.INCOMPLETE);
+                inspectionOutcome = "shield-screen-unavailable";
+            }
         }
     };
 
@@ -97,8 +133,16 @@ public final class TextGuardService extends AccessibilityService {
             // The uninstall guard needs nothing else, so it is armed before image setup.
             excluded = ChosenApps.excluded(this);
             ready = true;
-            // Keeps the boot shield's pre-unlock copy current for installs that predate it.
-            BootShieldService.mirror(this, PolicyStore.get(this).uninstallLock());
+            // Keeps the boot shield's pre-unlock copy current. A running
+            // protection lock arms the removal guard even when the switch is off.
+            try {
+                PolicyStore store = PolicyStore.get(this);
+                BootShieldService.mirror(this, ProtectionLock.bootShieldArmed(
+                        BuildConfig.SELF_PROTECTION, store.uninstallLock(), store.remainingMillis()));
+            } catch (RuntimeException unreadable) {
+                // Leave the previous pre-unlock copy alone: unreadable settings are
+                // not evidence that protection was turned off.
+            }
             // A removal screen opened before Android bound this service is left now.
             if (BuildConfig.SELF_PROTECTION) { selfRetries = 3; handler.post(selfCheck); }
             if (visual != null) visual.close();
@@ -220,7 +264,7 @@ public final class TextGuardService extends AccessibilityService {
             // A queued inspection, and the heartbeat, cover every window anyway.
             if (connected && !discoverPending && !inspectPending) {
                 discoverPending = true;
-                handler.postDelayed(discover, 500);
+                handler.postDelayed(discover, 250);
             }
             return;
         }
@@ -275,7 +319,8 @@ public final class TextGuardService extends AccessibilityService {
             } else if (!inspectPending) {
                 rootRetries = 5;
                 inspectPending = true;
-                handler.postDelayed(inspect, 150);
+                // Content changes are checked quickly; a window-state change is immediate.
+                handler.postDelayed(inspect, 50);
             }
         } catch (RuntimeException unavailable) {
             inspection.record(InspectionHealth.Outcome.INCOMPLETE);
@@ -471,23 +516,36 @@ public final class TextGuardService extends AccessibilityService {
         pendingScheduleReason = false;
         pendingVisualReason = false;
         pendingShortVideoReason = true;
-        pendingSelfProtectionReason = false;
         handler.removeCallbacks(showRestriction);
         handler.postDelayed(showRestriction, 350);
     }
 
     /**
+     * The removal guard is armed by the explicit keep switch or by any running
+     * protection lock. Unreadable settings keep the explicit switch's value but
+     * cannot prove a lock; the dashboard reports the unreadable state instead of
+     * inventing protection.
+     */
+    private static boolean screenGuardKeep(PolicyStore store) {
+        boolean keep = store.uninstallLock();
+        try { return keep || ProtectionLock.locked(store.remainingMillis()); }
+        catch (RuntimeException unreadable) { return keep; }
+    }
+
+    /**
      * Direct builds only: leave Hisn's uninstall, App info, admin-deactivation or
-     * accessibility-toggle screen, or the power menu's Safe Mode prompt, while the owner
-     * keeps the keep-installed switch on. Text of watched system windows is read only
-     * then, and never retained.
+     * accessibility-toggle screen, a new app's install confirmation, or the power
+     * menu's Safe Mode prompt, while the owner's switches are on. Text of watched
+     * system windows is read only then, and never retained.
      */
     private void checkSelfProtection() {
         selfCheckQueued = false;
         if (!BuildConfig.SELF_PROTECTION) return;
         AccessibilityNodeInfo root = null;
         try {
-            if (!SelfProtectionScreens.active(PolicyStore.get(this).uninstallLock())) return;
+            PolicyStore store = PolicyStore.get(this);
+            boolean keep = screenGuardKeep(store), install = store.installLock();
+            if (!SelfProtectionScreens.active(keep, install)) return;
             root = getRootInActiveWindow();
             String name = root == null || root.getPackageName() == null ? null : root.getPackageName().toString();
             if (!SelfProtectionScreens.watches(name)) {
@@ -495,12 +553,16 @@ public final class TextGuardService extends AccessibilityService {
                 if (selfRetries-- > 0) handler.postDelayed(selfCheck, 30);
                 return;
             }
+            // Watched, but not by a switch that is on: no tree walk for a screen
+            // the guard could not act on anyway.
+            if (!SelfProtectionScreens.watches(name, keep, install)) return;
             AccessibilityNodeInfo sampleRoot = root;
             root = null; // LabelScan.sample takes ownership and releases the root.
             Nodes nodes = new Nodes();
             String text = LabelScan.sample(nodes, sampleRoot, LabelScan.NODE_BUDGET).text();
-            if (!isTamper(name, text)) return;
-            leaveTamperScreen();
+            Guard guard = SelfProtectionScreens.classify(name, text, selfNames(), keep, install);
+            if (guard == Guard.NONE) return;
+            leaveTamperScreen(guard);
         } catch (RuntimeException unavailable) {
             inspection.record(InspectionHealth.Outcome.INCOMPLETE);
             inspectionOutcome = "self-protection-unavailable";
@@ -510,47 +572,89 @@ public final class TextGuardService extends AccessibilityService {
     /** Event text alone (a dialog's title and message) is often enough to act before any tree walk. */
     private boolean leaveIfTamperEvent(String name, AccessibilityEvent event) {
         try {
-            if (!SelfProtectionScreens.active(PolicyStore.get(this).uninstallLock())) return false;
+            PolicyStore store = PolicyStore.get(this);
+            boolean keep = screenGuardKeep(store), install = store.installLock();
+            if (!SelfProtectionScreens.active(keep, install)) return false;
             StringBuilder text = new StringBuilder();
             for (CharSequence line : event.getText()) if (line != null) text.append(line).append('\n');
             if (event.getContentDescription() != null) text.append(event.getContentDescription());
-            if (!isTamper(name, text.toString())) return false;
-            leaveTamperScreen();
+            Guard guard = SelfProtectionScreens.classify(name, text.toString(), selfNames(), keep, install);
+            if (guard == Guard.NONE) return false;
+            leaveTamperScreen(guard);
             return true;
         } catch (RuntimeException unavailable) {
             return false;
         }
     }
 
-    private boolean isTamper(String name, String text) {
+    private java.util.List<String> selfNames() {
         if (selfNames == null) {
             java.util.List<String> names = new java.util.ArrayList<>(SelfProtectionScreens.LABELS);
             names.add(getApplicationInfo().loadLabel(getPackageManager()).toString());
             names.add(getPackageName());
             selfNames = names;
         }
-        return SelfProtectionScreens.isTamperScreen(name, text, selfNames)
-                || SelfProtectionScreens.isSafeModePrompt(name, text);
+        return selfNames;
     }
 
-    private void leaveTamperScreen() {
+    private void leaveTamperScreen(Guard guard) {
         handler.removeCallbacks(selfCheck);
         selfCheckQueued = false;
         selfProtectionInterventions++;
         inspectionOutcome = "self-protection-intervention";
-        // BACK cancels an uninstall dialog; HOME then leaves Settings entirely.
+        // BACK cancels a dialog or leaves App info; HOME then leaves Settings entirely.
         performGlobalAction(GLOBAL_ACTION_BACK);
+        // Put a touch-blocking accessibility overlay over the Settings window before
+        // leaving it. This closes the gap where a second tap could reach Uninstall or
+        // Force stop while the Home transition and ShieldActivity are starting.
+        showGuardOverlay();
         if (!performGlobalAction(GLOBAL_ACTION_HOME)) homeFailures++;
+        pendingGuard = guard;
         long now = SystemClock.elapsedRealtime();
-        if (now - lastIntervention < 1500) { cooldownEnforcements++; return; }
-        lastIntervention = now;
-        pendingWordReason = false;
-        pendingScheduleReason = false;
-        pendingVisualReason = false;
-        pendingShortVideoReason = false;
-        pendingSelfProtectionReason = true;
-        handler.removeCallbacks(showRestriction);
-        handler.postDelayed(showRestriction, 350);
+        if (now - lastIntervention < 1500) cooldownEnforcements++;
+        else lastIntervention = now;
+        handler.removeCallbacks(showShield);
+        // Show the shield quickly, but leave the home transition enough time to
+        // settle; an immediate start was covered by that transition on Samsung.
+        handler.postDelayed(showShield, 100);
+    }
+
+    private void showGuardOverlay() {
+        if (Build.VERSION.SDK_INT < 30 || guardOverlay != null) return;
+        try {
+            WindowManager manager = (WindowManager) getSystemService(WINDOW_SERVICE);
+            if (manager == null) return;
+            TextView view = new TextView(this);
+            view.setText(R.string.shield_overlay);
+            view.setTextColor(0xffffffff);
+            view.setTextSize(20);
+            view.setGravity(Gravity.CENTER);
+            view.setBackgroundColor(0xe6000000);
+            view.setClickable(true);
+            view.setOnClickListener(click -> { });
+            WindowManager.LayoutParams params = new WindowManager.LayoutParams(
+                    WindowManager.LayoutParams.MATCH_PARENT,
+                    WindowManager.LayoutParams.MATCH_PARENT,
+                    WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                            | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+                    PixelFormat.TRANSLUCENT);
+            params.setFitInsetsTypes(WindowInsets.Type.systemBars());
+            params.gravity = Gravity.TOP | Gravity.START;
+            manager.addView(view, params);
+            guardOverlay = view;
+            guardOverlayManager = manager;
+        } catch (RuntimeException unavailable) {
+            // The 100 ms ShieldActivity path remains as the fallback.
+        }
+    }
+
+    private void removeGuardOverlay() {
+        if (guardOverlay == null || guardOverlayManager == null) return;
+        try { guardOverlayManager.removeView(guardOverlay); }
+        catch (RuntimeException alreadyGone) { }
+        guardOverlay = null;
+        guardOverlayManager = null;
     }
 
     private void scheduleHeartbeat() {
@@ -630,7 +734,6 @@ public final class TextGuardService extends AccessibilityService {
         pendingScheduleReason = schedule;
         pendingVisualReason = visualReason;
         pendingShortVideoReason = false;
-        pendingSelfProtectionReason = false;
         handler.removeCallbacks(showRestriction);
         // HOME is asynchronous. Launching immediately lets its pending task
         // transition cover the explanation screen on Samsung Android 16.
@@ -673,9 +776,11 @@ public final class TextGuardService extends AccessibilityService {
         handler.removeCallbacks(inspect);
         handler.removeCallbacks(discover);
         handler.removeCallbacks(showRestriction);
+        handler.removeCallbacks(showShield);
         handler.removeCallbacks(heartbeat);
         handler.removeCallbacks(selfCheck);
         selfCheckQueued = false;
+        pendingGuard = Guard.NONE;
         inspectPending = false;
         discoverPending = false;
         pendingPackage = null;
@@ -691,6 +796,7 @@ public final class TextGuardService extends AccessibilityService {
     }
 
     @Override public void onDestroy() {
+        removeGuardOverlay();
         connected = false;
         ready = false;
         handler.removeCallbacks(checkpoint);

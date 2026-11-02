@@ -5,29 +5,43 @@ import java.util.Arrays;
 /** Offline DNS decision prototype. It does not open sockets or route packets. */
 public final class DnsPolicy {
     public interface Rules { DomainPolicy.Decision evaluate(String hostname); }
-    public enum Action { BLOCK, FORWARD, UNSUPPORTED }
+    /** Returns a CNAME target, or null to forward normally. */
+    public interface Rewriter { String target(String hostname); }
+    public enum Action { BLOCK, FORWARD, REWRITE, UNSUPPORTED }
 
     public static final class Result {
         public final Action action;
         /** Only present for a BLOCK decision. */
         public final byte[] response;
+        /** Only present for a REWRITE decision. */
+        public final String rewriteTarget;
         final int questionEnd;
         private Result(Action action, byte[] response, int questionEnd) {
+            this(action, response, questionEnd, null);
+        }
+        private Result(Action action, byte[] response, int questionEnd, String rewriteTarget) {
             this.action = action;
             this.response = response;
             this.questionEnd = questionEnd;
+            this.rewriteTarget = rewriteTarget;
         }
     }
 
     private final Rules domains;
+    private final Rewriter rewriter;
 
     public DnsPolicy(DomainPolicy domains) {
         this(domains == null ? null : domains::evaluate);
     }
 
     public DnsPolicy(Rules domains) {
+        this(domains, null);
+    }
+
+    public DnsPolicy(Rules domains, Rewriter rewriter) {
         if (domains == null) throw new IllegalArgumentException("Missing domain policy");
         this.domains = domains;
+        this.rewriter = rewriter;
     }
 
     /** Handles one uncompressed, standard, single-question IN query with an optional EDNS(0) OPT.
@@ -56,6 +70,7 @@ public final class DnsPolicy {
             }
         }
         if (offset + 4 > query.length || read16(query, offset + 2) != 1) return unsupported();
+        int queryType = read16(query, offset);
         int questionEnd = offset + 4;
         if (additional == 0) {
             if (questionEnd != query.length || query.length > 512) return unsupported();
@@ -64,7 +79,14 @@ public final class DnsPolicy {
         }
         DomainPolicy.Decision decision = decide(name.toString());
         if (decision == DomainPolicy.Decision.INVALID) return unsupported();
-        if (decision == DomainPolicy.Decision.ALLOW) return new Result(Action.FORWARD, null, questionEnd);
+        if (decision == DomainPolicy.Decision.ALLOW) {
+            String rewrite = rewriter == null ? null : rewriter.target(name.toString());
+            if (rewrite != null && (queryType == 1 || queryType == 28)) {
+                return new Result(Action.REWRITE, cnameResponse(query, questionEnd, rewrite),
+                        questionEnd, rewrite);
+            }
+            return new Result(Action.FORWARD, null, questionEnd);
+        }
         return new Result(Action.BLOCK, response(query, questionEnd, 3), questionEnd);
     }
 
@@ -113,6 +135,47 @@ public final class DnsPolicy {
         int dot = name.indexOf('.', underscore);
         if (dot < 0 || name.indexOf('.', dot + 1) < 0) return DomainPolicy.Decision.ALLOW;
         return domains.evaluate(name.substring(dot + 1));
+    }
+
+    /** A CNAME answer with the question intact and no upstream records. */
+    private static byte[] cnameResponse(byte[] query, int questionEnd, String target) {
+        byte[] wire = encodeName(target);
+        byte[] response = new byte[questionEnd + 12 + wire.length];
+        System.arraycopy(query, 0, response, 0, questionEnd);
+        int flags = 0x8000 | 0x0080 | (read16(query, 2) & 0x0100);
+        response[2] = (byte) (flags >>> 8);
+        response[3] = (byte) flags;
+        response[6] = 0; response[7] = 1;   // one answer
+        response[8] = 0; response[9] = 0;   // no authority
+        response[10] = 0; response[11] = 0; // no additional (the OPT record is dropped)
+        int at = questionEnd;
+        response[at++] = (byte) 0xc0; response[at++] = 0x0c; // name points at the question
+        response[at++] = 0; response[at++] = 5;              // CNAME
+        response[at++] = 0; response[at++] = 1;              // IN
+        response[at++] = 0; response[at++] = 0; response[at++] = 1; response[at++] = 0x2c; // TTL 300
+        response[at++] = (byte) (wire.length >>> 8);
+        response[at++] = (byte) wire.length;
+        System.arraycopy(wire, 0, response, at, wire.length);
+        return response;
+    }
+
+    private static byte[] encodeName(String target) {
+        if (target == null || target.isEmpty() || target.length() > 253) {
+            throw new IllegalArgumentException("Invalid rewrite target");
+        }
+        byte[] out = new byte[target.length() + 2];
+        int at = 0;
+        for (String label : target.split("\\.", -1)) {
+            if (label.isEmpty() || label.length() > 63) throw new IllegalArgumentException("Invalid label");
+            out[at++] = (byte) label.length();
+            for (int i = 0; i < label.length(); i++) {
+                char c = label.charAt(i);
+                if (c < 33 || c > 126 || c == '.') throw new IllegalArgumentException("Invalid label");
+                out[at++] = (byte) c;
+            }
+        }
+        out[at++] = 0;
+        return java.util.Arrays.copyOf(out, at);
     }
 
     private static byte[] response(byte[] query, int questionEnd, int code) {

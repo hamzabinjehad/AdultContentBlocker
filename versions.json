@@ -1,6 +1,6 @@
 {
   "branch": "release/1.0",
-  "updated": "2026-11-01",
+  "updated": "2026-11-02",
   "platforms": [
     {
       "id": "extension",
@@ -32,11 +32,11 @@
     {
       "id": "android",
       "name": "Android",
-      "version": "0.8.4",
-      "build": 24,
+      "version": "0.9.0",
+      "build": 25,
       "state": "preview · unsigned; direct builds add the -direct suffix",
       "source": "android/app/build.gradle",
-      "notes": "versionCode is monotonic and must increase for every uploaded or side-loaded update. 24 lets the daily schedule block every app except a chosen keep list, and adds the browser-coverage screen from 23."
+      "notes": "versionCode is monotonic and must increase for every uploaded or side-loaded update. 25 adds the protection lock: saved rules are fully frozen while it runs, the direct build's removal guard arms itself from the lock, and the device-owner uninstall block is applied for the lock. Release APKs are checked unsigned; a production key is still required."
     }
   ]
 }

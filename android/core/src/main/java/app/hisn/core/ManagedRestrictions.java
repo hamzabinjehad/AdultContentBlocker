@@ -8,38 +8,63 @@ import java.util.Set;
  * Pure decisions for the optional managed-lockdown restrictions.
  *
  * A device owner can add user restrictions that ordinary apps cannot. Hisn uses
- * five, and only while the person has explicitly turned on managed lockdown and
- * an active commitment or the keep-installed switch is holding the app:
+ * eight in the basic lockdown and one more only when the owner also turns on
+ * strict mode, and only while managed lockdown is on and an active commitment
+ * or the keep-installed switch is holding the app:
  *
  *   SAFE_BOOT            no Safe Mode from the power menu or hardware keys
  *   APPS_CONTROL         no uninstall, disable, clear-data or force-stop for any app
  *   FACTORY_RESET        no Settings erase (recovery mode still works)
+ *   ADD_USER             no second user or work profile
+ *   CONFIG_DATE_TIME     no manual date, time or timezone change (Android 9+, API 28)
+ *   CONFIG_DEFAULT_APPS  no changing default apps (Android 14+, API 34)
  *   CONFIG_VPN           no VPN configuration changes
  *   CONFIG_PRIVATE_DNS   no Private DNS changes (Android 10+, API 29)
  *
- * APPS_CONTROL is deliberately broad: it changes what the person can do to
- * every app, not only Hisn. That is why it is a separate opt-in and why the
- * caller must show it before applying. None of this survives ADB, root, a
- * device-owner removal at the console, or recovery mode; the UI says so.
+ * Strict mode adds:
+ *
+ *   INSTALL_UNKNOWN_SOURCES  no unknown-source installs (Android 10+, API 29)
+ *
+ * Strict is deliberately separate: it also blocks the guardian's own
+ * sideloaded update. USB debugging is deliberately not blocked, so the
+ * guardian can still verify and recover the phone over ADB; ADB is stated as a
+ * remaining route rather than hidden. A device-wide install block
+ * ({@code no_install_apps}) is still not used because it would freeze Play
+ * updates as well. None of this survives ADB, root, a device-owner removal at
+ * the console, or recovery mode.
  */
 public final class ManagedRestrictions {
     private ManagedRestrictions() { }
 
     /** The Android user-restriction keys, kept here so the decision is testable without Android. */
     public enum Restriction {
-        SAFE_BOOT("no_safe_boot"),
-        APPS_CONTROL("no_apps_control"),
-        FACTORY_RESET("no_factory_reset"),
-        CONFIG_VPN("no_config_vpn"),
-        CONFIG_PRIVATE_DNS("disallow_config_private_dns");
+        SAFE_BOOT("no_safe_boot", 21, false),
+        APPS_CONTROL("no_control_apps", 21, false),
+        FACTORY_RESET("no_factory_reset", 21, false),
+        ADD_USER("no_add_user", 21, false),
+        CONFIG_DATE_TIME("no_config_date_time", 28, false),
+        CONFIG_DEFAULT_APPS("disallow_config_default_apps", 34, false),
+        INSTALL_UNKNOWN_SOURCES("no_install_unknown_sources_globally", 29, true),
+        CONFIG_VPN("no_config_vpn", 21, false),
+        CONFIG_PRIVATE_DNS("disallow_config_private_dns", 29, false);
 
         public final String key;
+        /** The first API level whose UserManager knows this key. */
+        public final int minSdk;
+        /** True only for the separate strict-mode opt-in. */
+        public final boolean strictOnly;
 
-        Restriction(String key) { this.key = key; }
+        Restriction(String key, int minSdk, boolean strictOnly) {
+            this.key = key;
+            this.minSdk = minSdk;
+            this.strictOnly = strictOnly;
+        }
 
         /** Apply order, and the reverse of it is the release order. */
         public static final Restriction[] APPLY_ORDER = {
-                SAFE_BOOT, APPS_CONTROL, FACTORY_RESET, CONFIG_VPN, CONFIG_PRIVATE_DNS
+                SAFE_BOOT, APPS_CONTROL, FACTORY_RESET, ADD_USER, CONFIG_DATE_TIME,
+                CONFIG_DEFAULT_APPS, INSTALL_UNKNOWN_SOURCES, CONFIG_VPN,
+                CONFIG_PRIVATE_DNS
         };
     }
 
@@ -49,25 +74,37 @@ public final class ManagedRestrictions {
         return deviceOwner && managedLockdown && (keepInstalled || remainingMillis > 0);
     }
 
-    /** The exact set Android should hold, assuming every platform key is supported. */
+    /** The exact basic set Android should hold, assuming every current platform key is supported. */
     public static Set<Restriction> desired(boolean deviceOwner, boolean managedLockdown,
                                            boolean keepInstalled, long remainingMillis) {
-        return desired(deviceOwner, managedLockdown, keepInstalled, remainingMillis, true);
+        return desired(deviceOwner, managedLockdown, keepInstalled, remainingMillis,
+                Integer.MAX_VALUE, false);
+    }
+
+    /** The exact basic set Android should hold on the given API level. */
+    public static Set<Restriction> desired(boolean deviceOwner, boolean managedLockdown,
+                                           boolean keepInstalled, long remainingMillis, int sdkInt) {
+        return desired(deviceOwner, managedLockdown, keepInstalled, remainingMillis, sdkInt, false);
     }
 
     /**
-     * The exact set Android should hold. {@code privateDnsSupported} is true only
-     * on Android 10+ (API 29), where the Private DNS restriction exists; older
-     * versions must not be asked for a key they do not know.
+     * The exact set Android should hold. {@code strict} adds the two keys that
+     * also close sideloaded installs and USB debugging. The caller passes
+     * {@code Build.VERSION.SDK_INT}; older versions must not be asked for a key
+     * they do not know, and an unsupported key would turn the status out of sync.
      */
     public static Set<Restriction> desired(boolean deviceOwner, boolean managedLockdown,
-                                           boolean keepInstalled, long remainingMillis,
-                                           boolean privateDnsSupported) {
+                                           boolean keepInstalled, long remainingMillis, int sdkInt,
+                                           boolean strict) {
         if (!shouldApply(deviceOwner, managedLockdown, keepInstalled, remainingMillis)) {
             return Collections.emptySet();
         }
-        Set<Restriction> wanted = EnumSet.allOf(Restriction.class);
-        if (!privateDnsSupported) wanted.remove(Restriction.CONFIG_PRIVATE_DNS);
+        Set<Restriction> wanted = EnumSet.noneOf(Restriction.class);
+        for (Restriction restriction : Restriction.values()) {
+            if (sdkInt >= restriction.minSdk && (strict || !restriction.strictOnly)) {
+                wanted.add(restriction);
+            }
+        }
         return Collections.unmodifiableSet(wanted);
     }
 
@@ -90,7 +127,7 @@ public final class ManagedRestrictions {
         return result;
     }
 
-    /** Apply order for missing restrictions: safe boot first, VPN last. */
+    /** Apply order for missing restrictions: safe boot first, VPN and Private DNS last. */
     public static Restriction[] applyOrder(Set<Restriction> restrictions) {
         java.util.List<Restriction> ordered = new java.util.ArrayList<>();
         for (Restriction restriction : Restriction.APPLY_ORDER) {

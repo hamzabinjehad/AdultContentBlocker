@@ -22,7 +22,7 @@ lockdown**.
   | Restriction | Android key | What it blocks |
   | --- | --- | --- |
   | Safe Mode | `no_safe_boot` | Safe Mode from the power menu and the hardware-key prompt |
-  | App controls | `no_apps_control` | Uninstall, disable, clear-data and force-stop for **every** app |
+  | App controls | `no_control_apps` | Uninstall, disable, clear-data and force-stop for **every** app |
   | Factory reset | `no_factory_reset` | The Settings erase flow (recovery mode still works) |
   | VPN configuration | `no_config_vpn` | Adding, removing or changing VPN configuration |
 
@@ -70,7 +70,7 @@ factory-reset, account-free phone. Do not provision the owner's daily phone.
 
 - It is available only while Hisn is the device owner. An ordinary install, a
   legacy device admin and a profile owner cannot apply these restrictions.
-- `no_apps_control` stops the person from managing **all** apps, including
+- `no_control_apps` stops the person from managing **all** apps, including
   clearing a malfunctioning app's data. That is the price of the strongest
   supported setting; it is not a default.
 - It does not set always-on VPN or global Private DNS. The DNS-only `VpnService`

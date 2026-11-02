@@ -1,4 +1,4 @@
-# Google Play readiness — Hisn Android 0.8.2
+# Google Play readiness — Hisn Android 0.8.4
 
 Repository-side record for a Play submission. It is **not** a Play listing and
 does not claim Play approval. The direct build and the Play build are different

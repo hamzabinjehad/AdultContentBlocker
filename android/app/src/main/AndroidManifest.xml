@@ -5,6 +5,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SYSTEM_EXEMPTED" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Direct builds: the boot shield covers the screen until the uninstall guard is running. -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
@@ -40,6 +41,12 @@
             </intent-filter>
         </activity>
         <activity android:name=".RestrictionActivity" android:exported="false" android:excludeFromRecents="true" />
+        <activity android:name=".GuardianPairActivity" android:exported="false"
+            android:launchMode="singleTop"
+            android:label="@string/guardian_pair_title" android:windowSoftInputMode="adjustResize" />
+        <!-- Direct builds: the page shown after the guard leaves a removal, disable or install screen. -->
+        <activity android:name=".ShieldActivity" android:exported="false" android:excludeFromRecents="true"
+            android:launchMode="singleTop" />
         <receiver android:name=".CommitmentAdminReceiver" android:exported="true"
             android:permission="android.permission.BIND_DEVICE_ADMIN"
             android:label="@string/admin_title" android:description="@string/admin_explanation">
@@ -70,6 +77,8 @@
             android:exported="false" />
         <!-- Configured VPN apps qualify for systemExempted without alarm permissions.
              VpnService.prepare approval precedes startup; lint cannot infer that runtime eligibility.
+             The tunnel carries DNS only. Always-on keeps that filter connected and does not
+             route non-DNS traffic; managed lockdown still never enables VPN lockdown.
              https://developer.android.com/about/versions/14/changes/fgs-types-required#system-exempted -->
         <service android:name=".DnsVpnService"
             android:permission="android.permission.BIND_VPN_SERVICE"
@@ -77,7 +86,7 @@
             android:exported="false"
             tools:ignore="ForegroundServicePermission">
             <intent-filter><action android:name="android.net.VpnService" /></intent-filter>
-            <meta-data android:name="android.net.VpnService.SUPPORTS_ALWAYS_ON" android:value="false" />
+            <meta-data android:name="android.net.VpnService.SUPPORTS_ALWAYS_ON" android:value="true" />
         </service>
     </application>
 </manifest>

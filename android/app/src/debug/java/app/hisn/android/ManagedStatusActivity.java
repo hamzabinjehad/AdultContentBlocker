@@ -37,7 +37,20 @@ public final class ManagedStatusActivity extends Activity {
             json.put("uninstallBlocked", status.uninstallBlocked);
             json.put("keepInstalled", status.keepInstalled);
             json.put("managedLockdown", status.managedLockdown);
+            json.put("managedStrict", status.managedStrict);
+            json.put("suspendBlocked", status.suspendBlocked);
             json.put("restrictionsMatch", status.restrictionsMatch());
+            json.put("managedMatches", status.managedMatches());
+            json.put("alwaysOnVpn", status.alwaysOnActive);
+            json.put("alwaysOnDesired", status.alwaysOnDesired);
+            json.put("alwaysOnMatch", status.alwaysOnMatch);
+            json.put("suspensionMatch", status.suspensionMatch);
+            org.json.JSONArray suspended = new org.json.JSONArray();
+            for (String packageName : status.suspendedApps) suspended.put(packageName);
+            json.put("suspendedApps", suspended);
+            org.json.JSONArray wantedSuspended = new org.json.JSONArray();
+            for (String packageName : status.desiredSuspended) wantedSuspended.put(packageName);
+            json.put("desiredSuspended", wantedSuspended);
             org.json.JSONArray held = new org.json.JSONArray();
             for (app.hisn.core.ManagedRestrictions.Restriction restriction : status.restrictions) {
                 held.put(restriction.key);

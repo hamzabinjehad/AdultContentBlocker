@@ -45,7 +45,7 @@ past version; *superseded* documents point to their replacement. Start with the
 ## Android
 
 - [Google Play readiness](ANDROID_STORE.md): Play vs direct builds, listing copy, Data safety answers, permission declarations, reviewer steps and submission checklist.
-- [Android implementation status](ANDROID_IMPLEMENTATION_STATUS.md): Table of each Android protection layer, what code exists and how far it was verified, as of 0.8.1.
+- [Android implementation status](ANDROID_IMPLEMENTATION_STATUS.md): Table of each Android protection layer, what code exists and how far it was verified, as of 0.9.0.
 - [Android live protection test](ANDROID_LIVE_TEST_2026-10-30.md): Emulator-only 2026-10-30 evidence for text and whole-app blocking, the DNS local-block/route checks and a verified one-day device-owner uninstall lock. Records the test-only fixture limitation and why the physical Samsung was not touched.
 - [Android UI and UX refresh](ANDROID_UI_REFRESH.md): The 2026-10-30 presentation pass: bottom navigation, a status-first Protection page with a concrete attention list, switches, searchable app lists, day/night palette, adaptive icon and splash, and the accessibility work. No policy or consent text changed.
 - [Android tamper resistance scope](ANDROID_TAMPER_RESISTANCE.md): What Android personal mode can and cannot do to resist removal, Play policy limits, and managed-device mode including the 0.8.0 lockdown restrictions and layer watchdog.
@@ -60,6 +60,7 @@ past version; *superseded* documents point to their replacement. Start with the
 - [Blocking decision contract](POLICY.md): The rules the Mac filter and browser extension must both follow for lists, allowlist, locks and strict mode.
 - [Self-control commitment](SELF_CONTROL_COMMITMENT.md): Rules for voluntary time-locked commitments on Mac, iPhone and iPad: what is implemented, what it does not promise, and remaining gaps.
 - [Tamper model](TAMPER_MODEL.md): An audit of every store enforcement reads, who can write it, and what each kind of user can undo.
+- [Phone–laptop pairing protocol](PAIRING_PROTOCOL.md): Wire format for the guardian offer, six-digit SAS, signed policy envelope, replay and expiry rules, threat matrix, and the reference implementation with 33 protocol tests and 11 console tests.
 
 ## Releasing and testing
 
@@ -78,6 +79,7 @@ past version; *superseded* documents point to their replacement. Start with the
 ## Plans and roadmaps
 
 - [Road to 1.0](ROAD_TO_1.0.md): The integrated finish plan: current verified state, the per-platform removal-lock ladder, content-coverage gates, milestones, backlog and owner actions. Start here when deciding what to build next.
+- [Guardian mode plan](GUARDIAN_MODE_PLAN.md): The post-1.0 managed-device route: device owner and supervision levels, the guardian console and phone-laptop pairing, what each platform can actually enforce, the coverage matrix and the phased build.
 - [Android 1.0 plan](ANDROID_1.0_PLAN.md): Fixed Android 1.0 finish line: what is in and out of scope, current state, milestones M1-M5, signing steps.
 - [End-goal plan](END_GOAL_PLAN.md): Ties all plans to one testable goal: no adult content and no removal before a chosen date, with measurable gates.
 - [Improvement roadmap](HISN_IMPROVEMENT_ROADMAP.md): Ordered next work on word blocking, evasion matching, context scoring and cross-platform verification, plus what each pass delivered.
@@ -116,6 +118,12 @@ Per-version change and verification notes, newest first.
 
 ### Android
 
+- [Android 0.9.0 release notes](ANDROID_0.9.0.md): The protection lock freezes every saved rule in both directions, arms the direct build's removal guard from the lock itself, and makes the Play build's uninstall limit explicit while the lock runs. API 36 emulator UI and instrumentation evidence; no physical device claimed.
+- [UI principles and the 2026-11-02 pass](UI_PRINCIPLES.md): progressive disclosure, deferred mobile copy and the screens changed.
+
+- [Physical direct-build guard run, 2026-11-02](ANDROID_LIVE_GUARD_2026-11-02.md): Samsung SM-G990B2 App Info → shield, and `adb uninstall` refused with the legacy admin active; no device owner.
+- [Physical-device validation runbook](PHYSICAL_DEVICE_VALIDATION.md): disposable-phone checklist for managed mode, Settings refusals, pairing, tunnel and release.
+- [Android managed-mode emulator run, 2026-11-01](ANDROID_LIVE_TEST_2026-11-01.md): API 36 emulator device-owner evidence for nine lockdown restrictions, strict mode, blocked-app suspension and the uninstall refusal; records the `no_apps_control` → `no_control_apps` key bug and the remaining physical-device gaps.
 - [Android 0.8.2 release notes](COVERAGE_PASS_2026-10-30.md): Seed v5's 239,885-domain core, and the two selected fill sources named in the licenses/sources screen. Unsigned preview; device-owner run still pending.
 - [Android 0.8.1 release notes](ANDROID_0.8.1.md): The APK-only list-update decision with a 90-day bundled-list age warning, a visible background-check line, and the notification permission request when Keep Hisn installed is enabled. Device acceptance pending; the ordinary build is still removable.
 - [Android 0.8.0 release notes](ANDROID_0.8.0.md): Private DNS joins managed lockdown on Android 10+, and a persistent 15-minute watchdog notices a stopped accessibility guard or DNS VPN and posts a local layer-loss notice. *Historical.*

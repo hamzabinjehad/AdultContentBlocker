@@ -32,7 +32,11 @@ still not absolute. See **Limits** below.
    cannot see the screen, and store it the way you store other recovery secrets.
 
    Optional supervised-only hardening, each off by default because it can take
-   away a recovery path:
+   away a recovery path. `--maximum` turns on every switch in the table below;
+   it refuses `--allow-app-removal`, and it blocks installing needed apps,
+   account and passcode changes and Content & Privacy edits. Use it only after
+   reading **Limits** below: the profile cannot recover a forgotten passcode or
+   a changed account for you.
 
    | Flag | Key set | What it closes |
    | --- | --- | --- |
@@ -46,6 +50,20 @@ still not absolute. See **Limits** below.
    Add only the ones the person and guardian have agreed to. `allowAppRemoval`
    is controlled separately by `--allow-app-removal`; leaving it unset keeps app
    deletion blocked. None of these keys apply on an unsupervised device.
+
+   **Guardian pack (optional).** To keep the profile, its hash and the
+   step-by-step checklist together, build the pack instead:
+
+   ```sh
+   python3 profile/make_guardian_pack.py --out dist/iphone-pack \
+       --block-site reddit.com --maximum
+   ```
+
+   It writes `hisn-iphone.mobileconfig` (mode 0600, the removal password is
+   inside it), `manifest.json` (hash and facts, never the password),
+   `GUARDIAN.md` (supervision, verification and recovery steps) and
+   `SHA256SUMS`. The pack refuses `--maximum --allow-app-removal` and does not
+   supervise anything itself.
 
 2. **Supervise the device.** In Apple Configurator: connect the device, choose
    **Prepare**, select **Manual configuration**, tick **Supervise devices** and

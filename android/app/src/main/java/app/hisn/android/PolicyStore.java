@@ -8,6 +8,7 @@ import android.provider.Settings;
 import app.hisn.core.CommitmentClock;
 import app.hisn.core.DailyAppSchedule;
 import app.hisn.core.DomainPolicy;
+import app.hisn.core.ProtectionLock;
 import app.hisn.core.UninstallProtection;
 import app.hisn.core.PolicyChangeError;
 import app.hisn.core.SavedSettings;
@@ -117,7 +118,10 @@ public final class PolicyStore {
     private volatile Snapshot snapshot;
     private CommitmentClock commitment;
     private boolean uninstallLock;
+    private boolean installLock;
     private boolean managedLockdown;
+    private boolean managedStrict;
+    private boolean suspendBlocked;
     // Saved with the rules: the commitment could not be read and runs for the longest possible time,
     // and the main file was replaced by its copy and the owner has not yet confirmed the rules.
     private boolean commitmentUnknown, restored;
@@ -152,7 +156,10 @@ public final class PolicyStore {
             SavedSettings loadedSettings = SavedSettings.rules(load.rules);
             snapshot = snapshot(loadedSettings);
             uninstallLock = loadedSettings.uninstallLock;
+            installLock = loadedSettings.installLock;
             managedLockdown = loadedSettings.managedLockdown;
+            managedStrict = loadedSettings.managedStrict;
+            suspendBlocked = loadedSettings.suspendBlocked;
             commitment = load.clock;
             commitmentUnknown = load.unknown;
             restored = load.restored;
@@ -198,8 +205,15 @@ public final class PolicyStore {
         persist(snapshot, commitment.checkpoint(SystemClock.elapsedRealtime(), boot()), commitmentUnknown, restored);
     }
 
-    /** Opt-in "keep Hisn installed" switch used by the device-owner guard. */
+    /** Opt-in "keep Hisn installed" switch used by the device-owner guard and the direct screen guard. */
     public synchronized boolean uninstallLock() { return uninstallLock; }
+
+    /**
+     * Direct build only: the owner also asked the screen guard to leave a new
+     * app's install confirmation. Separate from the keep-installed switch so
+     * installing an ordinary app stays possible when only removal is locked.
+     */
+    public synchronized boolean installLock() { return installLock; }
 
     /**
      * Opt-in managed lockdown: while it is on and the app is held by a
@@ -211,6 +225,20 @@ public final class PolicyStore {
     public synchronized boolean managedLockdown() { return managedLockdown; }
 
     /**
+     * Separate strict managed-lockdown opt-in: while it is on and managed
+     * lockdown holds, the device owner also blocks unknown-source installs and
+     * USB debugging. Off by default; it freezes sideloaded updates and ADB.
+     */
+    public synchronized boolean managedStrict() { return managedStrict; }
+
+    /**
+     * Separate opt-in: while managed lockdown holds, apps the owner already
+     * blocked are suspended by Android, so they disappear from the launcher.
+     * Their data is kept; unblocking or releasing resumes them.
+     */
+    public synchronized boolean suspendBlocked() { return suspendBlocked; }
+
+    /**
      * Save both managed-device choices together so a failure cannot leave the
      * uninstall block and the restrictions describing different states.
      *
@@ -220,31 +248,88 @@ public final class PolicyStore {
      * ostensibly locked.
      */
     public synchronized void updateManagedChoice(boolean keepInstalled, boolean lockdown) {
+        updateManagedChoice(keepInstalled, installLock, lockdown, managedStrict, suspendBlocked);
+    }
+
+    /**
+     * Save the direct build's two screen-guard choices and the device-owner
+     * lockdown in one write. Tightening is always allowed; loosening any switch
+     * waits for a commitment to end, for the same reason as before: otherwise a
+     * person could start a commitment, turn the guard off, and remove Hisn
+     * while the saved rules still looked locked.
+     */
+    public synchronized void updateManagedChoice(boolean keepInstalled, boolean installLocked, boolean lockdown) {
+        updateManagedChoice(keepInstalled, installLocked, lockdown, managedStrict, suspendBlocked);
+    }
+
+    /**
+     * Save the screen-guard choices, managed lockdown and the strict opt-in in
+     * one write. Loosening any switch waits for a commitment to end.
+     */
+    public synchronized void updateManagedChoice(boolean keepInstalled, boolean installLocked,
+                                                 boolean lockdown, boolean strict) {
+        updateManagedChoice(keepInstalled, installLocked, lockdown, strict, suspendBlocked);
+    }
+
+    /**
+     * Save the screen-guard choices, managed lockdown, strict mode and blocked-app
+     * suspension in one write. Loosening any switch waits for a commitment to end.
+     */
+    public synchronized void updateManagedChoice(boolean keepInstalled, boolean installLocked,
+                                                 boolean lockdown, boolean strict, boolean suspend) {
         long remaining = remainingMillis();
         if (!keepInstalled && uninstallLock && !UninstallProtection.mayChangeLock(remaining))
             throw new IllegalStateException("Commitment prevents disabling uninstall protection");
+        if (!installLocked && installLock && !UninstallProtection.mayChangeLock(remaining))
+            throw new IllegalStateException("Commitment prevents disabling install protection");
         if (!lockdown && managedLockdown && !UninstallProtection.mayChangeLock(remaining))
             throw new IllegalStateException("Commitment prevents disabling managed lockdown");
-        boolean previousKeep = uninstallLock, previousLockdown = managedLockdown;
+        if (!strict && managedStrict && !UninstallProtection.mayChangeLock(remaining))
+            throw new IllegalStateException("Commitment prevents disabling strict lockdown");
+        if (!suspend && suspendBlocked && !UninstallProtection.mayChangeLock(remaining))
+            throw new IllegalStateException("Commitment prevents disabling blocked-app suspension");
+        boolean previousKeep = uninstallLock, previousInstall = installLock, previousLockdown = managedLockdown;
+        boolean previousStrict = managedStrict, previousSuspend = suspendBlocked;
         uninstallLock = keepInstalled;
+        installLock = installLocked;
         managedLockdown = lockdown;
+        managedStrict = strict;
+        suspendBlocked = suspend;
         try {
             persist(snapshot, commitment.checkpoint(SystemClock.elapsedRealtime(), boot()), commitmentUnknown, restored);
         } catch (RuntimeException failed) {
             uninstallLock = previousKeep;
+            installLock = previousInstall;
             managedLockdown = previousLockdown;
+            managedStrict = previousStrict;
+            suspendBlocked = previousSuspend;
             throw failed;
         }
     }
 
-    /** Turn the persistent uninstall guard on or off, leaving managed lockdown unchanged. */
+    /** Turn the persistent uninstall guard on or off, leaving the other choices unchanged. */
     public synchronized void updateUninstallLock(boolean enabled) {
-        updateManagedChoice(enabled, managedLockdown);
+        updateManagedChoice(enabled, installLock, managedLockdown);
     }
 
-    /** Turn managed lockdown on or off, leaving the uninstall keep switch unchanged. */
+    /** Turn the direct build's install guard on or off, leaving the other choices unchanged. */
+    public synchronized void updateInstallLock(boolean enabled) {
+        updateManagedChoice(uninstallLock, enabled, managedLockdown);
+    }
+
+    /** Turn managed lockdown on or off, leaving the screen-guard choices unchanged. */
     public synchronized void updateManagedLockdown(boolean enabled) {
-        updateManagedChoice(uninstallLock, enabled);
+        updateManagedChoice(uninstallLock, installLock, enabled, managedStrict, suspendBlocked);
+    }
+
+    /** Turn the strict install/debug block on or off, leaving the other choices unchanged. */
+    public synchronized void updateManagedStrict(boolean enabled) {
+        updateManagedChoice(uninstallLock, installLock, managedLockdown, enabled, suspendBlocked);
+    }
+
+    /** Turn blocked-app suspension on or off, leaving the other choices unchanged. */
+    public synchronized void updateSuspendBlocked(boolean enabled) {
+        updateManagedChoice(uninstallLock, installLock, managedLockdown, managedStrict, enabled);
     }
 
     public synchronized void startCommitment(int days) {
@@ -284,19 +369,87 @@ public final class PolicyStore {
                 snapshot.adultWordsEnabled, schedule, snapshot.visualEnabled, snapshot.shortVideoEnabled));
     }
 
+    /**
+     * Saved rules are frozen for the whole protection-lock period. Unlike the
+     * earlier "tighten only" rule, adding a restriction is refused too: the
+     * promise is that the rules cannot change at all. A guardian-signed policy
+     * has its own tighten-only path ({@link #updateFromGuardian}); extending the
+     * lock is allowed because it only lengthens the same promise.
+     *
+     * <p>A no-op save is still accepted so a screen that re-saves unchanged
+     * values does not fail. The UI disables the editors as well, but this
+     * backend check is what makes the freeze real for every caller.
+     */
     private void save(Snapshot next) {
         Snapshot previous = snapshot;
-        if (remainingMillis() > 0 && (!next.domains.blockedRules().containsAll(previous.domains.blockedRules())
-                || !next.words.configuredRules().containsAll(previous.words.configuredRules())
-                || !next.blockedApps.containsAll(previous.blockedApps)
-                || !next.scannedApps.containsAll(previous.scannedApps)
-                || (previous.adultWordsEnabled && !next.adultWordsEnabled)
-                || (previous.visualEnabled && !next.visualEnabled)
-                || (previous.shortVideoEnabled && !next.shortVideoEnabled)
-                || !next.schedule.preserves(previous.schedule, next.blockedApps))) {
-            throw new PolicyChangeError.Refused(PolicyChangeError.COMMITMENT, "Commitment prevents weakening rules");
+        long remaining = remainingMillis();
+        if (ProtectionLock.locked(remaining) && !sameRules(previous, next)) {
+            throw new PolicyChangeError.Refused(PolicyChangeError.COMMITMENT,
+                    "The protection lock prevents changing rules");
         }
         persist(next, commitment.checkpoint(SystemClock.elapsedRealtime(), boot()), commitmentUnknown, restored);
+    }
+
+    /**
+     * Guardian policy path: a signed policy may tighten rules while the lock is
+     * running, and it may never loosen them. The caller has already verified the
+     * signature, device binding, expiry and counter. This path exists because
+     * the person-facing editors are fully frozen during a lock; a guardian is
+     * the separate authority the product documents.
+     */
+    public synchronized void updateFromGuardian(String domains, String words, Set<String> apps,
+                                                Set<String> scans) {
+        Snapshot previous = snapshot;
+        Snapshot next = new Snapshot(domains, words, apps, scans, previous.adultWordsEnabled,
+                previous.schedule, previous.visualEnabled, previous.shortVideoEnabled);
+        if (!tightensOnly(previous, next)) {
+            throw new PolicyChangeError.Refused(PolicyChangeError.COMMITMENT,
+                    "A guardian policy may only add restrictions");
+        }
+        persist(next, commitment.checkpoint(SystemClock.elapsedRealtime(), boot()), commitmentUnknown, restored);
+    }
+
+    private static boolean sameRules(Snapshot a, Snapshot b) {
+        return a.domains.blockedRules().equals(b.domains.blockedRules())
+                && a.words.configuredRules().equals(b.words.configuredRules())
+                && a.blockedApps.equals(b.blockedApps)
+                && a.scannedApps.equals(b.scannedApps)
+                && a.adultWordsEnabled == b.adultWordsEnabled
+                && a.visualEnabled == b.visualEnabled
+                && a.shortVideoEnabled == b.shortVideoEnabled
+                && a.schedule.enabled == b.schedule.enabled
+                && a.schedule.startMinute == b.schedule.startMinute
+                && a.schedule.endMinute == b.schedule.endMinute
+                && a.schedule.allApps == b.schedule.allApps
+                && a.schedule.apps.equals(b.schedule.apps);
+    }
+
+    /** Every rule the previous snapshot held must still be held, and no switch may turn off. */
+    private static boolean tightensOnly(Snapshot previous, Snapshot next) {
+        return next.domains.blockedRules().containsAll(previous.domains.blockedRules())
+                && next.words.configuredRules().containsAll(previous.words.configuredRules())
+                && next.blockedApps.containsAll(previous.blockedApps)
+                && next.scannedApps.containsAll(previous.scannedApps)
+                && (!previous.adultWordsEnabled || next.adultWordsEnabled)
+                && (!previous.visualEnabled || next.visualEnabled)
+                && (!previous.shortVideoEnabled || next.shortVideoEnabled)
+                && next.schedule.preserves(previous.schedule, next.blockedApps);
+    }
+
+    /** Optional SafeSearch rewrite. It is a saved rule, so the same lock applies. */
+    public synchronized boolean safeSearchEnabled() {
+        return context.getSharedPreferences(DnsVpnService.PREFS, Context.MODE_PRIVATE)
+                .getBoolean(DnsVpnService.SAFE_SEARCH, false);
+    }
+
+    public synchronized void updateSafeSearch(boolean enabled) {
+        boolean current = safeSearchEnabled();
+        if (ProtectionLock.locked(remainingMillis()) && enabled != current) {
+            throw new PolicyChangeError.Refused(PolicyChangeError.COMMITMENT,
+                    "The protection lock prevents changing rules");
+        }
+        context.getSharedPreferences(DnsVpnService.PREFS, Context.MODE_PRIVATE).edit()
+                .putBoolean(DnsVpnService.SAFE_SEARCH, enabled).apply();
     }
 
     /**
@@ -307,8 +460,9 @@ public final class PolicyStore {
     private void persist(Snapshot rules, CommitmentClock clock, boolean unknown, boolean restoredNotice) {
         Map<String, Object> values = SavedSettings.values(String.join("\n", rules.domains.blockedRules()),
                 String.join("\n", rules.words.configuredRules()), rules.blockedApps, rules.scannedApps,
-                rules.adultWordsEnabled, rules.visualEnabled, rules.shortVideoEnabled, uninstallLock,
-                managedLockdown, rules.schedule, clock, unknown, restoredNotice);
+                rules.adultWordsEnabled, rules.visualEnabled, rules.shortVideoEnabled, uninstallLock, installLock,
+                managedLockdown, managedStrict, suspendBlocked, rules.schedule, clock, unknown,
+                restoredNotice);
         if (!write(prefs, values)) throw saveFailed("Cannot save settings");
         saved = values;
         snapshot = rules;

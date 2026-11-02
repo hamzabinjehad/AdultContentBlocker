@@ -17,6 +17,10 @@ public final class DomainPolicyTest {
         check(!policy.blocks("safe.example.com") && !policy.blocks("a.safe.example.com"), "allow overrides block");
         check(policy.blocks("xn--bcher-kva.example"), "IDNA");
         check(policy.blocks("www。example.com"), "international separator");
+        int before = policy.cacheSize();
+        check(policy.blocks("WWW.Example.com"), "cache hit decision");
+        check(policy.cacheSize() == before + 1 || before > 0, "cache did not retain the new query");
+        check(policy.evaluate(null) == DomainPolicy.Decision.INVALID, "null query");
         for (String invalid : Arrays.asList("https://example.com", "example.com:443", "example.com..", "192.0.2.1", "::1", " example.com")) {
             check(!policy.blocks(invalid), "invalid query " + invalid);
             check(policy.evaluate(invalid) == DomainPolicy.Decision.INVALID, "invalid status " + invalid);

@@ -4,6 +4,14 @@ Written 2026-10-24 against 0.5.1 (version code 13). This replaces the open-ended
 "next acceptance gates" list in [the status record](ANDROID_IMPLEMENTATION_STATUS.md)
 with a fixed finish line. Per-version evidence stays in the `ANDROID_0.x.md` records.
 
+> **0.9.0 update (2026-11-02):** the in-app commitment is now the **protection
+> lock**. While it runs, every saved rule is frozen in both directions, not only
+> against weakening. The direct build's removal guard arms itself from the lock
+> even when its switch is off, and a device-owner install keeps Android's
+> uninstall block. The Play build states that it cannot block its own removal.
+> Code, core tests, string parity, debug/test builds and lint pass; no physical
+> device run of 0.9.0 is claimed. See [0.9.0](ANDROID_0.9.0.md).
+
 ## End goal
 
 Hisn for Android 1.0 is a **signed, sideloadable personal self-control app**. The
@@ -13,7 +21,8 @@ owner turns on the layers they choose and gets accurate status for each one:
 2. **Selected-app restrictions**: permanent blocks and daily schedules.
 3. **Word and adult-text checks** in the apps the owner chooses.
 4. **Opt-in image/video sampling** in the apps the owner chooses.
-5. **Commitments** that refuse to weaken any of the above until they expire.
+5. **Protection locks** that freeze every layer above, in both directions, until
+   they expire.
 6. **Optional managed uninstall protection** on a phone the owner has
    provisioned as device owner. This is an extra, not a requirement for the
    ordinary sideloaded build.
@@ -57,8 +66,8 @@ needs its own lifecycle testing.
 | DNS layer (UDP + TCP53, DoT upstream, route check) | Implemented; core and Samsung route checks pass | Real Wi-Fi to mobile handover, screen lock, another VPN, resolver loss (M2) |
 | App blocks, schedules, words, adult text | Implemented; fixture and synthetic-corpus evidence | Real-app coverage pass (M3) |
 | Visual sampling | Implemented; benign baseline 0/12 false blocks; WebGL 121 ms median on Samsung | Adult recall, battery, live capture on 0.5.1 (M4) |
-| Commitments | Implemented; clock, boot and isolated-preference tests pass. Device-owner mode can additionally block ordinary uninstall while one runs, and managed lockdown can hold the restrictions (five on Android 10+). | Disposable short commitment end to end on device (M3) |
-| Managed uninstall protection (0.8.1) | Device-owner only; pure state matrix, persistence guard, readback/release controller, UI and boot reconciliation are present. Optional lockdown adds `no_safe_boot`, `no_apps_control`, `no_factory_reset`, `no_config_vpn` and, on Android 10+, `disallow_config_private_dns`; saved with the uninstall block and released in reverse order. | Actual blocked uninstall and restriction refusals on a disposable provisioned device; Play/DPC policy review; no provisioning was applied to the owner's phone |
+| Protection locks | Implemented; clock, boot, full-freeze and isolated-preference tests pass. Device-owner mode can additionally block ordinary uninstall while one runs, and managed lockdown can hold the API-appropriate restrictions (five on Android 8, six on Android 9, seven on Android 10–13, eight on Android 14+). | Disposable short protection lock end to end on device (M3) |
+| Managed uninstall protection (0.8.1) | Device-owner only; pure state matrix, persistence guard, readback/release controller, UI and boot reconciliation are present. Optional lockdown adds `no_safe_boot`, `no_control_apps`, `no_factory_reset`, `no_add_user`, `no_config_vpn`, on Android 9+ `no_config_date_time`, on Android 10+ `disallow_config_private_dns` and, on Android 14+, `disallow_config_default_apps`; an optional strict switch adds `no_install_unknown_sources_globally` on Android 10+; a separate switch suspends blocked apps in Android while the lockdown holds. The DNS layer also has an opt-in SafeSearch CNAME rewrite. It also asks Android to keep the DNS-only VPN always on while DNS filtering is on. Saved with the uninstall block and released in reverse order. | Actual blocked uninstall and restriction refusals on a disposable provisioned device; Play/DPC policy review; an API 36 emulator device-owner run passed on 2026-11-01; no physical phone or release was provisioned |
 | Layer health / honest status | Implemented model with 1,280 combinations tested. 0.8.0 adds a persistent 15-minute JobScheduler watchdog that notices a stopped DNS VPN or accessibility guard, posts one local notice and clears it on recovery. 0.8.1 shows the last run, a lost layer or notifications being off, and requests the notification permission when Keep is enabled. | Service-kill, Doze delay, notification permission and permission-revoke recovery on device (M2) |
 | Release signing | **Added in 0.5.1**: optional `HISN_ANDROID_*` environment signing | Owner creates and backs up the production key (M5) |
 | Signed list updates | **Decision: APK-only for 1.0.** The signed seed is bundled and pinned at build time; `SeedFreshness` warns after 90 days and the UI states a new build is the update. No runtime list download. | Runtime generation deferred to 1.1 (needs a reviewed Ed25519 verifier and a published `lists` branch); stale warning on a device |
@@ -116,7 +125,7 @@ as a limit. It is never dropped silently.
   running.
 - 0.7.0 adds the second opt-in: while a device owner, the lockdown switch and a
   commitment or keep lock all hold, `DevicePolicyManager.addUserRestriction`
-  applies `no_safe_boot`, `no_apps_control`, `no_factory_reset`,
+  applies `no_safe_boot`, `no_control_apps`, `no_factory_reset`,
   `no_config_vpn` and, on Android 10+, `disallow_config_private_dns`;
   `UserManager` readback drives an out-of-sync state rather than a green light.
 - 0.8.0 adds the persistent 15-minute `JobScheduler` layer watchdog. It compares
@@ -148,7 +157,7 @@ Run on a fresh 0.5.x debug install, using `test-live-*.py` where possible:
 - [ ] Browsers: Chrome, Brave, Samsung Internet, Firefox. Record DNS block, text check
       and visual check per browser, as pass / fail / not supported.
 - [ ] Two feed apps chosen by the owner, using public content only, never private messages.
-- [ ] Disposable 1-day commitment (option added in 0.5.2): restart, stronger-rule update, rejected weakening.
+- [ ] Disposable 1-day protection lock (option added in 0.5.2): restart, rejected rule additions and rejected weakening.
 - [ ] Optional admin step: activation and deactivation UI observed.
 - [ ] Managed uninstall preview on a disposable device owner: blocked uninstall,
       readback, commitment expiry reconciliation, release and removal.
@@ -184,7 +193,7 @@ distribution, not another layer:
 | Real-app coverage (M3) | Fixtures only | Disposable phone and public content: browsers and two feed apps |
 | Visual benchmark (M4) | Benign baseline and WebKit/CPU timings | Licensed adult/benign corpus with denominators; battery run |
 | Managed device proof | Code, readback and tests only | Factory-reset, account-free device owner: uninstall, Safe Mode, app controls, factory reset, VPN and Private DNS refusals; release restores |
-| Version 1.0.0 | 0.8.1 (21) | Bump to 1.0.0, write `ANDROID_1.0.md`, copy the known limits into the release notes |
+| Version 1.0.0 | 0.9.0 (25) | Bump to 1.0.0, write `ANDROID_1.0.md`, copy the known limits into the release notes |
 | QR provisioning | Deferred | Needs a hosted APK URL and a reviewed QR payload; the ADB route is the supported 1.0 setup |
 | Always-on / full tunnel | Explicitly out of 1.0 | Revisit with a full-tunnel forwarder in 2.0 |
 | Play vs direct | Separate builds exist (`-PhisnDistribution=direct`) and `check-release.py --expect-distribution play` or `direct` refuses a mismatched artifact | Never upload the direct build to Play; keep the accessibility guard out of Play |

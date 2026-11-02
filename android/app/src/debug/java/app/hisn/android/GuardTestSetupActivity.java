@@ -45,6 +45,20 @@ public final class GuardTestSetupActivity extends Activity {
                         + " " + DnsVpnService.browserCanaryStatus());
                 return;
             }
+            if ("self-protection-on".equals(mode) || "self-protection-off".equals(mode)) {
+                boolean on = "self-protection-on".equals(mode);
+                PolicyStore store = PolicyStore.get(this);
+                store.updateManagedChoice(on, on, store.managedLockdown());
+                report("PASS " + mode + " KEEP " + store.uninstallLock() + " INSTALL " + store.installLock());
+                return;
+            }
+            if ("shield".equals(mode)) {
+                // Opens the protection page directly, so its layout can be captured without a live trigger.
+                startActivity(new android.content.Intent(this, ShieldActivity.class)
+                        .putExtra(ShieldActivity.EXTRA_GUARD, getIntent().getStringExtra("guard")));
+                report("PASS " + mode);
+                return;
+            }
             if ("restriction-screen".equals(mode)) {
                 // Opens the restriction screen and its pause without needing a live guard intervention.
                 startActivity(new android.content.Intent(this, RestrictionActivity.class)

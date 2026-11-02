@@ -1,8 +1,34 @@
 # Android implementation and remaining release gates
 
-Updated 2026-10-26. This describes the development work in `android/`, not a
+Updated 2026-11-02. This describes the development work in `android/`, not a
 production release or proof that the connected owner's phone is protected.
 Mac, iOS/iPadOS and browser code were not changed in this Android implementation.
+
+## 0.9.0 protection-lock verification boundary (2026-11-02)
+
+0.9.0 turns the in-app commitment into the **protection lock** and freezes every
+saved rule while it runs. `ProtectionLock` holds the pure decision; `PolicyStore`
+refuses additions, removals and edits from every in-app caller, not only
+weakening changes. Starting a longer lock is allowed. The guardian policy path
+(`updateFromGuardian`) can still add restrictions and is tighten-only.
+
+The direct build's accessibility guard now arms itself from a running lock even
+when the keep-installed switch is off. `TextGuardService`, the boot-shield copy
+and `LayerWatchdog` use the same effective state. A device-owner install applies
+`setUninstallBlocked` for the lock as before. The Play build cannot block its own
+removal and now adds an explicit attention item while a lock runs. The Rules page
+shows the remaining lock time and disables every editor, switch and the schedule
+button.
+
+Verified on 2 November 2026: `ProtectionLockTest`, the full Android core suite,
+English/Arabic string parity (440 strings, 14 plurals), `assembleDebug`,
+`assembleDebugAndroidTest` and `lintDebug` pass. The release/direct builds and
+`check-release.py` are recorded in [0.9.0](ANDROID_0.9.0.md).
+
+**No device run is claimed for 0.9.0.** The freeze, automatic guard arming, boot
+shield and uninstall states are code and unit-test evidence only. The guard still
+depends on accessibility being on; boot-key Safe Mode, ADB, root and a factory
+reset remain outside it, and the Play build remains removable by design.
 
 ## End-state objective
 
@@ -16,7 +42,7 @@ status. Each layer must state its scope and recover from service/permission
 loss without displaying false protection. Absolute detection or resistance to
 a device owner's reset/recovery controls is not an achievable release claim.
 
-## Implemented in the development preview (latest: 0.8.1)
+## Implemented in the development preview (latest: 0.9.0)
 
 | Layer | Code now present | Verification boundary |
 | --- | --- | --- |
@@ -31,10 +57,10 @@ a device owner's reset/recovery controls is not an achievable release claim.
 | App/word intervention | Consent-based accessibility service restricted to chosen apps; home/restriction screen; input/password skips | Existing ordinary/editable/password/long-text/wide-tree/rapid-reopen fixtures and 2026-10-20 normal-content fixtures pass; real-app coverage pending |
 | Built-in adult-text checks | Opt-in English/Arabic policy; 4,462 canonical rules including reviewed local protective/recovery context; bounded compact-spelling recovery, complete explicit media labels, shared Arabic/Persian/Urdu folds and no-space phrase aliases; custom rules independent | Core actual-seed tests pass, including Persian/Urdu, `nudephotos`, `p0rnhub` and the `سكسونيا` benign boundary; 52 synthetic examples: 23/25 intended blocks, 0/27 benign false blocks, two known challenge misses; not a general accuracy estimate. See 0.4.6 release evidence and the 0.6.0 record |
 | Setup guidance | Shared next-step message/action model separates rules, permission, binding, policy loading/error, limited scans and DNS/check states | All 1,280 enum combinations tested; READY requires every selected setup prerequisite, not universal protection |
-| Commitment | Backend rejects weaker settings and disabling opted-in adult checks for 7/30/90 days; elapsed/boot clock; new empty commitments rejected | Pure clock tests and isolated Samsung preference tests pass; old empty commitments preserve time and permit added restrictions |
+| Commitment | Backend rejects every rule change during the lock (0.9.0), not only weaker settings; elapsed/boot clock; new empty commitments rejected | Pure clock and protection-lock tests, isolated Samsung preference tests from earlier versions pass; the 0.9.0 freeze is core-test and build evidence only |
 | Daily selected-app schedule | Optional every-day local-time window, separate app set, overnight support, static-screen periodic enforcement and commitment-preserving coverage | Exhaustive/randomized core tests, isolated Samsung persistence/commitment checks and real local-time boundary test pass; clock/timezone/accessibility bypasses remain |
 | Removal friction | Optional legacy admin receiver with no administrative policies | Compiles; latest activation/deactivation test pending |
-| Managed uninstall protection | Device-owner only. Pure state matrix, `PolicyStore` keep switch with commitment guard, `DevicePolicyManager.setUninstallBlocked` readback/repair, in-app setup/release UI and boot reconciliation. 0.7.0 adds an opt-in managed lockdown (`no_safe_boot`, `no_apps_control`, `no_factory_reset`, `no_config_vpn`), saved in the same write, read back from `UserManager` and released in reverse order. 0.8.0 adds `disallow_config_private_dns` on API 29+. | Core `UninstallProtection`/`ManagedRestrictions`/`SavedSettings` tests, debug/test builds and lint pass. The Samsung is not device owner, so it reports "Not managed"; an actual blocked uninstall and the restrictions, expiry reconciliation and release still need a disposable provisioned device. |
+| Managed uninstall protection | Device-owner only. Pure state matrix, `PolicyStore` keep switch with commitment guard, `DevicePolicyManager.setUninstallBlocked` readback/repair, in-app setup/release UI and boot reconciliation. 0.7.0 adds an opt-in managed lockdown (`no_safe_boot`, `no_control_apps`, `no_factory_reset`, `no_config_vpn`), saved in the same write, read back from `UserManager` and released in reverse order. 0.8.0 adds `disallow_config_private_dns` on API 29+. | Core `UninstallProtection`/`ManagedRestrictions`/`SavedSettings` tests, debug/test builds and lint pass. The Samsung is not device owner, so it reports "Not managed"; an actual blocked uninstall and the restrictions, expiry reconciliation and release still need a disposable provisioned device. |
 | Background layer watchdog | A persistent 15-minute `JobScheduler` job compares expected layers (direct-build accessibility while keep is on, DNS while left on) with the live state; a lost layer gets one local notice, repeated at most every 12 hours, cleared on recovery. It never restarts a service. Protection shows the last run, a lost layer or notifications being off; enabling Keep on Android 13+ requests the notification permission. | Pure `LayerWatch` tests cover expected/running sets, lost detection, signature and notification cadence; the app builds and lints. A real service loss, Doze delay and notification permission are device checks. |
 | Visual filtering | Opt-in Android 14+ selected-window image/video sampling using the bundled local classifier; generic Home/restriction intervention, explicit capture consent and separate health | Actual local model, policy and stale-frame tests plus nine Samsung live fixture checks pass. A small benign baseline had 0/12 false-blocked views over 36 calls, with 1,984 ms median / 2,290 ms p95 classifier roundtrip. Sources/layouts are limited and correlated; this is not population accuracy. Adult recall, real-app/video and battery acceptance remain pending; no pre-display claim. See [0.5.0](ANDROID_0.5.0.md) and [benchmark](ANDROID_VISUAL_BENCHMARK_2026-10-22.md) |
 
@@ -146,7 +172,7 @@ do not describe the ordinary install as undeletable. See
 
 ## 0.7.0 managed-lockdown verification boundary (2026-10-29) *Historical*
 
-0.7.0 adds the second opt-in: `no_safe_boot`, `no_apps_control`,
+0.7.0 adds the second opt-in: `no_safe_boot`, `no_control_apps`,
 `no_factory_reset` and `no_config_vpn`, applied only while a device owner, the
 lockdown switch and a commitment or keep lock all hold. The code builds, lints
 and its pure matrix passes:

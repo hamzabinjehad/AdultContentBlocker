@@ -124,7 +124,7 @@ distribution and freshness — not a missing feature list.
 | Chromium extension | 1.2.2 development candidate; seed v5 core, 480 static rules, short-video/pause, list freshness, store metadata and footer | Not on the Chrome Web Store; unpacked only | Store publication, managed force-install, real store-ID wiring and a clean-profile acceptance pass |
 | Mac | 1.1.6; seed v5 core fallback, filter, browser guard, guardian split, profile, partner key and root guardian daemon | Unsigned, unnotarized, no app updater | A signed `.pkg`, an update path, the full published list, and the hardware checks in `TEST_MATRIX.md` |
 | iPhone/iPad | 1.1.4 development; six Safari blockers (239,885 domains), Screen Time, vault, supervised profile, privacy manifest, signed-list age and settings policy links | No Apple team, no Family Controls entitlement, no device | Entitlement, a disposable iPhone, device acceptance of every lock level and all six blockers |
-| Android | 0.8.2 preview; seed v5 core, direct-build uninstall guard, boot shield, opt-in device-owner managed lockdown (Safe Mode, all-app controls, factory reset, VPN and Android 10+ Private DNS), a visible 15-minute layer watchdog, and a 90-day bundled-list warning | No signed production APK; device-owner flow unproven | A disposable device-owner phone, real restriction refusals and release, layer-loss device run, signed release |
+| Android | 0.9.0 preview; seed v5 core, protection lock that freezes every saved rule and arms the direct removal guard, boot shield, opt-in device-owner managed lockdown (Safe Mode, all-app controls, factory reset, new users, VPN, Android 9+ date/time, Android 10+ Private DNS, Android 14+ default apps, an optional strict unknown-source install block, an opt-in blocked-app suspension, an opt-in SafeSearch CNAME rewrite and an always-on DNS-only VPN), a visible 15-minute layer watchdog, and a 90-day bundled-list warning | No signed production APK; API 36 emulator device-owner run passed 2026-11-01, physical phone pending | A disposable device-owner phone, real restriction refusals and release, layer-loss device run, signed release |
 | Lists | Signed seed v5 built 2026-10-30 | **No `lists` branch on origin** | Publish signed daily generations; update iOS and Android |
 
 A Windows policy generator (`profile/make_windows_policy.py`, with tests) and a
@@ -331,8 +331,9 @@ accessibility service is the *intervention* layer, not the lock.
 
 #### Distribution rule
 
-The Play build must not contain the uninstall-screen guard. The direct and
-managed builds must never be uploaded to Play. Keep them as separate Gradle
+The Play build must not contain the screen guard (removal, disable, Safe Mode
+or new-install screens). The direct and managed builds must never be uploaded
+to Play. Keep them as separate Gradle
 flavors, separate application IDs if necessary, and a release checklist that
 cannot mix them.
 
@@ -630,7 +631,7 @@ Sizes: S ≤ 2 days, M ≤ 1 week, L ≤ 3 weeks, XL > 3 weeks.
 | W1.4 | Per-surface list coverage: document the core / full split; make each client state its tier | Extension, iOS, Android | M | A coverage table is generated per release; no client claims the full list. **Done 2026-10-29:** `docs/COVERAGE.md` generated from the signed seed |
 | W1.5 | Text corpus: 500 labelled cases per language and a CI regression gate | All | L | A vocabulary change reports misses and false blocks per language |
 | W1.6 | Visual: licensed benchmark, hide-first audit, video sampling | Chromium, Safari, Android | L | Recall/false-hide numbers with denominators; no pre-verdict adult frame |
-| W2.1 | Android managed edition: safe-boot/app-control/factory-reset restrictions, always-on/private DNS, watchdog, QR provisioning | Android | XL | Disposable phone: uninstall refused, safe mode blocked, clear data blocked, VPN persistent, recovery works. **Partial 2026-10-30:** the four restrictions plus Android 10+ Private DNS (`disallow_config_private_dns`), explicit opt-in, readback and release order are implemented and unit-tested; the 15-minute layer watchdog is implemented and visible (0.8.1), with the notification permission requested when Keep is enabled; always-on VPN/lockdown are explicitly deferred (Android 1.0 network decision); QR provisioning and the device run remain |
+| W2.1 | Android managed edition: safe-boot/app-control/factory-reset restrictions, always-on/private DNS, watchdog, QR provisioning | Android | XL | Disposable phone: uninstall refused, safe mode blocked, clear data blocked, VPN persistent, recovery works. **Partial 2026-10-30:** the four restrictions plus Android 10+ Private DNS (`disallow_config_private_dns`), explicit opt-in, readback and release order are implemented and unit-tested; the 15-minute layer watchdog is implemented and visible (0.8.1), with the notification permission requested when Keep is enabled; DNS-only always-on is implemented for a device owner with managed lockdown (2026-11-01); a full-tunnel VPN and lockdown remain deferred (Android 1.0 network decision); QR provisioning and the device run remain |
 | W2.2 | Android direct build: boot shield + guard, signed APK | Android | M | Signed APK, hash, cert fingerprint; guard tested on a real phone |
 | W2.3 | iPhone supervised edition: profile test, vault wording, level UI, removal password | iOS | L | Device test record for every key in `IPHONE_SUPERVISED.md` |
 | W2.4 | Mac guardian edition: root daemon, bootout test, signed pkg, updater | Mac | L | Standard user cannot delete/disable; admin recovery documented; pkg notarized. **Partial 2026-10-30:** the root daemon, installer wiring, removal path and unit tests exist; standard-account bootout, signing/notarization and the updater remain |

@@ -14,5 +14,25 @@
         <activity android:name="app.hisn.android.ManagedStatusActivity"
             android:exported="true" android:permission="android.permission.DUMP"
             android:theme="@android:style/Theme.NoDisplay" />
+        <!-- Tighten-only managed-mode fixture setup for the acceptance run. -->
+        <activity android:name="app.hisn.android.ManagedTestSetupActivity"
+            android:exported="true" android:permission="android.permission.DUMP"
+            android:theme="@android:style/Theme.NoDisplay" />
+        <!-- One-shot pairing/policy runtime check; software key in private prefs. -->
+        <activity android:name="app.hisn.android.GuardianPairDebugActivity"
+            android:exported="true" android:permission="android.permission.DUMP"
+            android:theme="@android:style/Theme.NoDisplay" />
+        <!-- Shell-only trampoline for the non-exported product pairing screen. -->
+        <activity android:name="app.hisn.android.GuardianPairTestActivity"
+            android:exported="true" android:permission="android.permission.DUMP"
+            android:theme="@android:style/Theme.NoDisplay" />
+        <!-- Shell-only App-info launcher for the physical guard test. -->
+        <activity android:name="app.hisn.android.OpenAppInfoTestActivity"
+            android:exported="true" android:permission="android.permission.DUMP"
+            android:theme="@android:style/Theme.NoDisplay" />
+        <!-- Shell-only clipboard reader for the pairing-screen test. -->
+        <activity android:name="app.hisn.android.ClipboardDumpActivity"
+            android:exported="true" android:permission="android.permission.DUMP"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar" />
     </application>
 </manifest>

@@ -420,11 +420,11 @@ final class Ui {
     static final class Disclosure {
         final LinearLayout root;
         final TextView title;
-        final TextView body;
+        final View body;
         final ImageView chevron;
         boolean expanded;
 
-        Disclosure(LinearLayout root, TextView title, TextView body, ImageView chevron) {
+        Disclosure(LinearLayout root, TextView title, View body, ImageView chevron) {
             this.root = root;
             this.title = title;
             this.body = body;
@@ -447,6 +447,11 @@ final class Ui {
     }
 
     static Disclosure disclosure(Context context, CharSequence title, CharSequence bodyText) {
+        return disclosure(context, title, body(context, bodyText));
+    }
+
+    /** Disclosure whose body is an arbitrary view, e.g. a list that is built later. */
+    static Disclosure disclosure(Context context, CharSequence title, View content) {
         LinearLayout root = new LinearLayout(context);
         root.setOrientation(LinearLayout.VERTICAL);
         LinearLayout header = new LinearLayout(context);
@@ -465,12 +470,11 @@ final class Ui {
                 LinearLayout.LayoutParams.WRAP_CONTENT, 1));
         ImageView chevron = icon(context, R.drawable.ic_chevron_down, R.color.text_secondary, 20);
         header.addView(chevron);
-        TextView bodyView = body(context, bodyText);
-        bodyView.setVisibility(View.GONE);
-        bodyView.setPadding(0, dp(context, 2), 0, dp(context, 8));
+        content.setVisibility(View.GONE);
+        content.setPadding(0, dp(context, 2), 0, dp(context, 8));
         root.addView(header);
-        root.addView(bodyView);
-        Disclosure disclosure = new Disclosure(root, titleView, bodyView, chevron);
+        root.addView(content);
+        Disclosure disclosure = new Disclosure(root, titleView, content, chevron);
         disclosure.updateDescription();
         header.setOnClickListener(view -> disclosure.setExpanded(!disclosure.expanded));
         root.setTag(disclosure);

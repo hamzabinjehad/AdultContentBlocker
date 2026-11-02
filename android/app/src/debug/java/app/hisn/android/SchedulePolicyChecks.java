@@ -91,30 +91,38 @@ public final class SchedulePolicyChecks {
         rejectWithoutMutation(context, name, committed,
                 new DailyAppSchedule(true, 420, 1320, apps(ONE, TWO)), "shift to non-covering interval");
 
-        committed.updateSchedule(new DailyAppSchedule(true, 1260, 480, apps(ONE, TWO)));
-        checkSchedule(committed.snapshot().schedule, true, 1260, 480, apps(ONE, TWO), "wider schedule accepted during commitment");
-        committed.updateSchedule(new DailyAppSchedule(true, 1260, 480, apps(ONE, TWO, THREE)));
-        checkSchedule(committed.snapshot().schedule, true, 1260, 480, apps(ONE, TWO, THREE), "additional scheduled app accepted");
+        // The protection lock freezes every rule, not only weakening changes.
+        // Widening and adding are refused too, so the saved schedule must be
+        // exactly what the person locked.
+        rejectWithoutMutation(context, name, committed,
+                new DailyAppSchedule(true, 1260, 480, apps(ONE, TWO)), "wider schedule during lock");
+        rejectWithoutMutation(context, name, committed,
+                new DailyAppSchedule(true, 1260, 480, apps(ONE, TWO, THREE)), "added app during lock");
+        checkSchedule(committed.snapshot().schedule, true, 1320, 420, apps(ONE, TWO),
+                "locked schedule retains its exact window");
         checkChosenRules(committed, apps(PERMANENT));
         PolicyStore expanded = new PolicyStore(context, name);
-        checkSchedule(expanded.snapshot().schedule, true, 1260, 480, apps(ONE, TWO, THREE), "expanded schedule persists");
+        checkSchedule(expanded.snapshot().schedule, true, 1320, 420, apps(ONE, TWO),
+                "reload retains the locked schedule");
         require(expanded.remainingMillis() > 6L * 86400000L, "Reload retains isolated commitment");
 
-        // Stronger permanent blocking can replace scheduled coverage. Keep all
-        // existing permanent/scanned/domain/word choices when making that move.
+        // Moving scheduled coverage into permanent blocking is a rule change
+        // too; only the guardian policy path may tighten during the lock.
         Set<String> permanent = apps(PERMANENT, ONE, TWO, THREE);
-        expanded.update(expanded.domainText(), expanded.wordText(), permanent, expanded.snapshot().scannedApps);
-        require(expanded.snapshot().adultWordsEnabled, "Permanent editor retains adult flag");
-        expanded.updateSchedule(DailyAppSchedule.disabled());
-        checkChosenRules(expanded, permanent);
-        checkSchedule(expanded.snapshot().schedule, false, 1320, 420, apps(), "permanent coverage permits disabling schedule");
+        expectRejected(() -> expanded.update(expanded.domainText(), expanded.wordText(),
+                permanent, expanded.snapshot().scannedApps), "permanent replacement during lock");
+        expectRejected(() -> expanded.updateSchedule(DailyAppSchedule.disabled()), "disable during lock");
+        checkChosenRules(expanded, apps(PERMANENT));
+        checkSchedule(expanded.snapshot().schedule, true, 1320, 420, apps(ONE, TWO),
+                "rejected replacement retains the locked schedule");
         PolicyStore finalReload = new PolicyStore(context, name);
-        checkChosenRules(finalReload, permanent);
-        checkSchedule(finalReload.snapshot().schedule, false, 1320, 420, apps(), "effective coverage replacement persists");
-        require(finalReload.remainingMillis() > 6L * 86400000L, "Coverage replacement does not end commitment");
+        checkChosenRules(finalReload, apps(PERMANENT));
+        checkSchedule(finalReload.snapshot().schedule, true, 1320, 420, apps(ONE, TWO),
+                "rejected replacement persists unchanged");
+        require(finalReload.remainingMillis() > 6L * 86400000L, "Rejected changes do not end the lock");
         expectRejected(() -> finalReload.update(finalReload.domainText(), finalReload.wordText(), apps(PERMANENT),
-                finalReload.snapshot().scannedApps), "Permanent replacement coverage could be removed during commitment");
-        checkChosenRules(finalReload, permanent);
+                finalReload.snapshot().scannedApps), "Permanent coverage could be removed during the lock");
+        checkChosenRules(finalReload, apps(PERMANENT));
     }
 
     private static void rejectWithoutMutation(Context context, String name, PolicyStore store,

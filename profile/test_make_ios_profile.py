@@ -79,6 +79,20 @@ class TestRemovalProtection(unittest.TestCase):
         restrictions = by_type(generate("--allow-app-removal")[0])["com.apple.applicationaccess"]
         self.assertIs(restrictions["allowAppRemoval"], True)
         self.assertIs(restrictions["allowEraseContentAndSettings"], False)
+    def test_maximum_turns_on_every_hardening_key(self):
+        """One flag for the strongest supervised profile, but only as an explicit choice."""
+        restrictions = by_type(generate("--maximum")[0])["com.apple.applicationaccess"]
+        for key in ["allowAccountModification", "allowPasscodeModification",
+                    "allowAppInstallation", "allowAppClips", "allowEnablingRestrictions"]:
+            self.assertIs(restrictions[key], False, key)
+        self.assertIs(restrictions["forceAutomaticDateAndTime"], True)
+        self.assertIs(restrictions["allowAppRemoval"], False)
+
+    def test_maximum_refuses_to_leave_app_removal_allowed(self):
+        """A maximum profile that lets apps be deleted is not maximum."""
+        with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
+            ios.main(["--out", os.devnull, "--maximum", "--allow-app-removal"])
+
 
     def test_dns_cannot_be_switched_off_and_uses_a_real_resolver(self):
         """A DNS setting the person can toggle off is a suggestion, not a layer."""

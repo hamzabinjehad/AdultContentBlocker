@@ -56,6 +56,7 @@ import app.hisn.core.BrowserCoverage;
 import app.hisn.core.DailyAppSchedule;
 import app.hisn.core.GuardHealth;
 import app.hisn.core.PolicyChangeError;
+import app.hisn.core.ProtectionLock;
 import app.hisn.core.SeedFreshness;
 import app.hisn.core.SetupGuide;
 import app.hisn.core.UninstallProtection;
@@ -101,6 +102,7 @@ public final class MainActivity extends Activity {
     private Ui.LayerTile layerImages;
     private LinearLayout attentionCard;
     private LinearLayout attentionList;
+    private Ui.Disclosure attentionDetails;
     private String attentionSignature = "";
     private LinearLayout restoredCard;
     private Button restoredConfirm;
@@ -130,11 +132,19 @@ public final class MainActivity extends Activity {
     private Switch visualToggle;
     private Switch shortVideoToggle;
     private Switch grayToggle;
+    private Switch safeSearchToggle;
     private Ui.SettingRow domainsRow;
     private Ui.SettingRow wordsRow;
     private Ui.SettingRow blockedRow;
     private Ui.SettingRow scannedRow;
     private Ui.SettingRow browserRow;
+    private Button scheduleEdit;
+    private LinearLayout rulesLockCard;
+    private TextView rulesLockText;
+    private LinearLayout setupCard;
+    private Ui.Disclosure dnsAdvanced;
+    private TextView batteryState;
+    private Button batteryAction;
     private TextView scheduleState;
     private TextView commitmentStateRules;
     private TextView commitmentNote;
@@ -444,10 +454,8 @@ public final class MainActivity extends Activity {
         statusTitleParams.setMarginStart(Ui.dp(this, 12));
         heroTop.addView(statusTitle, statusTitleParams);
         hero.addView(heroTop);
-        Ui.Disclosure statusDetails = Ui.disclosure(this, getString(R.string.status_details),
-                getString(R.string.status_body));
-        statusBody = statusDetails.body;
-        hero.addView(statusDetails.root);
+        statusBody = Ui.caption(this, "");
+        hero.addView(statusBody, Ui.margins(this, 0, 2));
 
         LinearLayout layerRow = new LinearLayout(this);
         layerRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -468,29 +476,19 @@ public final class MainActivity extends Activity {
 
         attentionCard = Ui.card(this);
         attentionCard.setBackgroundResource(R.drawable.bg_warning_card);
-        LinearLayout attentionHeader = new LinearLayout(this);
-        attentionHeader.setOrientation(LinearLayout.HORIZONTAL);
-        attentionHeader.setGravity(Gravity.CENTER_VERTICAL);
-        attentionHeader.addView(Ui.icon(this, R.drawable.ic_alert, R.color.warning, 20));
-        TextView attentionTitle = Ui.strong(this, getString(R.string.section_attention));
-        attentionTitle.setTextColor(Ui.color(this, R.color.warning));
-        LinearLayout.LayoutParams attentionTitleParams = new LinearLayout.LayoutParams(0,
-                LinearLayout.LayoutParams.WRAP_CONTENT, 1);
-        attentionTitleParams.setMarginStart(Ui.dp(this, 10));
-        attentionHeader.addView(attentionTitle, attentionTitleParams);
-        attentionCard.addView(attentionHeader);
         attentionList = new LinearLayout(this);
         attentionList.setOrientation(LinearLayout.VERTICAL);
         attentionList.setPadding(0, Ui.dp(this, 4), 0, 0);
-        attentionCard.addView(attentionList);
+        attentionDetails = Ui.disclosure(this, getString(R.string.section_attention), attentionList);
+        attentionCard.addView(attentionDetails.root);
         attentionCard.setVisibility(View.GONE);
         page.addView(attentionCard, Ui.margins(this, 0, 10));
 
-        LinearLayout setup = addCard(page, R.drawable.ic_check, R.string.setup_heading);
+        setupCard = addCard(page, R.drawable.ic_check, R.string.setup_heading);
         setupState = Ui.body(this, getString(R.string.setup_first));
-        setup.addView(setupState);
+        setupCard.addView(setupState);
         setupNext = Ui.button(this, R.string.setup_next, Ui.ButtonKind.PRIMARY);
-        setup.addView(setupNext, Ui.buttonParams(this));
+        setupCard.addView(setupNext, Ui.buttonParams(this));
         setupNext.setOnClickListener(view -> nextSetupStep());
 
         LinearLayout network = addCard(page, R.drawable.ic_network, R.string.section_network);
@@ -519,15 +517,33 @@ public final class MainActivity extends Activity {
                 .setNegativeButton(android.R.string.cancel, null)
                 .setPositiveButton(R.string.dns_continue, (dialog, which) -> requestDns()).show());
         Button vpnSettings = Ui.button(this, R.string.dns_settings, Ui.ButtonKind.GHOST);
-        network.addView(vpnSettings, Ui.buttonParams(this));
+        LinearLayout advanced = new LinearLayout(this);
+        advanced.setOrientation(LinearLayout.VERTICAL);
+        advanced.addView(vpnSettings, Ui.buttonParams(this));
         vpnSettings.setOnClickListener(v -> reviewVpnSettings());
-        network.addView(Ui.divider(this), Ui.margins(this, 14, 2));
+        safeSearchToggle = Ui.toggle(this, getString(R.string.dns_safe_search_switch),
+                getString(R.string.dns_safe_search_hint));
+        safeSearchToggle.setChecked(settings != null && settings.safeSearchEnabled());
+        safeSearchToggle.setOnClickListener(view -> {
+            // A switch has already toggled itself before OnClick runs, so the
+            // checked state is the intended new value. Revert only on refusal.
+            boolean wanted = safeSearchToggle.isChecked();
+            try {
+                if (settings != null) settings.updateSafeSearch(wanted);
+                refreshStatus();
+            } catch (RuntimeException refused) {
+                safeSearchToggle.setChecked(!wanted);
+                showRefusal(refused);
+            }
+        });
+        advanced.addView(safeSearchToggle, Ui.margins(this, 8, 0));
+        advanced.addView(Ui.divider(this), Ui.margins(this, 14, 2));
 
-        network.addView(subheading(R.string.section_route_check));
+        advanced.addView(subheading(R.string.section_route_check));
         networkCheckState = statusLine();
-        network.addView(networkCheckState);
+        advanced.addView(networkCheckState);
         checkNetwork = Ui.button(this, R.string.network_check_button, Ui.ButtonKind.TONAL);
-        network.addView(checkNetwork, Ui.buttonParams(this));
+        advanced.addView(checkNetwork, Ui.buttonParams(this));
         checkNetwork.setOnClickListener(view -> new AlertDialog.Builder(this)
                 .setTitle(R.string.network_check_button).setMessage(R.string.network_check_disclosure)
                 .setNegativeButton(android.R.string.cancel, null)
@@ -536,13 +552,13 @@ public final class MainActivity extends Activity {
                     refreshStatus();
                 }).show());
 
-        network.addView(Ui.divider(this), Ui.margins(this, 14, 2));
-        network.addView(subheading(R.string.section_background_check));
+        advanced.addView(Ui.divider(this), Ui.margins(this, 14, 2));
+        advanced.addView(subheading(R.string.section_background_check));
         watchdogState = statusLine();
-        network.addView(watchdogState);
+        advanced.addView(watchdogState);
         notifSettings = Ui.button(this, R.string.open_notification_settings, Ui.ButtonKind.QUIET);
         notifSettings.setVisibility(View.GONE);
-        network.addView(notifSettings, Ui.buttonParams(this));
+        advanced.addView(notifSettings, Ui.buttonParams(this));
         notifSettings.setOnClickListener(view -> {
             try {
                 startActivity(new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
@@ -553,7 +569,7 @@ public final class MainActivity extends Activity {
         });
         privateDnsSettings = Ui.button(this, R.string.private_dns_settings, Ui.ButtonKind.QUIET);
         privateDnsSettings.setVisibility(View.GONE);
-        network.addView(privateDnsSettings, Ui.buttonParams(this));
+        advanced.addView(privateDnsSettings, Ui.buttonParams(this));
         privateDnsSettings.setOnClickListener(view -> {
             if (Build.VERSION.SDK_INT >= 29) {
                 try { startActivity(new Intent("android.settings.PRIVATE_DNS_SETTINGS")); }
@@ -562,6 +578,8 @@ public final class MainActivity extends Activity {
                 reviewVpnSettings();
             }
         });
+        dnsAdvanced = Ui.disclosure(this, getString(R.string.dns_advanced), advanced);
+        network.addView(dnsAdvanced.root, Ui.margins(this, 0, 4));
 
         LinearLayout apps = addCard(page, R.drawable.ic_apps, R.string.section_app_layer);
         textState = statusLine();
@@ -594,6 +612,26 @@ public final class MainActivity extends Activity {
     private void buildRulesPage(LinearLayout page) {
         page.addView(Ui.pageTitle(this, getString(R.string.rules_heading)), Ui.margins(this, 6, 6));
         page.addView(Ui.body(this, getString(R.string.rules_help)), Ui.margins(this, 0, 8));
+
+        rulesLockCard = Ui.card(this);
+        rulesLockCard.setBackgroundResource(R.drawable.bg_warning_card);
+        LinearLayout lockRow = new LinearLayout(this);
+        lockRow.setOrientation(LinearLayout.HORIZONTAL);
+        lockRow.setGravity(Gravity.TOP);
+        lockRow.addView(Ui.icon(this, R.drawable.ic_lock, R.color.warning, 22));
+        LinearLayout lockCopy = new LinearLayout(this);
+        lockCopy.setOrientation(LinearLayout.VERTICAL);
+        TextView lockTitle = Ui.strong(this, getString(R.string.rules_lock_title));
+        lockCopy.addView(lockTitle);
+        rulesLockText = Ui.body(this, "");
+        lockCopy.addView(rulesLockText, Ui.margins(this, 0, 2));
+        LinearLayout.LayoutParams lockCopyParams = new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+        lockCopyParams.setMarginStart(Ui.dp(this, 12));
+        lockRow.addView(lockCopy, lockCopyParams);
+        rulesLockCard.addView(lockRow);
+        rulesLockCard.setVisibility(View.GONE);
+        page.addView(rulesLockCard, Ui.margins(this, 0, 10));
 
         LinearLayout builtin = addCard(page, R.drawable.ic_shield, R.string.section_builtin);
         adultToggle = Ui.toggle(this, getString(R.string.toggle_adult), getString(R.string.adult_mode_off));
@@ -664,7 +702,7 @@ public final class MainActivity extends Activity {
         LinearLayout schedule = addCard(page, R.drawable.ic_calendar, R.string.section_schedule);
         scheduleState = statusLine();
         schedule.addView(scheduleState);
-        Button scheduleEdit = Ui.button(this, R.string.schedule_edit_button, Ui.ButtonKind.TONAL);
+        scheduleEdit = Ui.button(this, R.string.schedule_edit_button, Ui.ButtonKind.TONAL);
         schedule.addView(scheduleEdit, Ui.buttonParams(this));
         scheduleEdit.setOnClickListener(view -> editSchedule());
 
@@ -689,25 +727,42 @@ public final class MainActivity extends Activity {
 
     private void buildGuidePage(LinearLayout page) {
         page.addView(Ui.pageTitle(this, getString(R.string.app_goal_title)), Ui.margins(this, 6, 6));
-        page.addView(Ui.body(this, getString(R.string.app_goal_body)), Ui.margins(this, 0, 8));
+        page.addView(Ui.body(this, getString(R.string.app_goal_short)), Ui.margins(this, 0, 6));
+        page.addView(Ui.disclosure(this, getString(R.string.app_goal_more),
+                getString(R.string.app_goal_body)).root, Ui.margins(this, 0, 4));
 
         LinearLayout steps = addCard(page, R.drawable.ic_check, R.string.section_setup_steps);
-        for (View step : numberedSteps(getString(R.string.guide_steps_body))) steps.addView(step);
+        for (View step : numberedSteps(getString(R.string.guide_steps_core))) steps.addView(step);
+        LinearLayout optionalSteps = new LinearLayout(this);
+        optionalSteps.setOrientation(LinearLayout.VERTICAL);
+        for (View step : numberedSteps(getString(R.string.guide_steps_more))) {
+            optionalSteps.addView(step);
+        }
+        steps.addView(Ui.disclosure(this, getString(R.string.guide_more_steps), optionalSteps).root,
+                Ui.margins(this, 0, 2));
 
         LinearLayout limits = addCard(page, R.drawable.ic_info, R.string.section_limits);
-        limits.addView(Ui.body(this, getString(R.string.guide_limits_body)));
+        limits.addView(Ui.disclosure(this, getString(R.string.guide_limits_title),
+                getString(R.string.guide_limits_body)).root);
 
         LinearLayout privacy = addCard(page, R.drawable.ic_lock, R.string.section_privacy);
-        privacy.addView(Ui.body(this, getString(R.string.privacy)));
+        privacy.addView(Ui.body(this, getString(R.string.privacy_short)));
         Ui.Disclosure privateScreens = Ui.disclosure(this, getString(R.string.section_private_screens),
                 getString(R.string.private_screens));
         privacy.addView(privateScreens.root, Ui.margins(this, 6, 0));
+        privacy.addView(Ui.disclosure(this, getString(R.string.guide_details),
+                getString(R.string.privacy)).root, Ui.margins(this, 0, 2));
 
         LinearLayout uninstall = addCard(page, R.drawable.ic_lock, R.string.uninstall_title);
-        uninstall.addView(Ui.body(this, getString(R.string.uninstall_scope)));
-        uninstall.addView(Ui.body(this, getString(R.string.uninstall_guide)), Ui.margins(this, 8, 0));
-        uninstall.addView(Ui.caption(this, getString(R.string.uninstall_setup_note)),
+        LinearLayout uninstallDetails = new LinearLayout(this);
+        uninstallDetails.setOrientation(LinearLayout.VERTICAL);
+        uninstallDetails.addView(Ui.body(this, getString(R.string.uninstall_scope)));
+        uninstallDetails.addView(Ui.body(this, getString(R.string.uninstall_guide)),
                 Ui.margins(this, 8, 0));
+        uninstallDetails.addView(Ui.caption(this, getString(R.string.uninstall_setup_note)),
+                Ui.margins(this, 8, 0));
+        uninstall.addView(Ui.disclosure(this, getString(R.string.guide_details),
+                uninstallDetails).root);
         Button uninstallActionGuide = Ui.button(this, R.string.uninstall_action, Ui.ButtonKind.GHOST);
         uninstall.addView(uninstallActionGuide, Ui.buttonParams(this));
         uninstallActionGuide.setOnClickListener(view -> showUninstallDialog());
@@ -728,6 +783,22 @@ public final class MainActivity extends Activity {
                                     getString(R.string.admin_explanation));
                     startActivity(request);
                 }).show());
+
+        LinearLayout battery = addCard(page, R.drawable.ic_pulse, R.string.battery_title);
+        battery.addView(Ui.body(this, getString(R.string.battery_body)));
+        batteryState = statusLine();
+        battery.addView(batteryState);
+        batteryAction = Ui.button(this, R.string.battery_action, Ui.ButtonKind.TONAL);
+        battery.addView(batteryAction, Ui.buttonParams(this));
+        batteryAction.setOnClickListener(view -> requestBatteryExemption());
+        refreshBatteryState();
+
+        LinearLayout guardian = addCard(page, R.drawable.ic_shield, R.string.guardian_pair_title);
+        guardian.addView(Ui.body(this, getString(R.string.guardian_pair_body)));
+        Button guardianAction = Ui.button(this, R.string.guardian_pair_action, Ui.ButtonKind.GHOST);
+        guardian.addView(guardianAction, Ui.buttonParams(this));
+        guardianAction.setOnClickListener(view ->
+                startActivity(new Intent(this, GuardianPairActivity.class)));
 
         LinearLayout diagnostics = addCard(page, R.drawable.ic_pulse, R.string.section_diagnostics);
         networkStats = Ui.text(this, getString(R.string.dns_stats_empty), 13, R.color.text_secondary);
@@ -998,6 +1069,7 @@ public final class MainActivity extends Activity {
                 || (rules.schedule.enabled && rules.schedule.isConfigured())
                 || (!rules.scannedApps.isEmpty() && (rules.hasWordProtection() || rules.visualEnabled))
                 || rules.shortVideoEnabled);
+        boolean rulesLocked = settingsReadable && ProtectionLock.locked(remaining);
         boolean scanIncomplete = TextGuardService.inspection.incomplete();
         boolean policyPending = rules != null && rules.adultWordsEnabled
                 && AdultPolicyAssets.state != AdultPolicyAssets.State.READY;
@@ -1009,6 +1081,7 @@ public final class MainActivity extends Activity {
         if (rules != null) {
             refreshSchedule(rules.schedule);
             if (rules.adultWordsEnabled) AdultPolicyAssets.ensureLoaded(this);
+            if (safeSearchToggle != null) safeSearchToggle.setChecked(settings.safeSearchEnabled());
         } else {
             setStatus(scheduleState, getString(R.string.policy_unavailable), Ui.ATTENTION);
         }
@@ -1030,12 +1103,18 @@ public final class MainActivity extends Activity {
             updateToggle(shortVideoToggle, R.string.toggle_short_video, getString(R.string.policy_unavailable));
             updateToggle(adultToggle, R.string.toggle_adult, getString(R.string.policy_unavailable));
         }
+        applyRulesLock(rulesLocked, settingsReadable, remaining);
 
         UninstallProtectionController.Status uninstallStatus = refreshUninstallState();
         boolean uninstallAttention = uninstallStatus != null
                 && uninstallStatus.state() == UninstallProtection.State.OUT_OF_SYNC;
         boolean managedAttention = uninstallStatus != null && uninstallStatus.deviceOwner
                 && uninstallStatus.managedLockdown && !uninstallStatus.restrictionsMatch();
+        // On a Play build the lock freezes rules but cannot stop an uninstall. Say
+        // so instead of letting the lock read as stronger than it is.
+        boolean lockUnprotected = rulesLocked && !BuildConfig.SELF_PROTECTION
+                && (uninstallStatus == null
+                || uninstallStatus.state() != UninstallProtection.State.PROTECTED);
 
         refreshWatchdogState();
         boolean watchdogLost = !LayerWatchdog.lostSignature(this).isEmpty();
@@ -1053,8 +1132,13 @@ public final class MainActivity extends Activity {
         Ui.setTextIfChanged(statusTitle, title);
         statusTitle.setTextColor(Ui.color(this, needsAttention ? R.color.warning : R.color.text_primary));
         heroIcon.setColorFilter(Ui.color(this, needsAttention ? R.color.warning : R.color.accent));
-        Ui.setTextIfChanged(statusBody, getString(settingsReadable
-                ? R.string.status_body : R.string.policy_unavailable));
+        Ui.setTextIfChanged(statusBody, !settingsReadable
+                ? getString(R.string.policy_unavailable)
+                : rulesLocked
+                ? getString(R.string.status_body_locked, Durations.remaining(this, remaining))
+                : rules != null && rules.hasConfiguredRestrictions()
+                ? getString(R.string.status_body_unlocked)
+                : getString(R.string.status_body_short));
 
         // The three tiles are the fastest reading of the app: one word per layer.
         int dnsKind, appsKind, imagesKind;
@@ -1127,6 +1211,7 @@ public final class MainActivity extends Activity {
         if (privateDnsBypass) networkKind = Ui.ATTENTION;
         setStatus(networkState, network, networkKind);
         privateDnsSettings.setVisibility(privateDnsBypass ? View.VISIBLE : View.GONE);
+        if (privateDnsBypass && dnsAdvanced != null) dnsAdvanced.setExpanded(true);
 
         boolean canStartDns = current == DnsVpnService.State.OFF || current == DnsVpnService.State.ERROR;
         Ui.setTextIfChanged(startDns, getString(current == DnsVpnService.State.STARTING
@@ -1134,7 +1219,8 @@ public final class MainActivity extends Activity {
         Ui.setEnabledWithAlpha(startDns, settings != null && canStartDns);
         Ui.setTextIfChanged(networkStats, getString(R.string.dns_summary,
                 getString(R.string.dns_stats, DnsVpnService.domains, DnsVpnService.blocked.get(),
-                        DnsVpnService.forwarded.get(), DnsVpnService.errors.get()),
+                        DnsVpnService.forwarded.get(), DnsVpnService.rewritten.get(),
+                        DnsVpnService.errors.get()),
                 getString(R.string.dns_packet_diagnostics, DnsVpnService.unsupportedPackets.get(),
                         DnsVpnService.unsupportedTcpPackets.get(), DnsVpnService.malformedPackets.get()),
                 getString(R.string.dns_benign_packets, DnsVpnService.ignoredPackets.get(),
@@ -1234,11 +1320,60 @@ public final class MainActivity extends Activity {
         if (check == DnsVpnService.CheckState.FAILED) attention.add(R.string.attention_route_failed);
         if (uninstallAttention) attention.add(R.string.attention_uninstall_sync);
         if (managedAttention) attention.add(R.string.attention_managed_sync);
+        if (lockUnprotected) attention.add(R.string.attention_uninstall_unlocked);
         if (watchdogLost) attention.add(R.string.attention_watchdog_lost);
         else if (notificationsAttention) attention.add(R.string.attention_notifications_off);
         if (unknown) attention.add(R.string.attention_commitment_unknown);
         if (restored) attention.add(R.string.attention_settings_restored);
         updateAttention(attention);
+    }
+
+    /**
+     * Freeze every rule editor while the protection lock runs. The backend also
+     * refuses the change; disabling the controls is what makes the promise
+     * legible instead of a surprise refusal after typing.
+     */
+    private void applyRulesLock(boolean locked, boolean readable, long remaining) {
+        boolean editable = readable && !locked;
+        Ui.setEnabledWithAlpha(adultToggle, editable);
+        Ui.setEnabledWithAlpha(shortVideoToggle, editable);
+        Ui.setEnabledWithAlpha(visualToggle, editable && Build.VERSION.SDK_INT >= 34);
+        Ui.setEnabledWithAlpha(grayToggle, editable);
+        Ui.setEnabledWithAlpha(safeSearchToggle, editable);
+        setRowEnabled(domainsRow, editable);
+        setRowEnabled(wordsRow, editable);
+        setRowEnabled(blockedRow, editable);
+        setRowEnabled(scannedRow, editable);
+        setRowEnabled(browserRow, editable);
+        Ui.setEnabledWithAlpha(scheduleEdit, editable);
+        if (rulesLockCard == null || rulesLockText == null) return;
+        rulesLockCard.setVisibility(locked ? View.VISIBLE : View.GONE);
+        if (locked) {
+            rulesLockText.setText(getString(R.string.rules_lock_until,
+                    Durations.remaining(this, remaining)));
+        }
+    }
+
+    private static void setRowEnabled(Ui.SettingRow row, boolean enabled) {
+        if (row == null) return;
+        row.root.setEnabled(enabled);
+        row.root.setClickable(enabled);
+        row.root.setFocusable(enabled);
+        row.root.setAlpha(enabled ? 1f : 0.45f);
+    }
+
+    /** A short refusal before a dialog opens; the backend still re-checks the change. */
+    private boolean refuseIfRulesLocked() {
+        try {
+            if (settings != null && ProtectionLock.locked(settings.remainingMillis())) {
+                Toast.makeText(this, R.string.rules_locked, Toast.LENGTH_LONG).show();
+                return true;
+            }
+            return false;
+        } catch (RuntimeException unreadable) {
+            Toast.makeText(this, R.string.policy_unavailable, Toast.LENGTH_LONG).show();
+            return true;
+        }
     }
 
     private void refreshWatchdogState() {
@@ -1277,6 +1412,7 @@ public final class MainActivity extends Activity {
             attentionCard.setVisibility(View.GONE);
             return;
         }
+        if (attentionDetails != null) attentionDetails.setExpanded(false);
         for (Integer item : items) {
             LinearLayout row = new LinearLayout(this);
             row.setOrientation(LinearLayout.HORIZONTAL);
@@ -1313,7 +1449,9 @@ public final class MainActivity extends Activity {
                 getString(rules.shortVideoEnabled ? R.string.short_video_on_short
                         : R.string.short_video_toggle_summary));
         shortVideoToggle.setChecked(rules.shortVideoEnabled);
-        Ui.setEnabledWithAlpha(shortVideoToggle, !rules.shortVideoEnabled || remaining == 0);
+        // A protection lock freezes the switch in both directions; outside a
+        // lock, turning an enabled layer off waits for the period to end.
+        Ui.setEnabledWithAlpha(shortVideoToggle, remaining == 0);
 
         if (rules.adultWordsEnabled) {
             String adultSummary;
@@ -1331,7 +1469,7 @@ public final class MainActivity extends Activity {
             updateToggle(adultToggle, R.string.toggle_adult, getString(R.string.adult_toggle_summary));
         }
         adultToggle.setChecked(rules.adultWordsEnabled);
-        Ui.setEnabledWithAlpha(adultToggle, !rules.adultWordsEnabled || remaining == 0);
+        Ui.setEnabledWithAlpha(adultToggle, remaining == 0);
 
         SetupGuide.Assets assets = !rules.adultWordsEnabled ? SetupGuide.Assets.DISABLED
                 : AdultPolicyAssets.state == AdultPolicyAssets.State.READY ? SetupGuide.Assets.READY
@@ -1406,6 +1544,10 @@ public final class MainActivity extends Activity {
                 break;
         }
         Ui.setTextIfChanged(setupNext, getString(nextText));
+        // The DNS card below already owns the start action; hide the duplicate
+        // recommendation card on that step.
+        setupCard.setVisibility(currentSetupStep == SetupGuide.Step.ENABLE_DNS
+                ? View.GONE : View.VISIBLE);
     }
 
     private void setTextIfChanged(TextView view, int textRes) {
@@ -1567,7 +1709,7 @@ public final class MainActivity extends Activity {
     // ------------------------------------------------------------------ dialogs and actions
 
     private void editAdultMode() {
-        if (settings == null) return;
+        if (settings == null || refuseIfRulesLocked()) return;
         boolean enabled = settings.snapshot().adultWordsEnabled;
         new AlertDialog.Builder(this).setTitle(enabled ? R.string.adult_mode_disable : R.string.adult_mode_enable)
                 .setMessage(R.string.adult_mode_disclosure).setNegativeButton(android.R.string.cancel, null)
@@ -1588,7 +1730,7 @@ public final class MainActivity extends Activity {
     }
 
     private void editShortVideo() {
-        if (settings == null) return;
+        if (settings == null || refuseIfRulesLocked()) return;
         boolean enabled = settings.snapshot().shortVideoEnabled;
         new AlertDialog.Builder(this).setTitle(enabled ? R.string.short_video_disable : R.string.short_video_enable)
                 .setMessage(R.string.short_video_disclosure).setNegativeButton(android.R.string.cancel, null)
@@ -1603,7 +1745,7 @@ public final class MainActivity extends Activity {
     }
 
     private void editVisualMode() {
-        if (settings == null || Build.VERSION.SDK_INT < 34) return;
+        if (settings == null || refuseIfRulesLocked() || Build.VERSION.SDK_INT < 34) return;
         boolean enabled = settings.snapshot().visualEnabled;
         new AlertDialog.Builder(this).setTitle(enabled ? R.string.visual_disable : R.string.visual_enable)
                 .setMessage(R.string.visual_disclosure).setNegativeButton(android.R.string.cancel, null)
@@ -1618,6 +1760,7 @@ public final class MainActivity extends Activity {
 
     /** With adb's permission Hisn switches it; otherwise Settings has the same switch. */
     private void editGray() {
+        if (refuseIfRulesLocked()) return;
         boolean wanted = ScreenGray.wanted(this);
         if (ScreenGray.canControl(this)) {
             if (!ScreenGray.set(this, !wanted, committed()))
@@ -1638,7 +1781,7 @@ public final class MainActivity extends Activity {
     }
 
     private void editRules(boolean domain) {
-        if (settings == null) return;
+        if (settings == null || refuseIfRulesLocked()) return;
         LinearLayout form = new LinearLayout(this);
         form.setOrientation(LinearLayout.VERTICAL);
         form.setPadding(Ui.dp(this, 20), Ui.dp(this, 4), Ui.dp(this, 20), 0);
@@ -1700,7 +1843,7 @@ public final class MainActivity extends Activity {
     }
 
     private void chooseApps(boolean scan) {
-        if (settings == null) return;
+        if (settings == null || refuseIfRulesLocked()) return;
         List<ChosenApps.Entry> apps = ChosenApps.list(this);
         Set<String> chosen = new LinkedHashSet<>(scan
                 ? settings.snapshot().scannedApps : settings.snapshot().blockedApps);
@@ -1725,7 +1868,7 @@ public final class MainActivity extends Activity {
     }
 
     private void showBrowserCoverage() {
-        if (settings == null) return;
+        if (settings == null || refuseIfRulesLocked()) return;
         List<ChosenApps.Entry> browsers = ChosenApps.browsers(this);
         if (browsers.isEmpty()) {
             Toast.makeText(this, R.string.browsers_none, Toast.LENGTH_SHORT).show();
@@ -1768,7 +1911,7 @@ public final class MainActivity extends Activity {
     }
 
     private void editSchedule() {
-        if (settings == null) return;
+        if (settings == null || refuseIfRulesLocked()) return;
         final DailyAppSchedule existing;
         try { existing = settings.snapshot().schedule; }
         catch (RuntimeException unavailable) {
@@ -1911,6 +2054,26 @@ public final class MainActivity extends Activity {
                     try {
                         settings.startCommitment(days);
                         UninstallProtectionController.sync(this);
+                        // A lock arms removal protection on its own: copy the boot
+                        // state before the next restart and keep the loss check scheduled.
+                        BootShieldService.mirror(this, ProtectionLock.bootShieldArmed(
+                                BuildConfig.SELF_PROTECTION, settings.uninstallLock(),
+                                settings.remainingMillis()));
+                        try { LayerWatchdog.syncSchedule(this); }
+                        catch (RuntimeException unavailable) { /* The next open retries. */ }
+                        if (BuildConfig.SELF_PROTECTION && !Settings.canDrawOverlays(this)) {
+                            Toast.makeText(this, R.string.boot_shield_permission, Toast.LENGTH_LONG).show();
+                            try {
+                                startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                        android.net.Uri.parse("package:" + getPackageName())));
+                            } catch (RuntimeException unavailable) { /* The guard still works. */ }
+                        }
+                        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(
+                                android.Manifest.permission.POST_NOTIFICATIONS)
+                                != PackageManager.PERMISSION_GRANTED) {
+                            requestPermissions(new String[]{
+                                    android.Manifest.permission.POST_NOTIFICATIONS}, 102);
+                        }
                         refreshStatus();
                     } catch (RuntimeException refused) { showRefusal(refused); }
                 }).show();
@@ -1947,6 +2110,10 @@ public final class MainActivity extends Activity {
         }
         UninstallProtectionController.Status status = UninstallProtectionController.read(this);
         UninstallProtection.State state = status.state();
+        // Keep the pre-unlock boot shield copy in step with the effective lock:
+        // a running protection lock arms it even when the keep switch is off.
+        BootShieldService.mirror(this, ProtectionLock.bootShieldArmed(BuildConfig.SELF_PROTECTION,
+                status.keepInstalled, status.remainingMillis));
         // A commitment can expire while this screen is open. Repair a stale
         // platform flag at most every five seconds, never on every UI tick.
         if (state == UninstallProtection.State.OUT_OF_SYNC && status.deviceOwner
@@ -1957,20 +2124,37 @@ public final class MainActivity extends Activity {
             state = status.state();
         }
         if (BuildConfig.SELF_PROTECTION && !status.deviceOwner) {
-            // Direct build without device ownership: the accessibility screen guard is the protection.
-            int text;
+            // Direct build without device ownership: the accessibility screen guard
+            // is the protection, and a running lock arms it on its own.
+            boolean committed = ProtectionLock.locked(status.remainingMillis);
+            boolean connected = TextGuardService.connected;
+            CharSequence label;
             int kind;
-            if (!status.keepInstalled) {
-                text = R.string.self_protection_state_off;
-                kind = Ui.OFF;
-            } else if (TextGuardService.connected) {
-                text = R.string.self_protection_state_on;
+            if (committed && !connected) {
+                label = getString(R.string.self_protection_state_lock_inactive);
+                kind = Ui.ATTENTION;
+            } else if (committed) {
+                // The lock states carry the remaining time; keep the format call
+                // on the exact resource so lint and the translator see the argument.
+                label = settings.installLock()
+                        ? getString(R.string.self_protection_state_lock_on_installs,
+                        Durations.remaining(this, status.remainingMillis))
+                        : getString(R.string.self_protection_state_lock_on,
+                        Durations.remaining(this, status.remainingMillis));
+                kind = Ui.ON;
+            } else if (!status.keepInstalled) {
+                label = getString(settings.installLock() ? R.string.self_protection_state_installs_only
+                        : R.string.self_protection_state_off);
+                kind = settings.installLock() ? Ui.ON : Ui.OFF;
+            } else if (connected) {
+                label = getString(settings.installLock() ? R.string.self_protection_state_on_installs
+                        : R.string.self_protection_state_on);
                 kind = Ui.ON;
             } else {
-                text = R.string.self_protection_state_inactive;
+                label = getString(R.string.self_protection_state_inactive);
                 kind = Ui.ATTENTION;
             }
-            setStatus(uninstallState, getString(text), kind);
+            setStatus(uninstallState, label, kind);
             managedState.setVisibility(View.GONE);
             Ui.setEnabledWithAlpha(uninstallAction, true);
             return status;
@@ -2017,10 +2201,14 @@ public final class MainActivity extends Activity {
         managedState.setVisibility(View.VISIBLE);
         if (!status.managedLockdown) {
             setStatus(managedState, getString(R.string.managed_lockdown_off), Ui.OFF);
-        } else if (!status.restrictionsMatch()) {
+        } else if (!status.managedMatches()) {
             setStatus(managedState, getString(R.string.managed_lockdown_sync), Ui.ATTENTION);
         } else if (status.desiredRestrictions().isEmpty()) {
             setStatus(managedState, getString(R.string.managed_lockdown_idle), Ui.OFF);
+        } else if (status.managedStrict && Build.VERSION.SDK_INT >= 29) {
+            setStatus(managedState, getString(R.string.managed_lockdown_strict_on), Ui.ON);
+        } else if (status.suspendBlocked) {
+            setStatus(managedState, getString(R.string.managed_lockdown_suspend_on), Ui.ON);
         } else {
             setStatus(managedState, getString(R.string.managed_lockdown_on), Ui.ON);
         }
@@ -2048,12 +2236,29 @@ public final class MainActivity extends Activity {
                             : commitment ? R.string.uninstall_commitment_auto
                             : R.string.uninstall_keep_hint));
             keepSwitch.setChecked(settings.uninstallLock());
-            // Enabling is a tightening and stays available during a commitment.
-            // Disabling is the one direction a commitment refuses.
+            // Enabling is a tightening and stays available during a protection
+            // lock. Disabling is refused until the lock ends. The guard itself is
+            // already on for the lock even when this switch reads off.
             keepSwitch.setEnabled(!(commitment && keepSwitch.isChecked()));
             form.addView(keepSwitch, Ui.margins(this, 8, 0));
+            if (screenGuard && commitment && !settings.uninstallLock()) {
+                form.addView(Ui.caption(this, getString(R.string.self_protection_lock_auto)),
+                        Ui.margins(this, 2, 0));
+            }
+        }
+        Switch installSwitch = null;
+        if (screenGuard) {
+            installSwitch = Ui.toggle(this, getString(R.string.self_protection_install),
+                    getString(commitment && settings.installLock()
+                            ? R.string.self_protection_commitment
+                            : R.string.self_protection_install_hint));
+            installSwitch.setChecked(settings.installLock());
+            installSwitch.setEnabled(!(commitment && installSwitch.isChecked()));
+            form.addView(installSwitch, Ui.margins(this, 8, 0));
         }
         Switch lockdownSwitch = null;
+        Switch strictSwitch = null;
+        Switch suspendSwitch = null;
         if (status.deviceOwner) {
             lockdownSwitch = Ui.toggle(this, getString(R.string.managed_lockdown_switch));
             lockdownSwitch.setChecked(settings.managedLockdown());
@@ -2061,6 +2266,18 @@ public final class MainActivity extends Activity {
             form.addView(lockdownSwitch, Ui.margins(this, 8, 0));
             form.addView(Ui.caption(this, getString(R.string.managed_lockdown_hint)),
                     Ui.margins(this, 4, 0));
+            if (Build.VERSION.SDK_INT >= 29) {
+                strictSwitch = Ui.toggle(this, getString(R.string.managed_strict_switch),
+                        getString(R.string.managed_strict_hint));
+                strictSwitch.setChecked(settings.managedStrict());
+                strictSwitch.setEnabled(!(settings.managedStrict() && commitment));
+                form.addView(strictSwitch, Ui.margins(this, 12, 0));
+            }
+            suspendSwitch = Ui.toggle(this, getString(R.string.managed_suspend_switch),
+                    getString(R.string.managed_suspend_hint));
+            suspendSwitch.setChecked(settings.suspendBlocked());
+            suspendSwitch.setEnabled(!(settings.suspendBlocked() && commitment));
+            form.addView(suspendSwitch, Ui.margins(this, 8, 0));
         }
         if (!status.deviceOwner && !screenGuard) {
             form.addView(Ui.caption(this, getString(R.string.uninstall_command_label)),
@@ -2073,7 +2290,10 @@ public final class MainActivity extends Activity {
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
         final Switch keep = keepSwitch;
+        final Switch install = installSwitch;
         final Switch lockdown = lockdownSwitch;
+        final Switch strict = strictSwitch;
+        final Switch suspend = suspendSwitch;
         AlertDialog dialog = new AlertDialog.Builder(this)
                 .setTitle(R.string.uninstall_title).setView(scroll).create();
         form.addView(Ui.divider(this), Ui.margins(this, 14, 2));
@@ -2082,8 +2302,13 @@ public final class MainActivity extends Activity {
             primary = Ui.button(this, R.string.uninstall_apply, Ui.ButtonKind.PRIMARY);
             primary.setOnClickListener(view -> {
                 applyUninstallChoice(keep != null && keep.isChecked(),
+                        install != null ? install.isChecked() : settings.installLock(),
                         status.deviceOwner && lockdown != null
-                                ? lockdown.isChecked() : settings.managedLockdown());
+                                ? lockdown.isChecked() : settings.managedLockdown(),
+                        status.deviceOwner && strict != null
+                                ? strict.isChecked() : settings.managedStrict(),
+                        status.deviceOwner && suspend != null
+                                ? suspend.isChecked() : settings.suspendBlocked());
                 dialog.dismiss();
             });
         } else {
@@ -2125,11 +2350,13 @@ public final class MainActivity extends Activity {
         dialog.show();
     }
 
-    private void applyUninstallChoice(boolean keepInstalled, boolean managedLockdown) {
+    private void applyUninstallChoice(boolean keepInstalled, boolean installLock, boolean managedLockdown,
+                                      boolean managedStrict, boolean suspendBlocked) {
         try {
-            // Both choices are saved in one write, so the uninstall block and
-            // the restrictions can never describe different states.
-            settings.updateManagedChoice(keepInstalled, managedLockdown);
+            // All choices are saved in one write, so the guard switches, the
+            // uninstall block and the restrictions can never describe different states.
+            settings.updateManagedChoice(keepInstalled, installLock, managedLockdown, managedStrict,
+                    suspendBlocked);
         } catch (IllegalStateException locked) {
             Toast.makeText(this, R.string.uninstall_locked, Toast.LENGTH_LONG).show();
             return;
@@ -2138,9 +2365,13 @@ public final class MainActivity extends Activity {
             return;
         }
         UninstallProtectionController.Result result = UninstallProtectionController.sync(this);
-        BootShieldService.mirror(this, keepInstalled);
-        if (keepInstalled && BuildConfig.SELF_PROTECTION
-                && !android.provider.Settings.canDrawOverlays(this)) {
+        long remaining = 0;
+        try { remaining = settings.remainingMillis(); }
+        catch (RuntimeException unavailable) { /* The status refresh reports it. */ }
+        boolean bootArmed = ProtectionLock.bootShieldArmed(BuildConfig.SELF_PROTECTION,
+                keepInstalled, remaining);
+        BootShieldService.mirror(this, bootArmed);
+        if (bootArmed && !android.provider.Settings.canDrawOverlays(this)) {
             // The boot shield needs this; without it the first moments after a restart stay open.
             Toast.makeText(this, R.string.boot_shield_permission, Toast.LENGTH_LONG).show();
             try {
@@ -2153,7 +2384,7 @@ public final class MainActivity extends Activity {
         }
         try { LayerWatchdog.syncSchedule(this); }
         catch (RuntimeException unavailable) { /* The next open retries. */ }
-        if (keepInstalled && Build.VERSION.SDK_INT >= 33
+        if (bootArmed && Build.VERSION.SDK_INT >= 33
                 && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED) {
             // The watchdog's only signal for a closed app is a notification.
@@ -2228,6 +2459,31 @@ public final class MainActivity extends Activity {
         refreshStatus();
     }
 
+    private void refreshBatteryState() {
+        if (batteryState == null || batteryAction == null) return;
+        android.os.PowerManager power = (android.os.PowerManager) getSystemService(POWER_SERVICE);
+        boolean ignoring = power != null
+                && power.isIgnoringBatteryOptimizations(getPackageName());
+        batteryState.setText(ignoring ? R.string.battery_allowed : R.string.battery_limited);
+        batteryState.setTextColor(Ui.color(this, ignoring ? R.color.text_secondary : R.color.warning));
+        batteryAction.setVisibility(ignoring ? View.GONE : View.VISIBLE);
+    }
+
+    private void requestBatteryExemption() {
+        try {
+            Intent request = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                    android.net.Uri.parse("package:" + getPackageName()));
+            startActivity(request);
+        } catch (RuntimeException unavailable) {
+            try {
+                startActivity(new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS));
+                Toast.makeText(this, R.string.battery_unavailable, Toast.LENGTH_LONG).show();
+            } catch (RuntimeException missing) {
+                Toast.makeText(this, R.string.battery_unavailable, Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
     private boolean notificationsEnabled() {
         if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(
                 android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
@@ -2294,7 +2550,10 @@ public final class MainActivity extends Activity {
         // commitment may have expired, or the owner may have changed it while
         // another screen was open. This is a no-op on an unmanaged install.
         UninstallProtectionController.sync(this);
+        try { LayerWatchdog.syncSchedule(this); }
+        catch (RuntimeException unavailable) { /* The next open retries. */ }
         refreshRuleSummaries();
+        refreshBatteryState();
         handler.post(refresh);
     }
 

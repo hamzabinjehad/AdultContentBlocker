@@ -16,7 +16,7 @@ public final class SavedSettings {
     public static final String UNKNOWN = "commitment_unknown", RESTORED = "restored_from_copy";
     public final String domains, words;
     public final Set<String> apps, scans;
-    public final boolean adultWords, visual, shortVideo, uninstallLock, managedLockdown;
+    public final boolean adultWords, visual, shortVideo, uninstallLock, installLock, managedLockdown, managedStrict, suspendBlocked;
     public final DailyAppSchedule schedule;
 
     private SavedSettings(Map<String, ?> values) {
@@ -28,7 +28,10 @@ public final class SavedSettings {
         visual = flag(values, "visual_enabled");
         shortVideo = flag(values, "short_video");
         uninstallLock = flag(values, "uninstall_lock");
+        installLock = flag(values, "install_lock");
         managedLockdown = flag(values, "managed_lockdown");
+        managedStrict = flag(values, "managed_strict");
+        suspendBlocked = flag(values, "suspend_blocked");
         schedule = new DailyAppSchedule(flag(values, "schedule_enabled"), number(values, "schedule_start", 1320),
                 number(values, "schedule_end", 420), names(values, "schedule_apps"),
                 flag(values, "schedule_all_apps"));
@@ -59,6 +62,42 @@ public final class SavedSettings {
     public static Map<String, Object> values(String domains, String words, Set<String> apps, Set<String> scans,
             boolean adultWords, boolean visual, boolean shortVideo, boolean uninstallLock, boolean managedLockdown,
             DailyAppSchedule schedule, CommitmentClock clock, boolean unknown, boolean restored) {
+        return values(domains, words, apps, scans, adultWords, visual, shortVideo, uninstallLock, false,
+                managedLockdown, schedule, clock, unknown, restored);
+    }
+
+    /**
+     * Every value to save, with the direct build's separate install lock.
+     * Missing fields read as off, so every earlier settings file upgrades in place.
+     */
+    public static Map<String, Object> values(String domains, String words, Set<String> apps, Set<String> scans,
+            boolean adultWords, boolean visual, boolean shortVideo, boolean uninstallLock, boolean installLock,
+            boolean managedLockdown, DailyAppSchedule schedule, CommitmentClock clock, boolean unknown,
+            boolean restored) {
+        return values(domains, words, apps, scans, adultWords, visual, shortVideo, uninstallLock, installLock,
+                managedLockdown, false, schedule, clock, unknown, restored);
+    }
+
+    /**
+     * Every value to save, with the separate strict managed-lockdown opt-in.
+     * Missing fields read as off, so every earlier settings file upgrades in place.
+     */
+    public static Map<String, Object> values(String domains, String words, Set<String> apps, Set<String> scans,
+            boolean adultWords, boolean visual, boolean shortVideo, boolean uninstallLock, boolean installLock,
+            boolean managedLockdown, boolean managedStrict, DailyAppSchedule schedule, CommitmentClock clock,
+            boolean unknown, boolean restored) {
+        return values(domains, words, apps, scans, adultWords, visual, shortVideo, uninstallLock, installLock,
+                managedLockdown, managedStrict, false, schedule, clock, unknown, restored);
+    }
+
+    /**
+     * Every value to save, with the separate blocked-app suspension opt-in.
+     * Missing fields read as off, so every earlier settings file upgrades in place.
+     */
+    public static Map<String, Object> values(String domains, String words, Set<String> apps, Set<String> scans,
+            boolean adultWords, boolean visual, boolean shortVideo, boolean uninstallLock, boolean installLock,
+            boolean managedLockdown, boolean managedStrict, boolean suspendBlocked,
+            DailyAppSchedule schedule, CommitmentClock clock, boolean unknown, boolean restored) {
         Map<String, Object> values = new HashMap<>();
         values.put("domains", domains);
         values.put("words", words);
@@ -68,7 +107,10 @@ public final class SavedSettings {
         values.put("visual_enabled", visual);
         values.put("short_video", shortVideo);
         values.put("uninstall_lock", uninstallLock);
+        values.put("install_lock", installLock);
         values.put("managed_lockdown", managedLockdown);
+        values.put("managed_strict", managedStrict);
+        values.put("suspend_blocked", suspendBlocked);
         values.put("schedule_enabled", schedule.enabled);
         values.put("schedule_start", schedule.startMinute);
         values.put("schedule_end", schedule.endMinute);
