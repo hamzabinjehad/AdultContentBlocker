@@ -73,6 +73,10 @@ public struct SetupEvidence: Equatable {
     public var privateRelayOff: Bool
     public var screenTimeAdultFilter: Bool
     public var systemFilterRunning: Bool
+    /// Why the build cannot run the system filter, when that is the reason
+    /// it is not running. nil on a build that can (and in tests that only
+    /// model the boolean above).
+    public var filterBlock: FilterBuildBlock?
     /// /Applications/Hisn.app and its bridge owned by root, the bridge not
     /// writable by this user, and a protected, matching login-agent configuration.
     /// This is on-disk configuration evidence, not proof launchd has loaded it.
@@ -86,6 +90,7 @@ public struct SetupEvidence: Equatable {
                 safeSearch: SafeSearchDNS = SafeSearchDNS(),
                 partnerKeySet: Bool, browsers: [BrowserSetup], privateRelayOff: Bool,
                 screenTimeAdultFilter: Bool, systemFilterRunning: Bool,
+                filterBlock: FilterBuildBlock? = nil,
                 appFilesProtected: Bool? = true, authority: MacAuthority? = nil) {
         self.isAdmin = isAdmin
         self.hostsEntries = hostsEntries
@@ -96,6 +101,7 @@ public struct SetupEvidence: Equatable {
         self.privateRelayOff = privateRelayOff
         self.screenTimeAdultFilter = screenTimeAdultFilter
         self.systemFilterRunning = systemFilterRunning
+        self.filterBlock = filterBlock
         self.appFilesProtected = appFilesProtected
         self.authority = authority
     }
@@ -139,6 +145,11 @@ public struct SetupChecklist: Equatable {
     public let steps: [Step]
     /// The OS-level authority read for the accounts stage, when available.
     public let authority: MacAuthority?
+
+    /// The command that turns an ad-hoc build into a signed one. The team ID
+    /// stays a visible placeholder: the app cannot know it, and a copied
+    /// command with a guessed team would fail in a way that looks like a bug.
+    public static let signedBuildCommand = "macos/install.sh --team YOUR_TEAM_ID"
 
     public var required: [Step] { steps.filter { $0.state != .optional } }
     public var doneCount: Int { required.filter { $0.state == .done }.count }
@@ -307,12 +318,27 @@ public struct SetupChecklist: Equatable {
         }
 
         // 7. The system filter: VPN-proof, every app, needs the paid program.
+        // When the installed build cannot run it, say which part is missing and
+        // hand over the one command that fixes it: a step that only names the
+        // requirement leaves the person to search for how to meet it.
+        let filterBlock = e.systemFilterRunning ? nil : e.filterBlock
+        let filterDetail: String
+        switch filterBlock {
+        case .unsignedBuild:
+            filterDetail = FilterBuildBlock.unsignedBuild.explanation + " "
+                + String(localized: "Run the command below, then approve the filter in System Settings.")
+        case .filterNotEmbedded:
+            filterDetail = FilterBuildBlock.filterNotEmbedded.explanation
+        case nil:
+            filterDetail = e.systemFilterRunning
+                ? String(localized: "Running: domain filtering is active for app connections. Search settings and page text need their other protection layers.")
+                : String(localized: "Enable the system filter, then approve it in System Settings if macOS asks.")
+        }
         steps.append(Step(id: .systemFilter, title: String(localized: "System filter"),
-                          detail: e.systemFilterRunning
-                            ? String(localized: "Running: domain filtering is active for app connections. Search settings and page text need their other protection layers.")
-                            : String(localized: "Enable the system filter, then approve it in System Settings if macOS asks."),
+                          detail: filterDetail,
                           state: e.systemFilterRunning ? .done : .optional,
-                          action: nil))
+                          action: filterBlock == .unsignedBuild
+                            ? .command(SetupChecklist.signedBuildCommand) : nil))
 
         self.steps = steps
         self.authority = e.authority
@@ -325,7 +351,8 @@ extension SetupEvidence {
 
     /// Everything the checklist needs, read now. Off the main thread: it reads
     /// every browser profile's preferences.
-    static func current(systemFilterRunning: Bool, lockActive: Bool = false) -> SetupEvidence {
+    static func current(systemFilterRunning: Bool, lockActive: Bool = false,
+                        filterBlock: FilterBuildBlock? = nil) -> SetupEvidence {
         let ids = Set(NativeMessagingInstaller.extensionIDs)
         let support = FileManager.default.urls(for: .applicationSupportDirectory,
                                                in: .userDomainMask)[0]
@@ -363,6 +390,7 @@ extension SetupEvidence {
             privateRelayOff: forced("allowCloudPrivateRelay", "com.apple.applicationaccess") as? Bool == false,
             screenTimeAdultFilter: forced("restrictWeb", "com.apple.familycontrols.contentfilter") as? Bool == true,
             systemFilterRunning: systemFilterRunning,
+            filterBlock: filterBlock,
             appFilesProtected: appFilesProtected(),
             authority: MacAuthority.current(lockActive: lockActive))
     }

@@ -318,7 +318,8 @@ private struct OverviewPage: View {
             checklist: readingSetup ? nil : setup,
             requireOutsideLock: guardian.requireOutsideLock,
             browserWarning: !guardian.alerts.isEmpty,
-            hasAppExceptions: !guardian.allowed.isEmpty)
+            hasAppExceptions: !guardian.allowed.isEmpty,
+            filterBlock: FilterLink.shared.buildBlock)
     }
 
     private var lockStatus: LockStatus {
@@ -437,7 +438,8 @@ private struct OverviewPage: View {
         let running = LaptopSetupReadiness.filterIsReady(protectionEvidence)
         let locked = lock.isLocked
         var evidence = await Task.detached {
-            SetupEvidence.current(systemFilterRunning: running, lockActive: locked)
+            SetupEvidence.current(systemFilterRunning: running, lockActive: locked,
+                                  filterBlock: FilterLink.shared.buildBlock)
         }.value
         // Never certify the filter from the pre-scan snapshot or from a
         // restrictive recovery state that intentionally reports a live layer.
@@ -743,7 +745,8 @@ struct SetupPage: View {
             checklist: checking ? nil : checklist,
             requireOutsideLock: guardian.requireOutsideLock,
             browserWarning: !guardian.alerts.isEmpty,
-            hasAppExceptions: !guardian.allowed.isEmpty)
+            hasAppExceptions: !guardian.allowed.isEmpty,
+            filterBlock: FilterLink.shared.buildBlock)
     }
 
     init(filter: FilterController, goTo: @escaping (ContentView.Page) -> Void,
@@ -895,6 +898,11 @@ struct SetupPage: View {
                                 .controlSize(.small)
                             }
                             .padding(.top, 2)
+                            if line == SetupChecklist.signedBuildCommand {
+                                Text("Replace YOUR_TEAM_ID with the 10-character team ID from your Apple Developer account.")
+                                    .font(.caption).foregroundStyle(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
                         }
                         .padding(.top, 4)
                     }
@@ -988,7 +996,7 @@ struct SetupPage: View {
         await FilterSync.shared.sync()
         let running = LaptopSetupReadiness.filterIsReady(protectionEvidence)
         let locked = lock.isLocked
-        var evidence = await Task.detached { SetupEvidence.current(systemFilterRunning: running, lockActive: locked) }.value
+        var evidence = await Task.detached { SetupEvidence.current(systemFilterRunning: running, lockActive: locked, filterBlock: FilterLink.shared.buildBlock) }.value
         // The filter can change while disk/DNS evidence is being collected.
         evidence.systemFilterRunning = LaptopSetupReadiness.filterIsReady(protectionEvidence)
         checklist = SetupChecklist(evidence)

@@ -50,6 +50,10 @@ public struct ProtectionEvidence: Equatable {
     /// build — no paid Apple team — cannot, and its filter row says so
     /// instead of offering a button that can only fail.
     public var filterCanRun: Bool
+    /// Why `filterCanRun` is false, when the build itself is the reason:
+    /// an ad-hoc binary and a bundle missing its filter extension need
+    /// different remedies, so the row names the one that applies.
+    public var filterBlock: FilterBuildBlock?
     /// Live authority diagnostics, separate from whether its process runs.
     public var policyRecoveryRequired: Bool
     public var policyPersistenceError: String?
@@ -65,12 +69,14 @@ public struct ProtectionEvidence: Equatable {
 
     public init(filter: FilterEvidence, extensionLastSeen: Date?, now: Date = Date(),
                 hostsEntries: Int? = nil, filterCanRun: Bool = true,
+                filterBlock: FilterBuildBlock? = nil,
                 policyRecoveryRequired: Bool = false, policyPersistenceError: String? = nil) {
         self.filter = filter
         self.extensionLastSeen = extensionLastSeen
         self.now = now
         self.hostsEntries = hostsEntries
         self.filterCanRun = filterCanRun
+        self.filterBlock = filterBlock
         self.policyRecoveryRequired = policyRecoveryRequired
         self.policyPersistenceError = policyPersistenceError
     }
@@ -104,6 +110,7 @@ public struct ProtectionEvidence: Equatable {
             extensionLastSeen: d?.object(forKey: "extensionLastSeen") as? Date,
             hostsEntries: HostsFile.blockingEntries(),
             filterCanRun: FilterLink.shared.isConfigured,
+            filterBlock: FilterLink.shared.buildBlock,
             policyRecoveryRequired: authority?.record.recoveryRequired ?? false,
             policyPersistenceError: authority?.persistenceError)
     }
@@ -222,7 +229,8 @@ public struct ProtectionStatus: Equatable {
                            detail: String(localized: "Restricting traffic during policy recovery"),
                            state: .ok, action: nil)
         } else {
-            filter = Self.filterLayer(evidence.filter, canRun: evidence.filterCanRun)
+            filter = Self.filterLayer(evidence.filter, canRun: evidence.filterCanRun,
+                                      block: evidence.filterBlock)
         }
         let ext = Self.extensionLayer(lastSeen: evidence.extensionLastSeen, now: evidence.now)
         let hosts = evidence.hostsEntries.map(Self.hostsLayer)
@@ -281,11 +289,16 @@ public struct ProtectionStatus: Equatable {
                     state: .missing, action: nil)
     }
 
-    private static func filterLayer(_ f: FilterEvidence, canRun: Bool) -> Layer {
+    private static func filterLayer(_ f: FilterEvidence, canRun: Bool,
+                                    block: FilterBuildBlock?) -> Layer {
         let name = String(localized: "System filter")
         if !canRun {
+            // Name the cause that applies. A block with no diagnosis keeps the
+            // generic line: a state invented from missing evidence would be
+            // worse than an unspecific one.
             return Layer(name: name,
-                         detail: String(localized: "Needs a build signed with the Apple Developer Program (Setup step 9)"),
+                         detail: block?.explanation
+                            ?? String(localized: "Needs a build signed with the Apple Developer Program (Setup step 9)"),
                          state: .missing, action: nil)
         }
         switch f {

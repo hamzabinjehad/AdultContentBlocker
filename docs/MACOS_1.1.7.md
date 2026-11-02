@@ -40,6 +40,14 @@ of asking the person to self-certify it:
 - The account-split stage is complete only when the authority evidence is
   verified. A checked manual box can no longer make an administrator account
   look split.
+- **An unsigned build says which part is missing.** The System filter row, the
+  Overview setup card and the Protected Setup step now distinguish an ad-hoc
+  binary from a bundle with no filter extension, instead of repeating one
+  requirement. The step offers the command that fixes it
+  (`macos/install.sh --team YOUR_TEAM_ID`) with a Copy button and an explicit
+  placeholder, because the app cannot know the team ID and a guessed one fails
+  like a broken build. A build with no embedded extension gets its own message
+  rather than being blamed on signing.
 
 This is deliberately **not** the app making itself an administrator. A hidden
 or self-granted admin account is a backdoor; one bug or extracted secret would
@@ -50,10 +58,11 @@ root daemon, which is what the card verifies.
 
 On 2 November 2026:
 
-- `./test.sh macos`: **508 tests**, 0 failures, including the new
-  `MacAuthorityTests` and the account-split/lock-gate cases in
-  `SetupChecklistTests`.
-- Localization export: `561 strings, all with Arabic`.
+- `./test.sh macos`: **513 tests**, 0 failures, including the new
+  `MacAuthorityTests`, the account-split/lock-gate cases in
+  `SetupChecklistTests`, and the unsigned-build cases in `ProtectionStatusTests`,
+  `SetupChecklistTests` and `LaptopSetupReadinessTests`.
+- Localization export: `565 strings, all with Arabic`.
 - `python3 script/versions.py --check`: pass.
 - The Xcode project was regenerated from `macos/generate_xcodeproj.py`; project
   diff is two new files and the 1.1.7/build 11 version bump.

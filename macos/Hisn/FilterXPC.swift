@@ -121,6 +121,31 @@ public enum FilterXPC {
     }
 }
 
+/// Why a build cannot reach a system filter, when the build itself is the
+/// reason. Separate from a filter that is merely off: these are properties of
+/// the installed binary, so no button in the app can change them.
+public enum FilterBuildBlock: String, Equatable, Sendable {
+    /// No Apple-issued team on this binary — an ad-hoc or unsigned build.
+    /// macOS never loads a Network Extension from one, and the restricted
+    /// Network Extension entitlement cannot be issued without the paid
+    /// Developer Program.
+    case unsignedBuild
+    /// The app bundle carries no filter extension, or its Mach service name
+    /// still contains the unsubstituted build variable.
+    case filterNotEmbedded
+
+    /// One sentence naming the cause and the fix, so a status row is never a
+    /// dead end.
+    public var explanation: String {
+        switch self {
+        case .unsignedBuild:
+            return String(localized: "This build is ad-hoc signed, so macOS will not load its system filter. Rebuild it with your Apple Developer Program team (Setup step 9).")
+        case .filterNotEmbedded:
+            return String(localized: "This app bundle has no filter extension, so there is nothing to turn on. Reinstall the full Hisn build.")
+        }
+    }
+}
+
 /// The app's and the bridge's side of the channel.
 ///
 /// Every call has a timeout and every failure is `nil`: an unreachable filter
@@ -142,8 +167,17 @@ public final class FilterLink: @unchecked Sendable {
         self.requirement = requirement
     }
 
+    /// Why this build cannot reach a filter, or nil when it can. The two
+    /// causes have different fixes — re-sign the build, versus reinstall a
+    /// complete one — so the UI must not collapse them into one message.
+    public var buildBlock: FilterBuildBlock? {
+        if requirement == nil { return .unsignedBuild }
+        if serviceName == nil { return .filterNotEmbedded }
+        return nil
+    }
+
     /// Whether this build could reach a filter at all.
-    public var isConfigured: Bool { serviceName != nil && requirement != nil }
+    public var isConfigured: Bool { buildBlock == nil }
 
     private func proxy(onError: @escaping (Error) -> Void) -> HisnFilterXPC? {
         queue.sync {

@@ -209,6 +209,26 @@ final class ProtectionStatusTests: XCTestCase {
         }
     }
 
+    func testTheFilterRowNamesTheBlocksActualCause() {
+        func detail(_ block: FilterBuildBlock?) -> String {
+            ProtectionStatus(ProtectionEvidence(
+                filter: .off, extensionLastSeen: now, now: now,
+                hostsEntries: 400_000, filterCanRun: false, filterBlock: block))
+                .layers[0].detail
+        }
+        let unsigned = detail(.unsignedBuild)
+        XCTAssertTrue(unsigned.contains("ad-hoc"), unsigned)
+        XCTAssertTrue(unsigned.contains("Apple Developer Program"), unsigned)
+        XCTAssertTrue(unsigned.contains("Setup step 9"), unsigned)
+        let unembedded = detail(.filterNotEmbedded)
+        XCTAssertTrue(unembedded.contains("no filter extension"), unembedded)
+        // No diagnosis is still better than an invented one: the generic line
+        // survives for evidence that predates the block.
+        let unknown = detail(nil)
+        XCTAssertTrue(unknown.contains("Apple Developer Program"), unknown)
+        XCTAssertNotEqual(unsigned, unembedded)
+    }
+
     func testAHandfulOfHostsLinesIsNotABlocklist() {
         let s = ProtectionStatus(ProtectionEvidence(
             filter: .off, extensionLastSeen: now.addingTimeInterval(-30), now: now,

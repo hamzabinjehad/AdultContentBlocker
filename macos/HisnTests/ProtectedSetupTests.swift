@@ -147,13 +147,14 @@ final class LaptopSetupReadinessTests: XCTestCase {
     private let now = Date(timeIntervalSince1970: 1_800_000_000)
 
     private func protection(filter: FilterEvidence = .on(domainCount: 150_000),
-                            signed: Bool = true, recovery: Bool = false,
+                            signed: Bool = true, block: FilterBuildBlock? = nil,
+                            recovery: Bool = false,
                             persistenceError: String? = nil,
                             heartbeatAge: TimeInterval? = 30,
                             hosts: Int? = nil) -> ProtectionEvidence {
         ProtectionEvidence(filter: filter,
             extensionLastSeen: heartbeatAge.map { now.addingTimeInterval(-$0) }, now: now,
-            hostsEntries: hosts, filterCanRun: signed,
+            hostsEntries: hosts, filterCanRun: signed, filterBlock: block,
             policyRecoveryRequired: recovery, policyPersistenceError: persistenceError)
     }
 
@@ -197,6 +198,24 @@ final class LaptopSetupReadinessTests: XCTestCase {
             XCTAssertFalse(value.isReady)
             XCTAssertTrue(value.issues.contains(signed ? .filter : .signedBuild))
         }
+    }
+
+    func testTheSetupCardNamesTheBuildsActualBlock() {
+        let unsigned = readiness(protection(filter: .off, signed: false, block: .unsignedBuild))
+        XCTAssertEqual(unsigned.issues.first, .signedBuild)
+        XCTAssertTrue(unsigned.detail(.signedBuild).contains("ad-hoc"),
+                      unsigned.detail(.signedBuild))
+        let unembedded = readiness(protection(filter: .off, signed: false, block: .filterNotEmbedded))
+        XCTAssertTrue(unembedded.detail(.signedBuild).contains("no filter extension"))
+        // Evidence without a diagnosis keeps the generic line rather than
+        // asserting a cause the app did not observe.
+        let unknown = readiness(protection(filter: .off, signed: false))
+        XCTAssertTrue(unknown.detail(.signedBuild).contains("properly signed"),
+                      unknown.detail(.signedBuild))
+        // A running filter is never described as a blocked build.
+        let running = readiness(protection(filter: .on(domainCount: 150_000),
+                                           signed: true, block: .unsignedBuild))
+        XCTAssertTrue(running.issues.isEmpty)
     }
 
     func testLiveFilterOverridesAStaleSuccessfulChecklist() {

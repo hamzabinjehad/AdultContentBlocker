@@ -6,8 +6,8 @@ struct FilterSetupControl: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            if !FilterLink.shared.isConfigured {
-                Text("This development build cannot activate laptop-wide filtering. Install a properly signed Hisn release, then approve its filter in macOS.")
+            if let block = FilterLink.shared.buildBlock {
+                Text(block.explanation)
                     .font(.callout).foregroundStyle(.orange)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -49,6 +49,30 @@ struct FilterSetupControl: View {
     }
 }
 
+/// A command to copy verbatim. The signed-build command keeps its team ID as a
+/// visible placeholder: a guessed team ID would fail like a bug, not like a
+/// missing step.
+struct CopyableCommand: View {
+    let command: String
+    @State private var copied = false
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Text(verbatim: command)
+                .font(.callout.monospaced())
+                .fixedSize(horizontal: false, vertical: true)
+                .textSelection(.enabled)
+                .environment(\.layoutDirection, .leftToRight)
+            Button(copied ? "Copied" : "Copy") {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(command, forType: .string)
+                copied = true
+            }
+            .controlSize(.small)
+        }
+    }
+}
+
 /// The same live-evidence explanation on Setup and Overview. Actions navigate
 /// to consented setup; rendering this card never enables a protection layer.
 struct LaptopSetupStatusView: View {
@@ -68,16 +92,22 @@ struct LaptopSetupStatusView: View {
                 ProgressView("Checking this Mac...").controlSize(.small)
             }
             if let next = readiness.issues.first {
-                Text(LocalizedStringKey(next.detail))
+                Text(LocalizedStringKey(readiness.detail(next)))
                     .font(.callout)
                     .fixedSize(horizontal: false, vertical: true)
+                if next == .signedBuild, readiness.filterBlock == .unsignedBuild {
+                    CopyableCommand(command: SetupChecklist.signedBuildCommand)
+                    Text("Replace YOUR_TEAM_ID with the 10-character team ID from your Apple Developer account.")
+                        .font(.caption).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 Button("Review next step") { review(next) }
                     .accessibilityIdentifier("setup.reviewNextStep")
             }
             if readiness.issues.count > 1 {
                 DisclosureGroup("Other missing checks") {
                     ForEach(Array(readiness.issues.dropFirst())) { issue in
-                        Text(LocalizedStringKey(issue.detail))
+                        Text(LocalizedStringKey(readiness.detail(issue)))
                             .font(.callout)
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.top, 6)

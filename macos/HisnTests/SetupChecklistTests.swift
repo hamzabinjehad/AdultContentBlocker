@@ -11,12 +11,13 @@ final class SetupChecklistTests: XCTestCase {
                           safe: SafeSearchDNS = noSafeSearch, partner: Bool = false,
                           browsers: [BrowserSetup] = [BrowserSetup(name: "Helium")],
                           relayOff: Bool = false, screenTime: Bool = false,
-                          filter: Bool = false, appFiles: Bool? = false) -> SetupEvidence {
+                          filter: Bool = false, appFiles: Bool? = false,
+                          filterBlock: FilterBuildBlock? = nil) -> SetupEvidence {
         SetupEvidence(isAdmin: admin, hostsEntries: hosts, dnsBypassesBlocked: bypassesBlocked,
                       safeSearch: safe, partnerKeySet: partner,
                       browsers: browsers, privateRelayOff: relayOff,
                       screenTimeAdultFilter: screenTime, systemFilterRunning: filter,
-                      appFilesProtected: appFiles)
+                      filterBlock: filterBlock, appFilesProtected: appFiles)
     }
 
     private let lockedHelium = BrowserSetup(name: "Helium", incognitoLocked: true,
@@ -77,6 +78,35 @@ final class SetupChecklistTests: XCTestCase {
         let c = SetupChecklist(evidence(hosts: 0, filter: true))
         XCTAssertEqual(step(c, .domains).state, .done)
         XCTAssertEqual(step(c, .systemFilter).state, .done)
+    }
+
+    func testAnUnsignedBuildNamesTheCauseAndHandsOverTheCommand() {
+        let c = SetupChecklist(evidence(filterBlock: .unsignedBuild))
+        let systemFilter = step(c, .systemFilter)
+        XCTAssertEqual(systemFilter.state, .optional, "the paid filter never becomes required work")
+        XCTAssertEqual(systemFilter.action, .command(SetupChecklist.signedBuildCommand))
+        XCTAssertTrue(systemFilter.detail.contains("ad-hoc"), systemFilter.detail)
+        XCTAssertTrue(systemFilter.detail.contains("Apple Developer Program"), systemFilter.detail)
+        XCTAssertTrue(systemFilter.detail.contains("System Settings"), systemFilter.detail)
+        // A guessed team ID would fail like a broken build; the placeholder
+        // is what tells the person which value they must supply.
+        XCTAssertTrue(SetupChecklist.signedBuildCommand.contains("YOUR_TEAM_ID"))
+    }
+
+    func testAMissingFilterBundleIsNotBlamedOnSigning() {
+        let c = SetupChecklist(evidence(filterBlock: .filterNotEmbedded))
+        let systemFilter = step(c, .systemFilter)
+        XCTAssertNil(systemFilter.action, "re-signing cannot replace a missing extension")
+        XCTAssertTrue(systemFilter.detail.contains("no filter extension"), systemFilter.detail)
+        XCTAssertFalse(systemFilter.detail.contains("ad-hoc"), systemFilter.detail)
+    }
+
+    func testARunningFilterStepIsDoneWhateverTheBuildBlockSays() {
+        let c = SetupChecklist(evidence(filter: true, filterBlock: .unsignedBuild))
+        XCTAssertEqual(step(c, .systemFilter).state, .done)
+        XCTAssertNil(step(c, .systemFilter).action)
+        XCTAssertFalse(step(c, .systemFilter).detail.contains("ad-hoc"),
+                       "a running filter is not described as blocked")
     }
 
     func testVerifiedAuthorityCompletesTheAccountSplitEvenWithoutTheManualToggle() {

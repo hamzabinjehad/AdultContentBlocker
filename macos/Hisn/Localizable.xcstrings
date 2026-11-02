@@ -6425,6 +6425,46 @@
           }
         }
       }
+    },
+    "Replace YOUR_TEAM_ID with the 10-character team ID from your Apple Developer account." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استبدل YOUR_TEAM_ID بمعرّف الفريق المكوّن من 10 أحرف من حساب مطوّر Apple لديك."
+          }
+        }
+      }
+    },
+    "Run the command below, then approve the filter in System Settings." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نفّذ الأمر أدناه، ثم وافق على المرشّح في إعدادات النظام."
+          }
+        }
+      }
+    },
+    "This app bundle has no filter extension, so there is nothing to turn on. Reinstall the full Hisn build." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا تحتوي حزمة التطبيق هذه على امتداد المرشّح، لذا لا يوجد ما يمكن تفعيله. أعد تثبيت نسخة حصن الكاملة."
+          }
+        }
+      }
+    },
+    "This build is ad-hoc signed, so macOS will not load its system filter. Rebuild it with your Apple Developer Program team (Setup step 9)." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذه النسخة موقّعة توقيعًا مخصّصًا (ad-hoc)، لذا لن تُحمِّل macOS مرشّح النظام الخاص بها. أعد بناءها بفريق برنامج مطوّري Apple (الخطوة 9 من الإعداد)."
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

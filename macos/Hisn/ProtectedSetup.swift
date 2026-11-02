@@ -36,7 +36,18 @@ struct LaptopSetupReadiness: Equatable {
 
     let issues: [Issue]
     let isChecking: Bool
+    /// Why the build cannot run the filter, when that is an open issue. The
+    /// two blocks need different fixes, so the row must not collapse them.
+    var filterBlock: FilterBuildBlock?
     var isReady: Bool { !isChecking && issues.isEmpty }
+
+    /// The detail line for an issue, naming the build's actual block when
+    /// there is one. An unknown cause keeps the generic line rather than
+    /// inventing a diagnosis.
+    func detail(_ issue: Issue) -> String {
+        if issue == .signedBuild, let filterBlock { return filterBlock.explanation }
+        return issue.detail
+    }
 
     var headline: String {
         if isChecking { return String(localized: "Checking laptop protection") }
@@ -59,11 +70,13 @@ struct LaptopSetupReadiness: Equatable {
 
     init(protection: ProtectionEvidence, checklist: SetupChecklist?,
          requireOutsideLock: Bool, browserWarning: Bool = false,
-         hasAppExceptions: Bool = false) {
+         hasAppExceptions: Bool = false,
+         filterBlock: FilterBuildBlock? = nil) {
         var missing: [Issue] = []
         isChecking = checklist == nil || (protection.filterCanRun && protection.filter == .unknown)
         if !protection.filterCanRun { missing.append(.signedBuild) }
         else if !Self.filterIsReady(protection) { missing.append(.filter) }
+        self.filterBlock = filterBlock ?? protection.filterBlock
         if protection.policyRecoveryRequired || protection.policyPersistenceError != nil {
             missing.append(.policy)
         }
