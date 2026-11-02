@@ -5,6 +5,68 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
+## Browser extension 1.3.0 — 2026-11-02
+
+### Added
+
+- **Language-aware page-text scoring.** Every reviewed term in the signed
+  vocabulary now carries a language (`en`, `ar`, `ar-latn`, `de`, `es`, `fr`,
+  `it`, `pt`). The scorer picks a vocabulary view for the language the page is
+  actually written in, instead of applying all ~5,800 terms to every page. This
+  removes weak cross-language homographs without weakening the layer:
+  - the detected language's own terms, English (the common base), shared
+    spellings and the user's typed words are always present;
+  - terms at or above weight 7 — explicit labels such as an adult studio or a
+    title phrase — are included in every language;
+  - negative/context phrases are never filtered;
+  - an undeclared, unsupported or unclear language uses the complete index.
+- **Script evidence outranks the page's tag.** The detector counts Arabic and
+  Latin letters in the rendered sample. Dominant Arabic text on a page that
+  declares `lang="en"` still selects the Arabic vocabulary, closing the
+  one-attribute bypass that language-exclusive matching would have created.
+- **Feed items are judged in their own language.** A post's `lang` attribute
+  and a bounded sample of its rendered text accompany the existing body/alt
+  zones. A language change is part of the equality signature, so a changed post
+  is re-judged rather than reusing a clean verdict.
+- **The popup shows the detected page language**, with a plain explanation of
+  the rule; the options page names the supported lists and the fallback. Both
+  are translated into Arabic.
+- The iOS Safari web extension stages the same `lib/language.js` module and
+  shares the language-aware scorer; its text-check copy now says so.
+- **The real-model visual smoke test now covers four synthetic images**, not
+  one flat fill: flat green, flat blue, a soft gradient and a hard checkerboard,
+  plus the existing person-preference shapes. Nothing is uploaded; the test
+  still runs only the packaged engine on loopback.
+
+### Unchanged
+
+- No new extension permission, network request, durable field or browsing
+  record. Language tags and the bounded text sample stay in extension memory
+  and are sent only between the content script, worker and popup.
+- Not language-exclusive matching, and not a claim of complete coverage:
+  mixed-language pages, text hidden from rendering, images and videos without
+  readable text, and other browsers remain outside this layer.
+
+### Verification
+
+- `./test.sh extension` passes: every JavaScript suite, package check, and the
+  evaluation corpus at sensitivity 50/80/100. At 50 the corpus reports 0/22
+  adult cases missed and 0/28 benign pages blocked; dilution holds through
+  8,000 filler words and every adult tube body remains blocked under a benign
+  title/meta.
+- New `test/language.test.js` (68 checks) covers tag normalisation, script
+  detection, the declared-`en` bypass, view membership, the unknown-language
+  fallback and ignored-word invalidation. `feed.test.js` (94 checks) covers
+  per-post language signals.
+- `./test.sh browser` passes, including the scanner harness, popup and settings
+  pages in English and Arabic, feed compatibility, and the expanded real-engine
+  visual smoke in CPU mode.
+- Package: `dist/hisn-extension-1.3.0.zip`, 91 files, 6.2 MB, SHA-256
+  `a8471ab3a3e4db4f61656507c933ec51981264162f2c8d593bd63d33694abcac`.
+
+Version 1.3.0. Unpacked and store-ready; no listing, assigned store ID or
+managed force-install is claimed.
+
 ## Guardian console — unreleased
 
 ### Added

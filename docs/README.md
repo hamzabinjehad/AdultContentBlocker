@@ -148,7 +148,8 @@ Per-version change and verification notes, newest first.
 
 ### Browser extension
 
-- [Extension 1.2.2 release notes](COVERAGE_PASS_2026-10-30.md): Seed v5's 239,885-domain core tier and 480 static DNR rules; the packaged zip is hashed in the record. Development candidate; no listing yet.
+- [Extension 1.3.0 release notes](EXTENSION_1.3.0.md): Language-aware page-text scoring chooses the vocabulary from the page's own text, keeps strong labels across languages, falls back to the full list when unsure, and adds a detected-language row to the popup. Development candidate; no listing yet.
+- [Extension 1.2.2 release notes](COVERAGE_PASS_2026-10-30.md): Seed v5's 239,885-domain core tier and 480 static DNR rules; the packaged zip is hashed in the record. *Historical.*
 - [Extension 1.2.1 release notes](EXTENSION_1.2.1.md): Store metadata, an options footer with the on-device statement, version and privacy/support links, and a store-readiness record. Development candidate; no listing yet.
 - [Chrome Web Store readiness](EXTENSION_STORE.md): Listing copy, permission justifications, privacy answers, managed force-install policy, reviewer steps and post-publication ID wiring.
 - [Extension 1.2.0 release notes](EXTENSION_1.2.0.md): Signed-list block-page reason, Strict-mode preservation across a mode-less bridge reply, list age plus a manual update action, and Facebook share/reel coverage. *Historical.*

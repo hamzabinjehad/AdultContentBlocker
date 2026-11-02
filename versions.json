@@ -5,11 +5,11 @@
     {
       "id": "extension",
       "name": "Browser extension (Chromium)",
-      "version": "1.2.2",
+      "version": "1.3.0",
       "build": null,
       "state": "development · unpacked, no store listing",
       "source": "extension/manifest.json",
-      "notes": "The packaged zip strips the development key; the Chrome Web Store ID will differ from the unpacked ID. 1.2.2 ships the expanded 239,885-domain core tier (480 static rules) from seed v5."
+      "notes": "The packaged zip strips the development key; the Chrome Web Store ID will differ from the unpacked ID. 1.3.0 adds language-aware page-text scoring: each reviewed term carries a language, the page language is detected from its text rather than only its tag, and unknown languages fall back to the full list. Seed v5 still supplies the 239,885-domain core tier (480 static rules)."
     },
     {
       "id": "macos",

@@ -15,6 +15,7 @@
   const SUPPORTED_HOSTS = new Set(["x.com", "www.x.com", "mobile.x.com",
     "twitter.com", "www.twitter.com", "mobile.twitter.com"]);
   const MAX_ITEM_TEXT = 20_000;
+  const MAX_LANGUAGE_SAMPLE = 4_000;
   const MAX_CAPTION_NODES = 100;
   const MAX_PARALLEL = 4;
   const MAX_SCAN_ITEMS = 40;
@@ -41,7 +42,9 @@
   }
   function signature(zones, identity = "") {
     // Equality, not a compact hash: a collision must not reuse a clean verdict.
-    return JSON.stringify([identity, zones.body || "", zones.alt || ""]);
+    // Declared language is included so a post that swaps language without
+    // changing a character is re-judged against the right vocabulary.
+    return JSON.stringify([identity, zones.body || "", zones.alt || "", zones.langTags || null]);
   }
   function visuallyWithheld(el, win) {
     const kind = el.tagName === "IMG" ? "images" : el.tagName === "VIDEO" ? "videos" : null;
@@ -116,7 +119,22 @@
       const text = el.getAttribute("alt") || el.getAttribute("aria-label");
       if (text) captions.push(boundedText(text, 2_000));
     }
-    return { body, alt: boundedText(captions.join("\n")) };
+    const alt = boundedText(captions.join("\n"));
+    // X labels a post's own text with `lang`; the page's `<html lang>` names
+    // the interface, not necessarily the post. Prefer the post's own tag, and
+    // send the rendered sample too: the worker detects the language from the
+    // script of the actual text, so a forged tag cannot hide Arabic content.
+    const own = item.querySelector?.('[data-testid="tweetText"][lang]')?.getAttribute?.("lang")
+      || item.querySelector?.("[lang]")?.getAttribute?.("lang") || "";
+    const langTags = {
+      htmlLang: own || win.document?.documentElement?.lang
+        || item.ownerDocument?.documentElement?.lang || "",
+      metaContentLanguage: "",
+      ogLocale: "",
+      navigatorLanguage: win.navigator?.language || "",
+    };
+    return { body, alt, langTags,
+      langSample: boundedText(`${body}\n${alt}`, MAX_LANGUAGE_SAMPLE) };
   }
 
   function createScanner(deps = {}) {
@@ -382,7 +400,7 @@
     return { start, refresh, recheck, stop,
       get stats() { return { ...stats, cachedItems: cached.size, queuedText: queuedTextCount() }; } };
   }
-  globalThis.HisnFeed = { ITEM_SELECTOR, MAX_ITEM_TEXT, MAX_CAPTION_NODES, MAX_PARALLEL, MAX_SCAN_ITEMS,
+  globalThis.HisnFeed = { ITEM_SELECTOR, MAX_ITEM_TEXT, MAX_LANGUAGE_SAMPLE, MAX_CAPTION_NODES, MAX_PARALLEL, MAX_SCAN_ITEMS,
     MAX_QUEUED_TEXT, MAX_CACHED_ITEMS, BATCH_MS, RETRY_LIMIT,
     REPLY_TIMEOUT_MS, RECONNECT_MS, POLL_MS, OBSERVER_OPTIONS,
     isSupportedLocation, boundedText, signature, collectItemZones, createScanner };

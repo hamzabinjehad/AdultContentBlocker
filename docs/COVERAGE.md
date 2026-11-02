@@ -30,7 +30,7 @@ part of the bundled core.
 
 | Surface | Domain tier | Page text | Visual | Short video | Native apps |
 | --- | --- | --- | --- | --- | --- |
-| Chromium extension | Core · 239,885 domains, 480 static rules | Yes (ar/en/de, evasion) | Opt-in, hide-first on supported sites | Opt-in (YouTube, Instagram, Facebook, Snapchat, TikTok) | No |
+| Chromium extension | Core · 239,885 domains, 480 static rules | Yes (language-aware: en/ar/de/es/fr/it/pt, evasion) | Opt-in, hide-first on supported sites | Opt-in (YouTube, Instagram, Facebook, Snapchat, TikTok) | No |
 | Mac content filter | Full · 5,276,448 domains once a published generation is installed; core seed before that | No native-app text | No | No | All apps at host/flow level |
 | Safari on iPhone/iPad | Core · 239,885 domains in six blockers | Safari text extension | Opt-in local | No | WebKit only |
 | Android DNS | Core · 239,885 domains | Selected apps via accessibility | Selected apps, Android 14+ | Selected apps | Selected apps only |

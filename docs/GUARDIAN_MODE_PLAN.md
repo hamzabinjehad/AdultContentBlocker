@@ -278,7 +278,7 @@ devices Hisn cannot run on:
 | Router DNS and firewall | Listed hosts on every LAN device | Mobile data, another network, DoH, hardcoded IPs, VPN | Tools and guides only |
 | On-device DNS profile / Private DNS | Listed hosts in most apps | DoH inside an app, direct IPs, VPN | iOS profile, Android VPN, Mac filter |
 | Full-tunnel local VPN | DNS plus SNI/IP policy for all apps | Apps that pin certificates or use ECH, another VPN, root | Not built (DNS-only today) |
-| Browser extension and managed policy | Known hosts, page text, images, SafeSearch, incognito | Another browser, extension removed, unreadable media | Extension 1.2.2 |
+| Browser extension and managed policy | Known hosts, page text, images, SafeSearch, incognito | Another browser, extension removed, unreadable media | Extension 1.3.0 |
 | OS content filter | Host and flow decisions | Provider loss, established flows, encrypted posts | macOS system extension |
 | Apple web content filter | Adult sites in Safari/WebKit | Other apps, images, posts | Supervised profile |
 | Screen Time / Family Link | App limits, chosen apps, downtime | Account recovery, another device | iOS and Android |

@@ -4,8 +4,15 @@
 <pre id="summary" data-result="pending">Loading the packaged engine…</pre>
 <script type="module">
 // This is a real-model startup/inference smoke test, not a classification
-// accuracy benchmark. It uses only a synthetic flat green capture and the
-// exact engine bundle and assets shipped with the extension.
+// accuracy benchmark. It uses only synthetic captures and the exact engine
+// bundle and assets shipped with the extension.
+//
+// One flat-green image proves the models load and inference returns a
+// well-formed result. It does not prove the pipeline survives a second
+// texture: an image carrying real detail exercises the resize, tensor layout
+// and channel order in a way a uniform capture cannot. The fixtures below are
+// deliberately non-human (flat colour, a smooth gradient, a hard-edged
+// checkerboard) so the only defensible verdict is "not adult content".
 const summary = document.getElementById('summary');
 const results = [];
 let failed = false;
@@ -21,40 +28,76 @@ window.fetch = (input, init) => {
   if (url.origin !== location.origin) throw new Error('External fetch forbidden by local model smoke test');
   return realFetch(input, init);
 };
+
+const SIZE = 64;
+function capture(id, paint) {
+  const bytes = new Uint8Array(SIZE * SIZE * 4);
+  for (let y = 0; y < SIZE; y++) {
+    for (let x = 0; x < SIZE; x++) {
+      const [r, g, b, a = 255] = paint(x, y);
+      const i = (y * SIZE + x) * 4;
+      bytes[i] = r; bytes[i + 1] = g; bytes[i + 2] = b; bytes[i + 3] = a;
+    }
+  }
+  return { id, width: SIZE, height: SIZE, rgba: btoa(String.fromCharCode(...bytes)) };
+}
+
+// Four synthetic captures: uniform colour, a second uniform colour, a smooth
+// two-axis gradient, and a hard black/white checkerboard. The last two make
+// the engine resize and normalise actual variation, and they are the cases a
+// flat fill cannot exercise.
+const fixtures = [
+  ['flat-green', () => [0, 128, 0]],
+  ['flat-blue', () => [20, 60, 180]],
+  ['soft-gradient', (x, y) => [40 + Math.round(x * 1.5), 80 + Math.round(y * 1.2),
+                               160 + Math.round((x + y) * 0.5)]],
+  ['checkerboard', (x, y) => (Math.floor(x / 8) + Math.floor(y / 8)) % 2 ? [230, 230, 230] : [20, 20, 20]],
+];
+
 try {
   const { createVisualEngine } = await import('../../visual/engine.bundle.js');
   check(typeof createVisualEngine === 'function', 'the shipped engine bundle imports successfully');
   const engine = createVisualEngine({ baseURL: new URL('../../visual/', location.href).href, backend: 'cpu' });
-  const bytes = new Uint8Array(64 * 64 * 4);
-  for (let i = 0; i < bytes.length; i += 4) {
-    bytes[i + 1] = 128;
-    bytes[i + 3] = 255;
+
+  // Adult-content classification over every fixture. The first call pays the
+  // model-loading cost; later calls prove warm inference and that a new image
+  // is actually re-read rather than reusing the first tensor.
+  const adultPreferences = { inspectVisual: true, personBlur: 'off' };
+  for (const [id, paint] of fixtures) {
+    const started = performance.now();
+    try {
+      const result = await engine.inspect(`real-${id}`, capture(id, paint), adultPreferences);
+      const status = engine.status(adultPreferences);
+      results.push(`${id}: ${JSON.stringify({ result, status, milliseconds: Math.round(performance.now() - started) })}`);
+      check(result?.state === 'ready', `${id} inference returns an explicit ready result`);
+      check(status.state === 'ready' && status.backend === 'cpu', `${id} reports a loaded CPU backend and required models`);
+      check(typeof result?.adult?.block === 'boolean' && result.adult.inspected === true,
+        `${id} returns an actually inspected boolean verdict`);
+      check(result?.adult?.block === false, `synthetic ${id} is not classified as adult content`);
+    } catch (error) {
+      failed = true;
+      results.push(`FAIL ${id}: ${error.stack || error}; status=${JSON.stringify(engine.status(adultPreferences))}`);
+    }
   }
-  const capture = { id: 'real-model-green', width: 64, height: 64,
-    rgba: btoa(String.fromCharCode(...bytes)) };
-  bytes.fill(0);
+
+  // Person detection on the plain fixture: it must return the same explicit
+  // shape for every preference and must not invent a face in a flat image.
+  const personCapture = capture('flat-green', fixtures[0][1]);
   for (const [name, preferences] of [
-    ['adult', { inspectVisual: true, personBlur: 'off' }],
     ['all-faces', { inspectVisual: false, personBlur: 'all' }],
     ['female-faces', { inspectVisual: false, personBlur: 'female' }],
     ['male-faces', { inspectVisual: false, personBlur: 'male' }],
   ]) {
     const started = performance.now();
     try {
-      const result = await engine.inspect(`real-${name}`, capture, preferences);
+      const result = await engine.inspect(`real-${name}`, personCapture, preferences);
       const status = engine.status(preferences);
       results.push(`${name}: ${JSON.stringify({ result, status, milliseconds: Math.round(performance.now() - started) })}`);
       check(result?.state === 'ready', `${name} inference returns an explicit ready result`);
       check(status.state === 'ready' && status.backend === 'cpu', `${name} reports a loaded CPU backend and required models`);
-      if (preferences.inspectVisual) {
-        check(typeof result?.adult?.block === 'boolean' && result.adult.inspected === true,
-          'adult classification returns an actually inspected boolean verdict');
-        check(result?.adult?.block === false, 'synthetic flat green is not classified as adult content');
-      } else {
-        check(typeof result?.persons?.blur === 'boolean' && Array.isArray(result.persons.regions),
-          `${name} returns a boolean face verdict and bounded regions`);
-        check(result?.persons?.blur === false, `${name} does not invent a face in synthetic flat green`);
-      }
+      check(typeof result?.persons?.blur === 'boolean' && Array.isArray(result.persons.regions),
+        `${name} returns a boolean face verdict and bounded regions`);
+      check(result?.persons?.blur === false, `${name} does not invent a face in synthetic flat green`);
     } catch (error) {
       failed = true;
       results.push(`FAIL ${name}: ${error.stack || error}; status=${JSON.stringify(engine.status(preferences))}`);

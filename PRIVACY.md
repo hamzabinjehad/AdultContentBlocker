@@ -124,5 +124,5 @@ If this policy changes, the change is recorded in [CHANGELOG.md](CHANGELOG.md)
 and the effective date below is updated. A change that adds collection would
 need a new consent, not a silent edit.
 
-**Effective:** 2026-10-30 · **Applies to:** extension 1.2.2, Mac 1.1.6, iOS
-1.1.4, Android 0.8.2 and later builds that link to this policy.
+**Effective:** 2026-11-02 · **Applies to:** extension 1.3.0, Mac 1.1.7, iOS
+1.1.4, Android 0.9.0 and later builds that link to this policy.

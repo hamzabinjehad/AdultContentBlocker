@@ -20,6 +20,7 @@
  */
 
 import { normalize, tokenize, variants } from "./normalize.js";
+import { baseLanguage, detectLanguage } from "./language.js";
 
 /**
  * Where on the page the text came from, and how much that placement matters.
@@ -241,31 +242,92 @@ export function threshold(sensitivity) {
 export function buildIndex(termsJson) {
   const positive = new Map();
   const negative = new Map();
-  let maxWords = 1;
+  // Which reviewed language each positive term belongs to. The scorer uses
+  // this only to choose a page-language view; it never stores it on a page.
+  const termLanguage = new Map();
 
-  const add = (map, t, w) => {
+  const add = (map, t, w, language) => {
     t = phraseKey(t);
     if (!t) return;
-    const words = t.split(" ").length;
-    if (words > maxWords) maxWords = words;
     map.set(t, (map.get(t) ?? 0) + w);
+    if (map !== positive) return;
+    const previous = termLanguage.get(t);
+    // A spelling carried by more than one language is shared, not owned by
+    // whichever line happened to compile first.
+    termLanguage.set(t, previous && previous !== language ? "shared" : language);
   };
 
-  for (const r of termsJson.terms ?? []) add(positive, r.t, r.w);
-  for (const r of termsJson.negatives ?? []) add(negative, r.t, -Math.abs(r.w));
+  for (const r of termsJson.terms ?? []) {
+    add(positive, r.t, r.w, baseLanguage(r.l) ?? (r.l === "user" ? "user" : "shared"));
+  }
+  for (const r of termsJson.negatives ?? []) add(negative, r.t, -Math.abs(r.w), "shared");
 
-  // Aliases are added only after both canonical maps are complete, so a real
-  // term always wins its own spelling (see gluedAliases).
+  return makeIndex(positive, negative, new Set(termsJson.exempt_domains ?? []), termLanguage);
+}
+
+/** Assemble a compiled index from maps. Split from `buildIndex` so a
+ *  language view can reuse the same phrase/canonical compilation without
+ *  re-reading the signed vocabulary. */
+function makeIndex(positive, negative, exempt, termLanguage) {
+  let maxWords = 1;
+  for (const map of [positive, negative]) {
+    for (const term of map.keys()) {
+      const words = term.split(" ").length;
+      if (words > maxWords) maxWords = words;
+    }
+  }
   const canonical = gluedAliases(positive, negative);
-
+  for (const [alias, source] of canonical) {
+    termLanguage.set(alias, termLanguage.get(source) ?? "shared");
+  }
   return {
     positive,
     negative,
     maxPhrase: maxWords,
     phrases: phraseTree(positive, negative),
     canonical,
-    exempt: new Set(termsJson.exempt_domains ?? []),
+    exempt,
+    termLanguage,
+    // Language views are built once per page language and cached by the
+    // worker's long-lived index. `withoutTerms` clears this cache.
+    views: new Map(),
   };
+}
+
+/** The strongest cross-language weight shared with every page. Explicit
+ *  labels are useful evidence on any site; weak homographs from another
+ *  language are not. */
+const CROSS_LANGUAGE_STRONG = 7;
+
+/**
+ * A compiled vocabulary restricted to what is relevant to a page language.
+ *
+ * Included in every view:
+ *   - shared terms (no usable language tag) and user-typed words;
+ *   - English, the common base;
+ *   - every term in the detected language;
+ *   - every negative/context phrase, in all languages, so protective context
+ *     cannot disappear just because the page language changed.
+ *
+ * Terms from other languages are included only at or above
+ * `CROSS_LANGUAGE_STRONG`, which keeps explicit media labels while dropping
+ * weak cross-language homographs. A null/unsupported language returns the
+ * full index; language detection is never allowed to make a page unscorable.
+ */
+export function indexForLanguage(index, language) {
+  const code = baseLanguage(language);
+  if (!code || !index?.termLanguage) return index;
+  if (index.views?.has(code)) return index.views.get(code);
+  const wanted = new Set(["shared", "user", "en", code]);
+  const positive = new Map();
+  for (const [term, weight] of index.positive) {
+    const lang = index.termLanguage.get(term) ?? "shared";
+    if (wanted.has(lang) || weight >= CROSS_LANGUAGE_STRONG) positive.set(term, weight);
+  }
+  if (!positive.size) return index;
+  const view = makeIndex(positive, new Map(index.negative), index.exempt, index.termLanguage);
+  index.views.set(code, view);
+  return view;
 }
 
 /** True if `hostname` equals, or is a subdomain of, any domain in `list`.
@@ -297,6 +359,7 @@ export function withoutTerms(index, terms) {
   const drop = new Set(terms.map(phraseKey));
   const positive = new Map();
   const canonical = new Map();
+  const termLanguage = new Map();
   for (const [t, w] of index.positive) {
     const source = index.canonical?.get(t);
     // Dropping a canonical phrase must drop its glued aliases too, or the
@@ -304,6 +367,8 @@ export function withoutTerms(index, terms) {
     if (drop.has(t) || (source && drop.has(source))) continue;
     positive.set(t, w);
     if (source) canonical.set(t, source);
+    termLanguage.set(t, index.termLanguage?.get(t)
+      ?? (source ? index.termLanguage?.get(source) : null) ?? "shared");
   }
   // Negative aliases are never dropped by this function; carry them over so a
   // later ignore of a positive word cannot silently disable a negative phrase.
@@ -311,7 +376,8 @@ export function withoutTerms(index, terms) {
     const source = index.canonical?.get(t);
     if (source) canonical.set(t, source);
   }
-  return { ...index, positive, canonical, phrases: phraseTree(positive, index.negative) };
+  return { ...index, positive, canonical, termLanguage, views: new Map(),
+    phrases: phraseTree(positive, index.negative) };
 }
 
 /** True if this hostname is exempt from PAGE-TEXT blocking.
@@ -441,7 +507,13 @@ function scoreZone(text, index, counts, inspectLocal = false, sensitivity = 50) 
  * @param {number} sensitivity 0-100
  * @returns {{score, density, words, threshold, block, hits}}
  */
-export function scorePage(zones, index, sensitivity = 50) {
+export function scorePage(zones, index, sensitivity = 50, options = {}) {
+  // One vocabulary view per page language. Unknown/unsupported languages use
+  // the complete index, so a missing or dishonest language tag can never make
+  // a page cheaper to block than it was before language awareness existed.
+  const language = options.language
+    ?? detectLanguage(zones?.langTags ?? {}, zones?.langSample ?? "");
+  const scoringIndex = indexForLanguage(index, language);
   let score = 0;
   let words = 0;
   const hits = new Map();
@@ -452,13 +524,13 @@ export function scorePage(zones, index, sensitivity = 50) {
     if (!text) continue;
 
     const counts = new Map();
-    const result = scoreZone(text, index, counts, zone === "body" || zone === "alt", sensitivity);
+    const result = scoreZone(text, scoringIndex, counts, zone === "body" || zone === "alt", sensitivity);
     if (zone === "body") words += result.words;
     if (!localEvidence && result.local) localEvidence = { zone, ...result.local };
 
     for (const [term, raw] of counts) {
       const occurrences = Math.min(raw, MAX_OCCURRENCES);
-      const w = index.positive.get(term) ?? index.negative.get(term) ?? 0;
+      const w = scoringIndex.positive.get(term) ?? scoringIndex.negative.get(term) ?? 0;
       score += w * occurrences * weight;
       if (w > 0) hits.set(term, (hits.get(term) ?? 0) + occurrences);
     }

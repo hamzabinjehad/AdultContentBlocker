@@ -15,6 +15,7 @@ import { connectionStatus, connectionFeedback, repairFeedback } from "./lib/sett
 import { restrictionsActive, quickBlockTarget, settingsError } from "./lib/settings.js";
 import { describeVisual } from "./lib/visual-status.js";
 import { initLanguage, t, language, setLanguage, savePreference, translatePage } from "./lib/i18n.js";
+import { detectLanguage, languageName } from "./lib/language.js";
 
 await initLanguage();
 renderIcons();
@@ -22,6 +23,7 @@ let lastState;
 let lastRender;
 let privateCoverage;
 let visualEngine;
+let pageLanguageReply; // undefined = not asked, null = no answer, object = answered
 setInterval(() => { if (lastState) render(lastState); }, 1000);
 
 /** How long to wait for the worker before saying we could not reach it. */
@@ -29,6 +31,7 @@ const REPLY_TIMEOUT_MS = 3000;
 
 function render(state) {
   lastState = state;
+  renderPageLanguage();
   const version = chrome.runtime.getManifest?.().version;
   const s = describeStatus(state, { version });
   const connection = connectionStatus(state);
@@ -173,7 +176,55 @@ chrome.tabs?.query?.({ active: true, currentWindow: true }, (tabs) => {
   void chrome.runtime.lastError;
   activeTab = tabs?.[0];
   renderQuickBlock();
+  refreshPageLanguage();
 });
+
+/**
+ * Show the language the scanner already detected for this page.
+ *
+ * Display only: the worker scores the page itself and never trusts this
+ * round-trip or the page's own language tag. The content script answers with
+ * its collected tags and the bounded sample it already sends for scoring; the
+ * detector runs here so the popup and the scorer share one decision. Nothing
+ * is written or sent off the device.
+ */
+function refreshPageLanguage(attempt = 0) {
+  if (!activeTab?.id || !/^https?:/i.test(activeTab.url || "") || !chrome.tabs?.sendMessage) {
+    pageLanguageReply = null;
+    renderPageLanguage();
+    return;
+  }
+  try {
+    chrome.tabs.sendMessage(activeTab.id, { type: "hisnPageLanguage" }, { frameId: 0 }, (reply) => {
+      // Reading lastError marks "no scanner in this tab" as expected. A tab
+      // that just opened may still be injecting, so retry once before hiding.
+      if (chrome.runtime.lastError || !reply?.tags) {
+        if (attempt === 0) { setTimeout(() => refreshPageLanguage(1), 400); return; }
+        pageLanguageReply = null;
+      } else {
+        pageLanguageReply = { code: detectLanguage(reply.tags, reply.sample) };
+      }
+      renderPageLanguage();
+    });
+  } catch {
+    pageLanguageReply = null;
+    renderPageLanguage();
+  }
+}
+function renderPageLanguage() {
+  const section = document.getElementById("pageLanguage");
+  if (!section) return;
+  // The language is context for the text layer. If that layer is off and no
+  // lock keeps it on, the scanner should not be active and the row would
+  // describe a check that is not running.
+  const textActive = !lastState || lastState.inspectText || lastState.failClosed
+    || restrictionsActive(lastState);
+  section.hidden = !pageLanguageReply || !textActive;
+  if (!pageLanguageReply) return;
+  document.getElementById("pageLanguageValue").textContent = pageLanguageReply.code
+    ? languageName(pageLanguageReply.code, language())
+    : t("popup.pageLanguageUnknown");
+}
 document.getElementById("quickBlockButton").addEventListener("click", async () => {
   const target = quickBlockTarget(activeTab?.url, lastState);
   if (!target.ok || quickBusy) return;
@@ -279,6 +330,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
       document.getElementById("repairMessage").textContent = document.getElementById("repairProtection").disabled ? t("repair.checking") : "";
       lastRender = undefined;
       labelSwitch();
+      renderPageLanguage();
       render(lastState);
       checkIncognitoAccess();
     });
@@ -308,6 +360,7 @@ langSwitch.addEventListener("click", async () => {
   document.getElementById("repairMessage").textContent = document.getElementById("repairProtection").disabled ? t("repair.checking") : "";
   lastRender = undefined;
   labelSwitch();
+  renderPageLanguage();
   if (lastState !== undefined) render(lastState);
   checkIncognitoAccess();
 });

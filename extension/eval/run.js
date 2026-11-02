@@ -54,7 +54,10 @@ const bump = (k, field) => {
 let benignBlocked = 0;
 const lines = [];
 for (const c of corpus) {
-  const r = scorePage(c.zones, index, sensitivity);
+  // The corpus declares each case's language, so score it the way a page with
+  // that language would be scored. Detection from script is exercised by the
+  // unit suite; here the label keeps per-language coverage comparable.
+  const r = scorePage(c.zones, index, sensitivity, { language: c.lang });
   const k = key(c);
   if (c.label === "adult") {
     bump(k, "adult");
@@ -85,7 +88,7 @@ for (const c of corpus.filter((c) => c.label === "adult" && c.dilute)) {
   let lost = null;
   for (const words of [0, 100, 300, 1000, 3000, 8000]) {
     const padded = { ...c.zones, body: (c.zones.body ?? "") + " " + FILLER.split(" ").slice(0, words).join(" ") };
-    const r = scorePage(padded, index, sensitivity);
+    const r = scorePage(padded, index, sensitivity, { language: c.lang });
     if (!r.block) { lost = words; break; }
   }
   print(`  ${c.id.padEnd(16)} ${lost === null ? "holds through 8000 words" : `lost at +${lost} words`}`);
@@ -95,13 +98,13 @@ for (const c of corpus.filter((c) => c.label === "adult" && c.dilute)) {
 print("\nmisleading metadata:");
 for (const c of corpus.filter((c) => c.label === "adult" && c.type === "tube")) {
   const benignHead = { ...c.zones, title: "Weekend gardening notes", meta: "Gardening, tomatoes, compost" };
-  const r = scorePage(benignHead, index, sensitivity);
+  const r = scorePage(benignHead, index, sensitivity, { language: c.lang });
   print(`  ${c.id.padEnd(16)} adult body under benign title/meta: ${r.block ? "blocked" : "MISSED"}`);
 }
 {
   const benign = corpus.find((c) => c.id === "en-news-1");
   const adultHead = { ...benign.zones, title: "Free adult videos — watch now", meta: "adult movies, blowjob, big tits" };
-  const r = scorePage(adultHead, index, sensitivity);
+  const r = scorePage(adultHead, index, sensitivity, { language: "en" });
   print(`  ${"en-news-1".padEnd(16)} benign body under adult title/meta: ${r.block ? "blocked (metadata is evidence)" : "not blocked"}`);
 }
 

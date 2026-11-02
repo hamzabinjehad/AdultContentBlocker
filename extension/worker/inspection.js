@@ -142,9 +142,22 @@ export async function scoreFeedItem(zones, sender) {
   if (isExempt(location.hostname, index) || hostInList(location.hostname, state.textAllow ?? [])) {
     return { block: false, enabled: false };
   }
+  const tags = zones?.langTags;
+  const tag = (value) => typeof value === "string" ? value.slice(0, 64) : "";
   const itemZones = {
     body: globalThis.HisnFeed.boundedText(zones?.body),
     alt: globalThis.HisnFeed.boundedText(zones?.alt),
+    // The post's own `lang` and its rendered text, so the scorer picks the
+    // vocabulary for the language this item is actually written in. Bounded
+    // here as well: the content script is trusted, but every message boundary
+    // still gets its own limit.
+    langTags: {
+      htmlLang: tag(tags?.htmlLang),
+      metaContentLanguage: tag(tags?.metaContentLanguage),
+      ogLocale: tag(tags?.ogLocale),
+      navigatorLanguage: tag(tags?.navigatorLanguage),
+    },
+    langSample: globalThis.HisnFeed.boundedText(zones?.langSample, globalThis.HisnFeed.MAX_LANGUAGE_SAMPLE),
   };
   const sensitivity = state.failClosed ? 80 : (state.textSensitivity ?? 50);
   return { block: scorePage(itemZones, index, sensitivity).block, enabled: true };

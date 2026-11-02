@@ -129,6 +129,11 @@
       h = fnv1a(String(zones[key] ?? ""), h);
       h = fnv1a("\u0000", h);
     }
+    // The page can change its declared language, or replace Latin text with
+    // Arabic text, without changing any other zone's length or wording we use.
+    // Re-score when the language evidence moves.
+    h = fnv1a(JSON.stringify(zones.langTags ?? {}), h);
+    h = fnv1a(String(zones.langSample ?? ""), h);
     return `${h.toString(16)}:${(zones.body ?? "").length}`;
   }
 
@@ -260,6 +265,10 @@
 
     /** Collect the zones the scorer weights, cheaply. */
     function collectZones() {
+      const firstContent = (selector) => {
+        try { return doc.querySelectorAll(selector)?.[0]?.getAttribute?.("content") || ""; }
+        catch { return ""; }
+      };
       const meta = [];
       // Open Graph, Twitter card and schema.org descriptions all carry the
       // page's own summary and are frequently the only place a feed puts the
@@ -301,6 +310,16 @@
         heading: headings.join(" "),
         body,
         alt: boundedText(alt.join(" ")),
+        // Signals only. The worker detects and selects the language; a page
+        // cannot use this field to disable the full-vocabulary fallback.
+        langTags: {
+          htmlLang: doc.documentElement?.lang || "",
+          metaContentLanguage: firstContent('meta[http-equiv="content-language" i]'),
+          ogLocale: firstContent('meta[property="og:locale" i]'),
+          navigatorLanguage: win.navigator?.language || "",
+        },
+        langSample: boundedText([doc.title, headings.slice(0, 3).join(" "), body]
+          .join(" "), 6000),
       };
     }
 
@@ -515,6 +534,12 @@
 
     return {
       start, evaluate, onMutation, recheck,
+      languageSignals() {
+        try {
+          const zones = collectZones();
+          return { tags: zones.langTags, sample: zones.langSample };
+        } catch { return null; }
+      },
       get stopped() { return stopped; },
       get stats() { return { ...stats }; },
     };
@@ -544,6 +569,14 @@
       globalThis.__hisnScanVersion = version;
       const scanner = createScanner();
       scanner.start();
+      // Popup-only read of the language signals already collected for the
+      // scanner. It is extension-to-extension (never the page), and the
+      // sample is the same bounded text the worker already scores.
+      globalThis.chrome.runtime.onMessage?.addListener((message, sender, sendResponse) => {
+        if (message?.type !== "hisnPageLanguage") return false;
+        try { sendResponse(scanner.languageSignals()); } catch { sendResponse(null); }
+        return false;
+      });
       globalThis.chrome.storage?.onChanged?.addListener((changes, area) => {
         if (area === "local" && changes.state
             && scoringPolicyChanged(changes.state.oldValue, changes.state.newValue)) scanner.recheck();

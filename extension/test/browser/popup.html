@@ -7,8 +7,19 @@ const pause = () => new Promise((resolve) => setTimeout(resolve, 100));
 try {
   // Forced tiny iframe previews do not exercise Chromium's popup auto-sizing.
   const source = (await (await fetch("../../popup.html")).text()).replace('class="popup-root"', '');
-  async function frame(state, language = "en", privateAccess = true, viewport = {width:360,height:650}) {
+  async function frame(state, language = "en", privateAccess = true, viewport = {width:360,height:650}, pageLanguage) {
     const f = document.createElement("iframe");
+    const languageMock = pageLanguage === undefined ? "" : `
+      window.languageCalls = 0;
+      window.languageReply = ${JSON.stringify(pageLanguage)};
+      chrome.tabs = {
+        query(_query, callback) { callback([{ id: 7, url: "https://example.test/article" }]); },
+        sendMessage(_id, message, _options, callback) {
+          languageCalls++;
+          setTimeout(() => callback(window.languageReply), 0);
+        }
+      };
+    `;
     const mock = `<script>
       window.opened = 0;
       window.workerUnavailable = false;
@@ -38,6 +49,7 @@ try {
             cb({ok:false,reason:'unexpected-message'});
           } }
       };
+      ${languageMock}
     <\/script>`;
     f.srcdoc = source.replace('<head>', `<head><base href="${new URL('../../popup.html', location.href).href}">${mock}`);
     f.style.width = `${viewport.width}px`; f.style.height = `${viewport.height}px`;
@@ -110,6 +122,38 @@ try {
   check(!s.getElementById('popupEditor').hidden && solo.contentWindow.opened === 0, "visual shortcut stays inside the popup");
   s.getElementById('backToStatus').click();
   check(s.documentElement.scrollWidth <= solo.contentWindow.innerWidth, "popup does not overflow");
+
+  // The detected-language row is context for the text layer, not another
+  // protection claim. It must name the language, stay hidden when the layer is
+  // off, and fit the same narrow popup the rest of the UI survives.
+  const langFrame = await frame(base, "en", true, {width:480,height:600},
+    {tags:{htmlLang:"ar-EG",navigatorLanguage:"en-US"},
+     sample:"هذا نص عربي طويل يتحدث عن القراءة والكتابة وأشياء كثيرة أخرى."});
+  const ld = langFrame.contentDocument;
+  check(!ld.getElementById("pageLanguage").hidden, "a detected page language is shown while text checks are on");
+  check(ld.getElementById("pageLanguageValue").textContent === "Arabic", "the language row uses the popup's UI language");
+  check(ld.getElementById("pageLanguage").textContent.includes("explicit labels"),
+    "the language row explains cross-language labels without showing matched words");
+  check(ld.getElementById("pageLanguage").getBoundingClientRect().bottom <= langFrame.contentWindow.innerHeight,
+    "the language row stays inside the popup");
+  const langAr = await frame(base, "ar", true, {width:480,height:600},
+    {tags:{htmlLang:"de-DE"},sample:"Ein deutscher Text über Gartenarbeit und Bücher."});
+  const ad = langAr.contentDocument;
+  check(!ad.getElementById("pageLanguage").hidden
+    && ad.getElementById("pageLanguageValue").textContent === "الألمانية",
+    "Arabic popup names the detected language in Arabic");
+  const langUnknown = await frame(base, "en", true, {width:480,height:600},
+    {tags:{htmlLang:"nl"},sample:"Een Nederlandse pagina over tuinieren."});
+  check(langUnknown.contentDocument.getElementById("pageLanguageValue").textContent === "Not identified",
+    "an unidentified language is reported instead of guessed");
+  const langOff = await frame({...base, inspectText:false}, "en", true, {width:480,height:600},
+    {tags:{htmlLang:"ar"},sample:"هذا نص عربي طويل يتحدث عن القراءة والكتابة."});
+  check(langOff.contentDocument.getElementById("pageLanguage").hidden,
+    "the language row is hidden when text checking is off");
+  const langNarrow = await frame(base, "ar", true, {width:200,height:650},
+    {tags:{htmlLang:"ar"},sample:"هذا نص عربي طويل يتحدث عن القراءة والكتابة."});
+  check(langNarrow.contentDocument.documentElement.scrollWidth <= langNarrow.contentWindow.innerWidth,
+    "the Arabic language row fits a narrow popup");
   const failed = await frame({ok:false,reason:"internal-error"});
   check(failed.contentDocument.getElementById("pHead").textContent === "Status unavailable", "a worker error never looks like active protection");
   const pending = await frame({...base,enforcement:undefined}), pd = pending.contentDocument;

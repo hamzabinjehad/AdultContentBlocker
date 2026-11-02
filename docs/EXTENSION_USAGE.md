@@ -3,7 +3,7 @@
 ## Without the macOS app
 
 Prepare a clean, browser-specific unpacked folder with
-`python3 extension/prepare_unpacked.py --out dist/hisn-unpacked-chrome-1.0.1`,
+`python3 extension/prepare_unpacked.py --out dist/hisn-unpacked-chrome-1.3.0`,
 then select that folder in **Load unpacked** in a supported Chromium browser.
 Use a fresh output name for another browser or update; existing folders are
 never overwritten. This excludes generated `_metadata` caches while preserving
@@ -26,6 +26,14 @@ Settings lets you manage blocked sites, allowed sites, custom content words,
 and page-text sensitivity. Invalid domain lines prevent that section from
 saving and are identified by line number. Successful saves display the
 canonical domains actually sent to the blocking engine.
+
+Page-text checking detects the language from the page's rendered text as well
+as its tags. It uses dedicated word lists for English, Arabic, German, Spanish,
+French, Italian and Portuguese; explicit labels are checked in every language,
+and an unidentified language uses the full list. The popup shows the detected
+language for the current page. Detection is a heuristic and does not make the
+layer complete: mixed-language pages and text the browser cannot render remain
+gaps.
 
 Use the sidebar to move between sections. Each section saves independently;
 an **Unsaved changes** label distinguishes edits from applied settings, and

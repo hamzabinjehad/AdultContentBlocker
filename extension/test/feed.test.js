@@ -79,10 +79,33 @@ for (const hostname of ["x.com.evil.test", "notx.com", "cdn.x.com", "example.tes
 check(!F.isSupportedLocation({ protocol: "file:", hostname: "x.com" }), "non-web scheme not supported");
 check(F.signature({ body: "hello" }) !== F.signature({ body: "world" }), "equal-length post changes invalidate equality cache");
 check(F.signature({ body: "same" }, "1") !== F.signature({ body: "same" }, "2"), "recycled identity changes invalidate cache");
+check(F.signature({ body: "same", langTags: { htmlLang: "en" } })
+      !== F.signature({ body: "same", langTags: { htmlLang: "ar" } }),
+      "a language-tag change invalidates the equality cache");
 check(F.boundedText({ secret: "do not coerce" }) === "", "non-string payload is not coerced");
 const long = "h".repeat(F.MAX_ITEM_TEXT) + "tail";
 check(F.boundedText(long).endsWith("tail") && F.boundedText(long).length === F.MAX_ITEM_TEXT + 1,
   "bounded samples retain both ends of long post text");
+
+// ── each post carries the language evidence its own text provides ─────────
+{
+  const win = { getComputedStyle(el) { return { display: el.display || "block", visibility: el.visibility || "visible" }; },
+    navigator: { language: "en-GB" }, document: { documentElement: { lang: "en" } } };
+  const article = item("مرحبا بالعالم هذا منشور عربي طويل عن المحتوى غير المناسب.");
+  article.querySelector = (selector) => selector.includes("tweetText")
+    ? { getAttribute: (k) => k === "lang" ? "ar-EG" : null } : null;
+  const zones = F.collectItemZones(article, win);
+  check(zones.langTags.htmlLang === "ar-EG", "a post's own lang tag outranks the page's interface language");
+  check(zones.langTags.navigatorLanguage === "en-GB", "the browser language is kept as a last-resort signal");
+  check(zones.langSample.includes("مرحبا") && zones.langSample.length <= F.MAX_LANGUAGE_SAMPLE,
+        "the language sample is bounded rendered post text");
+
+  const ordinary = item("A perfectly ordinary gardening post.");
+  ordinary.querySelector = () => null;
+  const fallback = F.collectItemZones(ordinary, win);
+  check(fallback.langTags.htmlLang === "en", "without its own tag, a post falls back to the page language");
+  check(fallback.langSample.includes("gardening"), "an ordinary post still contributes its sample");
+}
 
 await (async () => {
   const safe = item(), bad = item("fixtureadult"), h = harness([safe, bad]);
@@ -95,7 +118,10 @@ await (async () => {
   check(safe.getAttribute("aria-hidden") === null, "safe original accessibility restored");
   check(bad.previousSibling?.textContent.includes("Hisn hid this post"), "generic explanation has no reveal button or matched text");
   check(bad.style.getPropertyValue("max-height") === "0px", "blocked item collapses to notice instead of video-sized blank gap");
-  check(h.messages.every((zones) => Object.keys(zones).sort().join(",") === "alt,body"), "only per-article body/caption zones leave scanner");
+  check(h.messages.every((zones) => Object.keys(zones).sort().join(",") === "alt,body,langSample,langTags"),
+        "only per-article text, caption and bounded language signals leave scanner");
+  check(h.messages.every((zones) => zones.langSample.length <= F.MAX_LANGUAGE_SAMPLE),
+        "the language sample stays bounded");
   check(h.messages.length === 2, "one message per changed item, not aggregate page");
   h.mutate(); await h.clock.advance(1000);
   check(h.messages.length === 2, "unchanged benign and blocked items reuse current verdict");

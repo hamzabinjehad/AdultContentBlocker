@@ -38,6 +38,7 @@ RESOURCES = {
     "visual/decisions.js": "extension/visual/decisions.js",
     "visual/queue.js": "extension/visual/queue.js",
     "lib/score.js": "extension/lib/score.js",
+    "lib/language.js": "extension/lib/language.js",
     "lib/normalize.js": "extension/lib/normalize.js",
     "icons/icon-32.png": "extension/icons/icon-32.png",
     "icons/icon-128.png": "extension/icons/icon-128.png",
