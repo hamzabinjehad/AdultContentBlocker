@@ -64,9 +64,22 @@ struct ContentView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }.padding(20)
             List(Page.allCases, selection: $navigation.page) { p in
-                Label(p.title, systemImage: p.systemImage).tag(p)
+                HStack(spacing: 8) {
+                    Label(p.title, systemImage: p.systemImage)
+                    Spacer(minLength: 0)
+                    if p == .lock && lock.isLocked {
+                        Image(systemName: "lock.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .accessibilityLabel("Locked")
+                    }
+                }
+                .tag(p)
             }
             .listStyle(.sidebar)
+            Divider()
+            SidebarStatus(lock: lock, filter: filter) { navigation.page = .overview }
+                .padding(12)
             }
             .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 270)
         } detail: {
@@ -108,8 +121,18 @@ struct ContentView: View {
             }
             .background(Color(nsColor: .windowBackgroundColor))
             .navigationTitle((page ?? .overview).title)
+            .navigationSubtitle(Text((page ?? .overview).subtitle))
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    let title: LocalizedStringKey = lock.isLocked ? "Manage lock" : "Start a lock…"
+                    Button { navigation.page = .lock } label: {
+                        Label(title, systemImage: lock.isLocked ? "lock.fill" : "lock.open")
+                    }
+                    .help(title)
+                }
+            }
         }
-        .frame(minWidth: 720, minHeight: 500)
+        .frame(minWidth: 760, minHeight: 560)
         .task {
             guard !AppDelegate.isHostingTests else { return }
             await filter.reassertIfNeeded()
@@ -118,6 +141,67 @@ struct ContentView: View {
 }
 
 // MARK: - Shared pieces
+
+/// Always-visible answer to the app's two questions. The sidebar is the one
+/// surface present on every page, so protection and lock state belong here
+/// rather than only on Overview.
+private struct SidebarStatus: View {
+    @ObservedObject var lock: LockManager
+    @ObservedObject var filter: FilterController
+    @ObservedObject private var sync = FilterSync.shared
+    let open: () -> Void
+
+    var body: some View {
+        let protection = ProtectionStatus(ProtectionEvidence.current(
+            filter: filter.availability, authority: sync.status))
+        Button(action: open) {
+            VStack(alignment: .leading, spacing: 5) {
+                HStack(spacing: 7) {
+                    Circle()
+                        .fill(colour(protection.level))
+                        .frame(width: 7, height: 7)
+                        .accessibilityHidden(true)
+                    Text(protection.headline)
+                        .font(.callout.weight(.medium))
+                        .lineLimit(1)
+                    Spacer(minLength: 4)
+                    Image(systemName: "chevron.forward")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .accessibilityHidden(true)
+                }
+                Text(lock.isLocked
+                     ? String(localized: "Locked · \(lock.remainingDescription) left")
+                     : String(localized: "No active lock"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(10)
+        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
+        .overlay {
+            RoundedRectangle(cornerRadius: 10)
+                .strokeBorder(Color(nsColor: .separatorColor), lineWidth: 1)
+                .accessibilityHidden(true)
+        }
+        .help("Overview")
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("sidebar.status")
+    }
+
+    private func colour(_ level: ProtectionStatus.Level) -> Color {
+        switch level {
+        case .active:      return .green
+        case .partial:     return .orange
+        case .setupNeeded: return .secondary
+        case .checking:    return .secondary
+        }
+    }
+}
 
 /// A titled block with breathing room. The pages are built from these so
 /// spacing, titles and subtitles stay identical across them.
@@ -351,8 +435,9 @@ private struct OverviewPage: View {
         readingSetup = true
         defer { readingSetup = false }
         let running = LaptopSetupReadiness.filterIsReady(protectionEvidence)
+        let locked = lock.isLocked
         var evidence = await Task.detached {
-            SetupEvidence.current(systemFilterRunning: running)
+            SetupEvidence.current(systemFilterRunning: running, lockActive: locked)
         }.value
         // Never certify the filter from the pre-scan snapshot or from a
         // restrictive recovery state that intentionally reports a live layer.
@@ -385,10 +470,27 @@ private struct OverviewPage: View {
                 ForEach(protection.layers) { layer in
                     layerRow(layer)
                 }
+
+                HStack {
+                    Button(primaryActionTitle) { goTo(primaryActionPage) }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
+                    Spacer()
+                }
+                .padding(.top, 4)
             }
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Protection: \(protection.headline). \(protection.summary)")
+    }
+
+    private var primaryActionTitle: LocalizedStringKey {
+        if lock.isLocked { return "Manage lock" }
+        return protection.isEnforcingAnything ? "Start a lock…" : "Continue setup"
+    }
+
+    private var primaryActionPage: ContentView.Page {
+        lock.isLocked || protection.isEnforcingAnything ? .lock : .setup
     }
 
     private func layerRow(_ layer: ProtectionStatus.Layer) -> some View {
@@ -441,8 +543,8 @@ private struct OverviewPage: View {
                     }
                 }
                 Spacer()
-                Button(lockStatus.isLocked ? "Manage lock" : "Start a lock…") {
-                    goTo(.lock)
+                if lockStatus.isLocked {
+                    Button("Manage lock") { goTo(.lock) }
                 }
             }
         }
@@ -615,6 +717,7 @@ struct SetupPage: View {
     @ObservedObject var filter: FilterController
     @ObservedObject private var sync = FilterSync.shared
     @ObservedObject private var guardian = BrowserGuard.shared
+    @ObservedObject private var lock = LockManager.shared
     let goTo: (ContentView.Page) -> Void
 
     @State private var checklist: SetupChecklist?
@@ -715,10 +818,13 @@ struct SetupPage: View {
                                 Toggle("A trusted person keeps the separate administrator password, and I use only this standard account.", isOn: $administratorConfirmed)
                                     .toggleStyle(.checkbox)
                                     .fixedSize(horizontal: false, vertical: true)
-                                    .disabled(stage.steps.contains { $0.state != .done })
+                                    .disabled(lock.isLocked || stage.steps.contains { $0.state != .done })
                                 Text("Confirmed by you. Hisn can check account permissions, but cannot know who holds a password.")
                                     .font(.callout).foregroundStyle(.secondary)
                                     .fixedSize(horizontal: false, vertical: true)
+                                if let authority = checklist?.authority {
+                                    AuthorityCard(authority: authority, isLocked: lock.isLocked)
+                                }
                             }
                         }
                         .padding(.top, 12)
@@ -844,7 +950,9 @@ struct SetupPage: View {
         case .accountsSettings:
             Button("Open Users & Groups") {
                 openSystemSettings("com.apple.Users-Groups-Settings.extension")
-            }.controlSize(.small)
+            }
+            .controlSize(.small)
+            .disabled(lock.isLocked)
         case .applicationsFolder:
             Button("Open Applications") {
                 NSWorkspace.shared.open(URL(fileURLWithPath: "/Applications", isDirectory: true))
@@ -879,11 +987,141 @@ struct SetupPage: View {
         await filter.refresh()
         await FilterSync.shared.sync()
         let running = LaptopSetupReadiness.filterIsReady(protectionEvidence)
-        var evidence = await Task.detached { SetupEvidence.current(systemFilterRunning: running) }.value
+        let locked = lock.isLocked
+        var evidence = await Task.detached { SetupEvidence.current(systemFilterRunning: running, lockActive: locked) }.value
         // The filter can change while disk/DNS evidence is being collected.
         evidence.systemFilterRunning = LaptopSetupReadiness.filterIsReady(protectionEvidence)
         checklist = SetupChecklist(evidence)
         lastChecked = Date()
+    }
+}
+
+/// The visible authority evidence, beside the account-split confirmation.
+/// The app only reads; it never creates the guardian or stores its password.
+private struct AuthorityCard: View {
+    let authority: MacAuthority
+    let isLocked: Bool
+    @State private var copied: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .foregroundStyle(color)
+                    .accessibilityHidden(true)
+                Text("Protection authority").font(.body.weight(.semibold))
+                Spacer()
+                Text(levelText).font(.callout.weight(.medium)).foregroundStyle(color)
+            }
+            row("Daily account", dailyText, ok: authority.dailyUserIsAdmin == false)
+            row("Guardian account", guardianText, ok: authority.guardian == .ready)
+            row("Guardian daemon", daemonText, ok: authority.daemon == .loaded)
+            if isLocked {
+                Label("A lock is running, so administrator and removal changes are disabled until it ends.",
+                      systemImage: "lock.fill")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                if authority.level != .verified || authority.dailyUserIsAdmin == true {
+                    command("Guardian setup command", MacAuthority.guardianSetupCommand)
+                }
+                if authority.mayOfferRestoreCommand {
+                    command("Restore administrator command",
+                            MacAuthority.restoreAdminCommand(dailyUser: authority.dailyUser))
+                }
+            }
+            Text("Hisn does not create the guardian account or store its password. A separate person types it.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 10).fill(Color(nsColor: .controlBackgroundColor)))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.secondary.opacity(0.2)))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("setup.authority")
+    }
+
+    private var icon: String {
+        switch authority.level {
+        case .verified: return "checkmark.shield.fill"
+        case .partial: return "exclamationmark.shield.fill"
+        case .unavailable: return "questionmark.circle"
+        }
+    }
+
+    private var color: Color {
+        switch authority.level {
+        case .verified: return .green
+        case .partial: return .orange
+        case .unavailable: return .secondary
+        }
+    }
+
+    private var levelText: LocalizedStringKey {
+        switch authority.level {
+        case .verified: return "Verified"
+        case .partial: return "Not verified"
+        case .unavailable: return "Unavailable"
+        }
+    }
+
+    private var dailyText: LocalizedStringKey {
+        switch authority.dailyUserIsAdmin {
+        case .some(false): return "Standard account"
+        case .some(true): return "Administrator"
+        case .none: return "Could not read"
+        }
+    }
+
+    private var guardianText: LocalizedStringKey {
+        switch authority.guardian {
+        case .ready: return "Ready"
+        case .missing: return "Missing"
+        case .notAdmin: return "Not an administrator"
+        case .noSecureToken: return "No secure token"
+        case .unreadable: return "Could not read"
+        }
+    }
+
+    private var daemonText: LocalizedStringKey {
+        switch authority.daemon {
+        case .loaded: return "Loaded"
+        case .notLoaded: return "Not loaded"
+        case .missing: return "Missing"
+        }
+    }
+
+    private func row(_ title: LocalizedStringKey, _ value: LocalizedStringKey, ok: Bool) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Image(systemName: ok ? "checkmark.circle.fill" : "exclamationmark.circle")
+                .foregroundStyle(ok ? Color.green : Color.orange)
+                .accessibilityHidden(true)
+            Text(title).font(.callout)
+            Spacer()
+            Text(value).font(.callout).foregroundStyle(.secondary)
+                .multilineTextAlignment(.trailing)
+        }
+    }
+
+    private func command(_ title: LocalizedStringKey, _ line: String) -> some View {
+        DisclosureGroup(title) {
+            HStack(alignment: .top, spacing: 8) {
+                Text(verbatim: line)
+                    .font(.callout.monospaced())
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .environment(\.layoutDirection, .leftToRight)
+                Button(copied == line ? "Copied" : "Copy") {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(line, forType: .string)
+                    copied = line
+                }
+                .controlSize(.small)
+            }
+            .padding(.top, 2)
+        }
     }
 }
 
@@ -904,6 +1142,7 @@ private struct LockPage: View {
     @State private var showConfirm = false
     @State private var showReleaseConfirm = false
     @State private var showExtendConfirm = false
+    @State private var authority: MacAuthority?
 
     enum CustomUnit: String, CaseIterable, Identifiable {
         // Minutes exist so a lock can be TRIED. Without them the shortest
@@ -974,6 +1213,12 @@ private struct LockPage: View {
         .onChange(of: fixedCommitment) { _ in understandsLimits = false }
         .onChange(of: strict) { _ in understandsLimits = false }
         .onChange(of: lock.isLocked) { _ in understandsLimits = false }
+        .task {
+            let locked = lock.isLocked
+            authority = await Task.detached {
+                MacAuthority.current(lockActive: locked)
+            }.value
+        }
         .confirmationDialog("Add seven days to this lock?", isPresented: $showExtendConfirm,
                             titleVisibility: .visible) {
             Button("Add a week", role: .destructive) {
@@ -1069,6 +1314,14 @@ private struct LockPage: View {
                       Nothing is set up to enforce a lock yet — it would run \
                       but block nothing. Finish setup on the Overview page first.
                       """,
+                      systemImage: "exclamationmark.triangle.fill")
+                    .font(.callout)
+                    .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if authority?.dailyUserIsAdmin == true {
+                Label("This account is still an administrator. It can remove Hisn during the lock. Complete the guardian split in Setup first.",
                       systemImage: "exclamationmark.triangle.fill")
                     .font(.callout)
                     .foregroundStyle(.orange)

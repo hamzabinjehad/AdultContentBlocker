@@ -92,6 +92,9 @@ APP_SOURCES = SHARED + [
     # The setup steps of docs/SETUP.md, read from this Mac.
     "Hisn/SetupChecklist.swift",
     "Hisn/ProtectedSetup.swift",
+    # Who can change protection at the OS level: daily account, visible
+    # guardian, root daemon. Read-only evidence, never a self-granted admin.
+    "Hisn/MacAuthority.swift",
     # The menu bar icon and menu.
     "Hisn/StatusMenu.swift",
     # The daily lock.
@@ -124,6 +127,7 @@ TEST_SOURCES = ["HisnTests/BlocklistStoreTests.swift",
                 "HisnTests/LocalizationTests.swift",
                 "HisnTests/SetupChecklistTests.swift",
                 "HisnTests/ProtectedSetupTests.swift",
+                "HisnTests/MacAuthorityTests.swift",
                 "HisnTests/LockScheduleTests.swift",
                 "HisnTests/ScreenGrayscaleTests.swift",
                 "HisnTests/FilterActivationTests.swift",
@@ -377,8 +381,8 @@ def main() -> int:
     app_settings = {
         "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
         "CODE_SIGN_ENTITLEMENTS": "Hisn/Hisn.entitlements",
-        "CURRENT_PROJECT_VERSION": "10",
-        "MARKETING_VERSION": "1.1.6",
+        "CURRENT_PROJECT_VERSION": "11",
+        "MARKETING_VERSION": "1.1.7",
         "ENABLE_HARDENED_RUNTIME": "YES",
         "INFOPLIST_FILE": "Hisn/Info.plist",
         "PRODUCT_BUNDLE_IDENTIFIER": APP_BUNDLE_ID,
@@ -389,8 +393,8 @@ def main() -> int:
     }
     filter_settings = {
         "CODE_SIGN_ENTITLEMENTS": "HisnFilter/HisnFilter.entitlements",
-        "CURRENT_PROJECT_VERSION": "10",
-        "MARKETING_VERSION": "1.1.6",
+        "CURRENT_PROJECT_VERSION": "11",
+        "MARKETING_VERSION": "1.1.7",
         "ENABLE_HARDENED_RUNTIME": "YES",
         "INFOPLIST_FILE": "HisnFilter/Info.plist",
         "PRODUCT_BUNDLE_IDENTIFIER": FILTER_BUNDLE_ID,
@@ -400,8 +404,8 @@ def main() -> int:
     }
     bridge_settings = {
         "CODE_SIGN_ENTITLEMENTS": "HisnBridge/HisnBridge.entitlements",
-        "CURRENT_PROJECT_VERSION": "10",
-        "MARKETING_VERSION": "1.1.6",
+        "CURRENT_PROJECT_VERSION": "11",
+        "MARKETING_VERSION": "1.1.7",
         "ENABLE_HARDENED_RUNTIME": "YES",
         "GENERATE_INFOPLIST_FILE": "YES",
         "PRODUCT_NAME": '"$(TARGET_NAME)"',

@@ -8,6 +8,7 @@ past version; *superseded* documents point to their replacement. Start with the
 
 - [Setting it up, in order](SETUP.md): The ordered setup steps: second person, network, Mac app, extension, profile, Screen Time, phone and account split.
 - [1.0 readiness](1.0_READINESS.md): One finish line across the four platforms: versions, local evidence, artifacts, unproven claims and the owner/device actions that remain.
+- [Publish readiness, 2026-11-02](PUBLISH_READINESS_2026-11-02.md): The full verification run, reproducible and unsigned artifacts, what is genuinely publishable in the repository, and the owner actions still required.
 - [Versions and release state](VERSIONS.md): The pinned version/build of every platform, generated and checked from the manifests.
 - [Content coverage by surface](COVERAGE.md): The core, full and keyword tiers, what each client actually carries, and what the table does not claim.
 - [Privacy policy](../PRIVACY.md) and [support](../SUPPORT.md): The public statements, troubleshooting and safe reporting route.
@@ -22,6 +23,7 @@ past version; *superseded* documents point to their replacement. Start with the
 
 ## Mac
 
+- [Mac UI/UX pass, 2026-11-02](MACOS_UI_UX_2026-11-02.md): Persistent sidebar status, a lock action in every window toolbar, a single Overview primary action, Go/Protection menus with keyboard shortcuts, and RTL render captures. No policy changes.
 - [Mac filter health contract](HEALTH.md): The status keys the Mac filter, updater and bridge write, and how the app should report them.
 
 ## Browser extension
@@ -107,6 +109,7 @@ Per-version change and verification notes, newest first.
 
 ### Mac
 
+- [Mac 1.1.7 release notes](MACOS_1.1.7.md): A verified protection-authority card (standard daily account, visible guardian administrator with a secure token, loaded root daemon) and lock-gated authority/removal controls. Unsigned/unnotarized; no split or device run claimed.
 - [Mac 1.1.6 release notes](COVERAGE_PASS_2026-10-30.md): Seed v5 and its 239,885-domain core fallback, with notices naming the selected fill sources. The full list still needs a published generation. Unsigned/unnotarized.
 - [Mac 1.1.5 release notes](MACOS_1.1.5.md): A root LaunchDaemon restores the login agent if a standard user boots it out, with installer wiring, tamper logging, list-freshness and licenses rows, and a removal path. Unsigned/unnotarized; standard-account and reboot checks pending.
 

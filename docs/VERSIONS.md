@@ -11,7 +11,7 @@ signed artifact has shipped. The state column is the honest release state.
 | Platform | Version | Build | State | Source of truth |
 | --- | --- | --- | --- | --- |
 | Browser extension (Chromium) | 1.2.2 | — | development · unpacked, no store listing | `extension/manifest.json` |
-| Mac | 1.1.6 | 10 | development · unsigned, needs Developer ID and notarization | `macos/Hisn.xcodeproj/project.pbxproj` |
+| Mac | 1.1.7 | 11 | development · unsigned, needs Developer ID and notarization | `macos/Hisn.xcodeproj/project.pbxproj` |
 | iPhone & iPad | 1.1.4 | 5 | development · no Apple team, Family Controls entitlement or test device | `ios/HisnMobile.xcodeproj/project.pbxproj` |
 | Android | 0.9.0 | 25 | preview · unsigned; direct builds add the -direct suffix | `android/app/build.gradle` |
 
@@ -33,7 +33,7 @@ generation must beat; clients refuse a lower one.
 ## Version notes
 
 - **Browser extension (Chromium)** (`extension`): The packaged zip strips the development key; the Chrome Web Store ID will differ from the unpacked ID. 1.2.2 ships the expanded 239,885-domain core tier (480 static rules) from seed v5.
-- **Mac** (`macos`): Every target must carry the same MARKETING_VERSION and CURRENT_PROJECT_VERSION; 1.1.6 bundles seed v5 and its expanded core tier while keeping the guardian-daemon packaging.
+- **Mac** (`macos`): Every target must carry the same MARKETING_VERSION and CURRENT_PROJECT_VERSION; 1.1.7 adds the read-only protection-authority layer (daily account, visible guardian admin, root daemon) and disables authority/removal controls while a lock runs. Unsigned/unnotarized.
 - **iPhone & iPad** (`ios`): The app, six Safari blockers and HisnActivityMonitor share one version set; 1.1.4 raises Safari capacity from four to six 40,000-rule parts and bundles seed v5 (239,885 domains).
 - **Android** (`android`): versionCode is monotonic and must increase for every uploaded or side-loaded update. 25 adds the protection lock: saved rules are fully frozen while it runs, the direct build's removal guard arms itself from the lock, and the device-owner uninstall block is applied for the lock. Release APKs are checked unsigned; a production key is still required.
 

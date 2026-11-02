@@ -22,15 +22,33 @@ enum AppLifecyclePolicy {
 struct HisnApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject private var icon = MenuBarIcon.shared
+    @Environment(\.openWindow) private var openWindow
 
     var body: some Scene {
         WindowGroup(id: MainWindow.id) { ContentView() }
             // Resizable, with a floor set by `ContentView`. The old fixed
             // 420-point column forced every explanation into caption-sized
             // text; this window is mostly explanations.
-            .defaultSize(width: 880, height: 600)
+            .defaultSize(width: 980, height: 700)
             .commands {
                 CommandGroup(replacing: .newItem) {}
+                CommandMenu("Go") {
+                    ForEach(ContentView.Page.allCases) { page in
+                        Button(page.title) { MainWindow.show(page, open: openWindow) }
+                            .keyboardShortcut(shortcut(for: page), modifiers: .command)
+                    }
+                }
+                CommandMenu("Protection") {
+                    Button("Check again") {
+                        Task {
+                            await FilterController.shared.refresh()
+                            await FilterSync.shared.sync()
+                        }
+                    }
+                    .keyboardShortcut("r", modifiers: .command)
+                    Button("Start a lock…") { MainWindow.show(.lock, open: openWindow) }
+                        .keyboardShortcut("l", modifiers: [.command, .shift])
+                }
                 CommandGroup(replacing: .appTermination) {
                     Button("Hide Hisn") { MainWindow.hide() }
                         .keyboardShortcut("q")
@@ -46,6 +64,16 @@ struct HisnApp: App {
             } icon: {
                 Image(nsImage: icon.image)
             }
+        }
+    }
+
+    private func shortcut(for page: ContentView.Page) -> KeyEquivalent {
+        switch page {
+        case .overview: return "1"
+        case .setup:    return "2"
+        case .rules:    return "3"
+        case .lock:     return "4"
+        case .settings: return "5"
         }
     }
 }

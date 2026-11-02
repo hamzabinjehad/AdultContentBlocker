@@ -322,8 +322,40 @@ bump without an entry here is an unfinished release.
 
 - Bundles seed v5's 239,885-domain core tier and 480 static DNR rules. The
   packaged store zip is `dist/hisn-extension-1.2.2.zip`, 90 files, 5.9 MB,
-  SHA-256 `6db421dccec745218f178d717bfbac9a948c1e91752a64dde863afce66fc24bd`.
+  SHA-256 `fd254f2eeb5a3a14ee017281675d12a11ca4a6d355ba075c97bf68a54f04157b`.
+  Packaging now fixes timestamps and sorts entries, so two builds of the same
+  tree are byte-identical.
 - No store listing, real store ID or managed force-install is claimed.
+
+## Mac 1.1.7 — 2026-11-02
+
+### Added
+
+- **Protection authority is read, not self-certified.** Setup now reads whether
+  the daily account is an administrator, whether the visible `hisn_guardian`
+  account exists with a secure token, and whether the root guardian daemon is
+  loaded. The account-split step is complete only when all three are verified.
+  A checked manual box can no longer make an administrator account look split.
+- **Lock-gated authority and removal.** While a protection lock runs, the app
+  disables the Users & Groups shortcut, hides the guardian setup/restore
+  commands, and prevents the account-split confirmation from changing. After
+  the lock, the commands return. Restoring administrator rights remains a
+  guardian action; Hisn never stores the password.
+- The Setup card states plainly that Hisn does not create the guardian account
+  or store its password. The app cannot make itself an administrator; a hidden
+  self-granted admin would be a backdoor.
+- **Lock page warning.** Before a lock starts, the app warns when the daily
+  account is still an administrator, so the person sees that the lock does not
+  stop their own admin access. The Setup authority card is the fix.
+- **UI/UX pass.** The sidebar has a persistent protection/lock status footer
+  and a lock badge; the toolbar carries a lock action and page subtitle;
+  Overview has one primary action; duplicate lock CTAs were removed; new Go and
+  Protection menus add ⌘1–⌘5, ⌘R and ⌘⇧L. The default window grows to 980×700.
+  Render captures are in `design/macos-ui-2026-11-02/`; no policy changed.
+
+Version 1.1.7, build 11. `./test.sh macos` passes 508 tests including
+`MacAuthorityTests`; localization passes 561 strings with Arabic. Unsigned and
+unnotarized; no account split or standard-account run is claimed.
 
 ## Mac 1.1.6 — 2026-10-30
 

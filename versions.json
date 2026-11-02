@@ -14,11 +14,11 @@
     {
       "id": "macos",
       "name": "Mac",
-      "version": "1.1.6",
-      "build": 10,
+      "version": "1.1.7",
+      "build": 11,
       "state": "development · unsigned, needs Developer ID and notarization",
       "source": "macos/Hisn.xcodeproj/project.pbxproj",
-      "notes": "Every target must carry the same MARKETING_VERSION and CURRENT_PROJECT_VERSION; 1.1.6 bundles seed v5 and its expanded core tier while keeping the guardian-daemon packaging."
+      "notes": "Every target must carry the same MARKETING_VERSION and CURRENT_PROJECT_VERSION; 1.1.7 adds the read-only protection-authority layer (daily account, visible guardian admin, root daemon) and disables authority/removal controls while a lock runs. Unsigned/unnotarized."
     },
     {
       "id": "ios",

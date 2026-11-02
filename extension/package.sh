@@ -81,7 +81,11 @@ python3 -c "import json;json.load(open('$BUILD/manifest.json'))" \
 mkdir -p "$(dirname "$OUT")"
 OUT="$(cd "$(dirname "$OUT")" && pwd)/$(basename "$OUT")"
 rm -f "$OUT"
-( cd "$BUILD" && zip -qr -X "$OUT" . )
+# Reproducible store package: a fixed timestamp and a sorted file list make
+# two builds of the same tree byte-identical. The store does not require this,
+# but a release record whose hash changes per build is not a record.
+TZ=UTC find "$BUILD" -exec touch -t 202001010000.00 {} +
+( cd "$BUILD" && find . -mindepth 1 -print | LC_ALL=C sort | zip -q -X "$OUT" -@ )
 python3 "$EXT_DIR/check_package.py" "$OUT"
 
 echo "wrote $OUT"

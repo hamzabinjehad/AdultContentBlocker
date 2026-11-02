@@ -78,12 +78,15 @@ public struct SetupEvidence: Equatable {
     /// This is on-disk configuration evidence, not proof launchd has loaded it.
     /// nil when Hisn is not in /Applications.
     public var appFilesProtected: Bool?
+    /// Who can change protection at the OS level. nil in tests that do not
+    /// model it; a real read supplies it.
+    public var authority: MacAuthority?
 
     public init(isAdmin: Bool?, hostsEntries: Int?, dnsBypassesBlocked: Bool = true,
                 safeSearch: SafeSearchDNS = SafeSearchDNS(),
                 partnerKeySet: Bool, browsers: [BrowserSetup], privateRelayOff: Bool,
                 screenTimeAdultFilter: Bool, systemFilterRunning: Bool,
-                appFilesProtected: Bool? = true) {
+                appFilesProtected: Bool? = true, authority: MacAuthority? = nil) {
         self.isAdmin = isAdmin
         self.hostsEntries = hostsEntries
         self.dnsBypassesBlocked = dnsBypassesBlocked
@@ -94,6 +97,7 @@ public struct SetupEvidence: Equatable {
         self.screenTimeAdultFilter = screenTimeAdultFilter
         self.systemFilterRunning = systemFilterRunning
         self.appFilesProtected = appFilesProtected
+        self.authority = authority
     }
 }
 
@@ -133,6 +137,8 @@ public struct SetupChecklist: Equatable {
     }
 
     public let steps: [Step]
+    /// The OS-level authority read for the accounts stage, when available.
+    public let authority: MacAuthority?
 
     public var required: [Step] { steps.filter { $0.state != .optional } }
     public var doneCount: Int { required.filter { $0.state == .done }.count }
@@ -269,19 +275,35 @@ public struct SetupChecklist: Equatable {
 
         // 7. Last: the account split. Everything above can be undone by an
         //    administrator, so this is the step that makes the rest hold.
-        switch e.isAdmin {
-        case .some(false):
-            steps.append(Step(id: .accounts, title: String(localized: "Account split"),
-                              detail: String(localized: "This is a standard account. Confirm below who keeps the separate administrator account."),
-                              state: .done, action: nil))
-        case .some(true):
-            steps.append(Step(id: .accounts, title: String(localized: "Account split"),
-                              detail: String(localized: "You are an administrator, so you can undo every step above. Do this last, with your partner."),
-                              state: .todo, action: .accountsSettings))
-        case .none:
-            steps.append(Step(id: .accounts, title: String(localized: "Account split"),
-                              detail: String(localized: "Could not read whether you are an administrator."),
-                              state: .todo, action: .accountsSettings))
+        if let authority = e.authority {
+            let lock = authority.lockActive
+                ? " " + String(localized: "A lock is running, so administrator and removal changes are disabled until it ends.")
+                : ""
+            switch authority.level {
+            case .verified:
+                steps.append(Step(id: .accounts, title: String(localized: "Account split"),
+                                  detail: String(localized: "Verified: this is a standard account, the guardian account is an administrator with a secure token, and the guardian daemon is loaded.") + lock,
+                                  state: .done, action: nil))
+            case .partial, .unavailable:
+                steps.append(Step(id: .accounts, title: String(localized: "Account split"),
+                                  detail: String(localized: "Not verified. This account or the guardian setup needs attention before the split can be trusted.") + lock,
+                                  state: .todo, action: .accountsSettings))
+            }
+        } else {
+            switch e.isAdmin {
+            case .some(false):
+                steps.append(Step(id: .accounts, title: String(localized: "Account split"),
+                                  detail: String(localized: "This is a standard account. Confirm below who keeps the separate administrator account."),
+                                  state: .done, action: nil))
+            case .some(true):
+                steps.append(Step(id: .accounts, title: String(localized: "Account split"),
+                                  detail: String(localized: "You are an administrator, so you can undo every step above. Do this last, with your partner."),
+                                  state: .todo, action: .accountsSettings))
+            case .none:
+                steps.append(Step(id: .accounts, title: String(localized: "Account split"),
+                                  detail: String(localized: "Could not read whether you are an administrator."),
+                                  state: .todo, action: .accountsSettings))
+            }
         }
 
         // 7. The system filter: VPN-proof, every app, needs the paid program.
@@ -293,6 +315,7 @@ public struct SetupChecklist: Equatable {
                           action: nil))
 
         self.steps = steps
+        self.authority = e.authority
     }
 }
 
@@ -302,7 +325,7 @@ extension SetupEvidence {
 
     /// Everything the checklist needs, read now. Off the main thread: it reads
     /// every browser profile's preferences.
-    static func current(systemFilterRunning: Bool) -> SetupEvidence {
+    static func current(systemFilterRunning: Bool, lockActive: Bool = false) -> SetupEvidence {
         let ids = Set(NativeMessagingInstaller.extensionIDs)
         let support = FileManager.default.urls(for: .applicationSupportDirectory,
                                                in: .userDomainMask)[0]
@@ -340,7 +363,8 @@ extension SetupEvidence {
             privateRelayOff: forced("allowCloudPrivateRelay", "com.apple.applicationaccess") as? Bool == false,
             screenTimeAdultFilter: forced("restrictWeb", "com.apple.familycontrols.contentfilter") as? Bool == true,
             systemFilterRunning: systemFilterRunning,
-            appFilesProtected: appFilesProtected())
+            appFilesProtected: appFilesProtected(),
+            authority: MacAuthority.current(lockActive: lockActive))
     }
 
     /// One name per engine, and the host whose address it should carry —

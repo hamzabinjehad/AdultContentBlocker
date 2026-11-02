@@ -6175,6 +6175,256 @@
           }
         }
       }
+    },
+    "Protection authority" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سلطة الحماية"
+          }
+        }
+      }
+    },
+    "Daily account" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الحساب اليومي"
+          }
+        }
+      }
+    },
+    "Guardian account" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حساب ولي الأمر"
+          }
+        }
+      }
+    },
+    "Verified" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مُتحقَّق"
+          }
+        }
+      }
+    },
+    "Not verified" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "غير مُتحقَّق"
+          }
+        }
+      }
+    },
+    "Unavailable" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "غير متاح"
+          }
+        }
+      }
+    },
+    "Standard account" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حساب قياسي"
+          }
+        }
+      }
+    },
+    "Administrator" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مسؤول"
+          }
+        }
+      }
+    },
+    "Could not read" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّرت القراءة"
+          }
+        }
+      }
+    },
+    "Ready" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جاهز"
+          }
+        }
+      }
+    },
+    "Missing" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مفقود"
+          }
+        }
+      }
+    },
+    "Not an administrator" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ليس مسؤولًا"
+          }
+        }
+      }
+    },
+    "No secure token" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بلا رمز آمن"
+          }
+        }
+      }
+    },
+    "Loaded" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "محمّل"
+          }
+        }
+      }
+    },
+    "Not loaded" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "غير محمّل"
+          }
+        }
+      }
+    },
+    "A lock is running, so administrator and removal changes are disabled until it ends." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قفل قيد التشغيل، لذا تُعطّل تغييرات المسؤول والإزالة حتى ينتهي."
+          }
+        }
+      }
+    },
+    "Guardian setup command" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أمر إعداد ولي الأمر"
+          }
+        }
+      }
+    },
+    "Restore administrator command" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أمر استعادة صلاحية المسؤول"
+          }
+        }
+      }
+    },
+    "Hisn does not create the guardian account or store its password. A separate person types it." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا ينشئ حصن حساب ولي الأمر ولا يخزّن كلمة مروره. يكتبها شخص منفصل."
+          }
+        }
+      }
+    },
+    "Verified: this is a standard account, the guardian account is an administrator with a secure token, and the guardian daemon is loaded." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مُتحقَّق: هذا حساب قياسي، وحساب ولي الأمر مسؤول ويملك رمزًا آمنًا، وحارس ولي الأمر محمّل."
+          }
+        }
+      }
+    },
+    "Not verified. This account or the guardian setup needs attention before the split can be trusted." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "غير مُتحقَّق. يحتاج هذا الحساب أو إعداد ولي الأمر إلى مراجعة قبل الوثوق بالفصل."
+          }
+        }
+      }
+    },
+    "This account is still an administrator. It can remove Hisn during the lock. Complete the guardian split in Setup first." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يزال هذا الحساب مسؤولًا. يمكنه إزالة حصن أثناء القفل. أكمل فصل حساب ولي الأمر من الإعداد أولًا."
+          }
+        }
+      }
+    },
+    "Go" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "انتقال"
+          }
+        }
+      }
+    },
+    "Locked" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مقفل"
+          }
+        }
+      }
+    },
+    "Protection" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الحماية"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

@@ -79,6 +79,38 @@ final class SetupChecklistTests: XCTestCase {
         XCTAssertEqual(step(c, .systemFilter).state, .done)
     }
 
+    func testVerifiedAuthorityCompletesTheAccountSplitEvenWithoutTheManualToggle() {
+        var e = evidence(admin: false)
+        e.authority = MacAuthority(dailyUser: "daily", dailyUserIsAdmin: false,
+                                   guardian: .ready, daemon: .loaded, lockActive: false)
+        let c = SetupChecklist(e)
+        XCTAssertEqual(step(c, .accounts).state, .done)
+        XCTAssertTrue(c.authority?.isVerified == true)
+        let setup = ProtectedSetup(checklist: c, administratorConfirmed: false, recoveryConfirmed: false)
+        XCTAssertTrue(setup.stages.first { $0.id == .accounts }?.isComplete == true)
+    }
+
+    func testDailyAdminIsNeverVerifiedByTheManualToggle() {
+        var e = evidence(admin: true)
+        e.authority = MacAuthority(dailyUser: "daily", dailyUserIsAdmin: true,
+                                   guardian: .ready, daemon: .loaded, lockActive: false)
+        let c = SetupChecklist(e)
+        XCTAssertEqual(step(c, .accounts).state, .todo)
+        let setup = ProtectedSetup(checklist: c, administratorConfirmed: true, recoveryConfirmed: false)
+        XCTAssertFalse(setup.stages.first { $0.id == .accounts }?.isComplete == true,
+                       "a checked box cannot replace a verified standard account")
+    }
+
+    func testALockedAuthoritySaysChangesAreDisabled() {
+        var e = evidence(admin: false)
+        e.authority = MacAuthority(dailyUser: "daily", dailyUserIsAdmin: false,
+                                   guardian: .ready, daemon: .loaded, lockActive: true)
+        let c = SetupChecklist(e)
+        XCTAssertTrue(step(c, .accounts).detail.contains("lock is running"),
+                      step(c, .accounts).detail)
+        XCTAssertFalse(c.authority?.mayChangeAuthority == true)
+    }
+
     /// A hosts file that encrypted DNS walks around is not finished.
     func testAHostsFileWithOpenBypassesIsNotDone() {
         let open = step(SetupChecklist(evidence(hosts: 330_940, bypassesBlocked: false)), .domains)

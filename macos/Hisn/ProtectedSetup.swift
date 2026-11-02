@@ -114,7 +114,7 @@ struct ProtectedSetup: Equatable {
             (.installation, [.systemFilter, .appFiles, .browsers], true),
             (.browser, [.extensionManagement, .domains, .profile, .safeSearch, .screenTime], true),
             (.recovery, [.partner], recoveryConfirmed),
-            (.accounts, [.accounts], administratorConfirmed),
+            (.accounts, [.accounts], administratorConfirmed || checklist.authority?.isVerified == true),
         ]
         stages = groups.map { id, identifiers, confirmed in
             Stage(id: id, steps: identifiers.compactMap { wanted in

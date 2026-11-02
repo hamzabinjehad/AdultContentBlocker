@@ -124,13 +124,13 @@ class PolicyTests(unittest.TestCase):
             rules = Path(tmp) / "rules.json"
             rules.write_text(json.dumps({"strict": True, "blocked_hosts_sha256": "00"}))
             policy = Path(tmp) / "policy.json"
-            code, _, _ = run("sign-policy", "--key", str(key_path), "--device", device_id,
+            code, _, _ = run("sign-policy", "--key", str(key_path), f"--device={device_id}",
                              "--counter", "7", "--issued-at", str(NOW),
                              "--not-after", str(NOW + 3600), "--rules", str(rules),
                              "--out", str(policy))
             self.assertEqual(code, 0)
             code, out, _ = run("verify-policy", "--public-key", str(public_path),
-                               "--policy", str(policy), "--device", device_id,
+                               "--policy", str(policy), f"--device={device_id}",
                                "--now", str(NOW))
             self.assertEqual(code, 0)
             self.assertEqual(json.loads(out)["rules"]["strict"], True)
@@ -143,14 +143,14 @@ class PolicyTests(unittest.TestCase):
             rules = Path(tmp) / "rules.json"
             rules.write_text("{}")
             policy = Path(tmp) / "policy.json"
-            run("sign-policy", "--key", str(key_path), "--device", device_id,
+            run("sign-policy", "--key", str(key_path), f"--device={device_id}",
                 "--counter", "2", "--issued-at", str(NOW), "--not-after", str(NOW + 3600),
                 "--rules", str(rules), "--out", str(policy))
             code, _, _ = run("verify-policy", "--public-key", str(public_path),
                              "--policy", str(policy), "--device", "other", "--now", str(NOW))
             self.assertEqual(code, 1)
             code, _, _ = run("verify-policy", "--public-key", str(public_path),
-                             "--policy", str(policy), "--device", device_id,
+                             "--policy", str(policy), f"--device={device_id}",
                              "--last-counter", "2", "--now", str(NOW))
             self.assertEqual(code, 1)
 
@@ -160,7 +160,7 @@ class PolicyTests(unittest.TestCase):
             device_id = gp.device_id(gp.generate_key().public_key())
             rules = Path(tmp) / "rules.json"
             rules.write_text("[]")
-            code, _, err = run("sign-policy", "--key", str(key_path), "--device", device_id,
+            code, _, err = run("sign-policy", "--key", str(key_path), f"--device={device_id}",
                                "--counter", "1", "--rules", str(rules),
                                "--out", str(Path(tmp) / "policy.json"))
             self.assertEqual(code, 1)
