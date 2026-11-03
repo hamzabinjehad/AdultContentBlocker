@@ -113,6 +113,7 @@ Per-version change and verification notes, newest first.
 
 ### Mac
 
+- [Mac 1.1.10 release notes](MACOS_1.1.10.md): A UI/UX pass — one title per page, the Overview action above the evidence, one Setup card with progress and next step, the lock mode stated once, and lists before prose on Blocking Rules. REA design research on Screen Zen 2.0.0; 522 tests. Unsigned/unnotarized.
 - [Mac 1.1.9 release notes](MACOS_1.1.9.md): The browser-guard warning becomes a calm dark intervention card with a shield, a large countdown and one Open-browser action, with no bypass; Overview moves layer evidence behind compact chips and a disclosure. Presentation only; 522 tests. Unsigned/unnotarized.
 - [Mac 1.1.8 release notes](MACOS_1.1.8.md): An on-demand pause window — a 30-second guided breath, rotating reminders, four needs and a local day/count tally — reachable from Overview, the menu bar and ⇧⌘P. It changes no rule or layer. Unsigned/unnotarized; no physical-Mac result claimed.
 - [Mac 1.1.7 release notes](MACOS_1.1.7.md): A verified protection-authority card (standard daily account, visible guardian administrator with a secure token, loaded root daemon) and lock-gated authority/removal controls. Unsigned/unnotarized; no split or device run claimed.

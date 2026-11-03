@@ -14,11 +14,11 @@
     {
       "id": "macos",
       "name": "Mac",
-      "version": "1.1.9",
-      "build": 13,
+      "version": "1.1.10",
+      "build": 15,
       "state": "development · unsigned, needs Developer ID and notarization",
       "source": "macos/Hisn.xcodeproj/project.pbxproj",
-      "notes": "Every target must carry the same MARKETING_VERSION and CURRENT_PROJECT_VERSION; 1.1.9 redesigns the browser-guard warning as a calm dark card with a shield, a large countdown, one Open-browser action and no bypass, and moves the Overview's layer evidence behind compact state chips and a Layer details disclosure. 1.1.8's pause, protection-authority and lock controls are retained. Unsigned/unnotarized."
+      "notes": "Every target must carry the same MARKETING_VERSION and CURRENT_PROJECT_VERSION; 1.1.10 is a UI/UX pass: the duplicated in-page title block is gone (the window title bar already names the page), Setup merges its readiness and progress into one card, Overview puts its one action above the layer evidence, the Lock page stops repeating the fixed-commitment paragraph and follows the chosen mode, and Blocking Rules leads with the editable lists instead of a three-paragraph browser guide. 1.1.9's guard card, status-first overview and 1.1.8's pause are retained. Unsigned/unnotarized."
     },
     {
       "id": "ios",

@@ -5,6 +5,39 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
+## Mac 1.1.10 — 2026-11-03
+
+### Changed
+
+- **One page title, not three.** The large in-page header (icon, title, subtitle)
+  is gone; the window title bar already names the page and its purpose. Setup
+  previously said "Protected Setup" in the title bar, again as a header and a
+  third time as a section heading. Every page now starts with its content.
+- **Overview puts the action before the evidence.** The one primary button sits
+  directly under the layer chips; with the layer details open it used to land at
+  the bottom of the card, below three explanations. The commitment card moved up
+  beside the protection card, and the laptop-readiness card appears only while a
+  check is missing instead of repeating a passing verdict.
+- **Setup is one card.** Readiness, a progress bar, "2 of 12 steps done" and
+  "Next: …" now share the top card; the duplicate "Protected Setup" section and
+  its second verdict are gone.
+- **Lock states what the chosen mode means, once.** The fixed-commitment
+  paragraph follows the toggle — before, turning the fixed commitment off left
+  the paragraph on screen — and the duplicate "Your chosen commitment" card is
+  removed.
+- **Blocking Rules leads with the lists.** The editable site and app lists come
+  first; the browser guide follows them instead of pushing every control below
+  the fold.
+
+### Verification
+
+- `./test.sh macos` — **522 tests, 0 failures**; 597 strings, all with Arabic.
+- Design research: REA 6.4.0 `inspect-artifact` and
+  `capture-native-ui-scenario` on the Screen Zen 2.0.0 (build 63) window,
+  observation only. Captures in `design/macos-ui-1.1.10/`.
+- Version 1.1.10, build 15. Unsigned and unnotarized; no physical-Mac,
+  VoiceOver or signed-build result is claimed.
+
 ## Android 1.1.0 — 2026-11-03
 
 ### Added

@@ -24,10 +24,11 @@ you the lock; Hisn adds the coverage those built-in filters miss. Read
 - **iPhone & iPad 1.4.0** — a custom Screen Time shield names the saved rule in
   English or Arabic and offers only Close, with no unlock action; the on-demand
   pause, protection hero, daily quiet hours and saved-rule freeze remain.
-- **Mac 1.1.9** — the browser-guard warning is now a calm dark card with a
-  shield, a large countdown and one "Open browser" action; it offers no bypass.
-  Overview leads with layer chips and keeps the evidence behind a disclosure.
-  The 1.1.8 pause and protection-authority checks remain.
+- **Mac 1.1.10** — a UI/UX pass: one title per page (the window title bar), the
+  Overview action above the layer evidence, one Setup card with progress and the
+  next step, one statement of the chosen lock mode, and Blocking Rules leading
+  with the lists. Design research used REA on Screen Zen 2.0.0. The 1.1.9 guard
+  card, layer chips, 1.1.8 pause and protection-authority checks remain.
 - **Android 1.1.0** — a first-run welcome, a voluntary pause on Protection and
   today's usage in the daily-limit editor sit on the 1.0.0 protection lock,
   removal guard, managed lockdown and layer watchdog. The signed direct APK is
@@ -54,7 +55,7 @@ layer states. More captures, including Arabic and dark mode, are in the
 | Platform | What it does | State | Start here |
 | --- | --- | --- | --- |
 | Browser extension (Chromium) | Blocks listed domains, checks page text in the page's language, optional local image/video checks, portable hand lists | 1.5.0 | [Using the extension](docs/EXTENSION_USAGE.md) |
-| Mac | Content-filter system extension, browser guard, locks, authority checks, accountability partner, root guardian daemon and an on-demand breathing pause | 1.1.9, needs a signed build | [Mac setup](docs/SETUP.md) |
+| Mac | Content-filter system extension, browser guard, locks, authority checks, accountability partner, root guardian daemon and an on-demand breathing pause | 1.1.10, needs a signed build | [Mac setup](docs/SETUP.md) |
 | iPhone & iPad | Six Safari blockers, Safari text extension, Screen Time app limits with a custom bilingual shield, optional family DNS, protection lock for saved rules, an on-demand pause and daily quiet hours | 1.4.0, development | [iOS README](ios/README.md) |
 | Android | DNS filtering, selected-app and word restrictions, per-app daily time limits, first-run welcome, voluntary pause, optional image checks, browser-coverage screen, schedules, protection lock that freezes saved rules, opt-in device-owner uninstall guard and managed lockdown, direct-build removal guard, layer watchdog and bundled-list freshness warning | 1.1.0 direct published; Play AAB not uploaded | [Android README](android/README.md) · [1.1 record](docs/ANDROID_1.1.0.md) |
 | Network / router | Verified signed DNS rules for administrator import | Tools only | [Network tools](network/README.md) |

@@ -85,19 +85,11 @@ struct ContentView: View {
         } detail: {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                HStack(alignment: .top, spacing: 16) {
-                    Image(systemName: (page ?? .overview).systemImage)
-                        .font(.title2).foregroundStyle(Color.accentColor)
-                        .frame(width: 52, height: 52)
-                        .background(Color.accentColor.opacity(0.1), in: RoundedRectangle(cornerRadius: 16))
-                        .accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text((page ?? .overview).title).font(.largeTitle.weight(.bold))
-                            .accessibilityAddTraits(.isHeader)
-                        Text((page ?? .overview).subtitle).font(.callout).foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
+                // The page name and one-line purpose are in the window title
+                // bar, where macOS puts them. Repeating them here as a large
+                // header pushed every page's real content below the fold and
+                // said the same thing three times on Setup (title bar, header,
+                // first section).
                 Group {
                     switch page ?? .overview {
                     case .overview:
@@ -350,13 +342,46 @@ private struct OverviewPage: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             protectionCard
+            lockCard
             pauseCard
-            Card {
-                TimelineView(.periodic(from: .now, by: 10)) { _ in
-                    LaptopSetupStatusView(readiness: laptopReadiness) { issue in
-                        goTo(issue == .browserGuard || issue == .appExceptions ? .rules : .setup)
+            // One row to the place where the missing checks are explained.
+            // The full readiness card repeated the protection card's own
+            // missing-layer message, and the Setup page owns the detail.
+            if !laptopReadiness.isReady {
+                Button { goTo(.setup) } label: {
+                    Card {
+                        HStack(alignment: .center, spacing: 14) {
+                            Image(systemName: "checklist")
+                                .font(.title2)
+                                .foregroundStyle(Color.orange)
+                                .frame(width: 40, height: 40)
+                                .background(Color.orange.opacity(0.12), in: Circle())
+                                .accessibilityHidden(true)
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(LocalizedStringKey(laptopReadiness.headline))
+                                    .font(.headline)
+                                Text(LocalizedStringKey(laptopReadiness.summary))
+                                    .font(.callout)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(2)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            Spacer(minLength: 8)
+                            if let setup = protectedSetup {
+                                Text(String(localized: "\(setup.doneCount) of \(setup.totalCount) steps done."))
+                                    .font(.callout.weight(.medium))
+                                    .foregroundStyle(.secondary)
+                            }
+                            Image(systemName: "chevron.forward")
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                                .accessibilityHidden(true)
+                        }
                     }
                 }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("setup.laptopReadiness")
             }
             if clockAssessment != .consistent {
                 Label("Device time could not be confirmed. Check automatic date and time. Your saved commitment deadline has not changed.",
@@ -381,16 +406,6 @@ private struct OverviewPage: View {
                     .foregroundStyle(.orange)
                     .fixedSize(horizontal: false, vertical: true)
                 Button("Continue setup") { goTo(.setup) }
-            }
-            lockCard
-            if let setup = protectedSetup, !setup.isComplete {
-                HStack(alignment: .firstTextBaseline) {
-                    Label(String(localized: "Setup: \(setup.doneCount) of \(setup.totalCount) steps done."),
-                          systemImage: "checklist")
-                        .font(.callout)
-                    Spacer()
-                    Button("Continue setup") { goTo(.setup) }
-                }
             }
 
             // The one combination that is genuinely alarming: a lock is
@@ -469,6 +484,16 @@ private struct OverviewPage: View {
 
                 layerChips
 
+                // The one action sits directly under the answer, before the
+                // evidence. With the details open it used to land at the very
+                // bottom of the card, below three layer explanations.
+                HStack(spacing: 10) {
+                    Button(primaryActionTitle) { goTo(primaryActionPage) }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
+                    Spacer(minLength: 0)
+                }
+
                 DisclosureGroup(isExpanded: $showLayerDetails) {
                     VStack(alignment: .leading, spacing: 12) {
                         LabeledContent("Protection layers reporting ready",
@@ -485,14 +510,6 @@ private struct OverviewPage: View {
                     Text("Layer details")
                         .font(.callout.weight(.medium))
                 }
-
-                HStack {
-                    Button(primaryActionTitle) { goTo(primaryActionPage) }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.large)
-                    Spacer()
-                }
-                .padding(.top, 4)
             }
         }
         .accessibilityElement(children: .contain)
@@ -846,32 +863,34 @@ struct SetupPage: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
+            // One card answers both questions the page exists for: is this Mac
+            // protected, and how far through setup am I? The page title bar
+            // already says "Protected Setup", so a second heading saying it
+            // again only pushed the steps down.
             Card {
-                TimelineView(.periodic(from: .now, by: 10)) { _ in
-                    LaptopSetupStatusView(readiness: laptopReadiness, review: reviewSetupIssue)
-                }
-            }
-            PageSection(title: "Protected Setup") {
-                if let setup = protectedSetup {
-                    let complete = setup.isComplete && laptopReadiness.isReady
-                    Label(complete ? "Protected setup checks passed" : "Protection needs attention",
-                          systemImage: complete ? "checkmark.shield" : "exclamationmark.shield")
-                        .font(.headline)
-                        .foregroundStyle(complete ? Color.green : Color.primary)
-                    ProgressView(value: Double(setup.doneCount), total: Double(setup.totalCount))
-                    Text(String(localized: "\(setup.doneCount) of \(setup.totalCount) steps done."))
-                        .font(.callout.weight(.medium))
-                        .foregroundStyle(.secondary)
-                    if let next = setup.nextStage {
-                        Text(String(localized: "Next: \(next.title)"))
-                            .font(.callout.weight(.medium))
+                VStack(alignment: .leading, spacing: 14) {
+                    TimelineView(.periodic(from: .now, by: 10)) { _ in
+                        LaptopSetupStatusView(readiness: laptopReadiness, review: reviewSetupIssue)
                     }
-                } else {
-                    ProgressView("Checking this Mac...").controlSize(.small)
+                    if let setup = protectedSetup {
+                        Divider()
+                        ProgressView(value: Double(setup.doneCount), total: Double(setup.totalCount))
+                        HStack(alignment: .firstTextBaseline, spacing: 10) {
+                            Text(String(localized: "\(setup.doneCount) of \(setup.totalCount) steps done."))
+                                .font(.callout.weight(.medium))
+                                .foregroundStyle(.secondary)
+                            Spacer(minLength: 8)
+                            if let next = setup.nextStage {
+                                Text(String(localized: "Next: \(next.title)"))
+                                    .font(.callout.weight(.medium))
+                                    .lineLimit(1)
+                            }
+                        }
+                        Text("These checks cover this Mac and make protection harder to disable. Network protection, other devices, and recovery access are checked separately.")
+                            .font(.caption).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
-                Text("These checks cover this Mac and make protection harder to disable. Network protection, other devices, and recovery access are checked separately.")
-                    .font(.callout).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
 
             if let setup = protectedSetup {
@@ -1354,8 +1373,19 @@ private struct LockPage: View {
 
             PageSection(title: "Mode") {
                 Toggle("Fixed commitment until the chosen deadline", isOn: $fixedCommitment)
-                Text("No early self-release during a fixed commitment. Partner recovery remains available; this does not prevent an administrator from removing protection.")
+                // One description of what the chosen mode means, and it follows
+                // the toggle. Before, the fixed-commitment sentence was shown
+                // twice — once here, once in a card below — and it stayed on
+                // screen after the person turned the fixed commitment off.
+                Text(fixedCommitment
+                     ? "No early self-release during a fixed commitment. Partner recovery remains available; this does not prevent an administrator from removing protection."
+                     : """
+                       Once started, you cannot shorten or cancel this. \
+                       Early release takes 48 hours, or an approval from \
+                       your accountability partner.
+                       """)
                     .font(.callout).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
                 Toggle(isOn: $strict) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Strict mode")
@@ -1364,27 +1394,6 @@ private struct LockPage: View {
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
-                }
-            }
-
-            // The honest warning. People who are surprised by a lock fight it;
-            // people who chose it with clear eyes keep it.
-            Card {
-                VStack(alignment: .leading, spacing: 8) {
-                    Label(fixedCommitment ? "Your chosen commitment" : "This cannot be undone by you alone",
-                          systemImage: "lock.fill")
-                        .font(.body.weight(.medium))
-                    if fixedCommitment {
-                        Text("No early self-release during a fixed commitment. Partner recovery remains available; this does not prevent an administrator from removing protection.")
-                            .font(.callout).foregroundStyle(.secondary)
-                    } else { Text("""
-                         Once started, you cannot shorten or cancel this. \
-                         Early release takes 48 hours, or an approval from \
-                         your accountability partner.
-                         """)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true) }
                 }
             }
 
@@ -1706,13 +1715,16 @@ private struct RulesPage: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            BrowserFirstGuide()
-            Divider()
+            // The lists a person came here to edit come first. The browser
+            // guide is real, but it is a second visit, not a landing page:
+            // three paragraphs of prose pushed every control below the fold.
             SiteListsSection(isLocked: isLocked)
             Divider()
             UserBlocksSection(isLocked: isLocked)
             Divider()
             BrowsersSection(isLocked: isLocked)
+            Divider()
+            BrowserFirstGuide()
         }
     }
 }
