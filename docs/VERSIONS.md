@@ -11,7 +11,7 @@ signed artifact has shipped. The state column is the honest release state.
 | Platform | Version | Build | State | Source of truth |
 | --- | --- | --- | --- | --- |
 | Browser extension (Chromium) | 1.5.0 | — | development · unpacked, no store listing | `extension/manifest.json` |
-| Mac | 1.1.10 | 19 | development · unsigned, needs Developer ID and notarization | `macos/Hisn.xcodeproj/project.pbxproj` |
+| Mac | 1.1.10 | 20 | development · unsigned, needs Developer ID and notarization | `macos/Hisn.xcodeproj/project.pbxproj` |
 | iPhone & iPad | 1.4.0 | 8 | development · no Apple team, Family Controls entitlement or test device | `ios/HisnMobile.xcodeproj/project.pbxproj` |
 | Android | 1.1.0 | 27 | released · signed direct APK on GitHub; Play AAB not uploaded | `android/app/build.gradle` |
 

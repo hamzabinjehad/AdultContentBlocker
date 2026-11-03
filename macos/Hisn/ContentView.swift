@@ -1282,11 +1282,12 @@ private struct LockPage: View {
 
     /// Would a lock started now block anything? Read from the same status the
     /// Overview shows, so the two can never disagree.
-    private var enforcingAnything: Bool {
+    private var protectionStatus: ProtectionStatus {
         ProtectionStatus(ProtectionEvidence.current(filter: filter.availability,
-                                                      authority: FilterSync.shared.status))
-            .isEnforcingAnything
+                                                    authority: FilterSync.shared.status))
     }
+
+    private var enforcingAnything: Bool { protectionStatus.isEnforcingAnything }
 
     /// The length the button would start, or nil when there is nothing valid to
     /// start. Nil disables the button rather than substituting a nearby legal
@@ -1397,22 +1398,6 @@ private struct LockPage: View {
                 }
             }
 
-            // Just-in-time, at the point of decision rather than as a permanent
-            // banner up top. Someone about to commit to a lock that enforces
-            // nothing is the one moment this warning earns its alarm — and the
-            // confirmation dialog repeats it, so it cannot be clicked past by
-            // reflex.
-            if !enforcingAnything {
-                Label("""
-                      Nothing is set up to enforce a lock yet — it would run \
-                      but block nothing. Finish setup on the Overview page first.
-                      """,
-                      systemImage: "exclamationmark.triangle.fill")
-                    .font(.callout)
-                    .foregroundStyle(.orange)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
             if authority?.dailyUserIsAdmin == true {
                 Label("This account is still an administrator. It can remove Hisn during the lock. Complete the guardian split in Setup first.",
                       systemImage: "exclamationmark.triangle.fill")
@@ -1424,6 +1409,39 @@ private struct LockPage: View {
             Toggle("I understand this commitment does not prevent an administrator from removing protection. Keep essential services accessible.",
                    isOn: $understandsLimits)
 
+        }
+        // The action and its consequence form one panel at the end of the
+        // setup section, above the daily schedule, instead of a button under
+        // two warnings and the acknowledgement. Pinning this to the window's
+        // bottom edge needs the draft lifted into the window chrome; until
+        // then it stays in the page.
+        .safeAreaInset(edge: .bottom, spacing: 0) { startBar }
+    }
+
+    /// The action panel: one line saying what pressing the button would
+    /// enforce, then the button. The line is derived from the same status the
+    /// Overview shows, so the promise and the lock cannot disagree.
+    private var startBar: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if enforcingAnything {
+                Label(String(localized: "This lock would enforce \(protectionStatus.layers.filter(\.ok).count) of \(protectionStatus.layers.count) protection layers."),
+                      systemImage: "checkmark.shield")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                // Just-in-time, at the point of decision. Someone about to
+                // commit to a lock that enforces nothing is the one moment
+                // this warning earns its alarm.
+                Label("""
+                      Nothing is set up to enforce a lock yet — it would run \
+                      but block nothing. Finish setup on the Overview page first.
+                      """,
+                      systemImage: "exclamationmark.triangle.fill")
+                    .font(.callout)
+                    .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             Button {
                 showConfirm = true
             } label: {
@@ -1446,6 +1464,12 @@ private struct LockPage: View {
                 Text(confirmMessage)
             }
         }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 14)
+        .frame(maxWidth: 840, alignment: .leading)
+        .frame(maxWidth: .infinity)
+        .background(.bar)
+        .overlay(alignment: .top) { Divider() }
     }
 
     // MARK: Locked

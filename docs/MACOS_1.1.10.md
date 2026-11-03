@@ -49,14 +49,14 @@ layout evidence, not the accessibility tree.
 | Overview | commitment card below the setup card | commitment beside the protection card |
 | Overview | full readiness card repeating the missing-layer message | one row: headline, summary, step count, chevron → Setup |
 | Setup | readiness card + "Protected Setup" section with a second verdict | one card: readiness, progress bar, "2 of 12 steps done", next step |
-| Lock | fixed-commitment paragraph twice, once stale | stated once, follows the mode toggle; duplicate card removed |
+| Lock | fixed-commitment paragraph twice, once stale | stated once, follows the mode toggle; duplicate card removed; one action panel with a live consequence line |
 | Blocking Rules | guide, then lists | lists, then guide |
 | Your sites | two large text boxes, domains only visible as text | per-domain rows with Remove, an inline add field, a chip strip of what is blocked, and bulk paste in a disclosure |
 | Settings | a flat column of headings and dividers, checkbox toggles | one card per group, with trailing switches |
 
 No rule, lock, filter, browser-bridge or protection-layer behaviour changed. Two
 user-facing strings were added (`Add`, `Paste a list`), both with Arabic; the
-catalog is 600 strings. Xcode marked five strings that only the removed blocks
+catalog is 601 strings. Xcode marked five strings that only the removed blocks
 used as `stale` in the catalog; their Arabic is kept. The add field's
 placeholder is a verbatim `example.com` held in a String property, so it does
 not enter the catalog as translatable copy.
@@ -66,7 +66,7 @@ not enter the catalog as translatable copy.
 | File | Change |
 | --- | --- |
 | `macos/Hisn/ContentView.swift` | page chrome, Overview order, Setup card, Lock mode text, Rules order, row-based site lists |
-| `macos/Hisn.xcodeproj/project.pbxproj`, `macos/generate_xcodeproj.py` | 1.1.10, build 19 |
+| `macos/Hisn.xcodeproj/project.pbxproj`, `macos/generate_xcodeproj.py` | 1.1.10, build 20 |
 | `macos/Hisn/Localizable.xcstrings` | two new strings with Arabic; five marked stale |
 | `design/macos-ui-1.1.10/` | before/after captures and their README |
 
@@ -78,6 +78,9 @@ not enter the catalog as translatable copy.
   captured: 1.1.9 (before) and 1.1.10 (after), same window width, dark mode.
 - The captures are real windows, not SwiftUI renders: they show this Mac's
   actual state (ad-hoc filter off, hosts list on, extension connected).
+- **Not done:** the Lock action panel sits at the end of the setup section, not
+  pinned to the window's bottom edge. Pinning needs the draft state lifted out of
+  `LockPage` into the window chrome, which is a larger change than this pass.
 
 ## Limits
 

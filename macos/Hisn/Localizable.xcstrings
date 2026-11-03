@@ -6502,6 +6502,16 @@
         }
       }
     },
+    "This lock would enforce %lld of %lld protection layers." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سيفرض هذا القفل %1$lld من أصل %2$lld طبقة حماية."
+          }
+        }
+      }
+    },
     "This makes the schedule weaker, so it takes effect %@." : {
       "localizations" : {
         "ar" : {
