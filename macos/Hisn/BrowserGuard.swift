@@ -926,22 +926,29 @@ public final class BrowserGuard: ObservableObject {
             return
         }
         if panel == nil {
-            let p = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 380, height: 150),
-                            styleMask: [.titled, .nonactivatingPanel, .utilityWindow, .resizable],
+            let p = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 460, height: 320),
+                            styleMask: [.titled, .fullSizeContentView, .utilityWindow],
                             backing: .buffered, defer: false)
             p.title = String(localized: "Hisn")
+            p.titleVisibility = .hidden
+            p.titlebarAppearsTransparent = true
+            p.standardWindowButton(.closeButton)?.isHidden = true
+            p.standardWindowButton(.miniaturizeButton)?.isHidden = true
+            p.standardWindowButton(.zoomButton)?.isHidden = true
+            p.isMovableByWindowBackground = true
             p.level = .floating
             p.isFloatingPanel = true
             p.hidesOnDeactivate = false
-            p.contentMinSize = NSSize(width: 380, height: 160)
+            p.becomesKeyOnlyIfNeeded = true
+            p.contentMinSize = NSSize(width: 460, height: 280)
             p.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             p.contentView = NSHostingView(rootView: GuardAlertView(guardian: self))
             panel = p
         }
         if let panel, panelAlertCount != alerts.count {
             let availableHeight = NSScreen.main?.visibleFrame.height ?? 800
-            let height = min(max(176, CGFloat(alerts.count) * 124 + 32), min(440, availableHeight * 0.65))
-            panel.setContentSize(NSSize(width: max(380, panel.frame.width), height: height))
+            let height = min(max(320, CGFloat(alerts.count) * 300 + 24), min(640, availableHeight * 0.8))
+            panel.setContentSize(NSSize(width: 460, height: height))
             panelAlertCount = alerts.count
         }
         if let panel, !panel.isVisible, let screen = NSScreen.main {
@@ -952,32 +959,118 @@ public final class BrowserGuard: ObservableObject {
     }
 }
 
-/// The countdown panel's content.
+/// The countdown panel's content: one calm card per browser that is about to
+/// close. It explains why, counts down, and offers one way forward — bring the
+/// browser forward so the extension can be restored. There is no dismiss or
+/// bypass action; restoring the extension is what cancels the close.
 struct GuardAlertView: View {
     @ObservedObject var guardian: BrowserGuard
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             ScrollView {
-            LazyVStack(alignment: .leading, spacing: 14) {
-                ForEach(guardian.alerts) { alert in
-                    VStack(alignment: .leading, spacing: 4) {
-                        Label(String(localized: """
-                              \(alert.name) closes in \
-                              \(max(0, Int(alert.closeAt.timeIntervalSince(context.date).rounded()))) s
-                              """),
-                              systemImage: "exclamationmark.shield.fill")
-                            .font(.headline)
-                            .foregroundStyle(.orange)
-                        Text(BrowserGuard.message(name: alert.name, reason: alert.reason))
-                            .font(.callout)
-                            .fixedSize(horizontal: false, vertical: true)
+                VStack(spacing: 14) {
+                    ForEach(guardian.alerts) { alert in
+                        GuardAlertCard(alert: alert, now: context.date) {
+                            NSRunningApplication(processIdentifier: alert.id)?
+                                .activate(options: [.activateAllWindows])
+                        }
                     }
                 }
+                .padding(22)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            }
+            .background(
+                LinearGradient(colors: [
+                    Color(red: 0.055, green: 0.075, blue: 0.19),
+                    Color(red: 0.025, green: 0.035, blue: 0.10),
+                ], startPoint: .topLeading, endPoint: .bottomTrailing)
+                .ignoresSafeArea()
+            )
+            .preferredColorScheme(.dark)
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text("Browser protection needs attention"))
+    }
+}
+
+/// One browser's intervention card. Kept separate from the panel so the render
+/// tests can inspect it without an alert being live.
+struct GuardAlertCard: View {
+    let alert: BrowserGuard.Alert
+    let now: Date
+    let open: () -> Void
+
+    private var remaining: Int {
+        max(0, Int(alert.closeAt.timeIntervalSince(now).rounded()))
+    }
+
+    /// A fixed blue rather than the system accent: this panel must look the
+    /// same on every Mac, including a graphite accent or a test host.
+    private var accent: Color { Color(red: 0.36, green: 0.43, blue: 0.96) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top, spacing: 13) {
+                Image(systemName: "shield.lefthalf.filled")
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 52, height: 52)
+                    .background(accent, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Protection interrupted")
+                        .font(.caption.weight(.semibold))
+                        .textCase(.uppercase)
+                        .foregroundStyle(.white.opacity(0.62))
+                    Text("\(alert.name) is about to close")
+                        .font(.title3.weight(.bold))
+                        .foregroundStyle(.white)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+            }
+
+            Text(BrowserGuard.message(name: alert.name, reason: alert.reason))
+                .font(.callout)
+                .foregroundStyle(.white.opacity(0.76))
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(verbatim: "\(remaining)")
+                    .font(.system(size: 44, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(.white)
+                Text("seconds left")
+                    .font(.callout)
+                    .foregroundStyle(.white.opacity(0.62))
+                Spacer(minLength: 0)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(Text("Closes in \(remaining) seconds"))
+
+            Button(action: open) {
+                Label("Open \(alert.name)", systemImage: "arrow.up.forward.app")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .foregroundStyle(.white)
+                    .background(accent, in: Capsule())
+            }
+            .buttonStyle(.plain)
+
+            Text("Restoring the extension cancels the close.")
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.60))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(20)
+        .background(.white.opacity(0.065), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .strokeBorder(.white.opacity(0.10), lineWidth: 1)
+                .accessibilityHidden(true)
+        }
+        .accessibilityElement(children: .contain)
     }
 }

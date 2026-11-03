@@ -130,6 +130,35 @@ final class PauseTests: XCTestCase {
         }
     }
 
+    func testGuardAlertRendersInBothLanguages() async throws {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let alert = BrowserGuard.Alert(id: 1, name: "Chrome",
+                                       reason: .extensionSilent,
+                                       closeAt: now.addingTimeInterval(42))
+        for language in ["en", "ar"] {
+            let view = NSHostingView(rootView: ZStack {
+                Color(red: 0.03, green: 0.04, blue: 0.11).ignoresSafeArea()
+                GuardAlertCard(alert: alert, now: now, open: {})
+                    .padding(22)
+            }
+            .environment(\.locale, Locale(identifier: language))
+            .environment(\.layoutDirection, language == "ar" ? .rightToLeft : .leftToRight)
+            .frame(width: 460, height: 320))
+            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 460, height: 320),
+                                  styleMask: [.titled], backing: .buffered, defer: false)
+            window.isReleasedWhenClosed = false
+            window.contentView = view
+            defer { window.close() }
+            window.orderFront(nil)
+            try await Task.sleep(nanoseconds: 300_000_000)
+            view.layoutSubtreeIfNeeded()
+            let bitmap = try XCTUnwrap(view.bitmapImageRepForCachingDisplay(in: view.bounds))
+            view.cacheDisplay(in: view.bounds, to: bitmap)
+            let data = try XCTUnwrap(bitmap.representation(using: .png, properties: [:]))
+            XCTAssertGreaterThan(data.count, 2000, "\(language) guard card should render")
+        }
+    }
+
     private func render(suffix: String, elapsed: TimeInterval) async throws {
         let name = TestNamespace.make()
         defer { TestNamespace.dispose(name) }

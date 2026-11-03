@@ -65,6 +65,36 @@ bump without an entry here is an unfinished release.
 - Version 1.5.0. No permission, host permission, storage field or network path
   was added. English and Arabic copy added.
 
+## Mac 1.1.9 — 2026-11-03
+
+### Changed
+
+- **The browser-guard warning is now an intervention card.** A dark, calm card
+  shows a shield, the browser's name, the exact reason, a large countdown in
+  seconds, and one **Open browser** action. There is no dismiss or bypass:
+  restoring the extension is what cancels the close. The panel is movable,
+  hides its title bar, stays above other windows and resizes for several
+  browsers.
+- **Overview is status-first.** Compact layer chips answer which layers are
+  ready at a glance. The long evidence, readiness count and per-layer details
+  sit behind a **Layer details** disclosure that opens automatically when a
+  layer needs attention or is still checking.
+- No policy, filter, lock, browser-bridge or protection-layer behaviour
+  changed. Version 1.1.9, build 13.
+
+### Verification
+
+- `./test.sh macos` — **522 tests, 0 failures**; 597 strings, all with Arabic.
+  The new guard-card render test covers English and Arabic in the same sizes as
+  the panel.
+- Design captures are in
+  [`design/macos-ui-1.1.9/`](design/macos-ui-1.1.9/README.md).
+- The guard-card render is a deterministic SwiftUI render, not a physical
+  click-through; the panel's countdown and close logic remain covered by
+  `BrowserGuardTests`.
+
+Unsigned and unnotarized. See [the 1.1.9 record](docs/MACOS_1.1.9.md).
+
 ## Mac 1.1.8 — 2026-11-03
 
 ### Added

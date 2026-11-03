@@ -6705,6 +6705,86 @@
           }
         }
       }
+    },
+    "Browser protection needs attention" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حماية المتصفح تحتاج إلى انتباه"
+          }
+        }
+      }
+    },
+    "Protection interrupted" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "توقفت الحماية"
+          }
+        }
+      }
+    },
+    "%@ is about to close" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سيُغلق %@ بعد قليل"
+          }
+        }
+      }
+    },
+    "seconds left" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ثانية متبقية"
+          }
+        }
+      }
+    },
+    "Closes in %lld seconds" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يُغلق خلال %lld ثانية"
+          }
+        }
+      }
+    },
+    "Open %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افتح %@"
+          }
+        }
+      }
+    },
+    "Restoring the extension cancels the close." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استعادة الإضافة تلغي الإغلاق."
+          }
+        }
+      }
+    },
+    "Layer details" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تفاصيل الطبقات"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

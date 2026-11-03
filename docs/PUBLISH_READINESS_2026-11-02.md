@@ -10,7 +10,7 @@ physical-device acceptance run exists.
 | Surface | Version | Build | State |
 | --- | --- | --- | --- |
 | Android | 1.0.0 | 26 | signed direct APK published on GitHub; Play AAB built but not uploaded; physical device proof still required |
-| Mac | 1.1.8 | 12 | unsigned package smoke passes; system filter still needs the Apple team |
+| Mac | 1.1.9 | 13 | unsigned package smoke passes; system filter still needs the Apple team |
 | iPhone & iPad | 1.4.0 | 8 | simulator suite passes; no team, entitlement or device |
 | Browser extension | 1.5.0 | — | reproducible store zip passes the package check; no listing |
 | Seed / lists | v5 seed (2026-10-30); v6 lists (2026-11-03) | — | signed; `lists` branch published and HTTP 200 |
@@ -23,7 +23,7 @@ physical-device acceptance run exists.
 | Python suites | **PASS** — blocklist, profile, network publication, extension staging, Safari rules |
 | Extension JavaScript suites | **PASS** — 68 language checks, 94 feed checks, 397 web-protection, 46 worker-layout plus the rest |
 | `./test.sh browser` | **PASS** — DNR 42/42, live scanner, six block pages, popup/settings redesign in English and Arabic, and the four-image real-engine visual smoke in Helium/Chromium |
-| `./test.sh macos` | **PASS** — 521 tests, localization 589 strings with Arabic (includes the 1.1.8 pause) |
+| `./test.sh macos` | **PASS** — 522 tests, localization 597 strings with Arabic (includes the 1.1.9 guard panel and pause) |
 | `./test.sh release` | **PASS** — 33 installer/package tests |
 | `./test.sh ios` | **PASS** — 206 tests on the iPhone simulator |
 | `android/test-core.sh` | **PASS** — seed, DNS, rules, managed restrictions, protection lock, `AppTimeLimitTest` |
@@ -45,8 +45,8 @@ physical-device acceptance run exists.
 - Extension zip SHA-256
   `96ca854f52b3a4cb406bcc735013263a6adea56aedda93c843bf95733b1d85a7`
   (5.9 MB, 92 files, reproducible)
-- Mac package smoke artifact `Hisn-UNSIGNED-TEST.pkg` (1.1.8, build 12) SHA-256
-  `376a563e7e197b9e9db98fe720e6ba5dc15adf1768cc75021f9cd4842b7aa843`
+- Mac package smoke artifact `Hisn-UNSIGNED-TEST.pkg` (1.1.9, build 13) SHA-256
+  `16280ef15dc8f4272aa48cb26f64ffb28e34d68dedbec3bb99d6df8f1354b61f`
   — structure-only, no signature, not for distribution
 - iOS: no archive; the simulator test build is the only artifact
 

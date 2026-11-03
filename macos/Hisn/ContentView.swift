@@ -287,6 +287,7 @@ private struct OverviewPage: View {
     @State private var notice: String?
     @State private var previouslyReadyLayers: Set<String> = []
     @State private var historyStorageHealthy = true
+    @State private var showLayerDetails = true
     @State private var clockAssessment: CommitmentClock.Assessment = .consistent
     @State private var clockMonitor = CommitmentClock(wallAnchor: Date(), uptimeAnchor: CommitmentClock.continuousTime)
     @State private var readinessHistory = ReadinessHistory.deviceLocal(key: "hisn.mac.readiness",
@@ -415,12 +416,16 @@ private struct OverviewPage: View {
             Button("OK") { error = nil }
         } message: { Text(error ?? "") }
         .sheet(isPresented: $showBrowserHelp) { BrowserSetupHelp() }
-        .onAppear { rememberReadiness(protection) }
+        .onAppear {
+            rememberReadiness(protection)
+            showLayerDetails = shouldShowLayerDetails(protection)
+        }
         .onChange(of: lock.now) { _ in
             clockAssessment = clockMonitor.assessment(wall: Date(), uptime: CommitmentClock.continuousTime)
         }
         .onChange(of: protection) { current in
             rememberReadiness(current)
+            showLayerDetails = shouldShowLayerDetails(current)
         }
         .task { await readSetup() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
@@ -462,16 +467,23 @@ private struct OverviewPage: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
-                Divider()
+                layerChips
 
-                LabeledContent("Protection layers reporting ready",
-                    value: "\(protection.layers.filter { $0.ok }.count) / \(protection.layers.count)")
-                    .accessibilityIdentifier("plan.configuredLayers")
-                Text("Readiness is not proof that every route is blocked. Router protection is checked separately.")
-                    .font(.caption).foregroundStyle(.secondary)
-
-                ForEach(protection.layers) { layer in
-                    layerRow(layer)
+                DisclosureGroup(isExpanded: $showLayerDetails) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        LabeledContent("Protection layers reporting ready",
+                            value: "\(protection.layers.filter { $0.ok }.count) / \(protection.layers.count)")
+                            .accessibilityIdentifier("plan.configuredLayers")
+                        Text("Readiness is not proof that every route is blocked. Router protection is checked separately.")
+                            .font(.caption).foregroundStyle(.secondary)
+                        ForEach(protection.layers) { layer in
+                            layerRow(layer)
+                        }
+                    }
+                    .padding(.top, 6)
+                } label: {
+                    Text("Layer details")
+                        .font(.callout.weight(.medium))
                 }
 
                 HStack {
@@ -487,6 +499,10 @@ private struct OverviewPage: View {
         .accessibilityLabel("Protection: \(protection.headline). \(protection.summary)")
     }
 
+    private func shouldShowLayerDetails(_ status: ProtectionStatus) -> Bool {
+        status.hasProblems || status.layers.contains { !$0.ok } || status.level == .checking
+    }
+
     private var primaryActionTitle: LocalizedStringKey {
         if lock.isLocked { return "Manage lock" }
         return protection.isEnforcingAnything ? "Start a lock…" : "Continue setup"
@@ -494,6 +510,32 @@ private struct OverviewPage: View {
 
     private var primaryActionPage: ContentView.Page {
         lock.isLocked || protection.isEnforcingAnything ? .lock : .setup
+    }
+
+    /// A compact answer to "which layers are ready?" The detailed evidence is
+    /// one disclosure below; a problem expands it automatically.
+    private var layerChips: some View {
+        HStack(spacing: 8) {
+            ForEach(protection.layers) { layer in
+                let colour: Color = layer.ok ? .green
+                    : layer.state == .problem ? .orange : .secondary
+                HStack(spacing: 4) {
+                    Image(systemName: layer.ok ? "checkmark.circle.fill"
+                          : layer.state == .problem ? "exclamationmark.circle.fill" : "circle")
+                        .accessibilityHidden(true)
+                    Text(layer.name)
+                        .lineLimit(1)
+                }
+                .font(.caption.weight(.medium))
+                .foregroundStyle(colour)
+                .padding(.horizontal, 9)
+                .padding(.vertical, 5)
+                .background(colour.opacity(0.10), in: Capsule())
+                .accessibilityElement(children: .combine)
+                .accessibilityValue(Text(layer.detail))
+            }
+            Spacer(minLength: 0)
+        }
     }
 
     private func layerRow(_ layer: ProtectionStatus.Layer) -> some View {
