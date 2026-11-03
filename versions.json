@@ -23,11 +23,11 @@
     {
       "id": "ios",
       "name": "iPhone & iPad",
-      "version": "1.3.0",
-      "build": 7,
+      "version": "1.4.0",
+      "build": 8,
       "state": "development · no Apple team, Family Controls entitlement or test device",
       "source": "ios/HisnMobile.xcodeproj/project.pbxproj",
-      "notes": "The app, six Safari blockers and HisnActivityMonitor share one version set. 1.3.0 adds an on-demand pause (breath, reminder, needs and a local day/count tally), a calmer protection hero on the overview and daily quiet hours; the 1.2.0 freeze of the saved site and app-limit rules is retained. Seed v5 still supplies the 239,885-domain Safari list."
+      "notes": "The app, six Safari blockers, HisnActivityMonitor, the scanner and two shield extensions share one version set. 1.4.0 adds HisnShieldConfig and HisnShieldAction: the system shield names the saved rule (always, daily budget or quiet hours) in the app language and offers only Close, never an unlock. 1.3.0's pause, protection hero, daily quiet hours and saved-rule freeze are retained. Seed v5 still supplies the 239,885-domain Safari list."
     },
     {
       "id": "android",

@@ -120,6 +120,7 @@ Per-version change and verification notes, newest first.
 
 ### iPhone and iPad
 
+- [iOS 1.4.0 release notes](IOS_1.4.0.md): Custom `ShieldConfiguration`/`ShieldAction` extensions name the saved rule in English or Arabic and offer only Close, with no unlock; eleven privacy-manifest bundles and two new Family Controls targets. Simulator-tested only; no entitlement, signed build or device.
 - [iOS 1.3.0 release notes](IOS_1.3.0.md): An on-demand pause, a calmer protection hero and daily quiet hours (including a two-leg cross-midnight DeviceActivity schedule and both-clock reconciliation). Simulator-tested only; no entitlement, signed build or device.
 - [iOS 1.2.0 release notes](IOS_1.2.0.md): Protection lock freezes blocked-site and app-limit rules while a commitment runs, with layer recovery still available; English and Arabic lock copy. Simulator-tested only.
 - [iOS 1.1.4 release notes](COVERAGE_PASS_2026-10-30.md): Six 40,000-rule Safari blockers instead of four, seed v5, and capacity/readiness checks derived from one blocker count. Simulator-tested; no device, team or entitlement yet.

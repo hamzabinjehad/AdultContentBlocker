@@ -62,9 +62,33 @@ class PrivacyManifestTests(unittest.TestCase):
         source = GENERATOR.read_text()
         self.assertIn('privacy = "Hisn/PrivacyInfo.xcprivacy"', source)
         self.assertIn("monitor: [privacy], scanner: [privacy]", source)
+        self.assertIn("shield_config: [privacy], shield_action: [privacy]", source)
         self.assertIn("**{blocker: [privacy] for blocker in blockers}", source)
         self.assertIn('".xcprivacy": "text.xml"', source)
         self.assertIn('refs[privacy]', source)
+
+    def test_shield_extensions_are_configured_for_family_controls(self):
+        bundles = [
+            (ROOT / "HisnShieldConfig/Info.plist",
+             "com.apple.ManagedSettingsUI.shield-configuration-service",
+             ".ShieldConfigurationExtension"),
+            (ROOT / "HisnShieldAction/Info.plist",
+             "com.apple.ManagedSettingsUI.shield-action-service",
+             ".ShieldActionExtension"),
+        ]
+        for path, point, principal in bundles:
+            with path.open("rb") as source:
+                info = plistlib.load(source)
+            extension = info["NSExtension"]
+            self.assertEqual(extension["NSExtensionPointIdentifier"], point)
+            self.assertTrue(extension["NSExtensionPrincipalClass"].endswith(principal), str(path))
+        with open(ROOT / "HisnShieldConfig/HisnShieldConfig.entitlements", "rb") as source:
+            config = plistlib.load(source)
+        with open(ROOT / "HisnShieldAction/HisnShieldAction.entitlements", "rb") as source:
+            action = plistlib.load(source)
+        for data in (config, action):
+            self.assertIs(data["com.apple.developer.family-controls"], True)
+        self.assertEqual(config["com.apple.security.application-groups"], ["group.app.hisn.mobile"])
 
     def test_generated_project_references_the_manifest_for_every_bundle(self):
         project = PROJECT.read_text()
@@ -72,8 +96,10 @@ class PrivacyManifestTests(unittest.TestCase):
                               r"\t\t\tlastKnownFileType = text\.xml;\n"
                               r'\t\t\tpath = "Hisn/PrivacyInfo\.xcprivacy";', project)
         self.assertIsNotNone(reference, "privacy manifest file reference missing from the project")
-        # app + six blockers + monitor + scanner
-        self.assertEqual(project.count(f"fileRef = {reference.group(1)};"), 9)
+        # app + six blockers + monitor + scanner + shield config + shield action
+        self.assertEqual(project.count(f"fileRef = {reference.group(1)};"), 11)
+        for name in ["HisnShieldConfig.appex", "HisnShieldAction.appex"]:
+            self.assertIn(name, project, f"{name} missing from the generated project")
 
 
 if __name__ == "__main__":

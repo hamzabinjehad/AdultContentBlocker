@@ -33,7 +33,10 @@ def main(safari_only: bool = False, domain_only: bool = False,
     blockers = [f"Hisn{i}" for i in range(1, BLOCKERS + 1)]
     monitor = "HisnActivityMonitor"
     scanner = "HisnText"
-    names = [app, *blockers, *([] if domain_only else [scanner])] if safari_only else [app, *blockers, monitor, scanner, tests]
+    shield_config = "HisnShieldConfig"
+    shield_action = "HisnShieldAction"
+    names = ([app, *blockers, *([] if domain_only else [scanner])] if safari_only
+             else [app, *blockers, monitor, scanner, shield_config, shield_action, tests])
     sources = {
         app: ["Hisn/HisnMobileApp.swift", "Hisn/MobileRootView.swift", "Hisn/ProtectionController.swift",
               "Hisn/MobileCommitmentStore.swift", "Hisn/CommitmentSection.swift",
@@ -41,7 +44,7 @@ def main(safari_only: bool = False, domain_only: bool = False,
               "Hisn/CustomSitesSection.swift", "../shared/apple/CustomSitePolicy.swift",
               "Hisn/PasscodeVault.swift", "Hisn/PasscodeVaultSection.swift", "Hisn/HisnPalette.swift",
               "Hisn/Pause.swift", "Hisn/ProtectionHero.swift",
-              "Shared/AppUsageConfiguration.swift",
+              "Shared/AppUsageConfiguration.swift", "Shared/ShieldTextPolicy.swift",
               "../shared/apple/RouterAppDomains.swift", "../shared/apple/RouterAppDomainsView.swift",
               "../shared/apple/CommitmentPolicy.swift", "../shared/apple/MobileProtectionPolicy.swift",
               "../shared/apple/MirroredRuleStore.swift", "../shared/apple/ReadinessHistory.swift",
@@ -50,18 +53,27 @@ def main(safari_only: bool = False, domain_only: bool = False,
                 "HisnTests/CustomSiteTests.swift", "HisnTests/PasscodeVaultTests.swift",
                 "HisnTests/AccessibilityTests.swift", "HisnTests/CommitmentHoldsTests.swift",
                 "HisnTests/PauseTests.swift", "HisnTests/QuietHoursTests.swift",
+                "HisnTests/ShieldTextPolicyTests.swift",
                 "../shared/tests/MirroredRuleStoreTests.swift"],
         monitor: ["HisnActivityMonitor/ActivityMonitor.swift", "Shared/AppUsageConfiguration.swift",
                   "../shared/apple/MirroredRuleStore.swift", "../shared/apple/TrustedTime.swift",
                   "../shared/apple/LayerAlertPolicy.swift"],
         scanner: ["HisnWebExtension/SafariWebExtensionHandler.swift"],
+        shield_config: ["HisnShieldConfig/ShieldConfigurationExtension.swift",
+                        "Shared/ShieldTextPolicy.swift", "Shared/AppUsageConfiguration.swift",
+                        "../shared/apple/MirroredRuleStore.swift", "../shared/apple/TrustedTime.swift"],
+        shield_action: ["HisnShieldAction/ShieldActionExtension.swift"],
         **{name: ["HisnBlocker/ContentBlockerRequestHandler.swift"] for name in blockers},
     }
+    # The Safari-only candidate has no Family Controls entitlement, so it does
+    # not build or embed Hisn's shield extensions.
+    sources = {name: sources[name] for name in names} if safari_only else sources
     privacy = "Hisn/PrivacyInfo.xcprivacy"
     resources = {app: ["Hisn/en.lproj/Localizable.strings", "Hisn/ar.lproj/Localizable.strings",
                        "Hisn/Assets.xcassets", privacy, "Hisn/Notices.txt"],
                  tests: ["fixtures/safari_cases.json"],
                  monitor: [privacy], scanner: [privacy],
+                 shield_config: [privacy], shield_action: [privacy],
                  **{blocker: [privacy] for blocker in blockers}}
     if safari_only:
         sources[app] = ["HisnSafariOnly/SafariOnlyApp.swift", "../shared/apple/MobileProtectionPolicy.swift"]
@@ -106,7 +118,7 @@ def main(safari_only: bool = False, domain_only: bool = False,
     })
     base = {"SDKROOT": "iphoneos", "IPHONEOS_DEPLOYMENT_TARGET": "16.0", "SWIFT_VERSION": "5.0",
             "TARGETED_DEVICE_FAMILY": q("1,2"), "CODE_SIGN_STYLE": "Automatic",
-            "DEVELOPMENT_TEAM": '""', "CURRENT_PROJECT_VERSION": "7", "MARKETING_VERSION": "1.3.0",
+            "DEVELOPMENT_TEAM": '""', "CURRENT_PROJECT_VERSION": "8", "MARKETING_VERSION": "1.4.0",
             "CLANG_ENABLE_MODULES": "YES", "CLANG_ENABLE_OBJC_ARC": "YES",
             "ENABLE_USER_SCRIPT_SANDBOXING": "NO", "SUPPORTED_PLATFORMS": q("iphoneos iphonesimulator"),
             "SUPPORTS_MACCATALYST": "NO", "PRODUCT_NAME": q("$(TARGET_NAME)"),
@@ -148,6 +160,8 @@ def main(safari_only: bool = False, domain_only: bool = False,
         extra = {"PRODUCT_BUNDLE_IDENTIFIER": q(app_identifier if name == app else
                  "app.hisn.mobile.tests" if name == tests else "app.hisn.mobile.activity" if name == monitor
                  else f"{app_identifier}.HisnText" if name == scanner
+                 else f"{app_identifier}.shieldconfig" if name == shield_config
+                 else f"{app_identifier}.shieldaction" if name == shield_action
                  else f"{app_identifier}.blocker{blockers.index(name) + 1}")}
         if reuse_text_id and name == blockers[0]:
             extra["PRODUCT_BUNDLE_IDENTIFIER"] = q(f"{app_identifier}.HisnText")
@@ -171,7 +185,8 @@ def main(safari_only: bool = False, domain_only: bool = False,
                 extra["CODE_SIGN_ENTITLEMENTS"] = "Hisn/Hisn.entitlements"
             extra["ASSETCATALOG_COMPILER_APPICON_NAME"] = "AppIcon"
             embedded = []
-            for blocker in [name for name in names if name in [*blockers, monitor, scanner]]:
+            for blocker in [name for name in names
+                            if name in [*blockers, monitor, scanner, shield_config, shield_action]]:
                 embedded.append(p.add(oid("ios-embed", blocker), "PBXBuildFile", {
                     "fileRef": products[blocker], "settings": "{ATTRIBUTES = (RemoveHeadersOnCopy, );}"}))
                 deps.append(dependency(name, blocker))
@@ -194,6 +209,14 @@ def main(safari_only: bool = False, domain_only: bool = False,
                 "files": "()", "inputPaths": "()", "outputPaths": "()", "alwaysOutOfDate": "1",
                 "shellPath": "/bin/sh", "shellScript": q(script).replace("\n", "\\n"),
                 "runOnlyForDeploymentPostprocessing": "0"}))
+        elif name == shield_config:
+            extra.update({"INFOPLIST_FILE": "HisnShieldConfig/Info.plist",
+                          "CODE_SIGN_ENTITLEMENTS": "HisnShieldConfig/HisnShieldConfig.entitlements",
+                          "APPLICATION_EXTENSION_API_ONLY": "YES", "SKIP_INSTALL": "YES"})
+        elif name == shield_action:
+            extra.update({"INFOPLIST_FILE": "HisnShieldAction/Info.plist",
+                          "CODE_SIGN_ENTITLEMENTS": "HisnShieldAction/HisnShieldAction.entitlements",
+                          "APPLICATION_EXTENSION_API_ONLY": "YES", "SKIP_INSTALL": "YES"})
         elif name == tests:
             extra.update({"GENERATE_INFOPLIST_FILE": "YES", "BUNDLE_LOADER": q("$(TEST_HOST)"),
                           "TEST_HOST": q("$(BUILT_PRODUCTS_DIR)/HisnMobile.app/HisnMobile")})

@@ -101,6 +101,36 @@ bump without an entry here is an unfinished release.
 Unsigned and unnotarized. No physical-Mac, VoiceOver or signed-build result is
 claimed; see [the 1.1.8 record](docs/MACOS_1.1.8.md).
 
+## iPhone & iPad 1.4.0 — 2026-11-03
+
+### Added
+
+- **A shield that explains itself.** `HisnShieldConfig` returns the system
+  Screen Time shield for every app, category, site and web domain Hisn shields.
+  It names the saved rule — always block, daily budget reached or quiet hours —
+  in the language chosen in Hisn, using a small fixed English/Arabic table and
+  the App Group language choice.
+- **No unlock action.** `HisnShieldAction` answers the shield's one button with
+  Close. The ManagedSettings shield remains applied until the rule ends or the
+  person changes it in Hisn outside a commitment. A missing or unreadable rule,
+  a budget shield without its reached-day marker, or an outside-window
+  quiet-hours shield gets a generic honest message rather than a false claim.
+- Both extensions carry the Family Controls entitlement; the configuration
+  extension also carries the shared App Group. Privacy manifests now cover
+  eleven bundles: the app, six blockers, monitor, scanner and both shield
+  extensions.
+
+### Verification
+
+- `./test.sh ios` — **39 Python tests and 213 simulator tests, 0 failures** on
+  the iPhone 17 simulator, iOS 26.5. The hosted count was 206 before this
+  release; the seven new tests cover shield text, language and reasons.
+- Version 1.4.0, build 8.
+
+Simulator-tested only. No Apple team, Family Controls distribution entitlement,
+signed build or physical-device result is claimed. The system-rendered shield
+still needs a signed build on a real iPhone.
+
 ## iPhone & iPad 1.3.0 — 2026-11-03
 
 ### Added

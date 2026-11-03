@@ -8,6 +8,35 @@ The plan to finish the iPhone/iPad app, including which Apple-supported lock
 level stops deletion and what each one cannot stop, is in
 [the iOS end-goal plan](../docs/IOS_IMPROVEMENT_PLAN.md).
 
+## 1.4.0 a shield that explains itself
+
+The 1.3.0 shields were Apple's default screen: they did not say which Hisn rule
+was holding the app, and they did not follow Hisn's language. This release adds
+two Screen Time extensions:
+
+- **HisnShieldConfig** returns the system-rendered shield for every app,
+  category, site and web domain Hisn shields. It names the saved rule — always
+  block, daily budget reached, or quiet hours — in the language chosen in Hisn.
+  The copy is a small fixed English/Arabic table because the extension runs
+  outside the app; the app writes its language choice into the App Group.
+- **HisnShieldAction** answers the shield's one button with `.close`. It cannot
+  unlock anything: the ManagedSettings shield remains applied until the rule
+  ends or the person changes it in Hisn (outside a commitment). There is no
+  quick-unlock action to copy from ScreenZen.
+- A missing or unreadable rule, a budget shield without its reached-day marker,
+  or an outside-window quiet-hours shield gets a generic honest message rather
+  than a false claim about which rule applies.
+- Both extensions carry the Family Controls entitlement; the configuration
+  extension also carries the shared App Group and a privacy manifest. The
+  privacy manifest is now included in eleven bundles (app, six blockers,
+  monitor, scanner, and both shield extensions).
+
+Version 1.4.0, build 8. `./test.sh ios` passes **39 Python and 213 simulator
+tests**; no Apple team, Family Controls entitlement, signed build or
+physical-device acceptance is claimed. The system-rendered shield itself still
+needs a signed build on a physical iPhone. See
+[the 1.4.0 record](../docs/IOS_1.4.0.md).
+
 ## 1.3.0 pause, quiet hours and a calmer overview
 
 Inspired by ScreenZen and comparable apps, and recorded in
@@ -128,6 +157,10 @@ runner, for example `platform=iOS Simulator,name=iPhone 17 Pro`.
   when both the device clock and, once read, Apple's time are outside the
   window. Rules are frozen during a commitment. This is configuration evidence,
   not a blocking test.
+- A custom system **shield** (`HisnShieldConfig` and `HisnShieldAction`) explains
+  which saved rule is holding the app or site, in English or Arabic, and has no
+  unlock action. It needs the Family Controls entitlement on both extensions and
+  a signed build to test.
 - Six Safari content blockers, each capped at 40,000 rules. The signed core
   seed is fully included, never silently truncated. The current seed has
   239,885 domains; increasing capacity requires explicit additional targets.
@@ -164,16 +197,21 @@ shipping a new seed requires rebuilding and redistributing the app.
 ## Activate on a real device
 
 1. Set your Apple development team on the app, all six Safari domain targets,
-   and the separate Hisn Text target.
+   `HisnActivityMonitor`, `HisnText`, `HisnShieldConfig` and `HisnShieldAction`.
    Keep extension bundle IDs prefixed by the app ID. If changing the app ID,
    also change `shared/apple/MobileProtectionPolicy.swift` and the generator.
 2. Enable the app's **Network Extensions → DNS Settings** signing capability.
    The supplied entitlement is a request, not a grant: your provisioning profile
    must actually include `dns-settings`.
-3. Run on your iPhone/iPad from Xcode. UI and WebKit rule tests can run in a
+3. Enable **Family Controls** on the app, `HisnActivityMonitor`,
+   `HisnShieldConfig` and `HisnShieldAction`. Each provisioning profile must
+   include `com.apple.developer.family-controls`; the shield configuration
+   extension also needs the shared App Group. Distribution requires Apple's
+   approval for the entitlement; adding the plist key is not approval.
+4. Run on your iPhone/iPad from Xcode. UI and WebKit rule tests can run in a
    simulator without purchasing a developer membership. The simulator does
    **not** verify real-device DNS activation.
-4. In Safari settings, enable **Hisn 1**, **Hisn 2**, **Hisn 3**, **Hisn 4**.
+5. In Safari settings, enable **Hisn 1**, **Hisn 2**, **Hisn 3**, **Hisn 4**.
    Reload the rules from Hisn, then return to the protection tab and check state.
    To add text checking, separately enable **Hisn Text**, grant access to each
    wanted website, reload existing tabs and test profiles/private browsing.
@@ -181,13 +219,18 @@ shipping a new seed requires rebuilding and redistributing the app.
    Open Hisn Text's Safari toolbar panel or extension options to opt into visual
    checking. These settings are stored in Safari, not synchronized with or
    locked by the native app commitment.
-5. Optional: choose **Prepare family DNS**, accept Apple's permission dialog,
+6. Optional: choose **Prepare family DNS**, accept Apple's permission dialog,
    then explicitly select **Hisn Family DNS** in system DNS settings. Return to
    Hisn; a saved-but-disabled configuration remains visibly incomplete.
-6. Optional: authorize Hisn's personal Screen Time adult-site filter. Hisn
+7. Optional: authorize Hisn's personal Screen Time adult-site filter. Hisn
    applies it only after explicit consent and reads its configured state back;
    this is not proof of blocked traffic. Test ordinary browsing and filtering
    separately on each real device before relying on protection.
+8. Verify the custom shield: apply an always-block or quiet-hours rule to a
+   disposable app, open it, and check Hisn's title/subtitle in the language
+   chosen in Hisn. Tap the single button; the app must remain shielded. Then
+   revoke Family Controls access and confirm iOS removes the shields. None of
+   this can be verified in the Simulator.
 
 Distribution through TestFlight/App Store requires your developer membership,
 signing/provisioning and review. No distributable signed IPA or store upload is
@@ -314,6 +357,15 @@ each split leg must meet that minimum; the editor explains an invalid window
 instead of rounding it. Health says whether the window is registered, not
 whether blocking was observed.
 
+Hisn's own system shield (`HisnShieldConfig` and `HisnShieldAction`) names the
+saved rule — always block, budget reached or quiet hours — in the language
+chosen in Hisn, and shows one button that only closes the shield view. It cannot
+unlock anything. A missing or unreadable rule, a budget shield without its
+reached-day marker, or an outside-window quiet-hours shield shows a generic
+message rather than a false claim. Both extensions need the Family Controls
+entitlement; the configuration extension also needs the shared App Group. The
+Simulator cannot render or verify the system shield.
+
 The app and monitor must both have Family Controls and the same App Group
 (`group.app.hisn.mobile`) in their signed provisioning profiles. Apple distribution
 approval is needed for each appropriate target. Simulator registration/build
@@ -429,12 +481,15 @@ languages. What VoiceOver actually announces on a device is not tested.
 
 ## Validation
 
-Python tests cover signed-input rejection, tampering, capacity, sorted/unique
-domains, infrastructure protection/CDN tenants, complete shard splitting,
-authority boundary fixtures and Arabic/English key parity. Hosted iOS tests
-cover actual bundled integrity/counts, DNS configuration classification, partial
-Safari state, WebKit compilation and layouts at phone/tablet widths. Device
-signing and real Safari/DNS behavior still require a provisioned physical device.
+The 39 Python tests cover signed-input rejection, tampering, capacity,
+sorted/unique domains, infrastructure protection/CDN tenants, complete shard
+splitting, authority boundary fixtures, the shield extension point and
+privacy-manifest membership, and Arabic/English key parity. The 213 hosted iOS
+tests cover bundled integrity/counts, DNS configuration classification, partial
+Safari state, WebKit compilation, layouts at phone/tablet widths, the pause and
+quiet-hours rules, and the shield language/reason policy. Device signing and
+real Safari/DNS/Screen Time shield behavior still require a provisioned physical
+device.
 # Current protection setup checks
 
 Overview and Setup now show a live, non-persisted configuration assessment.

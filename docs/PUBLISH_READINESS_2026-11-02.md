@@ -11,7 +11,7 @@ physical-device acceptance run exists.
 | --- | --- | --- | --- |
 | Android | 1.0.0 | 26 | signed direct APK published on GitHub; Play AAB built but not uploaded; physical device proof still required |
 | Mac | 1.1.8 | 12 | unsigned package smoke passes; system filter still needs the Apple team |
-| iPhone & iPad | 1.3.0 | 7 | simulator suite passes; no team, entitlement or device |
+| iPhone & iPad | 1.4.0 | 8 | simulator suite passes; no team, entitlement or device |
 | Browser extension | 1.5.0 | — | reproducible store zip passes the package check; no listing |
 | Seed / lists | v5 seed (2026-10-30); v6 lists (2026-11-03) | — | signed; `lists` branch published and HTTP 200 |
 

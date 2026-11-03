@@ -108,6 +108,21 @@ Sources consulted:
 - **ScreenZen’s visual identity or copy.** Hisn uses its own SwiftUI components,
   colours and English/Arabic strings.
 
+## 1.4.0 follow-up
+
+The 1.3.0 audit recorded that no custom ShieldConfiguration or ShieldAction
+extension was included. 1.4.0 adds both: HisnShieldConfig returns a bilingual,
+reason-specific system shield, and HisnShieldAction answers the single button
+with `.close` and offers no unlock. The shield copy is a fixed policy table, not
+a ScreenZen imitation.
+
+A clean simulator build of the 1.4.0 tree with both extensions embedded gives
+REA evidence
+`ev_3d4715f53f0eeef3e757ed6297845585d36c285eea54801189412303cfe188ef`,
+SHA-256 `b4dd458876ee8e25b708521253262c00fe3820dadf00e90dc5892589349a3619`.
+As above, this is a static artifact inventory. The system-rendered shield and
+extension activation still need a signed, entitled device.
+
 ## Limits and follow-up
 
 - This is one installed Mac artifact, its strings and one window, plus public

@@ -21,9 +21,9 @@ you the lock; Hisn adds the coverage those built-in filters miss. Read
 - **Extension 1.5.0** — **Move your rules**: export the hand lists to a
   versioned file and import one add-only in another browser. A lock keeps new
   allowances and corrections waiting; a file can never remove a block.
-- **iPhone & iPad 1.3.0** — an on-demand breathing pause, a calmer protection
-  hero and daily quiet hours; the protection lock still freezes saved sites and
-  app limits while a commitment runs.
+- **iPhone & iPad 1.4.0** — a custom Screen Time shield names the saved rule in
+  English or Arabic and offers only Close, with no unlock action; the on-demand
+  pause, protection hero, daily quiet hours and saved-rule freeze remain.
 - **Mac 1.1.8** — a private pause window for the moment of an urge: a guided
   breath, a rotating reminder, four needs and a local count, reachable from
   Overview, the menu bar and ⇧⌘P. It changes no rule; protection authority is
@@ -54,7 +54,7 @@ layer states. More captures, including Arabic and dark mode, are in the
 | --- | --- | --- | --- |
 | Browser extension (Chromium) | Blocks listed domains, checks page text in the page's language, optional local image/video checks, portable hand lists | 1.5.0 | [Using the extension](docs/EXTENSION_USAGE.md) |
 | Mac | Content-filter system extension, browser guard, locks, authority checks, accountability partner, root guardian daemon and an on-demand breathing pause | 1.1.8, needs a signed build | [Mac setup](docs/SETUP.md) |
-| iPhone & iPad | Six Safari blockers, Safari text extension, Screen Time app limits, optional family DNS, protection lock for saved rules, an on-demand pause and daily quiet hours | 1.3.0, development | [iOS README](ios/README.md) |
+| iPhone & iPad | Six Safari blockers, Safari text extension, Screen Time app limits with a custom bilingual shield, optional family DNS, protection lock for saved rules, an on-demand pause and daily quiet hours | 1.4.0, development | [iOS README](ios/README.md) |
 | Android | DNS filtering, selected-app and word restrictions, per-app daily time limits, optional image checks, browser-coverage screen, schedules, protection lock that freezes saved rules, opt-in device-owner uninstall guard and managed lockdown, direct-build removal guard, layer watchdog and bundled-list freshness warning | 1.0.0 direct published; Play AAB not uploaded | [Android README](android/README.md) · [1.0 record](docs/ANDROID_1.0.md) |
 | Network / router | Verified signed DNS rules for administrator import | Tools only | [Network tools](network/README.md) |
 

@@ -19,6 +19,14 @@ forums (links inline). Nothing here has been tested on a real iPhone yet.
 > are frozen during a commitment. See [the 1.3.0 record](IOS_1.3.0.md) and the
 > [iOS REA audit](REA_AUDIT_IOS_2026-11-03.md). DeviceActivity callbacks and
 > real Screen Time enforcement are still not device-verified.
+>
+> **1.4.0 update (2026-11-03):** the system shield is now Hisn’s own
+> `ShieldConfigurationDataSource` / `ShieldActionDelegate` pair. It names the
+> always-block, budget or quiet-hours rule in English or Arabic, offers one
+> close-only button and no unlock path, and falls back to a generic message when
+> the rule cannot be read. Both extensions need the Family Controls entitlement;
+> the system-rendered shield still needs a signed-device test. See
+> [the 1.4.0 record](IOS_1.4.0.md).
 
 ## End goal
 

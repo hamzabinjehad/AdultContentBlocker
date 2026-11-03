@@ -16,7 +16,16 @@ struct HisnMobileApp: App {
                 .onChange(of: phase) { next in
                     if next == .active { Task { await protection.refresh() } }
                 }
+                .onAppear { storeShieldLanguage() }
+                .onChange(of: language) { _ in storeShieldLanguage() }
         }
+    }
+
+    /// The shield extensions run in their own processes, so the language choice
+    /// is written where they can read it. "system" lets them follow the device.
+    private func storeShieldLanguage() {
+        ShieldTextPolicy.store(languageChoice: language,
+                               defaults: UserDefaults(suiteName: AppUsageConfiguration.group))
     }
 
     private var isArabic: Bool {
