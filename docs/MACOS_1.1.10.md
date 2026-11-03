@@ -51,11 +51,12 @@ layout evidence, not the accessibility tree.
 | Setup | readiness card + "Protected Setup" section with a second verdict | one card: readiness, progress bar, "2 of 12 steps done", next step |
 | Lock | fixed-commitment paragraph twice, once stale | stated once, follows the mode toggle; duplicate card removed |
 | Blocking Rules | guide, then lists | lists, then guide |
-| Your sites | two large text boxes, domains only visible as text | per-domain rows with Remove, an inline add field and a live count; bulk paste in a disclosure |
+| Your sites | two large text boxes, domains only visible as text | per-domain rows with Remove, an inline add field, a chip strip of what is blocked, and bulk paste in a disclosure |
+| Settings | a flat column of headings and dividers | one card per group: content checking, browser guidance, partner, gray screen, language, details |
 
 No rule, lock, filter, browser-bridge or protection-layer behaviour changed. Two
 user-facing strings were added (`Add`, `Paste a list`), both with Arabic; the
-catalog is 599 strings. Xcode marked five strings that only the removed blocks
+catalog is 600 strings. Xcode marked five strings that only the removed blocks
 used as `stale` in the catalog; their Arabic is kept. The add field's
 placeholder is a verbatim `example.com` held in a String property, so it does
 not enter the catalog as translatable copy.
@@ -65,7 +66,7 @@ not enter the catalog as translatable copy.
 | File | Change |
 | --- | --- |
 | `macos/Hisn/ContentView.swift` | page chrome, Overview order, Setup card, Lock mode text, Rules order, row-based site lists |
-| `macos/Hisn.xcodeproj/project.pbxproj`, `macos/generate_xcodeproj.py` | 1.1.10, build 17 |
+| `macos/Hisn.xcodeproj/project.pbxproj`, `macos/generate_xcodeproj.py` | 1.1.10, build 18 |
 | `macos/Hisn/Localizable.xcstrings` | two new strings with Arabic; five marked stale |
 | `design/macos-ui-1.1.10/` | before/after captures and their README |
 

@@ -1758,6 +1758,30 @@ struct SiteListsSection: View {
 
     var body: some View {
         PageSection(title: "Your sites") {
+            // The at-a-glance strip: what this person has added, before the
+            // controls that change it. It reads the same edited text the rows
+            // do, so it cannot disagree with them.
+            if !blockedDomains.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(blockedDomains.prefix(6), id: \.self) { domain in
+                            Text(domain)
+                                .font(.caption.monospaced())
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 3)
+                                .background(Color.secondary.opacity(0.12), in: Capsule())
+                        }
+                        if blockedDomains.count > 6 {
+                            Text(verbatim: "+\(blockedDomains.count - 6)")
+                                .font(.caption.monospaced())
+                                .foregroundStyle(.secondary)
+                                .accessibilityLabel(Text("and more"))
+                        }
+                    }
+                    .padding(.vertical, 2)
+                }
+            }
+
             listEditor("Always block these",
                        subtitle: "On top of the published list.",
                        text: $blockText,
@@ -1772,6 +1796,10 @@ struct SiteListsSection: View {
                     save: save, revert: load)
         }
         .onAppear(perform: load)
+    }
+
+    private var blockedDomains: [String] {
+        SiteLists.parse(blockText).domains
     }
 
     private func load() {
@@ -2553,7 +2581,11 @@ private struct SettingsPage: View {
     @State private var showBrowserHelp = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 30) {
+        VStack(alignment: .leading, spacing: 18) {
+            // Each group is one card. A flat column of headings and dividers
+            // gave every control the same weight and read as one long form;
+            // grouped cards match the rest of the app.
+            Card {
             PageSection(title: "Content checking",
                     subtitle: isLocked
                         ? "A lock is running. You can turn checks on and raise sensitivity; the reverse waits until it ends."
@@ -2604,8 +2636,7 @@ private struct SettingsPage: View {
                 SaveRow(message: message, isError: isError,
                         canSave: settings != saved, save: save, revert: load)
             }
-
-            Divider()
+            }
 
             Card {
                 VStack(alignment: .leading, spacing: 14) {
@@ -2615,21 +2646,13 @@ private struct SettingsPage: View {
                 }
             }
 
-            Divider()
+            Card { PartnerSection(isLocked: isLocked) }
 
-            PartnerSection(isLocked: isLocked)
+            Card { GrayscaleSection(isLocked: isLocked) }
 
-            Divider()
+            Card { LanguageSection() }
 
-            GrayscaleSection(isLocked: isLocked)
-
-            Divider()
-
-            LanguageSection()
-
-            Divider()
-
-            DetailsSection()
+            Card { DetailsSection() }
         }
         .onAppear(perform: load)
         .sheet(isPresented: $showBrowserHelp) { BrowserSetupHelp() }

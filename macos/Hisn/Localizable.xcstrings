@@ -1,6 +1,16 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "and more" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "والمزيد"
+          }
+        }
+      }
+    },
     "“%@” is too short to block safely. Words need at least %lld letters — shorter ones match parts of ordinary words and block pages you need." : {
       "localizations" : {
         "ar" : {

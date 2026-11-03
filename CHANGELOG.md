@@ -28,6 +28,12 @@ bump without an entry here is an unfinished release.
 - **Blocking Rules leads with the lists.** The editable site and app lists come
   first; the browser guide follows them instead of pushing every control below
   the fold.
+- **A blocked-sites strip.** The sites list opens with chips for what this
+  person has added, before the controls that change them; it reads the same
+  edited text the rows do, so the two cannot disagree.
+- **Settings is grouped cards.** Content checking, browser guidance, partner,
+  gray screen, language and details each become one card instead of a flat
+  column of headings and dividers.
 - **Site lists are rows, not a text box.** Each always-blocked and always-allowed
   list shows one domain per row with a Remove control, an inline add field and a
   live count; bulk paste stays one disclosure down, with the one-domain-per-line
@@ -40,7 +46,7 @@ bump without an entry here is an unfinished release.
 - Design research: REA 6.4.0 `inspect-artifact` and
   `capture-native-ui-scenario` on the Screen Zen 2.0.0 (build 63) window,
   observation only. Captures in `design/macos-ui-1.1.10/`.
-- Version 1.1.10, build 17. Unsigned and unnotarized; no physical-Mac,
+- Version 1.1.10, build 18. Unsigned and unnotarized; no physical-Mac,
   VoiceOver or signed-build result is claimed.
 
 ## Android 1.1.0 — 2026-11-03
