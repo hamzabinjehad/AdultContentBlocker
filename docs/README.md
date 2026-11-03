@@ -113,6 +113,7 @@ Per-version change and verification notes, newest first.
 
 ### Mac
 
+- [Screen Zen feature audit](SCREEN_ZEN_FEATURE_AUDIT_2026-11-03.md): A read-only walkthrough of every Screen Zen 2.0.0 surface, what Hisn took in 1.1.10, what it could take next, what it rejects and why, and where the automated-test gaps are.
 - [Mac 1.1.10 release notes](MACOS_1.1.10.md): A UI/UX pass — one title per page, the Overview action above the evidence, one Setup card with progress and next step, the lock mode stated once, lists before prose on Blocking Rules, per-domain rows for the site lists and grouped settings cards. REA design research on Screen Zen 2.0.0; 526 tests. Unsigned/unnotarized.
 - [Mac 1.1.9 release notes](MACOS_1.1.9.md): The browser-guard warning becomes a calm dark intervention card with a shield, a large countdown and one Open-browser action, with no bypass; Overview moves layer evidence behind compact chips and a disclosure. Presentation only; 522 tests. Unsigned/unnotarized.
 - [Mac 1.1.8 release notes](MACOS_1.1.8.md): An on-demand pause window — a 30-second guided breath, rotating reminders, four needs and a local day/count tally — reachable from Overview, the menu bar and ⇧⌘P. It changes no rule or layer. Unsigned/unnotarized; no physical-Mac result claimed.

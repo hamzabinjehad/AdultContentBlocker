@@ -2598,6 +2598,7 @@ private struct SettingsPage: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
+                .toggleStyle(.switch)
 
                 Toggle(isOn: $settings.text) {
                     VStack(alignment: .leading, spacing: 2) {
@@ -2607,6 +2608,7 @@ private struct SettingsPage: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
+                .toggleStyle(.switch)
 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
@@ -2690,6 +2692,7 @@ private struct GrayscaleSection: View {
             Toggle(isOn: Binding(get: { grayscale.isOn }, set: { grayscale.set($0) })) {
                 Text("Make the screen gray")
             }
+            .toggleStyle(.switch)
             .disabled(!ScreenGrayscale.isAvailable || (grayscale.isOn && isLocked))
 
             if !ScreenGrayscale.isAvailable {

@@ -52,7 +52,7 @@ layout evidence, not the accessibility tree.
 | Lock | fixed-commitment paragraph twice, once stale | stated once, follows the mode toggle; duplicate card removed |
 | Blocking Rules | guide, then lists | lists, then guide |
 | Your sites | two large text boxes, domains only visible as text | per-domain rows with Remove, an inline add field, a chip strip of what is blocked, and bulk paste in a disclosure |
-| Settings | a flat column of headings and dividers | one card per group: content checking, browser guidance, partner, gray screen, language, details |
+| Settings | a flat column of headings and dividers, checkbox toggles | one card per group, with trailing switches |
 
 No rule, lock, filter, browser-bridge or protection-layer behaviour changed. Two
 user-facing strings were added (`Add`, `Paste a list`), both with Arabic; the
@@ -66,7 +66,7 @@ not enter the catalog as translatable copy.
 | File | Change |
 | --- | --- |
 | `macos/Hisn/ContentView.swift` | page chrome, Overview order, Setup card, Lock mode text, Rules order, row-based site lists |
-| `macos/Hisn.xcodeproj/project.pbxproj`, `macos/generate_xcodeproj.py` | 1.1.10, build 18 |
+| `macos/Hisn.xcodeproj/project.pbxproj`, `macos/generate_xcodeproj.py` | 1.1.10, build 19 |
 | `macos/Hisn/Localizable.xcstrings` | two new strings with Arabic; five marked stale |
 | `design/macos-ui-1.1.10/` | before/after captures and their README |
 
