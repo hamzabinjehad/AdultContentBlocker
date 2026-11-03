@@ -1260,18 +1260,19 @@ final class SetupHonestyTests: XCTestCase {
 
     func testSetupHonestyTextShipsInEnglishAndArabic() throws {
         let claims = Attestation.Claim.allCases
-        let keys = Policy.LockLevel.allCases.map(\.rawValue)
-            + [Policy.LockEvidence.verified, .attested].map(\.rawValue)
-            + SetupGuide.Step.allCases.map(\.rawValue)
-            + claims.map(LockConfirmationRows.confirmKey) + claims.map(LockConfirmationRows.confirmBodyKey)
-            + claims.map(LockConfirmationRows.confirmedKey)
-            + [Policy.StaleReason.vaultChanged, .otherDevice].map(\.rawValue)
-            + [VaultConfirmation.Refusal.commitmentEnded, .datesMoved].map(\.rawValue)
-            + earlierCases.map(\.commitmentKey)
-            + [facts(hidesAt: start.addingTimeInterval(900)), facts()].map {
+        var keys: [String] = []
+        keys += Policy.LockLevel.allCases.map(\.rawValue)
+        keys += [Policy.LockEvidence.verified, .attested].map(\.rawValue)
+        keys += SetupGuide.Step.allCases.map(\.rawValue)
+        keys += claims.map(LockConfirmationRows.confirmKey) + claims.map(LockConfirmationRows.confirmBodyKey)
+        keys += claims.map(LockConfirmationRows.confirmedKey)
+        keys += [Policy.StaleReason.vaultChanged, .otherDevice].map(\.rawValue)
+        keys += [VaultConfirmation.Refusal.commitmentEnded, .datesMoved].map(\.rawValue)
+        keys += earlierCases.map(\.commitmentKey)
+        keys += [facts(hidesAt: start.addingTimeInterval(900)), facts()].map {
                 VaultCommitmentDates.vaultDateKey($0, now: start.addingTimeInterval(60))
             }
-            + ["lock.title", "lock.evidence.none", "lock.selfTested", "lock.stale", "lock.ladder", "lock.selfTest",
+        keys += ["lock.title", "lock.evidence.none", "lock.selfTested", "lock.stale", "lock.ladder", "lock.selfTest",
                "lock.withdraw", "lock.confirm.hint", "dates.commitmentUntil", "dates.vaultUntil", "dates.vaultEarlier",
                "dates.neverEarlier", "vault.match", "vault.matchBody", "vault.matchCreateBody", "vault.moreLocks",
                "vault.writeDown", "vault.appleGuide", "commitment.empty.title", "commitment.empty.body %lld",

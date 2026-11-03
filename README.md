@@ -29,13 +29,13 @@ you the lock; Hisn adds the coverage those built-in filters miss. Read
   Overview, the menu bar and ⇧⌘P. It changes no rule; protection authority is
   still read from the accounts and daemon, not self-certified.
 - **Android 1.0.0** — per-app daily foreground-time limits join the protection
-  lock, removal guard, managed lockdown and layer watchdog; the direct build is
-  signed locally, while a Play listing still needs the owner.
+  lock, removal guard, managed lockdown and layer watchdog. The signed direct
+  APK is published on GitHub Releases; the Play AAB is built but not uploaded.
 
 These are development candidates. No store listing or physical-device
-acceptance is claimed; the Android 1.0.0 APKs are signed but not uploaded, and
-the exact state is in [versions](docs/VERSIONS.md) and
-[1.0 readiness](docs/1.0_READINESS.md).
+acceptance is claimed; the Android 1.0.0 direct APK is published on GitHub and
+the Play AAB is not uploaded. The exact state is in
+[versions](docs/VERSIONS.md) and [1.0 readiness](docs/1.0_READINESS.md).
 
 ### Interface
 
@@ -55,7 +55,7 @@ layer states. More captures, including Arabic and dark mode, are in the
 | Browser extension (Chromium) | Blocks listed domains, checks page text in the page's language, optional local image/video checks, portable hand lists | 1.5.0 | [Using the extension](docs/EXTENSION_USAGE.md) |
 | Mac | Content-filter system extension, browser guard, locks, authority checks, accountability partner, root guardian daemon and an on-demand breathing pause | 1.1.8, needs a signed build | [Mac setup](docs/SETUP.md) |
 | iPhone & iPad | Six Safari blockers, Safari text extension, Screen Time app limits, optional family DNS, protection lock for saved rules, an on-demand pause and daily quiet hours | 1.3.0, development | [iOS README](ios/README.md) |
-| Android | DNS filtering, selected-app and word restrictions, per-app daily time limits, optional image checks, browser-coverage screen, schedules, protection lock that freezes saved rules, opt-in device-owner uninstall guard and managed lockdown, direct-build removal guard, layer watchdog and bundled-list freshness warning | 1.0.0 signed direct; Play pending | [Android README](android/README.md) · [1.0 record](docs/ANDROID_1.0.md) |
+| Android | DNS filtering, selected-app and word restrictions, per-app daily time limits, optional image checks, browser-coverage screen, schedules, protection lock that freezes saved rules, opt-in device-owner uninstall guard and managed lockdown, direct-build removal guard, layer watchdog and bundled-list freshness warning | 1.0.0 direct published; Play AAB not uploaded | [Android README](android/README.md) · [1.0 record](docs/ANDROID_1.0.md) |
 | Network / router | Verified signed DNS rules for administrator import | Tools only | [Network tools](network/README.md) |
 
 Seed **v5** raises the bundled core from 159,768 to **239,885 domains** on every

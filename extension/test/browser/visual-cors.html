@@ -74,10 +74,24 @@ try {
   let cursor = 0;
   const answerCycle = async () => {
     const expected = new Set(['positive', 'clean', 'varying', 'author']);
-    for (let i = 0; i < 4; i++) {
+    // The image signature includes a ten-second time bucket, so a slow runner
+    // can legitimately re-inspect one image when the bucket turns over. Allow
+    // that only for a job whose bucket changed; a duplicate inside one bucket
+    // is still a scheduling failure.
+    const seen = new Map();
+    while (expected.size) {
       await wait(() => win.jobs.length > cursor);
       const job = win.jobs[cursor++];
-      check(expected.delete(job.node?.id), `one model inspection owns the actual ${job.node?.id || 'missing'} DOM image`);
+      const id = job.node?.id;
+      const bucket = Math.floor(Date.now() / 10000);
+      if (!expected.has(id)) {
+        check(seen.has(id) && seen.get(id) !== bucket,
+          `duplicate ${id || 'missing'} inspection without a signature time boundary`);
+        job.reply({ state: 'ready', adult: { block: id === 'positive' }, persons: { blur: false } });
+        continue;
+      }
+      expected.delete(id);
+      seen.set(id, bucket);
       check(job.bound && job.crossOrigin === 'anonymous' && job.message.mediaKind === 'image',
         `model pixels equal actual anonymous DOM pixels for ${job.node.id}`);
       check(job.source === originals.get(job.node) && hidden(job.node),

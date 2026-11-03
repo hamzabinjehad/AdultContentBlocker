@@ -30,7 +30,7 @@ statically, what web research showed, what was implemented in Hisn iPhone/iPad
 | Subject | REA operation | Evidence | Observed digest |
 | --- | --- | --- | --- |
 | `/Applications/ScreenZen.app` (2.0.0, build 63) | `inspect-artifact` | `ev_914842e780b424b338ac5ad746902664b5cd4e488bd8d696f4aae8e63e053cab` | SHA-256 `3d71a3666b43ba400dc05e62d772c7a5f85eea06234e750b42c7d698fe8c7547` |
-| Built `HisnMobile.app` 1.3.0 (7) | `inspect-artifact` | `ev_2d8091880a7c8bb83c2a3e93971034c5063c036ba9876ac9aec8a5507de8ce1c` | SHA-256 `b80c20ad1ab78bb1d2aba38021182cc36cb45e421c5643017f4da1eb327eb516` |
+| Built `HisnMobile.app` 1.3.0 (7), clean simulator build of this tree | `inspect-artifact` | `ev_9ce139c0da4ed5cc318c2ac33c0767ca0d7917b8d7881cbf12eb74dfe2da0dec` | SHA-256 `fc1becf3befc6bf7e68869be68947a8f1a163966f1eeb23ff7eddac14f259090` |
 | ScreenZen Firefox extension | `analyze-javascript-application` (Mac audit) | `ev_ac7da350505820ff98ea6c11c30620f8e56b893c52fb4b060184dbb5bea240ff` | 5 source files, 14 graph nodes, 21 relationships |
 | ScreenZen window | `capture-native-ui-scenario` (Mac audit) | `ev_7e5597cf9f1d78b8b5ee4b52d5af7f40b6c771d42a40abb5ebac3ffd7372a29d` | 48 accessibility nodes plus screenshot |
 | ScreenZen user-facing strings | Static string inventory (Mac audit) | `/tmp/hisn-work/screenzen-strings.txt` | product vocabulary, not runtime proof |

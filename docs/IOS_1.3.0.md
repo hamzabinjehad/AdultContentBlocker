@@ -124,9 +124,10 @@ details remain below. Setup still shows the complete diagnostic view.
 - Render tests cover the pause at breathing and completion stages in English
   and Arabic, the pause at the largest accessibility text size, and the
   quiet-hours editor in both languages.
-- REA 6.4.0 (`inspect-artifact`, provider-free) inventoried the built app:
-  evidence `ev_2d8091880a7c8bb83c2a3e93971034c5063c036ba9876ac9aec8a5507de8ce1c`,
-  SHA-256 `b80c20ad1ab78bb1d2aba38021182cc36cb45e421c5643017f4da1eb327eb516`.
+- REA 6.4.0 (`inspect-artifact`, provider-free) inventoried a clean simulator
+  build of this tree:
+  evidence `ev_9ce139c0da4ed5cc318c2ac33c0767ca0d7917b8d7881cbf12eb74dfe2da0dec`,
+  SHA-256 `fc1becf3befc6bf7e68869be68947a8f1a163966f1eeb23ff7eddac14f259090`.
   This is a static artifact inventory, not runtime proof. See the
   [iOS REA audit](REA_AUDIT_IOS_2026-11-03.md).
 - No physical device, Family Controls entitlement or signed IPA was available.
