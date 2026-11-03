@@ -60,9 +60,14 @@ try {
  check(!hidden(supported)&&!supported.paused&&w.jobs.some(job=>job.kind==='video'),
    'a normal local MediaStream video passes real canvas capture and remains usable after verification');
  const jobsBefore=w.jobs.length;
+ const jobsBucket=Math.floor(Date.now()/10000);
  adult.remove();await new Promise(r=>setTimeout(r,0));d.getElementById('gallery').append(adult);
  await new Promise(r=>setTimeout(r,30));
- check(hidden(adult)&&adult.dataset.hisnVisual==='adult-hidden'&&w.jobs.length===jobsBefore,
+ // The image signature includes a ten-second bucket. A reinsertion that
+ // crosses the boundary may legitimately be rechecked; within one bucket it
+ // must not be.
+ const sameBucket=Math.floor(Date.now()/10000)===jobsBucket;
+ check(hidden(adult)&&adult.dataset.hisnVisual==='adult-hidden'&&(!sameBucket||w.jobs.length===jobsBefore),
    'retired adult withholding survives detachment and reinsertion without rescanning');
  const safe=images[238];safe.src=picture+'#replacement';
  await wait(()=>safe.dataset.hisnVisual==='pending');
