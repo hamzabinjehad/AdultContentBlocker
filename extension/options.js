@@ -78,18 +78,39 @@ function renderOverview() {
   if (signature === overviewSignature) return;
   overviewSignature = signature;
   $("protectionDot").className = `dot ${s.protection.level}`;
+  $("statusCard").dataset.level = s.protection.level;
   $("protectionTitle").textContent = s.protection.headline;
   $("protectionDetail").textContent = s.protection.detail;
   $("lockTitle").textContent = s.lock.headline;
   $("lockDetail").textContent = s.lock.detail;
   $("lockNotice").textContent = shown && restrictionsActive(shown) ? t("opt.lockHint.active")
     : shown?.appPresent ? t("opt.lockHint.managed") : t("opt.lockHint.browser");
-  $("domainLayer").textContent = enforcement.layers.domains.text;
-  $("searchLayer").textContent = enforcement.layers.search.text;
-  $("textLayer").textContent = enforcement.layers.text.text;
-  $("visualLayer").textContent = visual.text;
-  $("personLayer").textContent = shown?.personBlur && shown.personBlur !== "off" ? visual.text : t("details.off");
-  $("privateLayer").textContent = t(privateCoverage === undefined ? "opt.coverage.unknown" : privateCoverage ? "details.on" : "opt.coverage.notEnabled");
+  // One-word layer states. The Details disclosure and each page carry the
+  // longer explanation; this surface answers "what is on?" at a glance.
+  const stateLabel = (level, enabled = true, unavailable = false) => {
+    if (!enabled) return t("state.off");
+    if (unavailable) return t("state.issue");
+    if (level === "active") return t("state.on");
+    if (level === "partial") return t("state.issue");
+    return t("state.checking");
+  };
+  const paint = (id, level, enabled = true, unavailable = false) => {
+    const el = $(id), text = stateLabel(level, enabled, unavailable);
+    el.className = `layer-state ${enabled ? level : "off"}`;
+    el.textContent = text;
+  };
+  const textEnabled = !shown || shown.inspectText !== false || shown.failClosed === true
+    || restrictionsActive(shown);
+  const visualEnabled = !shown || shown.inspectVisual === true
+    || ["all", "female", "male"].includes(shown.personBlur);
+  const personEnabled = !shown || ["all", "female", "male"].includes(shown.personBlur);
+  paint("domainLayer", enforcement.layers.domains.level);
+  paint("searchLayer", enforcement.layers.search.level);
+  paint("textLayer", enforcement.layers.text.level, textEnabled);
+  paint("visualLayer", visual.level, visualEnabled, visualEnabled && visual.available === false);
+  paint("personLayer", visual.level, personEnabled, personEnabled && visual.available === false);
+  paint("privateLayer", privateCoverage === true ? "active" : privateCoverage === false ? "off" : "unknown",
+        privateCoverage !== false);
   $("privateHint").hidden = privateCoverage !== false;
   $("statusDetails").replaceChildren(...s.details.flatMap(([key, value]) => {
     const dt = document.createElement("dt"), dd = document.createElement("dd");
@@ -98,7 +119,7 @@ function renderOverview() {
   }));
   $("protectionNotices").replaceChildren(...s.notices.map((notice) => {
     const p = document.createElement("p");
-    p.className = "notice"; p.textContent = notice.text;
+    p.className = `notice ${notice.kind}`; p.textContent = notice.text;
     return p;
   }));
 }

@@ -35,7 +35,7 @@ final class SafariWebScannerPackageTests: XCTestCase {
             "manifest.json", "background.js", "background.html", "blocked.html", "blocked.js",
             "options.html", "options.js", "options.css",
             "content/scan.js", "content/feed.js", "content/visual.js", "content/visual-effects.js",
-            "content/visual-gate.css", "lib/score.js", "lib/normalize.js",
+            "content/visual-gate.css", "lib/score.js", "lib/language.js", "lib/normalize.js",
             "seed/terms.json", "icons/icon-32.png", "icons/icon-128.png",
             "visual/capture.js", "visual/broker.js", "visual/decisions.js", "visual/queue.js",
             "visual/verdict-cache.js",

@@ -104,7 +104,7 @@ def main(safari_only: bool = False, domain_only: bool = False,
     })
     base = {"SDKROOT": "iphoneos", "IPHONEOS_DEPLOYMENT_TARGET": "16.0", "SWIFT_VERSION": "5.0",
             "TARGETED_DEVICE_FAMILY": q("1,2"), "CODE_SIGN_STYLE": "Automatic",
-            "DEVELOPMENT_TEAM": '""', "CURRENT_PROJECT_VERSION": "5", "MARKETING_VERSION": "1.1.4",
+            "DEVELOPMENT_TEAM": '""', "CURRENT_PROJECT_VERSION": "6", "MARKETING_VERSION": "1.2.0",
             "CLANG_ENABLE_MODULES": "YES", "CLANG_ENABLE_OBJC_ARC": "YES",
             "ENABLE_USER_SCRIPT_SANDBOXING": "NO", "SUPPORTED_PLATFORMS": q("iphoneos iphonesimulator"),
             "SUPPORTS_MACCATALYST": "NO", "PRODUCT_NAME": q("$(TARGET_NAME)"),

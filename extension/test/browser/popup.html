@@ -132,8 +132,8 @@ try {
   const ld = langFrame.contentDocument;
   check(!ld.getElementById("pageLanguage").hidden, "a detected page language is shown while text checks are on");
   check(ld.getElementById("pageLanguageValue").textContent === "Arabic", "the language row uses the popup's UI language");
-  check(ld.getElementById("pageLanguage").textContent.includes("explicit labels"),
-    "the language row explains cross-language labels without showing matched words");
+  check(ld.getElementById("pageLanguage").getAttribute("title").includes("explicit labels"),
+    "the language row explains cross-language labels in a tooltip, not body copy");
   check(ld.getElementById("pageLanguage").getBoundingClientRect().bottom <= langFrame.contentWindow.innerHeight,
     "the language row stays inside the popup");
   const langAr = await frame(base, "ar", true, {width:480,height:600},
@@ -157,7 +157,7 @@ try {
   const failed = await frame({ok:false,reason:"internal-error"});
   check(failed.contentDocument.getElementById("pHead").textContent === "Status unavailable", "a worker error never looks like active protection");
   const pending = await frame({...base,enforcement:undefined}), pd = pending.contentDocument;
-  check(pd.getElementById('pHead').textContent === 'Checking browser protection'
+  check(pd.getElementById('pHead').textContent === 'Checking protection'
     && !pd.getElementById('domainIndicator').classList.contains('active'), 'stored desired settings never certify domain readiness');
   const repair = await frame({...base,appPresent:true,lastHeartbeat:Date.now(),desiredRevision:2,
     enforcement:{version:1,status:'failed',desiredRevision:2,appliedRevision:1,

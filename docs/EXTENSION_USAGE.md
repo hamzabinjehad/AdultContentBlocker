@@ -3,7 +3,7 @@
 ## Without the macOS app
 
 Prepare a clean, browser-specific unpacked folder with
-`python3 extension/prepare_unpacked.py --out dist/hisn-unpacked-chrome-1.3.0`,
+`python3 extension/prepare_unpacked.py --out dist/hisn-unpacked-chrome-1.4.0`,
 then select that folder in **Load unpacked** in a supported Chromium browser.
 Use a fresh output name for another browser or update; existing folders are
 never overwritten. This excludes generated `_metadata` caches while preserving
@@ -13,8 +13,8 @@ extension when available. Open the Hisn popup and
 choose **Settings**. The bundled domain rules and page-text checking work
 without a native app connection. Verified list updates run in the extension.
 **Settings → Block list updates** shows the installed list version and when it
-was last installed. Automatic checks run every six hours; **Update block list**
-checks now. A failed download or signature check keeps the current list and
+was last installed. Automatic checks run every six hours; **Update** in the
+block-list row checks now. A failed download or signature check keeps the current list and
 says so, and status calls out a list that has not updated for 14 days.
 
 **Standard** mode blocks listed domains and applies content checks. **Strict**

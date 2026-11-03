@@ -34,7 +34,7 @@ check(language() === "en", "toolbar translation never changes the global page/sc
 
 const fresh = fixture();
 await fresh.toolbar.update(undefined);
-check(fresh.badge === "?" && fresh.title === "Hisn — Checking browser protection", "startup honestly displays checking");
+check(fresh.badge === "?" && fresh.title === "Hisn — Checking protection", "startup honestly displays checking");
 const freshCalls = fresh.calls.length;
 await fresh.toolbar.update(pending);
 check(fresh.calls.length === freshCalls, "repeated successful pending presentation is deduplicated");

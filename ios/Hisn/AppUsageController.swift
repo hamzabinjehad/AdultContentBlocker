@@ -57,26 +57,19 @@ import Combine
             }
         }
     }
-    func apply(_ next: AppUsageConfiguration, commitmentActive: Bool, storageHealthy: Bool) {
+    func apply(_ next: AppUsageConfiguration, rulesLocked: Bool, storageHealthy: Bool) {
+        guard !rulesLocked else { errorKey = "apps.locked"; return }
         guard storageHealthy, authorized, next.isValid,
               let defaults else {
             errorKey = "apps.failed"; return
         }
         let store = AppUsageConfiguration.ruleStore(defaults)
-        let previous: AppUsageConfiguration?
         let old: Data?
         let reachedDay: String?
         do {
             old = try store.load()?.payload
-            previous = try AppUsageConfiguration.load(defaults)
             reachedDay = next.mode == .dailyBudget ? try AppUsageConfiguration.reachedDay(defaults) : nil
         } catch { errorKey = "apps.failed"; health = .invalid; return }
-        if previous?.permits(next, committed: commitmentActive) == false {
-            errorKey = "apps.locked"; return
-        }
-        if commitmentActive, previous?.mode == .dailyBudget, next.mode == .dailyBudget {
-            if #available(iOS 17.4, *) { } else { errorKey = "apps.locked"; return }
-        }
         do {
             let encoded = try JSONEncoder().encode(next)
             try store.save(encoded)
@@ -115,8 +108,8 @@ import Combine
         }
     }
 
-    func clear(commitmentActive: Bool, storageHealthy: Bool) {
-        guard !commitmentActive, storageHealthy, authorized,
+    func clear(rulesLocked: Bool, storageHealthy: Bool) {
+        guard !rulesLocked, storageHealthy, authorized,
               let defaults else {
             errorKey = "apps.locked"; return
         }

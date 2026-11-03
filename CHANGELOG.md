@@ -5,6 +5,76 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
+## iPhone & iPad 1.2.0 — 2026-11-03
+
+### Changed
+
+- **The protection lock now freezes the saved rule lists**, inspired by Android
+  0.9.0. While a commitment runs, blocked sites and app-limit rules are
+  read-only: no additions, removals, parent-domain consolidation, app selection
+  changes, mode changes, minute changes or clearing. An unreadable commitment
+  counts as locked. Extending the commitment remains available.
+- **Layer recovery is still allowed.** The Screen Time filter cannot be turned
+  off inside Hisn during a commitment, but it can be enabled or restored after
+  iOS revokes access. DNS setup and Safari rule reload remain available because
+  they add or repair layers rather than rewrite the frozen rules. iOS Settings
+  switches remain outside the app's control.
+- The commitment section shows **Protection lock running** and the frozen-rule
+  scope in English and Arabic; site and app controls are disabled rather than
+  failing after a tap.
+- `AppUsageConfiguration.permits` now requires full rule equality while
+  committed, and `CustomSitePolicy.permits` freezes the whole site list. Both
+  controllers refuse direct calls, not only the SwiftUI controls.
+- The iOS Safari scanner packaging allowlist now includes `lib/language.js`, the
+  shared language-aware scorer from extension 1.3.0.
+
+### Verification
+
+- `./test.sh ios` — **185 tests, 0 failures** on the iPhone simulator.
+- `python3 -m unittest ios.test_localization` — pass; English/Arabic parity.
+- `./test.sh python` — pass.
+- Version 1.2.0, build 6. Simulator-tested only; no Apple team, Family Controls
+  entitlement, signed build or device acceptance is claimed.
+
+## Browser extension 1.4.0 — 2026-11-02
+
+### Changed
+
+- **UI/UX redesign.** One status hero answers “am I protected?” before detail.
+  Popup layers are compact rows with a one-word state (On, Off, Checking,
+  Issue) and a gear; the old per-layer sentences moved to Details, the page the
+  gear opens, or a tooltip. One full-width primary action replaces competing
+  buttons. The lock is a compact banner and the page-language row is a single
+  label/value line.
+- **Settings dashboard simplified.** The duplicated “Browser protection” list
+  and the four status blocks are now one state card, one chip list, a compact
+  app-connection card, two quick links and a one-line block-list row. The
+  longer list-update explanation is a tooltip.
+- **Less copy in English and Arabic.** Removed the sidebar tagline, the
+  always-on-content paragraph, the repeated on-device footer sentence, and
+  several hints; shortened status, repair, connection, visual, rules and
+  content copy. Lock, managed-by-app, private-window and visual-coverage
+  limits remain visible where they affect a choice.
+- **Calmer visual system.** New light/dark tokens with stronger contrast,
+  standardised controls, 44px touch targets, neutral information notices and
+  warning amber reserved for warnings. The block page uses the same surfaces.
+- Removed unused locale keys. No permission, network path, storage field or
+  scoring rule changed; the 1.3.0 language-aware vocabulary is retained.
+
+### Verification
+
+- `./test.sh extension` — **PASS**, including the evaluation corpus (0/22 adult
+  cases missed, 0/28 benign pages blocked at 50/80/100).
+- `./test.sh browser` — **PASS**, including 160–480px popup layouts, Arabic RTL,
+  settings guards and six block pages.
+- Design captures and principles:
+  [`design/extension-ui-2026-11-02/`](design/extension-ui-2026-11-02/README.md).
+- Package: `dist/hisn-extension-1.4.0.zip`, 91 files, 6.2 MB, SHA-256
+  `2cb7d723884b633b37f295ced0deec9ac0046c95d70d6c1fc80365acb41c5552`.
+
+Version 1.4.0. Unpacked and store-ready; no listing, assigned store ID or
+managed force-install is claimed.
+
 ## Browser extension 1.3.0 — 2026-11-02
 
 ### Added

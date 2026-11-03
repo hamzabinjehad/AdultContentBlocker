@@ -12,14 +12,41 @@ you the lock; Hisn adds the coverage those built-in filters miss. Read
 [Positioning](docs/POSITIONING.md) for why it exists, and the
 [Threat model](docs/THREAT_MODEL.md) before changing anything.
 
+## Latest
+
+- **Extension 1.4.0** — a quieter UI/UX pass: one status hero, one-word layer
+  states, less copy in English and Arabic, and stricter action hierarchy.
+- **iPhone & iPad 1.2.0** — the protection lock now freezes blocked sites and
+  app-limit rules while a commitment runs; layer recovery remains available.
+- **Mac 1.1.7** — protection authority is read from the accounts and daemon,
+  not self-certified; lock-gated authority and removal controls.
+- **Android 0.9.0** — the protection lock freezes every saved rule, the
+  direct build's removal guard arms itself, and device-owner lockdown is
+  read back honestly.
+
+These are development versions. No store listing, signed production build or
+device acceptance is claimed; the exact state is in
+[versions](docs/VERSIONS.md) and [1.0 readiness](docs/1.0_READINESS.md).
+
+### Interface
+
+<p align="center">
+  <img src="design/extension-ui-2026-11-02/popup-light-en.png" width="300" alt="Hisn extension popup in light mode">
+  <img src="design/extension-ui-2026-11-02/options-overview-light-en.png" width="560" alt="Hisn extension dashboard in light mode">
+</p>
+
+The extension popup and dashboard lead with one protection status and one-word
+layer states. More captures, including Arabic and dark mode, are in the
+[UI pass record](design/extension-ui-2026-11-02/README.md).
+
 ## Platforms
 
 | Platform | What it does | State | Start here |
 | --- | --- | --- | --- |
-| Browser extension (Chromium) | Blocks listed domains, checks page text in the page's language, optional local image/video checks | 1.3.0 | [Using the extension](docs/EXTENSION_USAGE.md) |
-| Mac | Content-filter system extension, browser guard, locks, accountability partner and root guardian daemon | 1.1.6, needs a signed build | [Mac setup](docs/SETUP.md) |
-| iPhone & iPad | Six Safari blockers, Safari text extension, Screen Time app limits, optional family DNS, privacy manifest | 1.1.4, development | [iOS README](ios/README.md) |
-| Android | DNS filtering, selected-app and word restrictions, optional image checks, browser-coverage screen that blocks browsers no layer covers, daily schedule that can block every app except a keep list, commitments, opt-in device-owner uninstall guard and managed lockdown, direct-build protection page (unreleased) that closes removal, disable, Safe Mode and new-install screens, background layer watchdog and bundled-list freshness warning | 0.8.4 preview | [Android README](android/README.md) · [1.0 plan](docs/ANDROID_1.0_PLAN.md) |
+| Browser extension (Chromium) | Blocks listed domains, checks page text in the page's language, optional local image/video checks | 1.4.0 | [Using the extension](docs/EXTENSION_USAGE.md) |
+| Mac | Content-filter system extension, browser guard, locks, authority checks, accountability partner and root guardian daemon | 1.1.7, needs a signed build | [Mac setup](docs/SETUP.md) |
+| iPhone & iPad | Six Safari blockers, Safari text extension, Screen Time app limits, optional family DNS, protection lock for saved rules | 1.2.0, development | [iOS README](ios/README.md) |
+| Android | DNS filtering, selected-app and word restrictions, optional image checks, browser-coverage screen, schedules, protection lock that freezes saved rules, opt-in device-owner uninstall guard and managed lockdown, direct-build removal guard, layer watchdog and bundled-list freshness warning | 0.9.0 preview | [Android README](android/README.md) · [1.0 plan](docs/ANDROID_1.0_PLAN.md) |
 | Network / router | Verified signed DNS rules for administrator import | Tools only | [Network tools](network/README.md) |
 
 Seed **v5** raises the bundled core from 159,768 to **239,885 domains** on every
@@ -116,6 +143,8 @@ the [release runbook](docs/RELEASE_RUNBOOK.md) and record results in
 the [changelog](CHANGELOG.md).
 
 ## Privacy
+
+See [SECURITY.md](SECURITY.md) for private vulnerability reporting and the limits that are documented product boundaries, not bugs.
 
 Domain matching happens entirely on-device. Do not build a feature that reports
 which sites a user tried to visit. A server-side log of blocked adult domains,

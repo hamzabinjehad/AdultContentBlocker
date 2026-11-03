@@ -33,7 +33,7 @@ trust still apply. Do not remove full-edition entitlements to conceal failures.
 
 - Built and verified the development-signed domain-only bundle, version 1.1.2,
   build 6. That 1.1.2 bundle contained exactly Hisn1–4, no text or DeviceActivity
-  extension; the current 1.1.4 project has six parts.
+  extension; the current 1.2.0 project has six parts.
 - Installed on the connected iPhone 11; device app listing confirms identity
   and version. Launch was denied with the OS security/profile-trust error.
   User developer trust and successful launch remain to be confirmed.

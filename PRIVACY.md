@@ -47,7 +47,7 @@ site you visited, a page you read or a classification result.
 
 | Request | Who can see it | Contains | When |
 | --- | --- | --- | --- |
-| Signed list update (`raw.githubusercontent.com`) | GitHub and your network | The repository file requested, your IP address, the time | Mac app and browser extension, automatic or **Update block list** |
+| Signed list update (`raw.githubusercontent.com`) | GitHub and your network | The repository file requested, your IP address, the time | Mac app and browser extension, automatic or **Update** in the block-list row |
 | Apple server time (`www.apple.com`) | Apple and your network | An ordinary HTTPS request; Hisn reads only the `Date` response header | iPhone/iPad time lock and vault reveal |
 | DNS queries, if you enable Hisn DNS | The resolver you configured (Hisn's default is Cloudflare Families) and your network | The names your device resolves | While the DNS layer is on |
 | Accountability release notice | Your chosen partner, through the mechanism you set up | That a release was requested, and when | Only when you request one |
@@ -124,5 +124,5 @@ If this policy changes, the change is recorded in [CHANGELOG.md](CHANGELOG.md)
 and the effective date below is updated. A change that adds collection would
 need a new consent, not a silent edit.
 
-**Effective:** 2026-11-02 · **Applies to:** extension 1.3.0, Mac 1.1.7, iOS
-1.1.4, Android 0.9.0 and later builds that link to this policy.
+**Effective:** 2026-11-02 · **Applies to:** extension 1.4.0, Mac 1.1.7, iOS
+1.2.0, Android 0.9.0 and later builds that link to this policy.

@@ -33,6 +33,14 @@ optional reinforcement, not prerequisites for recording a commitment.
   the same effective-deadline calculation in app, bridge and filter. A forged
   or queued 48-hour self-release cannot end the fixed horizon early. Existing
   locks retain their prior behavior. Partner-authorized recovery remains.
+- During a running commitment the saved **blocked-site list** and **app-limit
+  rules** are frozen: no additions, removals or changes. An unreadable
+  commitment counts as locked. The pure policy and both controllers refuse the
+  write, so a disabled SwiftUI control is not the only guard. Extending the
+  plan remains available. Protection layers can still be added or restored
+  (Screen Time access after revocation, DNS setup, Safari reload), because that
+  increases coverage rather than rewriting the committed rules; turning a layer
+  off inside Hisn remains unavailable.
 - Network DNS, device DNS, Safari rules and Screen Time remain independent
   layers. Ending a commitment does not automatically disable them. The mobile
   setup includes official router-DNS guidance; Mac retains its existing router
@@ -64,7 +72,7 @@ Restoring clock agreement clears it; it does not establish trusted time across
 relaunch. Mobile keeps its last valid elapsed-time sample if the counter is invalid.
 
 Screen Time's configured policy is not proof of blocked traffic or all-app
-coverage. Apple classification may miss content. Safari needs its four parts
+coverage. Apple classification may miss content. Safari needs its six parts
 enabled; DNS is not VPN-proof. Router DNS only helps on that network. Router
 instructions are manual, not a verified phone-side router-installation feature.
 

@@ -79,6 +79,21 @@ enum CommitmentPolicy {
         session?.screenTimeFilter == true && active && commitmentReadable && authorized && !filterPresent
     }
 
+    /// While a commitment runs, every saved rule is frozen, not merely prevented
+    /// from weakening. This matches the Android protection lock and is
+    /// deliberately stricter than "tighten only": the rule set is the plan the
+    /// person committed to, and any change reopens the negotiation the
+    /// commitment exists to close. An unreadable commitment counts as running,
+    /// because Hisn cannot prove it ended.
+    static func rulesLocked(active: Bool, commitmentReadable: Bool) -> Bool {
+        active || !commitmentReadable
+    }
+
+    /// The inverse, named for call sites that ask permission rather than state.
+    static func mayChangeRules(active: Bool, commitmentReadable: Bool) -> Bool {
+        !rulesLocked(active: active, commitmentReadable: commitmentReadable)
+    }
+
     static func validDuration(_ seconds: TimeInterval) -> Bool {
         seconds.isFinite && seconds >= 60 && seconds <= 365 * 86400
     }

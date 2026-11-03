@@ -31,14 +31,16 @@ final class CustomSiteTests: XCTestCase {
         XCTAssertEqual(CustomSitePolicy.adding("example.com", to: full), .added(["example.com"]))
     }
 
-    func testCommitmentAllowsAddingButNotRemoving() {
+    func testCommitmentFreezesTheWholeSiteList() {
         let sites = ["a.example", "b.example"]
         XCTAssertTrue(CustomSitePolicy.permits(current: sites, proposed: ["a.example"], committed: false))
         XCTAssertFalse(CustomSitePolicy.permits(current: sites, proposed: ["a.example"], committed: true))
-        XCTAssertTrue(CustomSitePolicy.permits(current: sites, proposed: sites + ["c.example"], committed: true))
-        XCTAssertTrue(CustomSitePolicy.permits(current: ["m.example.com"], proposed: ["example.com"], committed: true),
-                      "A parent that still covers a saved site is not loosening")
-        XCTAssertFalse(CustomSitePolicy.permits(current: ["example.com"], proposed: ["m.example.com"], committed: true))
+        XCTAssertFalse(CustomSitePolicy.permits(current: sites, proposed: sites + ["c.example"], committed: true),
+                       "Adding a block is still a rule change while the list is frozen")
+        XCTAssertFalse(CustomSitePolicy.permits(current: ["m.example.com"], proposed: ["example.com"], committed: true),
+                       "Parent-domain consolidation waits too")
+        XCTAssertTrue(CustomSitePolicy.permits(current: sites, proposed: sites, committed: true),
+                      "An identical save is a no-op")
     }
 
     func testStoreRoundTripsAndReportsDamageInsteadOfAnEmptyList() throws {
@@ -54,7 +56,7 @@ final class CustomSiteTests: XCTestCase {
         XCTAssertThrowsError(try store.save([]), "A damaged list is never silently replaced")
     }
 
-    @MainActor func testControllerAddsDuringCommitmentButRefusesRemoval() async throws {
+    @MainActor func testControllerFreezesAddAndRemoveDuringCommitment() async throws {
         let storage = EphemeralRuleStorage()
         let commitments = MemoryCommitmentStore()
         let controller = ProtectionController(commitmentStore: commitments,
@@ -66,15 +68,18 @@ final class CustomSiteTests: XCTestCase {
         controller.addCustomSite("first.example")
         XCTAssertEqual(controller.customSiteMessage, "sites.duplicate")
         await controller.startCommitment(days: 7)
+        XCTAssertTrue(controller.rulesLocked)
         XCTAssertTrue(controller.customSitesLocked)
         controller.addCustomSite("second.example")
-        XCTAssertEqual(controller.customSites, ["first.example", "second.example"])
+        XCTAssertEqual(controller.customSiteMessage, "sites.locked")
+        XCTAssertEqual(controller.customSites, ["first.example"])
         controller.removeCustomSite("first.example")
         XCTAssertEqual(controller.customSiteMessage, "sites.locked")
-        XCTAssertEqual(controller.customSites, ["first.example", "second.example"])
+        XCTAssertEqual(controller.customSites, ["first.example"])
         let relaunched = ProtectionController(commitmentStore: commitments,
                                               customSiteStore: CustomSiteStore(storage: storage))
-        XCTAssertEqual(relaunched.customSites, ["first.example", "second.example"])
+        XCTAssertEqual(relaunched.customSites, ["first.example"])
+        XCTAssertTrue(relaunched.rulesLocked)
         #if targetEnvironment(simulator)
         XCTAssertFalse(relaunched.customSitesApplied, "Saved sites are not applied without Screen Time")
         #endif

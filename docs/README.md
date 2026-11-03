@@ -115,6 +115,7 @@ Per-version change and verification notes, newest first.
 
 ### iPhone and iPad
 
+- [iOS 1.2.0 release notes](IOS_1.2.0.md): Protection lock freezes blocked-site and app-limit rules while a commitment runs, with layer recovery still available; English and Arabic lock copy. Simulator-tested only.
 - [iOS 1.1.4 release notes](COVERAGE_PASS_2026-10-30.md): Six 40,000-rule Safari blockers instead of four, seed v5, and capacity/readiness checks derived from one blocker count. Simulator-tested; no device, team or entitlement yet.
 - [iOS 1.1.3 release notes](IOS_1.1.3.md): A privacy manifest in the app and every extension, export-compliance declaration, the signed Safari list's build date with a 90-day warning, an offline licenses-and-sources screen, and privacy/support/version rows in Settings. Simulator-tested; no device, team or entitlement yet.
 - [Hisn 1.1.2 update notes](UPDATE_1_1_2.md): New popup and visual-check interface, detection changes and limits, and how to update Mac, browser and phone. *Historical.*
@@ -148,7 +149,8 @@ Per-version change and verification notes, newest first.
 
 ### Browser extension
 
-- [Extension 1.3.0 release notes](EXTENSION_1.3.0.md): Language-aware page-text scoring chooses the vocabulary from the page's own text, keeps strong labels across languages, falls back to the full list when unsure, and adds a detected-language row to the popup. Development candidate; no listing yet.
+- [Extension 1.4.0 release notes](EXTENSION_1.4.0.md): UI/UX pass with one status hero, one-word layer states, less copy in English and Arabic, calmer information notices and a single action hierarchy. Design captures in `design/extension-ui-2026-11-02/`. Development candidate; no listing yet.
+- [Extension 1.3.0 release notes](EXTENSION_1.3.0.md): Language-aware page-text scoring chooses the vocabulary from the page's own text, keeps strong labels across languages, falls back to the full list when unsure, and adds a detected-language row to the popup. *Previous development candidate.*
 - [Extension 1.2.2 release notes](COVERAGE_PASS_2026-10-30.md): Seed v5's 239,885-domain core tier and 480 static DNR rules; the packaged zip is hashed in the record. *Historical.*
 - [Extension 1.2.1 release notes](EXTENSION_1.2.1.md): Store metadata, an options footer with the on-device statement, version and privacy/support links, and a store-readiness record. Development candidate; no listing yet.
 - [Chrome Web Store readiness](EXTENSION_STORE.md): Listing copy, permission justifications, privacy answers, managed force-install policy, reviewer steps and post-publication ID wiring.

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The commitment locks only what is already on, so Setup lists it after the blocking layers
+/// The commitment freezes every saved rule, so Setup lists it after the blocking layers
 /// and before the passcode vault.
 struct CommitmentSection: View {
     @ObservedObject var protection: ProtectionController
@@ -21,6 +21,8 @@ struct CommitmentSection: View {
             if protection.commitmentActive, let session = protection.commitment {
                 Label("commitment.active", systemImage: "lock.fill")
                 LabeledContent("commitment.until") { dateText(session.deadline) }
+                Label("commitment.rulesFrozen", systemImage: "lock.square")
+                    .font(.callout)
                 endCheck
                 vaultDates(commitmentEnd: session.deadline)
                 Text("commitment.noEarlyRelease").font(.footnote).foregroundStyle(.secondary)
@@ -206,12 +208,15 @@ struct ScreenTimeSection: View {
                       systemImage: "exclamationmark.triangle")
                     .font(.footnote).foregroundStyle(HisnPalette.warning)
             }
-            Button("screentime.enable") { confirmEnable = true }.disabled(protection.busy)
+            Button("screentime.enable") { confirmEnable = true }
+                .disabled(protection.busy || (protection.rulesLocked && protection.screenTimeState != .accessRemoved))
             if let error = protection.errorKey, error.hasPrefix("screentime.") {
                 Label(LocalizedStringKey(error), systemImage: "exclamationmark.triangle")
                     .font(.footnote).foregroundStyle(HisnPalette.warning)
             }
-            if protection.screenTimeConfigured && !protection.commitmentActive {
+            if protection.rulesLocked && protection.screenTimeConfigured {
+                Text("screentime.locked").font(.footnote).foregroundStyle(.secondary)
+            } else if !protection.rulesLocked && protection.screenTimeConfigured {
                 Button("screentime.disable") { protection.disablePersonalScreenTime() }
                     .disabled(protection.busy || !protection.commitmentStorageHealthy)
             }

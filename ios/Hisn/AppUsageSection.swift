@@ -9,7 +9,7 @@ struct AppUsageSection: View {
     @State private var minutes = 30
     @State private var selecting = false
     @State private var confirm = false
-    private var locked: Bool { protection.commitmentActive }
+    private var locked: Bool { protection.rulesLocked }
     var body: some View {
         Section("apps.title") {
             Label(LocalizedStringKey(usage.health.rawValue), systemImage: "shield.lefthalf.filled")
@@ -18,24 +18,24 @@ struct AppUsageSection: View {
             Text("apps.browserGuardGuidance").font(.footnote).foregroundStyle(.secondary)
             Text("apps.browserGuardLimits").font(.footnote).foregroundStyle(.secondary)
             if !usage.authorized { Text("apps.authorization").font(.footnote).foregroundStyle(.secondary) }
-            Button("apps.choose") { selecting = true }.disabled(!protection.commitmentStorageHealthy || !usage.authorized)
+            Button("apps.choose") { selecting = true }.disabled(locked || !protection.commitmentStorageHealthy || !usage.authorized)
             Text("apps.count \(selection.applicationTokens.count + selection.categoryTokens.count + selection.webDomainTokens.count)")
             Picker("apps.mode", selection: $mode) {
                 Text("apps.always").tag(AppUsageConfiguration.Mode.always)
                 Text("apps.budget").tag(AppUsageConfiguration.Mode.dailyBudget)
-            }.disabled(!protection.commitmentStorageHealthy)
+            }.disabled(locked || !protection.commitmentStorageHealthy)
             if mode == .dailyBudget {
                 Stepper("apps.minutes \(minutes)", value: $minutes, in: 15...240, step: 15)
-                    .disabled(!protection.commitmentStorageHealthy)
+                    .disabled(locked || !protection.commitmentStorageHealthy)
                 Text("apps.budgetScope").font(.footnote).foregroundStyle(.secondary)
             }
-            Button("apps.apply") { confirm = true }.disabled(!protection.commitmentStorageHealthy || !usage.authorized)
+            Button("apps.apply") { confirm = true }.disabled(locked || !protection.commitmentStorageHealthy || !usage.authorized)
             if locked { Text("apps.locked").font(.footnote).foregroundStyle(.secondary) }
             if !locked, usage.configuration != nil {
                 Button("apps.clear") {
-                    usage.clear(commitmentActive: protection.commitmentActive,
+                    usage.clear(rulesLocked: locked,
                                 storageHealthy: protection.commitmentStorageHealthy)
-                }.disabled(!protection.commitmentStorageHealthy)
+                }.disabled(locked || !protection.commitmentStorageHealthy)
             }
             if usage.registered && usage.authorized { Label("apps.registered", systemImage: "clock") }
             if let error = usage.errorKey { Label(LocalizedStringKey(error), systemImage: "exclamationmark.triangle") }
@@ -44,7 +44,7 @@ struct AppUsageSection: View {
         .alert("apps.consent", isPresented: $confirm) {
             Button("apps.apply") {
                 usage.apply(AppUsageConfiguration(selection: selection, mode: mode, minutes: minutes),
-                    commitmentActive: locked, storageHealthy: protection.commitmentStorageHealthy)
+                    rulesLocked: locked, storageHealthy: protection.commitmentStorageHealthy)
             }
             Button("cancel", role: .cancel) { }
         } message: { Text("apps.consentBody") }

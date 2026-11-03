@@ -307,16 +307,17 @@ struct AppUsageConfiguration: Codable {
         // Monitor callbacks leave existing shields untouched on unreadable rules.
         try? load(defaults)
     }
+    /// While committed the saved rule is frozen, not merely prevented from
+    /// weakening. A no-op save is still permitted. Equality is explicit because
+    /// `FamilyActivitySelection` is not declared Equatable in every SDK.
     func permits(_ next: AppUsageConfiguration, committed: Bool) -> Bool {
-        guard committed else { return true }
-        guard Self.preserves(selection.applicationTokens, next.selection.applicationTokens),
-              Self.preserves(selection.categoryTokens, next.selection.categoryTokens),
-              Self.preserves(selection.webDomainTokens, next.selection.webDomainTokens) else { return false }
-        if mode == .always { return next.mode == .always }
-        return next.mode == .always || next.minutes <= minutes
+        !committed || sameRule(as: next)
     }
-    static func preserves<T: Hashable>(_ current: Set<T>, _ proposed: Set<T>) -> Bool {
-        current.isSubset(of: proposed)
+    func sameRule(as other: AppUsageConfiguration) -> Bool {
+        mode == other.mode && minutes == other.minutes
+            && selection.applicationTokens == other.selection.applicationTokens
+            && selection.categoryTokens == other.selection.categoryTokens
+            && selection.webDomainTokens == other.selection.webDomainTokens
     }
     func shield(_ store: ManagedSettingsStore) {
         store.shield.applications = selection.applicationTokens.isEmpty ? nil : selection.applicationTokens

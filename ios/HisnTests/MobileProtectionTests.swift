@@ -383,7 +383,7 @@ final class MobileProtectionTests: XCTestCase {
         XCTAssertEqual(controller.commitment, first)
     }
 
-    func testAppBudgetCannotBeWeakenedDuringCommitment() {
+    func testAppBudgetIsFrozenDuringCommitment() {
         let empty = FamilyActivitySelection()
         let always = AppUsageConfiguration(selection: empty, mode: .always, minutes: 30)
         let budget = AppUsageConfiguration(selection: empty, mode: .dailyBudget, minutes: 30)
@@ -391,11 +391,10 @@ final class MobileProtectionTests: XCTestCase {
         XCTAssertFalse(always.isValid, "Empty selection must never create an all-device monitoring event")
         XCTAssertFalse(always.permits(budget, committed: true))
         XCTAssertFalse(budget.permits(longer, committed: true))
-        XCTAssertTrue(budget.permits(always, committed: true))
+        XCTAssertFalse(budget.permits(always, committed: true),
+                       "Strengthening to always-block is still a rule change while frozen")
+        XCTAssertTrue(budget.permits(budget, committed: true), "An identical save is a no-op")
         XCTAssertTrue(budget.permits(longer, committed: false))
-        XCTAssertTrue(AppUsageConfiguration.preserves(Set(["A"]), Set(["A", "B"])))
-        XCTAssertFalse(AppUsageConfiguration.preserves(Set(["A", "B"]), Set(["A"])))
-        XCTAssertFalse(AppUsageConfiguration.preserves(Set(["A"]), Set(["B"])))
     }
 
     func testRouterAppExportRejectsUnsafeInputAndWarnsAboutAllClients() throws {

@@ -8,10 +8,15 @@ const params = new URLSearchParams(location.search);
 const page = ["options", "popup", "blocked"].includes(params.get("page")) ? params.get("page") : "options";
 const managed = params.get("managed") === "1";
 const uiLanguage = params.get("lang") === "ar" ? "ar" : "en";
-const base = new URL(`../../${page}.html`, location.href);
+const view = (params.get("view") || "").replace(/[^a-z]/g, "");
+const base = new URL(`../../${page}.html${view ? `#${view}` : ""}`, location.href);
 const state = { appPresent:managed, mode:"blocklist", lockUntil:params.get("locked") === "1" ? Date.now() + 300000 : 0, lastHeartbeat:Date.now(),
   customBlocks:["example.com"],allowlist:["wikipedia.org"],customTerms:[],textAllow:[],ignoreTerms:[],disputed:[],
-  inspectText:true,textSensitivity:50,failClosed:false };
+  inspectText:true,textSensitivity:50,failClosed:false,
+  desiredRevision:1,appliedRevision:1,
+  enforcement:{version:1,status:"applied",desiredRevision:1,appliedRevision:1,
+    layers:{domains:"applied",search:"applied",text:"applied",visual:"off"},
+    downloadedRules:{domains:0,keywords:0,listVersion:0}} };
 const mock = `<script>
 const state = ${JSON.stringify(state)};
 window.chrome = {
@@ -28,6 +33,9 @@ window.chrome = {
 const html = await (await fetch(base)).text();
 document.getElementById("screen").srcdoc = html.replace('<head>', `<head><base href="${base.href}">${mock}`);
 document.getElementById("screen").onload = () => {
+  // A srcdoc iframe starts at about:srcdoc, so the requested view is applied
+  // after load rather than inherited from the base URL.
+  if (view) document.getElementById("screen").contentWindow.location.hash = view;
   document.getElementById("summary").dataset.result = "pass";
   document.getElementById("summary").textContent = "Preview loaded (simulated connection).";
 };

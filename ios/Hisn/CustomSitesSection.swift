@@ -51,13 +51,14 @@ struct CustomSitesSection: View {
             .onSubmit(add)
             // Hostnames read left to right in both languages.
             .environment(\.layoutDirection, .leftToRight)
+            .disabled(protection.rulesLocked)
             .accessibilityIdentifier("customSitesEntry")
     }
 
     private var addButton: some View {
         Button("sites.add", action: add)
             .buttonStyle(.borderedProminent)
-            .disabled(protection.busy || !protection.customSitesStorageHealthy
+            .disabled(protection.busy || protection.rulesLocked || !protection.customSitesStorageHealthy
                       || entry.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
     }
 

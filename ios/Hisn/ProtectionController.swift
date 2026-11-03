@@ -428,6 +428,8 @@ final class ProtectionController: ObservableObject {
     /// Independent adult self-control, not a hidden fallback from guardian authorization.
     func enablePersonalScreenTime() async {
         guard !busy else { return }
+        // Adding or restoring this layer only tightens protection. Turning it
+        // off is the locked action and has no in-app path during a commitment.
         busy = true; errorKey = nil
         defer { busy = false }
         #if targetEnvironment(simulator)
@@ -491,11 +493,12 @@ final class ProtectionController: ObservableObject {
         catch { customSitesStorageHealthy = false; customSitesApplied = false }
     }
 
-    /// Adding a site only tightens protection, so it stays available during a commitment.
+    /// Every saved rule is frozen while the commitment runs, including additions.
     func addCustomSite(_ raw: String) {
         updateClock()
         loadCustomSites()
         guard !busy, customSitesStorageHealthy else { customSiteMessage = "sites.failed"; return }
+        guard !rulesLocked else { customSiteMessage = "sites.locked"; return }
         switch CustomSitePolicy.adding(raw, to: customSites) {
         case .invalid: customSiteMessage = "sites.invalid"
         case .duplicate: customSiteMessage = "sites.duplicate"
@@ -504,7 +507,7 @@ final class ProtectionController: ObservableObject {
         }
     }
 
-    /// Removal waits for the commitment to end; an unreadable commitment counts as running.
+    /// No removal while the commitment runs; an unreadable commitment counts as running.
     func removeCustomSite(_ host: String) {
         updateClock()
         loadCustomSites()
@@ -512,13 +515,18 @@ final class ProtectionController: ObservableObject {
         let next = customSites.filter { $0 != host }
         guard next != customSites else { return }
         guard CustomSitePolicy.permits(current: customSites, proposed: next,
-                                       committed: commitmentActive || !commitmentStorageHealthy) else {
+                                       committed: rulesLocked) else {
             customSiteMessage = "sites.locked"; return
         }
         saveCustomSites(next, success: "sites.removed")
     }
 
-    var customSitesLocked: Bool { commitmentActive || !commitmentStorageHealthy }
+    /// The whole rule set is frozen while a commitment runs, or while Hisn
+    /// cannot prove one ended. Kept as `customSitesLocked` for existing views.
+    var rulesLocked: Bool {
+        CommitmentPolicy.rulesLocked(active: commitmentActive, commitmentReadable: commitmentStorageHealthy)
+    }
+    var customSitesLocked: Bool { rulesLocked }
 
     private func saveCustomSites(_ next: [String], success: String) {
         do {
@@ -552,7 +560,7 @@ final class ProtectionController: ObservableObject {
 
     func disablePersonalScreenTime() {
         updateClock()
-        guard !busy, commitmentStorageHealthy, !commitmentActive else { return }
+        guard !busy, !rulesLocked else { return }
         screenTimeFilter.filter = nil
         readScreenTimeState()
     }

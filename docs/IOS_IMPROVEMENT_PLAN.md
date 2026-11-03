@@ -5,6 +5,12 @@ Written 2026-10-26 against 1.1.2 and updated 2026-10-30 for 1.1.3. This is the i
 read of `ios/`, `shared/apple/` and `profile/`, and from Apple's documentation and
 forums (links inline). Nothing here has been tested on a real iPhone yet.
 
+> **1.2.0 update (2026-11-03):** a running commitment now freezes the saved
+> blocked-site list and app-limit rules, closing the add/tighten exceptions
+> recorded below. Layer additions and recovery remain available. See
+> [the 1.2.0 record](IOS_1.2.0.md). Milestone claims below still describe 1.1.3
+> unless a later date is named; they are not rewritten as if device-tested.
+
 ## End goal
 
 > On the person's iPhone and iPad, adult content does not reach the screen in

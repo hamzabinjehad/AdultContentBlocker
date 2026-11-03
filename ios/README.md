@@ -8,6 +8,33 @@ The plan to finish the iPhone/iPad app, including which Apple-supported lock
 level stops deletion and what each one cannot stop, is in
 [the iOS end-goal plan](../docs/IOS_IMPROVEMENT_PLAN.md).
 
+## 1.2.0 protection lock
+
+Inspired by the Android 0.9.0 protection lock, a running commitment now freezes
+the saved rules Hisn owns:
+
+- **My blocked sites:** the entry field and Add button are disabled, swipe-to-
+  delete is unavailable, and the controller refuses a direct add. No parent-
+  domain consolidation either.
+- **App limits:** choosing apps, changing the mode or daily minutes, applying,
+  strengthening always-block, and clearing are all disabled. The controller and
+  the pure `permits` rule require full equality while committed.
+- An active **or unreadable** commitment counts as locked; extending the
+  commitment is the one rule action that remains.
+- **Layer recovery is still available.** The Screen Time filter cannot be
+  turned off inside Hisn, but it can be enabled or restored after iOS revokes
+  access. DNS setup and the Safari rule reload remain available because they add
+  or repair layers rather than change the frozen lists. iOS Settings switches
+  remain outside the app's control.
+- The commitment section says **Protection lock running** and names the frozen
+  rules in English and Arabic.
+
+This is an app-level rule lock, not Android's device-owner lock. The passcode
+vault and supervised profile remain the removal-protection paths. Version 1.2.0,
+build 6. `./test.sh ios` passes 185 simulator tests; no Apple team, entitlement,
+signed build or physical-device acceptance is claimed. See
+[the 1.2.0 record](../docs/IOS_1.2.0.md).
+
 ## 1.1.4 coverage pass
 
 - **Six Safari blockers:** the four 40,000-rule parts became six, raising the

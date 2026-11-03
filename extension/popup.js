@@ -38,30 +38,55 @@ function render(state) {
   const visual = describeVisual(visualEngine, state);
   const enforcement = describeEnforcement(state);
   if (enforcement.status === "failed") document.getElementById("protectionDetails").open = true;
-  const signature = JSON.stringify([s, connection, privateCoverage, visual, state?.inspectText]);
+  const signature = JSON.stringify([s, connection, privateCoverage, visual, state?.inspectText, state?.personBlur]);
   if (signature === lastRender) return;
   lastRender = signature;
-  document.getElementById("connectionBadge").textContent = !state ? t("badge.unavailable")
-    : !connection.managed ? t("badge.browserOnly")
-    : connection.fresh ? t("badge.connected") : t("badge.offline");
 
+  const hero = document.getElementById("hero");
+  hero.dataset.level = s.protection.level;
   document.getElementById("pDot").className = `dot ${s.protection.level}`;
   document.getElementById("pHead").textContent = s.protection.headline;
-  document.getElementById("pDetail").textContent = state && !state.appPresent && enforcement.status === "applied"
-    ? t("popup.browserOnlySummary") : s.protection.detail;
-  const layers = [
-    ["domain", enforcement.layers.domains.level, enforcement.layers.domains.level === "active"
-      ? t("popup.worksAlone") : enforcement.layers.domains.text],
-    ["text", enforcement.layers.text.level, enforcement.layers.text.level === "active"
-      ? t("popup.checksAllowedPages") : enforcement.layers.text.text],
-    ["private", privateCoverage ? "active" : privateCoverage === false ? "partial" : "unknown", t(privateCoverage === undefined ? "opt.coverage.unknown" : privateCoverage ? "details.on" : "popup.permissionNeeded")],
-    ["app", state && connection.fresh ? "active" : state?.appPresent ? "partial" : "unknown", null],
-    ["visual", visual.level, visual.text],
-  ];
-  for (const [id, level, text] of layers) {
-    document.getElementById(`${id}Indicator`).className = `layer-indicator ${level}`;
-    if (text !== null) document.getElementById(`${id}Status`).textContent = text;
-  }
+  document.getElementById("pDetail").textContent = s.protection.detail;
+
+  /**
+   * A layer's status is a word, not a sentence. "On", "Off", "Checking" and
+   * "Issue" are the whole vocabulary; the explanation lives in Details and in
+   * the page the gear opens.
+   */
+  const stateLabel = (level, enabled = true, unavailable = false) => {
+    if (!enabled) return t("state.off");
+    if (unavailable) return t("state.issue");
+    if (level === "active") return t("state.on");
+    if (level === "partial") return t("state.issue");
+    return t("state.checking");
+  };
+  const paintLayer = (indicatorId, statusId, level, enabled = true, unavailable = false) => {
+    const indicator = document.getElementById(indicatorId);
+    const status = document.getElementById(statusId);
+    const shown = enabled ? level : "off";
+    indicator.className = `layer-indicator ${shown}`;
+    status.className = `layer-state ${shown}`;
+    status.textContent = stateLabel(level, enabled, unavailable);
+  };
+
+  const textEnabled = !state || state.inspectText !== false
+    || state.failClosed === true || restrictionsActive(state);
+  const visualEnabled = !!state && (state.inspectVisual === true
+    || ["all", "female", "male"].includes(state.personBlur));
+  paintLayer("domainIndicator", "domainStatus", enforcement.layers.domains.level);
+  paintLayer("textIndicator", "textStatus", enforcement.layers.text.level, textEnabled);
+  paintLayer("visualIndicator", "visualStatus", visual.level, visualEnabled,
+    visualEnabled && visual.available === false);
+  paintLayer("privateIndicator", "privateStatus",
+    privateCoverage === true ? "active" : privateCoverage === false ? "off" : "unknown",
+    privateCoverage !== false);
+  const appLevel = state && connection.fresh ? "active" : state?.appPresent ? "partial" : "off";
+  document.getElementById("appIndicator").className = `layer-indicator ${appLevel}`;
+  const badge = document.getElementById("connectionBadge");
+  badge.className = `layer-state ${appLevel}`;
+  badge.textContent = !state ? t("badge.unavailable")
+    : !connection.managed ? t("popup.optional")
+    : connection.fresh ? t("badge.connected") : t("badge.offline");
   document.getElementById("connectionAction").textContent = t(connection.fresh ? "popup.checkConnection" : "popup.connectApp");
 
   document.getElementById("lHead").textContent = s.lock.headline;
@@ -75,7 +100,7 @@ function render(state) {
   const notices = document.getElementById("notices");
   notices.replaceChildren(...s.notices.map((n) => {
     const el = document.createElement("div");
-    el.className = "notice";
+    el.className = `notice ${n.kind}`;
     el.setAttribute("role", n.kind === "warn" ? "alert" : "status");
     el.textContent = n.text;
     return el;

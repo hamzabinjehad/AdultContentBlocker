@@ -1,4 +1,5 @@
 import Foundation
+import FamilyControls
 import ManagedSettings
 import XCTest
 @testable import HisnMobile
@@ -40,6 +41,25 @@ private final class FakeNotifications: NotificationPermission {
 final class CommitmentHoldsTests: XCTestCase {
     private let start = Date(timeIntervalSince1970: 1_800_000_000)
     private var suites: [String] = []
+
+    @MainActor func testAppUsageControllerRefusesAnyChangeWhenRulesAreLocked() {
+        let usage = AppUsageController(defaults: nil)
+        let rule = AppUsageConfiguration(selection: FamilyActivitySelection(), mode: .always, minutes: 30)
+        usage.apply(rule, rulesLocked: true, storageHealthy: true)
+        XCTAssertEqual(usage.errorKey, "apps.locked")
+        usage.clear(rulesLocked: true, storageHealthy: true)
+        XCTAssertEqual(usage.errorKey, "apps.locked")
+    }
+
+    func testRulesAreFrozenByAnActiveOrUnreadableCommitment() {
+        XCTAssertTrue(CommitmentPolicy.rulesLocked(active: true, commitmentReadable: true))
+        XCTAssertTrue(CommitmentPolicy.rulesLocked(active: false, commitmentReadable: false),
+                      "Unreadable storage cannot prove a commitment ended")
+        XCTAssertFalse(CommitmentPolicy.rulesLocked(active: false, commitmentReadable: true))
+        XCTAssertEqual(CommitmentPolicy.mayChangeRules(active: true, commitmentReadable: true), false)
+        XCTAssertEqual(CommitmentPolicy.mayChangeRules(active: false, commitmentReadable: false), false)
+        XCTAssertEqual(CommitmentPolicy.mayChangeRules(active: false, commitmentReadable: true), true)
+    }
 
     override func tearDown() {
         for name in suites { UserDefaults().removePersistentDomain(forName: name) }

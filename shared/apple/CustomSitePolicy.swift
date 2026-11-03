@@ -4,7 +4,7 @@ import Foundation
 ///
 /// Apple's adult-content filter (`WebContentSettings.FilterPolicy.auto`) accepts
 /// a short list of additional domains. This is that list: canonical ASCII
-/// hosts, add-only while a commitment runs, the same rules the Mac app and the
+/// hosts, frozen while a commitment runs, the same rules the Mac app and the
 /// browser extension use for their custom blocks. A saved or applied list is
 /// configuration evidence, not proof that any request was blocked.
 enum CustomSitePolicy {
@@ -51,9 +51,11 @@ enum CustomSitePolicy {
         return .added((kept + [host]).sorted())
     }
 
-    /// While committed the list can grow but never stop covering a saved site.
+    /// While committed the saved list is frozen: no additions, removals or
+    /// parent-domain consolidation. This is the same full freeze as the
+    /// Android protection lock. An identical save is a no-op, not a change.
     static func permits(current: [String], proposed: [String], committed: Bool) -> Bool {
-        !committed || current.allSatisfy { covers(proposed, $0) }
+        !committed || current == proposed
     }
 
     static func isValid(_ sites: [String]) -> Bool {

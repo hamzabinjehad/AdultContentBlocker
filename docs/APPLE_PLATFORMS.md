@@ -26,6 +26,12 @@ account and guardian approval; it does not lock Safari/DNS settings. Individual
 approval is not treated as removal protection. See the mobile README for
 recovery, provisioning and physical-device acceptance checks.
 
+iOS 1.2.0 adds a protection lock in the same spirit as Android 0.9.0: a
+commitment freezes the saved blocked-site list and app-limit rules in both
+directions, while protection layers may still be added or restored and the
+commitment may be extended. It is not a device-owner lock; vault and supervised
+profile remain the deletion-resistance paths.
+
 For building, signing and testing, start with [`../ios/README.md`](../ios/README.md).
 
 ## Coordinated development

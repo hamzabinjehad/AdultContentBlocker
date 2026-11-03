@@ -1,4 +1,4 @@
-# Chrome Web Store readiness — Hisn Protection 1.3.0
+# Chrome Web Store readiness — Hisn Protection 1.4.0
 
 This is the owner-facing record for publishing the extension. It is not a
 listing that exists yet. The packaged zip is built by `extension/package.sh`;
@@ -27,6 +27,9 @@ native-messaging installer and policy generators.
 > They read the page's text as well as its language tag, so a misleading tag
 > cannot hide Arabic content; explicit adult labels are checked in every
 > language, and an unidentified language falls back to the full list.
+>
+> The popup and settings dashboard lead with one clear protection status and
+> short layer states, with technical details available only when needed.
 >
 > It runs on its own or with the Hisn Mac app. With the app, a timed lock,
 > the app's site lists and a browser guard become authoritative. Without the
@@ -142,7 +145,7 @@ the previous generation on failure.
 ## Checklist
 
 - [ ] Chrome Web Store developer account and fee.
-- [ ] Upload `dist/hisn-extension-1.3.0.zip`; unlisted first.
+- [ ] Upload `dist/hisn-extension-1.4.0.zip`; unlisted first.
 - [ ] Fill listing, privacy practices and permission justifications from above.
 - [ ] Add 128 px icon and at least one screenshot; the package already has icons.
 - [ ] Read the assigned store ID and wire both native messaging and policy.

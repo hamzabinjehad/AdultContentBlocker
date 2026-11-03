@@ -1,4 +1,4 @@
-# Publish readiness — 2 November 2026
+# Publish readiness — 2–3 November 2026
 
 This is the repository-side answer to “can we publish?”. It records what is
 built, tested and packaged, and the owner actions that no repository change can
@@ -11,21 +11,21 @@ physical-device acceptance run exists.
 | --- | --- | --- | --- |
 | Android | 0.9.0 | 25 | unsigned Play and direct releases checked; direct build installed on the Samsung |
 | Mac | 1.1.7 | 11 | unsigned package smoke passes; system filter still needs the Apple team |
-| iPhone & iPad | 1.1.4 | 5 | simulator suite passes; no team, entitlement or device |
-| Browser extension | 1.3.0 | — | reproducible store zip passes the package check; no listing |
+| iPhone & iPad | 1.2.0 | 6 | simulator suite passes; no team, entitlement or device |
+| Browser extension | 1.4.0 | — | reproducible store zip passes the package check; no listing |
 | Seed | v5, 2026-10-30 | — | signed; no published `lists` branch |
 
-## Verification run on 2 November 2026
+## Verification run on 2–3 November 2026
 
 | Check | Result |
 | --- | --- |
 | `./test.sh python seed extension release macos ios` | **PASS** |
 | Python suites | **PASS** — blocklist, profile, network publication, extension staging, Safari rules |
 | Extension JavaScript suites | **PASS** — 68 language checks, 94 feed checks, 397 web-protection, 46 worker-layout plus the rest |
-| `./test.sh browser` | **PASS** — DNR 42/42, live scanner, six block pages, and the four-image real-engine visual smoke in Helium/Chromium |
+| `./test.sh browser` | **PASS** — DNR 42/42, live scanner, six block pages, popup/settings redesign in English and Arabic, and the four-image real-engine visual smoke in Helium/Chromium |
 | `./test.sh macos` | **PASS** — 513 tests, localization 565 strings with Arabic |
 | `./test.sh release` | **PASS** — 33 installer/package tests |
-| `./test.sh ios` | **PASS** — 183 hosted tests on iPhone 17 / iOS 26.5 |
+| `./test.sh ios` | **PASS** — 185 tests on the iPhone simulator |
 | `android/test-core.sh` | **PASS** — seed, DNS, rules, managed restrictions, protection lock |
 | Android `assembleDebug assembleDebugAndroidTest lintDebug assembleRelease bundleRelease` | **PASS** — 0 lint errors; Play and direct APKs pass `check-release.py` |
 | `CoreDeviceTestRunner` on API 36 emulator | **PASS** — including full-freeze assertions |
@@ -40,7 +40,7 @@ physical-device acceptance run exists.
 - Android AAB SHA-256
   `4647d666edd6068262659a2eab2631fc470529aa3262f157004502dc82526ab7`
 - Extension zip SHA-256
-  `a8471ab3a3e4db4f61656507c933ec51981264162f2c8d593bd63d33694abcac`
+  `2cb7d723884b633b37f295ced0deec9ac0046c95d70d6c1fc80365acb41c5552`
   (6.2 MB, 91 files, reproducible)
 - Mac package smoke artifact `Hisn-UNSIGNED-TEST.pkg` SHA-256
   `a081102f8cea0d9d8ec3658758c280d47f3f4132c6048d408d118ce0e6ca0547`

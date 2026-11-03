@@ -32,7 +32,7 @@ no automation, and it must be run on a real Mac by a person.
 | Every test class is discovered | `unittest discover` in `test.sh` | `test.sh python` |
 | The default suite runs end to end on this Mac | `./test.sh` (python, seed, extension, release, macOS, iOS) on 2026-10-29, exit 0 | `./test.sh` |
 | The pinned version set matches every platform manifest, and the coverage page matches the signed seed/ruleset | `versions.py --check`, `coverage.py --check` | `test_versions.py`, `test_coverage.py`, `test.sh python` |
-| iOS/iPadOS app, Safari blockers and activity monitor build and run their hosted tests | iOS 26.5 simulator (iPhone 17), Xcode 27.1, `** TEST SUCCEEDED **` on 2026-10-30, 183 tests | `./test.sh ios` |
+| iOS/iPadOS app, Safari blockers and activity monitor build and run their hosted tests | iOS 26.5 simulator (iPhone 17), Xcode 27.1, `** TEST SUCCEEDED **` on 2026-11-03, 185 tests | `./test.sh ios` |
 | iOS privacy manifest and export declaration match the code and every bundle | plist checks + generator/project membership | `ios/test_privacy.py`, `test.sh python` |
 | Apple apps bundle complete, current third-party notices | generated files + Swift bundle reads | `script/test_notices.py`, `testBundledThirdPartyNoticesArePresent` |
 | iOS signed Safari list age and 90-day warning | signed `built_at` in metadata + Swift age/clamp/boundary tests | `ios/test_rules.py`, `testSeedFreshness…` |

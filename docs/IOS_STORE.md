@@ -1,4 +1,4 @@
-# App Store readiness — Hisn iPhone & iPad 1.1.4
+# App Store readiness — Hisn iPhone & iPad 1.2.0
 
 Repository-side record for a TestFlight/App Store submission. It is not a
 listing and does not claim App Review approval. No Apple team or Family Controls
@@ -6,7 +6,7 @@ entitlement exists yet.
 
 ## Build and entitlement
 
-- Bundle: `app.hisn.mobile`, version **1.1.4 (5)**.
+- Bundle: `app.hisn.mobile`, version **1.2.0 (6)**.
 - The app and `HisnActivityMonitor` need the **Family Controls distribution
   entitlement**. The Safari blockers and `HisnText` are app extensions; the
   activity monitor has its own entitlement.
@@ -31,13 +31,15 @@ entitlement exists yet.
 **Description:**
 
 > Hisn adds Arabic-aware adult-content protection beside Apple's Screen Time
-> controls. Four Safari blockers load the signed core list, a Safari text
+> controls. Six Safari blockers load the signed core list, a Safari text
 > extension hides detected posts and pages, and optional local visual checks
 > blur media without uploading it.
 >
 > You can choose Screen Time app limits or a daily budget, keep a fixed
 > commitment that refuses to shorten, or seal a Screen Time passcode until a
-> date you choose. A supervised device can use Hisn's configuration profile for
+> date you choose. While a commitment runs, Hisn freezes its saved blocked-site
+> list and app-limit rules; protection layers can still be added or restored,
+> never turned off. A supervised device can use Hisn's configuration profile for
 > the strongest lock. Every mode states its exit and what it cannot stop.
 >
 > **Privacy:** matching stays on the device. Hisn has no account, no analytics
@@ -73,7 +75,8 @@ boot clock.
 
 - Every lock is disclosed in the app: self-only, passcode vault, family
   guardian, supervised profile. The app never claims a stronger level than it can
-  show.
+  show. A protection lock freezes Hisn's own saved sites and app limits; it does
+  not freeze Apple's Settings or make the app undeletable.
 - The passcode vault is a Screen Time passcode the person sets themselves. Hisn
   cannot verify the Settings steps and says so. Apple's Apple Account reset and
   device erase remain the recovery paths.
