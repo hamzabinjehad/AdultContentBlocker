@@ -73,8 +73,8 @@ physical-proximity mode.
    replacement-app, passcode or custom-message fields.
 2. **The same protection-lock freeze.** Limits are saved rules, not a separate
    unsealed counter, so the 0.9.0 protection lock freezes them in both
-   directions. A guardian policy may add or lower a limit but never remove or
-   raise one.
+   directions. The guardian path is tighten-only and preserves saved limits; it
+   cannot remove or raise one.
 3. **The existing pause screen explains the limit.** No new countdown, streak
    or score was added.
 

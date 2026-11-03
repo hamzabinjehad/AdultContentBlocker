@@ -36,9 +36,9 @@ first, which deletes its local rules and lock.
   and one daily foreground-time limit from 5 minutes to 24 hours. When Android's
   own on-device usage record reaches the limit, Hisn closes the app and shows the
   pause screen with a time-limit reason until local midnight.
-- The limit is a saved rule: a protection lock freezes it in both directions,
-  and the guardian tighten-only path may add or lower a limit but never remove
-  or raise one.
+- The limit is a saved rule: a protection lock freezes it in both directions.
+  The guardian path is tighten-only and preserves saved limits; it cannot
+  remove or raise one.
 - Enforcement requires both Hisn accessibility and Android's **Usage access**
   special permission. The Rules card distinguishes "Granted" from "Not granted",
   and Protection shows an attention item when limits are saved without the
@@ -46,8 +46,8 @@ first, which deletes its local rules and lock.
 - Hisn reads `UsageStatsManager` foreground totals for the current local day and
   caches one query per app for 15 seconds. It checks a limited app when it comes
   on screen, while it stays on screen, and in the once-a-minute sweep.
-- Version metadata, the app subtitle and the DNS notification now say 1.0.0
-  rather than preview.
+- Version metadata and the app subtitle now say 1.0.0 rather than preview; the
+  DNS notification says "Hisn DNS filtering" rather than "preview".
 - The 0.9.0 protection lock, direct-build removal guard, managed-device
   previews, DNS layer, text checks, visual sampling, schedules and pause screen
   are unchanged.
@@ -114,11 +114,15 @@ artifacts (checked by `check-release.py`).
 
 ## Publication
 
-The signed direct APK is prepared as the asset for the GitHub release
-`android-1.0.0`, to be published with its SHA-256 and the certificate
-fingerprint above. The Play AAB is not uploaded. The direct build is the
-recommended first distribution because its removal guard is outside Google
-Play's Accessibility policy; never upload the direct build to Play.
+The signed direct APK is published in the GitHub release
+[`android-1.0.0`](https://github.com/hamzabinjehad/AdultContentBlocker/releases/tag/android-1.0.0)
+with its SHA-256 and the certificate fingerprint above. The asset was downloaded
+back from GitHub on 3 November 2026; its SHA-256 matched
+`c42591ec8223e3d24d8159f0536d3212ee0f351b5c3edc1fc4d03c0d30afaac0` and
+`apksigner` verified the certificate above. The Play AAB is not uploaded. The
+direct build is the recommended first distribution because its removal guard is
+outside Google Play's Accessibility policy; never upload the direct build to
+Play.
 
 ## Updating from the preview
 

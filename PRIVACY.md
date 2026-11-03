@@ -38,7 +38,9 @@ The following are processed locally and are not saved or sent:
 - transient screenshots and video frames sampled by the opt-in visual checks;
 - image and video classification results;
 - host and flow decisions made by the Mac content filter;
-- DNS answers handled by the Android DNS service.
+- DNS answers handled by the Android DNS service;
+- Android's foreground-time totals for apps with a daily limit, read only to
+  compare the current local day with the saved limit.
 
 The visual models ship with the app and run locally. History is not retained by
 the visual engine.
@@ -77,6 +79,10 @@ in-app disclosure for each layer says what it can and cannot see.
   recognise Hisn's own uninstall/disable screens in the direct build. It is never
   used to read passwords; input and password fields are skipped where Android
   identifies them.
+- **Usage access (Android, optional):** read Android's on-device foreground-time
+  totals for apps you give a daily time limit. Hisn compares the current local
+  day's total with your saved limit; it does not retain a usage history or send
+  the totals anywhere.
 - **Screen capture / media projection (Android):** sample the selected app's
   window only when you turn on image or video checks. Samples are transient.
 - **VPN (Android):** run the DNS-only local resolver. It does not forward your

@@ -72,8 +72,8 @@ on-device usage record for an app reaches the saved limit, Hisn closes that app
 and shows the pause screen with a time-limit reason until local midnight.
 
 - The limit is a saved rule. A protection lock freezes it in both directions
-  with every other rule; the guardian tighten-only path can add or lower a
-  limit but never remove or raise one.
+  with every other rule; the guardian tighten-only path preserves saved limits
+  and cannot remove or raise one.
 - Enforcement needs both Hisn accessibility and Android's separate **Usage
   access** special permission. The Rules card says which of the two is missing,
   and Protection adds an attention item when limits are saved without Usage

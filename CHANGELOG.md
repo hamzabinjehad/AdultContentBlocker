@@ -148,7 +148,7 @@ behavior, quiet-hours registration and pause sheet still need a real device.
   **Usage access** permission; Hisn closes a limited app at the threshold and
   shows the pause screen with a time-limit reason until local midnight.
 - A limit is a saved rule: the protection lock freezes it in both directions,
-  and the guardian tighten-only path may add or lower a limit but never remove
+  and the guardian tighten-only path preserves saved limits and cannot remove
   or raise one. Missing Usage access or accessibility is shown as attention,
   never as enforced.
 - The 0.9.0 protection lock, direct-build removal guard, managed-device
@@ -158,8 +158,11 @@ behavior, quiet-hours registration and pause sheet still need a real device.
 ### Release
 
 - **Signed direct-sideload APK** at 1.0.0-direct, versionCode 26, package
-  `app.hisn.android`. The Play APK and AAB are built and checked but not
-  uploaded; Play approval is not claimed. The signing certificate is RSA 4096
+  `app.hisn.android`. Published at
+  [the android-1.0.0 release](https://github.com/hamzabinjehad/AdultContentBlocker/releases/tag/android-1.0.0);
+  the asset was re-downloaded and its SHA-256 and certificate re-verified. The
+  Play APK and AAB are built and checked but not uploaded; Play approval is not
+  claimed. The signing certificate is RSA 4096
   (`CN=Hisn Android`, SHA-256
   `2F:BE:D6:57:E6:AB:C7:1C:15:CA:D0:CD:99:1C:53:2F:59:77:2D:16:95:D7:C3:7E:65:A1:14:38:5E:94:70:C5`).
 - Artifact SHA-256: direct APK

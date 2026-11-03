@@ -11,8 +11,8 @@ It adds opt-in daily app time limits on top of the 0.9.0 protection lock.
 
 - `AppTimeLimit` stores a package-to-minutes rule (5–1,440 minutes, at most 200
   apps) inside the sealed settings file. It is frozen by a running protection
-  lock in both directions; the guardian tighten-only path may add or lower a
-  limit but never remove or raise one.
+  lock in both directions; the guardian tighten-only path preserves saved
+  limits and cannot remove or raise one.
 - `AppUsage` reads Android's on-device `UsageStatsManager` foreground total for
   the current local day. The separate Android **Usage access** special
   permission is required. Without it nothing is enforced, and the Rules card and
