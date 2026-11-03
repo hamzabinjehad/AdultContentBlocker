@@ -1,9 +1,9 @@
 # Android 1.1.0: first-run and pause UI/UX pass
 
-Prepared in the repository on 3 November 2026 as version 1.1.0, versionCode 27.
-This is a signed direct-sideload update over 1.0.0; the GitHub release is
-pending at the time of this record. It adds no new enforcement layer and
-relaxes no rule, permission or consent text.
+Released in the repository and published on GitHub on 3 November 2026 as
+version 1.1.0, versionCode 27. This is a signed direct-sideload update over
+1.0.0. It adds no new enforcement layer and relaxes no rule, permission or
+consent text.
 
 ## What changed
 
@@ -103,5 +103,9 @@ The Play AAB is built and checked but not uploaded; no Play approval is claimed.
 
 ## Publication
 
-The signed direct APK is prepared for the GitHub release `android-1.1.0` with
-the SHA-256 and certificate above. The Play AAB is not uploaded.
+The signed direct APK is published in the GitHub release
+[`android-1.1.0`](https://github.com/hamzabinjehad/AdultContentBlocker/releases/tag/android-1.1.0)
+with the SHA-256 and certificate above. The asset was downloaded back from
+GitHub on 3 November 2026; its SHA-256 matched
+`4d80a3c7c50e8e0637c69e9aa8b604d55902d1ee55c9f96c7e30c5712f0d7dff` and
+`apksigner` verified the certificate above. The Play AAB is not uploaded.
