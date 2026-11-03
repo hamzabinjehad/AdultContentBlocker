@@ -1,8 +1,9 @@
 # Android 1.1.0: first-run and pause UI/UX pass
 
-Released in the repository on 3 November 2026 as version 1.1.0, versionCode 27.
-This is a signed direct-sideload update over 1.0.0. It adds no new enforcement
-layer and relaxes no rule, permission or consent text.
+Prepared in the repository on 3 November 2026 as version 1.1.0, versionCode 27.
+This is a signed direct-sideload update over 1.0.0; the GitHub release is
+pending at the time of this record. It adds no new enforcement layer and
+relaxes no rule, permission or consent text.
 
 ## What changed
 
