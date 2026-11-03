@@ -25,7 +25,7 @@ physical-device acceptance run exists.
 | `./test.sh browser` | **PASS** — DNR 42/42, live scanner, six block pages, popup/settings redesign in English and Arabic, and the four-image real-engine visual smoke in Helium/Chromium |
 | `./test.sh macos` | **PASS** — 522 tests, localization 597 strings with Arabic (includes the 1.1.9 guard panel and pause) |
 | `./test.sh release` | **PASS** — 33 installer/package tests |
-| `./test.sh ios` | **PASS** — 206 tests on the iPhone simulator |
+| `./test.sh ios` | **PASS** — 213 tests on the iPhone simulator |
 | `android/test-core.sh` | **PASS** — seed, DNS, rules, managed restrictions, protection lock, `AppTimeLimitTest` |
 | Android strings/UI | **PASS** — 460 strings, 15 plurals, 485 references in English/Arabic; time-limit card read back on the API 36 emulator |
 | Android `assembleDebug assembleDebugAndroidTest lintDebug assembleRelease bundleRelease` | **PASS** — 0 lint errors; signed Play and direct APKs pass `check-release.py` and `apksigner` |
