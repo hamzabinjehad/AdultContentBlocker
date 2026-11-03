@@ -815,6 +815,18 @@
 			name = "Embed Safari Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E4C74C61E3AD0EDB72CCC6C8  = {
+			isa = PBXShellScriptBuildPhase;
+			name = "Strip Family Controls appexes from simulator builds";
+			buildActionMask = 2147483647;
+			files = ();
+			inputPaths = ();
+			outputPaths = ();
+			alwaysOutOfDate = 1;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"${PLATFORM_NAME:-}\" = \"iphonesimulator\" ]; then\n  rm -rf \"$TARGET_BUILD_DIR/$WRAPPER_NAME/PlugIns/HisnShieldConfig.appex\" \"$TARGET_BUILD_DIR/$WRAPPER_NAME/PlugIns/HisnShieldAction.appex\"\nfi\n";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		5EB20937FACE2CC9970F14D3  = {
 			isa = XCBuildConfiguration;
 			name = Debug;
@@ -892,6 +904,7 @@
 				953CC888EC97B82BA9E79C30,
 				95006D1BC6A758015200841C,
 				FF30F53173E32C0B2BD5EA05,
+				E4C74C61E3AD0EDB72CCC6C8,
 			);
 			dependencies = (
 				5DB503B456BCDB980EDFECCB,
