@@ -67,11 +67,12 @@ reason from the saved rule:
 - Both embed `Hisn/PrivacyInfo.xcprivacy`. The manifest now ships in eleven
   bundles: the app, six Safari blockers, the activity monitor, the Safari
   scanner, and both shield extensions.
-- Device builds embed the extensions in the app under PlugIns. Simulator builds
-  strip both appexes after the embed phase because some simulator runtimes
-  reject the ManagedSettingsUI extension point; the policy tests do not need
-  the appexes. The Safari-only candidate does not build them because it has no
-  Family Controls entitlement.
+- Device builds embed the extensions in the app under PlugIns. Simulator test
+  builds remove both appexes after building and before installation
+  (`./test.sh ios`) because some simulator runtimes reject the
+  ManagedSettingsUI extension point; the policy tests do not need the appexes.
+  The Safari-only candidate does not build them because it has no Family
+  Controls entitlement.
 - Version 1.4.0, build 8. The app, six blockers, monitor, scanner and both
   shield extensions share the version set.
 
@@ -97,11 +98,11 @@ reason from the saved rule:
 - `./test.sh ios` — **39 Python and 213 hosted tests, 0 failures** on the
   iPhone 17 simulator, iOS 26.5. The hosted count was 206 before this release;
   the seven new tests are the shield policy tests.
-- The app builds for the simulator with `CODE_SIGNING_ALLOWED=NO`; simulator
-  builds strip the shield appexes after embedding so the test runner installs
-  on runtimes that do not know the extension point. Device builds keep the
-  embed phase, and the extension Info.plists and entitlements are checked by
-  the Python tests.
+- The app builds for the simulator with `CODE_SIGNING_ALLOWED=NO`; the test
+  runner removes the shield appexes from the built product before installing,
+  so tests install on runtimes that do not know the extension point. Device
+  builds keep the embed phase, and the extension Info.plists and entitlements
+  are checked by the Python tests.
 - Python checks cover the shield plists, Family Controls entitlements, App Group
   on the configuration extension, privacy-manifest membership in eleven bundles
   and the generator references.
@@ -119,7 +120,7 @@ reason from the saved rule:
   targets: the app, `HisnActivityMonitor`, `HisnShieldConfig` and
   `HisnShieldAction`. Adding the plist key is not approval.
 - The Simulator cannot render or activate Screen Time shields, and simulator
-  test builds strip the appexes. The tests prove the policy and the extension
+  test builds remove the appexes. The tests prove the policy and the extension
   configuration, not the system UI.
 - The shield has no unlock action. Outside a commitment, the person removes or
   weakens the rule in Hisn; inside a commitment, the saved rule is frozen.

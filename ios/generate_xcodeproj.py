@@ -194,21 +194,6 @@ def main(safari_only: bool = False, domain_only: bool = False,
                 "buildActionMask": "2147483647", "dstPath": '""', "dstSubfolderSpec": "13",
                 "files": writer.plist_array(embedded), "name": q("Embed Safari Extensions"),
                 "runOnlyForDeploymentPostprocessing": "0"}))
-            # Older simulator runtimes reject the ManagedSettingsUI shield
-            # extension point, so the app would not install for tests. Device
-            # builds keep both appexes; simulator builds strip them after the
-            # embed phase. The shield policy is tested directly in the app tests.
-            if not safari_only:
-                strip = ('if [ "${PLATFORM_NAME:-}" = "iphonesimulator" ]; then\n'
-                         '  rm -rf "$TARGET_BUILD_DIR/$WRAPPER_NAME/PlugIns/HisnShieldConfig.appex" '
-                         '"$TARGET_BUILD_DIR/$WRAPPER_NAME/PlugIns/HisnShieldAction.appex"\n'
-                         'fi\n')
-                phases.append(p.add(oid("ios-strip-shields", name), "PBXShellScriptBuildPhase", {
-                    "name": q("Strip Family Controls appexes from simulator builds"),
-                    "buildActionMask": "2147483647", "files": "()", "inputPaths": "()",
-                    "outputPaths": "()", "alwaysOutOfDate": "1", "shellPath": "/bin/sh",
-                    "shellScript": q(strip).replace("\n", "\\n"),
-                    "runOnlyForDeploymentPostprocessing": "0"}))
         elif name == monitor:
             extra.update({"INFOPLIST_FILE": "HisnActivityMonitor/Info.plist",
                           "CODE_SIGN_ENTITLEMENTS": "HisnActivityMonitor/HisnActivityMonitor.entitlements",

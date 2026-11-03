@@ -30,8 +30,8 @@ two Screen Time extensions:
   extension also carries the shared App Group and a privacy manifest. The
   privacy manifest is now included in eleven bundles (app, six blockers,
   monitor, scanner, and both shield extensions). Device builds embed both
-  appexes; simulator builds strip them after embedding because some simulator
-  runtimes reject the ManagedSettingsUI extension point.
+  appexes; simulator test builds remove them before installation because some
+  simulator runtimes reject the ManagedSettingsUI extension point.
 
 Version 1.4.0, build 8. `./test.sh ios` passes **39 Python and 213 simulator
 tests**; no Apple team, Family Controls entitlement, signed build or

@@ -172,8 +172,21 @@ print("platform=iOS Simulator,id=" + devices[0]["udid"])
 ')"
     fi
     echo "── ios: hosted app tests"
-    xcodebuild test -project ios/HisnMobile.xcodeproj -scheme HisnMobile \
-        -destination "$destination" CODE_SIGNING_ALLOWED=NO \
+    # Older simulator runtimes reject the ManagedSettingsUI shield extension
+    # point, which makes the app un-installable for tests. Build first, remove
+    # the two shield appexes from the *test* product, then install and test;
+    # device builds keep both appexes and the policy is tested directly.
+    local derived="$SCRATCH/hisn-ios-tests"
+    xcodebuild build-for-testing -project ios/HisnMobile.xcodeproj -scheme HisnMobile \
+        -configuration Debug -destination "$destination" -derivedDataPath "$derived" \
+        CODE_SIGNING_ALLOWED=NO \
+        HISN_PYTHON="${HISN_PYTHON:-$(command -v python3)}" \
+        ${XCODEBUILD_FLAGS:-}
+    rm -rf "$derived/Build/Products/Debug-iphonesimulator/HisnMobile.app/PlugIns/HisnShieldConfig.appex" \
+           "$derived/Build/Products/Debug-iphonesimulator/HisnMobile.app/PlugIns/HisnShieldAction.appex"
+    xcodebuild test-without-building -project ios/HisnMobile.xcodeproj -scheme HisnMobile \
+        -configuration Debug -destination "$destination" -derivedDataPath "$derived" \
+        CODE_SIGNING_ALLOWED=NO \
         HISN_PYTHON="${HISN_PYTHON:-$(command -v python3)}" \
         ${XCODEBUILD_FLAGS:-}
 }
