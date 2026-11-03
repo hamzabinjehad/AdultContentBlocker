@@ -46,6 +46,7 @@
             </intent-filter>
         </activity>
         <activity android:name=".RestrictionActivity" android:exported="false" android:excludeFromRecents="true" />
+        <activity android:name=".WelcomeActivity" android:exported="false" android:excludeFromRecents="true" />
         <activity android:name=".GuardianPairActivity" android:exported="false"
             android:launchMode="singleTop"
             android:label="@string/guardian_pair_title" android:windowSoftInputMode="adjustResize" />

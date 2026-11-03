@@ -13,7 +13,7 @@ signed artifact has shipped. The state column is the honest release state.
 | Browser extension (Chromium) | 1.5.0 | — | development · unpacked, no store listing | `extension/manifest.json` |
 | Mac | 1.1.9 | 13 | development · unsigned, needs Developer ID and notarization | `macos/Hisn.xcodeproj/project.pbxproj` |
 | iPhone & iPad | 1.4.0 | 8 | development · no Apple team, Family Controls entitlement or test device | `ios/HisnMobile.xcodeproj/project.pbxproj` |
-| Android | 1.0.0 | 26 | released · signed direct APK; Play AAB built, not uploaded | `android/app/build.gradle` |
+| Android | 1.1.0 | 27 | released · signed direct APK; Play AAB built, not uploaded | `android/app/build.gradle` |
 
 ## Seed bundle
 
@@ -35,7 +35,7 @@ generation must beat; clients refuse a lower one.
 - **Browser extension (Chromium)** (`extension`): The packaged zip strips the development key; the Chrome Web Store ID will differ from the unpacked ID. 1.5.0 adds portable rules: Settings → Move your rules exports the person's five hand lists as a versioned JSON file and imports one add-only, so a more permissive file can never undo a stricter browser. A running lock withholds additions to the allowlist and corrections and applies blocks and words. No permission, network path or storage field changed; 1.4.0's quiet UI and 1.3.0's language-aware scoring are retained.
 - **Mac** (`macos`): Every target must carry the same MARKETING_VERSION and CURRENT_PROJECT_VERSION; 1.1.9 redesigns the browser-guard warning as a calm dark card with a shield, a large countdown, one Open-browser action and no bypass, and moves the Overview's layer evidence behind compact state chips and a Layer details disclosure. 1.1.8's pause, protection-authority and lock controls are retained. Unsigned/unnotarized.
 - **iPhone & iPad** (`ios`): The app, six Safari blockers, HisnActivityMonitor, the scanner and two shield extensions share one version set. 1.4.0 adds HisnShieldConfig and HisnShieldAction: the system shield names the saved rule (always, daily budget or quiet hours) in the app language and offers only Close, never an unlock. 1.3.0's pause, protection hero, daily quiet hours and saved-rule freeze are retained. Seed v5 still supplies the 239,885-domain Safari list.
-- **Android** (`android`): versionCode is monotonic and must increase for every uploaded or side-loaded update. 26 (1.0.0) adds per-app daily foreground-time limits alongside the protection lock, removal guard, managed lockdown, watchdog and bundled-list warning. Release APKs are checked; the release keystore is in the gitignored keys/android and must be backed up offline in two places. The Play AAB is built but not uploaded.
+- **Android** (`android`): versionCode is monotonic and must increase for every uploaded or side-loaded update. 27 (1.1.0) adds a first-run welcome, a voluntary pause on Protection and today's usage in the daily-limit editor; it adds no enforcement layer and relaxes no rule. 1.0.0 added per-app daily foreground-time limits alongside the protection lock, removal guard, managed lockdown, watchdog and bundled-list warning. Release APKs are checked; the release keystore is in the gitignored keys/android and must be backed up offline in two places. The Play AAB is built but not uploaded.
 
 ## Bumping a version
 

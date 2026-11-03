@@ -32,11 +32,11 @@
     {
       "id": "android",
       "name": "Android",
-      "version": "1.0.0",
-      "build": 26,
+      "version": "1.1.0",
+      "build": 27,
       "state": "released · signed direct APK; Play AAB built, not uploaded",
       "source": "android/app/build.gradle",
-      "notes": "versionCode is monotonic and must increase for every uploaded or side-loaded update. 26 (1.0.0) adds per-app daily foreground-time limits alongside the protection lock, removal guard, managed lockdown, watchdog and bundled-list warning. Release APKs are checked; the release keystore is in the gitignored keys/android and must be backed up offline in two places. The Play AAB is built but not uploaded."
+      "notes": "versionCode is monotonic and must increase for every uploaded or side-loaded update. 27 (1.1.0) adds a first-run welcome, a voluntary pause on Protection and today's usage in the daily-limit editor; it adds no enforcement layer and relaxes no rule. 1.0.0 added per-app daily foreground-time limits alongside the protection lock, removal guard, managed lockdown, watchdog and bundled-list warning. Release APKs are checked; the release keystore is in the gitignored keys/android and must be backed up offline in two places. The Play AAB is built but not uploaded."
     }
   ]
 }

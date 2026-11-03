@@ -5,6 +5,66 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
+## Android 1.1.0 — 2026-11-03
+
+### Added
+
+- **A first-run welcome.** Three skippable pages explain blocking, deliberate
+  opening and protection locks, with one large icon and one idea per page.
+  Finishing opens Rules; **Skip for now** opens Protection. It appears only when
+  no rules are configured and has not been seen. English and Arabic RTL.
+- **Take a pause on Protection.** A visible row opens the existing breathing
+  pause without a block. It changes no rule, grants no permission and remains
+  available during a protection lock. **Back to Hisn** returns immediately.
+- **Today's use in the daily-limit editor.** Each selected app shows
+  **Used X of Y today** with a progress bar from Android's on-device usage
+  record; without Usage access the editor says so instead of showing zeros.
+- The pause row moved near the top of Protection, after the hero/attention area.
+- ScreenZen's Android onboarding was observed read-only as design input; Hisn
+  uses its own copy, icons, colours and components. No ScreenZen code, assets or
+  copy was used. Open-count, streak, paywall and cloud features remain out of
+  scope.
+
+### Release
+
+- Signed direct APK `1.1.0-direct`, versionCode 27, package
+  `app.hisn.android`; the Play APK/AAB are built and checked but not uploaded.
+  Certificate unchanged:
+  `2F:BE:D6:57:E6:AB:C7:1C:15:CA:D0:CD:99:1C:53:2F:59:77:2D:16:95:D7:C3:7E:65:A1:14:38:5E:94:70:C5`.
+- SHA-256: direct APK
+  `4d80a3c7c50e8e0637c69e9aa8b604d55902d1ee55c9f96c7e30c5712f0d7dff`;
+  Play APK `f90c43b83cac0a79383dd8e0ccaecee4f9f604993ba618c02c23c7ebb6a75a5c`;
+  Play AAB `ee5bce6fd4d70bc9fcfe0a43ce6bc019dd04377ca0d7266c1eba4ba2ea78dc4f`.
+- The owner's Samsung updated from 1.0.0-direct to 1.1.0-direct in place
+  (`firstInstallTime` unchanged) and rendered the Arabic welcome. The 0.9.0
+  preview was debug-signed; its rules and optional admin did not survive the
+  earlier 1.0.0 migration on this phone, so the safe preview path remains
+  uninstall first. New installs from 1.0.0 onward use the release key.
+
+### Verification
+
+- `JAVA_HOME=<JBR> sh test-core.sh` — **PASS**, including `AppTimeLimitTest`,
+  sealed settings, protection lock, DNS, text, visual, guardian and seed suites.
+- `python3 check-strings.py` — **PASS**, 480 strings, 15 plurals, 506 source
+  references in English and Arabic.
+- `./gradlew assembleDebug assembleDebugAndroidTest lintDebug` — **PASS**, 0 lint
+  errors.
+- `CoreDeviceTestRunner` on the API 36 emulator — **PASS**.
+- Welcome UI in English and Arabic, Skip/Set up, page-by-page back, the
+  voluntary pause and the "Used 4 min of 15 min today" row — **PASS** on the
+  API 36 emulator.
+- Signed Play/direct APKs and AAB pass `check-release.py` and `apksigner`.
+
+### Limits
+
+- No full physical-phone enforcement, TalkBack/large-font or OEM-skin audit is
+  claimed; the phone run above is a launch/update and Arabic-welcome check.
+- The welcome appears only when no rules are configured. Pause and usage display
+  change no rule and grant no permission. Daily limits still need accessibility
+  and Usage access; clock/time-zone changes, clearing usage data, force-stop,
+  Safe Mode, ADB/root or a factory reset still bypass them.
+- The Play AAB is not uploaded and Play approval is not claimed.
+
 ## Blocklist v6 — 2026-11-03
 
 ### Published

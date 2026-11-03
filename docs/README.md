@@ -130,6 +130,7 @@ Per-version change and verification notes, newest first.
 
 ### Android
 
+- [Android 1.1.0 release notes](ANDROID_1.1.0.md): Signed direct-sideload update at versionCode 27 with a bilingual first-run welcome, a voluntary pause on Protection and today's usage in the daily-limit editor; 1.0.0 → 1.1.0 update verified in place on the owner's phone, no full physical enforcement or Play claim.
 - [Android 1.0.0 release notes](ANDROID_1.0.md): Signed direct-sideload APK at versionCode 26, per-app daily time limits backed by Android's usage record, Play APK/AAB built but not uploaded, and API 36 emulator evidence for the limit card and one live 5-minute enforcement pass. No physical-phone run claimed.
 - [Android 0.9.0 release notes](ANDROID_0.9.0.md): The protection lock freezes every saved rule in both directions, arms the direct build's removal guard from the lock itself, and makes the Play build's uninstall limit explicit while the lock runs. API 36 emulator UI and instrumentation evidence; no physical device claimed.
 - [UI principles and the 2026-11-02 pass](UI_PRINCIPLES.md): progressive disclosure, deferred mobile copy and the screens changed.

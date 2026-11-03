@@ -4,6 +4,34 @@ Updated 2026-11-03. This describes the development work in `android/`, not a
 production release or proof that the connected owner's phone is protected.
 Mac, iOS/iPadOS and browser code were not changed in this Android implementation.
 
+## 1.1.0 UI/UX pass (2026-11-03)
+
+Version 1.1.0 (versionCode 27) adds a first-run welcome, a voluntary **Take a
+pause** action on Protection and today's usage in the daily-limit editor. It
+adds no enforcement layer and relaxes no rule.
+
+- `WelcomeActivity` shows three skippable pages only when the app has no
+  configured rules and the welcome has not been seen. Finishing opens Rules;
+  skipping opens Protection. English and Arabic RTL.
+- `RestrictionActivity` now has a voluntary mode reached from Protection. It
+  uses the same pause card and tally, changes no rule, and **Back to Hisn**
+  returns immediately. The service-launched block path is unchanged.
+- The daily-limit editor shows each selected app's Android usage today with a
+  progress bar, or an explicit Usage-access message. `AppUsage` is the same
+  source used by enforcement.
+- ScreenZen's Android onboarding was observed read-only as design input; no
+  competitor code, assets or copy was used.
+
+Verified on 3 November 2026 on the API 36 emulator: `test-core.sh` (including
+`AppTimeLimitTest`), English/Arabic string parity (480 strings, 15 plurals),
+`assembleDebug`, `assembleDebugAndroidTest`, `lintDebug`, `CoreDeviceTestRunner`,
+the welcome in both languages with Skip/Set up and page-by-page back, the
+voluntary pause and the usage row. The owner's Samsung updated from 1.0.0 to
+1.1.0 in place (`firstInstallTime` unchanged) and rendered the Arabic welcome.
+The signed Play/direct APKs and AAB pass `check-release.py` and `apksigner`; the
+direct APK is the published artifact. No full physical-phone enforcement,
+TalkBack/large-font audit or Play approval is claimed.
+
 ## 1.0.0 signed release boundary (2026-11-03)
 
 Hisn Android 1.0.0 (versionCode 26) is the first signed direct-sideload release.

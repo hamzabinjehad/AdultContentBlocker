@@ -1,4 +1,4 @@
-# Hisn Android 1.0.0: signed self-control release
+# Hisn Android 1.1.0: signed self-control release
 
 The Android app contains an opt-in DNS-only VPN, saved custom rules, selected-app
 accessibility restrictions, opt-in daily app schedules, opt-in daily app time
@@ -9,30 +9,57 @@ layer-health watchdog. The interface follows the system light/dark appearance,
 uses bottom navigation for Protection, Rules and Guide, and supports Arabic and
 English.
 
-1.0.0 is the first signed direct-sideload release. The APK and its certificate
-fingerprint are recorded in [the 1.0 record](../docs/ANDROID_1.0.md). The Play
-build is produced from the same source but is not uploaded; its accessibility
-declaration still needs Google Play review, and the direct build's removal guard
-is deliberately absent from it.
+1.0.0 was the first signed direct-sideload release. 1.1.0 adds a first-run
+welcome, a voluntary pause action, and today's usage in the daily-limit editor;
+it adds no enforcement layer and relaxes no rule. The APK and certificate
+fingerprints for both releases are recorded in
+[the 1.1.0 record](../docs/ANDROID_1.1.0.md).
 
-Core tests pass and the signed 1.0.0 candidates are checked with
+The Play build is produced from the same source but is not uploaded; its
+accessibility declaration still needs Google Play review, and the direct
+build's removal guard is deliberately absent from it.
+
+Core tests pass and the signed 1.1.0 candidates are checked with
 `check-release.py`. Device evidence is version-specific in the release records
-below. The 1.0.0 feature and UI pass ran on the API 36 emulator; no physical
-phone run of 1.0.0 is claimed. The visual model and policy tests ran in a
-separate Samsung debug installation; the owner's existing app and permissions
-were not replaced or enabled. The current live VPN check passed local-block and
-external-resolver steps over both UDP and reused TCP. On 0.4.2, Brave displayed
-an ordinary page, search results and an IETF documentation page while the VPN
-was active. These are limited smoke tests, not proof that every browser request
-uses Hisn. Broader real-app coverage and VPN/lifecycle testing remain pending.
-Visual accuracy and real-app capture acceptance remain pending; the isolated
-live fixture sequence passes. Daily time limits read Android's on-device usage
-record and are only enforced while Hisn's accessibility service is connected;
-they are not a usage-statistics-based parental control system. Full traffic
-coverage is not implemented. Managed uninstall blocking and the broader
-lockdown exist only as an opt-in device-owner preview; the ordinary install
-remains removable, and actual blocked-uninstall and restriction acceptance
-needs a disposable provisioned device.
+below. The 1.1.0 UI pass ran on the API 36 emulator, and the owner's Samsung
+accepted the 1.0.0 → 1.1.0 update in place and rendered the Arabic welcome; no
+full physical-phone acceptance of enforcement is claimed. The visual model and
+policy tests ran in a separate Samsung debug installation; the owner's existing
+app and permissions were not replaced or enabled. The current live VPN check
+passed local-block and external-resolver steps over both UDP and reused TCP. On
+0.4.2, Brave displayed an ordinary page, search results and an IETF
+documentation page while the VPN was active. These are limited smoke tests, not
+proof that every browser request uses Hisn. Broader real-app coverage and
+VPN/lifecycle testing remain pending. Visual accuracy and real-app capture
+acceptance remain pending; the isolated live fixture sequence passes. Daily
+time limits read Android's on-device usage record and are only enforced while
+Hisn's accessibility service is connected; they are not a
+usage-statistics-based parental control system. Full traffic coverage is not
+implemented. Managed uninstall blocking and the broader lockdown exist only as
+an opt-in device-owner preview; the ordinary install remains removable, and
+actual blocked-uninstall and restriction acceptance needs a disposable
+provisioned device.
+
+## UI/UX pass (1.1.0)
+
+- **First-run welcome.** Three skippable pages explain blocking, deliberate
+  opening and protection locks, with one large icon and one idea per page.
+  Finishing opens Rules; **Skip for now** opens Protection. It appears only when
+  the app has no configured rules and has not been seen. English and Arabic RTL.
+- **Take a pause on Protection.** A visible row opens the existing breathing
+  pause without a block. It changes no rule, grants no permission and is
+  available during a protection lock. **Back to Hisn** returns immediately.
+- **Today's use in the daily-limit editor.** Each selected app shows
+  **Used X of Y today** with a progress bar from Android's on-device usage
+  record. Without Usage access the editor says so instead of showing zeros.
+- The pause row moved near the top of Protection, after the hero/attention area.
+- ScreenZen's Android onboarding was observed read-only on the owner's phone;
+  its three-value structure informed the welcome, but Hisn uses its own copy,
+  icons, colours and components. No ScreenZen code, assets or copy was used.
+- Verified on the API 36 emulator in English and Arabic, including Skip/Set up,
+  page-by-page back, the voluntary pause and the "Used 4 min of 15 min today"
+  row. The owner's Samsung updated from 1.0.0 to 1.1.0 in place and rendered the
+  Arabic welcome. No full physical-phone enforcement or Play claim.
 
 ## Protection lock (0.9.0)
 

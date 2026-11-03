@@ -11,6 +11,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ShortcutInfo;
 import android.content.pm.ShortcutManager;
+import android.content.res.ColorStateList;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.Icon;
@@ -39,6 +40,7 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -47,8 +49,10 @@ import android.widget.Toast;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 
@@ -180,6 +184,14 @@ public final class MainActivity extends Activity {
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         try { settings = PolicyStore.get(this); }
         catch (RuntimeException unavailable) { settings = null; }
+
+        // A fresh install gets one short, skippable explanation before the dashboard.
+        // Rules already saved mean this is an upgrade or a configured install; no welcome.
+        if (savedInstanceState == null && WelcomeActivity.shouldShow(this, settings)) {
+            startActivity(new Intent(this, WelcomeActivity.class));
+            finish();
+            return;
+        }
 
         buildShell();
         setContentView(shell);
@@ -486,6 +498,14 @@ public final class MainActivity extends Activity {
         attentionCard.addView(attentionDetails.root);
         attentionCard.setVisibility(View.GONE);
         page.addView(attentionCard, Ui.margins(this, 0, 10));
+
+        LinearLayout pauseCard = Ui.card(this);
+        Ui.SettingRow pauseRow = Ui.settingRow(this, R.drawable.ic_pulse,
+                getString(R.string.pause_voluntary_action), getString(R.string.pause_voluntary_summary),
+                view -> startActivity(new Intent(this, RestrictionActivity.class)
+                        .putExtra("voluntary", true)));
+        pauseCard.addView(pauseRow.root);
+        page.addView(pauseCard, Ui.margins(this, 0, 10));
 
         setupCard = addCard(page, R.drawable.ic_check, R.string.setup_heading);
         setupState = Ui.body(this, getString(R.string.setup_first));
@@ -2066,7 +2086,7 @@ public final class MainActivity extends Activity {
 
     // ------------------------------------------------------------ daily time limits
 
-    private void chooseTimeLimitApps(Set<String> selected, Ui.SettingRow row) {
+    private void chooseTimeLimitApps(Set<String> selected, Ui.SettingRow row, Runnable onChanged) {
         List<ChosenApps.Entry> apps = ChosenApps.list(this);
         Set<String> draft = new LinkedHashSet<>(selected);
         AlertDialog dialog = AppPicker.create(this, R.string.time_limits_choose_apps,
@@ -2075,12 +2095,13 @@ public final class MainActivity extends Activity {
                     selected.addAll(picked);
                     row.setSummary(getResources().getQuantityString(R.plurals.selected_apps,
                             selected.size(), selected.size()));
+                    onChanged.run();
                     return true;
                 });
         showPrivate(dialog);
     }
 
-    private void pickTimeLimit(int[] minutes, Ui.SettingRow row) {
+    private void pickTimeLimit(int[] minutes, Ui.SettingRow row, Runnable onChanged) {
         int[] choices = {5, 15, 30, 60, 120, 240, 480, 1440};
         String[] labels = new String[choices.length];
         int checked = 1;
@@ -2092,6 +2113,7 @@ public final class MainActivity extends Activity {
                 .setSingleChoiceItems(labels, checked, (dialog, which) -> {
                     minutes[0] = choices[which];
                     row.setSummary(timeLimitText(minutes[0]));
+                    onChanged.run();
                     dialog.dismiss();
                 })
                 .setNegativeButton(android.R.string.cancel, null).show();
@@ -2129,18 +2151,78 @@ public final class MainActivity extends Activity {
                 });
         form.addView(accessRow.root, Ui.margins(this, 8, 0));
 
+        Map<String, String> labels = new LinkedHashMap<>();
+        try {
+            for (ChosenApps.Entry entry : ChosenApps.list(this)) labels.put(entry.packageName, entry.label);
+        } catch (RuntimeException unavailable) {
+            // Package names still identify a saved app if labels cannot be read.
+        }
+
+        LinearLayout usageList = new LinearLayout(this);
+        usageList.setOrientation(LinearLayout.VERTICAL);
+        form.addView(Ui.strong(this, getString(R.string.time_limits_today)), Ui.margins(this, 14, 4));
+        form.addView(usageList);
+
+        final Runnable[] refreshUsage = {null};
+        refreshUsage[0] = () -> {
+            usageList.removeAllViews();
+            if (selected.isEmpty()) {
+                usageList.addView(Ui.caption(this, getString(R.string.time_limits_no_apps)),
+                        Ui.margins(this, 0, 2));
+                return;
+            }
+            if (!AppUsage.hasAccess(this)) {
+                usageList.addView(Ui.caption(this, getString(R.string.time_limits_usage_unavailable)),
+                        Ui.margins(this, 0, 2));
+                return;
+            }
+            int shown = 0;
+            for (String app : selected) {
+                if (shown >= 20) {
+                    usageList.addView(Ui.caption(this, getString(R.string.time_limits_more,
+                            selected.size() - shown)), Ui.margins(this, 0, 2));
+                    break;
+                }
+                shown++;
+                String label = labels.get(app);
+                if (label == null) label = app;
+                long used = AppUsage.usedToday(this, app);
+                long usedMinutes = Math.max(0, used / 60000L);
+                LinearLayout row = new LinearLayout(this);
+                row.setOrientation(LinearLayout.VERTICAL);
+                row.setPadding(0, Ui.dp(this, 4), 0, 0);
+                row.addView(Ui.strong(this, label));
+                row.addView(Ui.caption(this, getString(R.string.time_limits_used_today,
+                        timeLimitText((int) Math.min(Integer.MAX_VALUE, usedMinutes)),
+                        timeLimitText(minutes[0]))));
+                ProgressBar bar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+                bar.setMax(minutes[0]);
+                bar.setProgress((int) Math.min(minutes[0], usedMinutes));
+                bar.setProgressTintList(ColorStateList.valueOf(Ui.color(this, R.color.accent)));
+                bar.setProgressBackgroundTintList(ColorStateList.valueOf(
+                        Ui.color(this, R.color.surface_alt)));
+                LinearLayout.LayoutParams barParams = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(this, 6));
+                barParams.topMargin = Ui.dp(this, 4);
+                barParams.bottomMargin = Ui.dp(this, 8);
+                row.addView(bar, barParams);
+                usageList.addView(row);
+            }
+        };
+
         final Ui.SettingRow[] appsRow = {null};
         appsRow[0] = Ui.settingRow(this, R.drawable.ic_apps,
                 getString(R.string.time_limits_choose_apps),
                 getResources().getQuantityString(R.plurals.selected_apps, selected.size(), selected.size()),
-                view -> chooseTimeLimitApps(selected, appsRow[0]));
+                view -> chooseTimeLimitApps(selected, appsRow[0], refreshUsage[0]));
         form.addView(appsRow[0].root, Ui.margins(this, 8, 0));
 
         final Ui.SettingRow[] limitRow = {null};
         limitRow[0] = Ui.settingRow(this, R.drawable.ic_clock,
                 getString(R.string.time_limits_limit_title), timeLimitText(minutes[0]),
-                view -> pickTimeLimit(minutes, limitRow[0]));
+                view -> pickTimeLimit(minutes, limitRow[0], refreshUsage[0]));
         form.addView(limitRow[0].root, Ui.margins(this, 8, 0));
+        refreshUsage[0].run();
         form.addView(Ui.caption(this, getString(R.string.time_limits_limits)), Ui.margins(this, 10, 0));
 
         TextView error = Ui.caption(this, "");

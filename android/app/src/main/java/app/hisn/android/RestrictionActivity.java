@@ -48,9 +48,11 @@ public final class RestrictionActivity extends Activity {
     private TextView breathStep;
     private Button breatheAgain;
     private int cycle;
+    private boolean voluntary;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
+        voluntary = getIntent().getBooleanExtra("voluntary", false);
         if (Build.VERSION.SDK_INT >= 30) getWindow().setDecorFitsSystemWindows(false);
         int side = Ui.sidePadding(this);
         int top = Ui.dp(this, 28);
@@ -71,7 +73,8 @@ public final class RestrictionActivity extends Activity {
         LinearLayout.LayoutParams markParams = (LinearLayout.LayoutParams) mark.getLayoutParams();
         markParams.gravity = Gravity.CENTER_HORIZONTAL;
         column.addView(mark);
-        TextView title = Ui.text(this, getString(R.string.restriction_title), 25, R.color.text_primary);
+        TextView title = Ui.text(this, getString(voluntary ? R.string.pause_voluntary_title
+                : R.string.restriction_title), 25, R.color.text_primary);
         title.setTypeface(Ui.medium());
         title.setGravity(Gravity.CENTER);
         title.setPadding(0, Ui.dp(this, 18), 0, 0);
@@ -83,9 +86,12 @@ public final class RestrictionActivity extends Activity {
         body.setPadding(0, Ui.dp(this, 10), 0, 0);
         column.addView(body);
 
-        Button home = Ui.button(this, R.string.restriction_home, Ui.ButtonKind.PRIMARY);
+        Button home = Ui.button(this, voluntary ? R.string.pause_voluntary_done
+                : R.string.restriction_home, Ui.ButtonKind.PRIMARY);
         column.addView(home, Ui.margins(this, 18, 0));
-        home.setOnClickListener(view -> goHome());
+        home.setOnClickListener(view -> {
+            if (voluntary) finish(); else goHome();
+        });
 
         addPause(column, state == null);
 
@@ -106,11 +112,12 @@ public final class RestrictionActivity extends Activity {
 
         if (Build.VERSION.SDK_INT >= 33) {
             getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
-                    android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, this::goHome);
+                    android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, this::back);
         }
     }
 
     private int reason() {
+        if (voluntary) return R.string.pause_voluntary_body;
         return getIntent().getBooleanExtra("selfprotect", false) ? R.string.restriction_self_protection
                 : getIntent().getBooleanExtra("shortvideo", false) ? R.string.restriction_short_video
                 : getIntent().getBooleanExtra("visual", false) ? R.string.restriction_visual
@@ -306,7 +313,11 @@ public final class RestrictionActivity extends Activity {
 
     @SuppressLint("GestureBackNavigation")
     @Override public void onBackPressed() {
-        goHome();
+        back();
+    }
+
+    private void back() {
+        if (voluntary) finish(); else goHome();
     }
 
     private void goHome() {

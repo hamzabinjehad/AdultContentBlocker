@@ -1,9 +1,11 @@
-# Google Play readiness — Hisn Android 1.0.0
+# Google Play readiness — Hisn Android 1.1.0
 
 Repository-side record for a Play submission. It is **not** a Play listing and
 does not claim Play approval. The direct build and the Play build are different
-products of the same source. 1.0.0 is published as a signed direct APK on
+products of the same source. 1.1.0 is published as a signed direct APK on
 GitHub; the Play AAB is built and checked in the repository but not uploaded.
+1.1.0 adds only a first-run welcome, a voluntary pause and today's usage in the
+daily-limit editor; the permission and data-safety answers below are unchanged.
 
 ## Which build goes to Play
 
