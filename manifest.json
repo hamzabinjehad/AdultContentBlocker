@@ -1,0 +1,126 @@
+{
+  "artifacts": {
+    "dnr_block_rules.json": {
+      "bytes": 9676549,
+      "sha256": "976712e16f160e4a7d3e3fb395af69572659132f722eacf3e55118ffc08f0b97"
+    },
+    "dnr_keyword_rules.json": {
+      "bytes": 79908,
+      "sha256": "efb2750c8e92e08992cd1aa47d5f16825bc6938a1fa2e93172b4ccc39a55e45d"
+    },
+    "domains.index": {
+      "bytes": 8192,
+      "sha256": "7d2c7ac4888bfd75cd5f56e8d61f69595121183afc81556c876732fd3782c62f"
+    },
+    "domains.packed": {
+      "bytes": 135336526,
+      "sha256": "f345a45715d6781b7c3d0e502492f42acaf8cccd5a8489919925b5159cd38935"
+    },
+    "domains.packed.deflate": {
+      "bytes": 21360566,
+      "sha256": "e50d841e17ca9b684d36f5fb5d6bb6405844100c352ed999aa281f7c8da83e5e"
+    },
+    "domains.txt": {
+      "bytes": 135336658,
+      "sha256": "f43acf908a93c36a0d333b7ec4430b57dfa40287afa2b6fbedae3e3efebc6b59"
+    },
+    "domains_core.txt": {
+      "bytes": 4314769,
+      "sha256": "b9208fc0debade036f5265c43613feb1e0fdebafd2858410c07be925d2ff1e06"
+    },
+    "terms.json": {
+      "bytes": 288545,
+      "sha256": "870f81988ccc289386b2463bfa9bb8338ffd73f890a9f2cf0b1d0fa53e856b6a"
+    }
+  },
+  "built_at": "2026-11-03T15:39:23+00:00",
+  "core_capacity": 240000,
+  "core_domain_count": 239885,
+  "core_fill": {
+    "candidates": 268221,
+    "capacity": 240000,
+    "core_after": 239885,
+    "core_sources_collapsed": 124973,
+    "deferred": 555,
+    "eligible": 115582,
+    "enabled": true,
+    "headroom": 115,
+    "min_sources": 2,
+    "room": 115027,
+    "selected": 115027,
+    "sources": [
+      "blocklistproject-porn",
+      "oisd-nsfw"
+    ]
+  },
+  "dnr_keyword_rule_count": 116,
+  "dnr_rule_count": 480,
+  "domain_count": 5274046,
+  "host_term_count": 116,
+  "never_block_removed": 20,
+  "schema": 1,
+  "sources": [
+    {
+      "domains": 952054,
+      "id": "blocklistproject-porn",
+      "ok": true
+    },
+    {
+      "domains": 5934,
+      "id": "chadmayfield-top1m",
+      "ok": true
+    },
+    {
+      "domains": 92021,
+      "id": "hagezi-nsfw",
+      "ok": true
+    },
+    {
+      "domains": 486209,
+      "id": "oisd-nsfw",
+      "ok": true
+    },
+    {
+      "domains": 53908,
+      "id": "sinfonietta-porn",
+      "ok": true
+    },
+    {
+      "domains": 121016,
+      "id": "stevenblack-laptop",
+      "ok": true
+    },
+    {
+      "domains": 64295,
+      "id": "stevenblack-porn",
+      "ok": true
+    },
+    {
+      "domains": 4597564,
+      "id": "ut1-adult",
+      "ok": true
+    },
+    {
+      "domains": 149,
+      "id": "ut1-mixed-adult",
+      "ok": true
+    },
+    {
+      "domains": 132320,
+      "id": "ut1-strong-redirector",
+      "ok": true
+    }
+  ],
+  "term_count": 5831,
+  "term_langs": {
+    "ar": 4100,
+    "ar-latn": 1447,
+    "de": 100,
+    "en": 145,
+    "es": 16,
+    "fr": 10,
+    "it": 9,
+    "pt": 4
+  },
+  "version": 6
+}
