@@ -269,7 +269,9 @@ final class MobileProtectionTests: XCTestCase {
         XCTAssertEqual(try C.reachedDay(defaults), "2026-10-13")
         XCTAssertTrue(try C.budgetReached(mode: .dailyBudget, defaults: defaults, today: "2026-10-13"))
         XCTAssertFalse(try C.budgetReached(mode: .dailyBudget, defaults: defaults, today: "2026-10-14"))
-        XCTAssertEqual(defaults.object(forKey: C.reachedKey) as? Data, try record("2026-10-9"),
+        let preserved = (defaults.object(forKey: C.reachedKey) as? Data)
+            .flatMap { try? JSONDecoder().decode(C.ReachedDay.self, from: $0) }
+        XCTAssertEqual(preserved, C.reachedDay("2026-10-9"),
             "Reading must not write stale data over the monitor's newer marker")
     }
     func testReachedBudgetRejectsMalformedOrImpossibleDays() throws {
