@@ -28,14 +28,19 @@ bump without an entry here is an unfinished release.
 - **Blocking Rules leads with the lists.** The editable site and app lists come
   first; the browser guide follows them instead of pushing every control below
   the fold.
+- **Site lists are rows, not a text box.** Each always-blocked and always-allowed
+  list shows one domain per row with a Remove control, an inline add field and a
+  live count; bulk paste stays one disclosure down, with the one-domain-per-line
+  rules next to the box. Rows and the add field write the same newline text the
+  save path already parses, so there is one source of truth.
 
 ### Verification
 
-- `./test.sh macos` — **522 tests, 0 failures**; 597 strings, all with Arabic.
+- `./test.sh macos` — **526 tests, 0 failures**; 597 strings, all with Arabic.
 - Design research: REA 6.4.0 `inspect-artifact` and
   `capture-native-ui-scenario` on the Screen Zen 2.0.0 (build 63) window,
   observation only. Captures in `design/macos-ui-1.1.10/`.
-- Version 1.1.10, build 15. Unsigned and unnotarized; no physical-Mac,
+- Version 1.1.10, build 17. Unsigned and unnotarized; no physical-Mac,
   VoiceOver or signed-build result is claimed.
 
 ## Android 1.1.0 — 2026-11-03
@@ -177,7 +182,7 @@ bump without an entry here is an unfinished release.
 
 ### Verification
 
-- `./test.sh macos` — **522 tests, 0 failures**; 597 strings, all with Arabic.
+- `./test.sh macos` — **526 tests, 0 failures**; 597 strings, all with Arabic.
   The new guard-card render test covers English and Arabic in the same sizes as
   the panel.
 - Design captures are in

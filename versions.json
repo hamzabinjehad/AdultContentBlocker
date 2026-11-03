@@ -15,10 +15,10 @@
       "id": "macos",
       "name": "Mac",
       "version": "1.1.10",
-      "build": 15,
+      "build": 17,
       "state": "development · unsigned, needs Developer ID and notarization",
       "source": "macos/Hisn.xcodeproj/project.pbxproj",
-      "notes": "Every target must carry the same MARKETING_VERSION and CURRENT_PROJECT_VERSION; 1.1.10 is a UI/UX pass: the duplicated in-page title block is gone (the window title bar already names the page), Setup merges its readiness and progress into one card, Overview puts its one action above the layer evidence, the Lock page stops repeating the fixed-commitment paragraph and follows the chosen mode, and Blocking Rules leads with the editable lists instead of a three-paragraph browser guide. 1.1.9's guard card, status-first overview and 1.1.8's pause are retained. Unsigned/unnotarized."
+      "notes": "Every target must carry the same MARKETING_VERSION and CURRENT_PROJECT_VERSION; 1.1.10 is a UI/UX pass: the duplicated in-page title block is gone (the window title bar already names the page), Setup merges its readiness and progress into one card, Overview puts its one action above the layer evidence, the Lock page stops repeating the fixed-commitment paragraph and follows the chosen mode, Blocking Rules leads with the editable lists instead of a three-paragraph browser guide, and each site list is per-domain rows with an inline add field (bulk paste stays one disclosure down). 1.1.9's guard card, status-first overview and 1.1.8's pause are retained. Unsigned/unnotarized."
     },
     {
       "id": "ios",

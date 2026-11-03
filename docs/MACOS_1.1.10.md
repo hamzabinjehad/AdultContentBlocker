@@ -51,24 +51,28 @@ layout evidence, not the accessibility tree.
 | Setup | readiness card + "Protected Setup" section with a second verdict | one card: readiness, progress bar, "2 of 12 steps done", next step |
 | Lock | fixed-commitment paragraph twice, once stale | stated once, follows the mode toggle; duplicate card removed |
 | Blocking Rules | guide, then lists | lists, then guide |
+| Your sites | two large text boxes, domains only visible as text | per-domain rows with Remove, an inline add field and a live count; bulk paste in a disclosure |
 
-No rule, lock, filter, browser-bridge or protection-layer behaviour changed. No
-new user-facing string was added; every sentence is one the app already shipped
-in English and Arabic. Xcode marked five strings that only the removed blocks
-used as `stale` in the catalog; their Arabic is kept.
+No rule, lock, filter, browser-bridge or protection-layer behaviour changed. Two
+user-facing strings were added (`Add`, `Paste a list`), both with Arabic; the
+catalog is 599 strings. Xcode marked five strings that only the removed blocks
+used as `stale` in the catalog; their Arabic is kept. The add field's
+placeholder is a verbatim `example.com` held in a String property, so it does
+not enter the catalog as translatable copy.
 
 ## Files
 
 | File | Change |
 | --- | --- |
-| `macos/Hisn/ContentView.swift` | page chrome, Overview order, Setup card, Lock mode text, Rules order |
-| `macos/Hisn.xcodeproj/project.pbxproj`, `macos/generate_xcodeproj.py` | 1.1.10, build 15 |
+| `macos/Hisn/ContentView.swift` | page chrome, Overview order, Setup card, Lock mode text, Rules order, row-based site lists |
+| `macos/Hisn.xcodeproj/project.pbxproj`, `macos/generate_xcodeproj.py` | 1.1.10, build 17 |
+| `macos/Hisn/Localizable.xcstrings` | two new strings with Arabic; five marked stale |
 | `design/macos-ui-1.1.10/` | before/after captures and their README |
 
 ## Verification
 
-- `./test.sh macos` — **522 tests, 0 failures**; 597 strings, all with Arabic.
-  The suite covers the strings both pages use; no layout snapshot test exists.
+- `./test.sh macos` — **526 tests, 0 failures**; 597 strings, all with Arabic.
+  Four new `EditorSummaryTests` cover the row add field and Remove (normalization, duplicates, invalid text); no layout snapshot test exists.
 - Both builds were installed in place on the owner's Mac and the five pages were
   captured: 1.1.9 (before) and 1.1.10 (after), same window width, dark mode.
 - The captures are real windows, not SwiftUI renders: they show this Mac's

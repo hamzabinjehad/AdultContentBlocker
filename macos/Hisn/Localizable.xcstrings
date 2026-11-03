@@ -671,6 +671,16 @@
         }
       }
     },
+    "Add" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أضف"
+          }
+        }
+      }
+    },
     "Add a week" : {
       "localizations" : {
         "ar" : {
@@ -4606,6 +4616,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "مفتاح الشريك مُعدّ · %@"
+          }
+        }
+      }
+    },
+    "Paste a list" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الصق قائمة"
           }
         }
       }

@@ -1738,10 +1738,17 @@ private struct RulesPage: View {
 struct SiteListsSection: View {
     let isLocked: Bool
 
+    /// The add field's placeholder. Held in a String property so SwiftUI uses
+    /// the verbatim initializer: an example domain is not UI copy and must not
+    /// become a translation key.
+    private let exampleDomain = "example.com"
+
     @State private var blockText = ""
     @State private var allowText = ""
     @State private var savedBlockText = ""
     @State private var savedAllowText = ""
+    @State private var newBlock = ""
+    @State private var newAllow = ""
     @State private var message: String?
     @State private var isError = false
 
@@ -1750,21 +1757,16 @@ struct SiteListsSection: View {
     }
 
     var body: some View {
-        PageSection(title: "Your sites",
-                subtitle: """
-                    One domain per line — a full URL is fine, it becomes just \
-                    the domain. Subdomains are included automatically, so \
-                    example.com also covers cdn.example.com.
-                    """) {
-            editor("Always block these",
-                   subtitle: "On top of the published list.",
-                   text: $blockText,
-                   placeholder: "reddit.com")
+        PageSection(title: "Your sites") {
+            listEditor("Always block these",
+                       subtitle: "On top of the published list.",
+                       text: $blockText,
+                       newEntry: $newBlock)
 
-            editor("Always allowed",
-                   subtitle: "Reachable even if the published list names it. In strict mode nothing else is reachable.",
-                   text: $allowText,
-                   placeholder: "github.com")
+            listEditor("Always allowed",
+                       subtitle: "Reachable even if the published list names it. In strict mode nothing else is reachable.",
+                       text: $allowText,
+                       newEntry: $newAllow)
 
             SaveRow(message: message, isError: isError, canSave: isDirty,
                     save: save, revert: load)
@@ -1777,42 +1779,131 @@ struct SiteListsSection: View {
         savedAllowText = SiteLists.allowlist().joined(separator: "\n")
         blockText = savedBlockText
         allowText = savedAllowText
+        newBlock = ""
+        newAllow = ""
         message = nil
     }
 
-    private func editor(_ title: LocalizedStringKey, subtitle: LocalizedStringKey,
-                        text: Binding<String>, placeholder: String) -> some View {
-        // Counted as you type, from the same parser Save uses, so the number
-        // here and the outcome on Save can never disagree. A dropped line is
-        // the failure this exists to prevent: it looks identical to a saved one
-        // and is only discovered when the page you meant to block opens.
+    /// One list as rows, one domain per row. The old single text box made a
+    /// five-site list look like a paragraph and gave no way to take one site
+    /// back out without editing text; bulk paste stays one disclosure down.
+    private func listEditor(_ title: LocalizedStringKey, subtitle: LocalizedStringKey,
+                            text: Binding<String>, newEntry: Binding<String>) -> some View {
+        // Counted from the same parser Save uses, so the number here and the
+        // outcome on Save can never disagree. A dropped line is the failure
+        // this exists to prevent: it looks identical to a saved one and is only
+        // discovered when the page you meant to block opens.
         let summary = Self.summarize(text.wrappedValue)
-        return VStack(alignment: .leading, spacing: 3) {
-            Text(title).font(.body.weight(.medium))
-            Text(subtitle).font(.caption).foregroundStyle(.secondary)
-            ZStack(alignment: .topLeading) {
-                if text.wrappedValue.isEmpty {
-                    Text(verbatim: placeholder)
-                        .font(.system(.body, design: .monospaced))
-                        .foregroundStyle(.tertiary)
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 8)
-                        .allowsHitTesting(false)
+        let domains = SiteLists.parse(text.wrappedValue).domains
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(title).font(.body.weight(.medium))
+                if !summary.text.isEmpty {
+                    Text(summary.text)
+                        .font(.caption)
+                        .foregroundStyle(summary.hasProblem ? Color.orange : Color.secondary)
                 }
-                TextEditor(text: text)
-                    .font(.system(.body, design: .monospaced))
-                    .scrollContentBackground(.hidden)
-                    .accessibilityLabel(title)
+                Spacer(minLength: 0)
             }
-            .frame(height: 96)
-            .overlay(RoundedRectangle(cornerRadius: 6)
-                .stroke(summary.hasProblem ? Color.orange.opacity(0.7)
-                                           : Color.secondary.opacity(0.35)))
-            Text(summary.text)
-                .font(.caption)
-                .foregroundStyle(summary.hasProblem ? Color.orange : Color.secondary)
-                .frame(minHeight: 12, alignment: .leading)
+            Text(subtitle).font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if !domains.isEmpty {
+                VStack(spacing: 0) {
+                    ForEach(domains, id: \.self) { domain in
+                        HStack(spacing: 10) {
+                            Text(domain)
+                                .font(.system(.body, design: .monospaced))
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                            Spacer(minLength: 8)
+                            Button { remove(domain, from: text) } label: {
+                                Image(systemName: "trash")
+                            }
+                            .buttonStyle(.borderless)
+                            .help("Remove")
+                            .accessibilityLabel(Text("Remove"))
+                        }
+                        .padding(.vertical, 6)
+                        if domain != domains.last {
+                            Divider()
+                        }
+                    }
+                }
+                .padding(.horizontal, 12)
+                .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 8))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8)
+                        .strokeBorder(Color(nsColor: .separatorColor), lineWidth: 1)
+                        .accessibilityHidden(true)
+                }
+            }
+
+            HStack(spacing: 8) {
+                // A String variable, not a literal: the placeholder is an
+                // example domain, not UI copy, so it must not enter the
+                // translation catalog as a key of its own.
+                TextField(exampleDomain, text: newEntry)
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit { add(to: text, from: newEntry) }
+                    .accessibilityLabel(title)
+                Button("Add") { add(to: text, from: newEntry) }
+                    .disabled(SiteLists.normalize(newEntry.wrappedValue) == nil)
+            }
+
+            // Bulk editing is still one paste away, with the rules that apply
+            // to it next to the box rather than at the top of the section.
+            DisclosureGroup("Paste a list") {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("""
+                         One domain per line — a full URL is fine, it becomes \
+                         just the domain. Subdomains are included automatically, \
+                         so example.com also covers cdn.example.com.
+                         """)
+                        .font(.caption).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    TextEditor(text: text)
+                        .font(.system(.body, design: .monospaced))
+                        .scrollContentBackground(.hidden)
+                        .accessibilityLabel(title)
+                        .frame(height: 88)
+                        .overlay(RoundedRectangle(cornerRadius: 6)
+                            .stroke(summary.hasProblem ? Color.orange.opacity(0.7)
+                                                       : Color.secondary.opacity(0.35)))
+                }
+                .padding(.top, 6)
+            }
+            .font(.callout)
         }
+    }
+
+    /// Rows and the add field both write into the same newline text the save
+    /// path already parses, so there is one source of truth and no second
+    /// format to keep in sync.
+    private func add(to text: Binding<String>, from entry: Binding<String>) {
+        guard let updated = Self.adding(entry.wrappedValue, to: text.wrappedValue) else { return }
+        text.wrappedValue = updated
+        entry.wrappedValue = ""
+    }
+
+    private func remove(_ domain: String, from text: Binding<String>) {
+        text.wrappedValue = Self.removing(domain, from: text.wrappedValue)
+    }
+
+    /// The add field's whole behaviour, pure so it can be tested without a
+    /// window. Returns nil when the typed text is not a domain at all — the
+    /// button is disabled in that case — and leaves the list unchanged for a
+    /// domain that is already there.
+    static func adding(_ entry: String, to text: String) -> String? {
+        guard let domain = SiteLists.normalize(entry) else { return nil }
+        var domains = SiteLists.parse(text).domains
+        guard !domains.contains(domain) else { return text }
+        domains.append(domain)
+        return domains.joined(separator: "\n")
+    }
+
+    static func removing(_ domain: String, from text: String) -> String {
+        SiteLists.parse(text).domains.filter { $0 != domain }.joined(separator: "\n")
     }
 
     /// Live one-line summary of a domain editor's contents.

@@ -11,7 +11,7 @@ user study, a screen-reader audit or a layout snapshot test.
 | `before-setup.png` | 1.1.9: readiness card, then a second "Protected Setup" heading with a second verdict |
 | `after-setup.png` | 1.1.10: one card with readiness, progress, step count and next step |
 | `before-rules.png` | 1.1.9: a three-paragraph browser guide before any editable list |
-| `after-rules.png` | 1.1.10: the site lists first, the guide after them |
+| `after-rules.png` | 1.1.10: the site lists first, each list as per-domain rows with Remove and an inline add field |
 | `before-lock.png` | 1.1.9: the fixed-commitment paragraph stated twice |
 | `after-lock.png` | 1.1.10: stated once, following the mode toggle |
 
