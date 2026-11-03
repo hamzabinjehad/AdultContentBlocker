@@ -19,6 +19,12 @@ struct ContentView: View {
 
     private var page: Page? { navigation.page }
 
+    /// The pinned Lock action bar reads the same status the Overview does.
+    private var lockPageStatus: ProtectionStatus {
+        ProtectionStatus(ProtectionEvidence.current(filter: filter.availability,
+                                                    authority: FilterSync.shared.status))
+    }
+
     enum Page: String, CaseIterable, Identifiable {
         case overview, setup, rules, lock, settings
 
@@ -110,6 +116,11 @@ struct ContentView: View {
                 .frame(maxWidth: 840, alignment: .leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(28)
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if page == .lock && !lock.isLocked {
+                    LockActionBar(lock: lock, status: lockPageStatus)
+                }
             }
             .background(Color(nsColor: .windowBackgroundColor))
             .navigationTitle((page ?? .overview).title)
@@ -1231,54 +1242,183 @@ private struct AuthorityCard: View {
 // MARK: - Lock
 
 /// Starting a lock, or watching one run.
+/// The units the custom lock length offers. File-scope so `LockDraft`, which
+/// outlives the Lock page, can name it.
+enum LockUnit: String, CaseIterable, Identifiable {
+    // Minutes exist so a lock can be TRIED. Without them the shortest
+    // startable lock is an hour, and an hour that cannot be shortened,
+    // cancelled or escaped is a steep price for finding out what the
+    // button does — so nobody tries it, and the first real lock someone
+    // starts is also the first one they have ever seen run.
+    //
+    // This does not weaken anything: `LockManager.validated` still refuses
+    // anything under `minimumLock`, so the floor is 60 seconds either way.
+    case minutes = "minutes"
+    case hours = "hours"
+    case days = "days"
+    case weeks = "weeks"
+
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .minutes: return String(localized: "minutes")
+        case .hours:   return String(localized: "hours")
+        case .days:    return String(localized: "days")
+        case .weeks:   return String(localized: "weeks")
+        }
+    }
+    var seconds: TimeInterval {
+        switch self {
+        case .minutes: return 60
+        case .hours:   return 3600
+        case .days:    return 86400
+        case .weeks:   return 7 * 86400
+        }
+    }
+}
+
+/// The Lock page's choices, lifted out of the page.
+///
+/// The pinned action bar lives in the window chrome, outside the page's scroll
+/// view, so the form and the button cannot share `@State`. One draft object
+/// holds what the person has chosen; both views read and write it.
+final class LockDraft: ObservableObject {
+    static let shared = LockDraft()
+
+    @Published var duration: LockManager.Duration = .custom
+    @Published var customAmount = "5"
+    @Published var customUnit: LockUnit = .minutes
+    @Published var strict = false
+    @Published var fixedCommitment = true
+    @Published var understandsLimits = false
+
+    /// The length the button would start, or nil when nothing valid is typed.
+    /// Nil disables the button rather than substituting a nearby legal value —
+    /// a lock cannot be shortened afterwards, so quietly turning a mistyped
+    /// 3650 into 365 would commit someone to a year they never chose.
+    var selectedSeconds: TimeInterval? {
+        if let preset = duration.seconds { return preset }
+        guard let amount = Double(customAmount.trimmingCharacters(in: .whitespaces))
+        else { return nil }
+        return LockManager.validated(seconds: amount * customUnit.seconds)
+    }
+
+    var startButtonTitle: String {
+        guard let seconds = selectedSeconds else { return String(localized: "Start lock") }
+        return String(localized: "Start a lock of \(LockManager.describe(seconds))")
+    }
+
+    var confirmTitle: String {
+        guard let seconds = selectedSeconds else { return String(localized: "Start lock") }
+        return String(localized: "Start a lock of \(LockManager.describe(seconds))?")
+    }
+
+    /// Names the wall-clock moment, not just the length. "90 days" is abstract
+    /// in a way "18 February" is not, and the point of this text is that nobody
+    /// starts a lock they misjudged.
+    func confirmMessage(enforcing: Bool) -> String {
+        guard let seconds = selectedSeconds else { return "" }
+        let end = Date().addingTimeInterval(seconds).formatted()
+        var msg = String(localized: "You will not be able to turn this off until \(end).")
+        if fixedCommitment {
+            msg += "\n\n" + String(localized: "No early self-release during a fixed commitment. Partner recovery remains available; this does not prevent an administrator from removing protection.")
+        }
+        if !enforcing {
+            msg += "\n\n" + String(localized: """
+                Nothing is set up to enforce it yet, so it will run but \
+                block nothing until you finish setup.
+                """)
+        }
+        return msg
+    }
+}
+
+/// The decision and its consequence, pinned to the window's bottom edge while
+/// the options scroll. It lives outside the page's scroll view, so it reads the
+/// shared `LockDraft`; the line is derived from the same status the Overview
+/// shows, so the promise and the lock cannot disagree.
+private struct LockActionBar: View {
+    @ObservedObject var lock: LockManager
+    @ObservedObject private var draft = LockDraft.shared
+    let status: ProtectionStatus
+
+    @State private var showConfirm = false
+    @State private var error: String?
+
+    private var readyLayers: Int { status.layers.filter(\.ok).count }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if status.isEnforcingAnything {
+                Label(String(localized: "This lock would enforce \(readyLayers) of \(status.layers.count) protection layers."),
+                      systemImage: "checkmark.shield")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                // Just-in-time, at the point of decision. Someone about to
+                // commit to a lock that enforces nothing is the one moment
+                // this warning earns its alarm.
+                Label("""
+                      Nothing is set up to enforce a lock yet — it would run \
+                      but block nothing. Finish setup on the Overview page first.
+                      """,
+                      systemImage: "exclamationmark.triangle.fill")
+                    .font(.callout)
+                    .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Button {
+                showConfirm = true
+            } label: {
+                Text(draft.startButtonTitle)
+                    .frame(maxWidth: .infinity)
+            }
+            .controlSize(.large)
+            .buttonStyle(.borderedProminent)
+            .disabled(draft.selectedSeconds == nil || !draft.understandsLimits)
+            .confirmationDialog(draft.confirmTitle, isPresented: $showConfirm,
+                                titleVisibility: .visible) {
+                Button("Start the lock", role: .destructive) { start() }
+                Button("Not yet", role: .cancel) {}
+            } message: {
+                Text(draft.confirmMessage(enforcing: status.isEnforcingAnything))
+            }
+        }
+        .padding(.horizontal, 28)
+        .padding(.vertical, 14)
+        .frame(maxWidth: 840, alignment: .leading)
+        .frame(maxWidth: .infinity)
+        .background(.bar)
+        .overlay(alignment: .top) { Divider() }
+        .alert("Something went wrong", isPresented: .constant(error != nil)) {
+            Button("OK") { error = nil }
+        } message: { Text(error ?? "") }
+    }
+
+    private func start() {
+        guard draft.understandsLimits, let seconds = draft.selectedSeconds else { return }
+        Task {
+            do {
+                try await lock.start(seconds: seconds, strict: draft.strict,
+                                     fixedCommitment: draft.fixedCommitment)
+            } catch { self.error = error.localizedDescription }
+        }
+    }
+}
+
 private struct LockPage: View {
     @ObservedObject var lock: LockManager
     @ObservedObject var filter: FilterController
 
-    @State private var duration: LockManager.Duration = .custom
-    @State private var customAmount = "5"
-    @State private var customUnit: CustomUnit = .minutes
-    @State private var strict = false
-    @State private var fixedCommitment = true
-    @State private var understandsLimits = false
+    @ObservedObject private var draft = LockDraft.shared
     @State private var error: String?
-    @State private var showConfirm = false
     @State private var showReleaseConfirm = false
     @State private var showExtendConfirm = false
     @State private var authority: MacAuthority?
 
-    enum CustomUnit: String, CaseIterable, Identifiable {
-        // Minutes exist so a lock can be TRIED. Without them the shortest
-        // startable lock is an hour, and an hour that cannot be shortened,
-        // cancelled or escaped is a steep price for finding out what the
-        // button does — so nobody tries it, and the first real lock someone
-        // starts is also the first one they have ever seen run.
-        //
-        // This does not weaken anything: `LockManager.validated` still refuses
-        // anything under `minimumLock`, so the floor is 60 seconds either way.
-        case minutes = "minutes"
-        case hours = "hours"
-        case days = "days"
-        case weeks = "weeks"
-
-        var id: String { rawValue }
-        var title: String {
-            switch self {
-            case .minutes: return String(localized: "minutes")
-            case .hours:   return String(localized: "hours")
-            case .days:    return String(localized: "days")
-            case .weeks:   return String(localized: "weeks")
-            }
-        }
-        var seconds: TimeInterval {
-            switch self {
-            case .minutes: return 60
-            case .hours:   return 3600
-            case .days:    return 86400
-            case .weeks:   return 7 * 86400
-            }
-        }
-    }
+    /// Kept as the page-local name for the shared unit list.
+    typealias CustomUnit = LockUnit
 
     /// Would a lock started now block anything? Read from the same status the
     /// Overview shows, so the two can never disagree.
@@ -1293,12 +1433,7 @@ private struct LockPage: View {
     /// start. Nil disables the button rather than substituting a nearby legal
     /// value — a lock cannot be shortened afterwards, so quietly turning a
     /// mistyped 3650 into 365 would commit someone to a year they never chose.
-    private var selectedSeconds: TimeInterval? {
-        if let preset = duration.seconds { return preset }
-        guard let amount = Double(customAmount.trimmingCharacters(in: .whitespaces))
-        else { return nil }
-        return LockManager.validated(seconds: amount * customUnit.seconds)
-    }
+    private var selectedSeconds: TimeInterval? { draft.selectedSeconds }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 30) {
@@ -1311,12 +1446,12 @@ private struct LockPage: View {
         .alert("Something went wrong", isPresented: .constant(error != nil)) {
             Button("OK") { error = nil }
         } message: { Text(error ?? "") }
-        .onChange(of: duration) { _ in understandsLimits = false }
-        .onChange(of: customAmount) { _ in understandsLimits = false }
-        .onChange(of: customUnit) { _ in understandsLimits = false }
-        .onChange(of: fixedCommitment) { _ in understandsLimits = false }
-        .onChange(of: strict) { _ in understandsLimits = false }
-        .onChange(of: lock.isLocked) { _ in understandsLimits = false }
+        .onChange(of: draft.duration) { _ in draft.understandsLimits = false }
+        .onChange(of: draft.customAmount) { _ in draft.understandsLimits = false }
+        .onChange(of: draft.customUnit) { _ in draft.understandsLimits = false }
+        .onChange(of: draft.fixedCommitment) { _ in draft.understandsLimits = false }
+        .onChange(of: draft.strict) { _ in draft.understandsLimits = false }
+        .onChange(of: lock.isLocked) { _ in draft.understandsLimits = false }
         .task {
             let locked = lock.isLocked
             authority = await Task.detached {
@@ -1343,7 +1478,7 @@ private struct LockPage: View {
     private var setup: some View {
         VStack(alignment: .leading, spacing: 22) {
             PageSection(title: "How long?") {
-                Picker("Length", selection: $duration) {
+                Picker("Length", selection: $draft.duration) {
                     ForEach(LockManager.Duration.allCases) { d in
                         Text(d.title).tag(d)
                     }
@@ -1351,12 +1486,12 @@ private struct LockPage: View {
                 .pickerStyle(.segmented)
                 .labelsHidden()
 
-                if duration == .custom {
+                if draft.duration == .custom {
                     HStack(spacing: 8) {
-                        TextField("How long", text: $customAmount)
+                        TextField("How long", text: $draft.customAmount)
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 80)
-                        Picker("Unit", selection: $customUnit) {
+                        Picker("Unit", selection: $draft.customUnit) {
                             ForEach(CustomUnit.allCases) { Text($0.title).tag($0) }
                         }
                         .labelsHidden()
@@ -1373,12 +1508,12 @@ private struct LockPage: View {
             }
 
             PageSection(title: "Mode") {
-                Toggle("Fixed commitment until the chosen deadline", isOn: $fixedCommitment)
+                Toggle("Fixed commitment until the chosen deadline", isOn: $draft.fixedCommitment)
                 // One description of what the chosen mode means, and it follows
                 // the toggle. Before, the fixed-commitment sentence was shown
                 // twice — once here, once in a card below — and it stayed on
                 // screen after the person turned the fixed commitment off.
-                Text(fixedCommitment
+                Text(draft.fixedCommitment
                      ? "No early self-release during a fixed commitment. Partner recovery remains available; this does not prevent an administrator from removing protection."
                      : """
                        Once started, you cannot shorten or cancel this. \
@@ -1387,7 +1522,7 @@ private struct LockPage: View {
                        """)
                     .font(.callout).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
-                Toggle(isOn: $strict) {
+                Toggle(isOn: $draft.strict) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Strict mode")
                         Text("Blocks everything except sites you allow. A block list can never cover every site; this can.")
@@ -1407,69 +1542,9 @@ private struct LockPage: View {
             }
 
             Toggle("I understand this commitment does not prevent an administrator from removing protection. Keep essential services accessible.",
-                   isOn: $understandsLimits)
+                   isOn: $draft.understandsLimits)
 
         }
-        // The action and its consequence form one panel at the end of the
-        // setup section, above the daily schedule, instead of a button under
-        // two warnings and the acknowledgement. Pinning this to the window's
-        // bottom edge needs the draft lifted into the window chrome; until
-        // then it stays in the page.
-        .safeAreaInset(edge: .bottom, spacing: 0) { startBar }
-    }
-
-    /// The action panel: one line saying what pressing the button would
-    /// enforce, then the button. The line is derived from the same status the
-    /// Overview shows, so the promise and the lock cannot disagree.
-    private var startBar: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            if enforcingAnything {
-                Label(String(localized: "This lock would enforce \(protectionStatus.layers.filter(\.ok).count) of \(protectionStatus.layers.count) protection layers."),
-                      systemImage: "checkmark.shield")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            } else {
-                // Just-in-time, at the point of decision. Someone about to
-                // commit to a lock that enforces nothing is the one moment
-                // this warning earns its alarm.
-                Label("""
-                      Nothing is set up to enforce a lock yet — it would run \
-                      but block nothing. Finish setup on the Overview page first.
-                      """,
-                      systemImage: "exclamationmark.triangle.fill")
-                    .font(.callout)
-                    .foregroundStyle(.orange)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Button {
-                showConfirm = true
-            } label: {
-                Text(startButtonTitle)
-                    .frame(maxWidth: .infinity)
-            }
-            .controlSize(.large)
-            .buttonStyle(.borderedProminent)
-            .disabled(selectedSeconds == nil || !understandsLimits)
-            .confirmationDialog(
-                confirmTitle,
-                isPresented: $showConfirm, titleVisibility: .visible
-            ) {
-                Button("Start the lock", role: .destructive) { start() }
-                Button("Not yet", role: .cancel) {}
-            } message: {
-                // Names the wall-clock moment, not just the length. "90 days"
-                // is abstract in a way "18 February" is not, and the point of
-                // this dialog is that nobody starts a lock they misjudged.
-                Text(confirmMessage)
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 14)
-        .frame(maxWidth: 840, alignment: .leading)
-        .frame(maxWidth: .infinity)
-        .background(.bar)
-        .overlay(alignment: .top) { Divider() }
     }
 
     // MARK: Locked
@@ -1563,21 +1638,11 @@ private struct LockPage: View {
         }
     }
 
-    private var startButtonTitle: String {
-        guard let seconds = selectedSeconds else { return String(localized: "Start lock") }
-        return String(localized: "Start a lock of \(LockManager.describe(seconds))")
-    }
-
-    private var confirmTitle: String {
-        guard let seconds = selectedSeconds else { return String(localized: "Start lock") }
-        return String(localized: "Start a lock of \(LockManager.describe(seconds))?")
-    }
-
     /// Only once something has been typed. An empty field is a person who has
     /// not finished, not a person who is wrong, and colouring it red says the
     /// opposite.
     private var isCustomInvalid: Bool {
-        duration == .custom && !customAmount.isEmpty && selectedSeconds == nil
+        draft.duration == .custom && !draft.customAmount.isEmpty && selectedSeconds == nil
     }
 
     private var lengthHint: String {
@@ -1597,30 +1662,6 @@ private struct LockPage: View {
     /// nothing is set up to enforce it — the fact that the lock will block
     /// nothing, repeated here so it cannot be clicked past by reflex from the
     /// Start button.
-    private var confirmMessage: String {
-        guard let seconds = selectedSeconds else { return "" }
-        let end = Date().addingTimeInterval(seconds).formatted()
-        var msg = String(localized: "You will not be able to turn this off until \(end).")
-        if fixedCommitment {
-            msg += "\n\n" + String(localized: "No early self-release during a fixed commitment. Partner recovery remains available; this does not prevent an administrator from removing protection.")
-        }
-        if !enforcingAnything {
-            msg += "\n\n" + String(localized: """
-                Nothing is set up to enforce it yet, so it will run but \
-                block nothing until you finish setup.
-                """)
-        }
-        return msg
-    }
-
-    private func start() {
-        guard understandsLimits, let seconds = selectedSeconds else { return }
-        Task {
-            do { try await lock.start(seconds: seconds, strict: strict, fixedCommitment: fixedCommitment) }
-            catch { self.error = error.localizedDescription }
-        }
-    }
-
     private func requestRelease() {
         do { _ = try lock.requestSelfRelease() }
         catch { self.error = error.localizedDescription }

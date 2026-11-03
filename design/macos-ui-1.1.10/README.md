@@ -15,7 +15,7 @@ user study, a screen-reader audit or a layout snapshot test.
 | `before-settings.png` | 1.1.9: a flat column of headings and dividers |
 | `after-settings.png` | 1.1.10: one card per settings group, switches on the right |
 | `before-lock.png` | 1.1.9: the fixed-commitment paragraph stated twice |
-| `after-lock.png` | 1.1.10: stated once; one action panel with a live consequence line |
+| `after-lock.png` | 1.1.10: stated once; the action pinned to the window's bottom edge with a live consequence line |
 
 The captures show this Mac's real state — ad-hoc build (system filter off),
 hosts-file blocklist on, browser extension connected — not a mocked healthy

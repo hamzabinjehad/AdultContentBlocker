@@ -49,7 +49,7 @@ layout evidence, not the accessibility tree.
 | Overview | commitment card below the setup card | commitment beside the protection card |
 | Overview | full readiness card repeating the missing-layer message | one row: headline, summary, step count, chevron → Setup |
 | Setup | readiness card + "Protected Setup" section with a second verdict | one card: readiness, progress bar, "2 of 12 steps done", next step |
-| Lock | fixed-commitment paragraph twice, once stale | stated once, follows the mode toggle; duplicate card removed; one action panel with a live consequence line |
+| Lock | fixed-commitment paragraph twice, once stale | stated once, follows the mode toggle; duplicate card removed; one action pinned to the window's bottom edge with a live consequence line |
 | Blocking Rules | guide, then lists | lists, then guide |
 | Your sites | two large text boxes, domains only visible as text | per-domain rows with Remove, an inline add field, a chip strip of what is blocked, and bulk paste in a disclosure |
 | Settings | a flat column of headings and dividers, checkbox toggles | one card per group, with trailing switches |
@@ -66,7 +66,7 @@ not enter the catalog as translatable copy.
 | File | Change |
 | --- | --- |
 | `macos/Hisn/ContentView.swift` | page chrome, Overview order, Setup card, Lock mode text, Rules order, row-based site lists |
-| `macos/Hisn.xcodeproj/project.pbxproj`, `macos/generate_xcodeproj.py` | 1.1.10, build 20 |
+| `macos/Hisn.xcodeproj/project.pbxproj`, `macos/generate_xcodeproj.py` | 1.1.10, build 21 |
 | `macos/Hisn/Localizable.xcstrings` | two new strings with Arabic; five marked stale |
 | `design/macos-ui-1.1.10/` | before/after captures and their README |
 
@@ -78,9 +78,9 @@ not enter the catalog as translatable copy.
   captured: 1.1.9 (before) and 1.1.10 (after), same window width, dark mode.
 - The captures are real windows, not SwiftUI renders: they show this Mac's
   actual state (ad-hoc filter off, hosts list on, extension connected).
-- **Not done:** the Lock action panel sits at the end of the setup section, not
-  pinned to the window's bottom edge. Pinning needs the draft state lifted out of
-  `LockPage` into the window chrome, which is a larger change than this pass.
+- The Lock page's choices now live in a `LockDraft` observable, so the form and
+  the pinned bar read the same values; a field change still clears the
+  acknowledgement, and the bar's button follows it.
 
 ## Limits
 

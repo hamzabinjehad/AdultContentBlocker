@@ -24,9 +24,10 @@ bump without an entry here is an unfinished release.
 - **Lock states what the chosen mode means, once.** The fixed-commitment
   paragraph follows the toggle — before, turning the fixed commitment off left
   the paragraph on screen — and the duplicate "Your chosen commitment" card is
-  removed. The action now sits in one panel at the end of the setup section with
-  a live consequence line ("This lock would enforce 2 of 3 protection layers."),
-  below the options rather than under two warnings.
+  removed. The action is now pinned to the bottom edge of the window with a live
+  consequence line ("This lock would enforce 2 of 3 protection layers."), so the
+  decision stays visible while the options scroll instead of sitting under two
+  warnings.
 - **Blocking Rules leads with the lists.** The editable site and app lists come
   first; the browser guide follows them instead of pushing every control below
   the fold.
@@ -49,7 +50,7 @@ bump without an entry here is an unfinished release.
 - Design research: REA 6.4.0 `inspect-artifact` and
   `capture-native-ui-scenario` on the Screen Zen 2.0.0 (build 63) window,
   observation only. Captures in `design/macos-ui-1.1.10/`.
-- Version 1.1.10, build 20. Unsigned and unnotarized; no physical-Mac,
+- Version 1.1.10, build 21. Unsigned and unnotarized; no physical-Mac,
   VoiceOver or signed-build result is claimed.
 
 ## Android 1.1.0 — 2026-11-03
