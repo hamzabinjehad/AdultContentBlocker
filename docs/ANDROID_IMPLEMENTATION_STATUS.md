@@ -1,8 +1,47 @@
 # Android implementation and remaining release gates
 
-Updated 2026-11-02. This describes the development work in `android/`, not a
+Updated 2026-11-03. This describes the development work in `android/`, not a
 production release or proof that the connected owner's phone is protected.
 Mac, iOS/iPadOS and browser code were not changed in this Android implementation.
+
+## 1.0.0 signed release boundary (2026-11-03)
+
+Hisn Android 1.0.0 (versionCode 26) is the first signed direct-sideload release.
+It adds opt-in daily app time limits on top of the 0.9.0 protection lock.
+
+- `AppTimeLimit` stores a package-to-minutes rule (5–1,440 minutes, at most 200
+  apps) inside the sealed settings file. It is frozen by a running protection
+  lock in both directions; the guardian tighten-only path may add or lower a
+  limit but never remove or raise one.
+- `AppUsage` reads Android's on-device `UsageStatsManager` foreground total for
+  the current local day. The separate Android **Usage access** special
+  permission is required. Without it nothing is enforced, and the Rules card and
+  Protection attention list say so.
+- `TextGuardService` checks a limited app when it comes on screen, while it stays
+  on screen, and in the once-a-minute sweep. The same pause screen names the
+  daily-limit reason. Settings, dialers, launchers, installers and Hisn remain
+  excluded.
+- The Play and direct signed candidates pass `check-release.py`; `apksigner`
+  verifies both with the new release certificate. The direct APK is published on
+  GitHub Releases. The Play AAB is built but not uploaded; Play policy review is
+  still pending.
+
+Verified on 3 November 2026: `test-core.sh` (including `AppTimeLimitTest` and
+the sealed `SavedSettings` round trip), English/Arabic string parity (460
+strings, 15 plurals), `assembleDebug`, `assembleDebugAndroidTest`, `lintDebug`,
+the signed release builds, `check-release.py` for both distributions,
+`apksigner verify`, and `CoreDeviceTestRunner` on the API 36 emulator including
+time-limit persistence and protection-lock refusal. The Rules editor, Usage
+access state, app picker and summary were read back through the accessibility
+tree in English and in Arabic (RTL); with the Usage access grant revoked the
+summary read "Usage access needed" and the Apps tile read "Needs attention".
+A live 5-minute enforcement pass closed the fixture app and showed the
+daily-limit pause screen.
+
+**No physical-device run of 1.0.0 is claimed.** OEM Usage-access screens, real
+clock/time-zone changes, Doze/battery behaviour and physical enforcement
+latency remain device gates. The 0.9.0 and earlier verification boundaries below
+still apply.
 
 ## 0.9.0 protection-lock verification boundary (2026-11-02)
 

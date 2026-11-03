@@ -26,7 +26,10 @@ storage. On a Mac with the guardian edition, a root-owned local log records the
 protected account name, a guardian action and a timestamp (for example,
 "agent-reloaded"); it never records a site, a page or screen content. On iPhone/iPad the sealed Screen Time passcode is kept in the
 device-only Keychain (`ThisDeviceOnly`), outside iCloud and outside backups.
-Nothing in that storage is uploaded by Hisn.
+Nothing in that storage is uploaded by Hisn. A rules file you export from the
+browser extension is written to your Downloads folder only when you ask for it;
+it holds your blocked sites, allowed sites, words and corrections, and Hisn
+does not upload or sync it.
 
 The following are processed locally and are not saved or sent:
 
@@ -124,5 +127,5 @@ If this policy changes, the change is recorded in [CHANGELOG.md](CHANGELOG.md)
 and the effective date below is updated. A change that adds collection would
 need a new consent, not a silent edit.
 
-**Effective:** 2026-11-02 · **Applies to:** extension 1.4.0, Mac 1.1.7, iOS
+**Effective:** 2026-11-02 · **Applies to:** extension 1.5.0, Mac 1.1.7, iOS
 1.2.0, Android 0.9.0 and later builds that link to this policy.

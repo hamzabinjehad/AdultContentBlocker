@@ -3,7 +3,7 @@
 ## Without the macOS app
 
 Prepare a clean, browser-specific unpacked folder with
-`python3 extension/prepare_unpacked.py --out dist/hisn-unpacked-chrome-1.4.0`,
+`python3 extension/prepare_unpacked.py --out dist/hisn-unpacked-chrome-1.5.0`,
 then select that folder in **Load unpacked** in a supported Chromium browser.
 Use a fresh output name for another browser or update; existing folders are
 never overwritten. This excludes generated `_metadata` caches while preserving
@@ -16,6 +16,16 @@ without a native app connection. Verified list updates run in the extension.
 was last installed. Automatic checks run every six hours; **Update** in the
 block-list row checks now. A failed download or signature check keeps the current list and
 says so, and status calls out a list that has not updated for 14 days.
+
+**Settings → Blocking Rules → Move your rules** exports your blocked sites,
+allowed sites, custom words, ignored words and skipped sites to a
+`hisn-rules.json` file. It contains no browsing history, blocking mode, lock
+deadline or pause count. Import merges the file add-only: an entry already in
+this browser is kept and nothing is removed, so a file from a more permissive
+browser cannot undo this one. During a lock, new blocks and words apply, while
+new allowed sites and corrections wait until the lock ends; the page reports
+what was withheld. With the Mac app connected, the app owns the lists, so the
+page can export them but refuses an import — edit them in the app instead.
 
 **Standard** mode blocks listed domains and applies content checks. **Strict**
 mode limits browsing to saved allowed sites; save the sites you need before

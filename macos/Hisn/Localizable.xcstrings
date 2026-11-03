@@ -6465,6 +6465,246 @@
           }
         }
       }
+    },
+    "Take a pause…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خذ وقفة…"
+          }
+        }
+      }
+    },
+    "A private pause. Nothing here is recorded except today’s count." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وقفة خاصة. لا يُسجَّل هنا شيء سوى عدد وقفات اليوم."
+          }
+        }
+      }
+    },
+    "Take a moment before you go on" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خذ لحظة قبل أن تكمل"
+          }
+        }
+      }
+    },
+    "Breathe in…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خذ نفسًا عميقًا…"
+          }
+        }
+      }
+    },
+    "Breathe out slowly…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أخرِج النفس ببطء…"
+          }
+        }
+      }
+    },
+    "Breathing pause" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وقفة تنفّس"
+          }
+        }
+      }
+    },
+    "Well done. The urge passes faster than it feels." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أحسنت. الرغبة تزول أسرع مما تشعر."
+          }
+        }
+      }
+    },
+    "What do you need right now?" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ما الذي تحتاجه الآن؟"
+          }
+        }
+      }
+    },
+    "Rest" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "راحة"
+          }
+        }
+      }
+    },
+    "Company" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "رفقة"
+          }
+        }
+      }
+    },
+    "Calm" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هدوء"
+          }
+        }
+      }
+    },
+    "Something to do" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شيء أفعله"
+          }
+        }
+      }
+    },
+    "Put the screen away and lie down, even for ten minutes. Tiredness makes urges louder." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ضع الشاشة جانبًا واستلقِ ولو عشر دقائق. التعب يجعل الرغبة أقوى."
+          }
+        }
+      }
+    },
+    "Message or call someone you trust, even just to say hello." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "راسل شخصًا تثق به أو اتصل به، ولو لتقول له مرحبًا."
+          }
+        }
+      }
+    },
+    "Step outside or wash your face, then take five slow breaths." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اخرج قليلًا أو اغسل وجهك، ثم خذ خمسة أنفاس بطيئة."
+          }
+        }
+      }
+    },
+    "Pick one small task you have been putting off and give it ten minutes." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختر مهمة صغيرة أجّلتها وامنحها عشر دقائق."
+          }
+        }
+      }
+    },
+    "Breathe again" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تنفّس مرة أخرى"
+          }
+        }
+      }
+    },
+    "An urge rises, peaks and fades, usually within minutes. You don’t have to act on it." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الرغبة تشتد ثم تهدأ، وغالبًا خلال دقائق. لست مضطرًا إلى الاستجابة لها."
+          }
+        }
+      }
+    },
+    "You set this up on a calmer day, for a moment like this one." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أعددت هذا في يوم أهدأ، من أجل لحظة كهذه."
+          }
+        }
+      }
+    },
+    "A slip doesn’t erase your progress. Walking away right now still counts." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الزلّة لا تمحو ما أنجزته. ابتعادك الآن ما زال يُحسب لك."
+          }
+        }
+      }
+    },
+    "Ask what led here: the time, the place, the mood. That is what to change next." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اسأل نفسك ما الذي أوصلك إلى هنا: الوقت أو المكان أو المزاج. هذا ما تغيّره بعد ذلك."
+          }
+        }
+      }
+    },
+    "Stand up, change rooms, drink some water. Moving your body moves your mind." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قم من مكانك، وانتقل إلى غرفة أخرى، واشرب ماءً. حين يتحرك الجسد يتغيّر التفكير."
+          }
+        }
+      }
+    },
+    "Pauses today: %lld" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وقفات اليوم: %lld"
+          }
+        }
+      }
+    },
+    "Each time you walk away, the habit gets weaker." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كل مرة تبتعد فيها يضعف هذا الاعتياد."
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

@@ -1,26 +1,38 @@
-# Hisn Android 0.9.0: protection development preview
+# Hisn Android 1.0.0: signed self-control release
 
 The Android app contains an opt-in DNS-only VPN, saved custom rules, selected-app
-accessibility restrictions, opt-in daily app schedules, built-in adult-text checks and
-sampled image/video checks, an in-app
-commitment, an optional legacy-admin confirmation step and an opt-in
+accessibility restrictions, opt-in daily app schedules, opt-in daily app time
+limits, built-in adult-text checks and sampled image/video checks, an in-app
+protection lock, an optional legacy-admin confirmation step, an opt-in
 device-owner uninstall guard with an optional managed lockdown, and a background
-layer-health watchdog. The interface
-follows the system light/dark appearance, uses bottom navigation for
-Protection, Rules and Guide, and supports Arabic and English. This
-remains a development build, not the completed end goal.
-Core tests pass; device evidence is version-specific in the release records below.
-The visual model and policy tests ran in a separate Samsung debug installation;
-the owner's existing app and permissions were not replaced or enabled.
-The current live VPN check passed local-block and external-resolver steps over
-both UDP and reused TCP. On 0.4.2, Brave displayed an ordinary page, search results and
-an IETF documentation page while the VPN was active. These are limited smoke
-tests, not proof that every browser request uses Hisn. Broader real-app coverage
-and VPN/lifecycle testing remain pending. Visual accuracy and real-app capture acceptance
-remain pending; the isolated live fixture sequence passes. Usage limits and full traffic coverage are not implemented. Managed uninstall
-blocking and the broader lockdown exist only as an opt-in device-owner preview;
-the ordinary install remains removable, and actual blocked-uninstall and
-restriction acceptance needs a disposable provisioned device.
+layer-health watchdog. The interface follows the system light/dark appearance,
+uses bottom navigation for Protection, Rules and Guide, and supports Arabic and
+English.
+
+1.0.0 is the first signed direct-sideload release. The APK and its certificate
+fingerprint are recorded in [the 1.0 record](../docs/ANDROID_1.0.md). The Play
+build is produced from the same source but is not uploaded; its accessibility
+declaration still needs Google Play review, and the direct build's removal guard
+is deliberately absent from it.
+
+Core tests pass and the signed 1.0.0 candidates are checked with
+`check-release.py`. Device evidence is version-specific in the release records
+below. The 1.0.0 feature and UI pass ran on the API 36 emulator; no physical
+phone run of 1.0.0 is claimed. The visual model and policy tests ran in a
+separate Samsung debug installation; the owner's existing app and permissions
+were not replaced or enabled. The current live VPN check passed local-block and
+external-resolver steps over both UDP and reused TCP. On 0.4.2, Brave displayed
+an ordinary page, search results and an IETF documentation page while the VPN
+was active. These are limited smoke tests, not proof that every browser request
+uses Hisn. Broader real-app coverage and VPN/lifecycle testing remain pending.
+Visual accuracy and real-app capture acceptance remain pending; the isolated
+live fixture sequence passes. Daily time limits read Android's on-device usage
+record and are only enforced while Hisn's accessibility service is connected;
+they are not a usage-statistics-based parental control system. Full traffic
+coverage is not implemented. Managed uninstall blocking and the broader
+lockdown exist only as an opt-in device-owner preview; the ordinary install
+remains removable, and actual blocked-uninstall and restriction acceptance
+needs a disposable provisioned device.
 
 ## Protection lock (0.9.0)
 
@@ -51,6 +63,39 @@ Verified through the product UI and `CoreDeviceTestRunner` on the API 36
 emulator, including the read-back of disabled controls and an Arabic RTL
 capture; no physical-device run of 0.9.0 is claimed. See
 [the 0.9.0 record](../docs/ANDROID_0.9.0.md).
+
+## Daily time limits (1.0.0)
+
+Rules now has a separate **Daily time limits** card. The owner chooses apps and
+one foreground-time limit from 5 minutes to 24 hours. When Android's own
+on-device usage record for an app reaches the saved limit, Hisn closes that app
+and shows the pause screen with a time-limit reason until local midnight.
+
+- The limit is a saved rule. A protection lock freezes it in both directions
+  with every other rule; the guardian tighten-only path can add or lower a
+  limit but never remove or raise one.
+- Enforcement needs both Hisn accessibility and Android's separate **Usage
+  access** special permission. The Rules card says which of the two is missing,
+  and Protection adds an attention item when limits are saved without Usage
+  access. A limit is never reported as enforced without the grant.
+- Hisn reads Android's `UsageStatsManager` foreground total for the current
+  local day and caches one query per app for 15 seconds. It checks a limited app
+  when it comes on screen, while it stays on screen, and in the once-a-minute
+  sweep. A limit can therefore be enforced a little late while a static screen
+  is left open.
+- The Usage record resets at local midnight. Changing the device clock, time
+  zone or date, or clearing Android's usage data, can change or reset it. Hisn
+  does not claim a trusted clock or tamper-proof counting.
+- Settings, dialers, launchers, installers and Hisn itself stay excluded. This
+  limits selected apps; it is not a device-wide time budget, an open-count
+  limit, or a parental-control usage report. Nothing is uploaded.
+
+Verified for 1.0.0: `AppTimeLimitTest`, the `SavedSettings` sealed round-trip,
+`CoreDeviceTestRunner` time-limit persistence/freeze checks on the API 36
+emulator, the Rules editor and Arabic summary through the accessibility tree,
+and one live 5-minute enforcement pass against the test-only fixture activity
+on the same emulator. See [the 1.0 record](../docs/ANDROID_1.0.md). No
+physical-phone run of 1.0.0 is claimed.
 
 ## Protection page and install lock (direct build)
 
@@ -885,6 +930,8 @@ and cleared after testing; real user rules and commitments are untouched.
 
 See [the REA review](../docs/REA_BLOCKERHERO_2026-10-19.md) for competitor
 observations, evidence identifiers, independent improvements and remaining gates.
+See [the 1.0 ScreenZen/BlockerHero static comparison](../docs/ANDROID_REA_SCREENZEN_2026-11-03.md)
+for the daily-time-limit design input and what was deliberately not copied.
 See [live Samsung guard tests](../docs/ANDROID_LIVE_GUARD_2026-10-19.md) for
 verified fixture results and the opt-in external test driver. Instrumentation
 restarts Hisn and can interrupt accessibility; use the external driver for live

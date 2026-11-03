@@ -5,16 +5,18 @@
 
 Seed **v5**, built 2026-10-30T17:33:25+00:00. These counts describe
 the bundled starting point, not a promise about every URL a person visits.
-Until the `lists` branch publishes a newer generation, every client stays at
-this seed; the extension and Mac app state the installed generation and warn
-when it is old.
+The signed `lists` branch carries newer generations for clients that update
+(see [the publication record](LIST_PUBLICATION_2026-11-03.md)); this seed
+remains the offline fallback. The extension and Mac app state the installed
+generation and warn when it is old; the phone clients update only with an app
+build.
 
 ## The three tiers
 
 | Tier | Domains | Where it fits |
 | --- | --- | --- |
 | Core (bundled) | 239,885 | The browser extension, the six Safari blockers, the iOS app and the Android DNS seed |
-| Full (buildable) | 5,276,448 | The Mac socket filter and the network DNS build; publishable to the `lists` branch, not bundled in any client and too large for the browser and Safari tiers |
+| Full (buildable) | 5,276,448 | The Mac socket filter and the network DNS build; published to the `lists` branch (v6 on 2026-11-03: 5,274,046), not bundled in any client and too large for the browser and Safari tiers |
 | Keyword layer | 5,831 terms | Page-text scoring in the extension, Safari text extension and Android selected-app checks |
 
 The extension carries **480 static DNR block rules** and

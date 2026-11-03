@@ -45,6 +45,7 @@ public final class TextGuardService extends AccessibilityService {
     static volatile long cooldownEnforcements;
     static volatile long periodicInspections;
     static volatile long scheduleInterventions;
+    static volatile long timeLimitInterventions;
     static volatile long shortVideoInterventions;
     static volatile long holdEnforcements;
     static volatile long homeFailures;
@@ -81,8 +82,14 @@ public final class TextGuardService extends AccessibilityService {
     };
     private boolean pendingWordReason;
     private boolean pendingScheduleReason;
+    private boolean pendingLimitReason;
     private boolean pendingVisualReason;
     private boolean pendingShortVideoReason;
+    /** Android usage totals are system-maintained and change slowly; one read per app per 15 s
+     *  bounds the query cost while a limited app is on screen. */
+    private static final long LIMIT_CACHE_MILLIS = 15000;
+    private final java.util.HashMap<String, Long> limitUsed = new java.util.HashMap<>();
+    private long limitCacheAt;
     private int selfRetries;
     private boolean selfCheckQueued;
     private java.util.List<String> selfNames;
@@ -93,6 +100,7 @@ public final class TextGuardService extends AccessibilityService {
             startActivity(new Intent(this, RestrictionActivity.class)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
                     .putExtra("word", pendingWordReason).putExtra("schedule", pendingScheduleReason)
+                    .putExtra("limit", pendingLimitReason)
                     .putExtra("visual", pendingVisualReason).putExtra("shortvideo", pendingShortVideoReason));
         } catch (RuntimeException unavailable) {
             inspection.record(InspectionHealth.Outcome.INCOMPLETE);
@@ -155,25 +163,25 @@ public final class TextGuardService extends AccessibilityService {
     }
 
     private VisualGuard newVisualGuard() {
-        return new VisualGuard(this, window -> intervene(window.app, window.id, window.active, false, false, true, false));
+        return new VisualGuard(this, window -> intervene(window.app, window.id, window.active, false, false, true, false, false));
     }
 
     /** Saves commitment progress once a minute so a restart loses little counted time. */
     private void checkpointCommitment() {
         try { PolicyStore.get(this).checkpoint(); } catch (RuntimeException unsaved) { /* Retry next minute. */ }
         ScreenGray.reassert(this);
-        enforceSchedule();
+        enforceTimedRules();
         handler.postDelayed(checkpoint, 60000);
     }
 
-    /** A scheduled window can open while a static app is on screen and produce no event.
-     *  One metadata-only sweep a minute closes that gap, so an allowlist does not need the
-     *  one-second heartbeat running all day. */
-    private void enforceSchedule() {
+    /** A scheduled window or a daily time limit can begin or be reached while a
+     *  static app is on screen and produce no event. One metadata-only sweep a
+     *  minute closes that gap. */
+    private void enforceTimedRules() {
         if (excluded == null || inspectPending) return;
         try {
             PolicyStore.Snapshot rules = PolicyStore.get(this).snapshot();
-            if (!rules.schedule.isConfigured()) return;
+            if (!rules.schedule.isConfigured() && !rules.timeLimits.configured()) return;
             List<GuardWindows.Window> windows = selectedWindows(this, excluded, app -> isSelected(rules, app));
             if (windows == null || windows.isEmpty()) return;
             pendingPackage = windows.get(0).app;
@@ -299,7 +307,7 @@ public final class TextGuardService extends AccessibilityService {
                 && event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             holdEnforcements++;
             pendingPackage = name;
-            intervene(name, event.getWindowId(), true, heldWord, false, heldVisual, true);
+            intervene(name, event.getWindowId(), true, heldWord, false, heldVisual, false, true);
             return;
         }
         try {
@@ -370,7 +378,14 @@ public final class TextGuardService extends AccessibilityService {
             for (GuardWindows.Window window : windows) {
                 if (rules.blockedApps.contains(window.app)) {
                     inspection.record(InspectionHealth.Outcome.COMPLETE);
-                    intervene(window.app, window.id, window.active, false, false, false, false);
+                    intervene(window.app, window.id, window.active, false, false, false, false, false);
+                    return;
+                }
+            }
+            for (GuardWindows.Window window : windows) {
+                if (limitReached(rules, window.app)) {
+                    inspection.record(InspectionHealth.Outcome.COMPLETE);
+                    intervene(window.app, window.id, window.active, false, false, false, true, false);
                     return;
                 }
             }
@@ -381,7 +396,7 @@ public final class TextGuardService extends AccessibilityService {
             for (GuardWindows.Window window : windows) {
                 if (rules.schedule.blocks(window.app, minute)) {
                     inspection.record(InspectionHealth.Outcome.COMPLETE);
-                    intervene(window.app, window.id, window.active, false, true, false, false);
+                    intervene(window.app, window.id, window.active, false, true, false, false, false);
                     return;
                 }
                 if (rules.scannedApps.contains(window.app) && rules.hasWordProtection()) scanned.add(window);
@@ -434,7 +449,7 @@ public final class TextGuardService extends AccessibilityService {
                 read |= !text.isEmpty();
                 if (matches(rules, adult, text)) {
                     inspection.record(partial ? InspectionHealth.Outcome.INCOMPLETE : InspectionHealth.Outcome.COMPLETE);
-                    intervene(window.app, window.id, window.active, true, false, false, false);
+                    intervene(window.app, window.id, window.active, true, false, false, false, false);
                     return;
                 }
             }
@@ -469,8 +484,28 @@ public final class TextGuardService extends AccessibilityService {
 
     private static boolean isSelected(PolicyStore.Snapshot rules, String name) {
         return rules.blockedApps.contains(name) || rules.scannedApps.contains(name)
+                || rules.timeLimits.monitored(name)
                 || rules.schedule.selects(name, minuteOfDay())
                 || (rules.shortVideoEnabled && ShortVideoSurfaces.watches(name));
+    }
+
+    /** Whether Android's on-device foreground record has reached this app's saved daily limit.
+     *  Without the Usage access special permission the answer is no, so the status page can show
+     *  the missing step instead of a limit that is not being enforced. */
+    private boolean limitReached(PolicyStore.Snapshot rules, String app) {
+        if (app == null || excluded == null || excluded.contains(app) || !rules.timeLimits.monitored(app)) return false;
+        if (!AppUsage.hasAccess(this)) return false;
+        long now = SystemClock.elapsedRealtime();
+        if (now - limitCacheAt > LIMIT_CACHE_MILLIS) {
+            limitUsed.clear();
+            limitCacheAt = now;
+        }
+        Long used = limitUsed.get(app);
+        if (used == null) {
+            used = AppUsage.usedToday(this, app);
+            limitUsed.put(app, used);
+        }
+        return rules.timeLimits.exceeded(app, used);
     }
 
     private static int minuteOfDay() {
@@ -514,6 +549,7 @@ public final class TextGuardService extends AccessibilityService {
         lastIntervention = now;
         pendingWordReason = false;
         pendingScheduleReason = false;
+        pendingLimitReason = false;
         pendingVisualReason = false;
         pendingShortVideoReason = true;
         handler.removeCallbacks(showRestriction);
@@ -697,14 +733,16 @@ public final class TextGuardService extends AccessibilityService {
      * Not again for a while on the same window while Home has left it on screen and out of use
      * (rule and tests in core InterventionRepeat); reopening a held app always acts. */
     private boolean intervene(String app, int window, boolean active, boolean word, boolean schedule,
-            boolean visualReason, boolean held) {
+            boolean visualReason, boolean limit, boolean held) {
         long now = SystemClock.elapsedRealtime();
         if (!held && repeat.wait(app, window, active, now) > 0) { repeatHoldOffs++; return false; }
         if (app != null) repeat.acted(app, window, now);
         inspectionOutcome = held ? "hold-intervention" : schedule ? "schedule-intervention"
+                : limit ? "time-limit-intervention"
                 : word ? "word-intervention" : visualReason ? "visual-intervention" : "app-intervention";
         if (word && !held) wordInterventions++;
         if (schedule) scheduleInterventions++;
+        if (limit) timeLimitInterventions++;
         if ((word || visualReason) && !held) {
             // The hold starts at the block itself; reopening does not extend it.
             String blocked = app != null ? app : activePackage();
@@ -732,6 +770,7 @@ public final class TextGuardService extends AccessibilityService {
         lastIntervention = now;
         pendingWordReason = word;
         pendingScheduleReason = schedule;
+        pendingLimitReason = limit;
         pendingVisualReason = visualReason;
         pendingShortVideoReason = false;
         handler.removeCallbacks(showRestriction);

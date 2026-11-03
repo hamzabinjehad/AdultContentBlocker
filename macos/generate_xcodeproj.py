@@ -101,6 +101,8 @@ APP_SOURCES = SHARED + [
     "Hisn/LockSchedule.swift",
     # The whole screen in gray, on request.
     "Hisn/ScreenGrayscale.swift",
+    # A private breathing pause, available from the menu bar and Overview.
+    "Hisn/Pause.swift",
 ]
 
 # Every string the app shows, in English and Arabic. A String Catalog: Xcode
@@ -133,6 +135,7 @@ TEST_SOURCES = ["HisnTests/BlocklistStoreTests.swift",
                 "HisnTests/FilterActivationTests.swift",
                 "HisnTests/OnboardingTests.swift",
                 "HisnTests/NetworkDNSProbeTests.swift",
+                "HisnTests/PauseTests.swift",
                 "../shared/tests/MirroredRuleStoreTests.swift"]
 
 # The signed seed list, bundled into the extension so a machine that has never
@@ -381,8 +384,8 @@ def main() -> int:
     app_settings = {
         "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
         "CODE_SIGN_ENTITLEMENTS": "Hisn/Hisn.entitlements",
-        "CURRENT_PROJECT_VERSION": "11",
-        "MARKETING_VERSION": "1.1.7",
+        "CURRENT_PROJECT_VERSION": "12",
+        "MARKETING_VERSION": "1.1.8",
         "ENABLE_HARDENED_RUNTIME": "YES",
         "INFOPLIST_FILE": "Hisn/Info.plist",
         "PRODUCT_BUNDLE_IDENTIFIER": APP_BUNDLE_ID,
@@ -393,8 +396,8 @@ def main() -> int:
     }
     filter_settings = {
         "CODE_SIGN_ENTITLEMENTS": "HisnFilter/HisnFilter.entitlements",
-        "CURRENT_PROJECT_VERSION": "11",
-        "MARKETING_VERSION": "1.1.7",
+        "CURRENT_PROJECT_VERSION": "12",
+        "MARKETING_VERSION": "1.1.8",
         "ENABLE_HARDENED_RUNTIME": "YES",
         "INFOPLIST_FILE": "HisnFilter/Info.plist",
         "PRODUCT_BUNDLE_IDENTIFIER": FILTER_BUNDLE_ID,
@@ -404,8 +407,8 @@ def main() -> int:
     }
     bridge_settings = {
         "CODE_SIGN_ENTITLEMENTS": "HisnBridge/HisnBridge.entitlements",
-        "CURRENT_PROJECT_VERSION": "11",
-        "MARKETING_VERSION": "1.1.7",
+        "CURRENT_PROJECT_VERSION": "12",
+        "MARKETING_VERSION": "1.1.8",
         "ENABLE_HARDENED_RUNTIME": "YES",
         "GENERATE_INFOPLIST_FILE": "YES",
         "PRODUCT_NAME": '"$(TARGET_NAME)"',

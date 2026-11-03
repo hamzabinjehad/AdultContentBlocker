@@ -94,6 +94,16 @@
 <div class="msg" id="msgAllow" role="status"></div>
 </fieldset>
 
+<fieldset class="wide" id="transferSettings"><legend data-i18n="opt.transfer.legend">Move your rules</legend>
+<p class="hint" data-i18n="opt.transfer.hint">Export your blocked sites, allowed sites, words and corrections as a file. It contains no browsing history. Importing adds the file’s entries here; it never removes one.</p>
+<div class="field-actions">
+<button type="button" id="exportRules"><span data-icon="download" aria-hidden="true"></span><span data-i18n="opt.transfer.export">Export file</span></button>
+<button type="button" class="secondary" id="importRules"><span data-icon="upload" aria-hidden="true"></span><span data-i18n="opt.transfer.import">Import file…</span></button>
+</div>
+<input type="file" id="importFile" accept="application/json,.json" hidden>
+<div class="msg" id="msgTransfer" role="status"></div>
+</fieldset>
+
 </section>
 <section class="page-view" id="settings" hidden aria-labelledby="settingsHeading">
 <h1 id="settingsHeading" data-i18n="visual.contentOptions">Content options</h1><p class="detail section-subtitle" data-i18n="visual.contentSubtitle">Choose what is checked in this browser.</p>

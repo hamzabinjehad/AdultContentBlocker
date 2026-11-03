@@ -10,6 +10,7 @@ struct MobileRootView: View {
     @State private var confirmation: Confirmation?
     @State private var selectedTab = 0
     @State private var showingNotices = false
+    @State private var showingPause = false
     @StateObject private var usage = AppUsageController()
     @StateObject private var vault: PasscodeVaultController
     /// The person's own confirmation of a lock Hisn cannot read; empty means none.
@@ -69,15 +70,23 @@ struct MobileRootView: View {
         } message: { action in
             Text(action == .guardian ? "removal.consent.body" : "dns.consent.body")
         }
-        .onAppear { usage.refresh() }
-        .onChange(of: protection.checkedAt) { _ in usage.refresh() }
+        .fullScreenCover(isPresented: $showingPause) {
+            PauseView(onClose: { showingPause = false })
+        }
+        .onAppear { usage.refresh(trustedNow: protection.trustedNow) }
+        .onChange(of: protection.checkedAt) { _ in usage.refresh(trustedNow: protection.trustedNow) }
     }
 
     /// Status first, then the commitment and the person's own sites. Everything
     /// that repeats Setup lives there; overview details stay one tap away.
     private var overview: some View {
         List {
-            verifiedSetup(compact: true)
+            ProtectionHero(protection: protection,
+                           onSetup: { selectedTab = 1 },
+                           onRefresh: { Task { await protection.refresh() } })
+            Section {
+                PauseCard { showingPause = true }
+            }
             readiness
             CommitmentSection(protection: protection, vault: vault)
             Section {
@@ -110,6 +119,7 @@ struct MobileRootView: View {
         .listStyle(.insetGrouped)
         .environment(\.defaultMinListRowHeight, 48)
         .refreshable { await protection.refresh() }
+        .toolbar { pauseToolbar }
         .frame(maxWidth: horizontalSizeClass == .regular ? 860 : .infinity)
         .frame(maxWidth: .infinity)
         .background(Color(uiColor: .systemGroupedBackground))
@@ -158,6 +168,7 @@ struct MobileRootView: View {
         }
         .listStyle(.insetGrouped)
         .environment(\.defaultMinListRowHeight, 48)
+        .toolbar { pauseToolbar }
         .frame(maxWidth: horizontalSizeClass == .regular ? 860 : .infinity)
         .frame(maxWidth: .infinity)
         .background(Color(uiColor: .systemGroupedBackground))
@@ -423,10 +434,23 @@ struct MobileRootView: View {
             }
         }
         // The same readable column as the other tabs on a wide iPad.
+        .toolbar { pauseToolbar }
         .frame(maxWidth: horizontalSizeClass == .regular ? 860 : .infinity)
         .frame(maxWidth: .infinity)
         .sheet(isPresented: $showingNotices) { NoticesView() }
         .background(Color(uiColor: .systemGroupedBackground))
+    }
+
+    /// The pause is always one tap away and changes no rule, so it is available
+    /// during a commitment too.
+    @ToolbarContentBuilder
+    private var pauseToolbar: some ToolbarContent {
+        ToolbarItem(placement: .navigationBarTrailing) {
+            Button { showingPause = true } label: {
+                Image(systemName: "wind")
+            }
+            .accessibilityLabel(Text("pause.open"))
+        }
     }
 
     @ViewBuilder private var errorRow: some View {

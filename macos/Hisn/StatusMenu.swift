@@ -193,6 +193,10 @@ struct StatusMenu: View {
                 Text(String(localized: "Daily lock at \(next.start.formatted(date: .omitted, time: .shortened))"))
             }
         }
+        if let tally = PauseStore.load(),
+           tally.day == PauseTally.dayKey(for: Date()) {
+            Text("Pauses today: \(tally.count)")
+        }
         Divider()
         Button("Open Hisn") { MainWindow.show(.overview, open: openWindow) }
         if !lock.isLocked {
@@ -206,6 +210,7 @@ struct StatusMenu: View {
             }
             Button("Start a lock…") { MainWindow.show(.lock, open: openWindow) }
         }
+        Button("Take a pause…") { PauseWindowController.shared.show() }
         Button("Block a site…") { QuickBlock.promptAndAdd() }
         if ScreenGrayscale.isAvailable {
             // A checkmark item. During a lock it can be ticked, not cleared.

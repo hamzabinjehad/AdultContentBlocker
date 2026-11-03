@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Hisn</string>
     <string name="title">Hisn for Android</string>
-    <string name="subtitle">Protection preview · %1$s</string>
+    <string name="subtitle">Hisn · %1$s</string>
     <string name="status_title">Protection is not active</string>
     <string name="status_body">Enable the layers you choose, then review each status. DNS, selected-app restrictions and sampled image/video checks have different coverage. A protection lock freezes saved rules; it does not by itself stop Android from disabling or removing Hisn.</string>
     <string name="network">DNS filtering · Off</string>
@@ -34,7 +34,7 @@
     <string name="dns_cancelled_network_requests">Old-network requests cancelled: %1$d</string>
     <string name="dns_tcp_stats">TCP DNS queries: %1$d · Replies prepared: %2$d · UDP retry signals: %3$d</string>
     <string name="dns_summary">%1$s\n%2$s\n%3$s\n%4$s\n%5$s\n%6$s\n%7$s</string>
-    <string name="dns_notification_title">Hisn DNS preview</string>
+    <string name="dns_notification_title">Hisn DNS filtering</string>
     <string name="dns_notification_body">Open Hisn for connection status and coverage.</string>
     <string name="dns_channel">DNS filtering status</string>
     <string name="dns_notification_private_dns">DNS tunnel connected · Android Private DNS can bypass Hisn</string>
@@ -382,6 +382,26 @@
     <string name="section_builtin">Built-in checks</string>
     <string name="section_rules_custom">Custom rules</string>
     <string name="section_apps">Apps</string>
+    <string name="section_time_limits">Daily time limits</string>
+    <string name="time_limits_edit_button">Edit daily limits</string>
+    <string name="time_limits_off">Daily time limits · Off</string>
+    <string name="time_limits_help">Choose apps and one daily foreground-time limit. When the limit is reached, Hisn closes the app and returns you home until local midnight. Hisn reads Android’s own on-device usage record; no usage event leaves the phone.</string>
+    <string name="time_limits_choose_apps">Apps with a daily limit</string>
+    <string name="time_limits_limit_title">Daily limit for these apps</string>
+    <string name="time_limits_limits">Requires Hisn accessibility to be connected and the separate Android Usage access grant. Android’s foreground-time record resets at local midnight; it can differ slightly from what you experienced, and changing the device clock, time zone or date or clearing Android’s usage data can change it. Limits are checked when a selected app is on screen and about once a minute while it stays there, so a limit may be enforced a little late. Settings, dialers, launchers and Hisn are excluded. While a protection lock runs, every saved limit is read-only.</string>
+    <string name="time_limits_save">Save daily limits</string>
+    <string name="time_limits_invalid">The daily limits could not be saved. Check the selected apps and the limit.</string>
+    <string name="time_limits_summary_limit">%1$s · %2$s per day</string>
+    <string name="time_limits_summary_access">%1$s · Usage access needed</string>
+    <string name="time_limits_minutes">%1$d min</string>
+    <string name="time_limits_hours">%1$d h</string>
+    <string name="time_limits_saved_access_needed">Daily limits saved. Grant Android Usage access so they can be enforced.</string>
+    <string name="time_limits_access_title">Android Usage access</string>
+    <string name="time_limits_access_granted">Granted · Hisn can read today’s foreground time</string>
+    <string name="time_limits_access_needed">Not granted · limits cannot be enforced</string>
+    <string name="time_limits_access_unavailable">Android’s Usage access screen could not open. Open Settings → Apps → Special access → Usage access.</string>
+    <string name="attention_time_limits_access">Daily time limits are saved, but Android Usage access is off, so they are not enforced.</string>
+    <string name="restriction_limit">You reached the daily time limit you set for this app. It resets at local midnight.</string>
     <string name="section_schedule">Daily schedule</string>
     <string name="section_commitment">Protection lock</string>
     <string name="section_uninstall">Uninstall protection</string>
@@ -454,6 +474,10 @@
     <string name="attention_route_failed">The DNS route check failed.</string>
     <string name="attention_commitment_unknown">Hisn could not read its saved protection lock.</string>
     <string name="attention_settings_restored">Settings were restored from the second copy; check your rules.</string>
+    <plurals name="time_limits_summary">
+        <item quantity="one">%1$d app with a daily limit</item>
+        <item quantity="other">%1$d apps with daily limits</item>
+    </plurals>
     <plurals name="saved_domains">
         <item quantity="one">%1$d domain saved</item>
         <item quantity="other">%1$d domains saved</item>

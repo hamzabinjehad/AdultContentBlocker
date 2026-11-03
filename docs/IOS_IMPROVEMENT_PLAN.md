@@ -10,6 +10,15 @@ forums (links inline). Nothing here has been tested on a real iPhone yet.
 > recorded below. Layer additions and recovery remain available. See
 > [the 1.2.0 record](IOS_1.2.0.md). Milestone claims below still describe 1.1.3
 > unless a later date is named; they are not rewritten as if device-tested.
+>
+> **1.3.0 update (2026-11-03):** iOS now has an on-demand pause (breathing,
+> reminders, needs, a local tally), a **daily quiet-hours** window for selected
+> apps beside always-block and the daily budget, and an action-first overview
+> hero. Quiet hours use two same-day DeviceActivity schedules when they cross
+> midnight, reconcile the shield against the device clock and Apple's time, and
+> are frozen during a commitment. See [the 1.3.0 record](IOS_1.3.0.md) and the
+> [iOS REA audit](REA_AUDIT_IOS_2026-11-03.md). DeviceActivity callbacks and
+> real Screen Time enforcement are still not device-verified.
 
 ## End goal
 
@@ -77,7 +86,7 @@ that it was seen working on a phone.
 
 | Layer | Works (code) | Missing or wrong |
 | --- | --- | --- |
-| Screen Time app limits | Always-block shields and one shared daily budget (`ios/Hisn/AppUsageController.swift:60-116`, `ios/Shared/AppUsageConfiguration.swift:127-132`); the monitor shields at the threshold and keeps a reached budget for the day (`ios/HisnActivityMonitor/ActivityMonitor.swift:7-28`); during a commitment only tightening is accepted (`AppUsageConfiguration.swift:116-123`); health separates missing permission from stopped monitoring (`AppUsageConfiguration.swift:24-32`) | The budget day is the wall-clock date (`AppUsageConfiguration.swift:47-50`), so moving the date starts a new day; on iOS 16–17.3 a running budget cannot be edited (`AppUsageController.swift:77-79`); no daily time window like Android's schedule; no notice when access is revoked in the background |
+| Screen Time app limits | Always-block shields and one shared daily budget (`ios/Hisn/AppUsageController.swift:60-116`, `ios/Shared/AppUsageConfiguration.swift:127-132`); the monitor shields at the threshold and keeps a reached budget for the day (`ios/HisnActivityMonitor/ActivityMonitor.swift:7-28`); during a commitment only tightening is accepted (`AppUsageConfiguration.swift:116-123`); health separates missing permission from stopped monitoring (`AppUsageConfiguration.swift:24-32`) | The budget day is the wall-clock date (`AppUsageConfiguration.swift:47-50`), so moving the date starts a new day; on iOS 16–17.3 a running budget cannot be edited (`AppUsageController.swift:77-79`); quiet hours were added in 1.3.0 and are still device-unverified; no notice when access is revoked in the background |
 | Safari content blockers | Six blockers × 40,000 rules (`shared/apple/MobileProtectionPolicy.swift:8-10`, `:46-53`); each handler refuses a rule file whose SHA-256 or count does not match instead of loading an empty list (`ios/HisnBlocker/ContentBlockerRequestHandler.swift:16-23`); the app re-verifies all six parts once per launch (`ios/Hisn/ProtectionController.swift:733-760`) and reads each switch (`:675-682`) and reload result (`:720-727`) | The list changes only with an app build; 239,885 of the published list's domains fit; no proof a page was blocked, only configuration |
 | Safari text and visual extension | The shared on-device scorer replaces a blocked top-frame page with `blocked.html` (`ios/HisnWebExtension/background.js:130-170`); it never receives native messages (`ios/HisnWebExtension/SafariWebExtensionHandler.swift:5-8`) | The app cannot read whether Hisn Text is on, allowed on sites or in Private Browsing, so the guide says so (`ios/Hisn/BrowserFirstSection.swift:10`) |
 | Family DNS | Saves a Cloudflare Family DoH configuration (`ProtectionController.swift:368-393`) and reports absent, saved-but-off, enabled or different (`MobileProtectionPolicy.swift:114-125`, `ProtectionController.swift:345-352`) | Can be switched off in Settings on any unsupervised phone; a supervised profile's DNS is invisible to `NEDNSSettingsManager`, so the row reads "not configured" there |
@@ -95,7 +104,7 @@ apps, so several Android layers have no iOS equivalent at all.
 | --- | --- | --- |
 | DNS filtering with Hisn's own list and custom domains (local VPN) | Partly. `NEDNSSettingsManager` only points the system at a DNS server; it cannot filter with Hisn's list on the device. A local `NEPacketTunnelProvider` could, at the cost of occupying the one VPN slot | Cloudflare Family DNS only; the domain list runs in Safari's blockers |
 | Block chosen apps entirely | Yes: FamilyControls picker + ManagedSettings shields | Built (always-block mode) |
-| Daily time window for chosen apps | Yes: `DeviceActivitySchedule` with an interval, shields set in `intervalDidStart` and cleared in `intervalDidEnd` | Not built; iOS has a daily usage budget instead |
+| Daily time window for chosen apps | Yes: `DeviceActivitySchedule` with an interval, shields set in `intervalDidStart` and cleared in `intervalDidEnd` | Built in 1.3.0 as daily quiet hours: one window, split at midnight, both-clock reconciliation. Not device-verified. |
 | Word rules and adult-text checks in other apps (accessibility) | **No.** No API reads another app's screen text | Safari only, through Hisn Text |
 | Image and video sampling in chosen apps (accessibility screenshots) | **No** for other apps. ReplayKit broadcast capture shows a recording indicator, is memory-capped and is not meant for this | Safari only, through Hisn Text's opt-in visual checks |
 | Commitment that refuses weaker rules | Yes, inside the app | Built |

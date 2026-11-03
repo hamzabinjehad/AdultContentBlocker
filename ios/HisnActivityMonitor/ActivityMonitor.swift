@@ -8,11 +8,23 @@ final class ActivityMonitor: DeviceActivityMonitor {
     private let budget = ManagedSettingsStore(named: .init(AppUsageConfiguration.budgetStoreName))
     private let selfControl = ManagedSettingsStore(named: .init("hisn.self-control"))
     private let always = ManagedSettingsStore(named: .init("hisn.apps.always"))
+    private let window = ManagedSettingsStore(named: .init(AppUsageConfiguration.windowStoreName))
     /// Apple's time over HTTPS, only when the saved reading cannot settle a day.
     private let serverWait: TimeInterval = 5
 
     override func intervalDidStart(for activity: DeviceActivityName) {
         defer { checkLayers() }
+        if isWindowActivity(activity) {
+            guard let defaults = UserDefaults(suiteName: AppUsageConfiguration.group),
+                  let config = AppUsageConfiguration.read(defaults),
+                  config.mode == .quietHours else {
+                // A stale window callback after the rule changed must not keep a shield.
+                window.clearAllSettings()
+                return
+            }
+            config.shield(window)
+            return
+        }
         guard activity.rawValue == AppUsageConfiguration.activity,
               let defaults = UserDefaults(suiteName: AppUsageConfiguration.group),
               let config = AppUsageConfiguration.read(defaults), config.mode == .dailyBudget else { return }
@@ -30,7 +42,39 @@ final class ActivityMonitor: DeviceActivityMonitor {
     }
 
     override func intervalDidEnd(for activity: DeviceActivityName) {
+        // A crossing window has two legs. The evening leg ends at 23:59, but the
+        // quiet hours are still running, so only the morning leg (or the single
+        // same-day leg) can clear the shield.
+        if activity.rawValue == AppUsageConfiguration.windowMorningActivity
+            || activity.rawValue == AppUsageConfiguration.windowActivity {
+            clearWindowOnlyWhenBothClocksAreOutside()
+        }
         checkLayers()
+    }
+
+    /// The interval end is driven by the device clock. If Apple's saved reading
+    /// still puts the device inside the window, the shield stays; the app clears
+    /// it after it can confirm both clocks. An unreadable rule leaves the
+    /// existing shield untouched rather than guessing.
+    private func clearWindowOnlyWhenBothClocksAreOutside() {
+        guard let defaults = UserDefaults(suiteName: AppUsageConfiguration.group),
+              let config = AppUsageConfiguration.read(defaults) else { return }
+        guard config.mode == .quietHours else {
+            // The rule was replaced or removed; a late callback must not keep it.
+            window.clearAllSettings()
+            return
+        }
+        let trusted = TrustedTime.AnchorStore(storage: DefaultsRuleStorage(defaults: defaults)).load()?
+            .lowerBound(uptime: TrustedTime.uptime, boot: TrustedTime.bootSession)
+        if !config.windowActive(deviceNow: Date(), trustedNow: trusted) {
+            window.clearAllSettings()
+        }
+    }
+
+    private func isWindowActivity(_ activity: DeviceActivityName) -> Bool {
+        activity.rawValue == AppUsageConfiguration.windowActivity
+            || activity.rawValue == AppUsageConfiguration.windowEveningActivity
+            || activity.rawValue == AppUsageConfiguration.windowMorningActivity
     }
 
     override func intervalWillStartWarning(for activity: DeviceActivityName) {
@@ -86,17 +130,18 @@ final class ActivityMonitor: DeviceActivityMonitor {
         let storage = DefaultsRuleStorage(defaults: defaults)
         guard let watch = LayerAlertPolicy.loadWatch(storage), watch.alertsOn else { return }
         let config = AppUsageConfiguration.read(defaults)
-        let shield = always.shield
         var webFilterSet = false
         if case .auto = selfControl.webContent.blockedByFilter { webFilterSet = true }
+        let trusted = TrustedTime.AnchorStore(storage: storage).load()?
+            .lowerBound(uptime: TrustedTime.uptime, boot: TrustedTime.bootSession)
+        let quietHoursActive = config?.mode == .quietHours
+            && config?.windowActive(deviceNow: Date(), trustedNow: trusted) == true
         let observed = LayerAlertPolicy.Observation(
             authorized: AuthorizationCenter.shared.authorizationStatus == .approved,
             webFilterSet: webFilterSet,
-            appShieldsExpected: config?.mode == .always,
-            appShieldsSet: shield.applications != nil || shield.applicationCategories != nil
-                || shield.webDomains != nil || shield.webDomainCategories != nil)
-        let trusted = TrustedTime.AnchorStore(storage: storage).load()?
-            .lowerBound(uptime: TrustedTime.uptime, boot: TrustedTime.bootSession)
+            appShieldsExpected: config?.mode == .always || quietHoursActive,
+            appShieldsSet: config?.mode == .always ? hasShield(always)
+                : quietHoursActive && hasShield(window))
         let posted = LayerAlertPolicy.posted(LayerAlertPolicy.loadMemory(storage), for: watch)
         let decision = LayerAlertPolicy.decide(watch: watch, deviceNow: Date(), trustedNow: trusted,
                                                observed: observed, alreadyPosted: posted)
@@ -109,5 +154,11 @@ final class ActivityMonitor: DeviceActivityMonitor {
                 identifier: "hisn.layer.\(layer.rawValue)", content: content, trigger: nil))
         }
         try? LayerAlertPolicy.saveMemory(.init(startedAt: watch.startedAt, layers: decision.remember), to: storage)
+    }
+
+    private func hasShield(_ store: ManagedSettingsStore) -> Bool {
+        let shield = store.shield
+        return shield.applications != nil || shield.applicationCategories != nil
+            || shield.webDomains != nil || shield.webDomainCategories != nil
     }
 }

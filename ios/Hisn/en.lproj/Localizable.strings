@@ -88,7 +88,7 @@
 "commitment.extendBody" = "Seven days will be added to your existing end date, not counted from today. The added time has the same no-early-release rule. New end date:";
 "commitment.extendFailed" = "The commitment could not be extended. It must be active, securely stored and remain within 365 days of its original start. Your previous plan was not shortened.";
 "apps.title" = "My apps and daily time";
-"apps.scope" = "Choose apps, categories or websites through Apple's private picker. Always-block mode shields them until you remove the rule outside a commitment. It is not a whole-phone lock; keep essential apps accessible.";
+"apps.scope" = "Choose apps, categories or websites through Apple's private picker, then choose always block, a shared daily budget or a daily quiet-hours window. It is not a whole-phone lock; keep essential apps accessible.";
 "apps.browserGuardGuidance" = "Safari rules do not protect every browser. To shield browsers or mixed-content apps such as X, use Choose apps and websites, select every browser app you want blocked, choose Always block, then apply the rule. This is a separate Screen Time choice, not an extension or profile scan. During a commitment, Hisn will not let you change that saved rule.";
 "apps.browserGuardLimits" = "iPhone and iPad cannot require this Mac browser extension or continuously watch extension presence, close other browsers, or offer the Mac one-minute repair countdown. Applied Screen Time shields do not need Hisn to stay open: iOS manages them while authorization remains approved. Safari and family DNS are separate layers; none scans all content in other apps. Personal adult authorization can be revoked and Hisn can be deleted.";
 "apps.authorization" = "First enable personal Screen Time protection above and accept Apple's permission on a real device.";
@@ -161,7 +161,7 @@
 "support.page" = "Support";
 "about.title" = "About";
 "about.version" = "Version";
-"privacy.body" = "Hisn does not record visited sites or blocked browsing attempts. Safari applies declarative rules without sending browsing history to Hisn. Family DNS is handled by Cloudflare under its own privacy policy. To check commitment, daily budget and passcode dates, Hisn reads the time from apple.com over HTTPS; nothing about you is sent.";
+"privacy.body" = "Hisn does not record visited sites or blocked browsing attempts. Safari applies declarative rules without sending browsing history to Hisn. Family DNS is handled by Cloudflare under its own privacy policy. To check commitment, daily budget, quiet-hours and passcode dates, Hisn reads the time from apple.com over HTTPS; nothing about you is sent.";
 "coverage.title" = "What this version protects";
 "coverage.body" = "A self-control commitment, Safari domain blockers, separately enabled Hisn Text webpage checking, selected-app shields, optional family DNS and Apple's adult-content web filter. These do not guarantee all content, all apps, VPN resistance or protection that cannot be disabled. Hisn works independently of your Mac; settings do not sync yet.";
 "apple.title" = "iPhone and iPad";
@@ -367,3 +367,69 @@
 "gray.steps" = "Settings › Accessibility › Display & Text Size › Color Filters: turn on Color Filters and choose Grayscale.";
 "gray.shortcut" = "To switch it quickly, add Color Filters to Settings › Accessibility › Accessibility Shortcut, then triple-click the side or Home button.";
 "gray.automation" = "To keep it on at set times, add a personal automation in the Shortcuts app with the Set Color Filters action.";
+
+/* iOS pause: an on-demand breathing moment, inspired by ScreenZen and matching Mac 1.1.8 */
+"pause.open" = "Take a pause…";
+"pause.cardBody" = "A private pause. Nothing here is recorded except today’s count.";
+"pause.title" = "Take a moment before you go on";
+"pause.body" = "A private pause. Nothing here is recorded except today’s count.";
+"pause.inhale" = "Breathe in…";
+"pause.exhale" = "Breathe out slowly…";
+"pause.progress" = "Breathing pause";
+"pause.done" = "Well done. The urge passes faster than it feels.";
+"pause.question" = "What do you need right now?";
+"pause.again" = "Breathe again";
+"pause.count %lld" = "Pauses today: %lld";
+"pause.footer" = "Each time you walk away, the habit gets weaker.";
+"pause.close" = "Close";
+"pause.reminder.1" = "An urge rises, peaks and fades, usually within minutes. You don’t have to act on it.";
+"pause.reminder.2" = "You set this up on a calmer day, for a moment like this one.";
+"pause.reminder.3" = "A slip doesn’t erase your progress. Walking away right now still counts.";
+"pause.reminder.4" = "Ask what led here: the time, the place, the mood. That is what to change next.";
+"pause.reminder.5" = "Stand up, change rooms, drink some water. Moving your body moves your mind.";
+"pause.need.tired" = "Rest";
+"pause.need.lonely" = "Company";
+"pause.need.stressed" = "Calm";
+"pause.need.bored" = "Something to do";
+"pause.tip.tired" = "Put the screen away and lie down, even for ten minutes. Tiredness makes urges louder.";
+"pause.tip.lonely" = "Message or call someone you trust, even just to say hello.";
+"pause.tip.stressed" = "Step outside or wash your face, then take five slow breaths.";
+"pause.tip.bored" = "Pick one small task you have been putting off and give it ten minutes.";
+
+/* Overview hero: one plain status and one next action before the diagnostics */
+"hero.on" = "Protection is on";
+"hero.attention" = "Protection needs attention";
+"hero.unchecked" = "Protection has not been checked";
+"hero.checking" = "Checking protection";
+"hero.onDetail" = "All three layer configurations are verified.";
+"hero.attentionDetail" = "Hisn found steps that still need you.";
+"hero.uncheckedDetail" = "Check the live state before relying on these layers.";
+"hero.checkingDetail" = "Reading the configuration of each layer.";
+"hero.issuesOne" = "1 item needs attention";
+"hero.issues %lld" = "%lld items need attention";
+"hero.finishSetup" = "Finish setup";
+"hero.checkAgain" = "Check again";
+"hero.scope" = "Configuration checks, not proof of complete blocking.";
+"hero.safari" = "Safari";
+"hero.dns" = "DNS";
+"hero.screenTime" = "Screen Time";
+"hero.layerOn" = "On";
+"hero.layerOff" = "Off";
+
+/* Daily quiet hours: a ScreenZen-style time window for chosen apps */
+"apps.quietHours" = "Daily quiet hours";
+"apps.health.quietHoursRegistered" = "Daily quiet hours registered — not a blocking test";
+"apps.health.quietHoursStopped" = "Saved quiet hours are not registered for monitoring";
+"apps.windowStart" = "From";
+"apps.windowEnd" = "Until";
+"apps.windowPreset" = "Presets";
+"apps.windowLateNight" = "Late night · 22:00–07:00";
+"apps.windowEvening" = "Evening · 20:00–23:00";
+"apps.windowWork" = "Work hours · 09:00–17:00";
+"apps.windowScope" = "The selected apps and websites are shielded every day during this window, even if you have not used them. It follows this device’s clock; when Hisn has read Apple’s time, it also checks that the window is really over before clearing the shield. One window, every day.";
+"apps.windowOvernight" = "This window crosses midnight and is protected on both sides.";
+"apps.windowInvalid" = "Choose a window of at least 15 minutes. A window that crosses midnight must start at least 16 minutes before midnight and end at least 15 minutes after it.";
+"apps.windowConsent" = "During this window the selected apps become inaccessible every day. Outside a commitment you can remove the rule; during one it is frozen.";
+
+/* App-limit section: advanced browser/coverage copy stays collapsed */
+"apps.details" = "Browser and coverage limits";

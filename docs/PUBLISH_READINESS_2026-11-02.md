@@ -9,11 +9,11 @@ physical-device acceptance run exists.
 
 | Surface | Version | Build | State |
 | --- | --- | --- | --- |
-| Android | 0.9.0 | 25 | unsigned Play and direct releases checked; direct build installed on the Samsung |
-| Mac | 1.1.7 | 11 | unsigned package smoke passes; system filter still needs the Apple team |
-| iPhone & iPad | 1.2.0 | 6 | simulator suite passes; no team, entitlement or device |
-| Browser extension | 1.4.0 | — | reproducible store zip passes the package check; no listing |
-| Seed | v5, 2026-10-30 | — | signed; no published `lists` branch |
+| Android | 1.0.0 | 26 | direct and Play APKs signed with a local release key; Play submission and physical device proof still required |
+| Mac | 1.1.8 | 12 | unsigned package smoke passes; system filter still needs the Apple team |
+| iPhone & iPad | 1.3.0 | 7 | simulator suite passes; no team, entitlement or device |
+| Browser extension | 1.5.0 | — | reproducible store zip passes the package check; no listing |
+| Seed / lists | v5 seed (2026-10-30); v6 lists (2026-11-03) | — | signed; `lists` branch published and HTTP 200 |
 
 ## Verification run on 2–3 November 2026
 
@@ -23,27 +23,30 @@ physical-device acceptance run exists.
 | Python suites | **PASS** — blocklist, profile, network publication, extension staging, Safari rules |
 | Extension JavaScript suites | **PASS** — 68 language checks, 94 feed checks, 397 web-protection, 46 worker-layout plus the rest |
 | `./test.sh browser` | **PASS** — DNR 42/42, live scanner, six block pages, popup/settings redesign in English and Arabic, and the four-image real-engine visual smoke in Helium/Chromium |
-| `./test.sh macos` | **PASS** — 513 tests, localization 565 strings with Arabic |
+| `./test.sh macos` | **PASS** — 521 tests, localization 589 strings with Arabic (includes the 1.1.8 pause) |
 | `./test.sh release` | **PASS** — 33 installer/package tests |
-| `./test.sh ios` | **PASS** — 185 tests on the iPhone simulator |
-| `android/test-core.sh` | **PASS** — seed, DNS, rules, managed restrictions, protection lock |
-| Android `assembleDebug assembleDebugAndroidTest lintDebug assembleRelease bundleRelease` | **PASS** — 0 lint errors; Play and direct APKs pass `check-release.py` |
+| `./test.sh ios` | **PASS** — 206 tests on the iPhone simulator |
+| `android/test-core.sh` | **PASS** — seed, DNS, rules, managed restrictions, protection lock, `AppTimeLimitTest` |
+| Android strings/UI | **PASS** — 460 strings, 15 plurals, 485 references in English/Arabic; time-limit card read back on the API 36 emulator |
+| Android `assembleDebug assembleDebugAndroidTest lintDebug assembleRelease bundleRelease` | **PASS** — 0 lint errors; signed Play and direct APKs pass `check-release.py` and `apksigner` |
+| Android live limit | **PASS** — a 5-minute limit on the test-only fixture app was reached, closed and explained on the API 36 emulator |
 | `CoreDeviceTestRunner` on API 36 emulator | **PASS** — including full-freeze assertions |
 | Extension package reproducibility | **PASS** — two builds produce the same SHA-256 |
+| Signed list v6 publication | **PASS** — manifest/signature match the signed candidate over HTTPS, HTTP/2 200; publish guard and 43 real-artifact checks pass |
 
-## Artifacts (unsigned unless stated)
+## Artifacts (Mac and extension unsigned; Android signed)
 
 - Android Play APK SHA-256
-  `b1887534dccc300c692f50838b8733676ef4939f8866179ac6135c001a1b23fe`
+  `bded282fd19fb524d77daf42d0a60a0660bd6db5c06acbba316e168743fe5517`
 - Android direct APK SHA-256
-  `5336e5eae797202cc868a04df8ef99959a29cfe71aa4434f4e0dcf748a7344f6`
+  `c42591ec8223e3d24d8159f0536d3212ee0f351b5c3edc1fc4d03c0d30afaac0`
 - Android AAB SHA-256
-  `4647d666edd6068262659a2eab2631fc470529aa3262f157004502dc82526ab7`
+  `0794e0d509ca939cc012e2a01e82353211611c0c54174cefe7e4e40ec07cfad7`
 - Extension zip SHA-256
-  `2cb7d723884b633b37f295ced0deec9ac0046c95d70d6c1fc80365acb41c5552`
-  (6.2 MB, 91 files, reproducible)
-- Mac package smoke artifact `Hisn-UNSIGNED-TEST.pkg` SHA-256
-  `a081102f8cea0d9d8ec3658758c280d47f3f4132c6048d408d118ce0e6ca0547`
+  `96ca854f52b3a4cb406bcc735013263a6adea56aedda93c843bf95733b1d85a7`
+  (5.9 MB, 92 files, reproducible)
+- Mac package smoke artifact `Hisn-UNSIGNED-TEST.pkg` (1.1.8, build 12) SHA-256
+  `376a563e7e197b9e9db98fe720e6ba5dc15adf1768cc75021f9cd4842b7aa843`
   — structure-only, no signature, not for distribution
 - iOS: no archive; the simulator test build is the only artifact
 
@@ -71,10 +74,13 @@ physical-device acceptance run exists.
 
 ### Android
 
-1. Create the production keystore offline with two backups.
-2. Build with the four `HISN_ANDROID_*` variables, then run
-   `android/check-release.py`, `apksigner verify --print-certs` and publish the
-   APK hash and certificate fingerprint.
+1. **Done 2026-11-03:** a release keystore exists in the gitignored
+   `keys/android/` with its password. Back both up offline in two separate
+   places; losing them means existing installs can never be updated.
+2. **Done 2026-11-03:** signed Play and direct APKs plus the AAB were built and
+   checked; hashes and the certificate fingerprint are in
+   [ANDROID_1.0.md](ANDROID_1.0.md). The 0.9.0 preview was debug-signed, so
+   updating it requires an uninstall.
 3. Provision a disposable, factory-reset, account-free phone as device owner and
    record the real refusals: uninstall, Safe Mode, app controls, factory reset,
    VPN/Private DNS, new user, default apps, strict install, release.
@@ -108,8 +114,11 @@ physical-device acceptance run exists.
 ### Lists
 
 1. Configure the `list-signing` environment with the signing key and a
-   `main`-only policy.
-2. Publish the `lists` branch and verify the manifest is HTTP 200.
+   `main`-only policy so the daily workflow can publish.
+2. **Done 2026-11-03:** the signed `lists` branch is live at v6 (5,274,046
+   domains) and the manifest is HTTP 200. It was published manually with the
+   matching local key; see
+   [LIST_PUBLICATION_2026-11-03.md](LIST_PUBLICATION_2026-11-03.md).
 3. Prove a client installs a newer signed generation and rejects rollback.
 
 ## The honest end-goal status
@@ -119,21 +128,25 @@ visual, short-video, search, app scheduling, commitments/locks, guardian
 authority, removal resistance report and per-platform health. What is missing is
 **evidence and distribution**, not a missing product layer:
 
-- No signed Android APK with a production key and no physical device-owner run.
+- Android 1.0.0 APKs are signed with a newly generated local release key; key
+  backup custody, Play submission and a physical device-owner run remain.
 - No signed/notarized Mac package, no active Mac system filter without the Apple
   team, and no standard-account Mac test.
 - No Apple team, entitlement, TestFlight or physical iPhone/iPad run.
 - No Chrome Web Store listing or real store ID.
-- No published `lists` branch; every client is on seed v5.
+- No **scheduled** `lists` publication (the `list-signing` environment is not
+  configured) and no installed client proven to have installed v6.
 - No measured adult-recall/visual benchmark with a licensed corpus.
 
 Until those are done, the correct label is **release candidate**, not 1.0.
 
 ## Suggested publication order
 
-1. **Android direct build** — sign, install on a disposable device, run the
-   device-owner matrix. This is the strongest free removal lock.
+1. **Android direct build** — the signed 1.0.0 APK is ready; install it on a
+   disposable device and run the device-owner matrix. This is the strongest
+   free removal lock.
 2. **Mac** — Developer ID, notarized package, standard-account test.
 3. **Extension** — unlisted Chrome Web Store beta, wire the real ID.
 4. **iOS** — entitlement, TestFlight, disposable device.
-5. **Lists** — publish signed daily generations.
+5. **Lists** — configure the scheduled signing environment; v6 is already
+   published, and a client install/rollback test remains.

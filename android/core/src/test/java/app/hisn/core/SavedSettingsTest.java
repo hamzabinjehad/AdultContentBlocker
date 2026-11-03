@@ -70,6 +70,14 @@ public final class SavedSettingsTest {
         check(SavedSettings.rules(suspendValues).suspendBlocked, "Blocked-app suspension read back");
         check(SavedSettings.rules(suspendValues).managedLockdown,
                 "Blocked-app suspension changed managed lockdown");
+        check(!SavedSettings.rules(suspendValues).timeLimits.configured(), "Time limits default off");
+        Map<String, Integer> limitMap = new HashMap<>();
+        limitMap.put("com.example.limited", 30);
+        Map<String, Object> limitValues = new HashMap<>(SavedSettings.values("", "", set(), set(), false, false,
+                false, false, false, false, false, false, new AppTimeLimit(limitMap),
+                DailyAppSchedule.disabled(), new CommitmentClock(0, 40000, BOOT), false, false));
+        check(new AppTimeLimit(limitMap).equals(SavedSettings.rules(limitValues).timeLimits),
+                "Time limits read back");
         check(rules.schedule.enabled && rules.schedule.startMinute == 1200 && rules.schedule.endMinute == 360
                 && rules.schedule.apps.equals(set("com.example.night")) && !rules.schedule.allApps, "Schedule read back");
         Map<String, Object> allowValues = new HashMap<>(SavedSettings.values("", "", set(), set(), false, false,
@@ -138,7 +146,8 @@ public final class SavedSettingsTest {
                 && !SavedSettings.rules(upgrade.rules).managedLockdown
                 && !SavedSettings.rules(upgrade.rules).managedStrict
                 && !SavedSettings.rules(upgrade.rules).suspendBlocked
-                && !SavedSettings.rules(upgrade.rules).installLock, "Upgrade from 0.5.3");
+                && !SavedSettings.rules(upgrade.rules).installLock
+                && !SavedSettings.rules(upgrade.rules).timeLimits.configured(), "Upgrade from 0.5.3");
         Map<String, Object> legacyInvalid = new HashMap<>(legacy);
         legacyInvalid.put("remaining", 5);
         try { load(legacyInvalid, none, false); throw new AssertionError("Invalid 0.5.3 settings loaded"); }

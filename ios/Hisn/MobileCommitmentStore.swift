@@ -97,6 +97,14 @@ final class MonitorSharedState {
         return (try? AppUsageConfiguration.load(defaults))?.mode == .dailyBudget
     }
 
+    /// A quiet-hours rule also needs a shared reading of Apple's time, so the app
+    /// can refuse to clear a shield just because the device clock was moved past
+    /// the window.
+    var quietHoursConfigured: Bool {
+        guard let defaults else { return false }
+        return (try? AppUsageConfiguration.load(defaults))?.mode == .quietHours
+    }
+
     func heldDayAction(deviceNow: Date, trustedNow: Date?) -> AppUsageConfiguration.HeldDayAction {
         defaults.map { AppUsageConfiguration.heldDayAction($0, deviceNow: deviceNow, trustedNow: trustedNow) } ?? .none
     }

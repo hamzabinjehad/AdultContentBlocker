@@ -8,6 +8,38 @@ The plan to finish the iPhone/iPad app, including which Apple-supported lock
 level stops deletion and what each one cannot stop, is in
 [the iOS end-goal plan](../docs/IOS_IMPROVEMENT_PLAN.md).
 
+## 1.3.0 pause, quiet hours and a calmer overview
+
+Inspired by ScreenZen and comparable apps, and recorded in
+[the iOS REA audit](../docs/REA_AUDIT_IOS_2026-11-03.md):
+
+- **A private on-demand pause.** A 30-second breath (4 seconds in, 6 out, three
+  times), five rotating reminders, four needs with offscreen tips, and a local
+  tally of today's pauses (a day, a count and a time; a 30-second merge; a 9,999
+  cap; no host, reason, history or network). It is reachable from the overview
+  and a wind button on every tab, keeps working during a commitment, and changes
+  no rule or permission.
+- **Daily quiet hours for selected apps.** A third app-rule mode beside always
+  block and the daily budget: one daily window with presets and custom times.
+  A window that crosses midnight is registered as two same-day
+  `DeviceActivitySchedule`s (evening → 23:59 and 00:00 → morning), so the
+  undocumented overnight interval is not relied on. The app clears the shield
+  only when both the device clock and, once read, Apple's time are outside the
+  window. The rule is frozen during a commitment, like every other saved app
+  rule. Health separates registered from stopped, and the copy says this is
+  configuration evidence, not a blocking test.
+- **One status, one action.** The overview hero shows a plain status, three
+  layer chips and one primary action; the detailed setup issues sit behind a
+  count and a disclosure. Setup keeps the full diagnostic view.
+- The long browser/coverage explanations in the app-limit section moved behind
+  **Browser and coverage limits**.
+
+Version 1.3.0, build 7. `./test.sh ios` passes **38 Python and 206 simulator
+tests**; no Apple team, entitlement, signed build or physical-device acceptance
+is claimed. The quiet-hours window, DeviceActivity callbacks and real Screen
+Time shields still need a signed build on a physical iPhone. See
+[the 1.3.0 record](../docs/IOS_1.3.0.md).
+
 ## 1.2.0 protection lock
 
 Inspired by the Android 0.9.0 protection lock, a running commitment now freezes
@@ -85,6 +117,17 @@ runner, for example `platform=iOS Simulator,name=iPhone 17 Pro`.
 ## What ships
 
 - Native SwiftUI tabs for protection status, guided setup, privacy and language.
+  The overview leads with one status, three layer chips and one next action; the
+  detailed checks are one disclosure below.
+- An on-demand **pause**: a 30-second guided breath, five rotating reminders,
+  four needs with offscreen tips, and a local day/count/time tally. It changes
+  no rule, works during a commitment and never sends the tally anywhere.
+- Selected-app rules can **always block**, share a **daily usage budget**, or
+  apply **daily quiet hours** with presets and custom times. Quiet hours crossing
+  midnight are two same-day DeviceActivity schedules; the shield clears only
+  when both the device clock and, once read, Apple's time are outside the
+  window. Rules are frozen during a commitment. This is configuration evidence,
+  not a blocking test.
 - Six Safari content blockers, each capped at 40,000 rules. The signed core
   seed is fully included, never silently truncated. The current seed has
   239,885 domains; increasing capacity requires explicit additional targets.
@@ -254,11 +297,22 @@ commitment behaviour only.
 
 ## Selected app restrictions
 
-The iPhone/iPad Setup page now offers Apple's private activity picker, always-on
-shields, and a combined daily usage budget (15–240 minutes) for selected apps,
-categories and websites. A `HisnActivityMonitor` extension receives Apple's
-threshold callbacks and shields the selection until the next daily interval
-starts. This is not a whole-device lock or a meter for all network traffic.
+The iPhone/iPad Setup page offers Apple's private activity picker, always-on
+shields, a combined daily usage budget (15–240 minutes), and daily quiet hours
+for selected apps, categories and websites. A `HisnActivityMonitor` extension
+receives Apple's threshold and interval callbacks and applies the shield. This
+is not a whole-device lock or a meter for all network traffic.
+
+Quiet hours are one daily window, with presets (late night, evening, work
+hours) or custom From/Until times. A window that crosses midnight is registered
+as two same-day `DeviceActivitySchedule`s: evening start to 23:59, and 00:00 to
+the morning end. The evening end deliberately keeps the shield; the morning end
+clears it, so the midnight boundary has no gap. The app also reconciles the
+shield with the device clock and, once read, Apple's server time, clearing only
+when both are outside the window. Apple rejects intervals under 15 minutes, so
+each split leg must meet that minimum; the editor explains an invalid window
+instead of rounding it. Health says whether the window is registered, not
+whether blocking was observed.
 
 The app and monitor must both have Family Controls and the same App Group
 (`group.app.hisn.mobile`) in their signed provisioning profiles. Apple distribution
@@ -270,13 +324,15 @@ costs and what must stay accessible, see
 [apps to consider blocking](../docs/APPS_TO_CONSIDER.md). Apple's picker returns
 opaque tokens, so the app cannot preselect or name the apps from a bundled list.
 
-During a commitment, including 90 days, selections can grow but cannot shrink;
-daily limits can tighten but not increase, and always-block cannot become a daily
-budget. On iOS 16–17.3 a running daily budget cannot be edited during commitment
-because restarting its monitor may reset counted activity. On iOS 17.4+ the event
-includes past activity. The always-block rule is restored on authorized relaunch.
-The app does not automatically restart missing budget monitoring or pretend it
-is registered. Rules remain until removed outside the commitment.
+During a commitment, including 90 days, the saved app rule is fully frozen:
+selections, mode, daily minutes and the quiet-hours window cannot change.
+Always-block cannot become a daily budget, and a budget cannot become quiet
+hours. On iOS 16–17.3 a running daily budget cannot be edited during a
+commitment because restarting its monitor may reset counted activity. On iOS
+17.4+ the event includes past activity. The always-block and quiet-hours shields
+are restored on authorized relaunch. The app does not automatically restart
+missing budget monitoring or pretend a quiet-hours window is registered. Rules
+remain until removed outside the commitment.
 
 The optional app-domain exporter creates reviewed AdGuard Home domain rules only,
 not an app/server discovery database or router installer. An explicit all-client

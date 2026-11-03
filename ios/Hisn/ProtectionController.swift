@@ -289,7 +289,7 @@ final class ProtectionController: ObservableObject {
             if stale { return true }
         }
         if shared.hasHeldBudgetDay { return true }
-        return stale && shared.dailyBudgetConfigured
+        return stale && (shared.dailyBudgetConfigured || shared.quietHoursConfigured)
     }
 
     /// Finishes a new budget day the monitor could not confirm, with the same both-clocks

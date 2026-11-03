@@ -3,7 +3,7 @@ import FamilyControls
 import ManagedSettings
 
 struct AppUsageConfiguration: Codable {
-    enum Mode: String, Codable { case always, dailyBudget }
+    enum Mode: String, Codable { case always, dailyBudget, quietHours }
     enum Health: String {
         case unchecked = "apps.health.unchecked"
         case unavailable = "apps.health.unavailable"
@@ -13,10 +13,13 @@ struct AppUsageConfiguration: Codable {
         case alwaysConfigured = "apps.health.alwaysConfigured"
         case budgetRegistered = "apps.health.budgetRegistered"
         case budgetStopped = "apps.health.budgetStopped"
+        case quietHoursRegistered = "apps.health.quietHoursRegistered"
+        case quietHoursStopped = "apps.health.quietHoursStopped"
 
         var needsAttention: Bool {
             switch self {
-            case .unavailable, .invalid, .permissionMissing, .budgetStopped: return true
+            case .unavailable, .invalid, .permissionMissing, .budgetStopped,
+                 .quietHoursStopped: return true
             default: return false
             }
         }
@@ -27,16 +30,151 @@ struct AppUsageConfiguration: Codable {
         guard hasSavedData else { return .notConfigured }
         guard valid, let mode else { return .invalid }
         guard authorized else { return .permissionMissing }
-        if mode == .always { return .alwaysConfigured }
-        return registered ? .budgetRegistered : .budgetStopped
+        switch mode {
+        case .always: return .alwaysConfigured
+        case .dailyBudget: return registered ? .budgetRegistered : .budgetStopped
+        case .quietHours: return registered ? .quietHoursRegistered : .quietHoursStopped
+        }
     }
     var selection: FamilyActivitySelection
     var mode: Mode
     var minutes: Int
-    var isValid: Bool {
-        (15...240).contains(minutes) && (!selection.applicationTokens.isEmpty
-            || !selection.categoryTokens.isEmpty || !selection.webDomainTokens.isEmpty)
+    /// Minutes after midnight for a quiet-hours window. They are kept on every
+    /// rule so a mode change does not silently lose the person's chosen times.
+    var windowStart: Int
+    var windowEnd: Int
+
+    init(selection: FamilyActivitySelection, mode: Mode, minutes: Int,
+         windowStart: Int = AppUsageConfiguration.defaultWindowStart,
+         windowEnd: Int = AppUsageConfiguration.defaultWindowEnd) {
+        self.selection = selection
+        self.mode = mode
+        self.minutes = minutes
+        self.windowStart = windowStart
+        self.windowEnd = windowEnd
     }
+
+    private enum CodingKeys: String, CodingKey {
+        case selection, mode, minutes, windowStart, windowEnd
+    }
+
+    /// Rules saved by 1.2.0 have no window fields; they decode with the default
+    /// late-night window, which is only used if the person selects quiet hours.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        selection = try container.decode(FamilyActivitySelection.self, forKey: .selection)
+        mode = try container.decode(Mode.self, forKey: .mode)
+        minutes = try container.decode(Int.self, forKey: .minutes)
+        windowStart = try container.decodeIfPresent(Int.self, forKey: .windowStart)
+            ?? Self.defaultWindowStart
+        windowEnd = try container.decodeIfPresent(Int.self, forKey: .windowEnd)
+            ?? Self.defaultWindowEnd
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(selection, forKey: .selection)
+        try container.encode(mode, forKey: .mode)
+        try container.encode(minutes, forKey: .minutes)
+        try container.encode(windowStart, forKey: .windowStart)
+        try container.encode(windowEnd, forKey: .windowEnd)
+    }
+
+    var isValid: Bool {
+        guard !selection.applicationTokens.isEmpty
+            || !selection.categoryTokens.isEmpty
+            || !selection.webDomainTokens.isEmpty else { return false }
+        switch mode {
+        case .always: return true
+        case .dailyBudget: return (15...240).contains(minutes)
+        case .quietHours:
+            return Self.isValidWindow(start: windowStart, end: windowEnd)
+        }
+    }
+
+    // MARK: - Quiet hours
+
+    struct WindowLeg: Equatable {
+        let activity: String
+        /// Minutes after midnight, inclusive.
+        let start: Int
+        /// Minutes after midnight, exclusive.
+        let end: Int
+    }
+
+    /// The schedules to register. A same-day window is one activity; a window
+    /// crossing midnight is two same-day activities. The gate that ends the
+    /// window only clears on the morning leg (or the single leg).
+    struct WindowPlan: Equatable {
+        let legs: [WindowLeg]
+        var activityNames: [String] { legs.map(\.activity) }
+    }
+
+    var windowCrossesMidnight: Bool { windowEnd < windowStart }
+
+    /// A duration in minutes; nil for an unreadable or zero-length window.
+    static func windowDuration(start: Int, end: Int) -> Int? {
+        guard (0..<1440).contains(start), (0..<1440).contains(end), start != end else { return nil }
+        return end > start ? end - start : 1440 - start + end
+    }
+
+    /// Apple rejects DeviceActivity schedules shorter than 15 minutes. A window
+    /// crossing midnight is split at midnight, so each half must also meet that
+    /// minimum. The split uses 23:59:59 as the evening end, which is why a start
+    /// later than 23:44 cannot be represented without a sub-15-minute leg.
+    static func isValidWindow(start: Int, end: Int) -> Bool {
+        guard let duration = windowDuration(start: start, end: end),
+              duration >= minimumWindowMinutes else { return false }
+        if end < start {
+            guard start <= 23 * 60 + 44, end >= minimumWindowMinutes else { return false }
+        }
+        return true
+    }
+
+    /// The schedules for a valid window; nil when the window is not valid.
+    static func makeWindowPlan(start: Int, end: Int) -> WindowPlan? {
+        guard isValidWindow(start: start, end: end) else { return nil }
+        if start < end {
+            return WindowPlan(legs: [WindowLeg(activity: windowActivity, start: start, end: end)])
+        }
+        return WindowPlan(legs: [
+            WindowLeg(activity: windowEveningActivity, start: start, end: 23 * 60 + 59),
+            WindowLeg(activity: windowMorningActivity, start: 0, end: end),
+        ])
+    }
+
+    var windowPlan: WindowPlan? {
+        Self.makeWindowPlan(start: windowStart, end: windowEnd)
+    }
+
+    static func minuteOfDay(_ date: Date, calendar: Calendar = .current) -> Int {
+        let parts = calendar.dateComponents([.hour, .minute], from: date)
+        return (parts.hour ?? 0) * 60 + (parts.minute ?? 0)
+    }
+
+    static func windowActive(start: Int, end: Int, at date: Date,
+                             calendar: Calendar = .current) -> Bool {
+        guard isValidWindow(start: start, end: end) else { return false }
+        let minute = minuteOfDay(date, calendar: calendar)
+        return start < end ? (minute >= start && minute < end)
+                           : (minute >= start || minute < end)
+    }
+
+    /// True if either clock is inside the window. Hisn clears a quiet-hours
+    /// shield only when both the device clock and (once read) Apple's time are
+    /// outside it, so moving the device clock forward cannot end it early.
+    static func windowActive(start: Int, end: Int, deviceNow: Date, trustedNow: Date?,
+                             calendar: Calendar = .current) -> Bool {
+        if windowActive(start: start, end: end, at: deviceNow, calendar: calendar) { return true }
+        guard let trustedNow else { return false }
+        return windowActive(start: start, end: end, at: trustedNow, calendar: calendar)
+    }
+
+    func windowActive(deviceNow: Date, trustedNow: Date?, calendar: Calendar = .current) -> Bool {
+        Self.windowActive(start: windowStart, end: windowEnd, deviceNow: deviceNow,
+                          trustedNow: trustedNow, calendar: calendar)
+    }
+
     static let group = "group.app.hisn.mobile"
     static let key = "appUsageConfiguration"
     /// The reached-day marker and its mirror, each a `ReachedDay` record.
@@ -53,6 +191,18 @@ struct AppUsageConfiguration: Codable {
     enum BudgetMarkerFailure: Error { case corrupt, writeFailed }
     static let activity = "hisn.selected.daily"
     static let event = "hisn.selected.budget"
+    /// A quiet-hours window that does not cross midnight uses one activity.
+    static let windowActivity = "hisn.selected.window"
+    /// A window crossing midnight is split into two same-day schedules and the
+    /// evening end does not clear the shield; the morning end does. This avoids
+    /// relying on an overnight interval whose behaviour Apple does not document.
+    static let windowEveningActivity = "hisn.selected.window.evening"
+    static let windowMorningActivity = "hisn.selected.window.morning"
+    static let windowStoreName = "hisn.apps.window"
+    static let defaultWindowStart = 22 * 60
+    static let defaultWindowEnd = 7 * 60
+    /// Apple rejects DeviceActivity schedules shorter than 15 minutes.
+    static let minimumWindowMinutes = 15
     /// A marker counts at most this far ahead of the device's day (or of the later of the
     /// device clock and Apple's time). One further ahead was written under a clock moved far
     /// forward and would otherwise keep the shield every day until that date.
@@ -315,6 +465,7 @@ struct AppUsageConfiguration: Codable {
     }
     func sameRule(as other: AppUsageConfiguration) -> Bool {
         mode == other.mode && minutes == other.minutes
+            && windowStart == other.windowStart && windowEnd == other.windowEnd
             && selection.applicationTokens == other.selection.applicationTokens
             && selection.categoryTokens == other.selection.categoryTokens
             && selection.webDomainTokens == other.selection.webDomainTokens

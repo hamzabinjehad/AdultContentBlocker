@@ -53,6 +53,7 @@ import java.util.Set;
 import java.util.TimeZone;
 
 import app.hisn.core.BrowserCoverage;
+import app.hisn.core.AppTimeLimit;
 import app.hisn.core.DailyAppSchedule;
 import app.hisn.core.GuardHealth;
 import app.hisn.core.PolicyChangeError;
@@ -139,6 +140,8 @@ public final class MainActivity extends Activity {
     private Ui.SettingRow scannedRow;
     private Ui.SettingRow browserRow;
     private Button scheduleEdit;
+    private TextView timeLimitState;
+    private Button timeLimitEdit;
     private LinearLayout rulesLockCard;
     private TextView rulesLockText;
     private LinearLayout setupCard;
@@ -699,6 +702,13 @@ public final class MainActivity extends Activity {
                 view -> showBrowserCoverage());
         appRules.addView(browserRow.root);
 
+        LinearLayout limits = addCard(page, R.drawable.ic_clock, R.string.section_time_limits);
+        timeLimitState = statusLine();
+        limits.addView(timeLimitState);
+        timeLimitEdit = Ui.button(this, R.string.time_limits_edit_button, Ui.ButtonKind.TONAL);
+        limits.addView(timeLimitEdit, Ui.buttonParams(this));
+        timeLimitEdit.setOnClickListener(view -> editTimeLimits());
+
         LinearLayout schedule = addCard(page, R.drawable.ic_calendar, R.string.section_schedule);
         scheduleState = statusLine();
         schedule.addView(scheduleState);
@@ -1067,6 +1077,7 @@ public final class MainActivity extends Activity {
         }
         boolean accessibilityConfigured = rules != null && (!rules.blockedApps.isEmpty()
                 || (rules.schedule.enabled && rules.schedule.isConfigured())
+                || rules.timeLimits.configured()
                 || (!rules.scannedApps.isEmpty() && (rules.hasWordProtection() || rules.visualEnabled))
                 || rules.shortVideoEnabled);
         boolean rulesLocked = settingsReadable && ProtectionLock.locked(remaining);
@@ -1080,10 +1091,12 @@ public final class MainActivity extends Activity {
 
         if (rules != null) {
             refreshSchedule(rules.schedule);
+            refreshTimeLimits(rules);
             if (rules.adultWordsEnabled) AdultPolicyAssets.ensureLoaded(this);
             if (safeSearchToggle != null) safeSearchToggle.setChecked(settings.safeSearchEnabled());
         } else {
             setStatus(scheduleState, getString(R.string.policy_unavailable), Ui.ATTENTION);
+            if (timeLimitState != null) setStatus(timeLimitState, getString(R.string.policy_unavailable), Ui.ATTENTION);
         }
 
         int visualReason = 0;
@@ -1317,6 +1330,8 @@ public final class MainActivity extends Activity {
             default: break;
         }
         if (visualReason != 0) attention.add(visualReason);
+        if (rules != null && rules.timeLimits.configured() && !AppUsage.hasAccess(this))
+            attention.add(R.string.attention_time_limits_access);
         if (check == DnsVpnService.CheckState.FAILED) attention.add(R.string.attention_route_failed);
         if (uninstallAttention) attention.add(R.string.attention_uninstall_sync);
         if (managedAttention) attention.add(R.string.attention_managed_sync);
@@ -1346,6 +1361,7 @@ public final class MainActivity extends Activity {
         setRowEnabled(scannedRow, editable);
         setRowEnabled(browserRow, editable);
         Ui.setEnabledWithAlpha(scheduleEdit, editable);
+        Ui.setEnabledWithAlpha(timeLimitEdit, editable);
         if (rulesLockCard == null || rulesLockText == null) return;
         rulesLockCard.setVisibility(locked ? View.VISIBLE : View.GONE);
         if (locked) {
@@ -1686,6 +1702,37 @@ public final class MainActivity extends Activity {
                         : R.string.schedule_window_inactive)), Ui.ON);
     }
 
+    /** Daily time limits are a saved rule plus a separate Android Usage access grant. Show both,
+     *  so a configured limit without the grant never reads as enforced. */
+    private void refreshTimeLimits(PolicyStore.Snapshot rules) {
+        if (timeLimitState == null) return;
+        if (!rules.timeLimits.configured()) {
+            setStatus(timeLimitState, getString(R.string.time_limits_off), Ui.OFF);
+            return;
+        }
+        int count = rules.timeLimits.size();
+        String summary = getResources().getQuantityString(R.plurals.time_limits_summary, count, count);
+        Integer single = null;
+        boolean same = true;
+        for (String app : rules.timeLimits.apps()) {
+            int minutes = rules.timeLimits.minutesFor(app);
+            if (single == null) single = minutes;
+            else if (single != minutes) same = false;
+        }
+        if (same && single != null) {
+            summary = getString(R.string.time_limits_summary_limit, summary, timeLimitText(single));
+        }
+        boolean access = AppUsage.hasAccess(this);
+        if (!access) summary = getString(R.string.time_limits_summary_access, summary);
+        setStatus(timeLimitState, summary, access ? Ui.ON : Ui.ATTENTION);
+    }
+
+    private String timeLimitText(int minutes) {
+        return minutes >= 60 && minutes % 60 == 0
+                ? getString(R.string.time_limits_hours, minutes / 60)
+                : getString(R.string.time_limits_minutes, minutes);
+    }
+
     private CharSequence scheduleAppsCount(boolean keep, int count) {
         return getResources().getQuantityString(keep ? R.plurals.kept_apps : R.plurals.selected_apps, count, count);
     }
@@ -2011,6 +2058,123 @@ public final class MainActivity extends Activity {
                         PolicyChangeError reason = PolicyChangeError.of(refused);
                         error.setText(reason == PolicyChangeError.INVALID
                                 ? getString(R.string.schedule_invalid) : refusalText(refused));
+                        error.setVisibility(View.VISIBLE);
+                    }
+                }));
+        showPrivate(dialog);
+    }
+
+    // ------------------------------------------------------------ daily time limits
+
+    private void chooseTimeLimitApps(Set<String> selected, Ui.SettingRow row) {
+        List<ChosenApps.Entry> apps = ChosenApps.list(this);
+        Set<String> draft = new LinkedHashSet<>(selected);
+        AlertDialog dialog = AppPicker.create(this, R.string.time_limits_choose_apps,
+                R.string.schedule_use_apps, apps, draft, picked -> {
+                    selected.clear();
+                    selected.addAll(picked);
+                    row.setSummary(getResources().getQuantityString(R.plurals.selected_apps,
+                            selected.size(), selected.size()));
+                    return true;
+                });
+        showPrivate(dialog);
+    }
+
+    private void pickTimeLimit(int[] minutes, Ui.SettingRow row) {
+        int[] choices = {5, 15, 30, 60, 120, 240, 480, 1440};
+        String[] labels = new String[choices.length];
+        int checked = 1;
+        for (int index = 0; index < choices.length; index++) {
+            labels[index] = timeLimitText(choices[index]);
+            if (choices[index] == minutes[0]) checked = index;
+        }
+        new AlertDialog.Builder(this).setTitle(R.string.time_limits_limit_title)
+                .setSingleChoiceItems(labels, checked, (dialog, which) -> {
+                    minutes[0] = choices[which];
+                    row.setSummary(timeLimitText(minutes[0]));
+                    dialog.dismiss();
+                })
+                .setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void editTimeLimits() {
+        if (settings == null || refuseIfRulesLocked()) return;
+        final PolicyStore.Snapshot current;
+        try { current = settings.snapshot(); }
+        catch (RuntimeException unavailable) {
+            Toast.makeText(this, R.string.policy_unavailable, Toast.LENGTH_LONG).show();
+            return;
+        }
+        Set<String> selected = new LinkedHashSet<>(current.timeLimits.apps());
+        int[] minutes = {15};
+        if (!current.timeLimits.apps().isEmpty()) {
+            Integer saved = current.timeLimits.minutesFor(current.timeLimits.apps().iterator().next());
+            if (saved != null) minutes[0] = saved;
+        }
+
+        LinearLayout form = new LinearLayout(this);
+        form.setOrientation(LinearLayout.VERTICAL);
+        form.setPadding(Ui.dp(this, 20), Ui.dp(this, 4), Ui.dp(this, 20), 0);
+        form.addView(Ui.body(this, getString(R.string.time_limits_help)));
+
+        boolean access = AppUsage.hasAccess(this);
+        Ui.SettingRow accessRow = Ui.settingRow(this, R.drawable.ic_lock,
+                getString(R.string.time_limits_access_title),
+                getString(access ? R.string.time_limits_access_granted : R.string.time_limits_access_needed),
+                view -> {
+                    try { startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)); }
+                    catch (RuntimeException unavailable) {
+                        Toast.makeText(this, R.string.time_limits_access_unavailable, Toast.LENGTH_LONG).show();
+                    }
+                });
+        form.addView(accessRow.root, Ui.margins(this, 8, 0));
+
+        final Ui.SettingRow[] appsRow = {null};
+        appsRow[0] = Ui.settingRow(this, R.drawable.ic_apps,
+                getString(R.string.time_limits_choose_apps),
+                getResources().getQuantityString(R.plurals.selected_apps, selected.size(), selected.size()),
+                view -> chooseTimeLimitApps(selected, appsRow[0]));
+        form.addView(appsRow[0].root, Ui.margins(this, 8, 0));
+
+        final Ui.SettingRow[] limitRow = {null};
+        limitRow[0] = Ui.settingRow(this, R.drawable.ic_clock,
+                getString(R.string.time_limits_limit_title), timeLimitText(minutes[0]),
+                view -> pickTimeLimit(minutes, limitRow[0]));
+        form.addView(limitRow[0].root, Ui.margins(this, 8, 0));
+        form.addView(Ui.caption(this, getString(R.string.time_limits_limits)), Ui.margins(this, 10, 0));
+
+        TextView error = Ui.caption(this, "");
+        error.setTextColor(Ui.color(this, R.color.danger));
+        error.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+        error.setVisibility(View.GONE);
+        form.addView(error);
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.addView(form, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        AlertDialog dialog = new AlertDialog.Builder(this).setTitle(R.string.section_time_limits)
+                .setView(scroll).setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.time_limits_save, null).create();
+        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                .setOnClickListener(view -> {
+                    try {
+                        app.hisn.core.AppTimeLimit limits;
+                        if (selected.isEmpty()) {
+                            limits = app.hisn.core.AppTimeLimit.none();
+                        } else {
+                            java.util.Map<String, Integer> map = new java.util.LinkedHashMap<>();
+                            for (String app : selected) map.put(app, minutes[0]);
+                            limits = new app.hisn.core.AppTimeLimit(map);
+                        }
+                        settings.updateTimeLimits(limits);
+                        dialog.dismiss();
+                        refreshStatus();
+                        Toast.makeText(this, AppUsage.hasAccess(this) || selected.isEmpty() ? R.string.rules_saved
+                                : R.string.time_limits_saved_access_needed, Toast.LENGTH_LONG).show();
+                    } catch (RuntimeException refused) {
+                        PolicyChangeError reason = PolicyChangeError.of(refused);
+                        error.setText(reason == PolicyChangeError.INVALID
+                                ? getString(R.string.time_limits_invalid) : refusalText(refused));
                         error.setVisibility(View.VISIBLE);
                     }
                 }));

@@ -4,6 +4,13 @@ Written 2026-10-24 against 0.5.1 (version code 13). This replaces the open-ended
 "next acceptance gates" list in [the status record](ANDROID_IMPLEMENTATION_STATUS.md)
 with a fixed finish line. Per-version evidence stays in the `ANDROID_0.x.md` records.
 
+> **1.0.0 update (2026-11-03):** the signed 1.0.0 release adds opt-in daily app
+> time limits, informed by ScreenZen and BlockerHero. A limit uses Android's
+> on-device foreground-time record (Usage access) and is frozen by the
+> protection lock like every other saved rule. The rest of this plan's 1.0
+> scope and its device-evidence limits stand; signed-artifact, publication and
+> physical-phone checks are recorded in [1.0](ANDROID_1.0.md).
+>
 > **0.9.0 update (2026-11-02):** the in-app commitment is now the **protection
 > lock**. While it runs, every saved rule is frozen in both directions, not only
 > against weakening. The direct build's removal guard arms itself from the lock
@@ -21,9 +28,11 @@ owner turns on the layers they choose and gets accurate status for each one:
 2. **Selected-app restrictions**: permanent blocks and daily schedules.
 3. **Word and adult-text checks** in the apps the owner chooses.
 4. **Opt-in image/video sampling** in the apps the owner chooses.
-5. **Protection locks** that freeze every layer above, in both directions, until
+5. **Opt-in daily app time limits** read from Android's on-device usage record,
+   for apps the owner chooses, with an explicit Usage access step.
+6. **Protection locks** that freeze every layer above, in both directions, until
    they expire.
-6. **Optional managed uninstall protection** on a phone the owner has
+7. **Optional managed uninstall protection** on a phone the owner has
    provisioned as device owner. This is an extra, not a requirement for the
    ordinary sideloaded build.
 
@@ -55,9 +64,11 @@ restarts. The 0.8.x watchdog makes that visible with a local notification, and
 `no_config_vpn` stops an ordinary user replacing the tunnel. The app never claims
 always-on coverage.
 
-Usage limits (time budgets) are deferred to 1.1. Daily schedules and permanent blocks
-already cover the self-control case, and budgets add a counter-recovery surface that
-needs its own lifecycle testing.
+Usage limits were added in 1.0.0 as per-app daily foreground-time limits. They
+use Android's own on-device usage record and a separate Usage access grant, not
+a locally accumulated counter. Open-count limits, per-session budgets, usage
+reports and parental dashboards remain out of scope. The rules and their
+enforcement limits are stated in [the 1.0 record](ANDROID_1.0.md).
 
 ## Where the preview stands (0.8.1)
 
@@ -65,6 +76,7 @@ needs its own lifecycle testing.
 | --- | --- | --- |
 | DNS layer (UDP + TCP53, DoT upstream, route check) | Implemented; core and Samsung route checks pass | Real Wi-Fi to mobile handover, screen lock, another VPN, resolver loss (M2) |
 | App blocks, schedules, words, adult text | Implemented; fixture and synthetic-corpus evidence | Real-app coverage pass (M3) |
+| Daily app time limits | Implemented in 1.0.0; `AppTimeLimitTest`, sealed-store round trip, device persistence/freeze checks and an API 36 emulator editor/enforcement pass. Requires the separate Android Usage access grant. | Physical-phone enforcement, OEM Usage access screens, clock/time-zone changes and battery/Doze behaviour |
 | Visual sampling | Implemented; benign baseline 0/12 false blocks; WebGL 121 ms median on Samsung | Adult recall, battery, live capture on 0.5.1 (M4) |
 | Protection locks | Implemented; clock, boot, full-freeze and isolated-preference tests pass. Device-owner mode can additionally block ordinary uninstall while one runs, and managed lockdown can hold the API-appropriate restrictions (five on Android 8, six on Android 9, seven on Android 10–13, eight on Android 14+). | Disposable short protection lock end to end on device (M3) |
 | Managed uninstall protection (0.8.1) | Device-owner only; pure state matrix, persistence guard, readback/release controller, UI and boot reconciliation are present. Optional lockdown adds `no_safe_boot`, `no_control_apps`, `no_factory_reset`, `no_add_user`, `no_config_vpn`, on Android 9+ `no_config_date_time`, on Android 10+ `disallow_config_private_dns` and, on Android 14+, `disallow_config_default_apps`; an optional strict switch adds `no_install_unknown_sources_globally` on Android 10+; a separate switch suspends blocked apps in Android while the lockdown holds. The DNS layer also has an opt-in SafeSearch CNAME rewrite. It also asks Android to keep the DNS-only VPN always on while DNS filtering is on. Saved with the uninstall block and released in reverse order. | Actual blocked uninstall and restriction refusals on a disposable provisioned device; Play/DPC policy review; an API 36 emulator device-owner run passed on 2026-11-01; no physical phone or release was provisioned |
@@ -181,25 +193,28 @@ Run on a fresh 0.5.x debug install, using `test-live-*.py` where possible:
 - [ ] GitHub release with the signed APK, hash, certificate fingerprint and the
       "not part of 1.0" list above, copied verbatim.
 
-## Remaining before calling it 1.0
+## Status at 1.0.0
 
-The 0.8.1 code covers the 1.0 feature scope. What is left is evidence and
-distribution, not another layer:
+The 1.0.0 feature scope is complete and the direct APK is signed and published.
+These evidence and distribution items remain open and are stated in the release
+notes; they are not features missing from the APK:
 
 | Item | State | Owner action |
 | --- | --- | --- |
-| Signed APK | Unsigned release artifact checked (`check-release.py`, SHA-256 recorded in [0.8.1](ANDROID_0.8.1.md)) | Create the production keystore offline, build with `HISN_ANDROID_*`, record the certificate fingerprint and APK hash |
+| Signed APK | **Done** — Play and direct APKs plus AAB built with the production key; `check-release.py` and `apksigner` pass; hashes and certificate in [1.0](ANDROID_1.0.md) | Back up `keys/android/` offline in two places |
 | Device lifecycle (M2) | Pure tests only | Disposable phone: VPN handover, accessibility revoke, reboot, service kill, watch the watchdog |
 | Real-app coverage (M3) | Fixtures only | Disposable phone and public content: browsers and two feed apps |
 | Visual benchmark (M4) | Benign baseline and WebKit/CPU timings | Licensed adult/benign corpus with denominators; battery run |
+| Daily time limits | Implemented; core, sealed-store, device-persistence and one API 36 emulator enforcement pass | Physical phone, OEM Usage-access screens, clock/time-zone changes and Doze/battery behaviour |
 | Managed device proof | Code, readback and tests only | Factory-reset, account-free device owner: uninstall, Safe Mode, app controls, factory reset, VPN and Private DNS refusals; release restores |
-| Version 1.0.0 | 0.9.0 (25) | Bump to 1.0.0, write `ANDROID_1.0.md`, copy the known limits into the release notes |
+| Version 1.0.0 | **Done** — 1.0.0 (26); record and known limits written | Copy the known limits into the release notes |
 | QR provisioning | Deferred | Needs a hosted APK URL and a reviewed QR payload; the ADB route is the supported 1.0 setup |
 | Always-on / full tunnel | Explicitly out of 1.0 | Revisit with a full-tunnel forwarder in 2.0 |
-| Play vs direct | Separate builds exist (`-PhisnDistribution=direct`) and `check-release.py --expect-distribution play` or `direct` refuses a mismatched artifact | Never upload the direct build to Play; keep the accessibility guard out of Play |
+| Play vs direct | Separate builds exist (`-PhisnDistribution=direct`) and `check-release.py --expect-distribution play` or `direct` refuses a mismatched artifact | Never upload the direct build to Play; keep the accessibility guard out of Play. The Play AAB is not uploaded and Play approval is not claimed. |
 
-Until the signed artifact and the device records exist, the honest label is
-**0.8.1 development preview**, not Android 1.0.
+The honest label is now **signed Android 1.0.0 direct release**, with the open
+device and Play gates above stated in the release notes. It is not a claim of
+universal protection or Play approval.
 
 ## Building a signed release
 

@@ -14,19 +14,28 @@ you the lock; Hisn adds the coverage those built-in filters miss. Read
 
 ## Latest
 
-- **Extension 1.4.0** — a quieter UI/UX pass: one status hero, one-word layer
-  states, less copy in English and Arabic, and stricter action hierarchy.
-- **iPhone & iPad 1.2.0** — the protection lock now freezes blocked sites and
-  app-limit rules while a commitment runs; layer recovery remains available.
-- **Mac 1.1.7** — protection authority is read from the accounts and daemon,
-  not self-certified; lock-gated authority and removal controls.
-- **Android 0.9.0** — the protection lock freezes every saved rule, the
-  direct build's removal guard arms itself, and device-owner lockdown is
-  read back honestly.
+- **Blocklist v6** — the first signed list generation is published:
+  **5,274,046 domains**, 239,885 core and 5,831 terms, verified over HTTPS and
+  served with HTTP 200. The bundled seed stays v5; iOS and Android still update
+  with an app build.
+- **Extension 1.5.0** — **Move your rules**: export the hand lists to a
+  versioned file and import one add-only in another browser. A lock keeps new
+  allowances and corrections waiting; a file can never remove a block.
+- **iPhone & iPad 1.3.0** — an on-demand breathing pause, a calmer protection
+  hero and daily quiet hours; the protection lock still freezes saved sites and
+  app limits while a commitment runs.
+- **Mac 1.1.8** — a private pause window for the moment of an urge: a guided
+  breath, a rotating reminder, four needs and a local count, reachable from
+  Overview, the menu bar and ⇧⌘P. It changes no rule; protection authority is
+  still read from the accounts and daemon, not self-certified.
+- **Android 1.0.0** — per-app daily foreground-time limits join the protection
+  lock, removal guard, managed lockdown and layer watchdog; the direct build is
+  signed locally, while a Play listing still needs the owner.
 
-These are development versions. No store listing, signed production build or
-device acceptance is claimed; the exact state is in
-[versions](docs/VERSIONS.md) and [1.0 readiness](docs/1.0_READINESS.md).
+These are development candidates. No store listing or physical-device
+acceptance is claimed; the Android 1.0.0 APKs are signed but not uploaded, and
+the exact state is in [versions](docs/VERSIONS.md) and
+[1.0 readiness](docs/1.0_READINESS.md).
 
 ### Interface
 
@@ -43,17 +52,21 @@ layer states. More captures, including Arabic and dark mode, are in the
 
 | Platform | What it does | State | Start here |
 | --- | --- | --- | --- |
-| Browser extension (Chromium) | Blocks listed domains, checks page text in the page's language, optional local image/video checks | 1.4.0 | [Using the extension](docs/EXTENSION_USAGE.md) |
-| Mac | Content-filter system extension, browser guard, locks, authority checks, accountability partner and root guardian daemon | 1.1.7, needs a signed build | [Mac setup](docs/SETUP.md) |
-| iPhone & iPad | Six Safari blockers, Safari text extension, Screen Time app limits, optional family DNS, protection lock for saved rules | 1.2.0, development | [iOS README](ios/README.md) |
-| Android | DNS filtering, selected-app and word restrictions, optional image checks, browser-coverage screen, schedules, protection lock that freezes saved rules, opt-in device-owner uninstall guard and managed lockdown, direct-build removal guard, layer watchdog and bundled-list freshness warning | 0.9.0 preview | [Android README](android/README.md) · [1.0 plan](docs/ANDROID_1.0_PLAN.md) |
+| Browser extension (Chromium) | Blocks listed domains, checks page text in the page's language, optional local image/video checks, portable hand lists | 1.5.0 | [Using the extension](docs/EXTENSION_USAGE.md) |
+| Mac | Content-filter system extension, browser guard, locks, authority checks, accountability partner, root guardian daemon and an on-demand breathing pause | 1.1.8, needs a signed build | [Mac setup](docs/SETUP.md) |
+| iPhone & iPad | Six Safari blockers, Safari text extension, Screen Time app limits, optional family DNS, protection lock for saved rules, an on-demand pause and daily quiet hours | 1.3.0, development | [iOS README](ios/README.md) |
+| Android | DNS filtering, selected-app and word restrictions, per-app daily time limits, optional image checks, browser-coverage screen, schedules, protection lock that freezes saved rules, opt-in device-owner uninstall guard and managed lockdown, direct-build removal guard, layer watchdog and bundled-list freshness warning | 1.0.0 signed direct; Play pending | [Android README](android/README.md) · [1.0 record](docs/ANDROID_1.0.md) |
 | Network / router | Verified signed DNS rules for administrator import | Tools only | [Network tools](network/README.md) |
 
 Seed **v5** raises the bundled core from 159,768 to **239,885 domains** on every
 surface, the largest tier the browser, six Safari blockers and the Android seed
 can hold without truncation. The selection rules, the 1,261 domains deferred by
 capacity and the licensing boundary are in the
-[coverage pass record](docs/COVERAGE_PASS_2026-10-30.md).
+[coverage pass record](docs/COVERAGE_PASS_2026-10-30.md). A signed **lists v6**
+generation (5,274,046 domains) is published for the Mac filter and the browser's
+list update; the seed remains the offline fallback. The evidence, hashes and the
+guard refusal that preceded it are in
+[the publication record](docs/LIST_PUBLICATION_2026-11-03.md).
 
 Each platform's start link is in the table; Mac users can also follow the
 [Mac user guide](docs/USER_GUIDE.md). Every document is listed in the

@@ -34,5 +34,9 @@
         <activity android:name="app.hisn.android.ClipboardDumpActivity"
             android:exported="true" android:permission="android.permission.DUMP"
             android:theme="@android:style/Theme.Material.Light.NoActionBar" />
+        <!-- Shell-only daily-time-limit setup for the enforcement fixture. -->
+        <activity android:name="app.hisn.android.TimeLimitTestSetupActivity"
+            android:exported="true" android:permission="android.permission.DUMP"
+            android:theme="@android:style/Theme.NoDisplay" />
     </application>
 </manifest>

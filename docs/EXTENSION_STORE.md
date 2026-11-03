@@ -1,7 +1,9 @@
-# Chrome Web Store readiness — Hisn Protection 1.4.0
+# Chrome Web Store readiness — Hisn Protection 1.5.0
 
 This is the owner-facing record for publishing the extension. It is not a
-listing that exists yet. The packaged zip is built by `extension/package.sh`;
+listing that exists yet. The packaged zip is built by `extension/package.sh`
+(`dist/hisn-extension-1.5.0.zip`, SHA-256
+`96ca854f52b3a4cb406bcc735013263a6adea56aedda93c843bf95733b1d85a7`);
 the store assigns its own extension ID, which then has to be wired into the
 native-messaging installer and policy generators.
 
@@ -29,7 +31,9 @@ native-messaging installer and policy generators.
 > language, and an unidentified language falls back to the full list.
 >
 > The popup and settings dashboard lead with one clear protection status and
-> short layer states, with technical details available only when needed.
+> short layer states, with technical details available only when needed. Your
+> own blocked sites, allowed sites, words and corrections can be exported to a
+> local file and imported in another browser; nothing is uploaded.
 >
 > It runs on its own or with the Hisn Mac app. With the app, a timed lock,
 > the app's site lists and a browser guard become authoritative. Without the
@@ -124,6 +128,9 @@ No account, sign-in, adult content or special network is needed:
 5. Turn on visual checks only if testing them; they are opt-in and local. No
    camera or upload prompt should appear.
 6. Remove the custom `example.com` rule and confirm the site loads.
+7. In **Blocking Rules → Move your rules**, choose **Export file** and confirm
+   a `hisn-rules.json` download appears. Import the same file back and confirm
+   it reports nothing new; no account or network is involved.
 
 Known limits the reviewer should see, not debug: a removed/disabled extension
 enforces nothing; unreadable media is not verified safe; other browsers and
@@ -145,7 +152,7 @@ the previous generation on failure.
 ## Checklist
 
 - [ ] Chrome Web Store developer account and fee.
-- [ ] Upload `dist/hisn-extension-1.4.0.zip`; unlisted first.
+- [ ] Upload `dist/hisn-extension-1.5.0.zip`; unlisted first.
 - [ ] Fill listing, privacy practices and permission justifications from above.
 - [ ] Add 128 px icon and at least one screenshot; the package already has icons.
 - [ ] Read the assigned store ID and wire both native messaging and policy.

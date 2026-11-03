@@ -349,6 +349,7 @@ private struct OverviewPage: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             protectionCard
+            pauseCard
             Card {
                 TimelineView(.periodic(from: .now, by: 10)) { _ in
                     LaptopSetupStatusView(readiness: laptopReadiness) { issue in
@@ -550,6 +551,39 @@ private struct OverviewPage: View {
                 }
             }
         }
+    }
+
+    /// The one positive action on this page. It changes no rule and records
+    /// only today's count, so it stays available during a lock too.
+    private var pauseCard: some View {
+        Button { PauseWindowController.shared.show() } label: {
+            Card {
+                HStack(alignment: .center, spacing: 14) {
+                    Image(systemName: "wind")
+                        .font(.title2)
+                        .foregroundStyle(Color.accentColor)
+                        .frame(width: 40, height: 40)
+                        .background(Color.accentColor.opacity(0.12), in: Circle())
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Take a pause…")
+                            .font(.headline)
+                        Text("A private pause. Nothing here is recorded except today’s count.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.forward")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .accessibilityHidden(true)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text("Take a pause…"))
     }
 
     // MARK: Actions

@@ -30,6 +30,7 @@ import { siteEditor } from "./lib/site-editor.js";
 import { describeVisual } from "./lib/visual-status.js";
 import { connectionStatus, connectionFeedback, repairFeedback, parseDomains, settingsError, restrictionsActive } from "./lib/settings.js";
 import { initLanguage, t, setLanguage, resolveLanguage, savePreference, translatePage, appLanguage } from "./lib/i18n.js";
+import { MAX_FILE_BYTES, exportJSON, importRules } from "./lib/transfer.js";
 
 const { preference: languagePreference } = await initLanguage();
 const $ = (id) => document.getElementById(id);
@@ -292,6 +293,103 @@ function renderReported(state) {
 }
 
 /**
+ * The person's own lists, out and back in.
+ *
+ * Export reads only the saved state — never a draft in a textarea — so the
+ * file is what is actually enforced. Import merges through `lib/transfer.js`
+ * and sends one `update`; the worker's guard, not this page, is the authority
+ * on whether a change is allowed. The page only decides what to say while a
+ * lock holds part of the file back.
+ */
+function transferMessage(text, kind = "") {
+  const el = $("msgTransfer");
+  el.className = kind ? `msg ${kind}` : "msg";
+  el.textContent = text;
+}
+
+function renderTransfer() {
+  const unavailable = !current || stateUnavailable;
+  $("exportRules").disabled = unavailable || saving;
+  $("importRules").disabled = unavailable || saving || current?.appPresent === true;
+  $("importRules").title = current?.appPresent ? t("opt.transfer.managed") : "";
+}
+
+function transferNotes(report = {}, skipped = {}) {
+  const parts = [];
+  if (report.withheld) parts.push(t("opt.transfer.locked", report.withheld));
+  if (report.capped) parts.push(t("opt.transfer.capped", report.capped));
+  const invalid = (skipped.hosts || 0) + (skipped.terms || 0);
+  if (invalid) parts.push(t("opt.transfer.skipped", invalid));
+  return parts.join(" ");
+}
+
+$("exportRules").addEventListener("click", () => {
+  if (saving || !current || stateUnavailable) {
+    transferMessage(settingsError({ reason: "unavailable" }), "error");
+    return;
+  }
+  const url = URL.createObjectURL(new Blob([exportJSON(current)], { type: "application/json" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "hisn-rules.json";
+  document.body.append(link);
+  link.click();
+  link.remove();
+  // The download owns the blob after the click; give it a turn to start.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  transferMessage(t("opt.transfer.exported"), "success");
+});
+
+$("importRules").addEventListener("click", () => {
+  if (saving || !current || current.appPresent) return;
+  transferMessage("");
+  $("importFile").click();
+});
+
+$("importFile").addEventListener("change", async () => {
+  const file = $("importFile").files?.[0];
+  $("importFile").value = "";
+  if (!file || !current || saving) return;
+  if (file.size > MAX_FILE_BYTES) {
+    transferMessage(t("opt.transfer.tooLarge"), "error");
+    return;
+  }
+  let text;
+  try {
+    text = await file.text();
+  } catch {
+    transferMessage(t("opt.transfer.invalid"), "error");
+    return;
+  }
+  const built = importRules(text, current, { locked: restrictionsActive(current) });
+  if (!built.ok) {
+    transferMessage(built.reason === "app-managed" ? t("opt.transfer.managed")
+      : built.reason === "too-large" ? t("opt.transfer.tooLarge")
+      : t("opt.transfer.invalid"), "error");
+    return;
+  }
+  if (!built.patch) {
+    transferMessage([t("opt.transfer.none"), transferNotes(built.report, built.skipped)]
+      .filter(Boolean).join(" "));
+    return;
+  }
+  saving = true;
+  renderTransfer();
+  transferMessage(t("opt.transfer.importing"));
+  const reply = await send({ type: "update", patch: built.patch });
+  saving = false;
+  if (!reply.ok) {
+    renderTransfer();
+    transferMessage(settingsError(reply), "error");
+    return;
+  }
+  // showState refreshes the lists, the drafts and this section's buttons.
+  showState(reply.state);
+  transferMessage([t("opt.transfer.imported", built.report.total),
+    transferNotes(built.report, built.skipped)].filter(Boolean).join(" "), "success");
+});
+
+/**
  * Reports made while a lock was running. They could not loosen the lock then,
  * so they were parked in `disputed`. Here the user can APPLY one (move it into
  * the real list — allowed only once the lock has ended, since applying is a
@@ -359,6 +457,7 @@ async function init() {
     renderOverview();
     $("modeTitle").textContent = t("status.unavailable");
     $("connectionMessage").textContent = settingsError({ reason: "unavailable" });
+    renderTransfer();
     return;
   }
   showState(state, true);
@@ -396,6 +495,7 @@ function showState(state, fill = false, verified = true) {
   renderVisualSettings();
   renderShortVideo();
   renderListUpdate(state);
+  renderTransfer();
 }
 
 /** The list's real state beside its Update button: version and install time,

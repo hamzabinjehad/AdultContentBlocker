@@ -1,8 +1,9 @@
-# Google Play readiness — Hisn Android 0.8.4
+# Google Play readiness — Hisn Android 1.0.0
 
 Repository-side record for a Play submission. It is **not** a Play listing and
 does not claim Play approval. The direct build and the Play build are different
-products of the same source.
+products of the same source. 1.0.0 is published as a signed direct APK on
+GitHub; the Play AAB is built and checked in the repository but not uploaded.
 
 ## Which build goes to Play
 
@@ -59,7 +60,8 @@ restrictions; that declaration and approval are separate and may be refused.
 | --- | --- |
 | Does the app collect or share any required user data? | **No** |
 | Browsing history / web activity | Not collected; processed on-device |
-| App activity, files, messages, photos/videos | Not collected; selected-app text and frames are processed transiently on-device |
+| App activity, files, messages, photos/videos | Not collected; selected-app text and frames are processed transiently on-device, and opt-in daily limits read Android's local foreground-time totals |
+| App usage / installed-app time | Not collected or shared; the Usage access grant is used only to compare a chosen app's local daily foreground time with its saved limit |
 | Device or other IDs | Not collected |
 | Location, contacts, health, financial info | Not collected |
 | Data encrypted in transit | The list update uses HTTPS; DNS uses DoT to the configured resolver |
@@ -77,6 +79,7 @@ the Data safety answers as on-device processing, not collection.
 | Accessibility (`BIND_ACCESSIBILITY_SERVICE`) | Selected-app text restrictions and optional visual sampling; not for uninstall prevention in the Play build. Prominent in-app disclosure before enabling. |
 | `VpnService` (DNS-only) | Local DNS filtering; not full-tunnel, not always-on, no traffic forwarding. Play VPN declaration required. |
 | `POST_NOTIFICATIONS` | DNS status and layer-loss notice. |
+| `PACKAGE_USAGE_STATS` (Usage access, special access) | Opt-in daily app time limits read Android's on-device foreground-time record. No usage event leaves the phone; the owner grants it in Android Settings and can revoke it at any time. Not used for advertising, analytics or a parental dashboard. |
 | `SYSTEM_ALERT_WINDOW` | Direct build's boot shield only; not used by the Play-style build for protection. |
 | Device admin / device owner | Optional uninstall block and managed lockdown; no wipe/password/screen-lock powers. DPC/EMM declarations may be required for the managed edition. |
 | `QUERY_ALL_PACKAGES`? | Not declared; `queries` entries cover launcher/home/dial only. |
@@ -98,17 +101,25 @@ because that feature is not Play-compliant.
    needed for review.
 5. Start a short commitment and verify that weakening a rule is refused; let it
    expire or use a disposable install.
-6. Managed features require a factory-reset, account-free device and are not
+6. Optional daily time limits: in Rules choose an app and a 5-minute limit, grant
+   Android Usage access, then use the app. The app is closed at the limit and the
+   pause screen names the daily limit. Revoke Usage access afterwards if wanted.
+7. Managed features require a factory-reset, account-free device and are not
    needed for the base review. The app reports "Not managed" on an ordinary
    install and makes no device-owner claim.
 
 ## Release checklist
 
-- [ ] Create the production keystore offline, two backups, and record the
-      certificate SHA-256.
-- [ ] Build the Play-style AAB/APK; run `check-release.py --expect-distribution play`.
-- [ ] Fill Data safety, content rating, VPN and accessibility declarations from
-      this record.
+- [x] Create the production keystore offline, two backups, and record the
+      certificate SHA-256. (Created 3 November 2026; the keystore and password
+      are in the gitignored `keys/android/` folder. **The owner must back both
+      files up offline in two places.**)
+- [x] Build the Play-style AAB/APK; run `check-release.py --expect-distribution play`.
+      Hash and certificate are in [the 1.0 record](ANDROID_1.0.md).
+- [ ] Upload the Play AAB. Not done: this release is direct-sideload only and
+      Play policy review has not been requested.
+- [ ] Fill Data safety, content rating, VPN, usage-access and accessibility
+      declarations from this record.
 - [ ] Host [PRIVACY.md](../PRIVACY.md) and [SUPPORT.md](../SUPPORT.md) at stable
       URLs and enter them in Play Console.
 - [ ] Internal testing on a clean phone; then closed testing.

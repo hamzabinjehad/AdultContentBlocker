@@ -5,6 +5,196 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
+## Blocklist v6 — 2026-11-03
+
+### Published
+
+- **The first signed list generation is live** at
+  `https://raw.githubusercontent.com/hamzabinjehad/AdultContentBlocker/lists/manifest.json`:
+  **5,274,046 domains**, **239,885 core**, 5,831 terms, 480 DNR rules. The
+  manifest and signature were downloaded over HTTPS, are byte-for-byte the
+  signed candidate, and returned HTTP/2 200.
+- **The publish guard refused a degraded build first.** The initial build timed
+  out fetching two UT1 sources and produced 1,273,954 domains; its signature
+  was valid, but the guard refused the drop from 5,276,448. Nothing was
+  published from it. A retry fetched all ten sources and passed.
+- `keys.py verify` — signature OK; `publish_guard.py` — v5 → v6 OK;
+  `test_build.py` — 43 tests OK, including known-adult-blocked and
+  critical-infrastructure-not-blocked checks. Published files total 34 MB;
+  `domains.txt` and `domains.packed` stay off the branch because they exceed
+  GitHub's 100 MB limit.
+
+### Limits
+
+- The bundled seed stays **v5**; it was not re-cut. iOS and Android still update
+  only with an app build. No installed Chromium or Mac client is proven to have
+  installed v6.
+- The daily GitHub workflow still cannot publish: the main-only `list-signing`
+  environment secret is not configured. This generation was published once with
+  the matching local key. See
+  [the publication record](docs/LIST_PUBLICATION_2026-11-03.md).
+
+## Browser extension 1.5.0 — 2026-11-03
+
+### Added
+
+- **Move your rules.** Settings → Blocking Rules exports the five hand lists
+  (blocked sites, allowlist, custom words, ignored words, skipped sites) as a
+  versioned `hisn.rules` JSON file, and imports one in another browser. The
+  file contains no blocking mode, lock deadline, list generation, pause count
+  or browsing data.
+- Import merges **add-only**: it never removes an entry, so a more permissive
+  file cannot undo a stricter browser. A running lock withholds additions to
+  the allowlist and corrections while still applying new blocks and words; the
+  report says what was withheld, invalid, or beyond the 200-word limit.
+- An app-managed browser exports its lists but refuses an import: the Mac app
+  owns them and would overwrite the file on its next heartbeat.
+
+### Verification
+
+- `./test.sh extension` — **PASS**: JavaScript suites, package and evaluation
+  corpus. The new `transfer.test.js` (45 checks) covers file shape,
+  schema/version refusal, invalid-entry counting, add-only merge, lock
+  direction, the 200-word ceiling and app-managed refusal.
+- `extension/test/browser/run.sh settings.html` — **PASS**, including a real
+  file reaching the guarded worker, an invalid file writing nothing, and a
+  locked browser applying blocks while withholding allowances.
+
+### Changed
+
+- Version 1.5.0. No permission, host permission, storage field or network path
+  was added. English and Arabic copy added.
+
+## Mac 1.1.8 — 2026-11-03
+
+### Added
+
+- **A pause window.** A 30-second guided breath (4 seconds in, 6 out, three
+  times), five rotating reminders, and four needs — Rest, Company, Calm,
+  Something to do — each with one offscreen tip. It is reachable from Overview,
+  the menu bar and **Protection › Take a pause… (⇧⌘P)**, and it is available
+  during a lock. Closing is always immediate.
+- **A local count only.** The pause stores a calendar day, a count and the time
+  of the last pause in `UserDefaults`: a 30-second merge window, a 9,999 cap and
+  a new day starting over. No host, reason, history or network request. The menu
+  bar shows today's count once a pause is recorded.
+- English and Arabic copy, VoiceOver labels for the breathing state and needs,
+  and design captures in
+  [`design/macos-pause-2026-11-03/`](design/macos-pause-2026-11-03/README.md).
+
+### Changed
+
+- No rule, permission, filter, browser bridge, schedule or lock behaviour
+  changed. The Mac version is 1.1.8, build 12.
+
+### Verification
+
+- `./test.sh macos` — **521 tests, 0 failures**; 589 strings, all with Arabic,
+  including the export of every string the compiled code uses.
+- Eight new `PauseTests` cover the tally, merge window, day boundary, cap,
+  breath timeline, reminder rotation, stored shape and render in both languages
+  at both stages, plus the Overview entry in both languages.
+- Design research using REA on Screen Zen and Hisn is recorded in
+  [the REA audit](docs/REA_AUDIT_SCREENZEN_2026-11-03.md). No Screen Zen code,
+  assets or copy was reused.
+
+Unsigned and unnotarized. No physical-Mac, VoiceOver or signed-build result is
+claimed; see [the 1.1.8 record](docs/MACOS_1.1.8.md).
+
+## iPhone & iPad 1.3.0 — 2026-11-03
+
+### Added
+
+- **On-demand pause.** A 30-second guided breath (4 seconds in, 6 out, three
+  times), five rotating reminders, four needs with offscreen tips and a local
+  day/count tally. It is available during a commitment, closes immediately and
+  changes no protection rule. The tally is a day, a count and the last time; no
+  host, reason or history.
+- **Protection hero.** The overview leads with one status, layer chips and one
+  next action; the full diagnostics are one disclosure below instead of a wall
+  of text.
+- **Daily quiet hours.** A DeviceActivity window applies the selected apps'
+  shields, splits a cross-midnight window into two same-day legs, enforces
+  Apple's 15-minute minimum and checks both wall and monotonic time. The health
+  row distinguishes registered from stopped; a commitment freezes the rule and
+  the guardian path can tighten, never loosen it.
+
+### Changed
+
+- The protection lock still freezes the saved blocked-site list and app-limit
+  rules while a commitment runs; adding or restoring a protection layer remains
+  available, turning one off does not.
+- Version 1.3.0, build 7. No new permission or network path was added.
+
+### Verification
+
+- `./test.sh ios` — **206 tests, 0 failures** on the iOS 26.5 simulator
+  (iPhone 17), including 9 pause tests, 12 quiet-hours tests and the existing
+  Safari-blocker and privacy checks.
+- `python3 -m unittest ios.test_localization` and the Python matrix pass;
+  `script/versions.py --check` passes.
+
+Simulator-tested only. No Apple team, Family Controls distribution entitlement,
+signed build, TestFlight or physical-device result is claimed. The Screen Time
+behavior, quiet-hours registration and pause sheet still need a real device.
+
+## Android 1.0.0 — 2026-11-03
+
+### Added
+
+- **Daily app time limits.** Rules gains a separate card: choose apps and one
+  daily foreground-time limit from five minutes to 24 hours. Android's own
+  on-device usage record is read only after the person grants the separate
+  **Usage access** permission; Hisn closes a limited app at the threshold and
+  shows the pause screen with a time-limit reason until local midnight.
+- A limit is a saved rule: the protection lock freezes it in both directions,
+  and the guardian tighten-only path may add or lower a limit but never remove
+  or raise one. Missing Usage access or accessibility is shown as attention,
+  never as enforced.
+- The 0.9.0 protection lock, direct-build removal guard, managed-device
+  previews, DNS layer, text checks, visual sampling, schedules and pause screen
+  are unchanged. Version metadata now says 1.0.0 rather than preview.
+
+### Release
+
+- **Signed direct-sideload APK** at 1.0.0-direct, versionCode 26, package
+  `app.hisn.android`. The Play APK and AAB are built and checked but not
+  uploaded; Play approval is not claimed. The signing certificate is RSA 4096
+  (`CN=Hisn Android`, SHA-256
+  `2F:BE:D6:57:E6:AB:C7:1C:15:CA:D0:CD:99:1C:53:2F:59:77:2D:16:95:D7:C3:7E:65:A1:14:38:5E:94:70:C5`).
+- Artifact SHA-256: direct APK
+  `c42591ec8223e3d24d8159f0536d3212ee0f351b5c3edc1fc4d03c0d30afaac0`;
+  Play APK `bded282fd19fb524d77daf42d0a60a0660bd6db5c06acbba316e168743fe5517`;
+  Play AAB `0794e0d509ca939cc012e2a01e82353211611c0c54174cefe7e4e40ec07cfad7`.
+- The debug-signed 0.9.0 preview cannot be updated in place; uninstall it first.
+  The owner must back up the new keystore and password offline in two places.
+
+### Verification
+
+- `JAVA_HOME=<JBR> sh test-core.sh` — **PASS**, including
+  `AppTimeLimitTest`, the sealed settings round-trip, protection-lock freeze,
+  DNS, text, visual, guardian and seed suites.
+- `python3 check-strings.py` — **PASS**, 460 strings, 15 plurals and 485 source
+  references in English and Arabic.
+- `./gradlew assembleDebug assembleDebugAndroidTest lintDebug` — **PASS**, 0
+  lint errors.
+- `CoreDeviceTestRunner` on the API 36 emulator — **PASS**, including time-limit
+  persistence/freeze and damaged settings.
+- Rules UI read back through the accessibility tree, and one live 5-minute
+  time-limit pass against the test-only fixture app closed it and showed the
+  daily-limit pause screen on the same emulator.
+- Both release APKs verify with `apksigner`; `check-release.py` passes for the
+  direct and Play distributions.
+
+### Limits
+
+- No physical-phone 1.0.0 run is claimed. Usage access is a separate special
+  permission; Android's record resets at local midnight and changing the clock,
+  time zone or usage data can change it. Enforcement can lag by up to about a
+  minute while a static screen stays open. Settings, launchers, dialers,
+  installers and Hisn itself are excluded. Accessibility off, force-stop, Safe
+  Mode, ADB/root or a factory reset still bypasses app-level limits.
+
 ## iPhone & iPad 1.2.0 — 2026-11-03
 
 ### Changed

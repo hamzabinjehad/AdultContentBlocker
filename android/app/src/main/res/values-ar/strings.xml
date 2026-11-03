@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">حصن</string>
     <string name="title">حصن لأندرويد</string>
-    <string name="subtitle">نسخة حماية تجريبية · %1$s</string>
+    <string name="subtitle">حصن · %1$s</string>
     <string name="status_title">الحماية غير مفعّلة</string>
     <string name="status_body">فعّل الطبقات التي تختارها وراجع حالة كل منها. يختلف نطاق DNS وتقييد التطبيقات وفحص الصور والفيديو. يقفل قفل الحماية القواعد المحفوظة، لكنه لا يمنع أندرويد وحده من تعطيل حصن أو إزالته.</string>
     <string name="network">فلترة DNS · متوقفة</string>
@@ -43,7 +43,7 @@
     <string name="dns_cancelled_network_requests">طلبات الشبكة السابقة الملغاة: %1$d</string>
     <string name="dns_tcp_stats">طلبات DNS عبر TCP: %1$d · ردود مجهّزة: %2$d · إشارات إعادة المحاولة عبر UDP: %3$d</string>
     <string name="dns_summary">%1$s\n%2$s\n%3$s\n%4$s\n%5$s\n%6$s\n%7$s</string>
-    <string name="dns_notification_title">حصن · DNS تجريبي</string>
+    <string name="dns_notification_title">حصن · تصفية DNS</string>
     <string name="dns_notification_body">افتح حصن لمعرفة حالة الاتصال والتغطية.</string>
     <string name="dns_channel">حالة فلترة DNS</string>
     <string name="dns_notification_private_dns">نفق DNS متصل · قد يتجاوز DNS الخاص في أندرويد حصن</string>
@@ -407,6 +407,26 @@
     <string name="section_builtin">الفحوص المدمجة</string>
     <string name="section_rules_custom">قواعد مخصصة</string>
     <string name="section_apps">التطبيقات</string>
+    <string name="section_time_limits">حدود الوقت اليومية</string>
+    <string name="time_limits_edit_button">تعديل الحدود اليومية</string>
+    <string name="time_limits_off">حدود الوقت اليومية · متوقفة</string>
+    <string name="time_limits_help">اختر تطبيقات وحدًا زمنيًا يوميًا لوقت الاستخدام. عند بلوغ الحد يغلق حصن التطبيق ويعيدك إلى الشاشة الرئيسية حتى منتصف الليل المحلي. يقرأ حصن سجل الاستخدام الذي يحتفظ به أندرويد على الجهاز؛ ولا تُرسل أي بيانات استخدام إلى أي مكان.</string>
+    <string name="time_limits_choose_apps">تطبيقات لها حد يومي</string>
+    <string name="time_limits_limit_title">الحد اليومي لهذه التطبيقات</string>
+    <string name="time_limits_limits">يتطلب اتصال خدمة إمكانية الوصول في حصن ومنح صلاحية «الوصول إلى الاستخدام» في أندرويد بشكل منفصل. يُصفَّر سجل وقت الاستخدام عند منتصف الليل المحلي؛ وقد يختلف قليلًا عن وقتك الفعلي، ويمكن أن يتغير بتغيير ساعة الجهاز أو منطقته الزمنية أو تاريخه أو بمسح بيانات الاستخدام. تُفحص الحدود عند ظهور تطبيق مختار على الشاشة ونحو مرة كل دقيقة أثناء بقائه، لذا قد يُطبَّق الحد متأخرًا قليلًا. تُستثنى الإعدادات وتطبيقات الاتصال والشاشة الرئيسية وحصن. أثناء تشغيل قفل الحماية تكون كل الحدود المحفوظة للقراءة فقط.</string>
+    <string name="time_limits_save">حفظ الحدود اليومية</string>
+    <string name="time_limits_invalid">تعذّر حفظ الحدود اليومية. تحقق من التطبيقات المختارة والحد الزمني.</string>
+    <string name="time_limits_summary_limit">%1$s · %2$s يوميًا</string>
+    <string name="time_limits_summary_access">%1$s · يلزم منح صلاحية الاستخدام</string>
+    <string name="time_limits_minutes">%1$d د</string>
+    <string name="time_limits_hours">%1$d س</string>
+    <string name="time_limits_saved_access_needed">حُفظت الحدود اليومية. امنح صلاحية الاستخدام في أندرويد ليُطبَّق الحد.</string>
+    <string name="time_limits_access_title">صلاحية الاستخدام في أندرويد</string>
+    <string name="time_limits_access_granted">ممنوحة · يستطيع حصن قراءة وقت الاستخدام اليوم</string>
+    <string name="time_limits_access_needed">غير ممنوحة · لا يمكن تطبيق الحدود</string>
+    <string name="time_limits_access_unavailable">تعذّر فتح شاشة صلاحية الاستخدام. افتح الإعدادات ← التطبيقات ← الوصول الخاص ← الوصول إلى الاستخدام.</string>
+    <string name="attention_time_limits_access">حُفظت حدود الوقت اليومية، لكن صلاحية الاستخدام في أندرويد متوقفة، لذا لا تُطبَّق.</string>
+    <string name="restriction_limit">بلغت الحد اليومي الذي حددته لهذا التطبيق. يُصفَّر عند منتصف الليل المحلي.</string>
     <string name="section_schedule">الجدول اليومي</string>
     <string name="section_commitment">قفل الحماية</string>
     <string name="section_uninstall">الحماية من الإزالة</string>
@@ -479,6 +499,14 @@
     <string name="attention_route_failed">فشل فحص مسار DNS.</string>
     <string name="attention_commitment_unknown">تعذّر على حصن قراءة قفل الحماية المحفوظ.</string>
     <string name="attention_settings_restored">استُعيدت الإعدادات من النسخة الثانية؛ تحقق من قواعدك.</string>
+    <plurals name="time_limits_summary">
+        <item quantity="zero">لا تطبيقات لها حدود يومية</item>
+        <item quantity="one">تطبيق واحد له حد يومي</item>
+        <item quantity="two">تطبيقان لهما حد يومي</item>
+        <item quantity="few">%1$d تطبيقات لها حدود يومية</item>
+        <item quantity="many">%1$d تطبيقًا لها حد يومي</item>
+        <item quantity="other">%1$d تطبيق لها حد يومي</item>
+    </plurals>
     <plurals name="saved_domains">
         <item quantity="zero">%1$d نطاق</item>
         <item quantity="one">نطاق واحد</item>

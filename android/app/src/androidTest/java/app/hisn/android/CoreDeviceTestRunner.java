@@ -8,11 +8,11 @@ import app.hisn.core.DnsExchange;
 import app.hisn.core.DnsPolicy;
 import app.hisn.core.DomainPolicy;
 import app.hisn.core.DomainSeed;
+import app.hisn.core.AppTimeLimit;
 import app.hisn.core.LayerWatch;
 import app.hisn.core.SeedFreshness;
 import app.hisn.core.WordRuleList;
 import app.hisn.core.VisibleTextSample;
-
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -43,6 +43,7 @@ public final class CoreDeviceTestRunner extends Instrumentation {
             testAdultPolicy();
             testAdultCommitment();
             testVisualCommitment();
+            testTimeLimits();
             testUninstallGuard();
             testLegacyEmptyCommitment();
             testDamagedSettings();
@@ -55,7 +56,7 @@ public final class CoreDeviceTestRunner extends Instrumentation {
             if (!sample.isPartial() || sample.text().length() > 32768)
                 throw new AssertionError("Inspection budget failed");
             results.putString("stream", "\nPASS: verified APK seed loaded " + seed.domainCount
-                    + " domains; Arabic matching, boundaries, local DNS block, saved rules, Unicode persistence, long-text sampling, verified adult terms, visual settings, commitment, damaged-settings and invalid-settings, uninstall-guard, layer-watch expectation and seed-age checks passed. No VPN was enabled; no accessibility service, admin or device-owner policy was changed.\n");
+                    + " domains; Arabic matching, boundaries, local DNS block, saved rules, Unicode persistence, long-text sampling, verified adult terms, visual settings, daily time limits, commitment, damaged-settings and invalid-settings, uninstall-guard, layer-watch expectation and seed-age checks passed. No VPN was enabled; no accessibility service, admin or device-owner policy was changed.\n");
             finish(Activity.RESULT_OK, results);
         } catch (Throwable failure) {
             StringBuilder detail = new StringBuilder();
@@ -90,6 +91,34 @@ public final class CoreDeviceTestRunner extends Instrumentation {
             if (!restored.visualEnabled || !restored.scannedApps.equals(apps))
                 throw new AssertionError("Rejected update damaged visual rules");
         } finally { forget(context, name); }
+    }
+
+    /** Daily time limits survive a sealed-store reload, keep working across other
+     *  editors, and are frozen by the protection lock like every other saved rule. */
+    private void testTimeLimits() {
+        String preferenceName = "hisn_limits_test_" + java.util.UUID.randomUUID();
+        android.content.Context context = getTargetContext();
+        try {
+            PolicyStore store = new PolicyStore(context, preferenceName);
+            AppTimeLimit limits = new AppTimeLimit(java.util.Collections.singletonMap("com.example.limited", 30));
+            store.updateTimeLimits(limits);
+            PolicyStore reloaded = new PolicyStore(context, preferenceName);
+            if (!reloaded.snapshot().timeLimits.equals(limits))
+                throw new AssertionError("Time limits did not persist");
+            if (!reloaded.snapshot().hasConfiguredRestrictions())
+                throw new AssertionError("Time limits do not count as configured rules");
+            reloaded.updateVisual(true);
+            reloaded.updateSchedule(app.hisn.core.DailyAppSchedule.disabled());
+            if (!new PolicyStore(context, preferenceName).snapshot().timeLimits.equals(limits))
+                throw new AssertionError("Another editor erased the time limits");
+            reloaded.startCommitment(1);
+            try {
+                reloaded.updateTimeLimits(AppTimeLimit.none());
+                throw new AssertionError("Time limits changed during a protection lock");
+            } catch (IllegalStateException expected) { }
+            if (!new PolicyStore(context, preferenceName).snapshot().timeLimits.equals(limits))
+                throw new AssertionError("Rejected limit change damaged the saved limits");
+        } finally { forget(context, preferenceName); }
     }
 
     private void testUninstallGuard() {

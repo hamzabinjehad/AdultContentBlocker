@@ -216,6 +216,8 @@ try {
   check(entry.disabled && s.querySelector("#rules .managed-notice").hidden === false && s.getElementById("saveBar").hidden, "app ownership is reflected by the site editor and save bar");
   const app = await frame(true), a = app.contentDocument;
   check(a.getElementById("blockingMode").disabled && a.getElementById("saveChecks").disabled, "managed controls read-only on load");
+  check(a.getElementById("importRules").disabled && !a.getElementById("exportRules").disabled,
+    "app-managed lists can be exported but not imported");
   const managedSyncCalls = app.contentWindow.syncCalls, managedWrites = app.contentWindow.writes;
   a.getElementById("repairProtection").click(); await pause();
   check(a.getElementById("custom").disabled && a.getElementById("custom").value === "example.com"
@@ -292,6 +294,45 @@ try {
   check(target.height >= 44, "appearance choices retain comfortable touch targets");
   s.querySelector('.dashboard-shortcuts a[href="#media"]').click(); await pause();
   check(!s.getElementById("media").hidden, "dashboard opens visual preferences directly");
+  // Portable rules: the file reaches the guarded worker, a bad file does not,
+  // and a lock withholds only the additions that would loosen.
+  const transferFrame = await frame(false), r = transferFrame.contentDocument, rw = transferFrame.contentWindow;
+  r.querySelector('a[href="#rules"]').click(); await pause();
+  check(!r.getElementById("exportRules").disabled && !r.getElementById("importRules").disabled,
+    "standalone can move rules with an export and an import");
+  const pickInto = (doc, win, name, body) => {
+    const input = doc.getElementById("importFile");
+    const dt = new win.DataTransfer();
+    dt.items.add(new win.File([body], name, { type: "application/json" }));
+    input.files = dt.files;
+    input.dispatchEvent(new Event("change"));
+  };
+  pickInto(r, rw, "rules.json", JSON.stringify({ schema: "hisn.rules", version: 1,
+    customBlocks: ["imported.example"], customTerms: ["importedword"] }));
+  for (let i = 0; i < 20 && !rw.fixture.customBlocks.includes("imported.example"); i++) await pause();
+  await pause();
+  check(rw.fixture.customBlocks.includes("imported.example") && rw.fixture.customTerms.includes("importedword"),
+    "an imported file reaches the guarded worker");
+  check(r.getElementById("msgTransfer").textContent.includes("New entries imported: 2"),
+    "the import reports what it added");
+  const badFrame = await frame(false), b = badFrame.contentDocument, bw = badFrame.contentWindow;
+  b.querySelector('a[href="#rules"]').click(); await pause();
+  pickInto(b, bw, "bad.json", "{");
+  await pause();
+  check(bw.writes === 0 && b.getElementById("msgTransfer").textContent.includes("not a Hisn rules file"),
+    "an invalid file is named and never written");
+  const lockFrame = await frame(false), l = lockFrame.contentDocument, lw = lockFrame.contentWindow;
+  lw.fixture.lockUntil = Date.now() + 60000;
+  for (const fn of lw.changeHandlers) fn({ state: { newValue: structuredClone(lw.fixture) } }, "local");
+  l.querySelector('a[href="#rules"]').click(); await pause();
+  pickInto(l, lw, "locked.json", JSON.stringify({ schema: "hisn.rules", version: 1,
+    customBlocks: ["locked.example"], allowlist: ["allowed.example"] }));
+  for (let i = 0; i < 20 && !lw.fixture.customBlocks.includes("locked.example"); i++) await pause();
+  await pause();
+  check(lw.fixture.customBlocks.includes("locked.example") && !lw.fixture.allowlist.includes("allowed.example"),
+    "a lock applies new blocks but withholds new allowances");
+  check(l.getElementById("msgTransfer").textContent.includes("Not applied because a lock is running: 1"),
+    "the withheld allowance is reported");
   document.getElementById("summary").dataset.result = "pass";
 } catch (error) {
   results.push(`FAIL ${error.stack}`);

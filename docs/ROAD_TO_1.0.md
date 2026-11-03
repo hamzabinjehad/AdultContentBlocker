@@ -12,6 +12,26 @@ this folder. It coordinates the existing plans rather than replacing them:
 - [Publishing plan](PUBLISHING_PLAN.md) — release tracks and ship-blockers.
 - [Test matrix](TEST_MATRIX.md) — what is demonstrated, inferred or manual.
 
+> **Execution update (2026-11-03, lists v6):** the first signed list
+> generation is published on the orphan `lists` branch — 5,274,046 domains,
+> 239,885 core, 5,831 terms — after the publish guard refused a degraded first
+> build (1,273,954 domains) caused by two upstream timeouts. The manifest and
+> signature match the signed candidate over HTTPS and return HTTP/2 200. The
+> seed stays v5; iOS and Android still update only with an app build, and the
+> scheduled GitHub workflow still needs the `list-signing` environment. See
+> [the publication record](LIST_PUBLICATION_2026-11-03.md).
+
+> **Execution update (2026-11-03, Mac 1.1.8):** the Mac app gains an
+> on-demand pause — a 30-second guided breath, five rotating reminders, four
+> needs with offscreen tips and a local day/count tally — reachable from
+> Overview, the menu bar and ⇧⌘P. It records no host, reason or history, is
+> available during a lock, and changes no rule or layer. `./test.sh macos`
+> passes 521 tests and 589 Arabic-complete strings. The design research with
+> REA on Screen Zen and Hisn is in
+> [the audit](REA_AUDIT_SCREENZEN_2026-11-03.md); the release record is
+> [Mac 1.1.8](MACOS_1.1.8.md). No signed build, physical-Mac or VoiceOver
+> result is claimed.
+
 > **Execution update (2026-10-30, seed v5 coverage pass):** the bundled core
 > grows from 159,768 to **239,885 domains** (+50.1%) on the extension, six
 > Safari blockers and the Android seed. Safari capacity rises from 4 × 40,000
@@ -21,9 +41,10 @@ this folder. It coordinates the existing plans rather than replacing them:
 > and that also carry an adult TLD, token or IDN label. The 1,261 deferred
 > domains and the 115-entry headroom are in the signed manifest.
 > [The coverage pass record](COVERAGE_PASS_2026-10-30.md) lists every suite and
-> the honest limits. The Mac still falls back to the core tier until a
-> published generation installs the 5,276,448-domain full list; no signed
-> build, device or `lists` branch is claimed.
+> the honest limits. **Update 2026-11-03:** the signed `lists` branch is now
+> published at v6 (5,274,046 domains), so the Mac and Chromium updater have a
+> generation to install; the bundled seed remains v5 until an installed client
+> fetches it. No signed build, installed-client update or device run is claimed.
 
 > **Execution update (2026-10-30, Extension 1.2.1):** the extension is
 > store-ready in the repository: `short_name`/`homepage_url`, an options footer
@@ -122,10 +143,10 @@ distribution and freshness — not a missing feature list.
 | Platform | Code state | Release state | The real gap |
 | --- | --- | --- | --- |
 | Chromium extension | 1.4.0 development candidate; seed v5 core, 480 static rules, language-aware page-text scoring, redesigned popup/settings, short-video/pause, list freshness, store metadata | Not on the Chrome Web Store; unpacked only | Store publication, managed force-install, real store-ID wiring and a clean-profile acceptance pass |
-| Mac | 1.1.7; seed v5 core fallback, filter, browser guard, guardian split, profile, partner key, root guardian daemon and a verified protection-authority card | Unsigned, unnotarized, no app updater | A signed `.pkg`, an update path, the full published list, and the hardware checks in `TEST_MATRIX.md` |
+| Mac | 1.1.8; seed v5 core fallback, filter, browser guard, guardian split, profile, partner key, root guardian daemon, a verified protection-authority card and an on-demand breathing pause | Unsigned, unnotarized, no app updater | A signed `.pkg`, an update path, the full published list, and the hardware checks in `TEST_MATRIX.md` |
 | iPhone/iPad | 1.2.0 development; six Safari blockers (239,885 domains), Screen Time, vault, supervised profile, privacy manifest, signed-list age, and a protection lock that freezes saved sites and app limits during a commitment | No Apple team, no Family Controls entitlement, no device | Entitlement, a disposable iPhone, device acceptance of every lock level and all six blockers |
 | Android | 0.9.0 preview; seed v5 core, protection lock that freezes every saved rule and arms the direct removal guard, boot shield, opt-in device-owner managed lockdown (Safe Mode, all-app controls, factory reset, new users, VPN, Android 9+ date/time, Android 10+ Private DNS, Android 14+ default apps, an optional strict unknown-source install block, an opt-in blocked-app suspension, an opt-in SafeSearch CNAME rewrite and an always-on DNS-only VPN), a visible 15-minute layer watchdog, and a 90-day bundled-list warning | No signed production APK; API 36 emulator device-owner run passed 2026-11-01, physical phone pending | A disposable device-owner phone, real restriction refusals and release, layer-loss device run, signed release |
-| Lists | Signed seed v5 built 2026-10-30 | **No `lists` branch on origin** | Publish signed daily generations; update iOS and Android |
+| Lists | Signed seed v5 built 2026-10-30; **signed lists v6 published 2026-11-03** (5,274,046 domains, 239,885 core) | `lists/manifest.json` HTTP 200; no scheduled workflow or installed-client proof | Configure the `list-signing` environment for daily generations; prove a client install and rollback; iOS/Android still update only with an app build |
 
 A Windows policy generator (`profile/make_windows_policy.py`, with tests) and a
 setup guide ([Windows setup](WINDOWS_SETUP.md)) now exist. The policy
@@ -171,9 +192,10 @@ The integration branch is now `release/1.0`:
   from.
 - The only uncommitted product checkout change was `.claude/launch.json` (IDE
   configuration), which is not a product file.
-- The remaining integration debt is external: no `lists` branch, no store
-  listing, no signed/notarized builds and no disposable device run for the
-  managed Android restrictions or the iPhone lock levels.
+- The remaining integration debt is external: no scheduled list publication
+  (the `list-signing` environment is unconfigured; v6 was published manually),
+  no store listing, no signed/notarized builds and no disposable device run for
+  the managed Android restrictions or the iPhone lock levels.
 
 ### 1.4 What is genuinely good
 
@@ -519,7 +541,7 @@ fastest way to lose trust. Today:
 | Surface | Domain list | Page text | Visual | Short video | Native apps |
 | --- | --- | --- | --- | --- | --- |
 | Chromium extension | 239,885 core domains (480 static rules); a list update refreshes the same core tier, not the long tail | Yes (ar/en/de, evasion) | Opt-in, hide-first on supported sites | Opt-in (YouTube, Instagram, Facebook, Snapchat, TikTok) | No |
-| Mac content filter | 5,276,448 full-list domains once a generation is installed; the bundled seed is the 239,885 core tier | No native-app text | No | No | All apps at host/flow level |
+| Mac content filter | 5,274,046 full-list domains in published v6 once the updater runs; the bundled seed is the 239,885 core tier | No native-app text | No | No | All apps at host/flow level |
 | Safari on iPhone/iPad | ~240k domains in six blockers; Screen Time web filter | Safari extension | Opt-in local | No | WebKit only |
 | Android DNS | 239,885 bundled core domains | Selected apps via accessibility | Selected apps, Android 14+ | Selected apps | Selected apps only |
 | Router / DNS | The resolver's categories, not Hisn's list | No | No | No | Any device on that network |
@@ -530,14 +552,17 @@ There are three list tiers, and they are not interchangeable:
    Android seed can hold. The extension's static rules and its downloaded
    generation both use this tier; a list update refreshes it and the keyword
    layer, and does not add the long tail.
-2. **Full list (5,276,448 domains in the signed seed build):** what the Mac
-   socket filter and DNS can hold. It is not shipped to the extension or Safari.
+2. **Full list (5,274,046 domains in published v6; 5,276,448 in the signed seed
+   build):** what the Mac socket filter and DNS can hold. It is not shipped to
+   the extension or Safari.
 3. **Keyword layer (~5.8k terms):** page-text scoring, independent of the
    domain tier.
 
-Until the `lists` branch exists, every client is frozen at the 2026-10-30
-seed. That is the single largest freshness gap. It is not a 3× extension gap:
-the extension is not supposed to carry the full list.
+The signed `lists` branch now exists at v6 (2026-11-03), so the Mac and the
+Chromium updater have a generation to fetch. iOS and Android still change only
+with an app build, so their bundled seed remains v5 until that work lands. The
+scheduled daily workflow still needs the `list-signing` environment. This is not
+a 3× extension gap: the extension is not supposed to carry the full list.
 
 ### 4.2 Quality gates
 
@@ -604,7 +629,7 @@ licences require it.
 | Milestone | Target | Exit gate |
 | --- | --- | --- |
 | **M0 One repo, one baseline** | 2026-11-08 | `main` + `android-0.6.0` merged; WIP committed; bare `./test.sh` green on a clean Mac; CI covers Android and iOS; `release/1.0` branch exists. **Achieved locally 2026-10-29:** bare `./test.sh` and the browser suite both pass; CI keeps both jobs. A CI run on the pushed branch is still needed. The `lists`/store/signing/device gates are M1-M5 |
-| **M1 Fresh lists everywhere** | 2026-11-22 | `lists` branch 200; Mac, Chromium, iOS and Android install a generation; stale clients say so |
+| **M1 Fresh lists everywhere** | 2026-11-22 | `lists` branch 200 (**done 2026-11-03**); Mac and Chromium install a generation; iOS and Android still need an app-build update path; stale clients say so |
 | **M2 Locked editions** | 2026-12-20 | Android device-owner refusal + restrictions proven on a disposable phone; iPhone supervised profile proven on a disposable phone; Mac guardian split + daemon proven on a standard account; Chromium force-install proven |
 | **M3 Coverage** | 2027-01-10 | 500-case text gate; visual benchmark; short-video release; Mac native text guard; iOS URL-filter decision recorded |
 | **M4 Device proof** | 2027-01-24 | Red-team matrix run on Mac, iPhone, iPad and Android; every failure fixed or recorded as a limit; release record written |
@@ -625,7 +650,7 @@ Sizes: S ≤ 2 days, M ≤ 1 week, L ≤ 3 weeks, XL > 3 weeks.
 | W0.1 | Merge `origin/main` into the release branch; resolve 0.5.4/0.5.5 vs 0.6.0/direct conflicts; retire the duplicate short-video branch | All | M | CI green on the merged branch; no lost test or doc |
 | W0.2 | Add a JDK 17 Android CI job and an iOS simulator job; make bare `./test.sh` fail loudly on a missing toolchain | CI | M | A clean runner runs every suite or fails with the missing tool named |
 | W0.3 | Create `release/1.0`, a version matrix and a changelog; tag the integration point | All | S | Every platform version is pinned in one file. **Done 2026-10-29:** `versions.json`, `docs/VERSIONS.md`, `CHANGELOG.md` and the check |
-| W1.1 | Publish the `lists` branch | Lists | S | `curl -I .../lists/manifest.json` is 200; clients install v5+ |
+| W1.1 | Publish the `lists` branch | Lists | S | `curl -I .../lists/manifest.json` is 200; clients install v5+. **Done 2026-11-03:** signed v6 published (5,274,046 domains) and HTTP 200; a real client install and rollback test remain |
 | W1.2 | Signed list updates for iOS Safari blockers and Android DNS | iOS, Android | L | A published generation changes enforcement without a new app build. **Android decision 2026-10-30:** APK-only for 1.0; the UI states it and warns at 90 days. Runtime Android downloads deferred to 1.1. iOS still open |
 | W1.3 | Extension store beta: 1.4.0 UI/metadata/package, unlisted listing | Extension | M | Store build passes the browser suite; real ID wired. **Repository side done 2026-11-02:** 1.4.0 packaged and documented; account/upload/review and ID wiring remain |
 | W1.4 | Per-surface list coverage: document the core / full split; make each client state its tier | Extension, iOS, Android | M | A coverage table is generated per release; no client claims the full list. **Done 2026-10-29:** `docs/COVERAGE.md` generated from the signed seed |
@@ -779,7 +804,7 @@ not in the docs is a bug.
 - [ ] iOS: TestFlight build with the entitlement; review notes disclose every
       lock and its exit.
 - [ ] Android: signed APK, hash, certificate fingerprint, direct-build warning.
-- [ ] Lists: `lists` branch 200, version floor, rollback test.
+- [ ] Lists: `lists` branch 200 (done 2026-11-03), version floor, rollback test.
 - [ ] Privacy policy and support page live; no browsing data collected.
 - [ ] `TEST_MATRIX.md` and the release validation record updated.
 - [ ] A second person completes setup from the docs alone.
@@ -844,8 +869,9 @@ not in the docs is a bug.
 
 1. Merge `origin/main` into `android-0.6.0`; resolve conflicts; run the full
    suite; tag the integration point.
-2. Configure `list-signing`, run the publish workflow, and verify the `lists`
-   branch returns 200.
+2. Configure `list-signing` so the daily workflow can publish. The signed
+   `lists` branch is already at v6 and returns 200; the remaining work is the
+   scheduled path and a client install/rollback proof.
 3. Point `JAVA_HOME` at the Android Studio JBR (or install JDK 17) and create
    a bootable iPhone simulator device; make bare `./test.sh` green; add both
    to CI.
@@ -869,7 +895,7 @@ product that is finished":
 
 | Measure | Today | 1.0 target |
 | --- | --- | --- |
-| Published list version / clients updating | Seed v4, no `lists` branch | Daily v5+, four clients |
+| Published list version / clients updating | v6 published 2026-11-03; no client install proven yet | Daily v6+, four clients |
 | Text corpus | 41 synthetic cases | 500 labelled per language |
 | Visual benchmark | Benign baseline only | Licensed recall + false-hide numbers |
 | Platforms with a verified removal level | 0 | 4 |

@@ -95,6 +95,9 @@ past version; *superseded* documents point to their replacement. Start with the
 ## Research
 
 - [Android research and execution plan](ANDROID_RESEARCH_PLAN.md): October 18 BlockerHero and HaramBlur study, Android platform limits and an early phased plan, now replaced. *Superseded by [ANDROID_1.0_PLAN.md](ANDROID_1.0_PLAN.md).*
+- [REA Android design audit, 2026-11-03](ANDROID_REA_SCREENZEN_2026-11-03.md): ScreenZen/BlockerHero research and the built Android 1.0.0 inventory behind the daily time-limit work. Design research, not a runtime or security assessment.
+- [REA iOS design audit, 2026-11-03](REA_AUDIT_IOS_2026-11-03.md): ScreenZen/comparable-app research, the built HisnMobile 1.3.0 inventory, and the pause, quiet-hours and protection-hero work it informed. Design research, not a security or runtime assessment.
+- [REA design audit of Screen Zen and Hisn, 2026-11-03](REA_AUDIT_SCREENZEN_2026-11-03.md): Static inventory, a Screen Zen extension graph and one accessibility/screenshot observation; what Hisn adopted (an on-demand pause) and what it deliberately did not. Design research, not a security assessment.
 - [BlockerHero inspection and resulting changes](REA_BLOCKERHERO_2026-10-19.md): REA static inspection of BlockerHero 1.5.0 and the independently written Hisn Android fixes it prompted. *Historical.*
 - [Similar extensions source comparison](EXTENSION_COMPARISON_2026-10-15.md): Patterns studied in NSFW Filter, HaramBlur and LeechBlock, what Hisn adopted, and license boundaries. *Historical.*
 - [Visual hide-first research](VISUAL_HIDE_FIRST_RESEARCH.md): Research on hiding media until checked, and the resulting pre-display gate and X playback repair. *Historical.*
@@ -105,16 +108,19 @@ Per-version change and verification notes, newest first.
 
 ### Cross-platform
 
-- [Seed v5 coverage pass](COVERAGE_PASS_2026-10-30.md): The bundled core grows from 159,768 to 239,885 domains on the extension, six Safari blockers and the Android seed; the full list refreshes to 5,276,448. Selection rules, licensing boundary, deferred domains, hashes and every suite are recorded. No signed build, device or `lists` branch is claimed.
+- [Blocklist v6 publication, 2026-11-03](LIST_PUBLICATION_2026-11-03.md): The first signed `lists` generation — 5,274,046 domains, 239,885 core, 5,831 terms — with artifact hashes, HTTP 200 verification, the guard refusal of a degraded first build, and the remaining scheduled-publication and client-install gaps.
+- [Seed v5 coverage pass](COVERAGE_PASS_2026-10-30.md): The bundled core grows from 159,768 to 239,885 domains on the extension, six Safari blockers and the Android seed; the full list refreshes to 5,276,448. Selection rules, licensing boundary, deferred domains, hashes and every suite are recorded. No signed build or device is claimed. *(Historical: no `lists` branch existed on 2026-10-30; v6 was published 2026-11-03.)*
 
 ### Mac
 
+- [Mac 1.1.8 release notes](MACOS_1.1.8.md): An on-demand pause window — a 30-second guided breath, rotating reminders, four needs and a local day/count tally — reachable from Overview, the menu bar and ⇧⌘P. It changes no rule or layer. Unsigned/unnotarized; no physical-Mac result claimed.
 - [Mac 1.1.7 release notes](MACOS_1.1.7.md): A verified protection-authority card (standard daily account, visible guardian administrator with a secure token, loaded root daemon) and lock-gated authority/removal controls. Unsigned/unnotarized; no split or device run claimed.
 - [Mac 1.1.6 release notes](COVERAGE_PASS_2026-10-30.md): Seed v5 and its 239,885-domain core fallback, with notices naming the selected fill sources. The full list still needs a published generation. Unsigned/unnotarized.
 - [Mac 1.1.5 release notes](MACOS_1.1.5.md): A root LaunchDaemon restores the login agent if a standard user boots it out, with installer wiring, tamper logging, list-freshness and licenses rows, and a removal path. Unsigned/unnotarized; standard-account and reboot checks pending.
 
 ### iPhone and iPad
 
+- [iOS 1.3.0 release notes](IOS_1.3.0.md): An on-demand pause, a calmer protection hero and daily quiet hours (including a two-leg cross-midnight DeviceActivity schedule and both-clock reconciliation). Simulator-tested only; no entitlement, signed build or device.
 - [iOS 1.2.0 release notes](IOS_1.2.0.md): Protection lock freezes blocked-site and app-limit rules while a commitment runs, with layer recovery still available; English and Arabic lock copy. Simulator-tested only.
 - [iOS 1.1.4 release notes](COVERAGE_PASS_2026-10-30.md): Six 40,000-rule Safari blockers instead of four, seed v5, and capacity/readiness checks derived from one blocker count. Simulator-tested; no device, team or entitlement yet.
 - [iOS 1.1.3 release notes](IOS_1.1.3.md): A privacy manifest in the app and every extension, export-compliance declaration, the signed Safari list's build date with a 90-day warning, an offline licenses-and-sources screen, and privacy/support/version rows in Settings. Simulator-tested; no device, team or entitlement yet.
@@ -122,6 +128,7 @@ Per-version change and verification notes, newest first.
 
 ### Android
 
+- [Android 1.0.0 release notes](ANDROID_1.0.md): Signed direct-sideload APK at versionCode 26, per-app daily time limits backed by Android's usage record, Play APK/AAB built but not uploaded, and API 36 emulator evidence for the limit card and one live 5-minute enforcement pass. No physical-phone run claimed.
 - [Android 0.9.0 release notes](ANDROID_0.9.0.md): The protection lock freezes every saved rule in both directions, arms the direct build's removal guard from the lock itself, and makes the Play build's uninstall limit explicit while the lock runs. API 36 emulator UI and instrumentation evidence; no physical device claimed.
 - [UI principles and the 2026-11-02 pass](UI_PRINCIPLES.md): progressive disclosure, deferred mobile copy and the screens changed.
 
@@ -149,6 +156,7 @@ Per-version change and verification notes, newest first.
 
 ### Browser extension
 
+- [Extension 1.5.0 release notes](EXTENSION_1.5.0.md): Portable rules: export the five hand lists to a versioned JSON file and import one add-only; a lock withholds new allowances and corrections while applying new blocks and words; an app-managed browser refuses the import. No new permission or network path. Development candidate; no listing yet.
 - [Extension 1.4.0 release notes](EXTENSION_1.4.0.md): UI/UX pass with one status hero, one-word layer states, less copy in English and Arabic, calmer information notices and a single action hierarchy. Design captures in `design/extension-ui-2026-11-02/`. Development candidate; no listing yet.
 - [Extension 1.3.0 release notes](EXTENSION_1.3.0.md): Language-aware page-text scoring chooses the vocabulary from the page's own text, keeps strong labels across languages, falls back to the full list when unsure, and adds a detected-language row to the popup. *Previous development candidate.*
 - [Extension 1.2.2 release notes](COVERAGE_PASS_2026-10-30.md): Seed v5's 239,885-domain core tier and 480 static DNR rules; the packaged zip is hashed in the record. *Historical.*

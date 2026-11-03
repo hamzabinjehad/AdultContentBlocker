@@ -115,6 +115,7 @@ public final class RestrictionActivity extends Activity {
                 : getIntent().getBooleanExtra("shortvideo", false) ? R.string.restriction_short_video
                 : getIntent().getBooleanExtra("visual", false) ? R.string.restriction_visual
                 : getIntent().getBooleanExtra("schedule", false) ? R.string.restriction_schedule
+                : getIntent().getBooleanExtra("limit", false) ? R.string.restriction_limit
                 : getIntent().getBooleanExtra("word", false) ? R.string.restriction_word
                 : R.string.restriction_app;
     }
