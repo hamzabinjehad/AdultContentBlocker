@@ -13,25 +13,21 @@ final class LocalizationTests: XCTestCase {
                        "المتصفحات المفتوحة · حالة الاتصال")
         XCTAssertEqual(ar.localizedString(forKey: "browser.live.waiting", value: nil, table: nil),
                        "بانتظار رد موثّق من الإضافة")
-        XCTAssertEqual(ar.localizedString(forKey: "browser.live.observationOnly", value: nil, table: nil),
-                       "عرض الحالة فقط: حراسة المتصفح غير مفعّلة، لذلك لن تغلق هذه الفحوص المتصفحات.")
         let format = ar.localizedString(forKey: "browser.live.countdown %lld", value: nil, table: nil)
         XCTAssertEqual(String(format: format, locale: Locale(identifier: "ar@numbers=latn"), 60),
                        "أعد الإضافة أو أغلق هذا المتصفح. سيُغلق خلال 60 ثانية.")
     }
 
-    func testBrowserRequirementConsentShipsArabic() throws {
+    func testBrowserProtectionIsContinuousAndSaysSo() throws {
         let ar = try arabic()
-        XCTAssertEqual(ar.localizedString(forKey: "Keep browser protection on", value: nil, table: nil),
-                       "أبقِ حماية المتصفح مفعّلة")
-        XCTAssertEqual(ar.localizedString(forKey: "Require browser protection outside a lock?", value: nil, table: nil),
-                       "هل تريد اشتراط حماية المتصفح خارج فترة القفل؟")
-        XCTAssertEqual(ar.localizedString(forKey: "Enable requirement", value: nil, table: nil),
-                       "تفعيل الاشتراط")
-        XCTAssertEqual(ar.localizedString(forKey: "This requirement cannot be turned off while a lock is running.", value: nil, table: nil),
-                       "لا يمكن إيقاف هذا الاشتراط أثناء تشغيل القفل.")
+        XCTAssertEqual(ar.localizedString(forKey: "Browser protection is always on while Hisn runs.", value: nil, table: nil),
+                       "حماية المتصفح مفعّلة دائمًا ما دام حصن يعمل.")
         XCTAssertEqual(ar.localizedString(forKey: "Link router only — left open because it hands links to a browser and does not render pages.", value: nil, table: nil),
                        "موجّه روابط فقط — يبقى مفتوحًا لأنه يرسل الروابط إلى متصفح ولا يعرض الصفحات.")
+        // The outside-lock opt-in and its confirmation are deleted, so no
+        // shipped string may resurrect them.
+        XCTAssertEqual(ar.localizedString(forKey: "Keep browser protection on", value: "—", table: nil), "—")
+        XCTAssertEqual(ar.localizedString(forKey: "browser.live.observationOnly", value: "—", table: nil), "—")
     }
 
     func testBrowserExceptionLimitsShipArabic() throws {

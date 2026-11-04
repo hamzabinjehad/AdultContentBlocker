@@ -513,7 +513,6 @@ private struct OverviewPage: View {
     private var laptopReadiness: LaptopSetupReadiness {
         LaptopSetupReadiness(protection: protectionEvidence,
             checklist: readingSetup ? nil : setup,
-            requireOutsideLock: guardian.requireOutsideLock,
             browserWarning: !guardian.alerts.isEmpty,
             hasAppExceptions: !guardian.allowed.isEmpty,
             filterBlock: FilterLink.shared.buildBlock)
@@ -1309,7 +1308,6 @@ struct SetupPage: View {
     private var laptopReadiness: LaptopSetupReadiness {
         LaptopSetupReadiness(protection: protectionEvidence,
             checklist: checking ? nil : checklist,
-            requireOutsideLock: guardian.requireOutsideLock,
             browserWarning: !guardian.alerts.isEmpty,
             hasAppExceptions: !guardian.allowed.isEmpty,
             filterBlock: FilterLink.shared.buildBlock)
@@ -1568,7 +1566,7 @@ struct SetupPage: View {
 
     private func reviewSetupIssue(_ issue: LaptopSetupReadiness.Issue) {
         switch issue {
-        case .browserGuard, .appExceptions:
+        case .appExceptions:
             goTo(.rules)
         case .browserProfiles, .browserConnection, .browserWarning:
             showBrowserHelp = true
@@ -2843,7 +2841,6 @@ struct BrowsersSection: View {
     @ObservedObject private var guardian = BrowserGuard.shared
     @State private var candidates: [BrowserGuard.Candidate] = []
     @State private var error: String?
-    @State private var confirmOutsideLock = false
 
     var body: some View {
         Card {
@@ -2855,21 +2852,11 @@ struct BrowsersSection: View {
                     unsupported browsers also close.
                     """,
                 systemImage: "safari") {
-            Toggle("Keep browser protection on", isOn: Binding(
-                get: { guardian.requireOutsideLock },
-                set: { enabled in
-                    if enabled { confirmOutsideLock = true }
-                    else { setOutsideLock(false) }
-                }))
-                .toggleStyle(.switch)
-                .disabled(isLocked && guardian.requireOutsideLock)
-            Text("Opt-in: keep requiring the extension after a lock ends. Off by default; active locks always require it.")
+            Label("Browser protection is always on while Hisn runs.", systemImage: "lock.shield")
+                .font(.callout.weight(.medium))
+            Text("There is no off switch and no lock needed: if the extension stops answering, the browser shows a countdown and then closes.")
                 .font(.callout).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-            if isLocked && guardian.requireOutsideLock {
-                Text("This requirement cannot be turned off while a lock is running.")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
             Text("""
                 Hisn stays in the background when its window closes; the separately \
                 installed login agent restarts it after a crash or force-quit. \
@@ -2900,10 +2887,6 @@ struct BrowsersSection: View {
                 }
                 ForEach(guardian.connections) { connection in
                     connectionRow(connection)
-                }
-                if !isLocked && !guardian.requireOutsideLock {
-                    Text("browser.live.observationOnly")
-                        .font(.caption).foregroundStyle(.secondary)
                 }
             }
             if !guardian.profileIssues.isEmpty {
@@ -2952,19 +2935,6 @@ struct BrowsersSection: View {
         .onAppear(perform: reload)
         .onChange(of: guardian.connections.map(\.id).sorted()) { _ in reload() }
         .onChange(of: guardian.effectiveAllowed) { _ in reload() }
-        .alert("Require browser protection outside a lock?", isPresented: $confirmOutsideLock) {
-            Button("Enable requirement") { setOutsideLock(true) }
-            Button("Cancel", role: .cancel) { }
-        } message: {
-            Text("""
-                Hisn will also guard browsers when no lock is running. Once lost \
-                protection is detected, you have one minute to restore the extension \
-                before closure; an unresolved relaunch gets only five seconds. \
-                Unsupported browsers, including Safari, also close. Save your work. \
-                Unknown apps you explicitly trust stay open without checks. You can \
-                turn this off outside a lock. It does not prevent uninstalling Hisn.
-                """)
-        }
     }
 
     private func connectionRow(_ connection: BrowserGuard.Connection) -> some View {
@@ -3041,16 +3011,6 @@ struct BrowsersSection: View {
     }
 
     private func reload() { candidates = guardian.candidates() }
-
-    private func setOutsideLock(_ enabled: Bool) {
-        do {
-            try guardian.setRequireOutsideLock(enabled)
-            error = nil
-        } catch {
-            self.error = error.localizedDescription
-        }
-        reload()
-    }
 
     private func describe(_ coverage: BrowserGuardPolicy.Coverage) -> String {
         switch coverage {

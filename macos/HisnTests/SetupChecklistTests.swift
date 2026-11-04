@@ -69,7 +69,7 @@ final class SetupChecklistTests: XCTestCase {
         let readiness = LaptopSetupReadiness(
             protection: ProtectionEvidence(filter: .off, extensionLastSeen: Date(),
                 hostsEntries: 358_239, filterCanRun: false),
-            checklist: c, requireOutsideLock: true)
+            checklist: c)
         XCTAssertFalse(readiness.isReady, "legacy completion is not verified laptop-wide coverage")
         XCTAssertTrue(readiness.issues.contains(.signedBuild))
     }

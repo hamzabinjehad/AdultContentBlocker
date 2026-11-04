@@ -14,11 +14,11 @@
     {
       "id": "macos",
       "name": "Mac",
-      "version": "1.1.11",
-      "build": 22,
+      "version": "1.1.12",
+      "build": 24,
       "state": "development · unsigned, needs Developer ID and notarization",
       "source": "macos/Hisn.xcodeproj/project.pbxproj",
-      "notes": "Every target must carry the same MARKETING_VERSION and CURRENT_PROJECT_VERSION; 1.1.11 is a UI/UX pass: Overview is one status hero with a tile per layer and a state-aware primary action (Finish setup / Review setup / Start a lock / Manage lock), warnings sit under the status, Setup leads with a progress ring and stage counts, Blocking Rules is one card per list with empty states, the Lock page has an end-date band, trailing switches and elapsed progress, and Settings card headings carry icons. A read-only Check a website sheet names the rule and list version that decide an address; it reads the installed list or the signed bundled core seed, and never turns an unreadable list into not blocked. New strings have Arabic; 541 tests pass. 1.1.10's one-title/one-action pass, 1.1.9's guard card and 1.1.8's pause are retained. No enforcement behavior changed. Unsigned/unnotarized."
+      "notes": "Every target must carry the same MARKETING_VERSION and CURRENT_PROJECT_VERSION; 1.1.12 makes browser protection continuous. The guard no longer waits for a lock or for the 'Keep browser protection on' opt-in: while Hisn runs, a browser whose extension stops answering shows a one-minute countdown and is closed, and unsupported browsers (Safari) close too. The outside-lock setting, its confirmation, its setter and its readiness issue are removed, so there is no off switch inside the app. 1.1.11's status hero, Check a website sheet and grouped pages, 1.1.10's pinned lock action and 1.1.9's guard card are retained. Unsigned/unnotarized."
     },
     {
       "id": "ios",

@@ -5,6 +5,27 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
+## Mac 1.1.12 — 2026-11-04
+
+### Changed
+
+- **Browser protection is continuous.** The guard no longer waits for a lock or
+  for the "Keep browser protection on" opt-in: while Hisn runs, a browser whose
+  extension stops answering shows a one-minute countdown and is then closed, and
+  unsupported browsers including Safari close on the same rule.
+- **The opt-in is removed, not hidden.** The setting, its confirmation sheet, the
+  stored `guardRequireOutsideLock` preference, the `setRequireOutsideLock` setter
+  and the setup issue that asked for the opt-in are gone. Settings states
+  "Browser protection is always on while Hisn runs." instead of offering it.
+
+### Verification
+
+- `./test.sh macos` — **541 tests, 0 failures**; new and updated tests cover the
+  continuous guard and readiness without an opt-in; all strings have Arabic.
+- Version 1.1.12, build 24. Installed in place on the owner's Mac. The close path
+  is the same one that ran under a lock; a real removed-extension run is still an
+  owner action.
+
 ## iPhone & iPad 1.5.0 — 2026-11-04
 
 ### Changed

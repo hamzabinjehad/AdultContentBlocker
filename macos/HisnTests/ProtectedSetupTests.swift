@@ -171,12 +171,10 @@ final class LaptopSetupReadinessTests: XCTestCase {
 
     private func readiness(_ evidence: ProtectionEvidence,
                            checklist: SetupChecklist? = nil,
-                           alwaysOn: Bool = true,
                            warning: Bool = false,
                            exceptions: Bool = false) -> LaptopSetupReadiness {
         LaptopSetupReadiness(protection: evidence, checklist: checklist ?? self.checklist(),
-            requireOutsideLock: alwaysOn, browserWarning: warning,
-            hasAppExceptions: exceptions)
+            browserWarning: warning, hasAppExceptions: exceptions)
     }
 
     func testLiveFunctionalChecksDoNotRequireExternalControlConfirmations() {
@@ -230,8 +228,7 @@ final class LaptopSetupReadinessTests: XCTestCase {
     }
 
     func testMissingChecklistWaitsForFreshEvidenceEvenWithHealthyProcesses() {
-        let value = LaptopSetupReadiness(protection: protection(), checklist: nil,
-            requireOutsideLock: true)
+        let value = LaptopSetupReadiness(protection: protection(), checklist: nil)
         XCTAssertTrue(value.isChecking)
         XCTAssertFalse(value.isReady)
     }
@@ -315,10 +312,11 @@ final class LaptopSetupReadinessTests: XCTestCase {
         }
     }
 
-    func testSessionOnlyGuardCannotClaimOutsideCommitmentReadiness() {
-        let value = readiness(protection(), alwaysOn: false)
-        XCTAssertFalse(value.isReady)
-        XCTAssertTrue(value.issues.contains(.browserGuard))
+    func testHealthyLaptopIsReadyWithoutASeparateGuardOptIn() {
+        // Guarding is continuous now, so readiness no longer has a switch to
+        // wait for; a healthy Mac is ready with no browser-guard issue at all.
+        let value = readiness(protection())
+        XCTAssertTrue(value.isReady, value.issues.map(\.rawValue).joined(separator: ", "))
     }
 
     func testBrowserWarningAndAppExceptionsMustBeResolved() {

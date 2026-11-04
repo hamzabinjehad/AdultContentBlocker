@@ -1150,6 +1150,16 @@
         }
       }
     },
+    "Browser protection is always on while Hisn runs." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حماية المتصفح مفعّلة دائمًا ما دام حصن يعمل."
+          }
+        }
+      }
+    },
     "Browser protection needs attention" : {
       "localizations" : {
         "ar" : {
@@ -1310,22 +1320,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Installed · not running"
-          }
-        }
-      }
-    },
-    "browser.live.observationOnly" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "عرض الحالة فقط: حراسة المتصفح غير مفعّلة، لذلك لن تغلق هذه الفحوص المتصفحات."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Status only: browser guarding is not active, so these checks will not close browsers."
           }
         }
       }
@@ -2254,32 +2248,6 @@
         }
       }
     },
-    "Enable Keep browser protection on in Blocking Rules to require protection after a commitment ends. This needs your confirmation." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "فعّل «إبقاء حماية المتصفح مفعّلة» في قواعد الحظر لطلب الحماية بعد انتهاء الالتزام. يتطلب ذلك موافقتك."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enable Keep browser protection on in Blocking Rules to require protection after a commitment ends. This needs your confirmation."
-          }
-        }
-      }
-    },
-    "Enable requirement" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تفعيل الاشتراط"
-          }
-        }
-      }
-    },
     "Enable system filter" : {
       "localizations" : {
         "ar" : {
@@ -2897,16 +2865,6 @@
         }
       }
     },
-    "Hisn will also guard browsers when no lock is running. Once lost protection is detected, you have one minute to restore the extension before closure; an unresolved relaunch gets only five seconds. Unsupported browsers, including Safari, also close. Save your work. Unknown apps you explicitly trust stay open without checks. You can turn this off outside a lock. It does not prevent uninstalling Hisn." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "سيحمي حصن المتصفحات أيضًا عندما لا يوجد قفل نشط. عند اكتشاف فقدان الحماية، لديك دقيقة لاستعادة الإضافة قبل الإغلاق؛ وإعادة التشغيل دون إصلاح تمنح خمس ثوانٍ فقط. تُغلَق المتصفحات غير المدعومة، بما فيها Safari، أيضًا. احفظ عملك. تظل التطبيقات غير المعروفة التي وثقتَ بها صراحةً مفتوحة دون فحوصات. يمكنك إيقاف هذا الخيار خارج القفل. لا يمنع ذلك إزالة حصن."
-          }
-        }
-      }
-    },
     "Hisn will close %@ in %lld seconds" : {
       "localizations" : {
         "ar" : {
@@ -3399,6 +3357,26 @@
         }
       }
     },
+    "It is not on the bundled core list (version %lld) or your own lists." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ليس في القائمة الأساسية المضمّنة (الإصدار %lld) ولا في قوائمك."
+          }
+        }
+      }
+    },
+    "It is not on the bundled core list or your own lists." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ليس في القائمة الأساسية المضمّنة ولا في قوائمك."
+          }
+        }
+      }
+    },
     "It is not on the installed block list (version %lld) or your own lists." : {
       "localizations" : {
         "ar" : {
@@ -3415,6 +3393,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ليس في قائمة الحجب المثبّتة ولا في قوائمك."
+          }
+        }
+      }
+    },
+    "It is on the bundled core list (version %lld)." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إنه في القائمة الأساسية المضمّنة (الإصدار %lld)."
+          }
+        }
+      }
+    },
+    "It is on the bundled core list." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إنه في القائمة الأساسية المضمّنة."
           }
         }
       }
@@ -3495,16 +3493,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "أبقِ موقع الخدمة متاحاً مع فحص نصوصه. في متصفحات Chromium المدعومة، يفحص حصن النصوص المتغيرة ويخفي منشورات X/Twitter المكتشفة كلّاً على حدة؛ اكتشاف منشور واحد لا يضيف الخدمة كلها إلى مواقعك المحظورة."
-          }
-        }
-      }
-    },
-    "Keep browser protection on" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "أبقِ حماية المتصفح مفعّلة"
           }
         }
       }
@@ -3632,6 +3620,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تقييد مواقع البالغين مفعّل. رمزه مكانه مع شريكك."
+          }
+        }
+      }
+    },
+    "Limits of these checks" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حدود هذه الفحوص"
           }
         }
       }
@@ -4744,16 +4742,6 @@
         }
       }
     },
-    "Opt-in: keep requiring the extension after a lock ends. Off by default; active locks always require it." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "خيار اختياري: الاستمرار في اشتراط اتصال الإضافة بعد انتهاء القفل. متوقف افتراضيًا؛ ويظل شرط الإضافة قائمًا أثناء القفل."
-          }
-        }
-      }
-    },
     "Other / I don't know" : {
       "localizations" : {
         "ar" : {
@@ -5368,16 +5356,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "اطلبه"
-          }
-        }
-      }
-    },
-    "Require browser protection outside a lock?" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "هل تريد اشتراط حماية المتصفح خارج فترة القفل؟"
           }
         }
       }
@@ -6693,6 +6671,16 @@
         }
       }
     },
+    "There is no off switch and no lock needed: if the extension stops answering, the browser shows a countdown and then closes." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يوجد مفتاح للإيقاف ولا حاجة إلى قفل: إذا توقفت الإضافة عن الاستجابة، يعرض المتصفح عدًّا تنازليًا ثم يُغلق."
+          }
+        }
+      }
+    },
     "These checks cover this Mac and make protection harder to disable. Network protection, other devices, and recovery access are checked separately." : {
       "localizations" : {
         "ar" : {
@@ -6736,6 +6724,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "لا يزال هذا الحساب مسؤولًا. يمكنه إزالة حصن أثناء القفل. أكمل فصل حساب ولي الأمر من الإعداد أولًا."
+          }
+        }
+      }
+    },
+    "This answer uses the bundled core list. The full list has not been installed on this Mac." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تستخدم هذه الإجابة القائمة الأساسية المضمّنة. لم تُثبَّت القائمة الكاملة على هذا الماك."
           }
         }
       }
@@ -6866,16 +6864,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "This may be your router's page. Confirm the address in your router's documentation. Enter its password only in the router's own page; Hisn does not collect it."
-          }
-        }
-      }
-    },
-    "This requirement cannot be turned off while a lock is running." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "لا يمكن إيقاف هذا الاشتراط أثناء تشغيل القفل."
           }
         }
       }
@@ -7573,66 +7561,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "كلماتك وتطبيقاتك"
-          }
-        }
-      }
-    },
-    "It is on the bundled core list (version %lld)." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "إنه في القائمة الأساسية المضمّنة (الإصدار %lld)."
-          }
-        }
-      }
-    },
-    "It is on the bundled core list." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "إنه في القائمة الأساسية المضمّنة."
-          }
-        }
-      }
-    },
-    "It is not on the bundled core list (version %lld) or your own lists." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ليس في القائمة الأساسية المضمّنة (الإصدار %lld) ولا في قوائمك."
-          }
-        }
-      }
-    },
-    "It is not on the bundled core list or your own lists." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ليس في القائمة الأساسية المضمّنة ولا في قوائمك."
-          }
-        }
-      }
-    },
-    "This answer uses the bundled core list. The full list has not been installed on this Mac." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تستخدم هذه الإجابة القائمة الأساسية المضمّنة. لم تُثبَّت القائمة الكاملة على هذا الماك."
-          }
-        }
-      }
-    },
-    "Limits of these checks" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "حدود هذه الفحوص"
           }
         }
       }

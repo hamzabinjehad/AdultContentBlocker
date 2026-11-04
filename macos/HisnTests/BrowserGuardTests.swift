@@ -73,11 +73,11 @@ final class BrowserGuardPolicyTests: XCTestCase {
                                         now: restored, profileLoss: false), .awaitingExtension)
     }
 
-    func testGuardIsOptionalOutsideLocksButAlwaysActiveDuringLocks() {
-        XCTAssertFalse(P.isActive(locked: false, requireOutsideLock: false))
-        XCTAssertTrue(P.isActive(locked: false, requireOutsideLock: true))
-        XCTAssertTrue(P.isActive(locked: true, requireOutsideLock: false))
-        XCTAssertTrue(P.isActive(locked: true, requireOutsideLock: true))
+    func testGuardIsContinuousWhileHisnRuns() {
+        // The former "require outside a lock" opt-in is gone: there is no
+        // inactive state, so a lock cannot be what decides whether a browser
+        // is guarded.
+        XCTAssertTrue(P.isActive())
     }
 
     func testAvailableAuthorityDoesNotFallBackToAnEditableLocalHeartbeat() {

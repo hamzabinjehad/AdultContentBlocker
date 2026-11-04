@@ -125,7 +125,7 @@ Each new Mac app process opens on Setup, not on a remembered successful visit.
 Setup and Overview distinguish partial blocking from current laptop protection
 checks: a live nonempty filter response, healthy policy, protected installation
 files, detected standard browser profiles, a recent extension connection, and
-the explicitly enabled outside-lock browser requirement. Browser warnings and
+the always-on browser requirement. Browser warnings and
 trusted app exceptions prevent a passing verdict. These are configuration and
 liveness checks, not an end-to-end blocking test or a guarantee of all-content
 coverage. Administrator/partner hardening is shown separately. A development
