@@ -73,7 +73,10 @@ export function siteEditor(field, key, getState) {
     list.replaceChildren();
     for (const host of matches) {
       const row = document.createElement("li");
+      const mark = document.createElement("span");
+      mark.className = "site-mark"; mark.dataset.icon = "globe"; mark.setAttribute("aria-hidden", "true");
       const label = document.createElement("span");
+      label.className = "site-label";
       label.textContent = host; label.dir = "ltr";
       const remove = document.createElement("button");
       remove.type = "button"; remove.className = "icon-button";
@@ -87,7 +90,7 @@ export function siteEditor(field, key, getState) {
         const next = list.querySelector("button:not(:disabled)");
         (next || input).focus();
       };
-      row.append(label, remove); list.append(row);
+      row.append(mark, label, remove); list.append(row);
     }
     if (!matches.length) {
       const empty = document.createElement("li");

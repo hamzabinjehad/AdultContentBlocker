@@ -4,15 +4,15 @@
 > manifests. Do not edit by hand: change `versions.json` and the platform
 > manifest together, then run `python3 script/versions.py`.
 
-Pinned on `release/1.0`, updated 2026-11-03. A platform
+Pinned on `release/1.0`, updated 2026-11-04. A platform
 version means what that platform's own manifest says; it is not a claim that a
 signed artifact has shipped. The state column is the honest release state.
 
 | Platform | Version | Build | State | Source of truth |
 | --- | --- | --- | --- | --- |
 | Browser extension (Chromium) | 1.5.0 | — | development · unpacked, no store listing | `extension/manifest.json` |
-| Mac | 1.1.10 | 21 | development · unsigned, needs Developer ID and notarization | `macos/Hisn.xcodeproj/project.pbxproj` |
-| iPhone & iPad | 1.4.0 | 8 | development · no Apple team, Family Controls entitlement or test device | `ios/HisnMobile.xcodeproj/project.pbxproj` |
+| Mac | 1.1.11 | 22 | development · unsigned, needs Developer ID and notarization | `macos/Hisn.xcodeproj/project.pbxproj` |
+| iPhone & iPad | 1.5.0 | 9 | development · no Apple team, Family Controls entitlement or test device | `ios/HisnMobile.xcodeproj/project.pbxproj` |
 | Android | 1.1.0 | 27 | released · signed direct APK on GitHub; Play AAB not uploaded | `android/app/build.gradle` |
 
 ## Seed bundle
@@ -33,8 +33,8 @@ generation must beat; clients refuse a lower one.
 ## Version notes
 
 - **Browser extension (Chromium)** (`extension`): The packaged zip strips the development key; the Chrome Web Store ID will differ from the unpacked ID. 1.5.0 adds portable rules: Settings → Move your rules exports the person's five hand lists as a versioned JSON file and imports one add-only, so a more permissive file can never undo a stricter browser. A running lock withholds additions to the allowlist and corrections and applies blocks and words. No permission, network path or storage field changed; 1.4.0's quiet UI and 1.3.0's language-aware scoring are retained.
-- **Mac** (`macos`): Every target must carry the same MARKETING_VERSION and CURRENT_PROJECT_VERSION; 1.1.10 is a UI/UX pass: the duplicated in-page title block is gone (the window title bar already names the page), Setup merges its readiness and progress into one card, Overview puts its one action above the layer evidence, the Lock page stops repeating the fixed-commitment paragraph and follows the chosen mode, Blocking Rules leads with the editable lists instead of a three-paragraph browser guide, each site list is per-domain rows with a chip strip, an inline add field and bulk paste one disclosure down, and Settings groups every section into a card. 1.1.9's guard card, status-first overview and 1.1.8's pause are retained. Unsigned/unnotarized.
-- **iPhone & iPad** (`ios`): The app, six Safari blockers, HisnActivityMonitor, the scanner and two shield extensions share one version set. 1.4.0 adds HisnShieldConfig and HisnShieldAction: the system shield names the saved rule (always, daily budget or quiet hours) in the app language and offers only Close, never an unlock. 1.3.0's pause, protection hero, daily quiet hours and saved-rule freeze are retained. Seed v5 still supplies the 239,885-domain Safari list.
+- **Mac** (`macos`): Every target must carry the same MARKETING_VERSION and CURRENT_PROJECT_VERSION; 1.1.11 is a UI/UX pass: Overview is one status hero with a tile per layer and a state-aware primary action (Finish setup / Review setup / Start a lock / Manage lock), warnings sit under the status, Setup leads with a progress ring and stage counts, Blocking Rules is one card per list with empty states, the Lock page has an end-date band, trailing switches and elapsed progress, and Settings card headings carry icons. A read-only Check a website sheet names the rule and list version that decide an address; it reads the installed list or the signed bundled core seed, and never turns an unreadable list into not blocked. New strings have Arabic; 541 tests pass. 1.1.10's one-title/one-action pass, 1.1.9's guard card and 1.1.8's pause are retained. No enforcement behavior changed. Unsigned/unnotarized.
+- **iPhone & iPad** (`ios`): The app, six Safari blockers, HisnActivityMonitor, the scanner and two shield extensions share one version set. 1.5.0 is a UI/UX pass: the overview is a calm card stack (status, pause, plan progress, lock and rules), the lock, blocked-site and app-limit cards open their editors directly, Setup is three guided steps with a checks card, the app-limit editor shows its three modes as a visible decision, and Settings is grouped cards. 1.4.0's bilingual Screen Time shield with no unlock, 1.3.0's pause, quiet hours and saved-rule freeze, and seed v5's 239,885-domain Safari list are retained. ScreenZen was observed read-only for design vocabulary; no code, assets or copy was reused.
 - **Android** (`android`): versionCode is monotonic and must increase for every uploaded or side-loaded update. 27 (1.1.0) adds a first-run welcome, a voluntary pause on Protection and today's usage in the daily-limit editor; it adds no enforcement layer and relaxes no rule. 1.0.0 added per-app daily foreground-time limits alongside the protection lock, removal guard, managed lockdown, watchdog and bundled-list warning. Release APKs are checked; the release keystore is in the gitignored keys/android and must be backed up offline in two places. The Play AAB is built but not uploaded.
 
 ## Bumping a version

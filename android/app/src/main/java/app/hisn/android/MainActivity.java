@@ -101,7 +101,7 @@ public final class MainActivity extends Activity {
 
     private TextView statusTitle;
     private TextView statusBody;
-    private ImageView heroIcon;
+    private Ui.ShieldView heroShield;
     private Ui.LayerTile layerDns;
     private Ui.LayerTile layerApps;
     private Ui.LayerTile layerImages;
@@ -120,10 +120,12 @@ public final class MainActivity extends Activity {
     private TextView watchdogState;
     private TextView networkStats;
     private Button startDns;
+    private boolean dnsPrimaryStyle;
     private Button checkNetwork;
     private Button notifSettings;
     private Button privateDnsSettings;
 
+    private TextView layerTextState;
     private TextView textState;
     private TextView visualState;
     private TextView shortVideoState;
@@ -229,9 +231,9 @@ public final class MainActivity extends Activity {
         appBarRow.addView(Ui.iconInTile(this, R.drawable.ic_shield, R.color.accent, 40, 24));
         LinearLayout brand = new LinearLayout(this);
         brand.setOrientation(LinearLayout.VERTICAL);
-        TextView title = Ui.text(this, getString(R.string.title), 19, R.color.text_primary);
+        TextView title = Ui.text(this, getString(R.string.app_name), 19, R.color.text_primary);
         title.setTypeface(Ui.medium());
-        TextView subtitle = Ui.text(this, getString(R.string.subtitle, BuildConfig.VERSION_NAME), 12,
+        TextView subtitle = Ui.text(this, getString(R.string.subtitle, BuildConfig.VERSION_NAME), 11,
                 R.color.text_tertiary);
         brand.addView(title);
         brand.addView(subtitle);
@@ -454,27 +456,36 @@ public final class MainActivity extends Activity {
         LinearLayout hero = new LinearLayout(this);
         hero.setOrientation(LinearLayout.VERTICAL);
         hero.setBackgroundResource(R.drawable.bg_hero);
-        hero.setPadding(Ui.dp(this, 18), Ui.dp(this, 18), Ui.dp(this, 18), Ui.dp(this, 16));
-        LinearLayout heroTop = new LinearLayout(this);
-        heroTop.setOrientation(LinearLayout.HORIZONTAL);
-        heroTop.setGravity(Gravity.CENTER_VERTICAL);
-        heroIcon = Ui.iconInTile(this, R.drawable.ic_shield, R.color.accent, 44, 26);
-        heroTop.addView(heroIcon);
-        statusTitle = Ui.text(this, getString(R.string.status_title), 20, R.color.text_primary);
+        hero.setGravity(Gravity.CENTER_HORIZONTAL);
+        hero.setPadding(Ui.dp(this, 22), Ui.dp(this, 24), Ui.dp(this, 22), Ui.dp(this, 20));
+
+        heroShield = new Ui.ShieldView(this);
+        LinearLayout.LayoutParams shieldParams = new LinearLayout.LayoutParams(
+                Ui.dp(this, 116), Ui.dp(this, 116));
+        shieldParams.gravity = Gravity.CENTER_HORIZONTAL;
+        hero.addView(heroShield, shieldParams);
+
+        statusTitle = Ui.text(this, getString(R.string.status_title), 27, R.color.text_primary);
         statusTitle.setTypeface(Ui.medium());
-        statusTitle.setLineSpacing(Ui.dp(this, 2), 1.05f);
+        statusTitle.setGravity(Gravity.CENTER);
+        statusTitle.setLineSpacing(Ui.dp(this, 3), 1.05f);
         statusTitle.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
-        LinearLayout.LayoutParams statusTitleParams = new LinearLayout.LayoutParams(0,
-                LinearLayout.LayoutParams.WRAP_CONTENT, 1);
-        statusTitleParams.setMarginStart(Ui.dp(this, 12));
-        heroTop.addView(statusTitle, statusTitleParams);
-        hero.addView(heroTop);
-        statusBody = Ui.caption(this, "");
-        hero.addView(statusBody, Ui.margins(this, 0, 2));
+        LinearLayout.LayoutParams statusTitleParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        statusTitleParams.topMargin = Ui.dp(this, 16);
+        hero.addView(statusTitle, statusTitleParams);
+
+        statusBody = Ui.text(this, "", 15, R.color.text_secondary);
+        statusBody.setGravity(Gravity.CENTER);
+        statusBody.setLineSpacing(Ui.dp(this, 4), 1.16f);
+        LinearLayout.LayoutParams statusBodyParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        statusBodyParams.topMargin = Ui.dp(this, 8);
+        hero.addView(statusBody, statusBodyParams);
 
         LinearLayout layerRow = new LinearLayout(this);
         layerRow.setOrientation(LinearLayout.HORIZONTAL);
-        layerRow.setPadding(0, Ui.dp(this, 14), 0, 0);
+        layerRow.setPadding(0, Ui.dp(this, 20), 0, 0);
         layerDns = Ui.layerTile(this, getString(R.string.layer_dns), getString(R.string.state_off), Ui.OFF);
         layerApps = Ui.layerTile(this, getString(R.string.layer_apps), getString(R.string.state_off), Ui.OFF);
         layerImages = Ui.layerTile(this, getString(R.string.layer_images), getString(R.string.state_off),
@@ -487,7 +498,29 @@ public final class MainActivity extends Activity {
             layerRow.addView(tiles[i].root, tileParams);
         }
         hero.addView(layerRow);
-        page.addView(hero, Ui.margins(this, 0, 10));
+
+        // The single next action lives with the verdict, not in a second card below it.
+        setupCard = new LinearLayout(this);
+        setupCard.setOrientation(LinearLayout.VERTICAL);
+        setupCard.setPadding(0, Ui.dp(this, 22), 0, 0);
+        LinearLayout.LayoutParams setupParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        setupParams.topMargin = Ui.dp(this, 2);
+        hero.addView(setupCard, setupParams);
+        TextView nextStep = Ui.text(this, getString(R.string.next_step), 11, R.color.accent);
+        nextStep.setTypeface(Ui.medium());
+        nextStep.setLetterSpacing(0.08f);
+        nextStep.setGravity(Gravity.CENTER);
+        setupCard.addView(nextStep);
+        setupState = Ui.caption(this, getString(R.string.setup_first));
+        setupState.setGravity(Gravity.CENTER);
+        setupState.setLineSpacing(Ui.dp(this, 2), 1.14f);
+        setupCard.addView(setupState, Ui.margins(this, 6, 0));
+        setupNext = Ui.button(this, R.string.setup_next, Ui.ButtonKind.PRIMARY);
+        setupCard.addView(setupNext, Ui.margins(this, 12, 0));
+        setupNext.setOnClickListener(view -> nextSetupStep());
+
+        page.addView(hero, Ui.margins(this, 0, 12));
 
         attentionCard = Ui.card(this);
         attentionCard.setBackgroundResource(R.drawable.bg_warning_card);
@@ -497,7 +530,7 @@ public final class MainActivity extends Activity {
         attentionDetails = Ui.disclosure(this, getString(R.string.section_attention), attentionList);
         attentionCard.addView(attentionDetails.root);
         attentionCard.setVisibility(View.GONE);
-        page.addView(attentionCard, Ui.margins(this, 0, 10));
+        page.addView(attentionCard, Ui.margins(this, 0, 12));
 
         LinearLayout pauseCard = Ui.card(this);
         Ui.SettingRow pauseRow = Ui.settingRow(this, R.drawable.ic_pulse,
@@ -505,14 +538,7 @@ public final class MainActivity extends Activity {
                 view -> startActivity(new Intent(this, RestrictionActivity.class)
                         .putExtra("voluntary", true)));
         pauseCard.addView(pauseRow.root);
-        page.addView(pauseCard, Ui.margins(this, 0, 10));
-
-        setupCard = addCard(page, R.drawable.ic_check, R.string.setup_heading);
-        setupState = Ui.body(this, getString(R.string.setup_first));
-        setupCard.addView(setupState);
-        setupNext = Ui.button(this, R.string.setup_next, Ui.ButtonKind.PRIMARY);
-        setupCard.addView(setupNext, Ui.buttonParams(this));
-        setupNext.setOnClickListener(view -> nextSetupStep());
+        page.addView(pauseCard, Ui.margins(this, 0, 12));
 
         LinearLayout network = addCard(page, R.drawable.ic_network, R.string.section_network);
         networkState = statusLine();
@@ -533,7 +559,7 @@ public final class MainActivity extends Activity {
             seedFreshness.setVisibility(View.VISIBLE);
         }
         network.addView(seedFreshness);
-        startDns = Ui.button(this, R.string.dns_start, Ui.ButtonKind.PRIMARY);
+        startDns = Ui.button(this, R.string.dns_start, Ui.ButtonKind.TONAL);
         network.addView(startDns, Ui.buttonParams(this));
         startDns.setOnClickListener(v -> new AlertDialog.Builder(this)
                 .setTitle(R.string.dns_consent_title).setMessage(R.string.dns_consent_body)
@@ -605,8 +631,8 @@ public final class MainActivity extends Activity {
         network.addView(dnsAdvanced.root, Ui.margins(this, 0, 4));
 
         LinearLayout apps = addCard(page, R.drawable.ic_apps, R.string.section_app_layer);
-        textState = statusLine();
-        apps.addView(textState);
+        layerTextState = statusLine();
+        apps.addView(layerTextState);
         visualState = statusLine();
         apps.addView(visualState, Ui.margins(this, 10, 0));
         shortVideoState = statusLine();
@@ -633,8 +659,13 @@ public final class MainActivity extends Activity {
     // ------------------------------------------------------------------ rules page
 
     private void buildRulesPage(LinearLayout page) {
-        page.addView(Ui.pageTitle(this, getString(R.string.rules_heading)), Ui.margins(this, 6, 6));
-        page.addView(Ui.body(this, getString(R.string.rules_help)), Ui.margins(this, 0, 8));
+        page.addView(Ui.pageTitle(this, getString(R.string.rules_heading)), Ui.margins(this, 6, 8));
+        page.addView(Ui.body(this, getString(R.string.rules_intro_short)), Ui.margins(this, 0, 6));
+        Ui.Disclosure aboutRules = Ui.disclosure(this, getString(R.string.rules_about),
+                getString(R.string.rules_help));
+        aboutRules.root.setBackgroundResource(R.drawable.bg_card_soft);
+        aboutRules.root.setPadding(Ui.dp(this, 16), 0, Ui.dp(this, 16), Ui.dp(this, 4));
+        page.addView(aboutRules.root, Ui.margins(this, 0, 12));
 
         rulesLockCard = Ui.card(this);
         rulesLockCard.setBackgroundResource(R.drawable.bg_warning_card);
@@ -758,8 +789,11 @@ public final class MainActivity extends Activity {
     private void buildGuidePage(LinearLayout page) {
         page.addView(Ui.pageTitle(this, getString(R.string.app_goal_title)), Ui.margins(this, 6, 6));
         page.addView(Ui.body(this, getString(R.string.app_goal_short)), Ui.margins(this, 0, 6));
-        page.addView(Ui.disclosure(this, getString(R.string.app_goal_more),
-                getString(R.string.app_goal_body)).root, Ui.margins(this, 0, 4));
+        Ui.Disclosure howItWorks = Ui.disclosure(this, getString(R.string.app_goal_more),
+                getString(R.string.app_goal_body));
+        howItWorks.root.setBackgroundResource(R.drawable.bg_card_soft);
+        howItWorks.root.setPadding(Ui.dp(this, 16), 0, Ui.dp(this, 16), Ui.dp(this, 4));
+        page.addView(howItWorks.root, Ui.margins(this, 0, 10));
 
         LinearLayout steps = addCard(page, R.drawable.ic_check, R.string.section_setup_steps);
         for (View step : numberedSteps(getString(R.string.guide_steps_core))) steps.addView(step);
@@ -905,7 +939,7 @@ public final class MainActivity extends Activity {
     private LinearLayout addCard(LinearLayout page, int iconRes, int titleRes) {
         LinearLayout card = Ui.card(this);
         card.addView(Ui.sectionHeader(this, iconRes, getString(titleRes)));
-        page.addView(card, Ui.margins(this, 0, 10));
+        page.addView(card, Ui.margins(this, 0, 12));
         return card;
     }
 
@@ -939,19 +973,26 @@ public final class MainActivity extends Activity {
         testerResult.setTextColor(Ui.color(this, colorRes));
     }
 
-    /** Renders the guide's numbered paragraphs as a scannable list with a number badge each. */
+    /**
+     * Renders the guide's numbered paragraphs as a scannable list with a number badge each.
+     * Steps may arrive in separate paragraphs or be numbered inline, and Arabic-Indic digits
+     * must keep their own numerals.
+     */
     private List<View> numberedSteps(String body) {
         List<View> views = new ArrayList<>();
-        String[] parts = body.split("\n\n");
+        String[] parts = body.replace("\r\n", "\n").split(
+                "\\n\\s*\\n|\\s+(?=[0-9\\u0660-\\u0669\\u06F0-\\u06F9]+\\s*\\.\\s)");
+        java.util.regex.Pattern numbered = java.util.regex.Pattern.compile(
+                "^\\s*([0-9\\u0660-\\u0669\\u06F0-\\u06F9]+)\\s*\\.\\s*");
         for (int index = 0; index < parts.length; index++) {
             String part = parts[index].trim();
             if (part.isEmpty()) continue;
-            String number = String.valueOf(index + 1);
+            String number = java.text.NumberFormat.getIntegerInstance().format(index + 1);
             String text = part;
-            int dot = part.indexOf(". ");
-            if (dot > 0 && dot <= 2 && part.substring(0, dot).matches("\\d+")) {
-                number = part.substring(0, dot);
-                text = part.substring(dot + 2);
+            java.util.regex.Matcher match = numbered.matcher(part);
+            if (match.find()) {
+                number = match.group(1);
+                text = part.substring(match.end()).trim();
             }
             LinearLayout row = new LinearLayout(this);
             row.setOrientation(LinearLayout.HORIZONTAL);
@@ -966,6 +1007,10 @@ public final class MainActivity extends Activity {
             badge.setBackground(background);
             row.addView(badge, new LinearLayout.LayoutParams(Ui.dp(this, 24), Ui.dp(this, 24)));
             TextView step = Ui.body(this, text);
+            // A wrapped guide line needs the font's descent room; without it the second
+            // line can be clipped when the helper removes font padding.
+            step.setIncludeFontPadding(true);
+            step.setPadding(0, 0, 0, Ui.dp(this, 1));
             LinearLayout.LayoutParams stepParams = new LinearLayout.LayoutParams(0,
                     LinearLayout.LayoutParams.WRAP_CONTENT, 1);
             stepParams.setMarginStart(Ui.dp(this, 12));
@@ -1164,7 +1209,11 @@ public final class MainActivity extends Activity {
                 ? R.string.protection_partial : R.string.status_title);
         Ui.setTextIfChanged(statusTitle, title);
         statusTitle.setTextColor(Ui.color(this, needsAttention ? R.color.warning : R.color.text_primary));
-        heroIcon.setColorFilter(Ui.color(this, needsAttention ? R.color.warning : R.color.accent));
+        heroShield.setState(needsAttention ? Ui.ATTENTION
+                : current == DnsVpnService.State.STARTING || guard == GuardHealth.LIMITED
+                ? Ui.STARTING
+                : current == DnsVpnService.State.RUNNING || guard == GuardHealth.ACTIVE
+                ? Ui.ON : Ui.OFF);
         Ui.setTextIfChanged(statusBody, !settingsReadable
                 ? getString(R.string.policy_unavailable)
                 : rulesLocked
@@ -1306,6 +1355,8 @@ public final class MainActivity extends Activity {
             case SETTINGS_UNAVAILABLE: textRes = R.string.policy_unavailable; textKind = Ui.ATTENTION; break;
             default: textRes = R.string.text_guard_disabled; textKind = Ui.OFF; break;
         }
+        // textState lives on the Rules page; layerTextState is the copy on Protection.
+        setStatus(layerTextState, getString(textRes), textKind);
         setStatus(textState, getString(textRes), textKind);
 
         boolean adminActive = CommitmentAdminReceiver.isActive(this);
@@ -1580,10 +1631,15 @@ public final class MainActivity extends Activity {
                 break;
         }
         Ui.setTextIfChanged(setupNext, getString(nextText));
-        // The DNS card below already owns the start action; hide the duplicate
-        // recommendation card on that step.
-        setupCard.setVisibility(currentSetupStep == SetupGuide.Step.ENABLE_DNS
-                ? View.GONE : View.VISIBLE);
+        // The DNS card below owns the start action on that step; hide the duplicate
+        // hero action and let the DNS button carry the primary emphasis.
+        boolean dnsStep = currentSetupStep == SetupGuide.Step.ENABLE_DNS
+                || currentSetupStep == SetupGuide.Step.READY_APPS;
+        setupCard.setVisibility(dnsStep ? View.GONE : View.VISIBLE);
+        if (dnsStep != dnsPrimaryStyle) {
+            dnsPrimaryStyle = dnsStep;
+            Ui.style(startDns, dnsStep ? Ui.ButtonKind.PRIMARY : Ui.ButtonKind.TONAL);
+        }
     }
 
     private void setTextIfChanged(TextView view, int textRes) {
@@ -1698,11 +1754,12 @@ public final class MainActivity extends Activity {
             text = R.string.gray_on;
             kind = Ui.ON;
         } else {
-            text = R.string.gray_off;
+            text = R.string.gray_status_off;
             kind = Ui.OFF;
         }
         setStatus(grayState, getString(text), kind);
-        updateToggle(grayToggle, R.string.gray_title, getString(text));
+        updateToggle(grayToggle, R.string.gray_title, getString(wanted && remaining > 0
+                ? R.string.gray_committed : gray ? R.string.gray_on : R.string.gray_off));
         grayToggle.setChecked(wanted);
         Ui.setEnabledWithAlpha(grayToggle, !wanted || remaining == 0);
     }

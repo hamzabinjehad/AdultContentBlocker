@@ -1,6 +1,6 @@
 {
   "branch": "release/1.0",
-  "updated": "2026-11-03",
+  "updated": "2026-11-04",
   "platforms": [
     {
       "id": "extension",
@@ -14,20 +14,20 @@
     {
       "id": "macos",
       "name": "Mac",
-      "version": "1.1.10",
-      "build": 21,
+      "version": "1.1.11",
+      "build": 22,
       "state": "development · unsigned, needs Developer ID and notarization",
       "source": "macos/Hisn.xcodeproj/project.pbxproj",
-      "notes": "Every target must carry the same MARKETING_VERSION and CURRENT_PROJECT_VERSION; 1.1.10 is a UI/UX pass: the duplicated in-page title block is gone (the window title bar already names the page), Setup merges its readiness and progress into one card, Overview puts its one action above the layer evidence, the Lock page stops repeating the fixed-commitment paragraph and follows the chosen mode, Blocking Rules leads with the editable lists instead of a three-paragraph browser guide, each site list is per-domain rows with a chip strip, an inline add field and bulk paste one disclosure down, and Settings groups every section into a card. 1.1.9's guard card, status-first overview and 1.1.8's pause are retained. Unsigned/unnotarized."
+      "notes": "Every target must carry the same MARKETING_VERSION and CURRENT_PROJECT_VERSION; 1.1.11 is a UI/UX pass: Overview is one status hero with a tile per layer and a state-aware primary action (Finish setup / Review setup / Start a lock / Manage lock), warnings sit under the status, Setup leads with a progress ring and stage counts, Blocking Rules is one card per list with empty states, the Lock page has an end-date band, trailing switches and elapsed progress, and Settings card headings carry icons. A read-only Check a website sheet names the rule and list version that decide an address; it reads the installed list or the signed bundled core seed, and never turns an unreadable list into not blocked. New strings have Arabic; 541 tests pass. 1.1.10's one-title/one-action pass, 1.1.9's guard card and 1.1.8's pause are retained. No enforcement behavior changed. Unsigned/unnotarized."
     },
     {
       "id": "ios",
       "name": "iPhone & iPad",
-      "version": "1.4.0",
-      "build": 8,
+      "version": "1.5.0",
+      "build": 9,
       "state": "development · no Apple team, Family Controls entitlement or test device",
       "source": "ios/HisnMobile.xcodeproj/project.pbxproj",
-      "notes": "The app, six Safari blockers, HisnActivityMonitor, the scanner and two shield extensions share one version set. 1.4.0 adds HisnShieldConfig and HisnShieldAction: the system shield names the saved rule (always, daily budget or quiet hours) in the app language and offers only Close, never an unlock. 1.3.0's pause, protection hero, daily quiet hours and saved-rule freeze are retained. Seed v5 still supplies the 239,885-domain Safari list."
+      "notes": "The app, six Safari blockers, HisnActivityMonitor, the scanner and two shield extensions share one version set. 1.5.0 is a UI/UX pass: the overview is a calm card stack (status, pause, plan progress, lock and rules), the lock, blocked-site and app-limit cards open their editors directly, Setup is three guided steps with a checks card, the app-limit editor shows its three modes as a visible decision, and Settings is grouped cards. 1.4.0's bilingual Screen Time shield with no unlock, 1.3.0's pause, quiet hours and saved-rule freeze, and seed v5's 239,885-domain Safari list are retained. ScreenZen was observed read-only for design vocabulary; no code, assets or copy was reused."
     },
     {
       "id": "android",

@@ -48,6 +48,11 @@ struct HisnApp: App {
                     .keyboardShortcut("r", modifiers: .command)
                     Button("Take a pause…") { PauseWindowController.shared.show() }
                         .keyboardShortcut("p", modifiers: [.command, .shift])
+                    Button("Check a website…") {
+                        AppNavigation.shared.siteCheckRequested = true
+                        MainWindow.show(.overview, open: openWindow)
+                    }
+                    .keyboardShortcut("k", modifiers: .command)
                     Button("Start a lock…") { MainWindow.show(.lock, open: openWindow) }
                         .keyboardShortcut("l", modifiers: [.command, .shift])
                 }

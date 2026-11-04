@@ -96,6 +96,7 @@ past version; *superseded* documents point to their replacement. Start with the
 
 - [Android research and execution plan](ANDROID_RESEARCH_PLAN.md): October 18 BlockerHero and HaramBlur study, Android platform limits and an early phased plan, now replaced. *Superseded by [ANDROID_1.0_PLAN.md](ANDROID_1.0_PLAN.md).*
 - [REA Android design audit, 2026-11-03](ANDROID_REA_SCREENZEN_2026-11-03.md): ScreenZen/BlockerHero research and the built Android 1.0.0 inventory behind the daily time-limit work. Design research, not a runtime or security assessment.
+- [REA iOS design audit, 2026-11-04](REA_AUDIT_IOS_2026-11-04.md): REA 6.8.0 static inventories of Screen Zen 2.0.0 and the built HisnMobile 1.4.0, comparable-app research, and the calm card stack, guided Setup and Settings cards it informed. Design research, not a security or runtime assessment.
 - [REA iOS design audit, 2026-11-03](REA_AUDIT_IOS_2026-11-03.md): ScreenZen/comparable-app research, the built HisnMobile 1.3.0 inventory, and the pause, quiet-hours and protection-hero work it informed. Design research, not a security or runtime assessment.
 - [REA design audit of Screen Zen and Hisn, 2026-11-03](REA_AUDIT_SCREENZEN_2026-11-03.md): Static inventory, a Screen Zen extension graph and one accessibility/screenshot observation; what Hisn adopted (an on-demand pause) and what it deliberately did not. Design research, not a security assessment.
 - [BlockerHero inspection and resulting changes](REA_BLOCKERHERO_2026-10-19.md): REA static inspection of BlockerHero 1.5.0 and the independently written Hisn Android fixes it prompted. *Historical.*
@@ -113,7 +114,8 @@ Per-version change and verification notes, newest first.
 
 ### Mac
 
-- [Screen Zen feature audit](SCREEN_ZEN_FEATURE_AUDIT_2026-11-03.md): A read-only walkthrough of every Screen Zen 2.0.0 surface, what Hisn took in 1.1.10, what it could take next, what it rejects and why, and where the automated-test gaps are.
+- [Screen Zen feature audit](SCREEN_ZEN_FEATURE_AUDIT_2026-11-03.md): A read-only walkthrough of every Screen Zen 2.0.0 surface, what Hisn took in 1.1.10 and in 1.1.11 (the site checker), what remains, what it rejects and why, and where the automated-test gaps are.
+- [Mac 1.1.11 release notes](MACOS_1.1.11.md): A state-first UI/UX pass — a status hero with one tile per layer, a state-aware primary action, a Setup progress ring and stage counts, card-based site lists, a stronger Lock page, and a read-only Check a website tool with an installed-list or signed-seed answer. Screen Zen 2.0.0 was observed read-only; Opal, one sec and Jomo were reviewed publicly. 541 tests; 645 Arabic strings. Unsigned/unnotarized.
 - [Mac 1.1.10 release notes](MACOS_1.1.10.md): A UI/UX pass — one title per page, the Overview action above the evidence, one Setup card with progress and next step, the lock mode stated once, lists before prose on Blocking Rules, per-domain rows for the site lists and grouped settings cards. REA design research on Screen Zen 2.0.0; 526 tests. Unsigned/unnotarized.
 - [Mac 1.1.9 release notes](MACOS_1.1.9.md): The browser-guard warning becomes a calm dark intervention card with a shield, a large countdown and one Open-browser action, with no bypass; Overview moves layer evidence behind compact chips and a disclosure. Presentation only; 522 tests. Unsigned/unnotarized.
 - [Mac 1.1.8 release notes](MACOS_1.1.8.md): An on-demand pause window — a 30-second guided breath, rotating reminders, four needs and a local day/count tally — reachable from Overview, the menu bar and ⇧⌘P. It changes no rule or layer. Unsigned/unnotarized; no physical-Mac result claimed.
@@ -123,6 +125,7 @@ Per-version change and verification notes, newest first.
 
 ### iPhone and iPad
 
+- [iOS 1.5.0 release notes](IOS_1.5.0.md): A calm card stack on the overview, direct editors for the lock, blocked sites and app limits, three guided Setup steps with a checks card, a visible app-limit mode selector and grouped Settings cards. No rule or enforcement change; 39 Python and 216 simulator tests. Simulator-tested only; no entitlement, signed build or device.
 - [iOS 1.4.0 release notes](IOS_1.4.0.md): Custom `ShieldConfiguration`/`ShieldAction` extensions name the saved rule in English or Arabic and offer only Close, with no unlock; eleven privacy-manifest bundles and two new Family Controls targets. Simulator-tested only; no entitlement, signed build or device.
 - [iOS 1.3.0 release notes](IOS_1.3.0.md): An on-demand pause, a calmer protection hero and daily quiet hours (including a two-leg cross-midnight DeviceActivity schedule and both-clock reconciliation). Simulator-tested only; no entitlement, signed build or device.
 - [iOS 1.2.0 release notes](IOS_1.2.0.md): Protection lock freezes blocked-site and app-limit rules while a commitment runs, with layer recovery still available; English and Arabic lock copy. Simulator-tested only.
@@ -162,6 +165,7 @@ Per-version change and verification notes, newest first.
 ### Browser extension
 
 - [Extension 1.5.0 release notes](EXTENSION_1.5.0.md): Portable rules: export the five hand lists to a versioned JSON file and import one add-only; a lock withholds new allowances and corrections while applying new blocks and words; an app-managed browser refuses the import. No new permission or network path. Development candidate; no listing yet.
+- [Extension UI refresh and REA design input, 2026-11-04](EXTENSION_UI_REFRESH_2026-11-04.md): Status-tinted popup, six distinct layer tiles, a persistent sidebar status, cards and switches across settings, and a pause-first block page with a breathing orb, three-breath progress and a quiet close-tab exit. Records the REA 6.5.0 inspection of ScreenZen and what was deliberately not copied. No enforcement change. Captures in `design/extension-ui-2026-11-04/`.
 - [Extension 1.4.0 release notes](EXTENSION_1.4.0.md): UI/UX pass with one status hero, one-word layer states, less copy in English and Arabic, calmer information notices and a single action hierarchy. Design captures in `design/extension-ui-2026-11-02/`. Development candidate; no listing yet.
 - [Extension 1.3.0 release notes](EXTENSION_1.3.0.md): Language-aware page-text scoring chooses the vocabulary from the page's own text, keeps strong labels across languages, falls back to the full list when unsure, and adds a detected-language row to the popup. *Previous development candidate.*
 - [Extension 1.2.2 release notes](COVERAGE_PASS_2026-10-30.md): Seed v5's 239,885-domain core tier and 480 static DNR rules; the packaged zip is hashed in the record. *Historical.*

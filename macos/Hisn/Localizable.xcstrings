@@ -1,16 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "and more" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "والمزيد"
-          }
-        }
-      }
-    },
     "“%@” is too short to block safely. Words need at least %lld letters — shorter ones match parts of ordinary words and block pages you need." : {
       "localizations" : {
         "ar" : {
@@ -401,6 +391,16 @@
         }
       }
     },
+    "A domain or a full link both work. Subdomains are covered by a parent domain." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يكفي إدخال النطاق أو رابط كامل. والنطاقات الفرعية يغطيها نطاقها الأصلي."
+          }
+        }
+      }
+    },
     "A fixed commitment stays fixed for the added time. This does not weaken any existing restrictions." : {
       "localizations" : {
         "ar" : {
@@ -727,6 +727,26 @@
         }
       }
     },
+    "Add to Always block" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أضف إلى قائمة الحجب الدائم"
+          }
+        }
+      }
+    },
+    "Added to Always block." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أُضيف إلى قائمة الحجب الدائم."
+          }
+        }
+      }
+    },
     "Adding blocks and removing allowances still work." : {
       "localizations" : {
         "ar" : {
@@ -805,6 +825,16 @@
         }
       }
     },
+    "Already on the Always block list." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "موجود بالفعل في قائمة الحجب الدائم."
+          }
+        }
+      }
+    },
     "Already on the list." : {
       "localizations" : {
         "ar" : {
@@ -851,6 +881,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "الرغبة تشتد ثم تهدأ، وغالبًا خلال دقائق. لست مضطرًا إلى الاستجابة لها."
+          }
+        }
+      }
+    },
+    "and more" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "والمزيد"
           }
         }
       }
@@ -1473,6 +1514,36 @@
         }
       }
     },
+    "Check" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افحص"
+          }
+        }
+      }
+    },
+    "Check a website" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افحص موقعًا إلكترونيًا"
+          }
+        }
+      }
+    },
+    "Check a website…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افحص موقعًا إلكترونيًا…"
+          }
+        }
+      }
+    },
     "Check again" : {
       "localizations" : {
         "ar" : {
@@ -1536,6 +1607,16 @@
         }
       }
     },
+    "Checking" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جارٍ الفحص"
+          }
+        }
+      }
+    },
     "Checking laptop protection" : {
       "localizations" : {
         "ar" : {
@@ -1558,6 +1639,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "جارٍ التحقق من الحالة"
+          }
+        }
+      }
+    },
+    "Checking the lists on this Mac…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جارٍ فحص القوائم على هذا الماك…"
           }
         }
       }
@@ -2239,6 +2330,16 @@
         }
       }
     },
+    "Ends %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ينتهي في %@"
+          }
+        }
+      }
+    },
     "Ends %@." : {
       "localizations" : {
         "ar" : {
@@ -2271,6 +2372,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Enter a length between %1$@ and %2$@."
+          }
+        }
+      }
+    },
+    "Enter a website or paste a link" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أدخل موقعًا أو الصق رابطًا"
           }
         }
       }
@@ -2383,6 +2494,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Finding a router or opening its page does not verify blocking. After setup, use the DNS check below and test each device separately."
+          }
+        }
+      }
+    },
+    "Finish setup" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أكمل الإعداد"
           }
         }
       }
@@ -3278,6 +3399,86 @@
         }
       }
     },
+    "It is not on the installed block list (version %lld) or your own lists." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ليس في قائمة الحجب المثبّتة (الإصدار %lld) ولا في قوائمك."
+          }
+        }
+      }
+    },
+    "It is not on the installed block list or your own lists." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ليس في قائمة الحجب المثبّتة ولا في قوائمك."
+          }
+        }
+      }
+    },
+    "It is on the installed block list (version %lld)." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إنه في قائمة الحجب المثبّتة (الإصدار %lld)."
+          }
+        }
+      }
+    },
+    "It is on the installed block list." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إنه في قائمة الحجب المثبّتة."
+          }
+        }
+      }
+    },
+    "It is on your Always allowed list. Neither the published list nor strict mode will block it." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إنه في قائمة «مسموح دائمًا». لذلك لن تحجبه القائمة المنشورة ولا الوضع الصارم."
+          }
+        }
+      }
+    },
+    "It is on your Always block list." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إنه في قائمة «احجب هذه دائمًا»."
+          }
+        }
+      }
+    },
+    "It matches a built-in Hisn rule for search results or viewer pages." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إنه يطابق قاعدة مضمّنة في حصن لنتائج البحث أو صفحات المشاهدة."
+          }
+        }
+      }
+    },
+    "Its address matches a blocked keyword." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عنوانه يطابق كلمة مفتاحية محجوبة."
+          }
+        }
+      }
+    },
     "Keep a recovery route" : {
       "localizations" : {
         "ar" : {
@@ -3511,7 +3712,18 @@
         }
       }
     },
+    "Lock progress" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تقدّم القفل"
+          }
+        }
+      }
+    },
     "Locked" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -3704,6 +3916,16 @@
         }
       }
     },
+    "Needs attention" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تحتاج إلى انتباه"
+          }
+        }
+      }
+    },
     "Needs the Apple Developer Program ($99 a year). It adds blocking no VPN can get around." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -3763,6 +3985,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تراجع"
+          }
+        }
+      }
+    },
+    "Next" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التالي"
           }
         }
       }
@@ -3850,6 +4082,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No early self-release during a fixed commitment. Partner recovery remains available; this does not prevent an administrator from removing protection."
+          }
+        }
+      }
+    },
+    "No extra sites. The published list still applies." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا مواقع إضافية. القائمة المنشورة تبقى مطبّقة."
           }
         }
       }
@@ -5262,6 +5504,16 @@
         }
       }
     },
+    "Review setup" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "راجع الإعداد"
+          }
+        }
+      }
+    },
     "Review text checking" : {
       "localizations" : {
         "ar" : {
@@ -5493,6 +5745,26 @@
         }
       }
     },
+    "See whether an address is on your lists or blocked for another reason." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اعرف إن كان العنوان في قوائمك أو محجوبًا لسبب آخر."
+          }
+        }
+      }
+    },
+    "See whether an address would be blocked, and which list decides it." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اعرف إن كان العنوان سيُحجب، وأي قائمة تقرر ذلك."
+          }
+        }
+      }
+    },
     "Self-control comes first: you can set up these layers yourself. A trusted person is optional reinforcement against changing administrator or router settings, not a requirement for starting a commitment." : {
       "localizations" : {
         "ar" : {
@@ -5630,6 +5902,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "يحتاج إعدادًا"
+          }
+        }
+      }
+    },
+    "Setup progress" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تقدّم الإعداد"
           }
         }
       }
@@ -5856,6 +6138,16 @@
         }
       }
     },
+    "Started %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بدأ في %@"
+          }
+        }
+      }
+    },
     "Stays open while its Hisn extension checks in; closed if the extension is switched off." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -5904,6 +6196,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "الوضع الصارم"
+          }
+        }
+      }
+    },
+    "Strict mode is on, and this site is not on your Always allowed list." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الوضع الصارم مفعّل، وهذا الموقع ليس في قائمة «مسموح دائمًا»."
           }
         }
       }
@@ -6026,6 +6328,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "هذا ليس مفتاح شريك. يجب أن يكون الرمز الذي تعرضه صفحة «شريك حصن» لدى شريكك تحت «مفتاحك»."
+          }
+        }
+      }
+    },
+    "That is not a website address" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذا ليس عنوان موقع إلكتروني"
           }
         }
       }
@@ -6202,6 +6514,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The installed app, browser bridge, and login agent need administrator-protected files in their expected locations."
+          }
+        }
+      }
+    },
+    "The installed block list could not be read, so this answer does not include it. Your own lists were checked." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّرت قراءة قائمة الحجب المثبّتة، لذا لا تشمل الإجابة القائمة المنشورة. وقد فُحصت قوائمك الخاصة."
           }
         }
       }
@@ -6449,6 +6771,16 @@
         }
       }
     },
+    "This checks the address against the lists on this Mac. It does not check page text, images or video, or whether a browser profile has the extension." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يفحص هذا العنوان مقابل القوائم على هذا الماك. ولا يفحص نص الصفحة أو الصور أو الفيديو، ولا يتحقق من وجود الإضافة في ملف تعريف المتصفح."
+          }
+        }
+      }
+    },
     "This development build cannot activate laptop-wide filtering. Install a properly signed Hisn release, then approve its filter in macOS." : {
       "localizations" : {
         "ar" : {
@@ -6560,6 +6892,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "This router family uses its phone app for DNS settings. Open that app and follow the family guide above, then return here for the filtering DNS addresses and checks."
+          }
+        }
+      }
+    },
+    "This site is blocked" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذا الموقع محجوب"
+          }
+        }
+      }
+    },
+    "This site is not blocked" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذا الموقع غير محجوب"
           }
         }
       }
@@ -6706,6 +7058,16 @@
         }
       }
     },
+    "Try something like example.com, or paste the page’s link." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جرّب شيئًا مثل example.com، أو الصق رابط الصفحة."
+          }
+        }
+      }
+    },
     "turn off keyword checking" : {
       "localizations" : {
         "ar" : {
@@ -6742,6 +7104,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "شغّل مرشّح النظام"
+          }
+        }
+      }
+    },
+    "Two lists of your own, on top of the published list." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قائمتان خاصتان بك، إضافةً إلى القائمة المنشورة."
           }
         }
       }
@@ -7135,6 +7507,16 @@
         }
       }
     },
+    "Your lists do not block this site" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قوائمك لا تحجب هذا الموقع"
+          }
+        }
+      }
+    },
     "Your lock is running, but nothing is enforcing it yet. It will block nothing until the steps above are done." : {
       "localizations" : {
         "ar" : {
@@ -7191,6 +7573,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "كلماتك وتطبيقاتك"
+          }
+        }
+      }
+    },
+    "It is on the bundled core list (version %lld)." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إنه في القائمة الأساسية المضمّنة (الإصدار %lld)."
+          }
+        }
+      }
+    },
+    "It is on the bundled core list." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إنه في القائمة الأساسية المضمّنة."
+          }
+        }
+      }
+    },
+    "It is not on the bundled core list (version %lld) or your own lists." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ليس في القائمة الأساسية المضمّنة (الإصدار %lld) ولا في قوائمك."
+          }
+        }
+      }
+    },
+    "It is not on the bundled core list or your own lists." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ليس في القائمة الأساسية المضمّنة ولا في قوائمك."
+          }
+        }
+      }
+    },
+    "This answer uses the bundled core list. The full list has not been installed on this Mac." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تستخدم هذه الإجابة القائمة الأساسية المضمّنة. لم تُثبَّت القائمة الكاملة على هذا الماك."
+          }
+        }
+      }
+    },
+    "Limits of these checks" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حدود هذه الفحوص"
           }
         }
       }

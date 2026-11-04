@@ -14,45 +14,50 @@ struct ProtectionHero: View {
     private var assessment: MobileProtectionPolicy.SetupAssessment { protection.setupAssessment }
 
     var body: some View {
-        Section {
-            VStack(alignment: .leading, spacing: 14) {
+        HisnCard(tint: tint) {
+            VStack(alignment: .leading, spacing: 16) {
                 header
                 layerChips
                 action
-                if !assessment.issues.isEmpty { issues }
+                statusLine
+                if !assessment.issues.isEmpty {
+                    HisnDivider()
+                    issues
+                }
                 Text("hero.scope")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.vertical, 4)
             .accessibilityIdentifier("overview.heroCard")
         }
     }
 
-    private var header: some View {
-        HStack(alignment: .top, spacing: 14) {
-            ZStack {
-                Circle()
-                    .fill(tint.opacity(0.12))
-                statusIcon
-                    .font(.system(size: 28, weight: .semibold))
-                    .foregroundStyle(tint)
+    @ViewBuilder private var header: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 12) {
+                statusBadge
+                headerText
             }
-            .frame(width: 56, height: 56)
-            .accessibilityHidden(true)
+        } else {
+            HStack(alignment: .top, spacing: 14) {
+                statusBadge
+                headerText
+                Spacer(minLength: 0)
+            }
+        }
+    }
 
-            VStack(alignment: .leading, spacing: 3) {
-                Text(titleKey)
-                    .font(.title3.bold())
-                    .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityAddTraits(.isHeader)
-                Text(detailKey)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Spacer(minLength: 0)
+    private var headerText: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(titleKey)
+                .font(.title3.bold())
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityAddTraits(.isHeader)
+            Text(detailKey)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -66,7 +71,7 @@ struct ProtectionHero: View {
     @ViewBuilder private var chips: some View {
         ForEach(HeroLayer.allCases) { layer in
             let on = isOn(layer)
-            HStack(spacing: 4) {
+            HStack(spacing: 5) {
                 // No dotted SF Symbol literal here: the repository's literal-key
                 // scanner would read it as a localization key. The filled state
                 // is carried by colour and the capsule.
@@ -74,12 +79,12 @@ struct ProtectionHero: View {
                     .accessibilityHidden(true)
                 Text(layer.title)
             }
-            .font(.caption.weight(.medium))
+            .font(.caption.weight(.semibold))
             .foregroundStyle(on ? HisnPalette.good : Color.secondary)
-            .padding(.horizontal, 9)
-            .padding(.vertical, 5)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
             .background(
-                Capsule().fill(on ? HisnPalette.good.opacity(0.12) : Color.secondary.opacity(0.10))
+                Capsule().fill(on ? HisnPalette.good.opacity(0.12) : HisnSurface.fill)
             )
             .accessibilityElement(children: .combine)
             .accessibilityLabel(Text(layer.title))
@@ -95,6 +100,7 @@ struct ProtectionHero: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
+            .controlSize(.large)
             .disabled(protection.busy)
         case .needsSetup:
             Button(action: onSetup) {
@@ -102,12 +108,14 @@ struct ProtectionHero: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
+            .controlSize(.large)
         case .unchecked:
             Button(action: onRefresh) {
                 Label("hero.checkAgain", systemImage: "arrow.clockwise")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
+            .controlSize(.large)
             .disabled(protection.busy)
         case .checking:
             ProgressView("working")
@@ -115,14 +123,41 @@ struct ProtectionHero: View {
         }
     }
 
+    @ViewBuilder private var statusLine: some View {
+        if let date = protection.checkedAt {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 3) {
+                    Label("status.checked", systemImage: "clock")
+                    Text(date, style: .time).monospacedDigit()
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            } else {
+                HStack(spacing: 6) {
+                    Image(systemName: "clock")
+                        .accessibilityHidden(true)
+                    Text("status.checked")
+                    Spacer(minLength: 8)
+                    Text(date, style: .time)
+                        .monospacedDigit()
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+        }
+    }
+
     private var issues: some View {
         DisclosureGroup(isExpanded: $showingIssues) {
-            ForEach(assessment.issues, id: \.rawValue) { issue in
-                Label(LocalizedStringKey(issue.rawValue), systemImage: "arrow.forward.circle")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(assessment.issues, id: \.rawValue) { issue in
+                    Label(LocalizedStringKey(issue.rawValue), systemImage: "arrow.forward.circle")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
+            .padding(.top, 6)
         } label: {
             issueLabel
                 .font(.callout.weight(.medium))
@@ -168,12 +203,16 @@ struct ProtectionHero: View {
         }
     }
 
-    @ViewBuilder private var statusIcon: some View {
+    @ViewBuilder private var statusBadge: some View {
         switch assessment.state {
-        case .configured: Image(systemName: "checkmark.shield.fill")
-        case .needsSetup: Image(systemName: "exclamationmark.shield.fill")
-        case .unchecked: Image(systemName: "questionmark.circle")
-        case .checking: Image(systemName: "arrow.clockwise")
+        case .configured:
+            HisnIconBadge(systemName: "checkmark.shield.fill", tint: tint, size: 58)
+        case .needsSetup:
+            HisnIconBadge(systemName: "exclamationmark.shield.fill", tint: tint, size: 58)
+        case .unchecked:
+            HisnIconBadge(systemName: "questionmark.circle", tint: tint, size: 58)
+        case .checking:
+            HisnIconBadge(systemName: "arrow.clockwise", tint: tint, size: 58)
         }
     }
 

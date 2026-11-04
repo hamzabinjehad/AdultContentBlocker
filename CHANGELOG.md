@@ -5,6 +5,103 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
+## iPhone & iPad 1.5.0 — 2026-11-04
+
+### Changed
+
+- **The overview is a calm card stack.** The status hero, the pause card, one
+  protection-plan card with `0 of 3` progress and four state rows, a protection
+  lock card and a rules card replace the old list plus full readiness and
+  commitment sections. The duplicate `0/3` and the repeated plan evidence are
+  gone; the detailed checks stay one disclosure down.
+- **Saved rules are one tap away.** **Set a lock / Manage lock**, **Blocked
+  sites** and **App limits** open their editors in sheets instead of sending the
+  person to find the right Setup step. The full commitment form no longer sits
+  on the status page.
+- **Setup is three guided steps.** One status card carries the state, issues,
+  last check time and `0 of 3 steps done`; step cards lead to blocking layers,
+  app limits plus commitment, and the passcode/removal page. The four checks
+  follow the steps instead of preceding them.
+- **App limits shows the decision.** Always block, daily combined budget and
+  daily quiet hours are visible rows with icons and a checkmark instead of a
+  menu picker; the selected items and count stay above the rule.
+- **Settings is grouped cards.** Language, the Safari extension, gray screen,
+  privacy and about each get one card; the full privacy note and coverage copy
+  stay behind disclosures.
+- **Accessibility.** Status headers, step cards, pause, lock and rule rows stack
+  at accessibility text sizes; status pills and the progress count no longer use
+  fixed widths; cards follow system light/dark and Increase Contrast; the
+  4.5:1 status colours are unchanged.
+- No rule, lock, commitment, Screen Time, DNS, Safari, pause or shield behaviour
+  changed. The 1.4.0 shield, 1.3.0 pause and quiet hours, and the 1.2.0
+  saved-rule freeze remain.
+
+### Verification
+
+- `./test.sh ios` — **39 Python and 216 simulator tests, 0 failures** on the
+  iPhone 17 simulator (iOS 26.5). Three new tests cover the today-only pause
+  count and the new phone/iPad light/dark renders including the three Setup
+  drill-ins.
+- Design research: REA 6.8.0 `inspect-artifact` on ScreenZen 2.0.0 (build 63)
+  and the built 1.4.0 app; observation only. Captures in
+  `design/ios-ui-1.5.0/`; record in
+  [the 1.5.0 notes](docs/IOS_1.5.0.md) and
+  [the REA audit](docs/REA_AUDIT_IOS_2026-11-04.md).
+- Version 1.5.0, build 9. Simulator-tested only; no Apple team, Family Controls
+  entitlement, signed build or physical-device result is claimed.
+
+## Mac 1.1.11 — 2026-11-04
+
+### Added
+
+- **Check a website.** A read-only sheet, reachable from the window toolbar,
+  Overview, Blocking Rules, the menu bar and ⌘K, answers whether an address
+  would be blocked and names the rule that decided it. It reads the installed list,
+  falls back to the signed core seed bundled with the app, and reports an
+  unreadable list as unavailable rather than as “not blocked”. **Add to Always
+  block** uses the existing guarded save path and still works during a lock.
+- `BlocklistStore.isOnPublishedList(host:)` and `matchesKeyword(host:)`, two
+  read-only queries that let the checker explain one layer at a time.
+- `SiteCheckerTests` and published-list/keyword query tests.
+
+### Changed
+
+- **Overview is a status hero, not a stack of summaries.** One card carries the
+  headline, summary and a tile per layer (name, state word, colour). The
+  duplicate chip strip and expanded layer repetition are gone.
+- **One state-aware primary action.** The button reads **Finish setup** when
+  nothing enforces, **Review setup** when some layers run but a check is
+  missing, **Start a lock…** when the setup checks pass, and **Manage lock**
+  during a lock. The lock remains the secondary action when it is valid. The
+  disabled “Checking…” state no longer blocks the first seconds of launch.
+- **Warnings sit under the status they qualify**, before the next action.
+- **Pause and the site checker share one tools card** instead of the pause
+  taking a full card.
+- **Setup leads with a progress ring** and a next-step line; the readiness card
+  is compact, the repeated build-block paragraph is gone, and each stage shows
+  `done/total` plus a **Next** badge.
+- **Blocking Rules is one card per list**, with an empty state, a parser-derived
+  count, app icons for blocked apps, and a Check a website row.
+- **The Lock page reads the commitment as a band**: the end date is emphasised,
+  the mode toggles are trailing switches, and a running lock shows elapsed
+  progress between its start and end.
+- **Settings card headings carry icons**, matching the rows elsewhere.
+- The sidebar's lock item shows the remaining time instead of a bare lock icon.
+
+### Verification
+
+- `./test.sh macos` — **541 tests, 0 failures**; **645 strings, all with
+  Arabic**.
+- Five pages and the checker were captured from a real development build on the
+  owner's Mac, dark, 760 pt, English; the 1.1.10 captures are the before state.
+  The bundled-seed path was exercised because the ad-hoc build has no app-group
+  container.
+- No rule, lock, filter, browser-bridge or protection-layer behaviour changed.
+  New strings have Arabic; the old `": "` placeholder key is gone.
+- Design research: Screen Zen 2.0.0 (build 63) observed read-only; Opal, one
+  sec, Jomo and Clearspace product pages and reviews read publicly. No
+  competitor code, assets, visual identity or copy was reused.
+
 ## Mac 1.1.10 — 2026-11-03
 
 ### Changed

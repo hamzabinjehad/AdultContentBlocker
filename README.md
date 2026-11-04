@@ -21,14 +21,19 @@ you the lock; Hisn adds the coverage those built-in filters miss. Read
 - **Extension 1.5.0** — **Move your rules**: export the hand lists to a
   versioned file and import one add-only in another browser. A lock keeps new
   allowances and corrections waiting; a file can never remove a block.
-- **iPhone & iPad 1.4.0** — a custom Screen Time shield names the saved rule in
-  English or Arabic and offers only Close, with no unlock action; the on-demand
-  pause, protection hero, daily quiet hours and saved-rule freeze remain.
-- **Mac 1.1.10** — a UI/UX pass: one title per page (the window title bar), the
-  Overview action above the layer evidence, one Setup card with progress and the
-  next step, one statement of the chosen lock mode, and Blocking Rules leading
-  with the lists. Design research used REA on Screen Zen 2.0.0. The 1.1.9 guard
-  card, layer chips, 1.1.8 pause and protection-authority checks remain.
+- **iPhone & iPad 1.5.0** — a UI/UX pass: the overview is a calm card stack
+  (status, pause, plan progress, lock and rules), the lock, blocked-site and
+  app-limit cards open their editors directly, Setup is three guided steps with
+  a checks card, and Settings is grouped cards. Design research used REA 6.8.0
+  on ScreenZen 2.0.0. The 1.4.0 bilingual Screen Time shield with no unlock, the
+  1.3.0 pause, quiet hours and saved-rule freeze remain.
+- **Mac 1.1.11** — a UI/UX pass: a status hero with one tile per layer and a
+  state-aware primary action, a Setup progress ring with per-stage counts,
+  card-based site lists, a stronger Lock page, and a read-only **Check a
+  website** tool that names the list and rule that decide an address. Design
+  research observed Screen Zen 2.0.0 read-only and reviewed Opal, one sec and
+  Jomo publicly; no code, assets or copy was reused. The 1.1.10 one-title/action
+  pass, 1.1.9 guard card and 1.1.8 pause remain.
 - **Android 1.1.0** — a first-run welcome, a voluntary pause on Protection and
   today's usage in the daily-limit editor sit on the 1.0.0 protection lock,
   removal guard, managed lockdown and layer watchdog. The signed direct APK is
@@ -42,21 +47,33 @@ the Play AAB is not uploaded. The exact state is in
 ### Interface
 
 <p align="center">
-  <img src="design/extension-ui-2026-11-02/popup-light-en.png" width="300" alt="Hisn extension popup in light mode">
-  <img src="design/extension-ui-2026-11-02/options-overview-light-en.png" width="560" alt="Hisn extension dashboard in light mode">
+  <img src="design/extension-ui-2026-11-04/after-popup-light-en.png" width="300" alt="Hisn extension popup in light mode">
+  <img src="design/extension-ui-2026-11-04/after-options-overview.png" width="560" alt="Hisn extension dashboard in light mode">
 </p>
 
 The extension popup and dashboard lead with one protection status and one-word
-layer states. More captures, including Arabic and dark mode, are in the
-[UI pass record](design/extension-ui-2026-11-02/README.md).
+layer states. The current captures, including Arabic, the rules editor, visual
+checks, content options and the block page, are in the
+[UI refresh record](design/extension-ui-2026-11-04/README.md). The design
+research behind the pass, including the REA comparison with ScreenZen, is in
+[the 2026-11-04 note](docs/EXTENSION_UI_REFRESH_2026-11-04.md).
+
+<p align="center">
+  <img src="design/macos-ui-1.1.11/after-overview.png" width="560" alt="Hisn Mac overview with per-layer status tiles">
+</p>
+
+The Mac window leads with one status hero, a tile per protection layer and one
+state-aware action. Setup, Blocking Rules, Lock, Settings and the read-only
+site checker are captured in the
+[Mac 1.1.11 design record](design/macos-ui-1.1.11/README.md).
 
 ## Platforms
 
 | Platform | What it does | State | Start here |
 | --- | --- | --- | --- |
 | Browser extension (Chromium) | Blocks listed domains, checks page text in the page's language, optional local image/video checks, portable hand lists | 1.5.0 | [Using the extension](docs/EXTENSION_USAGE.md) |
-| Mac | Content-filter system extension, browser guard, locks, authority checks, accountability partner, root guardian daemon and an on-demand breathing pause | 1.1.10, needs a signed build | [Mac setup](docs/SETUP.md) |
-| iPhone & iPad | Six Safari blockers, Safari text extension, Screen Time app limits with a custom bilingual shield, optional family DNS, protection lock for saved rules, an on-demand pause and daily quiet hours | 1.4.0, development | [iOS README](ios/README.md) |
+| Mac | Content-filter system extension, browser guard, locks, authority checks, accountability partner, root guardian daemon, an on-demand breathing pause and a read-only site checker | 1.1.11, needs a signed build | [Mac setup](docs/SETUP.md) |
+| iPhone & iPad | Six Safari blockers, Safari text extension, Screen Time app limits with a custom bilingual shield, optional family DNS, protection lock for saved rules, an on-demand pause and daily quiet hours | 1.5.0, development | [iOS README](ios/README.md) |
 | Android | DNS filtering, selected-app and word restrictions, per-app daily time limits, first-run welcome, voluntary pause, optional image checks, browser-coverage screen, schedules, protection lock that freezes saved rules, opt-in device-owner uninstall guard and managed lockdown, direct-build removal guard, layer watchdog and bundled-list freshness warning | 1.1.0 direct published; Play AAB not uploaded | [Android README](android/README.md) · [1.1 record](docs/ANDROID_1.1.0.md) |
 | Network / router | Verified signed DNS rules for administrator import | Tools only | [Network tools](network/README.md) |
 

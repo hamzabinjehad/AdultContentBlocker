@@ -8,7 +8,7 @@
 "setup.status.mixedcontent" = "Mixed-content apps such as X can still contain adult content. In Setup, you can block only the native app and use its website with Hisn Text enabled and permitted in Safari. Optional local visual checks are experimental; neither text nor visual checks inspect every app, image or video.";
 "setup.next.check" = "Check the live state first. Downloading Hisn or starting a commitment does not activate these layers.";
 "setup.next.list" = "The bundled Safari rules are missing, empty or could not be verified. Install a verified Hisn build; do not rely on Safari switches alone.";
-"setup.next.safari" = "In Safari Settings, enable Hisn 1–4. Reload the rules in Setup if a reload failed, then check again.";
+"setup.next.safari" = "In Safari Settings, enable Hisn 1–6. Reload the rules in Setup if a reload failed, then check again.";
 "setup.next.screentime" = "In Setup, enable personal Screen Time protection and approve Apple's request. Revoked permission cannot be restored silently.";
 "setup.next.dns" = "In Setup, prepare Family DNS, enable Hisn Family DNS in device Settings, then return and check. Unavailable checks need an entitled build on a real device.";
 "setup.next.dnssaved" = "Family DNS is saved but off. Enable Hisn Family DNS in device Settings, then check again; saving alone does not apply it.";
@@ -60,7 +60,7 @@
 "safari.title" = "Safari protection";
 "safari.enabled" = "All six Safari parts are enabled. This is an extension-state check, not a browsing test.";
 "safari.partial" = "Full Safari coverage is not verified. Enable all six Hisn parts in Safari Settings, then check again.";
-"safari.steps" = "In Settings → Apps → Safari → Extensions (or Content Blockers), enable Hisn 1, 2, 3 and 4. Reload the rules here, then check status. Menu labels may differ by iOS version.";
+"safari.steps" = "In Settings → Apps → Safari → Extensions (or Content Blockers), enable Hisn 1–6. Reload the rules here, then check status. Menu labels may differ by iOS version.";
 "safari.reload" = "Reload Safari rules";
 "safari.scope" = "Hisn's domain list blocks matching Safari requests. It does not read page text or filter other apps.";
 "safari.failed" = "At least one Safari part could not reload. Check that all six are enabled and retry. No successful empty list was substituted.";
@@ -176,14 +176,14 @@
 "browserfirst.title" = "Safari extension setup";
 "browserfirst.body" = "Hisn Text is a separate Safari extension that checks changing webpage text on this device. Detected X/Twitter posts are hidden individually without adding the whole service to your blocked sites. Other websites use page-level checking.";
 "browserfirst.unverified" = "Text-scanner access is not verified here";
-"browserfirst.steps" = "In Safari's extension settings, enable Hisn Text and allow website access for each site you want checked. This is separate from Hisn 1–4 domain blockers. Reload existing tabs after enabling it; check profiles and private browsing separately. Merely installing Hisn does not enable the scanner.";
+"browserfirst.steps" = "In Safari's extension settings, enable Hisn Text and allow website access for each site you want checked. This is separate from the Hisn 1–6 domain blockers. Reload existing tabs after enabling it; check profiles and private browsing separately. Merely installing Hisn does not enable the scanner.";
 "browserfirst.appOnly" = "If you choose to move a mixed-content service to Safari, select only its native app below and choose Always block. Do not select its website or an overlapping category if you want to keep the website available. Not every app has an equivalent website.";
 "browserfirst.limits" = "The scanner cannot inspect other apps. Optional local visual checks sample accessible images/video frames; face blurring is separate, experimental, and can miss people. Unreadable media is unknown, not safe, and content may appear before a verdict. Physical-device visual support is not yet verified. Website permission, extension removal and OS authorization remain separate limits. Intentional site blocks and other protection rules still apply.";
 "browserfirst.quickTitle" = "Your browser extension";
 "browserfirst.quickBody" = "Website text and optional visual checks are managed separately in Hisn Text for Safari.";
 "browserfirst.openSetup" = "Review Safari extension setup";
 "browserfirst.enable.title" = "Enable Hisn Text";
-"browserfirst.enable.body" = "Open Safari’s extension settings and turn on Hisn Text. The Hisn 1–4 domain blockers are separate layers.";
+"browserfirst.enable.body" = "Open Safari’s extension settings and turn on Hisn Text. The Hisn 1–6 domain blockers are separate layers.";
 "browserfirst.access.title" = "Allow website access";
 "browserfirst.access.body" = "Allow Hisn Text on the sites you want checked, then reload open tabs. Check Safari profiles and private browsing separately; installing the app alone does not grant access.";
 "browserfirst.visual.title" = "Visual checks";
@@ -433,3 +433,42 @@
 
 /* App-limit section: advanced browser/coverage copy stays collapsed */
 "apps.details" = "Browser and coverage limits";
+
+/* 1.5.0 overview cards */
+"overview.lock.none" = "No active protection lock";
+"overview.lock.activeDetail" = "Saved blocked sites and app limits are frozen.";
+"overview.lock.noneDetail" = "Freeze your saved blocked sites and app limits for a set time.";
+"overview.lock.until" = "Until";
+"overview.lock.manage" = "Manage lock";
+"overview.lock.set" = "Set a lock";
+"overview.rules.title" = "Your rules";
+"overview.rules.sites" = "Blocked sites";
+"overview.rules.siteCount %lld" = "%lld sites";
+"overview.rules.apps" = "App limits";
+"overview.rules.notSet" = "Not set";
+"plan.openSetup" = "Review protection setup";
+
+/* 1.5.0 guided setup */
+"setup.steps.title" = "Your setup steps";
+"setup.steps.subtitle" = "Work from the top. Each step adds protection Hisn can check.";
+"setup.step.layers" = "Turn on a blocking layer";
+"setup.step.layers.detail" = "Safari, Family DNS or the Screen Time filter";
+"setup.step.commitment" = "Start your commitment";
+"setup.step.commitment.detail" = "Freeze saved blocked sites and app limits";
+"setup.step.vault" = "Seal a Screen Time passcode";
+"setup.step.vault.detail" = "Keep apps from being deleted until a date";
+"setup.checks.title" = "Protection checks";
+"setup.checks.what" = "What these checks can and cannot see";
+"setup.progress %lld %lld" = "%1$lld of %2$lld steps done";
+"setup.detail.layers.title" = "Blocking layers";
+"setup.detail.commitment.title" = "App limits and lock";
+"apps.sheet.title" = "App limits";
+"commitment.sheet.title" = "Protection lock";
+"setup.detail.vault.title" = "Passcode and removal protection";
+
+/* 1.5.0 settings cards */
+"settings.safari.title" = "Safari extension";
+"settings.gray.more" = "Shortcut and automation";
+"settings.privacy.summary" = "Hisn does not record the sites you visit. Matching stays on this device; there is no account or cloud sync.";
+"settings.privacy.details" = "Read the full privacy note";
+"settings.about.tagline" = "Private, on-device protection for iPhone and iPad.";

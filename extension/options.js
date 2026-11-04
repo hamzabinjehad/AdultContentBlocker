@@ -82,6 +82,10 @@ function renderOverview() {
   $("statusCard").dataset.level = s.protection.level;
   $("protectionTitle").textContent = s.protection.headline;
   $("protectionDetail").textContent = s.protection.detail;
+  // The sidebar keeps the one-sentence status in view on every page.
+  $("sidebarStatus").dataset.level = s.protection.level;
+  $("sidebarDot").className = `dot ${s.protection.level}`;
+  $("sidebarHeadline").textContent = s.protection.headline;
   $("lockTitle").textContent = s.lock.headline;
   $("lockDetail").textContent = s.lock.detail;
   $("lockNotice").textContent = shown && restrictionsActive(shown) ? t("opt.lockHint.active")

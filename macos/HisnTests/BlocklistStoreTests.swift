@@ -1005,3 +1005,28 @@ final class LockStoreTests: XCTestCase {
         XCTAssertEqual(LockStore.read(), .unlocked)
     }
 }
+
+/// The site checker asks one layer at a time. These queries must not collapse
+/// the published list, the keyword layer and the hand lists into one answer.
+final class BlocklistQueryTests: XCTestCase {
+
+    func testPublishedListQueryWalksSubdomainsAndSkipsKeywordMatches() throws {
+        let key = Curve25519.Signing.PrivateKey()
+        let store = BlocklistStore(publicKeyHex: hex(key.publicKey.rawRepresentation))
+        let domains = Data("example.com\nother.net\n".utf8)
+        let (manifest, signature) = try signedManifest(key: key, version: 1,
+                                                       domainsData: domains)
+        try store.load(manifestData: manifest, signatureHex: signature,
+                       domainsData: domains)
+
+        XCTAssertTrue(store.isOnPublishedList(host: "cdn.example.com"))
+        XCTAssertTrue(store.isOnPublishedList(host: " EXAMPLE.com. \n"))
+        XCTAssertFalse(store.isOnPublishedList(host: "keyword-example.com"))
+
+        store.setHostTerms(tokens: ["keywordexample"], substrings: [],
+                           neverKeyword: [])
+        XCTAssertTrue(store.matchesKeyword(host: "keywordexample.com"))
+        XCTAssertFalse(store.matchesKeyword(host: "example.com"),
+                       "the published-list query must not report a keyword hit")
+    }
+}

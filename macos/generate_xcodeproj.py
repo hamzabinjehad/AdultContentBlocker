@@ -78,6 +78,8 @@ APP_SOURCES = SHARED + [
     "Hisn/NetworkDNSProbeView.swift",
     "Hisn/HisnApp.swift",
     "Hisn/ListUpdater.swift",
+    # Read-only "would this be blocked?" explanation for the address checker.
+    "Hisn/SiteChecker.swift",
     "Hisn/LockManager.swift",
     "Hisn/NativeMessagingInstaller.swift",
     "Hisn/ProtectionStatus.swift",
@@ -109,7 +111,12 @@ APP_SOURCES = SHARED + [
 # compiles it into en.lproj / ar.lproj at build time, plural forms included.
 # `macos/check_localization.py` fails the tests when a string has no Arabic.
 APP_RESOURCES = ["Hisn/Localizable.xcstrings", "Hisn/Assets.xcassets", "Hisn/AppIcon.icon",
-                 "Hisn/Notices.txt"]
+                 "Hisn/Notices.txt",
+                 # The signed core seed lets the address checker answer on a
+                 # fresh install, before the first list download. The same
+                 # verification path is used, so a bundled list buys no trust.
+                 "../seed/manifest.json", "../seed/manifest.json.sig",
+                 "../seed/domains_core.txt", "../seed/terms.json"]
 FILTER_SOURCES = SHARED + ["HisnFilter/FilterDataProvider.swift",
                            "HisnFilter/FilterXPCService.swift",
                            "HisnFilter/main.swift"]
@@ -136,6 +143,7 @@ TEST_SOURCES = ["HisnTests/BlocklistStoreTests.swift",
                 "HisnTests/OnboardingTests.swift",
                 "HisnTests/NetworkDNSProbeTests.swift",
                 "HisnTests/PauseTests.swift",
+                "HisnTests/SiteCheckerTests.swift",
                 "../shared/tests/MirroredRuleStoreTests.swift"]
 
 # The signed seed list, bundled into the extension so a machine that has never
@@ -384,8 +392,8 @@ def main() -> int:
     app_settings = {
         "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
         "CODE_SIGN_ENTITLEMENTS": "Hisn/Hisn.entitlements",
-        "CURRENT_PROJECT_VERSION": "21",
-        "MARKETING_VERSION": "1.1.10",
+        "CURRENT_PROJECT_VERSION": "22",
+        "MARKETING_VERSION": "1.1.11",
         "ENABLE_HARDENED_RUNTIME": "YES",
         "INFOPLIST_FILE": "Hisn/Info.plist",
         "PRODUCT_BUNDLE_IDENTIFIER": APP_BUNDLE_ID,
@@ -396,8 +404,8 @@ def main() -> int:
     }
     filter_settings = {
         "CODE_SIGN_ENTITLEMENTS": "HisnFilter/HisnFilter.entitlements",
-        "CURRENT_PROJECT_VERSION": "21",
-        "MARKETING_VERSION": "1.1.10",
+        "CURRENT_PROJECT_VERSION": "22",
+        "MARKETING_VERSION": "1.1.11",
         "ENABLE_HARDENED_RUNTIME": "YES",
         "INFOPLIST_FILE": "HisnFilter/Info.plist",
         "PRODUCT_BUNDLE_IDENTIFIER": FILTER_BUNDLE_ID,
@@ -407,8 +415,8 @@ def main() -> int:
     }
     bridge_settings = {
         "CODE_SIGN_ENTITLEMENTS": "HisnBridge/HisnBridge.entitlements",
-        "CURRENT_PROJECT_VERSION": "21",
-        "MARKETING_VERSION": "1.1.10",
+        "CURRENT_PROJECT_VERSION": "22",
+        "MARKETING_VERSION": "1.1.11",
         "ENABLE_HARDENED_RUNTIME": "YES",
         "GENERATE_INFOPLIST_FILE": "YES",
         "PRODUCT_NAME": '"$(TARGET_NAME)"',

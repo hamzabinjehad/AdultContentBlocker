@@ -84,7 +84,10 @@ rather than photographed.
 
 ## Recommended order
 
-1. Lock page: bottom action bar and a live consequence line.
-2. "Would this be blocked?" check.
+1. Lock page: bottom action bar and a live consequence line. **Done in 1.1.10.**
+2. "Would this be blocked?" check. **Done in 1.1.11** as the read-only
+   `SiteCheckSheet`, read from the installed list or the signed bundled core
+   seed, with the deciding rule and list version named.
 3. UI-test target for the five pages (two widths, two appearances, two languages).
-4. Settings cool-down, if the product decision is yes.
+   **Still open.**
+4. Settings cool-down, if the product decision is yes. **Still open.**

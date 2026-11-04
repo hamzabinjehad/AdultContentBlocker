@@ -69,15 +69,15 @@ public final class RestrictionActivity extends Activity {
         scroll.addView(column, new ScrollView.LayoutParams(
                 ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT));
 
-        ImageView mark = Ui.iconInTile(this, R.drawable.ic_shield, R.color.accent, 60, 34);
+        ImageView mark = Ui.iconInTile(this, R.drawable.ic_shield, R.color.accent, 72, 40);
         LinearLayout.LayoutParams markParams = (LinearLayout.LayoutParams) mark.getLayoutParams();
         markParams.gravity = Gravity.CENTER_HORIZONTAL;
         column.addView(mark);
         TextView title = Ui.text(this, getString(voluntary ? R.string.pause_voluntary_title
-                : R.string.restriction_title), 25, R.color.text_primary);
+                : R.string.restriction_title), 28, R.color.text_primary);
         title.setTypeface(Ui.medium());
         title.setGravity(Gravity.CENTER);
-        title.setPadding(0, Ui.dp(this, 18), 0, 0);
+        title.setPadding(0, Ui.dp(this, 20), 0, 0);
         Ui.heading(title);
         column.addView(title);
 
@@ -144,13 +144,13 @@ public final class RestrictionActivity extends Activity {
 
     private void addPause(LinearLayout layout, boolean count) {
         LinearLayout card = Ui.card(this);
-        card.setPadding(Ui.dp(this, 20), Ui.dp(this, 20), Ui.dp(this, 20), Ui.dp(this, 20));
+        card.setPadding(Ui.dp(this, 22), Ui.dp(this, 22), Ui.dp(this, 22), Ui.dp(this, 22));
         LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         cardParams.topMargin = Ui.dp(this, 22);
         layout.addView(card, cardParams);
 
-        TextView heading = Ui.text(this, getString(R.string.pause_title), 20, R.color.text_primary);
+        TextView heading = Ui.text(this, getString(R.string.pause_title), 22, R.color.text_primary);
         heading.setTypeface(Ui.medium());
         heading.setGravity(Gravity.CENTER);
         Ui.heading(heading);
@@ -158,7 +158,7 @@ public final class RestrictionActivity extends Activity {
 
         FrameLayout ringBox = new FrameLayout(this);
         LinearLayout.LayoutParams ringBoxParams = new LinearLayout.LayoutParams(
-                Ui.dp(this, 168), Ui.dp(this, 168));
+                Ui.dp(this, 188), Ui.dp(this, 188));
         ringBoxParams.gravity = Gravity.CENTER_HORIZONTAL;
         ringBoxParams.topMargin = Ui.dp(this, 14);
         card.addView(ringBox, ringBoxParams);
@@ -173,7 +173,7 @@ public final class RestrictionActivity extends Activity {
         circle.setScaleX(rest);
         circle.setScaleY(rest);
         FrameLayout.LayoutParams circleParams = new FrameLayout.LayoutParams(
-                Ui.dp(this, 132), Ui.dp(this, 132), Gravity.CENTER);
+                Ui.dp(this, 148), Ui.dp(this, 148), Gravity.CENTER);
         ringBox.addView(circle, circleParams);
 
         breathLabel = Ui.text(this, getString(R.string.pause_breathe_in), 18, R.color.text_primary);

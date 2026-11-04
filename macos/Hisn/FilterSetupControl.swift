@@ -3,10 +3,14 @@ import SwiftUI
 
 struct FilterSetupControl: View {
     @ObservedObject var filter: FilterController
+    /// The step around this control already prints the build block in its
+    /// detail. Repeating it here made the same orange paragraph appear twice
+    /// in one card.
+    var showsBuildBlock = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            if let block = FilterLink.shared.buildBlock {
+            if showsBuildBlock, let block = FilterLink.shared.buildBlock {
                 Text(block.explanation)
                     .font(.callout).foregroundStyle(.orange)
                     .fixedSize(horizontal: false, vertical: true)
@@ -95,12 +99,6 @@ struct LaptopSetupStatusView: View {
                 Text(LocalizedStringKey(readiness.detail(next)))
                     .font(.callout)
                     .fixedSize(horizontal: false, vertical: true)
-                if next == .signedBuild, readiness.filterBlock == .unsignedBuild {
-                    CopyableCommand(command: SetupChecklist.signedBuildCommand)
-                    Text("Replace YOUR_TEAM_ID with the 10-character team ID from your Apple Developer account.")
-                        .font(.caption).foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
                 Button("Review next step") { review(next) }
                     .accessibilityIdentifier("setup.reviewNextStep")
             }
@@ -114,9 +112,13 @@ struct LaptopSetupStatusView: View {
                     }
                 }
             }
-            Text("Mixed-content sites can still contain adult material. Strict mode restricts allowed destinations, but cannot certify everything on an allowed site. Custom profiles, tunnels, administrator changes, and recovery access need separate checks.")
-                .font(.caption).foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            DisclosureGroup("Limits of these checks") {
+                Text("Mixed-content sites can still contain adult material. Strict mode restricts allowed destinations, but cannot certify everything on an allowed site. Custom profiles, tunnels, administrator changes, and recovery access need separate checks.")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 4)
+            }
+            .font(.caption)
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("setup.laptopReadiness")
