@@ -5,6 +5,26 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
+## Browser extension 1.5.1 — 2026-11-04
+
+### Removed
+
+- **The private-window mode is gone from the browser.** The popup no longer
+  lists a "Private windows" layer or shows the "Not active in private windows
+  yet" notice with an "Allow in Incognito" walkthrough, and the options page no
+  longer shows the private-windows row or its hint. The `incog.*` and
+  `opt.layer.private` strings are deleted in English and Arabic.
+- Private browsing is now the Mac app's job: its hardening-profile step
+  disables private windows in every configured browser, and Setup reports them
+  as open until the profile is installed. The extension no longer coaches a
+  person into enabling Incognito so it can be covered there.
+
+### Verification
+
+- `./test.sh extension` — all suites pass, including the popup browser test
+  which now asserts the popup has no incognito mode.
+- Packaged: `dist/hisn-extension-1.5.1.zip`, 92 files.
+
 ## Mac 1.1.12 — 2026-11-04
 
 ### Changed

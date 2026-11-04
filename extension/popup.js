@@ -21,7 +21,6 @@ await initLanguage();
 renderIcons();
 let lastState;
 let lastRender;
-let privateCoverage;
 let visualEngine;
 let pageLanguageReply; // undefined = not asked, null = no answer, object = answered
 setInterval(() => { if (lastState) render(lastState); }, 1000);
@@ -38,7 +37,7 @@ function render(state) {
   const visual = describeVisual(visualEngine, state);
   const enforcement = describeEnforcement(state);
   if (enforcement.status === "failed") document.getElementById("protectionDetails").open = true;
-  const signature = JSON.stringify([s, connection, privateCoverage, visual, state?.inspectText, state?.personBlur]);
+  const signature = JSON.stringify([s, connection, visual, state?.inspectText, state?.personBlur]);
   if (signature === lastRender) return;
   lastRender = signature;
 
@@ -77,12 +76,6 @@ function render(state) {
   paintLayer("textIndicator", "textStatus", enforcement.layers.text.level, textEnabled);
   paintLayer("visualIndicator", "visualStatus", visual.level, visualEnabled,
     visualEnabled && visual.available === false);
-  paintLayer("privateIndicator", "privateStatus",
-    privateCoverage === true ? "active" : privateCoverage === false ? "off" : "unknown",
-    privateCoverage !== false);
-  const appLevel = state && connection.fresh ? "active" : state?.appPresent ? "partial" : "off";
-  document.getElementById("appIndicator").className = `layer-indicator ${appLevel}`;
-  const badge = document.getElementById("connectionBadge");
   badge.className = `layer-state ${appLevel}`;
   badge.textContent = !state ? t("badge.unavailable")
     : !connection.managed ? t("popup.optional")
@@ -114,71 +107,6 @@ function render(state) {
     dd.textContent = v;
     return [dt, dd];
   }));
-}
-
-/**
- * Ask the user to enable the extension in private windows.
- *
- * The manifest is `incognito: spanning`, which means the extension CAN run in a
- * private window — but Chrome keeps it off there until the user turns on "Allow
- * in Incognito/Private". That opt-in is deliberate (it is the browser's own
- * consent gate), so the honest thing is not to pretend it happened: this
- * detects when the extension has NOT been allowed in private windows and says
- * so, rather than letting page-text scanning silently not run there.
- *
- * If the profile has removed private browsing entirely (the other answer to the
- * incognito question), there is no private window to allow into and this is
- * simply never relevant — `isAllowedIncognitoAccess` reports the real setting.
- */
-function checkIncognitoAccess() {
-  if (!chrome.extension?.isAllowedIncognitoAccess) return;
-  chrome.extension.isAllowedIncognitoAccess((allowed) => {
-    privateCoverage = allowed;
-    const el = document.getElementById("incognito");
-    if (!el) return;
-    el.hidden = allowed;
-    if (lastState) render(lastState);
-    if (allowed) return;
-
-    // Guide, not just a warning. An extension cannot grant itself incognito
-    // access or open a private window (both are the browser's own consent
-    // gates, on purpose), so the most it can do is walk the user to the exact
-    // toggle. Numbered steps plus a button that opens this extension's details
-    // page, where "Allow in Incognito" lives.
-    const steps = document.createElement("ol");
-    for (const key of ["incog.step1", "incog.step2"]) {
-      const li = document.createElement("li");
-      li.textContent = t(key);
-      steps.appendChild(li);
-    }
-    const guide = document.getElementById("incognitoGuide");
-    guide.replaceChildren(steps);
-
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.textContent = t("incog.button");
-    btn.addEventListener("click", openDetailsPage);
-    guide.appendChild(btn);
-  });
-}
-
-/**
- * Open this extension's own details page — where the "Allow in Incognito"
- * toggle is. `chrome://extensions/?id=<id>` is the Chromium target and works
- * on the forks too (Helium included). Wrapped because a browser that refuses
- * to let an extension open its internal pages throws here, and the numbered
- * steps above already tell the user how to get there by hand.
- */
-function openDetailsPage() {
-  const url = `chrome://extensions/?id=${chrome.runtime.id}`;
-  try {
-    // A refusal to open an internal page arrives via lastError, not a throw,
-    // so read it to avoid an unchecked-error warning. Either way the written
-    // steps stay on screen as the fallback.
-    chrome.tabs.create({ url }, () => void chrome.runtime.lastError);
-  } catch (_) {
-    /* leave the written steps as the fallback */
-  }
 }
 
 // One-tap block for the site in the current tab. Shown only when the browser
@@ -301,7 +229,6 @@ document.getElementById("openFullSettings").addEventListener("click", () => {
   } catch { return; }
   chrome.runtime.openOptionsPage?.();
 });
-document.getElementById("privateSettings").addEventListener("click", openDetailsPage);
 for (const button of document.querySelectorAll("[data-view]")) button.addEventListener("click", () => {
   openEmbeddedSettings(button.dataset.view);
 });
@@ -357,7 +284,6 @@ chrome.storage.onChanged.addListener((changes, area) => {
       labelSwitch();
       renderPageLanguage();
       render(lastState);
-      checkIncognitoAccess();
     });
   }
 });
@@ -368,7 +294,6 @@ chrome.storage.onChanged.addListener((changes, area) => {
 send({ type: "getState" }, REPLY_TIMEOUT_MS).then((state) => {
   render(state.ok === false ? undefined : state);
 });
-checkIncognitoAccess();
 
 // The language switch: the other language's own name, one tap.
 const langSwitch = document.getElementById("langSwitch");
@@ -387,5 +312,4 @@ langSwitch.addEventListener("click", async () => {
   labelSwitch();
   renderPageLanguage();
   if (lastState !== undefined) render(lastState);
-  checkIncognitoAccess();
 });

@@ -18,9 +18,10 @@ you the lock; Hisn adds the coverage those built-in filters miss. Read
   **5,274,046 domains**, 239,885 core and 5,831 terms, verified over HTTPS and
   served with HTTP 200. The bundled seed stays v5; iOS and Android still update
   with an app build.
-- **Extension 1.5.0** — **Move your rules**: export the hand lists to a
-  versioned file and import one add-only in another browser. A lock keeps new
-  allowances and corrections waiting; a file can never remove a block.
+- **Extension 1.5.1** — the private-window (incognito) mode is gone from the
+  browser: no private-windows layer, no "allow in Incognito" guide and no
+  strings coaching it. Private browsing is the Mac app's hardening-profile step,
+  which disables it; 1.5.0's **Move your rules** export/import remains.
 - **iPhone & iPad 1.5.0** — a UI/UX pass: the overview is a calm card stack
   (status, pause, plan progress, lock and rules), the lock, blocked-site and
   app-limit cards open their editors directly, Setup is three guided steps with
