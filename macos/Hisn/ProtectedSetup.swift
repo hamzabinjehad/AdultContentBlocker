@@ -7,7 +7,7 @@ import Foundation
 struct LaptopSetupReadiness: Equatable {
     enum Issue: String, Identifiable {
         case signedBuild, filter, policy, installation, browserProfiles
-        case browserConnection, browserGuard, browserWarning, appExceptions
+        case browserConnection, browserWarning, appExceptions
         var id: String { rawValue }
 
         var detail: String {
@@ -24,8 +24,6 @@ struct LaptopSetupReadiness: Equatable {
                 return String(localized: "Connect Hisn in a supported browser and verify every detected standard profile. Missing or unreadable profiles are not protected evidence.")
             case .browserConnection:
                 return String(localized: "No recent browser connection is confirmed. Open your protected browser and reconnect Hisn.")
-            case .browserGuard:
-                return String(localized: "Enable Keep browser protection on in Blocking Rules to require protection after a commitment ends. This needs your confirmation.")
             case .browserWarning:
                 return String(localized: "A browser currently has a protection warning. Restore its extension connection before continuing.")
             case .appExceptions:
@@ -69,7 +67,7 @@ struct LaptopSetupReadiness: Equatable {
     }
 
     init(protection: ProtectionEvidence, checklist: SetupChecklist?,
-         requireOutsideLock: Bool, browserWarning: Bool = false,
+         browserWarning: Bool = false,
          hasAppExceptions: Bool = false,
          filterBlock: FilterBuildBlock? = nil) {
         var missing: [Issue] = []
@@ -91,7 +89,6 @@ struct LaptopSetupReadiness: Equatable {
         if !ProtectionStatus(protection).layers.contains(where: { $0.id == "extension" && $0.ok }) {
             missing.append(.browserConnection)
         }
-        if !requireOutsideLock { missing.append(.browserGuard) }
         if browserWarning { missing.append(.browserWarning) }
         if hasAppExceptions { missing.append(.appExceptions) }
         issues = missing

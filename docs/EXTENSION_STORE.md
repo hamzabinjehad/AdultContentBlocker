@@ -145,7 +145,7 @@ the previous generation on failure.
 3. Generate the Mac profile with `--extension-id <STORE_ID>` and the Windows
    policy with the same ID.
 4. Test the store build in a clean profile: native messaging, lock handover,
-   list update, incognito, remove/disable, and a managed force-install.
+   list update, remove/disable, and a managed force-install. Private windows are the app's profile step; the extension no longer offers an incognito mode.
 5. Record the result in [RELEASE_VALIDATION.md](RELEASE_VALIDATION.md) and the
    extension release record.
 

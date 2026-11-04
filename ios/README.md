@@ -8,6 +8,33 @@ The plan to finish the iPhone/iPad app, including which Apple-supported lock
 level stops deletion and what each one cannot stop, is in
 [the iOS end-goal plan](../docs/IOS_IMPROVEMENT_PLAN.md).
 
+## 1.5.0 a calmer overview and a guided setup
+
+This is a UI/UX pass, not a rules change. The overview is now a card stack:
+status, pause, one protection-plan card with `0 of 3` progress, a lock card and
+a rules card. **Set a lock / Manage lock**, **Blocked sites** and **App limits**
+open their editors directly, so changing a saved rule no longer means finding
+the right Setup step first. The full commitment form moved off the status page.
+
+Setup is three step cards with one progress card — turn on a blocking layer,
+start the commitment, seal a passcode — with the detailed controls and the four
+checks one level down. The app-limit editor shows always-block, daily budget and
+quiet hours as three visible rows instead of a menu. Settings is grouped cards
+for language, the Safari extension, gray screen, privacy and about.
+
+The design research is in
+[the REA audit](../docs/REA_AUDIT_IOS_2026-11-04.md), and the before/after
+captures are in [design/ios-ui-1.5.0](../design/ios-ui-1.5.0/README.md).
+No rule, lock, commitment, Screen Time, DNS, Safari, pause or shield behaviour
+changed. The 1.4.0 shield, 1.3.0 pause and quiet hours, and the 1.2.0 saved-rule
+freeze are retained.
+
+Version 1.5.0, build 9. `./test.sh ios` passes **39 Python and 216 simulator
+tests**; no Apple team, Family Controls entitlement, signed build or
+physical-device acceptance is claimed. The renders cover every tab at phone and
+iPad sizes in English and Arabic, phone light and dark, and the three Setup
+drill-ins. See [the 1.5.0 record](../docs/IOS_1.5.0.md).
+
 ## 1.4.0 a shield that explains itself
 
 The 1.3.0 shields were Apple's default screen: they did not say which Hisn rule

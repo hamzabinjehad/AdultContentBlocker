@@ -42,6 +42,15 @@ struct PauseTally: Codable, Equatable {
         if since >= 0 && since < mergeWindow { return stored }
         return PauseTally(day: day, count: min(stored.count + 1, maximum), at: now)
     }
+
+    /// Today's count for the overview, or nil when the stored tally is from
+    /// another day or cannot be read. A stale count is never presented as today.
+    static func todayCount(_ stored: PauseTally?, now: Date,
+                           calendar: Calendar = .current) -> Int? {
+        guard let stored, stored.day == dayKey(for: now, calendar: calendar),
+              stored.count > 0, stored.at.timeIntervalSince1970.isFinite else { return nil }
+        return stored.count
+    }
 }
 
 /// Where the pause tally lives. UserDefaults is enough: it is a count, not
@@ -62,6 +71,12 @@ enum PauseStore {
             defaults.set(data, forKey: key)
         }
         return tally
+    }
+
+    /// The count the overview may show: today's tally only, never yesterday's.
+    static func todayCount(now: Date = Date(),
+                           defaults: UserDefaults = .standard) -> Int? {
+        PauseTally.todayCount(load(defaults: defaults), now: now)
     }
 }
 
@@ -147,38 +162,55 @@ func pauseReminder(_ index: Int) -> LocalizedStringKey {
 // MARK: - Views
 
 /// The one positive action on the overview. It changes no rule and records only
-/// today's count, so it stays available during a commitment too.
+/// today's count, so it stays available during a commitment too. The count is
+/// shown only when the stored tally belongs to today.
 struct PauseCard: View {
+    var count: Int?
     let action: () -> Void
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 14) {
-                Image(systemName: "wind")
-                    .font(.title3)
-                    .foregroundStyle(Color.accentColor)
-                    .frame(width: 40, height: 40)
-                    .background(Color.accentColor.opacity(0.12), in: Circle())
-                    .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("pause.open")
-                        .font(.headline)
-                    Text("pause.cardBody")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+            HisnCard {
+                if dynamicTypeSize.isAccessibilitySize {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HisnIconBadge(systemName: "wind", tint: .accentColor, size: 46)
+                        pauseText
+                    }
+                } else {
+                    HStack(spacing: 14) {
+                        HisnIconBadge(systemName: "wind", tint: .accentColor, size: 46)
+                        pauseText
+                        Spacer(minLength: 8)
+                        Image(systemName: "chevron.forward")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                            .accessibilityHidden(true)
+                    }
                 }
-                Spacer(minLength: 8)
-                Image(systemName: "chevron.forward")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-                    .accessibilityHidden(true)
             }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text("pause.open"))
+    }
+
+    private var pauseText: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text("pause.open")
+                .font(.headline)
+            Text("pause.cardBody")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            if let count, count > 0 {
+                Text("pause.count \(count)")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+        }
     }
 }
 

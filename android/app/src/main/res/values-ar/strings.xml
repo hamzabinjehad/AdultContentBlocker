@@ -1,7 +1,6 @@
 <resources>
     <string name="app_name">حصن</string>
-    <string name="title">حصن لأندرويد</string>
-    <string name="subtitle">حصن · %1$s</string>
+    <string name="subtitle">الإصدار %1$s</string>
     <string name="status_title">الحماية غير مفعّلة</string>
     <string name="status_body">فعّل الطبقات التي تختارها وراجع حالة كل منها. يختلف نطاق DNS وتقييد التطبيقات وفحص الصور والفيديو. يقفل قفل الحماية القواعد المحفوظة، لكنه لا يمنع أندرويد وحده من تعطيل حصن أو إزالته.</string>
     <string name="network">فلترة DNS · متوقفة</string>
@@ -55,6 +54,9 @@
     <string name="visual">فحص الصور والفيديو · متوقف</string>
     <string name="commitment">قفل الحماية · متوقف</string>
     <string name="rules_heading">قواعد حمايتك</string>
+    <string name="next_step">الخطوة التالية</string>
+    <string name="rules_intro_short">اختر ما يحظره حصن أو يفحصه. كل قاعدة أدناه محفوظة على هذا الهاتف.</string>
+    <string name="rules_about">عن هذه القواعد</string>
     <string name="rules_lock_title">القواعد مقفلة</string>
     <string name="rules_lock_until">قفل الحماية نشط. كل قاعدة محفوظة في هذه الصفحة للقراءة فقط لنحو %1$s. الانتظار هو طريق الخروج الوحيد داخل حصن؛ ويمكن لسياسة موقّعة من ولي الأمر إضافة قيود فقط.</string>
     <string name="rules_help">احفظ نطاقات وكلمات حرفية، ثم اختر التطبيقات لحظرها أو فحصها. تُستثنى الإعدادات وتطبيقات الاتصال والشاشة الرئيسية. يشترك فحص النصوص وفحص الصور والفيديو في التطبيقات التي تختارها للفحص، ويتطلبان خدمة إمكانية الوصول. لكل فحص مدمج خيار تفعيل خاص به. أثناء تشغيل قفل الحماية تكون كل قاعدة في هذه الصفحة للقراءة فقط.</string>
@@ -174,14 +176,13 @@
     <string name="text_guard_permission">قيود التطبيقات المحفوظة غير مفعّلة · فعّل إمكانية الوصول لحصن</string>
     <string name="text_guard_unknown">تعذّر التأكد من إذن إمكانية الوصول · راجع إعدادات أندرويد</string>
     <string name="text_guard_recheck_note">تُعاد مراجعة التطبيقات المختارة نحو مرة كل ثانية أثناء فتحها، ويتوقف الفحص بعد مغادرتها. تبقى نصوص الشاشة على هذا الجهاز ولا تُحفظ.</string>
-    <string name="setup_heading">الإعداد المقترح</string>
     <string name="setup_first">اختر طبقات الحماية. منح الإذن واتصال الخدمة ونجاح الاختبار خطوات مختلفة.</string>
     <string name="setup_next">متابعة الإعداد</string>
-    <string name="setup_choose_rules">الخطوة ١ · اختر طبقاتك: فلترة DNS أدناه، أو حظرًا دائمًا أو مجدولًا للتطبيقات، أو فحص النصوص والصور في التطبيقات التي تختارها.</string>
-    <string name="setup_connect">الخطوة ٢ · راجع إذن إمكانية الوصول ووصل حصن.</string>
-    <string name="setup_policy_loading">الخطوة ٢ · سياسة النصوص قيد التحميل أو غير متاحة. راجع حالتها أدناه.</string>
-    <string name="setup_dns">الخطوة ٣ · راجع وفعّل فلترة DNS إذا أردت طبقة الشبكة.</string>
-    <string name="setup_test">الخطوة ٤ · اختبر مسار DNS. اتصال النفق لا يعني نجاح الاختبار.</string>
+    <string name="setup_choose_rules">اختر طبقاتك: فلترة DNS أدناه، أو حظرًا دائمًا أو مجدولًا للتطبيقات، أو فحص النصوص والصور في التطبيقات التي تختارها.</string>
+    <string name="setup_connect">راجع إذن إمكانية الوصول ووصل حصن.</string>
+    <string name="setup_policy_loading">سياسة النصوص قيد التحميل أو غير متاحة. راجع حالتها أدناه.</string>
+    <string name="setup_dns">راجع وفعّل فلترة DNS إذا أردت طبقة الشبكة.</string>
+    <string name="setup_test">اختبر مسار DNS. اتصال النفق لا يعني نجاح الاختبار.</string>
     <string name="setup_review">طبقة التطبيقات المختارة تبلغ عن فحص غير مكتمل. راجع حالتها قبل الاعتماد عليها.</string>
     <string name="setup_ready">طبقة التطبيقات متصلة ونجح آخر فحص لمسار DNS. التغطية تجريبية وليست حماية كاملة.</string>
     <string name="setup_review_visual">يبلغ فحص الصور عن عطل، أو لا توجد تطبيقات لفحصها، أو تتعذّر قراءة النافذة المختارة. راجعه من القواعد قبل الاعتماد عليه.</string>
@@ -260,6 +261,7 @@
     <string name="notice_cc_by">رخصة CC BY 4.0 · قائمة كلمات LDNOOBW</string>
     <string name="notice_visual_file">محرك فحص الصور · %1$s</string>
     <string name="gray_title">شاشة رمادية</string>
+    <string name="gray_status_off">شاشة رمادية · متوقفة</string>
     <string name="gray_off">تعرض الشاشة الألوان. يُفقد اللون الرمادي الصور ومقاطع الفيديو معظم جاذبيتها، وتبقى التطبيقات تعمل.</string>
     <string name="gray_on">الشاشة رمادية.</string>
     <string name="gray_committed">الالتزام قيد التشغيل. تبقى الشاشة رمادية حتى ينتهي.</string>

@@ -1,7 +1,6 @@
 <resources>
     <string name="app_name">Hisn</string>
-    <string name="title">Hisn for Android</string>
-    <string name="subtitle">Hisn · %1$s</string>
+    <string name="subtitle">Version %1$s</string>
     <string name="status_title">Protection is not active</string>
     <string name="status_body">Enable the layers you choose, then review each status. DNS, selected-app restrictions and sampled image/video checks have different coverage. A protection lock freezes saved rules; it does not by itself stop Android from disabling or removing Hisn.</string>
     <string name="network">DNS filtering · Off</string>
@@ -60,6 +59,9 @@
     <string name="restriction_visual">An image or sampled video frame on this screen was flagged by the experimental adult-content detector. The model can make mistakes.</string>
     <string name="commitment">Protection lock · Off</string>
     <string name="rules_heading">Your protection rules</string>
+    <string name="next_step">Next step</string>
+    <string name="rules_intro_short">Choose what Hisn blocks or checks. Every rule below is saved on this phone.</string>
+    <string name="rules_about">About these rules</string>
     <string name="rules_lock_title">Rules are locked</string>
     <string name="rules_lock_until">Protection lock is active. Every saved rule on this page is read-only for about %1$s. Waiting is the only release inside Hisn; a guardian-signed policy may still add restrictions.</string>
     <string name="rules_help">Save domains and literal words, then choose apps to restrict or check. Settings, dialers and launchers are excluded. Text and image/video checks share the apps you select for inspection and require the accessibility service. Each built-in check has its own opt-in. While a protection lock runs, every rule on this page is read-only.</string>
@@ -166,14 +168,13 @@
     <string name="text_guard_permission">Saved app restrictions are inactive · Enable Hisn accessibility</string>
     <string name="text_guard_unknown">Accessibility permission could not be verified · Review Android settings</string>
     <string name="text_guard_recheck_note">Selected apps are rechecked about once per second while open. Checks stop after leaving them. Screen text stays on this device and is not saved.</string>
-    <string name="setup_heading">Recommended setup</string>
     <string name="setup_first">Choose your protection layers. Permission, connection and a passed check are different steps.</string>
     <string name="setup_next">Continue setup</string>
-    <string name="setup_choose_rules">Step 1 · Choose your layers: DNS filtering below, permanent or scheduled app restrictions, or text and image checks in apps you select.</string>
-    <string name="setup_connect">Step 2 · Review accessibility permission and connect Hisn.</string>
-    <string name="setup_policy_loading">Step 2 · Adult-text policy is loading or unavailable. Review its status below.</string>
-    <string name="setup_dns">Step 3 · Review and enable DNS filtering if you want the network layer.</string>
-    <string name="setup_test">Step 4 · Run the DNS route check. A connected tunnel is not a passed test.</string>
+    <string name="setup_choose_rules">Choose your layers: DNS filtering below, permanent or scheduled app restrictions, or text and image checks in apps you select.</string>
+    <string name="setup_connect">Review accessibility permission and connect Hisn.</string>
+    <string name="setup_policy_loading">Adult-text policy is loading or unavailable. Review its status below.</string>
+    <string name="setup_dns">Review and enable DNS filtering if you want the network layer.</string>
+    <string name="setup_test">Run the DNS route check. A connected tunnel is not a passed test.</string>
     <string name="setup_review">The selected app layer reports an incomplete inspection. Review its status before relying on it.</string>
     <string name="setup_ready">Selected app layer connected; last DNS route check passed. Experimental coverage, not complete protection.</string>
     <string name="setup_review_visual">Image checks report a failure, have no apps to inspect, or cannot read the selected window. Review them in Rules before relying on them.</string>
@@ -243,6 +244,7 @@
     <string name="notice_cc_by">CC BY 4.0 · LDNOOBW word list</string>
     <string name="notice_visual_file">Image-check engine · %1$s</string>
     <string name="gray_title">Gray screen</string>
+    <string name="gray_status_off">Gray screen · Off</string>
     <string name="gray_off">The screen shows colour. Gray takes most of the pull out of images and videos; apps keep working.</string>
     <string name="gray_on">The screen is gray.</string>
     <string name="gray_committed">A commitment is running. The screen stays gray until it ends.</string>

@@ -64,7 +64,7 @@ public final class WelcomeActivity extends Activity {
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(Ui.color(this, R.color.background));
+        root.setBackgroundResource(R.drawable.bg_welcome);
         root.setPadding(side, top, side, bottom);
 
         LinearLayout header = new LinearLayout(this);
@@ -78,9 +78,9 @@ public final class WelcomeActivity extends Activity {
         header.addView(brand, brandParams);
         Button skip = Ui.button(this, R.string.welcome_skip, Ui.ButtonKind.QUIET);
         skip.setTextSize(14);
-        skip.setMinHeight(Ui.dp(this, 40));
-        skip.setMinimumHeight(Ui.dp(this, 40));
-        skip.setPadding(Ui.dp(this, 12), Ui.dp(this, 8), Ui.dp(this, 12), Ui.dp(this, 8));
+        skip.setMinHeight(Ui.dp(this, 48));
+        skip.setMinimumHeight(Ui.dp(this, 48));
+        skip.setPadding(Ui.dp(this, 14), Ui.dp(this, 10), Ui.dp(this, 14), Ui.dp(this, 10));
         skip.setOnClickListener(view -> finishWelcome(false));
         header.addView(skip);
         root.addView(header);
@@ -100,12 +100,13 @@ public final class WelcomeActivity extends Activity {
         dotRow = new LinearLayout(this);
         dotRow.setOrientation(LinearLayout.HORIZONTAL);
         dotRow.setGravity(Gravity.CENTER);
-        dotRow.setPadding(0, Ui.dp(this, 8), 0, Ui.dp(this, 8));
+        dotRow.setPadding(0, Ui.dp(this, 10), 0, Ui.dp(this, 12));
         for (int index = 0; index < PAGE_COUNT; index++) {
             View dot = new View(this);
             dot.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(Ui.dp(this, 8), Ui.dp(this, 8));
-            if (index > 0) params.setMarginStart(Ui.dp(this, 8));
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    Ui.dp(this, index == page ? 28 : 10), Ui.dp(this, 5));
+            if (index > 0) params.setMarginStart(Ui.dp(this, 6));
             dotRow.addView(dot, params);
             dots[index] = dot;
         }
@@ -161,38 +162,41 @@ public final class WelcomeActivity extends Activity {
     private void render(int newPage) {
         page = newPage;
         content.removeAllViews();
-        ImageView icon = Ui.iconInTile(this, ICONS[page], R.color.accent, 128, 72);
+        ImageView icon = Ui.iconInTile(this, ICONS[page], R.color.accent, 164, 96);
         // CENTER_INSIDE leaves a 24dp vector at its intrinsic size; FIT_CENTER
         // scales it up into the tile's content box.
         icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
         LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(
-                Ui.dp(this, 128), Ui.dp(this, 128));
+                Ui.dp(this, 164), Ui.dp(this, 164));
         iconParams.gravity = Gravity.CENTER_HORIZONTAL;
         content.addView(icon, iconParams);
 
-        TextView title = Ui.text(this, getString(TITLES[page]), 28, R.color.text_primary);
+        TextView title = Ui.text(this, getString(TITLES[page]), 30, R.color.text_primary);
         title.setTypeface(Ui.medium());
         title.setGravity(Gravity.CENTER);
         title.setLineSpacing(Ui.dp(this, 2), 1.05f);
         Ui.heading(title);
         LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        titleParams.topMargin = Ui.dp(this, 24);
+        titleParams.topMargin = Ui.dp(this, 28);
         content.addView(title, titleParams);
 
         TextView body = Ui.text(this, getString(BODIES[page]), 16, R.color.text_secondary);
         body.setGravity(Gravity.CENTER);
-        body.setLineSpacing(Ui.dp(this, 3), 1.15f);
+        body.setLineSpacing(Ui.dp(this, 4), 1.18f);
         LinearLayout.LayoutParams bodyParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        bodyParams.topMargin = Ui.dp(this, 12);
+        bodyParams.topMargin = Ui.dp(this, 14);
         content.addView(body, bodyParams);
 
         for (int index = 0; index < PAGE_COUNT; index++) {
             GradientDrawable shape = new GradientDrawable();
-            shape.setShape(GradientDrawable.OVAL);
             shape.setColor(Ui.color(this, index == page ? R.color.accent : R.color.divider));
+            shape.setCornerRadius(Ui.dp(this, 100));
             dots[index].setBackground(shape);
+            LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) dots[index].getLayoutParams();
+            params.width = Ui.dp(this, index == page ? 28 : 10);
+            dots[index].setLayoutParams(params);
         }
         dotRow.setContentDescription(getString(R.string.welcome_page, page + 1, PAGE_COUNT));
         next.setText(getString(page == PAGE_COUNT - 1 ? R.string.welcome_finish : R.string.welcome_next));

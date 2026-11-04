@@ -54,6 +54,23 @@ final class PauseTests: XCTestCase {
                                             calendar: utcCalendar()).count, PauseTally.maximum)
     }
 
+    func testTodayCountNeverCarriesYesterday() {
+        let calendar = utcCalendar()
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        let day = PauseTally.dayKey(for: now, calendar: calendar)
+        XCTAssertEqual(PauseTally.todayCount(PauseTally(day: day, count: 3, at: now),
+                                             now: now, calendar: calendar), 3)
+        let yesterday = PauseTally.dayKey(for: now.addingTimeInterval(-86_400), calendar: calendar)
+        XCTAssertNil(PauseTally.todayCount(PauseTally(day: yesterday, count: 3, at: now),
+                                           now: now, calendar: calendar))
+        XCTAssertNil(PauseTally.todayCount(PauseTally(day: day, count: 0, at: now),
+                                           now: now, calendar: calendar))
+        XCTAssertNil(PauseTally.todayCount(
+            PauseTally(day: day, count: 2, at: Date(timeIntervalSince1970: .nan)),
+            now: now, calendar: calendar
+        ))
+    }
+
     func testBreathTimelineMovesThroughThreeCyclesAndFinishes() {
         XCTAssertEqual(PauseBreath.total, 30)
         let start = PauseBreath.snapshot(at: 0)

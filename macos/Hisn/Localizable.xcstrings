@@ -1,215 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "%@ is already blocked." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ محجوب بالفعل."
-          }
-        }
-      }
-    },
-    "%@ is now blocked." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ محجوب الآن."
-          }
-        }
-      }
-    },
-    "A lock is running. The screen stays gray until it ends." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "القفل يعمل. تبقى الشاشة رمادية حتى ينتهي."
-          }
-        }
-      }
-    },
-    "Block a site" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "احجب موقعًا"
-          }
-        }
-      }
-    },
-    "Block a site…" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "احجب موقعًا…"
-          }
-        }
-      }
-    },
-    "browser.live.title" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Open browsers · live connection" } }, "ar" : { "stringUnit" : { "state" : "translated", "value" : "المتصفحات المفتوحة · حالة الاتصال" } } } },
-    "browser.live.refresh" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Check status now" } }, "ar" : { "stringUnit" : { "state" : "translated", "value" : "افحص الحالة الآن" } } } },
-    "browser.live.cadence" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Hisn checks open browsers about every 5 seconds. Extensions normally check in every 30 seconds; sleep and browser scheduling can delay replies. A connection verifies this process, not every profile or private window." } }, "ar" : { "stringUnit" : { "state" : "translated", "value" : "يفحص حصن المتصفحات المفتوحة كل ٥ ثوانٍ تقريباً. تتصل الإضافات عادة كل ٣٠ ثانية؛ قد يؤخر النوم أو جدولة المتصفح الردود. الاتصال يؤكد هذه النسخة المفتوحة، وليس كل ملف مستخدم أو نافذة خاصة." } } } },
-    "browser.live.checked" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Last status check:" } }, "ar" : { "stringUnit" : { "state" : "translated", "value" : "آخر فحص للحالة:" } } } },
-    "browser.live.none" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "No open browsers detected." } }, "ar" : { "stringUnit" : { "state" : "translated", "value" : "لم يُكتشف متصفح مفتوح." } } } },
-    "browser.live.observationOnly" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Status only: browser guarding is not active, so these checks will not close browsers." } }, "ar" : { "stringUnit" : { "state" : "translated", "value" : "عرض الحالة فقط: حراسة المتصفح غير مفعّلة، لذلك لن تغلق هذه الفحوص المتصفحات." } } } },
-    "browser.live.notRunning" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Installed · not running" } }, "ar" : { "stringUnit" : { "state" : "translated", "value" : "مثبّت · غير مفتوح" } } } },
-    "browser.live.connected" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Extension connected · process stays open" } }, "ar" : { "stringUnit" : { "state" : "translated", "value" : "الإضافة متصلة · يبقى المتصفح مفتوحاً" } } } },
-    "browser.live.waiting" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Waiting for a verified extension reply" } }, "ar" : { "stringUnit" : { "state" : "translated", "value" : "بانتظار رد موثّق من الإضافة" } } } },
-    "browser.live.profileLoss" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Protection missing in a standard profile · restore the extension there" } }, "ar" : { "stringUnit" : { "state" : "translated", "value" : "الحماية مفقودة في ملف مستخدم قياسي · أعد الإضافة فيه" } } } },
-    "browser.live.unsupported" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "No supported Hisn extension connection" } }, "ar" : { "stringUnit" : { "state" : "translated", "value" : "لا يوجد اتصال مدعوم بإضافة حصن" } } } },
-    "browser.live.exempt" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Exempt · extension connection not required" } }, "ar" : { "stringUnit" : { "state" : "translated", "value" : "مستثنى · لا يتطلب اتصال إضافة" } } } },
-    "browser.live.lastReply" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Last verified reply:" } }, "ar" : { "stringUnit" : { "state" : "translated", "value" : "آخر رد موثّق:" } } } },
-    "browser.live.countdown %lld" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Restore the extension or close this browser. Closing in %lld seconds." } }, "ar" : { "stringUnit" : { "state" : "translated", "value" : "أعد الإضافة أو أغلق هذا المتصفح. سيُغلق خلال %lld ثانية." } } } },
-    "browser.live.closing" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Recovery time expired · requesting browser closure" } }, "ar" : { "stringUnit" : { "state" : "translated", "value" : "انتهت مهلة الاستعادة · جارٍ طلب إغلاق المتصفح" } } } },
-    "Enter a domain or paste a link. Subdomains are included, and adding a block works during a lock." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "أدخل نطاقًا أو الصق رابطًا. تُشمل النطاقات الفرعية، وإضافة حجب ممكنة أثناء القفل."
-          }
-        }
-      }
-    },
-    "Gray screen" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "شاشة رمادية"
-          }
-        }
-      }
-    },
-    "Hisn" : { "localizations" : { "ar" : { "stringUnit" : { "state" : "translated", "value" : "حصن" } } } },
-    "design.localPrivacy" : { "localizations" : {
-      "en" : { "stringUnit" : { "state" : "translated", "value" : "Protection, with a clear view of every layer." } },
-      "ar" : { "stringUnit" : { "state" : "translated", "value" : "حماية مع رؤية واضحة لكل طبقة." } }
-    } },
-    "design.page.overview" : { "localizations" : {
-      "en" : { "stringUnit" : { "state" : "translated", "value" : "Your protection and commitment, shown separately." } },
-      "ar" : { "stringUnit" : { "state" : "translated", "value" : "حالة الحماية والالتزام، كلٌّ منهما على حدة." } }
-    } },
-    "design.page.setup" : { "localizations" : {
-      "en" : { "stringUnit" : { "state" : "translated", "value" : "Connect your layers, then verify what is ready." } },
-      "ar" : { "stringUnit" : { "state" : "translated", "value" : "اربط طبقات الحماية ثم تحقّق مما أصبح جاهزاً." } }
-    } },
-    "design.page.rules" : { "localizations" : {
-      "en" : { "stringUnit" : { "state" : "translated", "value" : "Choose boundaries for sites, apps and browser access." } },
-      "ar" : { "stringUnit" : { "state" : "translated", "value" : "ضع حدوداً للمواقع والتطبيقات والوصول من المتصفح." } }
-    } },
-    "design.page.lock" : { "localizations" : {
-      "en" : { "stringUnit" : { "state" : "translated", "value" : "Review your chosen time and recovery options." } },
-      "ar" : { "stringUnit" : { "state" : "translated", "value" : "راجع مدة التزامك وخيارات الاسترداد." } }
-    } },
-    "design.page.settings" : { "localizations" : {
-      "en" : { "stringUnit" : { "state" : "translated", "value" : "Language, connections and your preferences." } },
-      "ar" : { "stringUnit" : { "state" : "translated", "value" : "اللغة والاتصالات وتفضيلاتك." } }
-    } },
-    "Connect a supported browser before verifying removal protection." : {
-      "localizations" : { "ar" : { "stringUnit" : { "state" : "translated", "value" : "اربط متصفحاً مدعوماً قبل التحقق من الحماية من إزالة الإضافة." } } }
-    },
-    "Make the screen gray" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "اجعل الشاشة رمادية"
-          }
-        }
-      }
-    },
-    "removal.setup.title" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Set up removal protection" } },
-        "ar" : { "stringUnit" : { "state" : "translated", "value" : "إعداد الحماية من إزالة الإضافة" } }
-      }
-    },
-    "removal.setup.publish" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "1. Use a published Hisn extension with a stable ID and a verified update source. Loading an unpacked folder is not managed installation." } },
-        "ar" : { "stringUnit" : { "state" : "translated", "value" : "١. استخدم إضافة حصن منشورة بمعرّف ثابت ومصدر تحديث موثوق. تحميل مجلد الإضافة لا يعني تثبيتها بإدارة إلزامية." } }
-      }
-    },
-    "removal.setup.consent" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "2. With your consent, an administrator installs the matching browser protection profile. This guide does not install a profile or change your permissions." } },
-        "ar" : { "stringUnit" : { "state" : "translated", "value" : "٢. بموافقتك، يثبّت المسؤول ملف حماية المتصفح المناسب. هذا الدليل لا يثبّت ملفاً ولا يغيّر صلاحياتك." } }
-      }
-    },
-    "removal.setup.verify" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "3. Review chrome://policy for Hisn’s force-installed policy and errors, check that Disable and Remove are unavailable, then check again here. Test each browser and profile separately; Chromium forks may differ." } },
-        "ar" : { "stringUnit" : { "state" : "translated", "value" : "٣. راجع chrome://policy للتأكد من سياسة تثبيت حصن الإلزامي وعدم وجود أخطاء، وتحقق من غياب إمكانية التعطيل والحذف، ثم أعد الفحص هنا. اختبر كل متصفح وملف مستخدم منفصلاً؛ قد تختلف متصفحات كروميوم." } }
-      }
-    },
-    "removal.setup.limit" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "An administrator may still remove management. For stronger protection, use a standard daily account with a trusted administrator and a recovery plan. Managed installation is not proof of protection in every window or app." } },
-        "ar" : { "stringUnit" : { "state" : "translated", "value" : "قد يستطيع المسؤول إزالة الإدارة. لحماية أقوى، استخدم حساباً يومياً عادياً مع مسؤول موثوق وخطة استرداد. التثبيت المُدار لا يثبت الحماية في كل نافذة أو تطبيق." } }
-      }
-    },
-    "removal.setup.guide" : {
-      "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Official Chrome setup guide" } },
-        "ar" : { "stringUnit" : { "state" : "translated", "value" : "دليل إعداد Chrome الرسمي" } }
-      }
-    },
-    "Shows everything on this Mac in shades of gray. Apps keep working; images and videos lose most of their pull." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "يعرض كل ما على هذا الماك بدرجات الرمادي. تبقى التطبيقات تعمل، وتفقد الصور ومقاطع الفيديو معظم جاذبيتها."
-          }
-        }
-      }
-    },
-    "That is not a domain." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "هذا ليس نطاقًا."
-          }
-        }
-      }
-    },
-    "The filter and the browser extension pick it up within a few seconds. Remove it on the Blocking Rules page." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "يلتقطه المرشّح وإضافة المتصفح خلال ثوانٍ. أزِله من صفحة قواعد الحجب."
-          }
-        }
-      }
-    },
-    "This version of macOS does not let Hisn change the screen. Turn on Grayscale in System Settings › Accessibility › Display › Color Filters instead." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "لا يسمح هذا الإصدار من macOS لحصن بتغيير الشاشة. فعّل التدرّج الرمادي من إعدادات النظام › تسهيلات الاستخدام › شاشة العرض › مرشحات الألوان بدلًا من ذلك."
-          }
-        }
-      }
-    },
-    "Try something like example.com, or paste the page's link." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "جرّب شيئًا مثل example.com، أو الصق رابط الصفحة."
-          }
-        }
-      }
-    },
     "“%@” is too short to block safely. Words need at least %lld letters — shorter ones match parts of ordinary words and block pages you need." : {
       "localizations" : {
         "ar" : {
@@ -275,6 +66,7 @@
       }
     },
     "%@ closes in %lld s" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -353,12 +145,42 @@
         }
       }
     },
+    "%@ is about to close" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سيُغلق %@ بعد قليل"
+          }
+        }
+      }
+    },
     "%@ is about to close." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "سيُغلَق %@ بعد قليل."
+          }
+        }
+      }
+    },
+    "%@ is already blocked." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ محجوب بالفعل."
+          }
+        }
+      }
+    },
+    "%@ is now blocked." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ محجوب الآن."
           }
         }
       }
@@ -569,6 +391,16 @@
         }
       }
     },
+    "A domain or a full link both work. Subdomains are covered by a parent domain." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يكفي إدخال النطاق أو رابط كامل. والنطاقات الفرعية يغطيها نطاقها الأصلي."
+          }
+        }
+      }
+    },
     "A fixed commitment stays fixed for the added time. This does not weaken any existing restrictions." : {
       "localizations" : {
         "ar" : {
@@ -617,6 +449,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "يوجد قفل يعمل، لذلك لا يمكن إضافة مفتاح الشريك إلا بعد انتهائه."
+          }
+        }
+      }
+    },
+    "A lock is running, so administrator and removal changes are disabled until it ends." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قفل قيد التشغيل، لذا تُعطّل تغييرات المسؤول والإزالة حتى ينتهي."
           }
         }
       }
@@ -713,6 +555,16 @@
         }
       }
     },
+    "A lock is running. The screen stays gray until it ends." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "القفل يعمل. تبقى الشاشة رمادية حتى ينتهي."
+          }
+        }
+      }
+    },
     "A lock is running. You can add blocks and remove allowances; the reverse waits until it ends." : {
       "localizations" : {
         "ar" : {
@@ -759,12 +611,42 @@
         }
       }
     },
+    "A private pause. Nothing here is recorded except today’s count." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وقفة خاصة. لا يُسجَّل هنا شيء سوى عدد وقفات اليوم."
+          }
+        }
+      }
+    },
     "A release request takes %@ to arrive and cannot be hurried. Your accountability partner can approve one immediately." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "يستغرق طلب الإنهاء %@ حتى يسري، ولا يمكن تعجيله. يستطيع شريك المحاسبة الموافقة عليه فورًا."
+          }
+        }
+      }
+    },
+    "A slip doesn’t erase your progress. Walking away right now still counts." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الزلّة لا تمحو ما أنجزته. ابتعادك الآن ما زال يُحسب لك."
+          }
+        }
+      }
+    },
+    "A small profile disables private and incognito windows in those browsers. It changes nothing else — no DNS, no guest windows." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ملف تعريف صغير يعطّل النوافذ الخاصة والمتخفية في تلك المتصفحات. لا يغيّر شيئًا آخر — لا DNS ولا نوافذ الضيوف."
           }
         }
       }
@@ -809,6 +691,16 @@
         }
       }
     },
+    "Add" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أضف"
+          }
+        }
+      }
+    },
     "Add a week" : {
       "localizations" : {
         "ar" : {
@@ -841,6 +733,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Add seven days to this lock?"
+          }
+        }
+      }
+    },
+    "Add to Always block" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أضف إلى قائمة الحجب الدائم"
+          }
+        }
+      }
+    },
+    "Added to Always block." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أُضيف إلى قائمة الحجب الدائم."
           }
         }
       }
@@ -892,6 +804,16 @@
         }
       }
     },
+    "Administrator" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مسؤول"
+          }
+        }
+      }
+    },
     "Administrator setup" : {
       "localizations" : {
         "ar" : {
@@ -909,6 +831,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "اسمح به أثناء القفل"
+          }
+        }
+      }
+    },
+    "Already on the Always block list." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "موجود بالفعل في قائمة الحجب الدائم."
           }
         }
       }
@@ -953,6 +885,27 @@
         }
       }
     },
+    "An urge rises, peaks and fades, usually within minutes. You don’t have to act on it." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الرغبة تشتد ثم تهدأ، وغالبًا خلال دقائق. لست مضطرًا إلى الاستجابة لها."
+          }
+        }
+      }
+    },
+    "and more" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "والمزيد"
+          }
+        }
+      }
+    },
     "App version" : {
       "localizations" : {
         "ar" : {
@@ -963,12 +916,32 @@
         }
       }
     },
+    "Approve “Hisn private windows disabled” in System Settings › Device Management, then Check again." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وافق على «Hisn private windows disabled» في إعدادات النظام › إدارة الجهاز، ثم اضغط «تحقّق مرة أخرى»."
+          }
+        }
+      }
+    },
     "Apps" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "التطبيقات"
+          }
+        }
+      }
+    },
+    "Ask what led here: the time, the place, the mood. That is what to change next." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اسأل نفسك ما الذي أوصلك إلى هنا: الوقت أو المكان أو المزاج. هذا ما تغيّره بعد ذلك."
           }
         }
       }
@@ -1011,6 +984,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "احجب"
+          }
+        }
+      }
+    },
+    "Block a site" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "احجب موقعًا"
+          }
+        }
+      }
+    },
+    "Block a site…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "احجب موقعًا…"
           }
         }
       }
@@ -1091,6 +1084,46 @@
         }
       }
     },
+    "Breathe again" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تنفّس مرة أخرى"
+          }
+        }
+      }
+    },
+    "Breathe in…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خذ نفسًا عميقًا…"
+          }
+        }
+      }
+    },
+    "Breathe out slowly…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أخرِج النفس ببطء…"
+          }
+        }
+      }
+    },
+    "Breathing pause" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وقفة تنفّس"
+          }
+        }
+      }
+    },
     "Browser extension" : {
       "localizations" : {
         "ar" : {
@@ -1137,12 +1170,256 @@
         }
       }
     },
+    "Browser protection is always on while Hisn runs." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حماية المتصفح مفعّلة دائمًا ما دام حصن يعمل."
+          }
+        }
+      }
+    },
+    "Browser protection needs attention" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حماية المتصفح تحتاج إلى انتباه"
+          }
+        }
+      }
+    },
     "Browser protection settings could not be saved. Try again." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "تعذّر حفظ إعدادات حماية المتصفح. حاول مرة أخرى."
+          }
+        }
+      }
+    },
+    "browser.live.cadence" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يفحص حصن المتصفحات المفتوحة كل ٥ ثوانٍ تقريباً. تتصل الإضافات عادة كل ٣٠ ثانية؛ قد يؤخر النوم أو جدولة المتصفح الردود. الاتصال يؤكد هذه النسخة المفتوحة، وليس كل ملف مستخدم أو نافذة خاصة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hisn checks open browsers about every 5 seconds. Extensions normally check in every 30 seconds; sleep and browser scheduling can delay replies. A connection verifies this process, not every profile or private window."
+          }
+        }
+      }
+    },
+    "browser.live.checked" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "آخر فحص للحالة:"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last status check:"
+          }
+        }
+      }
+    },
+    "browser.live.closing" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "انتهت مهلة الاستعادة · جارٍ طلب إغلاق المتصفح"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recovery time expired · requesting browser closure"
+          }
+        }
+      }
+    },
+    "browser.live.connected" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإضافة متصلة · يبقى المتصفح مفتوحاً"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Extension connected · process stays open"
+          }
+        }
+      }
+    },
+    "browser.live.countdown %lld" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أعد الإضافة أو أغلق هذا المتصفح. سيُغلق خلال %lld ثانية."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restore the extension or close this browser. Closing in %lld seconds."
+          }
+        }
+      }
+    },
+    "browser.live.exempt" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مستثنى · لا يتطلب اتصال إضافة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exempt · extension connection not required"
+          }
+        }
+      }
+    },
+    "browser.live.lastReply" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "آخر رد موثّق:"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last verified reply:"
+          }
+        }
+      }
+    },
+    "browser.live.none" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يُكتشف متصفح مفتوح."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No open browsers detected."
+          }
+        }
+      }
+    },
+    "browser.live.notRunning" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مثبّت · غير مفتوح"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Installed · not running"
+          }
+        }
+      }
+    },
+    "browser.live.profileLoss" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الحماية مفقودة في ملف مستخدم قياسي · أعد الإضافة فيه"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Protection missing in a standard profile · restore the extension there"
+          }
+        }
+      }
+    },
+    "browser.live.refresh" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افحص الحالة الآن"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check status now"
+          }
+        }
+      }
+    },
+    "browser.live.title" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المتصفحات المفتوحة · حالة الاتصال"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open browsers · live connection"
+          }
+        }
+      }
+    },
+    "browser.live.unsupported" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يوجد اتصال مدعوم بإضافة حصن"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No supported Hisn extension connection"
+          }
+        }
+      }
+    },
+    "browser.live.waiting" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بانتظار رد موثّق من الإضافة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for a verified extension reply"
           }
         }
       }
@@ -1154,6 +1431,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "المتصفحات أثناء القفل"
+          }
+        }
+      }
+    },
+    "Calm" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هدوء"
           }
         }
       }
@@ -1241,6 +1528,36 @@
         }
       }
     },
+    "Check" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افحص"
+          }
+        }
+      }
+    },
+    "Check a website" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افحص موقعًا إلكترونيًا"
+          }
+        }
+      }
+    },
+    "Check a website…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افحص موقعًا إلكترونيًا…"
+          }
+        }
+      }
+    },
     "Check again" : {
       "localizations" : {
         "ar" : {
@@ -1304,6 +1621,16 @@
         }
       }
     },
+    "Checking" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جارٍ الفحص"
+          }
+        }
+      }
+    },
     "Checking laptop protection" : {
       "localizations" : {
         "ar" : {
@@ -1326,6 +1653,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "جارٍ التحقق من الحالة"
+          }
+        }
+      }
+    },
+    "Checking the lists on this Mac…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جارٍ فحص القوائم على هذا الماك…"
           }
         }
       }
@@ -1392,12 +1729,32 @@
         }
       }
     },
+    "Close" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إغلاق"
+          }
+        }
+      }
+    },
     "Closed while browser guarding is active if its extension stops checking in or is confirmed missing or disabled in a standard profile." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "يُغلق أثناء تفعيل رقابة المتصفحات إذا توقفت إضافته عن الاتصال، أو تأكد حذفها أو تعطيلها في ملف قياسي."
+          }
+        }
+      }
+    },
+    "Closes in %lld seconds" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يُغلق خلال %lld ثانية"
           }
         }
       }
@@ -1428,6 +1785,16 @@
         }
       }
     },
+    "Company" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "رفقة"
+          }
+        }
+      }
+    },
     "Confirmed by you, not checked by Hisn. Keep recovery details somewhere you can reach without this Mac." : {
       "localizations" : {
         "ar" : {
@@ -1454,6 +1821,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "اربط متصفحًا"
+          }
+        }
+      }
+    },
+    "Connect a supported browser before verifying removal protection." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اربط متصفحاً مدعوماً قبل التحقق من الحماية من إزالة الإضافة."
           }
         }
       }
@@ -1556,6 +1933,16 @@
         }
       }
     },
+    "Could not read" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّرت القراءة"
+          }
+        }
+      }
+    },
     "Could not read an identifier for %@." : {
       "localizations" : {
         "ar" : {
@@ -1586,12 +1973,32 @@
         }
       }
     },
+    "Create the private-windows profile…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أنشئ ملف تعريف النوافذ الخاصة…"
+          }
+        }
+      }
+    },
     "Custom" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "مخصص"
+          }
+        }
+      }
+    },
+    "Daily account" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الحساب اليومي"
           }
         }
       }
@@ -1628,6 +2035,102 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "أيام"
+          }
+        }
+      }
+    },
+    "design.localPrivacy" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حماية مع رؤية واضحة لكل طبقة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Protection, with a clear view of every layer."
+          }
+        }
+      }
+    },
+    "design.page.lock" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "راجع مدة التزامك وخيارات الاسترداد."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Review your chosen time and recovery options."
+          }
+        }
+      }
+    },
+    "design.page.overview" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حالة الحماية والالتزام، كلٌّ منهما على حدة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your protection and commitment, shown separately."
+          }
+        }
+      }
+    },
+    "design.page.rules" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ضع حدوداً للمواقع والتطبيقات والوصول من المتصفح."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose boundaries for sites, apps and browser access."
+          }
+        }
+      }
+    },
+    "design.page.settings" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اللغة والاتصالات وتفضيلاتك."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Language, connections and your preferences."
+          }
+        }
+      }
+    },
+    "design.page.setup" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اربط طبقات الحماية ثم تحقّق مما أصبح جاهزاً."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect your layers, then verify what is ready."
           }
         }
       }
@@ -1745,6 +2248,16 @@
         }
       }
     },
+    "Each time you walk away, the habit gets weaker." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كل مرة تبتعد فيها يضعف هذا الاعتياد."
+          }
+        }
+      }
+    },
     "early release arrives %@" : {
       "localizations" : {
         "ar" : {
@@ -1761,32 +2274,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "طُلب الإنهاء المبكر"
-          }
-        }
-      }
-    },
-    "Enable Keep browser protection on in Blocking Rules to require protection after a commitment ends. This needs your confirmation." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "فعّل «إبقاء حماية المتصفح مفعّلة» في قواعد الحظر لطلب الحماية بعد انتهاء الالتزام. يتطلب ذلك موافقتك."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enable Keep browser protection on in Blocking Rules to require protection after a commitment ends. This needs your confirmation."
-          }
-        }
-      }
-    },
-    "Enable requirement" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تفعيل الاشتراط"
           }
         }
       }
@@ -1841,12 +2328,32 @@
         }
       }
     },
+    "Ends %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ينتهي في %@"
+          }
+        }
+      }
+    },
     "Ends %@." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "ينتهي في %@."
+          }
+        }
+      }
+    },
+    "Enter a domain or paste a link. Subdomains are included, and adding a block works during a lock." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أدخل نطاقًا أو الصق رابطًا. تُشمل النطاقات الفرعية، وإضافة حجب ممكنة أثناء القفل."
           }
         }
       }
@@ -1863,6 +2370,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Enter a length between %1$@ and %2$@."
+          }
+        }
+      }
+    },
+    "Enter a website or paste a link" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أدخل موقعًا أو الصق رابطًا"
           }
         }
       }
@@ -1975,6 +2492,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Finding a router or opening its page does not verify blocking. After setup, use the DNS check below and test each device separately."
+          }
+        }
+      }
+    },
+    "Finish setup" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أكمل الإعداد"
           }
         }
       }
@@ -2101,6 +2628,86 @@
         }
       }
     },
+    "Go" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "انتقال"
+          }
+        }
+      }
+    },
+    "Gray screen" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شاشة رمادية"
+          }
+        }
+      }
+    },
+    "Guardian account" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حساب ولي الأمر"
+          }
+        }
+      }
+    },
+    "Guardian activity" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نشاط الحراسة"
+          }
+        }
+      }
+    },
+    "Guardian config unreadable" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّرت قراءة إعداد الحراسة"
+          }
+        }
+      }
+    },
+    "Guardian could not restore the login agent" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّر على الحراسة إعادة وكيل تسجيل الدخول"
+          }
+        }
+      }
+    },
+    "Guardian daemon" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خدمة الحراسة"
+          }
+        }
+      }
+    },
+    "Guardian setup command" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أمر إعداد ولي الأمر"
+          }
+        }
+      }
+    },
     "guest windows in %@" : {
       "localizations" : {
         "ar" : {
@@ -2215,6 +2822,16 @@
         }
       }
     },
+    "Hisn does not create the guardian account or store its password. A separate person types it." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا ينشئ حصن حساب ولي الأمر ولا يخزّن كلمة مروره. يكتبها شخص منفصل."
+          }
+        }
+      }
+    },
     "Hisn is not installed in Applications. Install it from the Hisn folder." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2274,16 +2891,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "يغيّر حصن لغته عند إعادة تشغيله."
-          }
-        }
-      }
-    },
-    "Hisn will also guard browsers when no lock is running. Once lost protection is detected, you have one minute to restore the extension before closure; an unresolved relaunch gets only five seconds. Unsupported browsers, including Safari, also close. Save your work. Unknown apps you explicitly trust stay open without checks. You can turn this off outside a lock. It does not prevent uninstalling Hisn." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "سيحمي حصن المتصفحات أيضًا عندما لا يوجد قفل نشط. عند اكتشاف فقدان الحماية، لديك دقيقة لاستعادة الإضافة قبل الإغلاق؛ وإعادة التشغيل دون إصلاح تمنح خمس ثوانٍ فقط. تُغلَق المتصفحات غير المدعومة، بما فيها Safari، أيضًا. احفظ عملك. تظل التطبيقات غير المعروفة التي وثقتَ بها صراحةً مفتوحة دون فحوصات. يمكنك إيقاف هذا الخيار خارج القفل. لا يمنع ذلك إزالة حصن."
           }
         }
       }
@@ -2686,6 +3293,16 @@
         }
       }
     },
+    "Installed" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مثبّتة"
+          }
+        }
+      }
+    },
     "Installed browsers have required Hisn protection and an administrator-protected connection to the app." : {
       "localizations" : {
         "ar" : {
@@ -2770,6 +3387,126 @@
         }
       }
     },
+    "It is not on the bundled core list (version %lld) or your own lists." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ليس في القائمة الأساسية المضمّنة (الإصدار %lld) ولا في قوائمك."
+          }
+        }
+      }
+    },
+    "It is not on the bundled core list or your own lists." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ليس في القائمة الأساسية المضمّنة ولا في قوائمك."
+          }
+        }
+      }
+    },
+    "It is not on the installed block list (version %lld) or your own lists." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ليس في قائمة الحجب المثبّتة (الإصدار %lld) ولا في قوائمك."
+          }
+        }
+      }
+    },
+    "It is not on the installed block list or your own lists." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ليس في قائمة الحجب المثبّتة ولا في قوائمك."
+          }
+        }
+      }
+    },
+    "It is on the bundled core list (version %lld)." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إنه في القائمة الأساسية المضمّنة (الإصدار %lld)."
+          }
+        }
+      }
+    },
+    "It is on the bundled core list." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إنه في القائمة الأساسية المضمّنة."
+          }
+        }
+      }
+    },
+    "It is on the installed block list (version %lld)." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إنه في قائمة الحجب المثبّتة (الإصدار %lld)."
+          }
+        }
+      }
+    },
+    "It is on the installed block list." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إنه في قائمة الحجب المثبّتة."
+          }
+        }
+      }
+    },
+    "It is on your Always allowed list. Neither the published list nor strict mode will block it." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إنه في قائمة «مسموح دائمًا». لذلك لن تحجبه القائمة المنشورة ولا الوضع الصارم."
+          }
+        }
+      }
+    },
+    "It is on your Always block list." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إنه في قائمة «احجب هذه دائمًا»."
+          }
+        }
+      }
+    },
+    "It matches a built-in Hisn rule for search results or viewer pages." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إنه يطابق قاعدة مضمّنة في حصن لنتائج البحث أو صفحات المشاهدة."
+          }
+        }
+      }
+    },
+    "Its address matches a blocked keyword." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "عنوانه يطابق كلمة مفتاحية محجوبة."
+          }
+        }
+      }
+    },
     "Keep a recovery route" : {
       "localizations" : {
         "ar" : {
@@ -2786,16 +3523,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "أبقِ موقع الخدمة متاحاً مع فحص نصوصه. في متصفحات Chromium المدعومة، يفحص حصن النصوص المتغيرة ويخفي منشورات X/Twitter المكتشفة كلّاً على حدة؛ اكتشاف منشور واحد لا يضيف الخدمة كلها إلى مواقعك المحظورة."
-          }
-        }
-      }
-    },
-    "Keep browser protection on" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "أبقِ حماية المتصفح مفعّلة"
           }
         }
       }
@@ -2846,66 +3573,6 @@
         }
       }
     },
-    "Close" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "إغلاق"
-          }
-        }
-      }
-    },
-    "Licenses and sources" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "التراخيص والمصادر"
-          }
-        }
-      }
-    },
-    "The notices could not be read from this app. Reinstall Hisn from a trusted copy." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تعذّرت قراءة الإشعارات من هذا التطبيق. أعد تثبيت حصن من نسخة موثوقة."
-          }
-        }
-      }
-    },
-    "Guardian daemon" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "خدمة الحراسة"
-          }
-        }
-      }
-    },
-    "Installed" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "مثبّتة"
-          }
-        }
-      }
-    },
-    "Not installed" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "غير مثبّتة"
-          }
-        }
-      }
-    },
     "Last guardian event" : {
       "localizations" : {
         "ar" : {
@@ -2916,52 +3583,12 @@
         }
       }
     },
-    "Login agent restored" : {
+    "Last list check" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "أُعيد وكيل تسجيل الدخول"
-          }
-        }
-      }
-    },
-    "Guardian could not restore the login agent" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تعذّر على الحراسة إعادة وكيل تسجيل الدخول"
-          }
-        }
-      }
-    },
-    "Protected account missing" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "حساب الحماية مفقود"
-          }
-        }
-      }
-    },
-    "Guardian config unreadable" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تعذّرت قراءة إعداد الحراسة"
-          }
-        }
-      }
-    },
-    "Guardian activity" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "نشاط الحراسة"
+            "value" : "آخر تحقق من القائمة"
           }
         }
       }
@@ -2976,32 +3603,12 @@
         }
       }
     },
-    "The block list has not updated in over a week. The previous signed list is still enforced." : {
+    "Layer details" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "لم تتحدث قائمة الحجب منذ أكثر من أسبوع. القائمة الموقّعة السابقة لا تزال مطبقة."
-          }
-        }
-      }
-    },
-    "The last block-list update failed. The previous signed list is still enforced." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "فشل آخر تحديث لقائمة الحجب. القائمة الموقّعة السابقة لا تزال مطبقة."
-          }
-        }
-      }
-    },
-    "Last list check" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "آخر تحقق من القائمة"
+            "value" : "تفاصيل الطبقات"
           }
         }
       }
@@ -3027,12 +3634,32 @@
         }
       }
     },
+    "Licenses and sources" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التراخيص والمصادر"
+          }
+        }
+      }
+    },
     "Limit Adult Websites is on. Its passcode belongs with your partner." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "تقييد مواقع البالغين مفعّل. رمزه مكانه مع شريكك."
+          }
+        }
+      }
+    },
+    "Limits of these checks" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حدود هذه الفحوص"
           }
         }
       }
@@ -3053,6 +3680,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "موجّه روابط فقط — يبقى مفتوحًا لأنه يرسل الروابط إلى متصفح ولا يعرض الصفحات."
+          }
+        }
+      }
+    },
+    "Loaded" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "محمّل"
           }
         }
       }
@@ -3103,6 +3740,27 @@
         }
       }
     },
+    "Lock progress" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تقدّم القفل"
+          }
+        }
+      }
+    },
+    "Locked" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مقفل"
+          }
+        }
+      }
+    },
     "Locked · %@ left" : {
       "localizations" : {
         "ar" : {
@@ -3119,6 +3777,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "مقفل حتى %@"
+          }
+        }
+      }
+    },
+    "Login agent restored" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أُعيد وكيل تسجيل الدخول"
           }
         }
       }
@@ -3154,6 +3822,16 @@
         }
       }
     },
+    "Make the screen gray" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اجعل الشاشة رمادية"
+          }
+        }
+      }
+    },
     "Manage lock" : {
       "localizations" : {
         "ar" : {
@@ -3174,12 +3852,32 @@
         }
       }
     },
+    "Message or call someone you trust, even just to say hello." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "راسل شخصًا تثق به أو اتصل به، ولو لتقول له مرحبًا."
+          }
+        }
+      }
+    },
     "minutes" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "دقائق"
+          }
+        }
+      }
+    },
+    "Missing" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مفقود"
           }
         }
       }
@@ -3246,6 +3944,16 @@
         }
       }
     },
+    "Needs attention" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تحتاج إلى انتباه"
+          }
+        }
+      }
+    },
     "Needs the Apple Developer Program ($99 a year). It adds blocking no VPN can get around." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -3305,6 +4013,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تراجع"
+          }
+        }
+      }
+    },
+    "Next" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التالي"
           }
         }
       }
@@ -3396,6 +4114,16 @@
         }
       }
     },
+    "No extra sites. The published list still applies." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا مواقع إضافية. القائمة المنشورة تبقى مطبّقة."
+          }
+        }
+      }
+    },
     "No Hisn protection inside — closed during a lock." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -3469,6 +4197,16 @@
         }
       }
     },
+    "No secure token" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بلا رمز آمن"
+          }
+        }
+      }
+    },
     "No supported browser is installed. Connect Hisn in a supported browser; Safari has no verified Hisn page scanner on this Mac." : {
       "localizations" : {
         "ar" : {
@@ -3485,6 +4223,16 @@
         }
       }
     },
+    "No supported Chromium browser is installed, so there is nothing to disable." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يوجد متصفح Chromium مدعوم مثبّت، لذا لا يوجد ما يمكن تعطيله."
+          }
+        }
+      }
+    },
     "No supported local gateway address was found. This can happen with a VPN, an IPv6-only network, or a router managed through its own app. Use the router's official app or continue protecting this device." : {
       "localizations" : {
         "ar" : {
@@ -3497,6 +4245,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No supported local gateway address was found. This can happen with a VPN, an IPv6-only network, or a router managed through its own app. Use the router's official app or continue protecting this device."
+          }
+        }
+      }
+    },
+    "Not an administrator" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ليس مسؤولًا"
           }
         }
       }
@@ -3521,12 +4279,32 @@
         }
       }
     },
+    "Not installed" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "غير مثبّتة"
+          }
+        }
+      }
+    },
     "Not installed — run macos/install.sh --hosts" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "غير مثبّتة — شغّل macos/install.sh --hosts"
+          }
+        }
+      }
+    },
+    "Not loaded" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "غير محمّل"
           }
         }
       }
@@ -3567,6 +4345,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "غير مُعدّة"
+          }
+        }
+      }
+    },
+    "Not verified" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "غير مُتحقَّق"
+          }
+        }
+      }
+    },
+    "Not verified. This account or the guardian setup needs attention before the split can be trusted." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "غير مُتحقَّق. يحتاج هذا الحساب أو إعداد ولي الأمر إلى مراجعة قبل الوثوق بالفصل."
           }
         }
       }
@@ -3738,6 +4536,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "واحدة في كل سطر. تُحجب الصفحة حين تتكرر فيها هذه الكلمات بما يكفي — لذا فالكلمة الشائعة تحجب صفحات عادية أيضًا. الحد الأدنى %lld أحرف."
+          }
+        }
+      }
+    },
+    "Open %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افتح %@"
           }
         }
       }
@@ -3974,16 +4782,6 @@
         }
       }
     },
-    "Opt-in: keep requiring the extension after a lock ends. Off by default; active locks always require it." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "خيار اختياري: الاستمرار في اشتراط اتصال الإضافة بعد انتهاء القفل. متوقف افتراضيًا؛ ويظل شرط الإضافة قائمًا أثناء القفل."
-          }
-        }
-      }
-    },
     "Other / I don't know" : {
       "localizations" : {
         "ar" : {
@@ -4102,12 +4900,42 @@
         }
       }
     },
+    "Paste a list" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الصق قائمة"
+          }
+        }
+      }
+    },
+    "Pauses today: %lld" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وقفات اليوم: %lld"
+          }
+        }
+      }
+    },
     "Person blur uses detected faces and can be off, all people, women or men. The women and men options estimate appearance; they do not identify a person or mean their image is adult content." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "يعتمد تمويه الأشخاص على الوجوه المكتشفة، ويمكن إيقافه أو اختيار جميع الأشخاص أو النساء أو الرجال. يقدّر خيارا النساء والرجال المظهر، ولا يحددان هوية الشخص أو يعنيان أن صورته محتوى إباحي."
+          }
+        }
+      }
+    },
+    "Pick one small task you have been putting off and give it ten minutes." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختر مهمة صغيرة أجّلتها وامنحها عشر دقائق."
           }
         }
       }
@@ -4138,6 +4966,16 @@
         }
       }
     },
+    "Private windows are open in %@." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "النوافذ الخاصة مفتوحة في %1$@."
+          }
+        }
+      }
+    },
     "private windows in %@" : {
       "localizations" : {
         "ar" : {
@@ -4158,6 +4996,16 @@
         }
       }
     },
+    "Protected account missing" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حساب الحماية مفقود"
+          }
+        }
+      }
+    },
     "Protected Setup" : {
       "localizations" : {
         "ar" : {
@@ -4169,11 +5017,22 @@
       }
     },
     "Protected setup checks passed" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "اجتاز الإعداد المحمي الفحوصات"
+          }
+        }
+      }
+    },
+    "Protection" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الحماية"
           }
         }
       }
@@ -4188,12 +5047,32 @@
         }
       }
     },
+    "Protection authority" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سلطة الحماية"
+          }
+        }
+      }
+    },
     "Protection can still be removed or disconnected in %@. Ask the administrator to install the published extension and Hisn protection profile." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "ما زال من الممكن إزالة الحماية أو قطع اتصالها في %@. اطلب من المسؤول تثبيت الإضافة المنشورة وملف حماية حصن."
+          }
+        }
+      }
+    },
+    "Protection interrupted" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "توقفت الحماية"
           }
         }
       }
@@ -4231,6 +5110,7 @@
       }
     },
     "Protection needs attention" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -4252,6 +5132,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Protection: %1$@. %2$@"
+          }
+        }
+      }
+    },
+    "Put the screen away and lie down, even for ten minutes. Tiredness makes urges louder." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ضع الشاشة جانبًا واستلقِ ولو عشر دقائق. التعب يجعل الرغبة أقوى."
           }
         }
       }
@@ -4314,6 +5204,16 @@
         }
       }
     },
+    "Ready" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جاهز"
+          }
+        }
+      }
+    },
     "Reconnect the browser" : {
       "localizations" : {
         "ar" : {
@@ -4330,6 +5230,102 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "أعد تثبيت حصن باستخدام حزمة التثبيت حتى تكون ملفاته محمية بحساب المسؤول."
+          }
+        }
+      }
+    },
+    "removal.setup.consent" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "٢. بموافقتك، يثبّت المسؤول ملف حماية المتصفح المناسب. هذا الدليل لا يثبّت ملفاً ولا يغيّر صلاحياتك."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2. With your consent, an administrator installs the matching browser protection profile. This guide does not install a profile or change your permissions."
+          }
+        }
+      }
+    },
+    "removal.setup.guide" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "دليل إعداد Chrome الرسمي"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Official Chrome setup guide"
+          }
+        }
+      }
+    },
+    "removal.setup.limit" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قد يستطيع المسؤول إزالة الإدارة. لحماية أقوى، استخدم حساباً يومياً عادياً مع مسؤول موثوق وخطة استرداد. التثبيت المُدار لا يثبت الحماية في كل نافذة أو تطبيق."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An administrator may still remove management. For stronger protection, use a standard daily account with a trusted administrator and a recovery plan. Managed installation is not proof of protection in every window or app."
+          }
+        }
+      }
+    },
+    "removal.setup.publish" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "١. استخدم إضافة حصن منشورة بمعرّف ثابت ومصدر تحديث موثوق. تحميل مجلد الإضافة لا يعني تثبيتها بإدارة إلزامية."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1. Use a published Hisn extension with a stable ID and a verified update source. Loading an unpacked folder is not managed installation."
+          }
+        }
+      }
+    },
+    "removal.setup.title" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إعداد الحماية من إزالة الإضافة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set up removal protection"
+          }
+        }
+      }
+    },
+    "removal.setup.verify" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "٣. راجع chrome://policy للتأكد من سياسة تثبيت حصن الإلزامي وعدم وجود أخطاء، وتحقق من غياب إمكانية التعطيل والحذف، ثم أعد الفحص هنا. اختبر كل متصفح وملف مستخدم منفصلاً؛ قد تختلف متصفحات كروميوم."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "3. Review chrome://policy for Hisn’s force-installed policy and errors, check that Disable and Remove are unavailable, then check again here. Test each browser and profile separately; Chromium forks may differ."
           }
         }
       }
@@ -4374,6 +5370,16 @@
         }
       }
     },
+    "Replace YOUR_TEAM_ID with the 10-character team ID from your Apple Developer account." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استبدل YOUR_TEAM_ID بمعرّف الفريق المكوّن من 10 أحرف من حساب مطوّر Apple لديك."
+          }
+        }
+      }
+    },
     "Request early release?" : {
       "localizations" : {
         "ar" : {
@@ -4404,22 +5410,22 @@
         }
       }
     },
-    "Require browser protection outside a lock?" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "هل تريد اشتراط حماية المتصفح خارج فترة القفل؟"
-          }
-        }
-      }
-    },
     "Required browser protection" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "حماية المتصفح الإلزامية"
+          }
+        }
+      }
+    },
+    "Rest" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "راحة"
           }
         }
       }
@@ -4454,12 +5460,32 @@
         }
       }
     },
+    "Restore administrator command" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أمر استعادة صلاحية المسؤول"
+          }
+        }
+      }
+    },
     "Restore Hisn in these profiles; browser guarding can close this browser." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "أعد تفعيل حصن في هذه الملفات؛ قد تُغلق رقابة المتصفحات هذا المتصفح."
+          }
+        }
+      }
+    },
+    "Restoring the extension cancels the close." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استعادة الإضافة تلغي الإغلاق."
           }
         }
       }
@@ -4506,6 +5532,16 @@
         }
       }
     },
+    "Review setup" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "راجع الإعداد"
+          }
+        }
+      }
+    },
     "Review text checking" : {
       "localizations" : {
         "ar" : {
@@ -4544,6 +5580,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Router name or model, for example Deco X50"
+          }
+        }
+      }
+    },
+    "Run the command below, then approve the filter in System Settings." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نفّذ الأمر أدناه، ثم وافق على المرشّح في إعدادات النظام."
           }
         }
       }
@@ -4717,6 +5763,36 @@
         }
       }
     },
+    "seconds left" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ثانية متبقية"
+          }
+        }
+      }
+    },
+    "See whether an address is on your lists or blocked for another reason." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اعرف إن كان العنوان في قوائمك أو محجوبًا لسبب آخر."
+          }
+        }
+      }
+    },
+    "See whether an address would be blocked, and which list decides it." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اعرف إن كان العنوان سيُحجب، وأي قائمة تقرر ذلك."
+          }
+        }
+      }
+    },
     "Self-control comes first: you can set up these layers yourself. A trusted person is optional reinforcement against changing administrator or router settings, not a requirement for starting a commitment." : {
       "localizations" : {
         "ar" : {
@@ -4858,7 +5934,18 @@
         }
       }
     },
+    "Setup progress" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تقدّم الإعداد"
+          }
+        }
+      }
+    },
     "Setup: %lld of %lld steps done." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -4890,6 +5977,16 @@
         }
       }
     },
+    "Shows everything on this Mac in shades of gray. Apps keep working; images and videos lose most of their pull." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يعرض كل ما على هذا الماك بدرجات الرمادي. تبقى التطبيقات تعمل، وتفقد الصور ومقاطع الفيديو معظم جاذبيتها."
+          }
+        }
+      }
+    },
     "Some protection layers need attention. Your commitment remains active; review the checks below." : {
       "localizations" : {
         "ar" : {
@@ -4916,12 +6013,42 @@
         }
       }
     },
+    "Something to do" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "شيء أفعله"
+          }
+        }
+      }
+    },
     "Something went wrong" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "حدث خطأ"
+          }
+        }
+      }
+    },
+    "Stand up, change rooms, drink some water. Moving your body moves your mind." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قم من مكانك، وانتقل إلى غرفة أخرى، واشرب ماءً. حين يتحرك الجسد يتغيّر التفكير."
+          }
+        }
+      }
+    },
+    "Standard account" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حساب قياسي"
           }
         }
       }
@@ -5039,6 +6166,16 @@
         }
       }
     },
+    "Started %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بدأ في %@"
+          }
+        }
+      }
+    },
     "Stays open while its Hisn extension checks in; closed if the extension is switched off." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -5046,6 +6183,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "يبقى مفتوحًا ما دامت إضافة حصن فيه تتصل بالتطبيق؛ ويُغلق إن عُطّلت الإضافة."
+          }
+        }
+      }
+    },
+    "Step outside or wash your face, then take five slow breaths." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اخرج قليلًا أو اغسل وجهك، ثم خذ خمسة أنفاس بطيئة."
           }
         }
       }
@@ -5081,6 +6228,16 @@
         }
       }
     },
+    "Strict mode is on, and this site is not on your Always allowed list." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الوضع الصارم مفعّل، وهذا الموقع ليس في قائمة «مسموح دائمًا»."
+          }
+        }
+      }
+    },
     "Switch to strict" : {
       "localizations" : {
         "ar" : {
@@ -5107,6 +6264,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "مرشّح النظام"
+          }
+        }
+      }
+    },
+    "Take a moment before you go on" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خذ لحظة قبل أن تكمل"
+          }
+        }
+      }
+    },
+    "Take a pause…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "خذ وقفة…"
           }
         }
       }
@@ -5163,12 +6340,32 @@
         }
       }
     },
+    "That is not a domain." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذا ليس نطاقًا."
+          }
+        }
+      }
+    },
     "That is not a partner key. It should be the code your partner’s Hisn Partner page shows under “Your key”." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "هذا ليس مفتاح شريك. يجب أن يكون الرمز الذي تعرضه صفحة «شريك حصن» لدى شريكك تحت «مفتاحك»."
+          }
+        }
+      }
+    },
+    "That is not a website address" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذا ليس عنوان موقع إلكتروني"
           }
         }
       }
@@ -5189,6 +6386,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "لا يتحقق التطبيق من إعدادات الفحص البصري. يمكن فحص الصور وإطارات الفيديو المتاحة محليًا؛ تبقى الوسائط غير القابلة للقراءة والحالات التي لم تُكتشف ممكنة."
+          }
+        }
+      }
+    },
+    "The block list has not updated in over a week. The previous signed list is still enforced." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم تتحدث قائمة الحجب منذ أكثر من أسبوع. القائمة الموقّعة السابقة لا تزال مطبقة."
           }
         }
       }
@@ -5215,6 +6422,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The DNS check could not finish. Check connectivity and try again."
+          }
+        }
+      }
+    },
+    "The filter and the browser extension pick it up within a few seconds. Remove it on the Blocking Rules page." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يلتقطه المرشّح وإضافة المتصفح خلال ثوانٍ. أزِله من صفحة قواعد الحجب."
           }
         }
       }
@@ -5329,6 +6546,26 @@
         }
       }
     },
+    "The installed block list could not be read, so this answer does not include it. Your own lists were checked." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّرت قراءة قائمة الحجب المثبّتة، لذا لا تشمل الإجابة القائمة المنشورة. وقد فُحصت قوائمك الخاصة."
+          }
+        }
+      }
+    },
+    "The last block-list update failed. The previous signed list is still enforced." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فشل آخر تحديث لقائمة الحجب. القائمة الموقّعة السابقة لا تزال مطبقة."
+          }
+        }
+      }
+    },
     "The link to the browser was re-registered. Open the browser and make sure the Hisn extension is turned on; this row updates within a minute." : {
       "localizations" : {
         "ar" : {
@@ -5377,6 +6614,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The network or DNS settings changed or could not be verified during this check. Retry on a stable connection."
+          }
+        }
+      }
+    },
+    "The notices could not be read from this app. Reinstall Hisn from a trusted copy." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّرت قراءة الإشعارات من هذا التطبيق. أعد تثبيت حصن من نسخة موثوقة."
           }
         }
       }
@@ -5474,6 +6721,16 @@
         }
       }
     },
+    "There is no off switch and no lock needed: if the extension stops answering, the browser shows a countdown and then closes." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يوجد مفتاح للإيقاف ولا حاجة إلى قفل: إذا توقفت الإضافة عن الاستجابة، يعرض المتصفح عدًّا تنازليًا ثم يُغلق."
+          }
+        }
+      }
+    },
     "These checks cover this Mac and make protection harder to disable. Network protection, other devices, and recovery access are checked separately." : {
       "localizations" : {
         "ar" : {
@@ -5511,12 +6768,63 @@
         }
       }
     },
+    "This account is still an administrator. It can remove Hisn during the lock. Complete the guardian split in Setup first." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يزال هذا الحساب مسؤولًا. يمكنه إزالة حصن أثناء القفل. أكمل فصل حساب ولي الأمر من الإعداد أولًا."
+          }
+        }
+      }
+    },
+    "This answer uses the bundled core list. The full list has not been installed on this Mac." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تستخدم هذه الإجابة القائمة الأساسية المضمّنة. لم تُثبَّت القائمة الكاملة على هذا الماك."
+          }
+        }
+      }
+    },
+    "This app bundle has no filter extension, so there is nothing to turn on. Reinstall the full Hisn build." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا تحتوي حزمة التطبيق هذه على امتداد المرشّح، لذا لا يوجد ما يمكن تفعيله. أعد تثبيت نسخة حصن الكاملة."
+          }
+        }
+      }
+    },
+    "This build is ad-hoc signed, so macOS will not load its system filter. Rebuild it with your Apple Developer Program team (Setup step 9)." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذه النسخة موقّعة توقيعًا مخصّصًا (ad-hoc)، لذا لن تُحمِّل macOS مرشّح النظام الخاص بها. أعد بناءها بفريق برنامج مطوّري Apple (الخطوة 9 من الإعداد)."
+          }
+        }
+      }
+    },
     "This cannot be undone by you alone" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "لا يمكنك التراجع عن هذا وحدك"
+          }
+        }
+      }
+    },
+    "This checks the address against the lists on this Mac. It does not check page text, images or video, or whether a browser profile has the extension." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يفحص هذا العنوان مقابل القوائم على هذا الماك. ولا يفحص نص الصفحة أو الصور أو الفيديو، ولا يتحقق من وجود الإضافة في ملف تعريف المتصفح."
           }
         }
       }
@@ -5574,6 +6882,16 @@
         }
       }
     },
+    "This lock would enforce %lld of %lld protection layers." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سيفرض هذا القفل %1$lld من أصل %2$lld طبقة حماية."
+          }
+        }
+      }
+    },
     "This makes the schedule weaker, so it takes effect %@." : {
       "localizations" : {
         "ar" : {
@@ -5600,16 +6918,6 @@
         }
       }
     },
-    "This requirement cannot be turned off while a lock is running." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "لا يمكن إيقاف هذا الاشتراط أثناء تشغيل القفل."
-          }
-        }
-      }
-    },
     "This router family uses its phone app for DNS settings. Open that app and follow the family guide above, then return here for the filtering DNS addresses and checks." : {
       "localizations" : {
         "ar" : {
@@ -5626,6 +6934,26 @@
         }
       }
     },
+    "This site is blocked" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذا الموقع محجوب"
+          }
+        }
+      }
+    },
+    "This site is not blocked" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذا الموقع غير محجوب"
+          }
+        }
+      }
+    },
     "This uses the provider's categories. To use Hisn's signed domain list, choose a filtering DNS server instead." : {
       "localizations" : {
         "ar" : {
@@ -5638,6 +6966,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "This uses the provider's categories. To use Hisn's signed domain list, choose a filtering DNS server instead."
+          }
+        }
+      }
+    },
+    "This version of macOS does not let Hisn change the screen. Turn on Grayscale in System Settings › Accessibility › Display › Color Filters instead." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يسمح هذا الإصدار من macOS لحصن بتغيير الشاشة. فعّل التدرّج الرمادي من إعدادات النظام › تسهيلات الاستخدام › شاشة العرض › مرشحات الألوان بدلًا من ذلك."
           }
         }
       }
@@ -5748,6 +7086,26 @@
         }
       }
     },
+    "Try something like example.com, or paste the page's link." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جرّب شيئًا مثل example.com، أو الصق رابط الصفحة."
+          }
+        }
+      }
+    },
+    "Try something like example.com, or paste the page’s link." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جرّب شيئًا مثل example.com، أو الصق رابط الصفحة."
+          }
+        }
+      }
+    },
     "turn off keyword checking" : {
       "localizations" : {
         "ar" : {
@@ -5784,6 +7142,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "شغّل مرشّح النظام"
+          }
+        }
+      }
+    },
+    "Two lists of your own, on top of the published list." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قائمتان خاصتان بك، إضافةً إلى القائمة المنشورة."
+          }
+        }
+      }
+    },
+    "Unavailable" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "غير متاح"
           }
         }
       }
@@ -5871,6 +7249,26 @@
         }
       }
     },
+    "Verified" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مُتحقَّق"
+          }
+        }
+      }
+    },
+    "Verified: this is a standard account, the guardian account is an administrator with a secure token, and the guardian daemon is loaded." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مُتحقَّق: هذا حساب قياسي، وحساب ولي الأمر مسؤول ويملك رمزًا آمنًا، وحارس ولي الأمر محمّل."
+          }
+        }
+      }
+    },
     "Verify a listed domain, a subdomain, and an ordinary website in the resolver's query log from each device. Check again after a list update. Importing a file alone does not prove that clients use it." : {
       "localizations" : {
         "ar" : {
@@ -5929,6 +7327,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "أسابيع"
+          }
+        }
+      }
+    },
+    "Well done. The urge passes faster than it feels." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أحسنت. الرغبة تزول أسرع مما تشعر."
+          }
+        }
+      }
+    },
+    "What do you need right now?" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ما الذي تحتاجه الآن؟"
           }
         }
       }
@@ -6063,6 +7481,16 @@
         }
       }
     },
+    "You set this up on a calmer day, for a moment like this one." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أعددت هذا في يوم أهدأ، من أجل لحظة كهذه."
+          }
+        }
+      }
+    },
     "You will not be able to turn this off until %@." : {
       "localizations" : {
         "ar" : {
@@ -6085,6 +7513,7 @@
       }
     },
     "Your chosen commitment" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -6112,6 +7541,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Your fixed commitment has not finished. Self-release is unavailable until it ends."
+          }
+        }
+      }
+    },
+    "Your lists do not block this site" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قوائمك لا تحجب هذا الموقع"
           }
         }
       }
@@ -6172,616 +7611,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "كلماتك وتطبيقاتك"
-          }
-        }
-      }
-    },
-    "Protection authority" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "سلطة الحماية"
-          }
-        }
-      }
-    },
-    "Daily account" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "الحساب اليومي"
-          }
-        }
-      }
-    },
-    "Guardian account" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "حساب ولي الأمر"
-          }
-        }
-      }
-    },
-    "Verified" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "مُتحقَّق"
-          }
-        }
-      }
-    },
-    "Not verified" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "غير مُتحقَّق"
-          }
-        }
-      }
-    },
-    "Unavailable" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "غير متاح"
-          }
-        }
-      }
-    },
-    "Standard account" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "حساب قياسي"
-          }
-        }
-      }
-    },
-    "Administrator" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "مسؤول"
-          }
-        }
-      }
-    },
-    "Could not read" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تعذّرت القراءة"
-          }
-        }
-      }
-    },
-    "Ready" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "جاهز"
-          }
-        }
-      }
-    },
-    "Missing" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "مفقود"
-          }
-        }
-      }
-    },
-    "Not an administrator" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ليس مسؤولًا"
-          }
-        }
-      }
-    },
-    "No secure token" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "بلا رمز آمن"
-          }
-        }
-      }
-    },
-    "Loaded" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "محمّل"
-          }
-        }
-      }
-    },
-    "Not loaded" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "غير محمّل"
-          }
-        }
-      }
-    },
-    "A lock is running, so administrator and removal changes are disabled until it ends." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "قفل قيد التشغيل، لذا تُعطّل تغييرات المسؤول والإزالة حتى ينتهي."
-          }
-        }
-      }
-    },
-    "Guardian setup command" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "أمر إعداد ولي الأمر"
-          }
-        }
-      }
-    },
-    "Restore administrator command" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "أمر استعادة صلاحية المسؤول"
-          }
-        }
-      }
-    },
-    "Hisn does not create the guardian account or store its password. A separate person types it." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "لا ينشئ حصن حساب ولي الأمر ولا يخزّن كلمة مروره. يكتبها شخص منفصل."
-          }
-        }
-      }
-    },
-    "Verified: this is a standard account, the guardian account is an administrator with a secure token, and the guardian daemon is loaded." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "مُتحقَّق: هذا حساب قياسي، وحساب ولي الأمر مسؤول ويملك رمزًا آمنًا، وحارس ولي الأمر محمّل."
-          }
-        }
-      }
-    },
-    "Not verified. This account or the guardian setup needs attention before the split can be trusted." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "غير مُتحقَّق. يحتاج هذا الحساب أو إعداد ولي الأمر إلى مراجعة قبل الوثوق بالفصل."
-          }
-        }
-      }
-    },
-    "This account is still an administrator. It can remove Hisn during the lock. Complete the guardian split in Setup first." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "لا يزال هذا الحساب مسؤولًا. يمكنه إزالة حصن أثناء القفل. أكمل فصل حساب ولي الأمر من الإعداد أولًا."
-          }
-        }
-      }
-    },
-    "Go" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "انتقال"
-          }
-        }
-      }
-    },
-    "Locked" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "مقفل"
-          }
-        }
-      }
-    },
-    "Protection" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "الحماية"
-          }
-        }
-      }
-    },
-    "Replace YOUR_TEAM_ID with the 10-character team ID from your Apple Developer account." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "استبدل YOUR_TEAM_ID بمعرّف الفريق المكوّن من 10 أحرف من حساب مطوّر Apple لديك."
-          }
-        }
-      }
-    },
-    "Run the command below, then approve the filter in System Settings." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "نفّذ الأمر أدناه، ثم وافق على المرشّح في إعدادات النظام."
-          }
-        }
-      }
-    },
-    "This app bundle has no filter extension, so there is nothing to turn on. Reinstall the full Hisn build." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "لا تحتوي حزمة التطبيق هذه على امتداد المرشّح، لذا لا يوجد ما يمكن تفعيله. أعد تثبيت نسخة حصن الكاملة."
-          }
-        }
-      }
-    },
-    "This build is ad-hoc signed, so macOS will not load its system filter. Rebuild it with your Apple Developer Program team (Setup step 9)." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "هذه النسخة موقّعة توقيعًا مخصّصًا (ad-hoc)، لذا لن تُحمِّل macOS مرشّح النظام الخاص بها. أعد بناءها بفريق برنامج مطوّري Apple (الخطوة 9 من الإعداد)."
-          }
-        }
-      }
-    },
-    "Take a pause…" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "خذ وقفة…"
-          }
-        }
-      }
-    },
-    "A private pause. Nothing here is recorded except today’s count." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "وقفة خاصة. لا يُسجَّل هنا شيء سوى عدد وقفات اليوم."
-          }
-        }
-      }
-    },
-    "Take a moment before you go on" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "خذ لحظة قبل أن تكمل"
-          }
-        }
-      }
-    },
-    "Breathe in…" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "خذ نفسًا عميقًا…"
-          }
-        }
-      }
-    },
-    "Breathe out slowly…" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "أخرِج النفس ببطء…"
-          }
-        }
-      }
-    },
-    "Breathing pause" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "وقفة تنفّس"
-          }
-        }
-      }
-    },
-    "Well done. The urge passes faster than it feels." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "أحسنت. الرغبة تزول أسرع مما تشعر."
-          }
-        }
-      }
-    },
-    "What do you need right now?" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ما الذي تحتاجه الآن؟"
-          }
-        }
-      }
-    },
-    "Rest" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "راحة"
-          }
-        }
-      }
-    },
-    "Company" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "رفقة"
-          }
-        }
-      }
-    },
-    "Calm" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "هدوء"
-          }
-        }
-      }
-    },
-    "Something to do" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "شيء أفعله"
-          }
-        }
-      }
-    },
-    "Put the screen away and lie down, even for ten minutes. Tiredness makes urges louder." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ضع الشاشة جانبًا واستلقِ ولو عشر دقائق. التعب يجعل الرغبة أقوى."
-          }
-        }
-      }
-    },
-    "Message or call someone you trust, even just to say hello." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "راسل شخصًا تثق به أو اتصل به، ولو لتقول له مرحبًا."
-          }
-        }
-      }
-    },
-    "Step outside or wash your face, then take five slow breaths." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "اخرج قليلًا أو اغسل وجهك، ثم خذ خمسة أنفاس بطيئة."
-          }
-        }
-      }
-    },
-    "Pick one small task you have been putting off and give it ten minutes." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "اختر مهمة صغيرة أجّلتها وامنحها عشر دقائق."
-          }
-        }
-      }
-    },
-    "Breathe again" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تنفّس مرة أخرى"
-          }
-        }
-      }
-    },
-    "An urge rises, peaks and fades, usually within minutes. You don’t have to act on it." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "الرغبة تشتد ثم تهدأ، وغالبًا خلال دقائق. لست مضطرًا إلى الاستجابة لها."
-          }
-        }
-      }
-    },
-    "You set this up on a calmer day, for a moment like this one." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "أعددت هذا في يوم أهدأ، من أجل لحظة كهذه."
-          }
-        }
-      }
-    },
-    "A slip doesn’t erase your progress. Walking away right now still counts." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "الزلّة لا تمحو ما أنجزته. ابتعادك الآن ما زال يُحسب لك."
-          }
-        }
-      }
-    },
-    "Ask what led here: the time, the place, the mood. That is what to change next." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "اسأل نفسك ما الذي أوصلك إلى هنا: الوقت أو المكان أو المزاج. هذا ما تغيّره بعد ذلك."
-          }
-        }
-      }
-    },
-    "Stand up, change rooms, drink some water. Moving your body moves your mind." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "قم من مكانك، وانتقل إلى غرفة أخرى، واشرب ماءً. حين يتحرك الجسد يتغيّر التفكير."
-          }
-        }
-      }
-    },
-    "Pauses today: %lld" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "وقفات اليوم: %lld"
-          }
-        }
-      }
-    },
-    "Each time you walk away, the habit gets weaker." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "كل مرة تبتعد فيها يضعف هذا الاعتياد."
-          }
-        }
-      }
-    },
-    "Browser protection needs attention" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "حماية المتصفح تحتاج إلى انتباه"
-          }
-        }
-      }
-    },
-    "Protection interrupted" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "توقفت الحماية"
-          }
-        }
-      }
-    },
-    "%@ is about to close" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "سيُغلق %@ بعد قليل"
-          }
-        }
-      }
-    },
-    "seconds left" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ثانية متبقية"
-          }
-        }
-      }
-    },
-    "Closes in %lld seconds" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "يُغلق خلال %lld ثانية"
-          }
-        }
-      }
-    },
-    "Open %@" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "افتح %@"
-          }
-        }
-      }
-    },
-    "Restoring the extension cancels the close." : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "استعادة الإضافة تلغي الإغلاق."
-          }
-        }
-      }
-    },
-    "Layer details" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "تفاصيل الطبقات"
           }
         }
       }

@@ -18,16 +18,21 @@ you the lock; Hisn adds the coverage those built-in filters miss. Read
   **5,274,046 domains**, 239,885 core and 5,831 terms, verified over HTTPS and
   served with HTTP 200. The bundled seed stays v5; iOS and Android still update
   with an app build.
-- **Extension 1.5.0** — **Move your rules**: export the hand lists to a
-  versioned file and import one add-only in another browser. A lock keeps new
-  allowances and corrections waiting; a file can never remove a block.
-- **iPhone & iPad 1.4.0** — a custom Screen Time shield names the saved rule in
-  English or Arabic and offers only Close, with no unlock action; the on-demand
-  pause, protection hero, daily quiet hours and saved-rule freeze remain.
-- **Mac 1.1.9** — the browser-guard warning is now a calm dark card with a
-  shield, a large countdown and one "Open browser" action; it offers no bypass.
-  Overview leads with layer chips and keeps the evidence behind a disclosure.
-  The 1.1.8 pause and protection-authority checks remain.
+- **Extension 1.5.1** — the private-window (incognito) mode is gone from the
+  browser: no private-windows layer, no "allow in Incognito" guide and no
+  strings coaching it. Private browsing is the Mac app's hardening-profile step,
+  which disables it; 1.5.0's **Move your rules** export/import remains.
+- **iPhone & iPad 1.5.0** — a UI/UX pass: the overview is a calm card stack
+  (status, pause, plan progress, lock and rules), the lock, blocked-site and
+  app-limit cards open their editors directly, Setup is three guided steps with
+  a checks card, and Settings is grouped cards. Design research used REA 6.8.0
+  on ScreenZen 2.0.0. The 1.4.0 bilingual Screen Time shield with no unlock, the
+  1.3.0 pause, quiet hours and saved-rule freeze remain.
+- **Mac 1.1.13** — one action for private windows: Setup names the browsers
+  still allowing them and offers a narrow profile that forces only
+  `IncognitoModeAvailability`, then hands it to System Settings. The 1.1.12
+  continuous browser protection (no lock, no opt-in, closes a browser whose
+  extension stops answering) and the 1.1.11 status hero remain.
 - **Android 1.1.0** — a first-run welcome, a voluntary pause on Protection and
   today's usage in the daily-limit editor sit on the 1.0.0 protection lock,
   removal guard, managed lockdown and layer watchdog. The signed direct APK is
@@ -41,21 +46,33 @@ the Play AAB is not uploaded. The exact state is in
 ### Interface
 
 <p align="center">
-  <img src="design/extension-ui-2026-11-02/popup-light-en.png" width="300" alt="Hisn extension popup in light mode">
-  <img src="design/extension-ui-2026-11-02/options-overview-light-en.png" width="560" alt="Hisn extension dashboard in light mode">
+  <img src="design/extension-ui-2026-11-04/after-popup-light-en.png" width="300" alt="Hisn extension popup in light mode">
+  <img src="design/extension-ui-2026-11-04/after-options-overview.png" width="560" alt="Hisn extension dashboard in light mode">
 </p>
 
 The extension popup and dashboard lead with one protection status and one-word
-layer states. More captures, including Arabic and dark mode, are in the
-[UI pass record](design/extension-ui-2026-11-02/README.md).
+layer states. The current captures, including Arabic, the rules editor, visual
+checks, content options and the block page, are in the
+[UI refresh record](design/extension-ui-2026-11-04/README.md). The design
+research behind the pass, including the REA comparison with ScreenZen, is in
+[the 2026-11-04 note](docs/EXTENSION_UI_REFRESH_2026-11-04.md).
+
+<p align="center">
+  <img src="design/macos-ui-1.1.11/after-overview.png" width="560" alt="Hisn Mac overview with per-layer status tiles">
+</p>
+
+The Mac window leads with one status hero, a tile per protection layer and one
+state-aware action. Setup, Blocking Rules, Lock, Settings and the read-only
+site checker are captured in the
+[Mac 1.1.11 design record](design/macos-ui-1.1.11/README.md).
 
 ## Platforms
 
 | Platform | What it does | State | Start here |
 | --- | --- | --- | --- |
 | Browser extension (Chromium) | Blocks listed domains, checks page text in the page's language, optional local image/video checks, portable hand lists | 1.5.0 | [Using the extension](docs/EXTENSION_USAGE.md) |
-| Mac | Content-filter system extension, browser guard, locks, authority checks, accountability partner, root guardian daemon and an on-demand breathing pause | 1.1.9, needs a signed build | [Mac setup](docs/SETUP.md) |
-| iPhone & iPad | Six Safari blockers, Safari text extension, Screen Time app limits with a custom bilingual shield, optional family DNS, protection lock for saved rules, an on-demand pause and daily quiet hours | 1.4.0, development | [iOS README](ios/README.md) |
+| Mac | Content-filter system extension, browser guard, locks, authority checks, accountability partner, root guardian daemon, an on-demand breathing pause and a read-only site checker | 1.1.13, needs a signed build | [Mac setup](docs/SETUP.md) |
+| iPhone & iPad | Six Safari blockers, Safari text extension, Screen Time app limits with a custom bilingual shield, optional family DNS, protection lock for saved rules, an on-demand pause and daily quiet hours | 1.5.0, development | [iOS README](ios/README.md) |
 | Android | DNS filtering, selected-app and word restrictions, per-app daily time limits, first-run welcome, voluntary pause, optional image checks, browser-coverage screen, schedules, protection lock that freezes saved rules, opt-in device-owner uninstall guard and managed lockdown, direct-build removal guard, layer watchdog and bundled-list freshness warning | 1.1.0 direct published; Play AAB not uploaded | [Android README](android/README.md) · [1.1 record](docs/ANDROID_1.1.0.md) |
 | Network / router | Verified signed DNS rules for administrator import | Tools only | [Network tools](network/README.md) |
 
@@ -87,7 +104,7 @@ statements to check before a release.
 | Configuration profile | Supported DNS, Private Relay, and browser settings | A tunnel; an administrator removing the profile |
 | Content filter (system extension) | Host/application decisions on new Mac flows | Provider loss, established flows, unidentified destinations outside strict mode, recovery/admin changes |
 | Accountability partner | Ordinary user loosening an active policy | Guardian authority or recovery; a separate unprotected device |
-| Browser guard (in the app) | Warns/closes disconnected browsers and repeatedly confirmed off standard profiles during locks or outside-lock opt-in | Force-quitting Hisn, explicitly trusted unknown apps, unreadable/custom profiles, guest/private windows, admin changes |
+| Browser guard (in the app) | Warns/closes disconnected browsers and repeatedly confirmed off standard profiles at all times while Hisn runs | Force-quitting Hisn, explicitly trusted unknown apps, unreadable/custom profiles, guest/private windows, admin changes |
 
 These layers address different gaps and need independent checks. A browser
 model cannot replace a device/network control, while DNS and socket decisions

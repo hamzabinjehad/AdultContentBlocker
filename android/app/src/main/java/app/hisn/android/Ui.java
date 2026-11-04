@@ -1,8 +1,11 @@
 package app.hisn.android;
 
 import android.content.Context;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.text.SpannableString;
@@ -65,7 +68,7 @@ final class Ui {
         LinearLayout card = new LinearLayout(context);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setBackgroundResource(R.drawable.bg_card);
-        card.setPadding(dp(context, 18), dp(context, 16), dp(context, 18), dp(context, 16));
+        card.setPadding(dp(context, 20), dp(context, 18), dp(context, 20), dp(context, 18));
         card.setElevation(dp(context, 1));
         return card;
     }
@@ -91,11 +94,11 @@ final class Ui {
         LinearLayout row = new LinearLayout(context);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(0, dp(context, 6), 0, dp(context, 8));
-        row.addView(icon(context, iconRes, R.color.accent, 20), tileParams(context));
+        row.setPadding(0, dp(context, 4), 0, dp(context, 10));
+        row.addView(iconInTile(context, iconRes, R.color.accent, 36, 20), tileParams(context));
         TextView label = new TextView(context);
         label.setText(title);
-        label.setTextSize(18);
+        label.setTextSize(19);
         label.setTextColor(color(context, R.color.text_primary));
         label.setTypeface(medium());
         label.setIncludeFontPadding(false);
@@ -108,15 +111,14 @@ final class Ui {
     }
 
     private static LinearLayout.LayoutParams tileParams(Context context) {
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(dp(context, 34), dp(context, 34));
-        return params;
+        return new LinearLayout.LayoutParams(dp(context, 36), dp(context, 36));
     }
 
     /** Page heading (larger than a card's section header). */
     static TextView pageTitle(Context context, CharSequence text) {
         TextView view = new TextView(context);
         view.setText(text);
-        view.setTextSize(24);
+        view.setTextSize(30);
         view.setTextColor(color(context, R.color.text_primary));
         view.setTypeface(medium());
         view.setLineSpacing(dp(context, 2), 1f);
@@ -226,8 +228,8 @@ final class Ui {
             value.setText(state);
             value.setTextColor(color);
             GradientDrawable background = new GradientDrawable();
-            background.setColor(withAlpha(color, 0.10f));
-            background.setCornerRadius(dp(context, 14));
+            background.setColor(withAlpha(color, 0.12f));
+            background.setCornerRadius(dp(context, 16));
             root.setBackground(background);
             root.setContentDescription(name.getText() + ": " + state);
         }
@@ -236,17 +238,82 @@ final class Ui {
     static LayerTile layerTile(Context context, CharSequence label, CharSequence state, int stateKind) {
         LinearLayout tile = new LinearLayout(context);
         tile.setOrientation(LinearLayout.VERTICAL);
-        tile.setPadding(dp(context, 12), dp(context, 10), dp(context, 10), dp(context, 10));
-        TextView name = text(context, label, 12, R.color.text_secondary);
+        tile.setPadding(dp(context, 12), dp(context, 11), dp(context, 10), dp(context, 11));
+        LinearLayout nameRow = new LinearLayout(context);
+        nameRow.setOrientation(LinearLayout.HORIZONTAL);
+        nameRow.setGravity(Gravity.CENTER_VERTICAL);
+        nameRow.addView(dot(context, color(context, R.color.text_tertiary), 6));
+        TextView name = text(context, label, 11, R.color.text_secondary);
         name.setTypeface(medium());
-        TextView value = text(context, state, 14, R.color.text_primary);
+        LinearLayout.LayoutParams nameParams = new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+        nameParams.setMarginStart(dp(context, 6));
+        nameRow.addView(name, nameParams);
+        TextView value = text(context, state, 15, R.color.text_primary);
         value.setTypeface(medium());
-        value.setPadding(0, dp(context, 2), 0, 0);
-        tile.addView(name);
+        value.setPadding(0, dp(context, 4), 0, 0);
+        tile.addView(nameRow);
         tile.addView(value);
         LayerTile layer = new LayerTile(tile, name, value);
         layer.setState(state, stateKind);
         return layer;
+    }
+
+    /**
+     * The answer to "am I protected?" as one calm shape: concentric rings tinted by state with the
+     * shield at the centre. Drawn rather than asset-based so it follows light, dark and large text.
+     */
+    static final class ShieldView extends View {
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Drawable icon;
+        private int kind = OFF;
+        private int stateTint;
+
+        ShieldView(Context context) {
+            super(context);
+            icon = context.getDrawable(R.drawable.ic_shield);
+            stateTint = color(context, R.color.accent);
+            setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        }
+
+        void setState(int stateKind) {
+            if (kind == stateKind) return;
+            // Off still uses the brand accent: the shield is the product mark, while the
+            // tile words and the headline carry the literal state.
+            int next = stateKind == OFF ? color(getContext(), R.color.accent)
+                    : stateColor(getContext(), stateKind);
+            kind = stateKind;
+            stateTint = next;
+            invalidate();
+            if (android.animation.ValueAnimator.areAnimatorsEnabled() && isAttachedToWindow()) {
+                setScaleX(0.94f);
+                setScaleY(0.94f);
+                animate().scaleX(1f).scaleY(1f).setDuration(260).start();
+            }
+        }
+
+        @Override protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            float cx = getWidth() / 2f, cy = getHeight() / 2f;
+            float outer = Math.min(getWidth(), getHeight()) / 2f - dp(getContext(), 1);
+
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(dp(getContext(), 1));
+            paint.setColor(withAlpha(stateTint, 0.14f));
+            canvas.drawCircle(cx, cy, outer, paint);
+            paint.setColor(withAlpha(stateTint, 0.26f));
+            canvas.drawCircle(cx, cy, outer - dp(getContext(), 9), paint);
+
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(withAlpha(stateTint, 0.10f));
+            canvas.drawCircle(cx, cy, outer - dp(getContext(), 18), paint);
+
+            int iconSize = dp(getContext(), 40);
+            icon.setBounds((int) (cx - iconSize / 2f), (int) (cy - iconSize / 2f),
+                    (int) (cx + iconSize / 2f), (int) (cy + iconSize / 2f));
+            icon.setTint(stateTint);
+            icon.draw(canvas);
+        }
     }
 
     // ---------------------------------------------------------------- buttons
@@ -267,11 +334,11 @@ final class Ui {
         button.setAllCaps(false);
         button.setTextSize(15);
         button.setTypeface(medium());
-        button.setMinHeight(dp(context, 48));
-        button.setMinimumHeight(dp(context, 48));
+        button.setMinHeight(dp(context, 52));
+        button.setMinimumHeight(dp(context, 52));
         button.setMinWidth(0);
         button.setMinimumWidth(0);
-        button.setPadding(dp(context, 18), dp(context, 12), dp(context, 18), dp(context, 12));
+        button.setPadding(dp(context, 20), dp(context, 14), dp(context, 20), dp(context, 14));
         button.setGravity(Gravity.CENTER);
         button.setIncludeFontPadding(false);
         button.setStateListAnimator(null);
@@ -340,16 +407,17 @@ final class Ui {
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setBackgroundResource(R.drawable.bg_row);
-        row.setPadding(dp(context, 6), dp(context, 10), dp(context, 6), dp(context, 10));
-        row.setMinimumHeight(dp(context, 56));
+        row.setPadding(dp(context, 8), dp(context, 12), dp(context, 8), dp(context, 12));
+        row.setMinimumHeight(dp(context, 62));
         row.setClickable(true);
         row.setFocusable(true);
-        row.addView(icon(context, iconRes, R.color.accent, 22));
+        row.addView(iconInTile(context, iconRes, R.color.accent, 38, 21));
         LinearLayout column = new LinearLayout(context);
         column.setOrientation(LinearLayout.VERTICAL);
         TextView name = strong(context, title);
+        name.setTextSize(16);
         TextView detail = caption(context, summary);
-        detail.setPadding(0, dp(context, 2), 0, 0);
+        detail.setPadding(0, dp(context, 3), 0, 0);
         column.addView(name);
         column.addView(detail);
         LinearLayout.LayoutParams columnParams = new LinearLayout.LayoutParams(0,
@@ -372,12 +440,12 @@ final class Ui {
     static Switch toggle(Context context, CharSequence title, CharSequence summary) {
         Switch toggle = new Switch(context);
         setToggleText(toggle, title, summary);
-        toggle.setTextSize(15);
+        toggle.setTextSize(16);
         toggle.setTextColor(color(context, R.color.text_primary));
         toggle.setTypeface(medium());
-        toggle.setLineSpacing(dp(context, 2), 1.12f);
-        toggle.setPadding(0, dp(context, 10), 0, dp(context, 10));
-        toggle.setMinHeight(dp(context, 52));
+        toggle.setLineSpacing(dp(context, 3), 1.12f);
+        toggle.setPadding(0, dp(context, 12), 0, dp(context, 12));
+        toggle.setMinHeight(dp(context, 58));
         toggle.setGravity(Gravity.CENTER_VERTICAL);
         return toggle;
     }
@@ -389,7 +457,7 @@ final class Ui {
         }
         SpannableString text = new SpannableString(title + "\n" + summary);
         int split = title.length() + 1;
-        text.setSpan(new RelativeSizeSpan(0.84f), split, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        text.setSpan(new RelativeSizeSpan(0.80f), split, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         text.setSpan(new ForegroundColorSpan(color(toggle.getContext(), R.color.text_secondary)),
                 split, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         text.setSpan(new android.text.style.TypefaceSpan("sans-serif"), split, text.length(),
@@ -457,12 +525,12 @@ final class Ui {
         LinearLayout header = new LinearLayout(context);
         header.setOrientation(LinearLayout.HORIZONTAL);
         header.setGravity(Gravity.CENTER_VERTICAL);
-        header.setMinimumHeight(dp(context, 48));
+        header.setMinimumHeight(dp(context, 52));
         header.setBackgroundResource(R.drawable.bg_row);
-        header.setPadding(0, dp(context, 6), 0, dp(context, 6));
+        header.setPadding(0, dp(context, 8), 0, dp(context, 8));
         TextView titleView = new TextView(context);
         titleView.setText(title);
-        titleView.setTextSize(15);
+        titleView.setTextSize(16);
         titleView.setTypeface(medium());
         titleView.setTextColor(color(context, R.color.text_primary));
         titleView.setIncludeFontPadding(false);
@@ -490,7 +558,7 @@ final class Ui {
         edit.setHintTextColor(color(context, R.color.text_tertiary));
         edit.setTextSize(15);
         edit.setBackgroundResource(R.drawable.bg_input);
-        edit.setPadding(dp(context, 12), dp(context, 10), dp(context, 12), dp(context, 10));
+        edit.setPadding(dp(context, 14), dp(context, 12), dp(context, 14), dp(context, 12));
         edit.setInputType(android.text.InputType.TYPE_CLASS_TEXT
                 | (multiline ? android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
                 : android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES)

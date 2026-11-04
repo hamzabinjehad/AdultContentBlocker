@@ -7,6 +7,9 @@ import SwiftUI
 final class AppNavigation: ObservableObject {
     static let shared = AppNavigation()
     @Published var page: ContentView.Page? = AppNavigation.firstPage()
+    /// A menu-bar request to open the site-check sheet on the next window
+    /// appearance. The window consumes and clears it.
+    @Published var siteCheckRequested = false
 
     /// Each new process starts on Setup until fresh checks can be displayed.
     /// A historical visit (or success) is not evidence about this session.
@@ -212,6 +215,10 @@ struct StatusMenu: View {
         }
         Button("Take a pause…") { PauseWindowController.shared.show() }
         Button("Block a site…") { QuickBlock.promptAndAdd() }
+        Button("Check a website…") {
+            AppNavigation.shared.siteCheckRequested = true
+            MainWindow.show(.overview, open: openWindow)
+        }
         if ScreenGrayscale.isAvailable {
             // A checkmark item. During a lock it can be ticked, not cleared.
             Toggle("Gray screen", isOn: Binding(

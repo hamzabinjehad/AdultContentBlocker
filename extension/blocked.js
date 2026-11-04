@@ -15,6 +15,7 @@ await initLanguage();
 renderIcons();
 
 const REASONS = new Set(["domain", "strict", "custom", "terms", "shortvideo"]);
+const NEED_ICONS = { tired: "moon", lonely: "users", stressed: "wind", bored: "sparkles" };
 
 function formatRemaining(ms) {
   if (ms <= 0) return null;
@@ -113,6 +114,7 @@ async function setupContentReport() {
       chip.textContent = term;               // never innerHTML
       chip.addEventListener("click", () => {
         chip.disabled = true;
+        rowEl.open = true; // show the confirmation next to the report controls
         chrome.runtime.sendMessage({ type: "reportWrongWord", term }, (res) => {
           res = res || {};
           if (res.ok) {
@@ -170,6 +172,8 @@ function breathe() {
   const circle = document.getElementById("breathCircle");
   const label = document.getElementById("breathLabel");
   const again = document.getElementById("breatheAgain");
+  const steps = [...document.querySelectorAll("#breathSteps span")];
+  steps.forEach((step) => step.classList.remove("done"));
   again.hidden = true;
   let cycle = 0;
   const phase = (inhale) => {
@@ -178,6 +182,7 @@ function breathe() {
     label.textContent = t(inhale ? "pause.breatheIn" : "pause.breatheOut");
     setTimeout(() => {
       if (inhale) return phase(false);
+      steps[cycle]?.classList.add("done");
       if (++cycle < BREATH.cycles) return phase(true);
       label.textContent = t("pause.breathDone");
       again.hidden = false;
@@ -208,8 +213,13 @@ async function setupPause() {
   for (const need of NEEDS) {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "secondary";
-    button.textContent = t(`pause.need.${need}`);
+    button.className = "secondary need";
+    const icon = document.createElement("span");
+    icon.dataset.icon = NEED_ICONS[need] || "sparkles";
+    icon.setAttribute("aria-hidden", "true");
+    const label = document.createElement("span");
+    label.textContent = t(`pause.need.${need}`);
+    button.replaceChildren(icon, label);
     button.setAttribute("aria-pressed", "false");
     button.addEventListener("click", () => {
       for (const other of needsEl.children) other.setAttribute("aria-pressed", String(other === button));
@@ -218,6 +228,7 @@ async function setupPause() {
     });
     needsEl.appendChild(button);
   }
+  renderIcons(needsEl);
 
   document.getElementById("breatheAgain").addEventListener("click", breathe);
   breathe();
@@ -232,6 +243,19 @@ chrome.runtime.sendMessage({ type: "getState" }, (state) => {
 setupContentReport();
 
 document.getElementById("openSettings").addEventListener("click", () => chrome.runtime.openOptionsPage());
+// A close action is the quietest way out of a blocked page. If this browser
+// does not let the page close its own tab, the new-tab action remains.
+document.getElementById("closeTab")?.addEventListener("click", () => {
+  chrome.tabs.getCurrent((tab) => {
+    if (chrome.runtime.lastError || !tab?.id || !chrome.tabs.remove) {
+      document.getElementById("note").textContent = t("blocked.useNewTab");
+      return;
+    }
+    chrome.tabs.remove(tab.id, () => {
+      if (chrome.runtime.lastError) document.getElementById("note").textContent = t("blocked.useNewTab");
+    });
+  });
+});
 document.getElementById("leavePage").addEventListener("click", () => {
   // A new tab avoids navigating back to the same blocked page or guessing a
   // destination that might itself be outside the user's allowed sites.

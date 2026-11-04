@@ -62,26 +62,25 @@ let current = null;
 let stateUnavailable = false;
 let saving = false;
 const siteEditors = new Map();
-let privateCoverage;
 let overviewSignature;
 let visualEngine;
-chrome.extension?.isAllowedIncognitoAccess?.((allowed) => {
-  privateCoverage = allowed;
-  renderOverview();
-});
 function renderOverview() {
   // Keep the saved baseline for drafts while reporting an unavailable worker.
   const shown = stateUnavailable ? null : current;
   const s = describeStatus(shown, { version: chrome.runtime.getManifest?.().version });
   const visual = describeVisual(visualEngine, shown);
   const enforcement = describeEnforcement(shown);
-  const signature = JSON.stringify([s, privateCoverage, shown?.inspectText, shown?.failClosed, visual, shown?.personBlur]);
+  const signature = JSON.stringify([s, shown?.inspectText, shown?.failClosed, visual, shown?.personBlur]);
   if (signature === overviewSignature) return;
   overviewSignature = signature;
   $("protectionDot").className = `dot ${s.protection.level}`;
   $("statusCard").dataset.level = s.protection.level;
   $("protectionTitle").textContent = s.protection.headline;
   $("protectionDetail").textContent = s.protection.detail;
+  // The sidebar keeps the one-sentence status in view on every page.
+  $("sidebarStatus").dataset.level = s.protection.level;
+  $("sidebarDot").className = `dot ${s.protection.level}`;
+  $("sidebarHeadline").textContent = s.protection.headline;
   $("lockTitle").textContent = s.lock.headline;
   $("lockDetail").textContent = s.lock.detail;
   $("lockNotice").textContent = shown && restrictionsActive(shown) ? t("opt.lockHint.active")
@@ -110,9 +109,6 @@ function renderOverview() {
   paint("textLayer", enforcement.layers.text.level, textEnabled);
   paint("visualLayer", visual.level, visualEnabled, visualEnabled && visual.available === false);
   paint("personLayer", visual.level, personEnabled, personEnabled && visual.available === false);
-  paint("privateLayer", privateCoverage === true ? "active" : privateCoverage === false ? "off" : "unknown",
-        privateCoverage !== false);
-  $("privateHint").hidden = privateCoverage !== false;
   $("statusDetails").replaceChildren(...s.details.flatMap(([key, value]) => {
     const dt = document.createElement("dt"), dd = document.createElement("dd");
     dt.textContent = key; dd.textContent = value;

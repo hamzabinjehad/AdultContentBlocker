@@ -40,9 +40,11 @@ import UserNotifications
 /// identifies the native host's browser process, not every profile or private
 /// window in it. Actual browser parent attribution needs deployment verification.
 public enum BrowserGuardPolicy {
-    public static func isActive(locked: Bool, requireOutsideLock: Bool) -> Bool {
-        locked || requireOutsideLock
-    }
+    /// Browser protection is continuous while Hisn runs. A lock no longer
+    /// changes whether the guard is active, and there is no opt-out: the
+    /// former "require outside a lock" setting is gone, so a browser that
+    /// loses the extension is warned and then closed at any time of day.
+    public static func isActive() -> Bool { true }
 
     /// An empty authoritative record is not permission to trust an editable
     /// local heartbeat. Local fallback is only for an unavailable authority.
@@ -405,7 +407,6 @@ public final class BrowserGuard: ObservableObject {
     /// Apps the person allowed to stay open during a lock. Add-only while
     /// unlocked; see `setAllowed`.
     public static let allowedKey = "guardAllowedApps"
-    public static let requireOutsideLockKey = "guardRequireOutsideLock"
 
     /// A browser the guard is about to close, for the warning panel and the
     /// Overview banner.
@@ -472,21 +473,6 @@ public final class BrowserGuard: ObservableObject {
     private var defaults: UserDefaults? { UserDefaults(suiteName: LockStore.appGroup) }
 
     private init() {}
-
-    /// Optional preference outside a commitment; an active lock always guards
-    /// browsers regardless of this ordinary, user-owned preference.
-    public var requireOutsideLock: Bool { defaults?.bool(forKey: Self.requireOutsideLockKey) == true }
-
-    public func setRequireOutsideLock(_ enabled: Bool) throws {
-        if !enabled, EffectiveLock.isLocked { throw AllowError.locked }
-        guard let defaults else { throw AllowError.storageUnavailable }
-        defaults.set(enabled, forKey: Self.requireOutsideLockKey)
-        guard defaults.object(forKey: Self.requireOutsideLockKey) as? Bool == enabled else {
-            throw AllowError.storageUnavailable
-        }
-        objectWillChange.send()
-        tick()
-    }
 
     public func start() {
         guard timer == nil else { return }
@@ -647,8 +633,7 @@ public final class BrowserGuard: ObservableObject {
         let applications = runningBrowsers(linked: linked)
         lastChecked = wall
 
-        guard BrowserGuardPolicy.isActive(locked: EffectiveLock.isLocked,
-                                          requireOutsideLock: requireOutsideLock) else {
+        guard BrowserGuardPolicy.isActive() else {
             session.reset()
             enforcing = false
             recentlyClosed.removeAll()
@@ -871,8 +856,7 @@ public final class BrowserGuard: ObservableObject {
                 requestedAt: requestedAt, awakeSince: self.awakeSince,
                 warningDeadline: self.alerts.first(where: { $0.id == pid })?.closeAt)
             if BrowserGuardPolicy.shouldForceClose(
-                active: BrowserGuardPolicy.isActive(locked: EffectiveLock.isLocked,
-                                                    requireOutsideLock: self.requireOutsideLock),
+                active: BrowserGuardPolicy.isActive(),
                 coverage: coverage, lastSeen: seen, now: Date(),
                 profileLoss: currentProfileLoss, notBefore: notBefore) {
                 app.forceTerminate()

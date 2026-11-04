@@ -5,6 +5,30 @@
 	};
 	objectVersion = 56;
 	objects = {
+		D56AB3BF962A101BB48A97AC /* domains_core.txt */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = text;
+			path = domains_core.txt;
+			sourceTree = "<group>";
+		};
+		F1F4679AE1DB96D841F82719 /* manifest.json */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = text.json;
+			path = manifest.json;
+			sourceTree = "<group>";
+		};
+		55126988B9BFC4348934186A /* manifest.json.sig */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = text;
+			path = manifest.json.sig;
+			sourceTree = "<group>";
+		};
+		28B6EF5B53D63BDF54A2F556 /* terms.json */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = text.json;
+			path = terms.json;
+			sourceTree = "<group>";
+		};
 		E28D1D98114D4AAC5E07A0AA /* CommitmentPolicy.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -275,6 +299,12 @@
 			path = SetupChecklist.swift;
 			sourceTree = "<group>";
 		};
+		177FBF20EADAD131CC8605FD /* SiteChecker.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = SiteChecker.swift;
+			sourceTree = "<group>";
+		};
 		9A85D28497AE287B0A4C4E8C /* SiteLists.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -473,6 +503,12 @@
 			path = SetupChecklistTests.swift;
 			sourceTree = "<group>";
 		};
+		34758234727DE25F34B097FF /* SiteCheckerTests.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = SiteCheckerTests.swift;
+			sourceTree = "<group>";
+		};
 		851D93C8FC728A88C285B13F /* TestNamespace.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -605,6 +641,7 @@
 				47D7593F13730648AEFF5006,
 				2D83067FD31B6A9D060D746D,
 				B5ABAB643E4DB0F9EFE758F8,
+				177FBF20EADAD131CC8605FD,
 				9A85D28497AE287B0A4C4E8C,
 				51FD9D9EEE75399A2987D61E,
 				94DA4ECBC1B15A13858FC4BB,
@@ -659,6 +696,7 @@
 				0002AABFEF0D63499AF4B526,
 				4792FDE5CE580FC1212B3EBD,
 				883D07C40E91F1F9B4B56A52,
+				34758234727DE25F34B097FF,
 				851D93C8FC728A88C285B13F,
 			);
 			path = HisnTests;
@@ -979,8 +1017,8 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				CODE_SIGN_ENTITLEMENTS = HisnFilter/HisnFilter.entitlements;
-				CURRENT_PROJECT_VERSION = 13;
-				MARKETING_VERSION = 1.1.9;
+				CURRENT_PROJECT_VERSION = 25;
+				MARKETING_VERSION = 1.1.13;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = HisnFilter/Info.plist;
 				PRODUCT_BUNDLE_IDENTIFIER = app.hisn.Hisn.HisnFilter;
@@ -1015,8 +1053,8 @@
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				CODE_SIGN_ENTITLEMENTS = HisnFilter/HisnFilter.entitlements;
-				CURRENT_PROJECT_VERSION = 13;
-				MARKETING_VERSION = 1.1.9;
+				CURRENT_PROJECT_VERSION = 25;
+				MARKETING_VERSION = 1.1.13;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = HisnFilter/Info.plist;
 				PRODUCT_BUNDLE_IDENTIFIER = app.hisn.Hisn.HisnFilter;
@@ -1051,8 +1089,8 @@
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				CODE_SIGN_ENTITLEMENTS = HisnFilter/HisnFilter.DeveloperID.entitlements;
-				CURRENT_PROJECT_VERSION = 13;
-				MARKETING_VERSION = 1.1.9;
+				CURRENT_PROJECT_VERSION = 25;
+				MARKETING_VERSION = 1.1.13;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = HisnFilter/Info.plist;
 				PRODUCT_BUNDLE_IDENTIFIER = app.hisn.Hisn.HisnFilter;
@@ -1200,8 +1238,8 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				CODE_SIGN_ENTITLEMENTS = HisnBridge/HisnBridge.entitlements;
-				CURRENT_PROJECT_VERSION = 13;
-				MARKETING_VERSION = 1.1.9;
+				CURRENT_PROJECT_VERSION = 25;
+				MARKETING_VERSION = 1.1.13;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1231,8 +1269,8 @@
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				CODE_SIGN_ENTITLEMENTS = HisnBridge/HisnBridge.entitlements;
-				CURRENT_PROJECT_VERSION = 13;
-				MARKETING_VERSION = 1.1.9;
+				CURRENT_PROJECT_VERSION = 25;
+				MARKETING_VERSION = 1.1.13;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1262,8 +1300,8 @@
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				CODE_SIGN_ENTITLEMENTS = HisnBridge/HisnBridge.entitlements;
-				CURRENT_PROJECT_VERSION = 13;
-				MARKETING_VERSION = 1.1.9;
+				CURRENT_PROJECT_VERSION = 25;
+				MARKETING_VERSION = 1.1.13;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1345,6 +1383,22 @@
 			isa = PBXBuildFile;
 			fileRef = 256824293978001618E4571E;
 		};
+		DC4A2A3B3CD93E2826593AF1 /* manifest.json in Resources */ = {
+			isa = PBXBuildFile;
+			fileRef = F1F4679AE1DB96D841F82719;
+		};
+		D825E56C2D5EE5C5A74CBB2D /* manifest.json.sig in Resources */ = {
+			isa = PBXBuildFile;
+			fileRef = 55126988B9BFC4348934186A;
+		};
+		D21F8D04066BBB4004E6E696 /* domains_core.txt in Resources */ = {
+			isa = PBXBuildFile;
+			fileRef = D56AB3BF962A101BB48A97AC;
+		};
+		1C1FC131DC0E13E946C97635 /* terms.json in Resources */ = {
+			isa = PBXBuildFile;
+			fileRef = 28B6EF5B53D63BDF54A2F556;
+		};
 		7E4B2B42202196B8DEDF4BBA /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1353,6 +1407,10 @@
 				91B0E4A037ED6B45D67BDE50,
 				10477D2365ED64C6DA83289A,
 				2633003E1538D81A7D23C6F4,
+				DC4A2A3B3CD93E2826593AF1,
+				D825E56C2D5EE5C5A74CBB2D,
+				D21F8D04066BBB4004E6E696,
+				1C1FC131DC0E13E946C97635,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1488,6 +1546,10 @@
 			isa = PBXBuildFile;
 			fileRef = 1F89B5A1A0E8503E6DE665E9;
 		};
+		293217248A162EF8C730AAB7 /* SiteChecker.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 177FBF20EADAD131CC8605FD;
+		};
 		55EEFF567258F1CEE1CFC3FF /* LockManager.swift in Sources */ = {
 			isa = PBXBuildFile;
 			fileRef = 00DEA34098A0930C4F010EB9;
@@ -1579,6 +1641,7 @@
 				9B480D6461884AF836765AC7,
 				BBEC95CEB0C5C5CAFDED43AB,
 				9E6560DDB2E30CF063E1CC2D,
+				293217248A162EF8C730AAB7,
 				55EEFF567258F1CEE1CFC3FF,
 				E2AEF87216467A0BAEB3B90C,
 				BF5115646CB0123EDCB52F30,
@@ -1629,8 +1692,8 @@
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Hisn/Hisn.entitlements;
-				CURRENT_PROJECT_VERSION = 13;
-				MARKETING_VERSION = 1.1.9;
+				CURRENT_PROJECT_VERSION = 25;
+				MARKETING_VERSION = 1.1.13;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Hisn/Info.plist;
 				PRODUCT_BUNDLE_IDENTIFIER = app.hisn.Hisn;
@@ -1666,8 +1729,8 @@
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Hisn/Hisn.entitlements;
-				CURRENT_PROJECT_VERSION = 13;
-				MARKETING_VERSION = 1.1.9;
+				CURRENT_PROJECT_VERSION = 25;
+				MARKETING_VERSION = 1.1.13;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Hisn/Info.plist;
 				PRODUCT_BUNDLE_IDENTIFIER = app.hisn.Hisn;
@@ -1703,8 +1766,8 @@
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Hisn/Hisn.DeveloperID.entitlements;
-				CURRENT_PROJECT_VERSION = 13;
-				MARKETING_VERSION = 1.1.9;
+				CURRENT_PROJECT_VERSION = 25;
+				MARKETING_VERSION = 1.1.13;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Hisn/Info.plist;
 				PRODUCT_BUNDLE_IDENTIFIER = app.hisn.Hisn;
@@ -1896,6 +1959,10 @@
 			isa = PBXBuildFile;
 			fileRef = 708E2F63E584E40A388AE0EC;
 		};
+		0DB6DC25129D35047897F85A /* SiteCheckerTests.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 34758234727DE25F34B097FF;
+		};
 		3139C6D825483E39B3F44E88 /* MirroredRuleStoreTests.swift in Sources */ = {
 			isa = PBXBuildFile;
 			fileRef = 8C9F5FB3A60642BE7E7C2530;
@@ -1925,6 +1992,7 @@
 				5332F9043E93BC0DFEA27EAC,
 				DC37F31CB2E6CC1AFC5011B7,
 				DDE01959A6C065554BD72EB4,
+				0DB6DC25129D35047897F85A,
 				3139C6D825483E39B3F44E88,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

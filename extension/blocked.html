@@ -7,16 +7,22 @@
 <link rel="stylesheet" href="ui.css">
 </head>
 <body class="blocked">
-  <main class="card">
-    <div class="mark" data-icon="shield-check" aria-hidden="true"></div>
-    <h1 id="title">This page is blocked</h1>
-    <p id="subtitle">This page matches your protection settings.</p>
-    <p class="matched" id="matched" hidden></p>
-    <div class="timer" id="timer" hidden></div>
-    <p class="note" id="note"></p>
+  <main class="card blocked-card">
+    <header class="blocked-head">
+      <div class="mark" data-icon="shield-check" aria-hidden="true"></div>
+      <p class="eyebrow" data-i18n="blocked.eyebrow">Hisn paused this page</p>
+      <h1 id="title">This page is blocked</h1>
+      <p id="subtitle">This page matches your protection settings.</p>
+      <p class="matched" id="matched" hidden></p>
+      <div class="timer" id="timer" hidden></div>
+      <p class="note" id="note"></p>
+    </header>
     <section class="pause" id="pause" aria-labelledby="pauseTitle">
       <h2 id="pauseTitle" data-i18n="pause.title">Take a moment before you go on</h2>
-      <div class="breath"><div class="breath-circle" id="breathCircle" aria-hidden="true"></div><p class="breath-label" id="breathLabel"></p></div>
+      <div class="breath">
+        <div class="breath-orbit" aria-hidden="true"><span class="breath-halo"></span><div class="breath-circle" id="breathCircle"></div></div>
+        <div class="breath-copy"><p class="breath-label" id="breathLabel"></p><p class="breath-hint" data-i18n="blocked.breathHint">Three slow breaths, at your own pace.</p><div class="breath-steps" id="breathSteps" aria-hidden="true"><span></span><span></span><span></span></div></div>
+      </div>
       <button type="button" class="secondary" id="breatheAgain" data-i18n="pause.breatheAgain" hidden>Breathe again</button>
       <p class="reminder" id="reminder"></p>
       <p class="need-question" id="needQuestion" data-i18n="pause.needQuestion">What do you need right now?</p>
@@ -25,11 +31,13 @@
       <p class="tally" id="tally" hidden></p>
     </section>
     <nav class="actions" aria-label="Next steps" data-i18n-aria-label="blocked.nextSteps"><button type="button" id="leavePage" data-i18n="blocked.newTab">Go to a new tab</button><button type="button" class="secondary" id="openSettings" data-i18n="blocked.reviewSettings">Review settings</button></nav>
-    <div class="report" id="reportRow" hidden>
+    <div class="blocked-links"><button type="button" class="text-button" id="closeTab" data-i18n="blocked.closeTab">Close this tab</button></div>
+    <details class="report" id="reportRow" hidden>
+      <summary data-i18n="blocked.reportSummary">Was this blocked by mistake?</summary>
       <p class="report-hint" id="reportHint" data-i18n="blocked.reportHint">Incorrect block? Selecting a word removes it from future text checks on every site. During a lock, your correction waits for review.</p>
       <button type="button" id="reportSite" data-i18n="blocked.reportSite">Report this site as incorrectly blocked</button>
       <p class="report-status" id="reportStatus" role="status" hidden></p>
-    </div>
+    </details>
   </main>
 
 <script type="module" src="blocked.js"></script>

@@ -69,9 +69,34 @@ final class SetupChecklistTests: XCTestCase {
         let readiness = LaptopSetupReadiness(
             protection: ProtectionEvidence(filter: .off, extensionLastSeen: Date(),
                 hostsEntries: 358_239, filterCanRun: false),
-            checklist: c, requireOutsideLock: true)
+            checklist: c)
         XCTAssertFalse(readiness.isReady, "legacy completion is not verified laptop-wide coverage")
         XCTAssertTrue(readiness.issues.contains(.signedBuild))
+    }
+
+    func testPrivateWindowsProfileForcesOnlyIncognitoDisabled() throws {
+        let profile = PrivateWindowsProfile.makeProfile(
+            domains: ["com.google.Chrome", "net.imput.helium"])
+        XCTAssertEqual(profile["PayloadType"] as? String, "Configuration")
+        XCTAssertEqual(profile["PayloadIdentifier"] as? String, "app.hisn.profile.incognito")
+        XCTAssertEqual(profile["PayloadRemovalDisallowed"] as? Bool, false)
+        let payloads = try XCTUnwrap(profile["PayloadContent"] as? [[String: Any]])
+        XCTAssertEqual(payloads.count, 1)
+        let payload = try XCTUnwrap(payloads.first)
+        XCTAssertEqual(payload["PayloadType"] as? String, "com.apple.ManagedClient.preferences")
+        let domains = try XCTUnwrap(payload["PayloadContent"] as? [String: Any])
+        XCTAssertEqual(Set(domains.keys), ["com.google.Chrome", "net.imput.helium"])
+        for value in domains.values {
+            let domain = try XCTUnwrap(value as? [String: Any])
+            let forced = try XCTUnwrap(domain["Forced"] as? [[String: Any]])
+            let settings = try XCTUnwrap(forced.first?["mcx_preference_settings"] as? [String: Any])
+            XCTAssertEqual(settings.count, 1, "the narrow profile must not set anything but private windows")
+            XCTAssertEqual(settings["IncognitoModeAvailability"] as? Int, 1)
+        }
+        let xml = String(decoding: try PrivateWindowsProfile.data(domains: ["com.google.Chrome"]),
+                         as: UTF8.self)
+        XCTAssertTrue(xml.contains("IncognitoModeAvailability"))
+        XCTAssertFalse(xml.contains("DnsOverHttpsMode"), "DNS is the full profile's job, not this one")
     }
 
     func testTheSystemFilterAloneCoversDomains() {

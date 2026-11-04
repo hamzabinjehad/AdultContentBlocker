@@ -217,18 +217,17 @@ final class OnboardingTests: XCTestCase {
             ("ready", LaptopSetupReadiness(
                 protection: ProtectionEvidence(filter: .on(domainCount: 150_000),
                     extensionLastSeen: now, now: now),
-                checklist: goodChecklist, requireOutsideLock: true)),
+                checklist: goodChecklist)),
             ("missing", LaptopSetupReadiness(
                 protection: ProtectionEvidence(filter: .off, extensionLastSeen: nil,
                     now: now, filterCanRun: false),
                 checklist: SetupChecklist(SetupEvidence(isAdmin: true, hostsEntries: nil,
                     partnerKeySet: false, browsers: [], privateRelayOff: false,
                     screenTimeAdultFilter: false, systemFilterRunning: false,
-                    appFilesProtected: nil)),
-                requireOutsideLock: false)),
+                    appFilesProtected: nil)))),
             ("checking", LaptopSetupReadiness(
                 protection: ProtectionEvidence(filter: .unknown, extensionLastSeen: nil, now: now),
-                checklist: nil, requireOutsideLock: false)),
+                checklist: nil)),
         ]
         XCTAssertTrue(cases[0].1.isReady)
         XCTAssertFalse(cases[1].1.isReady)

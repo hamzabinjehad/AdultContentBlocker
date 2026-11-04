@@ -1,24 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Night palette. Same semantic names as values/colors.xml, at least 4.5:1 on their surfaces. -->
 <resources>
-    <color name="background">#0B0F15</color>
-    <color name="surface">#141A22</color>
-    <color name="surface_alt">#1C242F</color>
-    <color name="surface_sunken">#232D3A</color>
-    <color name="text_primary">#EEF2F7</color>
-    <color name="text_secondary">#A9B4C4</color>
-    <color name="text_tertiary">#93A0B2</color>
-    <color name="divider">#293341</color>
+    <color name="background">#0A0E14</color>
+    <color name="surface">#131923</color>
+    <color name="surface_alt">#1B2330</color>
+    <color name="surface_sunken">#232D3B</color>
+    <color name="text_primary">#EDF2F9</color>
+    <color name="text_secondary">#AEB9C9</color>
+    <color name="text_tertiary">#94A3B8</color>
+    <color name="divider">#253041</color>
     <color name="accent">#8AB4FF</color>
-    <color name="accent_soft">#1B2A42</color>
-    <color name="on_accent">#0A1526</color>
-    <color name="success">#6EDD9C</color>
-    <color name="warning">#F2C06B</color>
-    <color name="warning_soft">#33260F</color>
-    <color name="danger">#FF9A93</color>
-    <color name="danger_soft">#3A1A18</color>
-    <color name="hero_start">#162236</color>
-    <color name="hero_end">#141A22</color>
+    <color name="accent_soft">#172B47</color>
+    <color name="on_accent">#081120</color>
+    <color name="success">#6EE7A8</color>
+    <color name="warning">#F5C878</color>
+    <color name="warning_soft">#2E2513</color>
+    <color name="danger">#FFA39E</color>
+    <color name="danger_soft">#351B1B</color>
+    <color name="hero_start">#13243C</color>
+    <color name="hero_end">#131923</color>
     <color name="control_highlight">#338AB4FF</color>
     <color name="ripple_on_accent">#330A1526</color>
     <color name="warning_border">#5E4A22</color>

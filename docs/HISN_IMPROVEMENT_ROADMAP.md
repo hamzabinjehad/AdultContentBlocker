@@ -97,7 +97,7 @@ Keep setup honest about supported surfaces and independently verified layers.
   grace cannot be renewed using a different profile's heartbeat. Native Mac
   diagnostics name standard folders; mobile guidance explains selecting every
   browser app for separate consented Screen Time shields.
-- Mac browser guarding can be explicitly required outside locks; active-lock
+- Mac browser guarding is continuous while the app runs; an active lock
   guarding remains. Browser-level session evidence stops unverified restart
   loops resetting grace/warnings, and authoritative check-ins do not fall back
   to editable local stamps when the authority answers. Delayed force-closure

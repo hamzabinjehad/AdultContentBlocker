@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="radius_card">20dp</dimen>
-    <dimen name="radius_control">14dp</dimen>
+    <dimen name="radius_card">24dp</dimen>
+    <dimen name="radius_control">16dp</dimen>
+    <dimen name="radius_pill">28dp</dimen>
     <dimen name="content_max_width">640dp</dimen>
 </resources>

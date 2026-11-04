@@ -28,23 +28,25 @@ struct AppUsageSection: View {
     }
 
     var body: some View {
-        Section("apps.title") {
+        Section {
             Label(LocalizedStringKey(usage.health.rawValue), systemImage: "shield.lefthalf.filled")
                 .foregroundStyle(usage.health.needsAttention ? HisnPalette.warning : Color.secondary)
-            Text("apps.scope").font(.footnote).foregroundStyle(.secondary)
-            DisclosureGroup("apps.details") {
-                Text("apps.browserGuardGuidance").font(.footnote).foregroundStyle(.secondary)
-                Text("apps.browserGuardLimits").font(.footnote).foregroundStyle(.secondary)
-            }
-            .font(.footnote)
             if !usage.authorized { Text("apps.authorization").font(.footnote).foregroundStyle(.secondary) }
-            Button("apps.choose") { selecting = true }.disabled(locked || !protection.commitmentStorageHealthy || !usage.authorized)
+
+            // Choose the objects first; the rule is a second decision.
+            Button("apps.choose") { selecting = true }
+                .disabled(locked || !protection.commitmentStorageHealthy || !usage.authorized)
             Text("apps.count \(selection.applicationTokens.count + selection.categoryTokens.count + selection.webDomainTokens.count)")
-            Picker("apps.mode", selection: $mode) {
-                Text("apps.always").tag(AppUsageConfiguration.Mode.always)
-                Text("apps.budget").tag(AppUsageConfiguration.Mode.dailyBudget)
-                Text("apps.quietHours").tag(AppUsageConfiguration.Mode.quietHours)
-            }.disabled(locked || !protection.commitmentStorageHealthy)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+
+            Text("apps.mode")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .padding(.top, 8)
+            modeSelector
+
             if mode == .dailyBudget {
                 Stepper("apps.minutes \(minutes)", value: $minutes, in: 15...240, step: 15)
                     .disabled(locked || !protection.commitmentStorageHealthy)
@@ -66,6 +68,18 @@ struct AppUsageSection: View {
             if let error = usage.errorKey {
                 Label(LocalizedStringKey(error), systemImage: "exclamationmark.triangle")
             }
+        } header: {
+            Text("apps.title")
+        } footer: {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("apps.scope")
+                DisclosureGroup("apps.details") {
+                    Text("apps.browserGuardGuidance")
+                    Text("apps.browserGuardLimits")
+                }
+            }
+            .font(.footnote)
+            .foregroundStyle(.secondary)
         }
         .familyActivityPicker(isPresented: $selecting, selection: $selection)
         .alert("apps.consent", isPresented: $confirm) {
@@ -92,6 +106,58 @@ struct AppUsageSection: View {
                 windowStart = c.windowStart
                 windowEnd = c.windowEnd
             }
+        }
+    }
+
+    /// Three rules, shown together so the choice is visible before it is made.
+    /// The selected row carries a filled check; the others stay quiet.
+    private var modeSelector: some View {
+        VStack(spacing: 0) {
+            ForEach(modes, id: \.self) { option in
+                Button { mode = option } label: {
+                    HStack(spacing: 12) {
+                        modeIcon(option)
+                            .frame(width: 24)
+                            .foregroundStyle(mode == option ? Color.accentColor : Color.secondary)
+                        Text(modeTitle(option))
+                            .font(.subheadline)
+                            .multilineTextAlignment(.leading)
+                        Spacer(minLength: 8)
+                        if mode == option {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundStyle(Color.accentColor)
+                                .accessibilityHidden(true)
+                        }
+                    }
+                    .padding(.vertical, 7)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .disabled(locked || !protection.commitmentStorageHealthy)
+            }
+        }
+    }
+
+    private var modes: [AppUsageConfiguration.Mode] {
+        [.always, .dailyBudget, .quietHours]
+    }
+
+    private func modeTitle(_ mode: AppUsageConfiguration.Mode) -> LocalizedStringKey {
+        switch mode {
+        case .always: return "apps.always"
+        case .dailyBudget: return "apps.budget"
+        case .quietHours: return "apps.quietHours"
+        }
+    }
+
+    @ViewBuilder private func modeIcon(_ mode: AppUsageConfiguration.Mode) -> some View {
+        switch mode {
+        case .always:
+            Image(systemName: "shield.lefthalf.filled")
+        case .dailyBudget:
+            Image(systemName: "hourglass")
+        case .quietHours:
+            Image(systemName: "moon.stars")
         }
     }
 

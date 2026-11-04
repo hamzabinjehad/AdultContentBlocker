@@ -184,8 +184,8 @@ try {
     "browser repair does not dismiss or shorten the displayed commitment");
   const ar = await frame(base,"ar",false), a = ar.contentDocument;
   check(a.documentElement.dir === "rtl", "Arabic popup mirrors");
-  check(!a.getElementById("incognito").hidden, "private-window gap is visible");
-  check(a.getElementById("incognito").textContent.includes("الخاصة"), "private-window guidance is Arabic");
+  check(!a.getElementById("incognito") && !a.getElementById("privateIndicator"),
+    "private windows are the app's job: the popup has no incognito mode or guidance");
   a.getElementById("langSwitch").click(); await pause();
   check(a.documentElement.dir === "ltr" && a.getElementById("pHead").textContent === "Protection active", "language switch rerenders status");
   check(a.getElementById("checkConnection").title === "Check connection", "icon command has a translated tooltip");

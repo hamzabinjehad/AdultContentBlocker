@@ -194,6 +194,24 @@ public final class BlocklistStore {
         queue.sync { blocked(host) }
     }
 
+    /// True when the published list names `host` or a parent domain.
+    ///
+    /// Hand lists and the keyword layer are deliberately excluded: the site
+    /// checker needs to name which rule decided an answer, and `isBlocked`
+    /// deliberately answers the combined question. This is a read-only query;
+    /// it changes no policy.
+    public func isOnPublishedList(host: String) -> Bool {
+        queue.sync {
+            walk(host) { hashes.contains($0) ? true : nil }
+        }
+    }
+
+    /// True when the hostname itself matches the keyword layer. Same reason as
+    /// `isOnPublishedList`: the checker explains one layer at a time.
+    public func matchesKeyword(host: String) -> Bool {
+        queue.sync { hostMatchesTerm(host) }
+    }
+
     // The entire verdict uses one policy/list snapshot, including exceptions
     // and keyword rules. Callers must hold queue.
     private func blocked(_ host: String) -> Bool {

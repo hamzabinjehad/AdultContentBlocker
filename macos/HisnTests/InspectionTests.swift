@@ -285,6 +285,35 @@ final class EditorSummaryTests: XCTestCase {
         XCTAssertTrue(s.text.contains("not a domain"))
     }
 
+    // ── domain rows: the add field and Remove ─────────────────────────────────
+
+    func testAddNormalisesAUrlAndAppends() {
+        XCTAssertEqual(SiteListsSection.adding("https://www.Example.com/watch?v=1", to: ""),
+                       "example.com")
+        XCTAssertEqual(SiteListsSection.adding("  reddit.com  ", to: "x.com"),
+                       "x.com\nreddit.com")
+    }
+
+    func testAddRefusesTextThatIsNotADomain() {
+        XCTAssertNil(SiteListsSection.adding("not a domain", to: ""))
+        XCTAssertNil(SiteListsSection.adding("", to: "x.com"))
+    }
+
+    func testAddIgnoresADomainAlreadyInTheList() {
+        XCTAssertEqual(SiteListsSection.adding("x.com", to: "x.com\nreddit.com"),
+                       "x.com\nreddit.com")
+        // The URL form of an entry that is already there is the same entry.
+        XCTAssertEqual(SiteListsSection.adding("https://www.x.com/a", to: "x.com"),
+                       "x.com")
+    }
+
+    func testRemoveDropsOnlyTheNamedDomain() {
+        XCTAssertEqual(SiteListsSection.removing("x.com", from: "x.com\nreddit.com"),
+                       "reddit.com")
+        XCTAssertEqual(SiteListsSection.removing("absent.com", from: "x.com"), "x.com")
+        XCTAssertEqual(SiteListsSection.removing("x.com", from: "x.com"), "")
+    }
+
     // ── words (UserBlocksSection) ─────────────────────────────────────────────
 
     func testValidWordsCountAndPluralise() {
