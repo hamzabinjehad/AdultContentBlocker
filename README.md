@@ -28,12 +28,11 @@ you the lock; Hisn adds the coverage those built-in filters miss. Read
   a checks card, and Settings is grouped cards. Design research used REA 6.8.0
   on ScreenZen 2.0.0. The 1.4.0 bilingual Screen Time shield with no unlock, the
   1.3.0 pause, quiet hours and saved-rule freeze remain.
-- **Mac 1.1.12** — browser protection has no off switch: while Hisn runs, a
-  browser whose extension stops answering shows a one-minute countdown and is
-  then closed, with no lock and no opt-in needed. The old "Keep browser
-  protection on" setting and its confirmation are removed. The 1.1.11 status
-  hero, Setup progress ring, Check a website tool and the 1.1.10 one-title/action
-  pass remain.
+- **Mac 1.1.13** — one action for private windows: Setup names the browsers
+  still allowing them and offers a narrow profile that forces only
+  `IncognitoModeAvailability`, then hands it to System Settings. The 1.1.12
+  continuous browser protection (no lock, no opt-in, closes a browser whose
+  extension stops answering) and the 1.1.11 status hero remain.
 - **Android 1.1.0** — a first-run welcome, a voluntary pause on Protection and
   today's usage in the daily-limit editor sit on the 1.0.0 protection lock,
   removal guard, managed lockdown and layer watchdog. The signed direct APK is
@@ -72,7 +71,7 @@ site checker are captured in the
 | Platform | What it does | State | Start here |
 | --- | --- | --- | --- |
 | Browser extension (Chromium) | Blocks listed domains, checks page text in the page's language, optional local image/video checks, portable hand lists | 1.5.0 | [Using the extension](docs/EXTENSION_USAGE.md) |
-| Mac | Content-filter system extension, browser guard, locks, authority checks, accountability partner, root guardian daemon, an on-demand breathing pause and a read-only site checker | 1.1.12, needs a signed build | [Mac setup](docs/SETUP.md) |
+| Mac | Content-filter system extension, browser guard, locks, authority checks, accountability partner, root guardian daemon, an on-demand breathing pause and a read-only site checker | 1.1.13, needs a signed build | [Mac setup](docs/SETUP.md) |
 | iPhone & iPad | Six Safari blockers, Safari text extension, Screen Time app limits with a custom bilingual shield, optional family DNS, protection lock for saved rules, an on-demand pause and daily quiet hours | 1.5.0, development | [iOS README](ios/README.md) |
 | Android | DNS filtering, selected-app and word restrictions, per-app daily time limits, first-run welcome, voluntary pause, optional image checks, browser-coverage screen, schedules, protection lock that freezes saved rules, opt-in device-owner uninstall guard and managed lockdown, direct-build removal guard, layer watchdog and bundled-list freshness warning | 1.1.0 direct published; Play AAB not uploaded | [Android README](android/README.md) · [1.1 record](docs/ANDROID_1.1.0.md) |
 | Network / router | Verified signed DNS rules for administrator import | Tools only | [Network tools](network/README.md) |

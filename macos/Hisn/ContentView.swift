@@ -1293,6 +1293,7 @@ struct SetupPage: View {
     @State private var copied: String?
     @State private var expandedStages: Set<ProtectedSetup.Stage.ID> = []
     @State private var lastChecked: Date?
+    @State private var privateProfileNotice: String?
     @AppStorage("hisn.setup.administratorConfirmed") private var administratorConfirmed = false
     @AppStorage("hisn.setup.recoveryConfirmed") private var recoveryConfirmed = false
 
@@ -1367,6 +1368,32 @@ struct SetupPage: View {
                         Text("These checks cover this Mac and make protection harder to disable. Network protection, other devices, and recovery access are checked separately.")
                             .font(.caption).foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+
+            // Private windows are the one profile item with a narrow fix: a
+            // single policy disables them without touching DNS. Offer that
+            // instead of sending the person to the full hardening profile for
+            // one setting.
+            if let openPrivate = privateWindowsOpen {
+                Card {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Label(String(localized: "Private windows are open in \(openPrivate)."),
+                              systemImage: "eye.slash")
+                            .font(.headline)
+                        Text("A small profile disables private and incognito windows in those browsers. It changes nothing else — no DNS, no guest windows.")
+                            .font(.callout).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        HStack(alignment: .firstTextBaseline, spacing: 12) {
+                            Button("Create the private-windows profile…") { createPrivateWindowsProfile() }
+                                .controlSize(.large)
+                            if let notice = privateProfileNotice {
+                                Text(notice)
+                                    .font(.caption).foregroundStyle(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
                     }
                 }
             }
@@ -1554,6 +1581,23 @@ struct SetupPage: View {
             }.controlSize(.small)
         case .command, .none:
             EmptyView()
+        }
+    }
+
+    /// Names of installed browsers whose private windows are not locked, or
+    /// nil when there are none.
+    private var privateWindowsOpen: String? {
+        let names = (checklist?.browsers ?? []).filter { !$0.incognitoLocked }.map(\.name)
+        guard !names.isEmpty else { return nil }
+        return names.formatted(.list(type: .and))
+    }
+
+    private func createPrivateWindowsProfile() {
+        do {
+            try PrivateWindowsProfile.openForInstallation()
+            privateProfileNotice = String(localized: "Approve “Hisn private windows disabled” in System Settings › Device Management, then Check again.")
+        } catch {
+            privateProfileNotice = error.localizedDescription
         }
     }
 

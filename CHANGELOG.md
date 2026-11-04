@@ -5,6 +5,31 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
+## Mac 1.1.13 — 2026-11-05
+
+### Added
+
+- **One action for private windows.** When a browser's private windows are
+  still open, Setup now shows a card naming those browsers and a **Create the
+  private-windows profile…** button. It writes a small configuration profile
+  that forces only `IncognitoModeAvailability = 1` for each installed Chromium
+  browser, opens it for approval in System Settings, and says what to do next.
+  The existing Check again re-reads the policy.
+- The narrow profile changes nothing else — no DNS, no DoH, no guest windows;
+  the full hardening profile keeps that job.
+
+### Verification
+
+- `./test.sh macos` — **542 tests, 0 failures** (a new test reads the generated
+  profile and asserts it sets only `IncognitoModeAvailability`); 644 strings,
+  all with Arabic.
+- Version 1.1.13, build 25. The button was pressed on the installed build: the
+  profile was written to
+  `~/Library/Application Support/Hisn/Hisn-Private-Windows-Disabled.mobileconfig`,
+  validated with `plutil`, and System Settings opened for approval. macOS 26 no
+  longer installs profiles from the command line, so final approval is the
+  person's step.
+
 ## Browser extension 1.5.1 — 2026-11-04
 
 ### Removed

@@ -641,6 +641,16 @@
         }
       }
     },
+    "A small profile disables private and incognito windows in those browsers. It changes nothing else — no DNS, no guest windows." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ملف تعريف صغير يعطّل النوافذ الخاصة والمتخفية في تلك المتصفحات. لا يغيّر شيئًا آخر — لا DNS ولا نوافذ الضيوف."
+          }
+        }
+      }
+    },
     "A trusted person keeps the separate administrator password, and I use only this standard account." : {
       "localizations" : {
         "ar" : {
@@ -902,6 +912,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "إصدار التطبيق"
+          }
+        }
+      }
+    },
+    "Approve “Hisn private windows disabled” in System Settings › Device Management, then Check again." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وافق على «Hisn private windows disabled» في إعدادات النظام › إدارة الجهاز، ثم اضغط «تحقّق مرة أخرى»."
           }
         }
       }
@@ -1949,6 +1969,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تعذّرت معرفة ما إذا كنت مديرًا للجهاز."
+          }
+        }
+      }
+    },
+    "Create the private-windows profile…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أنشئ ملف تعريف النوافذ الخاصة…"
           }
         }
       }
@@ -4193,6 +4223,16 @@
         }
       }
     },
+    "No supported Chromium browser is installed, so there is nothing to disable." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يوجد متصفح Chromium مدعوم مثبّت، لذا لا يوجد ما يمكن تعطيله."
+          }
+        }
+      }
+    },
     "No supported local gateway address was found. This can happen with a VPN, an IPv6-only network, or a router managed through its own app. Use the router's official app or continue protecting this device." : {
       "localizations" : {
         "ar" : {
@@ -4922,6 +4962,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "إعدادات DNS الخاصة في %@"
+          }
+        }
+      }
+    },
+    "Private windows are open in %@." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "النوافذ الخاصة مفتوحة في %1$@."
           }
         }
       }

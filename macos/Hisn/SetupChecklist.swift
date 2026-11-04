@@ -151,12 +151,17 @@ public struct SetupChecklist: Equatable {
     /// command with a guessed team would fail in a way that looks like a bug.
     public static let signedBuildCommand = "macos/install.sh --team YOUR_TEAM_ID"
 
+    /// The installed browsers the evidence described, kept so a view can ask
+    /// which private windows are still open without re-reading policy.
+    public var browsers: [BrowserSetup]
+
     public var required: [Step] { steps.filter { $0.state != .optional } }
     public var doneCount: Int { required.filter { $0.state == .done }.count }
     public var isComplete: Bool { doneCount == required.count }
 
     public init(_ e: SetupEvidence) {
         var steps: [Step] = []
+        browsers = e.browsers
 
         // 1. The extension — the only layer that reads page text.
         let missing = e.browsers.filter { !$0.extensionOffIn.isEmpty }
@@ -646,5 +651,85 @@ extension SetupEvidence {
         }
         guard let data = fm.contents(atPath: file) else { return false }
         return bridgeManifestMatches(data, ids: ids)
+    }
+}
+
+/// The small configuration profile that disables private windows in the
+/// Chromium browsers Hisn protects.
+///
+/// The full hardening profile (`profile/make_profile.py`) also changes DNS,
+/// Private Relay and guest windows. When private windows are the only open
+/// item, this profile is the narrow fix: one forced policy,
+/// `IncognitoModeAvailability = 1`, for each installed Chromium browser. It is
+/// handed to System Settings as a file; macOS 26 no longer installs profiles
+/// from the command line, so the person approves it there.
+public enum PrivateWindowsProfile {
+    public static let identifier = "app.hisn.profile.incognito"
+
+    /// Installed Chromium browsers Hisn knows, as (name, policy domain).
+    public static func installedBrowsers() -> [(name: String, domain: String)] {
+        NativeMessagingInstaller.browsers.compactMap { browser in
+            guard NSWorkspace.shared.urlForApplication(withBundleIdentifier: browser.bundleID) != nil
+            else { return nil }
+            return (browser.name, SetupEvidence.policyDomain(browser.bundleID))
+        }
+    }
+
+    /// The profile as a property list. Pure, so the tests can read it without
+    /// touching the system.
+    public static func makeProfile(domains: [String]) -> [String: Any] {
+        var forced: [String: Any] = [:]
+        for domain in domains {
+            forced[domain] = ["Forced": [["mcx_preference_settings": ["IncognitoModeAvailability": 1]]]]
+        }
+        let payload: [String: Any] = [
+            "PayloadType": "com.apple.ManagedClient.preferences",
+            "PayloadVersion": 1,
+            "PayloadIdentifier": identifier + ".payload",
+            "PayloadUUID": UUID().uuidString,
+            "PayloadDisplayName": "Hisn private windows disabled",
+            "PayloadDescription": "Disables private and incognito windows in the Chromium browsers Hisn protects. Nothing else is changed.",
+            "PayloadOrganization": "Hisn",
+            "PayloadContent": forced,
+        ]
+        return [
+            "PayloadType": "Configuration",
+            "PayloadVersion": 1,
+            "PayloadIdentifier": identifier,
+            "PayloadUUID": UUID().uuidString,
+            "PayloadDisplayName": "Hisn private windows disabled",
+            "PayloadDescription": "Disables private and incognito windows in the Chromium browsers Hisn protects. Remove it with: sudo profiles remove -identifier " + identifier,
+            "PayloadOrganization": "Hisn",
+            "PayloadRemovalDisallowed": false,
+            "PayloadContent": [payload],
+        ]
+    }
+
+    public static func data(domains: [String]) throws -> Data {
+        try PropertyListSerialization.data(fromPropertyList: makeProfile(domains: domains),
+                                            format: .xml, options: 0)
+    }
+
+    /// Write the profile somewhere stable and open it, so System Settings takes
+    /// over the approval. Returns the file it wrote.
+    @discardableResult
+    public static func openForInstallation() throws -> URL {
+        let domains = installedBrowsers().map(\.domain)
+        guard !domains.isEmpty else { throw PrivateWindowsProfileError.noBrowser }
+        let directory = FileManager.default.urls(for: .applicationSupportDirectory,
+                                                 in: .userDomainMask)[0]
+            .appendingPathComponent("Hisn", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let file = directory.appendingPathComponent("Hisn-Private-Windows-Disabled.mobileconfig")
+        try data(domains: domains).write(to: file, options: .atomic)
+        NSWorkspace.shared.open(file)
+        return file
+    }
+
+    public enum PrivateWindowsProfileError: LocalizedError {
+        case noBrowser
+        public var errorDescription: String? {
+            String(localized: "No supported Chromium browser is installed, so there is nothing to disable.")
+        }
     }
 }
