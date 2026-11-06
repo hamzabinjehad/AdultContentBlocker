@@ -4,26 +4,26 @@
 > manifests. Do not edit by hand: change `versions.json` and the platform
 > manifest together, then run `python3 script/versions.py`.
 
-Pinned on `release/1.0`, updated 2026-11-04. A platform
+Pinned on `release/1.0`, updated 2026-11-06. A platform
 version means what that platform's own manifest says; it is not a claim that a
 signed artifact has shipped. The state column is the honest release state.
 
 | Platform | Version | Build | State | Source of truth |
 | --- | --- | --- | --- | --- |
-| Browser extension (Chromium) | 1.5.1 | — | development · unpacked, no store listing | `extension/manifest.json` |
-| Mac | 1.1.13 | 25 | development · unsigned, needs Developer ID and notarization | `macos/Hisn.xcodeproj/project.pbxproj` |
-| iPhone & iPad | 1.5.0 | 9 | development · no Apple team, Family Controls entitlement or test device | `ios/HisnMobile.xcodeproj/project.pbxproj` |
-| Android | 1.1.0 | 27 | released · signed direct APK on GitHub; Play AAB not uploaded | `android/app/build.gradle` |
+| Browser extension (Chromium) | 1.5.2 | — | development · unpacked, no store listing | `extension/manifest.json` |
+| Mac | 1.1.16 | 28 | development · unsigned, needs Developer ID and notarization | `macos/Hisn.xcodeproj/project.pbxproj` |
+| iPhone & iPad | 1.7.0 | 11 | development · no Apple team, Family Controls entitlement or test device | `ios/HisnMobile.xcodeproj/project.pbxproj` |
+| Android | 1.1.1 | 28 | development · 1.1.1 built and tested locally; no signed APK published | `android/app/build.gradle` |
 
 ## Seed bundle
 
 | Field | Value |
 | --- | --- |
 | Version | 5 |
-| Built | 2026-10-30T17:33:25+00:00 |
+| Built | 2026-11-06T11:36:27+00:00 |
 | Schema | 1 |
-| Core tier (clients) | 239,885 domains |
-| Full list (Mac/DNS) | 5,276,448 domains |
+| Core tier (clients) | 236,586 domains |
+| Full list (Mac/DNS) | 5,280,200 domains |
 | Keyword layer | 5,831 terms |
 
 The seed is signed (`seed/manifest.json.sig`) and verified by
@@ -32,10 +32,10 @@ generation must beat; clients refuse a lower one.
 
 ## Version notes
 
-- **Browser extension (Chromium)** (`extension`): The packaged zip strips the development key; the Chrome Web Store ID will differ from the unpacked ID. 1.5.1 removes the private-window (incognito) mode from the browser: the popup and options no longer show a private-windows layer, an 'allow in Incognito' guide or its strings. Private browsing is the Mac app's hardening-profile step, which disables it in every configured browser; the extension no longer coaches the person into enabling it. 1.5.0's portable rules and 1.4.0's quiet UI are retained.
-- **Mac** (`macos`): Every target must carry the same MARKETING_VERSION and CURRENT_PROJECT_VERSION; 1.1.13 turns the open 'private windows' item into one action: Setup offers to create a narrow configuration profile that forces IncognitoModeAvailability=1 in each installed Chromium browser and nothing else (no DNS, no guest windows), opens it for approval in System Settings, and re-reads the policy on Check again. The policy readback and hardening-profile step are unchanged. 1.1.12's continuous browser protection and 1.1.11's status hero are retained. Unsigned/unnotarized.
-- **iPhone & iPad** (`ios`): The app, six Safari blockers, HisnActivityMonitor, the scanner and two shield extensions share one version set. 1.5.0 is a UI/UX pass: the overview is a calm card stack (status, pause, plan progress, lock and rules), the lock, blocked-site and app-limit cards open their editors directly, Setup is three guided steps with a checks card, the app-limit editor shows its three modes as a visible decision, and Settings is grouped cards. Long scope copy moved behind per-section disclosures, the overview uses short state labels, Setup issues collapse behind a count, and the stale 'Hisn 1–4' guide text is corrected to 1–6. 1.4.0's bilingual Screen Time shield with no unlock, 1.3.0's pause, quiet hours and saved-rule freeze, and seed v5's 239,885-domain Safari list are retained. ScreenZen was observed read-only for design vocabulary; no code, assets or copy was reused.
-- **Android** (`android`): versionCode is monotonic and must increase for every uploaded or side-loaded update. 27 (1.1.0) adds a first-run welcome, a voluntary pause on Protection and today's usage in the daily-limit editor; it adds no enforcement layer and relaxes no rule. 1.0.0 added per-app daily foreground-time limits alongside the protection lock, removal guard, managed lockdown, watchdog and bundled-list warning. Release APKs are checked; the release keystore is in the gitignored keys/android and must be backed up offline in two places. The Play AAB is built but not uploaded.
+- **Browser extension (Chromium)** (`extension`): The packaged zip strips the development key; the Chrome Web Store ID will differ from the unpacked ID. 1.5.2 adds one field to the native heartbeat: whether the browser lets the extension run in private/incognito windows (`chrome.extension.isAllowedIncognitoAccess`). The Mac app records it per browser and treats a false answer as an uncovered private-window gap; it never substitutes 'not allowed' when an older or silent browser gives no answer. 1.5.1's removal of the browser-side private-window mode and 1.5.0's portable rules and 1.4.0's quiet UI are retained.
+- **Mac** (`macos`): Every target must carry the same MARKETING_VERSION and CURRENT_PROJECT_VERSION. 1.1.16 adds an aggregate blocked-connection count reported by the filter itself: a number for the current local day only, never a host, app or address, shown in the menu bar and the Overview's layer details. The app's authority request batch now continues past a dropped XPC reply instead of abandoning the rest until the next tick, and the menu bar shows the lock's coarse time remaining where it used to show the app name. 1.1.15's Organization Mode, 1.1.14's first-run/private-window pass and 1.1.13's private-windows profile are retained. Unsigned/unnotarized.
+- **iPhone & iPad** (`ios`): The app, six Safari blockers, HisnActivityMonitor, the scanner and two shield extensions share one version set. 1.7.0 adds a pause rule: a fourth app-rule mode where the shield asks instead of only closing, a deliberately finished ten-second pause buys a session of chosen minutes, opens are limited per day, and a damaged budget record closes the day rather than guessing. The shield's Pause first action hands a request to Hisn — directly on iOS 26.5 and later, through a notification before that — the app grants in a failure-safe order, and the DeviceActivity monitor re-shields when the session ends. The editor adds opens per day and minutes per open. 1.6.0's browser/VPN guard and Lock Center, 1.5.0's card-stack overview, 1.4.0's bilingual shield, 1.3.0's pause, quiet hours and saved-rule freeze, and seed v5's core Safari list are retained. Simulator-tested only; real shielding and the shield's pause action need a signed, entitled device.
+- **Android** (`android`): versionCode is monotonic and must increase for every uploaded or side-loaded update. 27 (1.1.0) added the first-run welcome, the voluntary pause and today's usage in the daily-limit editor. 28 (1.1.1) lets the app schedule repeat on chosen weekdays: one window with a Monday-first day mask, every day by default for schedules saved before this version, an explicit day picker in the editor, and enforcement that keeps the overnight portion with the day the window starts on. The model and the accessibility service are the only enforcement; no permission, stored field or claim beyond the existing schedule is added. 1.0.0 added per-app daily foreground-time limits alongside the protection lock, removal guard, managed lockdown, watchdog and bundled-list warning. Release APKs are checked; the release keystore is in the gitignored keys/android and must be backed up offline in two places. The Play AAB is built but not uploaded.
 
 ## Bumping a version
 

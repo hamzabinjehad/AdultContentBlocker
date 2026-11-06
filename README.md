@@ -16,31 +16,64 @@ you the lock; Hisn adds the coverage those built-in filters miss. Read
 
 - **Blocklist v6** — the first signed list generation is published:
   **5,274,046 domains**, 239,885 core and 5,831 terms, verified over HTTPS and
-  served with HTTP 200. The bundled seed stays v5; iOS and Android still update
+  served with HTTP 200. The bundled seed stays v5, re-cut on 6 November with
+  **236,586 core** domains, 5,280,200 in the full list and the six MDisk/TeraBox
+  link hosts added from the adult-apps research; iOS and Android still update
   with an app build.
-- **Extension 1.5.1** — the private-window (incognito) mode is gone from the
-  browser: no private-windows layer, no "allow in Incognito" guide and no
-  strings coaching it. Private browsing is the Mac app's hardening-profile step,
-  which disables it; 1.5.0's **Move your rules** export/import remains.
+- **Extension 1.5.2** — the heartbeat now reports whether the browser lets Hisn
+  run in private windows (`isAllowedIncognitoAccess`). The Mac app records that
+  per browser and shows an uncovered private-window gap instead of letting a
+  green "Browser extension" row imply the private window is monitored. 1.5.1's
+  removal of the browser-side private-window mode and 1.5.0's **Move your
+  rules** export/import remain.
+- **iPhone & iPad 1.7.0** — a **pause rule**: a fourth app-rule mode where the
+  shield asks **Is this important?** instead of only closing. **Pause first**
+  hands the request to Hisn, a ten-second breath unlocks one session of the
+  chosen minutes, opens are limited per day, and the device monitor re-shields
+  when the session ends. The shield can only hand over, never grant; a damaged
+  budget record closes the day. 1.6.0's browser/VPN guard and Lock Center, 1.5.0
+  overview and 1.4.0 shield remain.
+- **Mac 1.1.16** — the filter now reports an aggregate count of denied
+  connections for the current local day (no host, app or address) in the menu
+  bar and the Overview's layer details; a dropped XPC reply no longer abandons
+  the authority request batch; and the menu bar shows the lock's coarse time
+  left. 1.1.15's Organization Mode and 1.1.14's first-run/private-window pass
+  remain.
+- **Android 1.1.1** — the app schedule can repeat on chosen weekdays. One
+  Monday-first day mask, an overnight window that belongs to the day it starts
+  on, a day picker in the editor, and every-day defaults for schedules saved
+  before this version; the protection lock still checks coverage across all
+  seven days.
+- **iPhone & iPad 1.6.0** — a **browser and VPN guard**: a second,
+  always-block app rule for the browsers and VPN apps that route around Safari
+  blocking, frozen during a commitment and watched by the monitor's layer-loss
+  check; and a **Lock Center** that turns removal protection into the honest
+  ladder — one row per level with what it stops and the exit it keeps, saying
+  plainly that no level stops an Apple Account passcode reset, device erasure
+  or another device. The 1.5.0 card-stack overview, 1.4.0 bilingual shield
+  with no unlock, 1.3.0 pause, quiet hours and saved-rule freeze remain.
 - **iPhone & iPad 1.5.0** — a UI/UX pass: the overview is a calm card stack
   (status, pause, plan progress, lock and rules), the lock, blocked-site and
   app-limit cards open their editors directly, Setup is three guided steps with
   a checks card, and Settings is grouped cards. Design research used REA 6.8.0
   on ScreenZen 2.0.0. The 1.4.0 bilingual Screen Time shield with no unlock, the
   1.3.0 pause, quiet hours and saved-rule freeze remain.
-- **Mac 1.1.13** — one action for private windows: Setup names the browsers
-  still allowing them and offers a narrow profile that forces only
-  `IncognitoModeAvailability`, then hands it to System Settings. The 1.1.12
-  continuous browser protection (no lock, no opt-in, closes a browser whose
-  extension stops answering) and the 1.1.11 status hero remain.
+- **Mac 1.1.15** — **Organization Mode**: a forced `HisnManaged` preference
+  from a profile puts the app under an organization, shows its name, hides
+  local removal and weakening controls, and makes Settings, Rules, the partner
+  key and the gray-screen switch tightening-only. `profile/make_profile.py
+  --managed --organization-name …` emits the app payload beside the browser
+  private-window policies with `PayloadRemovalDisallowed`; real removal
+  resistance still needs MDM/supervision and a standard account. The 1.1.14
+  welcome/Overview and **Private windows** status layer remain.
 - **Android 1.1.0** — a first-run welcome, a voluntary pause on Protection and
   today's usage in the daily-limit editor sit on the 1.0.0 protection lock,
   removal guard, managed lockdown and layer watchdog. The signed direct APK is
   published on GitHub Releases; the Play AAB is not uploaded.
 
 These are development candidates. No store listing or physical-device
-acceptance is claimed; the Android 1.1.0 direct APK is published on GitHub and
-the Play AAB is not uploaded. The exact state is in
+acceptance is claimed; the Android 1.1.0 direct APK is the published build (1.1.1
+is a development build) and the Play AAB is not uploaded. The exact state is in
 [versions](docs/VERSIONS.md) and [1.0 readiness](docs/1.0_READINESS.md).
 
 ### Interface
@@ -71,8 +104,8 @@ site checker are captured in the
 | Platform | What it does | State | Start here |
 | --- | --- | --- | --- |
 | Browser extension (Chromium) | Blocks listed domains, checks page text in the page's language, optional local image/video checks, portable hand lists | 1.5.0 | [Using the extension](docs/EXTENSION_USAGE.md) |
-| Mac | Content-filter system extension, browser guard, locks, authority checks, accountability partner, root guardian daemon, an on-demand breathing pause and a read-only site checker | 1.1.13, needs a signed build | [Mac setup](docs/SETUP.md) |
-| iPhone & iPad | Six Safari blockers, Safari text extension, Screen Time app limits with a custom bilingual shield, optional family DNS, protection lock for saved rules, an on-demand pause and daily quiet hours | 1.5.0, development | [iOS README](ios/README.md) |
+| Mac | Content-filter system extension, browser guard, locks, authority checks, accountability partner, root guardian daemon, an on-demand breathing pause, a read-only site checker and an aggregate blocked-connection count | 1.1.16, needs a signed build | [Mac setup](docs/SETUP.md) |
+| iPhone & iPad | Six Safari blockers, Safari text extension, Screen Time app limits with a custom bilingual shield, a browser and VPN guard, a pause rule with a daily opens budget, optional family DNS, protection lock for saved rules, an on-demand pause, daily quiet hours and a removal-protection Lock Center | 1.7.0, development | [iOS README](ios/README.md) |
 | Android | DNS filtering, selected-app and word restrictions, per-app daily time limits, first-run welcome, voluntary pause, optional image checks, browser-coverage screen, schedules, protection lock that freezes saved rules, opt-in device-owner uninstall guard and managed lockdown, direct-build removal guard, layer watchdog and bundled-list freshness warning | 1.1.0 direct published; Play AAB not uploaded | [Android README](android/README.md) · [1.1 record](docs/ANDROID_1.1.0.md) |
 | Network / router | Verified signed DNS rules for administrator import | Tools only | [Network tools](network/README.md) |
 

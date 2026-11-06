@@ -169,8 +169,8 @@ python3 build.py --out ../dist --sign-key ../keys/blocklist_ed25519.pem
 python3 keys.py verify --dist ../dist --pub ../keys/blocklist_ed25519.pub
 ```
 
-Produces the full 5,276,448-domain list from the upstream sources (the bundled
-core tier is 239,885). `domains_core.txt` (239,885 high-confidence domains,
+Produces the full 5,280,200-domain list from the upstream sources (the bundled
+core tier is 236,586). `domains_core.txt` (236,586 high-confidence domains,
 collapsed across subdomains) is what the browser extension, Safari blockers and
 Android seed ship; the full list goes to the Mac filter and network DNS, which
 have no rule budget. `terms.json`, the keyword layer, is compiled from

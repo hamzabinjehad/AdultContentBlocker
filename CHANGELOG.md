@@ -5,6 +5,262 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
+## iPhone & iPad 1.7.0 — 2026-11-06
+
+### Added
+
+- **A pause rule.** A fourth app-rule mode: the shield asks **Is this
+  important?** instead of only closing, a deliberately finished ten-second
+  pause buys one session of the chosen minutes, and the rule allows 1–10 opens
+  per day. It has its own `ManagedSettingsStore` and a mirrored day record; a
+  damaged record reads as unreadable and closes the day rather than handing out
+  a fresh budget. The DeviceActivity monitor ends a session at its threshold
+  and re-shields a session from another day or one older than any possible
+  reading of its minutes.
+- **Pause first on the shield.** The pause shield's secondary button hands a
+  request to Hisn — `.openParentalControlsApp` on iOS 26.5 and later, a local
+  notification before that — and never opens the app itself. A request older
+  than ten minutes is ignored, and the completion handler is called exactly
+  once when the notification path races the timeout.
+- **The breath screen.** The app consumes a handoff at most once per
+  foreground, shows a ten-second ring, and enables **Open for N minutes** only
+  when it finishes. Closing spends nothing. The grant order is failure-safe:
+  monitor, session record, open consumed, shield cleared last.
+- English and Arabic copy for the mode, the editor, the handoff and every grant
+  result.
+
+### Changed
+
+- The app-rule editor offers the pause mode with opens per day and minutes per
+  open; the shared minutes field is clamped when the mode changes, because the
+  valid ranges differ between a daily budget and a pause session.
+- The shield's secondary button is only configured for a pause rule with opens
+  left; every other mode keeps the existing one-button shield.
+
+### Verification
+
+- `./test.sh ios` — **40 Python and 242 simulator tests, 0 failures** on the
+  iPhone 17 simulator (iOS 26.5); 21 new pause-rule tests.
+- `PauseRuleTests` cover day rollover, budget exhaustion, damaged and
+  conflicting records, session bounds, handoff freshness and the practice-day
+  history without Apple's Screen Time service.
+- No entitlement, signed build or physical-device acceptance is claimed. The
+  pause shield rendering, its secondary button and `openParentalControlsApp`
+  need a signed, entitled device; only the code paths are covered here. Record:
+  [the 1.7.0 note](docs/IOS_1.7.0.md).
+
+### Limits
+
+- Real shielding needs the Family Controls entitlement; the simulator cannot
+  show a Screen Time shield.
+- Apple's usage threshold is not a hard clock, so a session can overrun its
+  minutes until the monitor's next reconciliation.
+- The notification handoff needs notification permission, and the direct open
+  needs iOS 26.5; without either the shield closes and the pause screen remains
+  reachable from Hisn.
+- Pause is a chosen mode, not a default; a commitment freezes a rule change like
+  any other, and the day record is device-local.
+
+## iPhone & iPad 1.6.0 — 2026-11-06
+
+### Added
+
+- **Browser and VPN guard.** A second, independent always-block app rule, so
+  the apps that route around Safari blocking — other browsers, VPN apps — stay
+  shielded beside whatever mode the main rule uses for other apps. Its own
+  mirrored record and `ManagedSettingsStore`, frozen during a commitment like
+  every saved rule, a row on the overview rules card, and a section in Setup
+  step 2 and the App limits sheet. The improvement plan's last remaining M2.5
+  code item.
+- **Lock Center.** Setup step 3's removal protection becomes the ladder as its
+  own object: the current level with its evidence and stale reason, one row per
+  rung (passcode vault, family guardian, supervised) with what it stops and the
+  exit it keeps, the guardian request with its consent sheet, and the person's
+  own confirmations with the optional deletion self-test. The footer states
+  what no level stops. No new lock is claimed; the honest ladder is the
+  answer to "make the app undeletable".
+- **Monitor guard watch.** The DeviceActivity monitor's layer-loss check
+  expects app shields when a guard is saved and observes the guard's own
+  store, so a lost guard is told rather than silent.
+
+### Changed
+
+- The commitment's frozen-rules line now names the guard, in English and
+  Arabic.
+- `RemovalProtectionSection` is replaced by `LockCenterView`; every caveat it
+  carried lives in the Lock Center.
+
+### Fixed
+
+- **Hisn Safari (limited edition) checked only four of its six parts.** The
+  limited app still assumed the pre-1.1.4 four-part bundle: it read the
+  six-part `rules-metadata.json` as unverifiable, hid parts 5 and 6, and
+  disabled reload. It now uses the shared `MobileProtectionPolicy` part count,
+  pinned by a new `test_safari_only.py` assertion. Found while building the
+  limited edition for a real iPhone 11 (Personal Team, device evidence in
+  `ios/HisnSafariOnly/README.md`).
+
+### Verification
+
+- `./test.sh ios` — **39 Python and 221 simulator tests, 0 failures** on the
+  iPhone 17 simulator (iOS 26.5); five new guard-rule tests.
+- REA 6.8.0 `inspect-artifact` on the built 1.6.0 app: evidence
+  `ev_33f65972e29c1415eeeb05ff3265387c087bb9caef117ca19f02ab494da6cf9e`.
+  Inventory only, no native analysis provider.
+- Renders of every tab and the three drill-ins in both languages are in
+  `design/ios-ui-1.6.0/`.
+- No entitlement, signed build or physical-device acceptance is claimed; the
+  guard's real shielding and the shield-combination behaviour need a signed,
+  entitled device. Record: [the 1.6.0 note](docs/IOS_1.6.0.md).
+
+## Mac 1.1.16 — 2026-11-06
+
+### Added
+
+- **Blocked connections today.** The filter counts denied flows for the current
+  local day and reports the number, with the day it belongs to, over the
+  existing XPC health reply. The menu bar and the Overview's Layer details show
+  it when it is non-zero and for today. Only an aggregate is kept — no host,
+  app, path or address — the count is capped at 9,999, and restarting the
+  filter or crossing local midnight starts again at zero.
+- **The lock's time left in the menu bar.** While a lock runs the menu-bar
+  label shows the remaining time in whole minutes, rounded up, in day/hour/
+  minute units; with no lock it reads **Hisn**.
+
+### Changed
+
+- **A dropped XPC reply no longer abandons the authority request batch.**
+  `FilterSync` now runs every queued request through a testable `apply` seam,
+  continues past a nil reply and keeps refusals in order. Each request is a
+  whole state, so the next tick reconciles whatever was missed, only in the
+  stricter direction.
+
+### Verification
+
+- `./test.sh macos` — **568 tests, 0 failures**; 720 strings, all with Arabic.
+- New tests cover the tally's day rollover, a read-only other day, the cap and
+  two time zones; the batch continuing past a missing reply and refusal order;
+  and the countdown's rounding and minute granularity.
+- No live XPC run with real filtered traffic is claimed. The count travels on
+  the health reply the authority tests already cover; its arithmetic is
+  unit-tested.
+
+### Limits
+
+- Per filter process and local day: a restart starts at zero, and nothing is
+  persisted by design.
+- It counts denied flows, not sites or people; retries and subresources inflate
+  it, and traffic denied elsewhere is invisible.
+- A count is not evidence of coverage; liveness remains the heartbeat and the
+  XPC answer.
+- With no authority answer the app shows no count, and the menu text is coarse
+  by design.
+
+## Mac 1.1.15 — 2026-11-05
+
+### Added
+
+- **Organization Mode.** A configuration profile can set the forced preference
+  `HisnManaged` in the app's own domain. The app reads it with
+  `CFPreferencesAppValueIsForced` — a `defaults write` cannot fake it — and
+  shows **Managed by [organization]** at the top of the Overview, Setup, Rules
+  and Settings, and in the menu bar.
+- **No local removal or weakening while managed.** The private-window sheet
+  hides **Not now** and the Device Management removal route; Rules accepts new
+  blocks and removal of allowances but refuses the reverse; Settings,
+  the partner key and the gray-screen switch become tightening-only; the
+  account-split confirmation is disabled. The app does not pretend this stops a
+  local administrator from removing the profile.
+- **Managed profile generator.** `profile/make_profile.py --managed
+  --organization-name "…"` adds a forced `app.hisn.Hisn` payload
+  (`HisnManaged = true`, `OrganizationName`) to the existing DNS/browser
+  profile. The profile already sets `PayloadRemovalDisallowed = true` and a
+  removal password; an MDM/supervised deployment is still what makes removal
+  resistance real.
+- **Removal-disallowed narrow profile.** When the app is managed, the
+  private-windows profile it creates also sets `PayloadRemovalDisallowed`.
+
+### Verification
+
+- `./test.sh macos` — **559 tests, 0 failures**; 718 strings, all with Arabic.
+- `profile` suite — managed payload, organization name, empty-name fallback and
+  removal-disallowed tests pass.
+- The generated example profile was inspected with `plutil`: it contains the
+  forced `HisnManaged`/`OrganizationName` payload and
+  `PayloadRemovalDisallowed => true`.
+
+### Limits
+
+- A local administrator, Recovery, or an erase can still remove any profile.
+  Organization Mode hides in-app bypasses; it is not a substitute for MDM,
+  supervision and a standard daily account.
+- Safari still has no supported private-browsing profile key; the managed
+  profile's DNS/browser policies do not change that. Use the organization's
+  Safari restriction, Screen Time, or block Safari.
+
+## Mac 1.1.14 — 2026-11-05
+
+### Added
+
+- **A first-run explanation, in order.** The app now opens on the Overview, not
+  the twelve-step diagnostics page. On first launch a three-screen welcome
+  shows the three protection layers in one line each, asks once whether Hisn
+  may disable private browsing, and names the browsers it can and cannot
+  control. It is skippable and reachable again from Settings › How Hisn works.
+- **Private windows are a first-class layer.** The status hero now includes
+  **Private windows** beside the filter and the browser extension. When a
+  private window is uncovered, the headline becomes **Private windows are
+  open**, the primary action is **Prevent private browsing…**, and the app no
+  longer lets a green "Browser extension" row imply the private window is
+  monitored.
+- **One consent sheet, every browser.** It lists installed Chromium browsers
+  (Chrome, Helium, Edge, Brave, Vivaldi, Opera, Arc and the rest of the
+  catalogue), Firefox channels, Zen/Floorp where policy is supported, and names
+  Safari, DuckDuckGo, Tor, Mullvad, LibreWolf and Waterfox as not controllable
+  rather than silently counting them as protected. **Not now** changes nothing;
+  a running lock disables the removal route and says so.
+- **Firefox private-window policy.** The narrow profile now sets
+  `EnterprisePoliciesEnabled` and `DisablePrivateBrowsing` for Firefox as well
+  as `IncognitoModeAvailability = 1` for Chromium. It still changes nothing
+  else: no DNS, no DoH, no guest windows.
+- The extension heartbeat reports whether Chrome's "Allow in Incognito" is on,
+  so an unpacked extension that is not allowed in private windows is visible as
+  a gap without waiting for a policy.
+
+### Changed
+
+- Setup's top card is shorter: one next step, a count of other checks, and no
+  duplicated limits paragraph. Layer details on the Overview starts collapsed.
+- The launch-time block-list check waits thirty seconds, so the first frame is
+  not competing with a background download. The previous signed list remains
+  enforced throughout.
+
+### Verification
+
+- `./test.sh macos` — **554 tests, 0 failures**; 707 strings, all with Arabic.
+- New `PrivateBrowsingTests` cover the installed-browser catalogue, forced
+  Chromium and Firefox policy, the extension's incognito answer, the mixed
+  profile payload, and the status layer/headline.
+- Rendered captures: welcome (English and Arabic), private-window sheet, and
+  the Overview at the 760-point minimum width.
+
+## Browser extension 1.5.2 — 2026-11-05
+
+### Added
+
+- The native heartbeat carries `incognitoAllowed`, read from
+  `chrome.extension.isAllowedIncognitoAccess`. The Mac app records it per
+  browser and treats `false` as an uncovered private-window gap; a missing
+  answer (older Chrome, an engine without the API) is not treated as `false`.
+
+### Verification
+
+- `extension/test/run.sh` — all suites pass, including a runtime assertion that
+  the heartbeat message carries the field.
+- Packaged: `dist/hisn-extension-1.5.2.zip`, 92 files, 5.9 MB, SHA-256
+  `ef3f7d8a9c8e2a290891ef92b56f2b44fdc3d0ad071cf83c44dfe6f41fc25d7f`.
+  Unpacked copy: `dist/hisn-unpacked-chrome-1.5.2`.
+
 ## Mac 1.1.13 — 2026-11-05
 
 ### Added
@@ -94,6 +350,16 @@ bump without an entry here is an unfinished release.
 - **Settings is grouped cards.** Language, the Safari extension, gray screen,
   privacy and about each get one card; the full privacy note and coverage copy
   stay behind disclosures.
+- **Less visible text, without removing caveats.** The Safari, Screen Time,
+  DNS, family, router, Safari-extension, app-limit, blocked-site, vault and
+  removal sections now lead with a short action or status line; the full scope,
+  steps and limits are one disclosure down. Setup issues collapse behind a
+  count, the overview plan and checks use short states ("Needs a signed
+  device", "Self only", "Not set"), and the gray-screen explanation moves under
+  **Why and how**.
+- **Stale Safari copy fixed.** The Setup, Safari and Hisn Text guides said
+  "Hisn 1–4" even though the app has shipped six Safari blockers since 1.1.4;
+  they now say **Hisn 1–6** in English and Arabic.
 - **Accessibility.** Status headers, step cards, pause, lock and rule rows stack
   at accessibility text sizes; status pills and the progress count no longer use
   fixed widths; cards follow system light/dark and Increase Contrast; the
@@ -215,6 +481,51 @@ bump without an entry here is an unfinished release.
   observation only. Captures in `design/macos-ui-1.1.10/`.
 - Version 1.1.10, build 21. Unsigned and unnotarized; no physical-Mac,
   VoiceOver or signed-build result is claimed.
+
+## Android 1.1.1 — 2026-11-06
+
+### Added
+
+- **Weekday schedules.** A schedule can now repeat on chosen days of the week
+  instead of every day. `DailyAppSchedule` carries a Monday-first day mask; an
+  overnight window belongs to the day it starts on, so a 22:00–07:00 window
+  selected for Monday covers Monday evening into Tuesday morning, and the
+  ten-minute arming window follows the same rule. A mask of zero days is
+  rejected.
+- **A day picker in the schedule editor.** **Days this window repeats on**
+  opens seven checkboxes, localised with the device locale's day names, and
+  refuses an empty selection. The row summary reads **Every day** or a count
+  such as **3 days a week**; the Protection and Rules summaries name the same
+  repetition in English and Arabic.
+
+### Changed
+
+- A schedule saved before this version has no day mask and reads as every day,
+  which is what its single window already did.
+- Preservation during a protection lock is checked across all seven days, so
+  changing the mask cannot drop a previously covered overnight portion.
+
+### Verification
+
+- `android/test-core.sh` — all core suites pass, including the per-day
+  boundaries, overnight anchoring, seven-day preservation and the exhaustive
+  minute grid; strings and notices pass with 552 strings and 16 plurals in
+  English and Arabic.
+- `:app:compileDebugJavaWithJavac`, `:app:assembleDebug` and `:app:lintDebug`
+  pass with 0 errors.
+- No signed APK, device run or emulator acceptance is claimed for 1.1.1. The
+  day picker follows the existing dialog and setting-row components; a device
+  check of night, weekday and empty-selection cases remains open.
+
+### Limits
+
+- The device clock and time zone decide, as with every schedule; this is not a
+  background scheduler.
+- One window per schedule: different windows on different days are not part of
+  this version.
+- The schedule still requires accessibility to be enabled and connected and
+  restricts selected apps, not the phone or the internet.
+- Existing installs stay every day until someone opens the editor and chooses.
 
 ## Android 1.1.0 — 2026-11-03
 
