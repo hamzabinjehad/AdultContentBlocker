@@ -65,6 +65,26 @@ visual identity.
 - **Privacy links stay visible.** The privacy policy, support page and offline
   licenses/sources are rows inside the privacy card.
 
+### Less text, same honesty
+
+- **The stale "Hisn 1–4" copy is fixed.** The app has shipped six Safari
+  blockers since 1.1.4, but the Setup, Safari and Hisn Text guides still said
+  1–4. They now say **Hisn 1–6** in English and Arabic.
+- **Long explanations moved one tap down.** Safari, Screen Time, DNS, family,
+  router, the Safari extension, app limits, blocked sites, the passcode vault
+  and removal protection now lead with a short action or status line; the full
+  scope, steps and caveats sit behind a section disclosure. No caveat was
+  deleted.
+- **The overview plan and checks use short states.** "Needs a signed device"
+  replaces the long simulator explanation; "Self only", "Passcode vault",
+  "Family guardian" and "Supervised" replace the full lock-ladder sentence;
+  "Not set" replaces "Not confirmed" for an empty app-limit rule. The full
+  wording remains in Setup and the removal section.
+- **Setup issues are collapsed.** The status card shows how many items need
+  attention; the issue sentences open on tap.
+- **Settings gray screen** leads with a one-line summary; the longer
+  explanation, shortcut and automation note are under **Why and how**.
+
 ### Accessibility and layout
 
 - Cards use `secondarySystemGroupedBackground` and system separators, so light
@@ -119,6 +139,10 @@ freezes saved rules and its pause changes no rule.
 | `ios/Hisn/ProtectionHero.swift` | Card layout, adaptive header, checked-at line |
 | `ios/Hisn/Pause.swift` | Today-only count helper and card layout |
 | `ios/Hisn/AppUsageSection.swift` | Visible mode selector and action-first order; scope behind the footer disclosure |
+| `ios/Hisn/BrowserFirstSection.swift` | Short summary and three one-line steps; long scanner and visual copy behind one disclosure |
+| `ios/Hisn/CommitmentSection.swift` | Screen Time scope behind a disclosure |
+| `ios/Hisn/CustomSitesSection.swift` | Short footer and a list-limits disclosure |
+| `ios/Hisn/PasscodeVaultSection.swift` | Short vault summary; full body, limits and stronger-lock copy behind disclosures |
 | `ios/Hisn/en.lproj/Localizable.strings`, `ar.lproj` | New overview, setup and settings copy in both languages |
 | `ios/HisnTests/UIRenderTests.swift` | New phone/iPad light/dark renders and the three Setup drill-ins |
 | `ios/HisnTests/PauseTests.swift` | Today-only tally test |

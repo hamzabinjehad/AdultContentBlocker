@@ -96,6 +96,7 @@ struct SetupStatusCard: View {
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var showingScope = false
+    @State private var showingIssues = false
 
     private var assessment: MobileProtectionPolicy.SetupAssessment { protection.setupAssessment }
 
@@ -106,20 +107,7 @@ struct SetupStatusCard: View {
 
                 progressRow
 
-                if assessment.state == .unchecked {
-                    Text("setup.next.check")
-                        .font(.callout)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                if !assessment.issues.isEmpty {
-                    VStack(alignment: .leading, spacing: 8) {
-                        ForEach(assessment.issues, id: \.rawValue) { issue in
-                            Label(LocalizedStringKey(issue.rawValue), systemImage: "arrow.forward.circle")
-                                .font(.callout)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
-                }
+                if !assessment.issues.isEmpty { issueDisclosure }
                 if assessment.state == .checking { ProgressView("working") }
 
                 HStack(spacing: 12) {
@@ -140,9 +128,13 @@ struct SetupStatusCard: View {
 
                 DisclosureGroup(isExpanded: $showingScope) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("setup.status.scope").font(.footnote).foregroundStyle(.secondary)
-                        Text("setup.status.mixedcontent").font(.footnote).foregroundStyle(.secondary)
+                        Text("setup.next.check")
+                        Text("setup.status.scope")
+                        Text("plan.scope")
+                        Text("setup.status.mixedcontent")
                     }
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
                     .padding(.top, 6)
                 } label: {
                     Text("setup.checks.what")
@@ -150,6 +142,31 @@ struct SetupStatusCard: View {
                 }
             }
             .accessibilityIdentifier("setup.currentAssessment")
+        }
+    }
+
+    /// The issues are useful but long. The card shows how many there are; the
+    /// sentences are one tap away, just as they are on the overview.
+    private var issueDisclosure: some View {
+        DisclosureGroup(isExpanded: $showingIssues) {
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(assessment.issues, id: \.rawValue) { issue in
+                    Label(LocalizedStringKey(issue.rawValue), systemImage: "arrow.forward.circle")
+                        .font(.callout)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(.top, 6)
+        } label: {
+            Group {
+                if assessment.issues.count == 1 {
+                    Text("hero.issuesOne")
+                } else {
+                    Text("hero.issues \(assessment.issues.count)")
+                }
+            }
+            .font(.callout.weight(.medium))
+            .foregroundStyle(HisnPalette.warning)
         }
     }
 
@@ -231,29 +248,66 @@ struct BlockingLayersSetupView: View {
     var body: some View {
         List {
             Section("safari.title") {
-                Text("safari.steps")
+                Text("safari.steps.short")
                 Button("safari.reload") { Task { await protection.reloadSafari() } }
                     .disabled(protection.busy || protection.listCount == 0)
-                Text("safari.scope").font(.footnote).foregroundStyle(.secondary)
+                DisclosureGroup("safari.details") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("safari.steps")
+                        Text("safari.scope")
+                    }
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 6)
+                }
+                .font(.footnote)
             }
             SafariPartsSection(protection: protection)
             ScreenTimeSection(protection: protection)
             CustomSitesSection(protection: protection)
             BrowserFirstSection()
             Section("dns.title") {
-                Text("dns.steps")
+                Text("dns.stepsShort")
                 Button("dns.prepare") { confirmDNS = true }.disabled(protection.busy)
-                Text("dns.scope").font(.footnote).foregroundStyle(.secondary)
+                DisclosureGroup("dns.details") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("dns.steps")
+                        Text("dns.scope")
+                    }
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 6)
+                }
+                .font(.footnote)
                 Link("dns.provider", destination: URL(string: "https://developers.cloudflare.com/1.1.1.1/setup/")!)
             }
             Section("family.title") {
                 Text("family.steps")
-                Text("family.scope").font(.footnote).foregroundStyle(.secondary)
+                DisclosureGroup("family.details") {
+                    Text("family.scope")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 6)
+                }
+                .font(.footnote)
             }
             Section("network.title") {
-                RouterAppDomainsView()
-                Text("network.steps")
-                Text("network.scope").font(.footnote).foregroundStyle(.secondary)
+                Text("network.stepsShort")
+                DisclosureGroup("network.details") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("network.steps")
+                        Text("network.scope")
+                    }
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 6)
+                }
+                .font(.footnote)
+                DisclosureGroup("network.routerRules") {
+                    RouterAppDomainsView()
+                        .padding(.top, 6)
+                }
+                .font(.footnote)
                 Link("network.guide", destination: URL(string: "https://developers.cloudflare.com/1.1.1.1/setup/router/")!)
             }
         }
@@ -279,6 +333,7 @@ struct CommitmentSetupView: View {
     var body: some View {
         List {
             AppUsageSection(protection: protection, usage: usage)
+            GuardSection(protection: protection, usage: usage)
             CommitmentSection(protection: protection, vault: vault)
         }
         .listStyle(.insetGrouped)
@@ -288,8 +343,8 @@ struct CommitmentSetupView: View {
     }
 }
 
-/// Step 3: the passcode vault and the stronger removal locks. Their dates are
-/// together on purpose: the person must see which one opens first.
+/// Step 3: the passcode vault and the removal ladder. Their dates are together
+/// on purpose: the person must see which one opens first.
 struct VaultSetupView: View {
     @ObservedObject var protection: ProtectionController
     @ObservedObject var vault: PasscodeVaultController
@@ -298,12 +353,12 @@ struct VaultSetupView: View {
     var body: some View {
         List {
             PasscodeVaultSection(vault: vault, protection: protection, lockDevice: lockDevice)
-            RemovalProtectionSection(protection: protection, vault: vault, lockDevice: lockDevice)
+            LockCenterView(protection: protection, vault: vault, lockDevice: lockDevice)
         }
         .listStyle(.insetGrouped)
         .environment(\.defaultMinListRowHeight, 48)
         .background(HisnSurface.grouped)
-        .navigationTitle("setup.detail.vault.title")
+        .navigationTitle("vault.title")
     }
 }
 
@@ -338,38 +393,178 @@ struct SafariPartsSection: View {
     }
 }
 
-/// Guardian authorization and the person's own confirmation of locks Hisn
-/// cannot read. Self-contained so Setup's step 3 owns its alert.
-struct RemovalProtectionSection: View {
+/// The removal-protection ladder as its own object: the current level first,
+/// then one row per rung with what it stops, its exit and one action. Apple
+/// gives an app no way to make itself undeletable on an unsupervised iPhone;
+/// this ladder is every supported level, and each rung states its own exit.
+/// The guardian request and the person's own confirmations live here; the
+/// passcode-vault rung refers to the vault section above it.
+struct LockCenterView: View {
     @ObservedObject var protection: ProtectionController
     @ObservedObject var vault: PasscodeVaultController
     let lockDevice: LockConfirmationDevice
     @State private var confirmGuardian = false
+    @AppStorage(MobileProtectionPolicy.lockAttestationKey) private var lockAttestationData = Data()
+
+    /// The readiness row's own assessment, computed the same way the overview
+    /// computes it: attested levels are never shown as verified.
+    private var removal: MobileProtectionPolicy.RemovalProtection {
+        MobileProtectionPolicy.removalProtection(removal: protection.removal,
+            attestation: MobileProtectionPolicy.LockAttestation(storage: lockAttestationData),
+            vault: vault.facts, now: protection.now, deviceMarker: lockDevice.marker)
+    }
 
     var body: some View {
-        Section("removal.title") {
-            Label(LocalizedStringKey(protection.removal.rawValue), systemImage: "lock.shield")
-            Text("removal.body").font(.footnote).foregroundStyle(.secondary)
-            Button("removal.request") { confirmGuardian = true }.disabled(protection.busy)
-            Text("removal.manual").font(.footnote).foregroundStyle(.secondary)
-            Text("removal.recovery").font(.footnote).foregroundStyle(.secondary)
-            DisclosureGroup("removal.setup.title") {
-                Text("removal.setup.mobile").font(.callout).foregroundStyle(.secondary)
-                Button("status.refresh") { Task { await protection.refresh() } }
-                    .disabled(protection.busy)
+        Section("lock.center.title") {
+            levelRow
+            if let stale = removal.stale {
+                Text(LocalizedStringKey(stale.rawValue))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
+            Text("lock.center.intro")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        Section("lock.center.ladder") {
+            vaultRung
+            guardianRung
+            supervisedRung
+        }
+        Section {
             DisclosureGroup("lock.confirmOther") {
                 Text("lock.ladder").font(.footnote).foregroundStyle(.secondary)
                 LockConfirmationRows(claims: [.familyGuardian, .supervised], vault: vault.facts,
                                      now: protection.now, device: lockDevice)
             }
-            Link("removal.guide", destination: URL(string: "https://support.apple.com/en-gb/105121")!)
+            DisclosureGroup("removal.details") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("removal.body")
+                    Text("removal.manual")
+                    Text("removal.recovery")
+                }
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .padding(.top, 6)
+            }
+            .font(.footnote)
+        } footer: {
+            Text("lock.center.honesty")
         }
         .alert("removal.consent.title", isPresented: $confirmGuardian) {
             Button("removal.request") { Task { await protection.requestGuardianProtection() } }
             Button("cancel", role: .cancel) { }
         } message: {
             Text("removal.consent.body")
+        }
+    }
+
+    // MARK: - Current level
+
+    /// The short level name the overview rows already use. Hisn cannot read the
+    /// Screen Time passcode, the deletion setting or supervision, so the row
+    /// carries the evidence beside it, never inside the name.
+    private var levelName: LocalizedStringKey {
+        switch removal.level {
+        case .selfOnly: return "overview.lock.level.selfOnly"
+        case .passcodeVault: return "overview.lock.level.vault"
+        case .familyGuardian: return "overview.lock.level.guardian"
+        case .supervised: return "overview.lock.level.supervised"
+        }
+    }
+
+    private var levelRow: some View {
+        HStack(alignment: .top, spacing: 12) {
+            if removal.level == .selfOnly {
+                HisnIconBadge(systemName: "lock.open", tint: Color.secondary, size: 38)
+                    .accessibilityHidden(true)
+            } else {
+                HisnIconBadge(systemName: "lock.shield.fill", tint: HisnPalette.good, size: 38)
+                    .accessibilityHidden(true)
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(levelName)
+                    .font(.headline)
+                if removal.selfTested {
+                    Text("lock.selfTested").font(.caption).foregroundStyle(.secondary)
+                }
+                switch removal.evidence {
+                case .verified?:
+                    HisnStatusPill(text: "lock.evidence.verified", systemImage: "checkmark.seal",
+                                   tint: HisnPalette.good)
+                case .attested?:
+                    HisnStatusPill(text: "lock.evidence.attested", systemImage: "person.fill.checkmark",
+                                   tint: .secondary)
+                case nil:
+                    HisnStatusPill(text: "lock.evidence.none", systemImage: "lock.open", tint: .secondary)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+    }
+
+    // MARK: - Rungs
+
+    /// One rung: what this level stops, the exit it keeps, and one action.
+    private func rungRow(systemName: String, stopsKey: LocalizedStringKey, exitKey: LocalizedStringKey,
+                         @ViewBuilder action: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 12) {
+                HisnIconBadge(systemName: systemName, tint: Color.accentColor, size: 34)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(stopsKey)
+                        .font(.callout)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text(exitKey)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+            }
+            action()
+        }
+        .padding(.vertical, 6)
+    }
+
+    private var vaultRung: some View {
+        rungRow(systemName: "lock.rotation",
+                stopsKey: "lock.rung.vault.stops",
+                exitKey: "lock.rung.vault.exit") {
+            Text("lock.rung.vault.how")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var guardianRung: some View {
+        rungRow(systemName: "person.2",
+                stopsKey: "lock.rung.guardian.stops",
+                exitKey: "lock.rung.guardian.exit") {
+            Label(LocalizedStringKey(protection.removal.rawValue), systemImage: "lock.shield")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Button("removal.request") { confirmGuardian = true }.disabled(protection.busy)
+        }
+    }
+
+    private var supervisedRung: some View {
+        rungRow(systemName: "crown",
+                stopsKey: "lock.rung.supervised.stops",
+                exitKey: "lock.rung.supervised.exit") {
+            DisclosureGroup("lock.rung.supervised.how") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("removal.setup.mobile")
+                    Link("removal.guide", destination: URL(string: "https://support.apple.com/en-gb/105121")!)
+                }
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .padding(.top, 6)
+            }
+            .font(.callout)
         }
     }
 }

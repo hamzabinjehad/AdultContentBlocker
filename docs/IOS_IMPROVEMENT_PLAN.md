@@ -27,6 +27,15 @@ forums (links inline). Nothing here has been tested on a real iPhone yet.
 > the rule cannot be read. Both extensions need the Family Controls entitlement;
 > the system-rendered shield still needs a signed-device test. See
 > [the 1.4.0 record](IOS_1.4.0.md).
+>
+> **1.6.0 update (2026-11-06):** M2.5 is done in code — a **browser and VPN
+> guard**, a second, independent always-block rule with its own mirrored record
+> and ManagedSettingsStore, frozen during a commitment and included in the
+> monitor's layer-loss watch. Setup step 3's removal section became the **Lock
+> Center**: the ladder as one object, each rung with what it stops and the exit
+> it keeps. No new lock level was added and none is claimed. See
+> [the 1.6.0 record](IOS_1.6.0.md). M2.3, M2.6, M3.1 and the M5 device matrix
+> remain device work.
 
 ## End goal
 

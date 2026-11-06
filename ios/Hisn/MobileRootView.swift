@@ -13,6 +13,9 @@ struct MobileRootView: View {
     @State private var showingSites = false
     @State private var showingAppLimits = false
     @State private var pauseCount: Int?
+    /// A pause request the shield handed over, waiting for the breath screen.
+    @State private var pauseRulePrompt: PauseRulePrompt?
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var usage = AppUsageController()
     @StateObject private var vault: PasscodeVaultController
     /// The person's own confirmation of a lock Hisn cannot read; empty means none.
@@ -88,7 +91,10 @@ struct MobileRootView: View {
         }
         .sheet(isPresented: $showingAppLimits) {
             NavigationStack {
-                List { AppUsageSection(protection: protection, usage: usage) }
+                List {
+                    AppUsageSection(protection: protection, usage: usage)
+                    GuardSection(protection: protection, usage: usage)
+                }
                     .listStyle(.insetGrouped)
                     .navigationTitle("apps.sheet.title")
                     .toolbar {
@@ -98,7 +104,22 @@ struct MobileRootView: View {
                     }
             }
         }
-        .onAppear { refreshDerivedState() }
+        .sheet(item: $pauseRulePrompt) { prompt in
+            // The shield's pause action hands the request to the app; this is
+            // the only place it becomes a session. Closing spends nothing.
+            PauseRuleGrantView(usage: usage, appName: prompt.request.appName,
+                               onClose: { pauseRulePrompt = nil })
+        }
+        .onAppear {
+            refreshDerivedState()
+            takePauseRuleRequest()
+        }
+        .onChange(of: scenePhase) { phase in
+            if phase == .active {
+                refreshDerivedState()
+                takePauseRuleRequest()
+            }
+        }
         .onChange(of: protection.checkedAt) { _ in refreshDerivedState() }
         .onChange(of: showingPause) { isShowing in
             if !isShowing { pauseCount = PauseStore.todayCount() }
@@ -108,6 +129,17 @@ struct MobileRootView: View {
     private func refreshDerivedState() {
         usage.refresh(trustedNow: protection.trustedNow)
         pauseCount = PauseStore.todayCount()
+    }
+
+    /// Consume a handoff at most once per foreground, and only while no other
+    /// prompt is up. The request is already age-bounded by the controller, so
+    /// a stale one from an app opened ten minutes ago is ignored, not shown.
+    private func takePauseRuleRequest() {
+        guard pauseRulePrompt == nil, !showingAppLimits, !showingPause
+        else { return }
+        if let request = usage.takePauseRequest() {
+            pauseRulePrompt = PauseRulePrompt(request: request)
+        }
     }
 
     @ViewBuilder private var tabContent: some View {
@@ -275,19 +307,13 @@ struct MobileRootView: View {
                 checkRow("dns.title", ready: protection.dns == .enabled, detail: Text(dnsLabel))
                 HisnDivider()
                 checkRow("screentime.layer", ready: protection.screenTimeConfigured,
-                         detail: Text(LocalizedStringKey(protection.screenTimeState.rawValue)))
+                         detail: Text(screenTimeCheckDetail))
                 HisnDivider()
                 lockRow
-                Text("plan.scope")
+                Text("setup.checks.footnote")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .padding(.top, 10)
-                if protection.checkedAt == nil {
-                    Label("plan.checkFirst", systemImage: "arrow.clockwise")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .padding(.top, 6)
-                }
             }
         }
     }
@@ -313,13 +339,29 @@ struct MobileRootView: View {
             vault: vault.facts, now: protection.now, deviceMarker: lockDevice.marker)
     }
 
+    private var screenTimeCheckDetail: LocalizedStringKey {
+        switch protection.screenTimeState {
+        case .unavailable: return "overview.screentimeUnavailable"
+        default: return LocalizedStringKey(protection.screenTimeState.rawValue)
+        }
+    }
+
+    private var removalCheckLevel: LocalizedStringKey {
+        switch removalProtection.level {
+        case .selfOnly: return "overview.lock.level.selfOnly"
+        case .passcodeVault: return "overview.lock.level.vault"
+        case .familyGuardian: return "overview.lock.level.guardian"
+        case .supervised: return "overview.lock.level.supervised"
+        }
+    }
+
     @ViewBuilder private var lockRow: some View {
         let lock = removalProtection
         HisnAdaptiveRow(
             title: "lock.title",
             detail: lock.selfTested
-                ? Text(LocalizedStringKey(lock.level.rawValue)) + Text(verbatim: "\n") + Text("lock.selfTested")
-                : Text(LocalizedStringKey(lock.level.rawValue))
+                ? Text(removalCheckLevel) + Text(verbatim: "\n") + Text("lock.selfTested")
+                : Text(removalCheckLevel)
         ) {
             switch lock.evidence {
             case .verified?:
@@ -442,7 +484,7 @@ struct MobileRootView: View {
                         .font(.headline)
                     Spacer(minLength: 0)
                 }
-                Text("gray.body")
+                Text("settings.gray.summary")
                     .font(.callout)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack(alignment: .top, spacing: 10) {
@@ -453,8 +495,9 @@ struct MobileRootView: View {
                         .font(.callout)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                DisclosureGroup("settings.gray.more") {
+                DisclosureGroup("settings.gray.details") {
                     VStack(alignment: .leading, spacing: 8) {
+                        Text("gray.body")
                         Text("gray.shortcut")
                         Text("gray.automation")
                     }
@@ -868,4 +911,10 @@ struct NoticesView: View {
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("notices.close") { dismiss() } } }
         }
     }
+}
+
+/// A sheet identity for one handoff; the request itself is not Identifiable.
+private struct PauseRulePrompt: Identifiable {
+    let id = UUID()
+    let request: PauseRule.Request
 }

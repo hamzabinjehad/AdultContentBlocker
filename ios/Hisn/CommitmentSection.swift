@@ -220,7 +220,13 @@ struct ScreenTimeSection: View {
                 Button("screentime.disable") { protection.disablePersonalScreenTime() }
                     .disabled(protection.busy || !protection.commitmentStorageHealthy)
             }
-            Text("screentime.scope").font(.footnote).foregroundStyle(.secondary)
+            DisclosureGroup("screentime.details") {
+                Text("screentime.scope")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 6)
+            }
+            .font(.footnote)
         }
         .alert("screentime.consentTitle", isPresented: $confirmEnable) {
             Button("screentime.enable") { Task { await protection.enablePersonalScreenTime() } }

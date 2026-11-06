@@ -3,7 +3,11 @@ import FamilyControls
 import ManagedSettings
 
 struct AppUsageConfiguration: Codable {
-    enum Mode: String, Codable { case always, dailyBudget, quietHours }
+    /// `pause` is the ScreenZen-style rule: a shield that asks a question, then
+    /// a short session bought with a deliberate pause. The other three are
+    /// hard blocks; `pause` is the only mode that can be opened from the shield,
+    /// and only within its own daily opens and session minutes.
+    enum Mode: String, Codable { case always, dailyBudget, quietHours, pause }
     enum Health: String {
         case unchecked = "apps.health.unchecked"
         case unavailable = "apps.health.unavailable"
@@ -15,6 +19,7 @@ struct AppUsageConfiguration: Codable {
         case budgetStopped = "apps.health.budgetStopped"
         case quietHoursRegistered = "apps.health.quietHoursRegistered"
         case quietHoursStopped = "apps.health.quietHoursStopped"
+        case pauseConfigured = "apps.health.pauseConfigured"
 
         var needsAttention: Bool {
             switch self {
@@ -34,11 +39,15 @@ struct AppUsageConfiguration: Codable {
         case .always: return .alwaysConfigured
         case .dailyBudget: return registered ? .budgetRegistered : .budgetStopped
         case .quietHours: return registered ? .quietHoursRegistered : .quietHoursStopped
+        case .pause: return .pauseConfigured
         }
     }
     var selection: FamilyActivitySelection
     var mode: Mode
     var minutes: Int
+    /// Opens a pause rule grants per calendar day. Ignored by the other modes,
+    /// and kept only so a mode change does not silently lose the number.
+    var opens: Int
     /// Minutes after midnight for a quiet-hours window. They are kept on every
     /// rule so a mode change does not silently lose the person's chosen times.
     var windowStart: Int
@@ -46,16 +55,18 @@ struct AppUsageConfiguration: Codable {
 
     init(selection: FamilyActivitySelection, mode: Mode, minutes: Int,
          windowStart: Int = AppUsageConfiguration.defaultWindowStart,
-         windowEnd: Int = AppUsageConfiguration.defaultWindowEnd) {
+         windowEnd: Int = AppUsageConfiguration.defaultWindowEnd,
+         opens: Int = PauseRule.defaultOpens) {
         self.selection = selection
         self.mode = mode
         self.minutes = minutes
         self.windowStart = windowStart
         self.windowEnd = windowEnd
+        self.opens = opens
     }
 
     private enum CodingKeys: String, CodingKey {
-        case selection, mode, minutes, windowStart, windowEnd
+        case selection, mode, minutes, windowStart, windowEnd, opens
     }
 
     /// Rules saved by 1.2.0 have no window fields; they decode with the default
@@ -69,6 +80,7 @@ struct AppUsageConfiguration: Codable {
             ?? Self.defaultWindowStart
         windowEnd = try container.decodeIfPresent(Int.self, forKey: .windowEnd)
             ?? Self.defaultWindowEnd
+        opens = try container.decodeIfPresent(Int.self, forKey: .opens) ?? PauseRule.defaultOpens
     }
 
     func encode(to encoder: Encoder) throws {
@@ -78,6 +90,7 @@ struct AppUsageConfiguration: Codable {
         try container.encode(minutes, forKey: .minutes)
         try container.encode(windowStart, forKey: .windowStart)
         try container.encode(windowEnd, forKey: .windowEnd)
+        try container.encode(opens, forKey: .opens)
     }
 
     var isValid: Bool {
@@ -89,6 +102,8 @@ struct AppUsageConfiguration: Codable {
         case .dailyBudget: return (15...240).contains(minutes)
         case .quietHours:
             return Self.isValidWindow(start: windowStart, end: windowEnd)
+        case .pause:
+            return PauseRule.sessionRange.contains(minutes) && PauseRule.opensRange.contains(opens)
         }
     }
 
@@ -177,6 +192,12 @@ struct AppUsageConfiguration: Codable {
 
     static let group = "group.app.hisn.mobile"
     static let key = "appUsageConfiguration"
+    /// The guard: a second, independent always-block rule for the main rule's
+    /// bypass route — other browsers and VPN apps. Its own record and its own
+    /// ManagedSettings store, so it can hold always-on while the main rule
+    /// budgets or quiet-hours different apps.
+    static let guardKey = "appUsageGuardConfiguration"
+    static let guardStoreName = "hisn.apps.guard"
     /// The reached-day marker and its mirror, each a `ReachedDay` record.
     static let reachedKey = "appUsageReachedDay.v2"
     static let reachedMirrorKey = "appUsageReachedDay.v2.mirror"
@@ -188,6 +209,14 @@ struct AppUsageConfiguration: Codable {
     /// time could not confirm the day was over. The app finishes the clear later.
     static let heldKey = "appUsageHeldDay"
     static let budgetStoreName = "hisn.apps.budget"
+    /// A pause rule keeps its own store so ending or granting a session never
+    /// touches the always-block, budget, quiet-hours or guard shields.
+    static let pauseStoreName = "hisn.apps.pause"
+    /// One activity per pause rule covers the whole day; a granted session is a
+    /// usage-threshold event inside it, so Apple's 15-minute minimum interval
+    /// never applies to a session that starts late in the evening.
+    static let pauseSessionActivity = "hisn.pause.session"
+    static let pauseSessionEvent = "hisn.pause.session.threshold"
     enum BudgetMarkerFailure: Error { case corrupt, writeFailed }
     static let activity = "hisn.selected.daily"
     static let event = "hisn.selected.budget"
@@ -220,6 +249,18 @@ struct AppUsageConfiguration: Codable {
     }
     static func day(_ date: Date = Date(), in timeZone: TimeZone = .current) -> String {
         day(date, calendar: dayCalendar(in: timeZone))
+    }
+
+    /// The day name a record carries, with a calendar the caller chooses. Callers
+    /// pass the Gregorian calendar so a person reading another calendar does not
+    /// see a budget reset on a different date.
+    static func dayKey(_ date: Date, calendar: Calendar) -> String {
+        day(date, calendar: calendar)
+    }
+
+    /// A stored day name that is a real Gregorian day and round-trips.
+    static func isValidDayName(_ raw: String) -> Bool {
+        checkedDay(raw) != nil
     }
     private static func day(_ date: Date, calendar: Calendar) -> String {
         let c = calendar.dateComponents([.year, .month, .day], from: date)
@@ -457,6 +498,43 @@ struct AppUsageConfiguration: Codable {
         // Monitor callbacks leave existing shields untouched on unreadable rules.
         try? load(defaults)
     }
+
+    // MARK: - Browser and VPN guard
+
+    /// A guard is always-block with a nonempty selection. The other fields ride
+    /// along through the shared decoder and are never read.
+    var isGuardValid: Bool { mode == .always && isValid }
+
+    static func guardRuleStore(_ defaults: UserDefaults) -> MirroredRuleStore {
+        MirroredRuleStore(key: guardKey, storage: DefaultsRuleStorage(defaults: defaults)) { data in
+            (try? JSONDecoder().decode(Self.self, from: data))?.isGuardValid == true
+        }
+    }
+    static func loadGuard(_ defaults: UserDefaults) throws -> AppUsageConfiguration? {
+        guard let data = try guardRuleStore(defaults).load()?.payload else { return nil }
+        return try JSONDecoder().decode(Self.self, from: data)
+    }
+    static func readGuard(_ defaults: UserDefaults) -> AppUsageConfiguration? {
+        // Monitor callbacks leave existing shields untouched on unreadable rules.
+        try? loadGuard(defaults)
+    }
+
+    /// The layer-loss watch's app-shield expectation and observation, including
+    /// the guard. A guard that is saved but not shielding is a lost layer; a
+    /// guard that is not saved must not make the main rule's shields required.
+    static func appShieldWatch(config: AppUsageConfiguration?, guardConfig: AppUsageConfiguration?,
+                               quietHoursActive: Bool, alwaysShieldSet: Bool, windowShieldSet: Bool,
+                               guardShieldSet: Bool, pauseSessionActive: Bool = false,
+                               pauseShieldSet: Bool = false) -> (expected: Bool, set: Bool) {
+        // A pause rule deliberately has no shield while its session runs, so a
+        // missing pause shield during a session is the rule working, not a layer
+        // that stopped.
+        let pauseExpected = config?.mode == .pause && !pauseSessionActive
+        let expected = config?.mode == .always || quietHoursActive || guardConfig != nil || pauseExpected
+        let mainSet = config?.mode == .always ? alwaysShieldSet : quietHoursActive && windowShieldSet
+        return (expected, mainSet || (guardConfig != nil && guardShieldSet)
+            || (pauseExpected && pauseShieldSet))
+    }
     /// While committed the saved rule is frozen, not merely prevented from
     /// weakening. A no-op save is still permitted. Equality is explicit because
     /// `FamilyActivitySelection` is not declared Equatable in every SDK.
@@ -464,7 +542,7 @@ struct AppUsageConfiguration: Codable {
         !committed || sameRule(as: next)
     }
     func sameRule(as other: AppUsageConfiguration) -> Bool {
-        mode == other.mode && minutes == other.minutes
+        mode == other.mode && minutes == other.minutes && opens == other.opens
             && windowStart == other.windowStart && windowEnd == other.windowEnd
             && selection.applicationTokens == other.selection.applicationTokens
             && selection.categoryTokens == other.selection.categoryTokens

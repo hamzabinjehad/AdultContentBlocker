@@ -75,7 +75,7 @@
 "commitment.shortScope" = "Freezes blocked sites and app limits inside Hisn, not deletion or permission changes in Apple settings. Add blocking layers below.";
 "commitment.details" = "How the layers work and their limits";
 "commitment.active" = "Protection lock running";
-"commitment.rulesFrozen" = "Saved rules are frozen: blocked sites and app limits.";
+"commitment.rulesFrozen" = "Saved rules are frozen: blocked sites, app limits and the browser/VPN guard.";
 "commitment.until" = "Chosen end date";
 "commitment.noEarlyRelease" = "No early cancellation, shortening, or changes to saved rules inside Hisn. Your plan stays recorded after closing the app.";
 "commitment.duration" = "Duration";
@@ -106,6 +106,19 @@
 "apps.consent" = "Apply these app restrictions?";
 "apps.consentBody" = "Selected apps, categories and websites may become inaccessible. Keep essential services available. During a commitment you cannot change these rules inside Hisn. These settings apply to this device, not the router. Permission revocation and deletion remain possible in Apple settings.";
 "apps.clear" = "Remove app restrictions (outside commitment)";
+"apps.guard.title" = "Browser and VPN guard";
+"apps.guard.none" = "No guard: other browsers and VPN apps stay open";
+"apps.guard.active" = "Guard on: the chosen apps are always shielded";
+"apps.guard.choose" = "Choose browsers and VPN apps";
+"apps.guard.count %lld" = "%lld apps, categories and sites always blocked";
+"apps.guard.remove" = "Remove the guard (outside commitment)";
+"apps.guard.apply" = "Always block these apps";
+"apps.guard.consentTitle" = "Always block the chosen apps?";
+"apps.guard.consentBody %lld" = "%lld chosen apps, categories or sites open only to Hisn's shield until you remove the guard here. Apple combines this shield with your other app rule. This is configuration evidence, not a blocking test.";
+"apps.guard.empty" = "Choose at least one app, category or site to shield.";
+"apps.guard.scope" = "Safari blocking does not reach other browsers or a VPN app. Pick the apps that are shielded always; the guard stays beside whatever rule you set for other apps, and it is frozen during a commitment like every saved rule.";
+"apps.guard.details" = "How this combines with the app rule";
+"apps.guard.merge" = "The guard is a second, independent always-block rule in its own Apple store. Apple combines the shields of Hisn's rule stores on the device; Hisn reads its own records back, which is configuration evidence, not proof every chosen app was shielded. Revoking Screen Time access in Settings removes the guard with every other rule.";
 "Optional router app-domain layer" = "Optional router app-domain layer";
 "Enter reviewed app-service hostnames, one per line. Hisn does not infer servers from an app name. Shared hosting can affect unrelated services." = "Enter reviewed app-service hostnames, one per line. Hisn does not infer servers from an app name. Shared hosting can affect unrelated services.";
 "App-service domains" = "App-service domains";
@@ -190,7 +203,7 @@
 "browserfirst.visual.body" = "Open Hisn Text’s extension settings. In Protection layers, configure Adult-media checks and Person blur separately. Choose Off, Women, Men or All people for person blur.";
 "browserfirst.visual.appearance" = "Person blur uses detected faces. Women and men are appearance estimates, not identity or an adult-content judgment. The estimate can be wrong and people can be missed.";
 "browserfirst.visual.unverified" = "Visual settings belong to Safari; this app does not verify them. Physical-device visual detection is not yet verified. Only accessible images and sampled video frames can be checked.";
-"browserfirst.details" = "App blocking and coverage limits";
+"browserfirst.details" = "How Hisn Text works and its limits";
 "safari.parts.details" = "Review all six domain blockers";
 "removal.setup.title" = "Set up removal protection";
 "removal.setup.mobile" = "On iPhone and iPad, Chrome management policies do not protect Hisn. A parent can restrict app deletion using Screen Time. Individual self-control authorization does not prevent deletion. This app cannot verify every manual Screen Time restriction; follow the Apple guide and test the settings with your guardian. Keep recovery access available.";
@@ -297,6 +310,18 @@
 
 /* Work package B: honest, guided setup (lock level, vault and commitment dates, setup order, vault guide) */
 "lock.title" = "Removal protection";
+"lock.center.title" = "How hard Hisn is to remove";
+"lock.center.intro" = "Apple gives an app no way to make itself undeletable on an unsupervised iPhone. These are the supported levels, weakest first; Hisn never claims a level it cannot show.";
+"lock.center.ladder" = "Levels";
+"lock.center.honesty" = "No level stops everything: an Apple Account password can reset a Screen Time passcode, erasing the device removes every lock, and another device is never covered. Hisn shows a level as verified only when Apple confirms it during this session.";
+"lock.rung.vault.stops" = "Passcode vault — apps, Hisn included, cannot be deleted until the date you chose.";
+"lock.rung.vault.exit" = "Exit: the Screen Time passcode can be reset with your Apple Account password; erasing the phone removes everything.";
+"lock.rung.vault.how" = "Seal the passcode in the section above, then confirm the level below.";
+"lock.rung.guardian.stops" = "Family guardian — your family's organizer holds the Screen Time passcode.";
+"lock.rung.guardian.exit" = "Exit: the guardian decides.";
+"lock.rung.supervised.stops" = "Supervised device — supervision with Hisn's profile blocks app deletion and keeps DNS and the web filter on.";
+"lock.rung.supervised.exit" = "Exit: the holder of the profile's removal password; a full restore still works.";
+"lock.rung.supervised.how" = "Set up a supervised device";
 "lock.level.selfOnly" = "Self only: you can delete Hisn or turn off its access at any time";
 "lock.level.passcodeVault" = "Passcode vault: Hisn keeps your Screen Time passcode";
 "lock.level.familyGuardian" = "Family guardian: someone in your family holds the lock";
@@ -445,6 +470,8 @@
 "overview.rules.sites" = "Blocked sites";
 "overview.rules.siteCount %lld" = "%lld sites";
 "overview.rules.apps" = "App limits";
+"overview.rules.guard" = "Browser and VPN guard";
+"overview.rules.guardCount %lld" = "%lld always blocked";
 "overview.rules.notSet" = "Not set";
 "plan.openSetup" = "Review protection setup";
 
@@ -464,7 +491,7 @@
 "setup.detail.commitment.title" = "App limits and lock";
 "apps.sheet.title" = "App limits";
 "commitment.sheet.title" = "Protection lock";
-"setup.detail.vault.title" = "Passcode and removal protection";
+"setup.detail.vault.title" = "Passcode vault";
 
 /* 1.5.0 settings cards */
 "settings.safari.title" = "Safari extension";
@@ -472,3 +499,54 @@
 "settings.privacy.summary" = "Hisn does not record the sites you visit. Matching stays on this device; there is no account or cloud sync.";
 "settings.privacy.details" = "Read the full privacy note";
 "settings.about.tagline" = "Private, on-device protection for iPhone and iPad.";
+
+/* 1.5.0 shorter visible copy; full explanations stay in disclosures */
+"overview.screentimeUnavailable" = "Needs a signed device";
+"overview.lock.level.selfOnly" = "Self only";
+"overview.lock.level.vault" = "Passcode vault";
+"overview.lock.level.guardian" = "Family guardian";
+"overview.lock.level.supervised" = "Supervised";
+"setup.checks.footnote" = "Configuration checks, not a blocking test.";
+"settings.gray.summary" = "Takes the pull out of images without blocking apps.";
+"settings.gray.details" = "Why and how";
+"safari.steps.short" = "Enable Hisn 1–6 in Safari's extension settings, then reload.";
+"safari.details" = "Where to enable the parts";
+"screentime.details" = "What this filter covers";
+"sites.details" = "List limits";
+"sites.scopeShort" = "Up to 49 sites, including subdomains.";
+"apps.scopeShort" = "Applies to this device. Not a whole-phone lock.";
+"browserfirst.summary" = "Checks webpage text in Safari. Its access is separate and not verified here.";
+"browserfirst.enable.short" = "Turn on Hisn Text in Safari's extension settings.";
+"browserfirst.access.short" = "Allow the sites you want checked.";
+"browserfirst.visual.short" = "Optional: set visual checks in the extension.";
+"dns.stepsShort" = "Prepare the profile, then enable Hisn Family DNS in Settings.";
+"dns.details" = "DNS details and limits";
+"network.stepsShort" = "Use the router guide, then check from each device.";
+"network.details" = "Router details and limits";
+"network.routerRules" = "Advanced: app-domain rules";
+"family.details" = "What this covers";
+"vault.summary" = "Hisn keeps a Screen Time passcode until your date.";
+"vault.moreLocksTitle" = "Stronger locks before sealing";
+"vault.writeDown.short" = "Write it down now; anyone looking can copy it.";
+"removal.details" = "What removal protection can and cannot stop";
+
+// Pause rule (1.7.0)
+"apps.pause" = "Ask first, with a pause";
+"apps.pauseOpens %lld" = "%lld opens per day";
+"apps.pauseMinutes %lld" = "%lld minutes per open";
+"apps.pauseScope" = "The shield asks before the app opens. A ten-second pause buys one session; when its minutes run out, the shield returns. Opens are counted per day, and a day with none left stays closed.";
+"apps.pauseConsent" = "Only a deliberately finished pause grants an open, for the minutes you choose. Hisn never opens the app for you; the shield stays unless you take the pause.";
+"apps.health.pauseConfigured" = "Pause rule saved — not a blocking test";
+"apps.pauseLive" = "A pause session is already running";
+"apps.pauseFailed" = "The pause session could not start";
+"pauseRule.title" = "Pause before opening";
+"pauseRule.body" = "Breathe with the ring. Nothing opens until the pause is finished.";
+"pauseRule.countdown" = "Seconds left in the pause";
+"pauseRule.open %lld" = "Open for %lld minutes";
+"pauseRule.keepClosed" = "Keep it closed";
+"pauseRule.granted %lld" = "Open for %lld minutes";
+"pauseRule.grantedBody" = "When the minutes run out, the shield returns. Each open counts toward today's limit.";
+"pauseRule.noOpens" = "No opens left today";
+"pauseRule.noOpensBody" = "The app stays shielded until tomorrow.";
+"pauseRule.unreadable" = "The saved pause record could not be read, so today stays closed.";
+"pauseRule.done" = "Done";

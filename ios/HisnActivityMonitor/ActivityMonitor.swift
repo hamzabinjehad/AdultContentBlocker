@@ -9,11 +9,19 @@ final class ActivityMonitor: DeviceActivityMonitor {
     private let selfControl = ManagedSettingsStore(named: .init("hisn.self-control"))
     private let always = ManagedSettingsStore(named: .init("hisn.apps.always"))
     private let window = ManagedSettingsStore(named: .init(AppUsageConfiguration.windowStoreName))
+    private let guardStore = ManagedSettingsStore(named: .init(AppUsageConfiguration.guardStoreName))
+    private let pause = ManagedSettingsStore(named: .init(AppUsageConfiguration.pauseStoreName))
     /// Apple's time over HTTPS, only when the saved reading cannot settle a day.
     private let serverWait: TimeInterval = 5
 
     override func intervalDidStart(for activity: DeviceActivityName) {
         defer { checkLayers() }
+        if activity.rawValue == AppUsageConfiguration.pauseSessionActivity {
+            // A new day: any session from yesterday is over, and the pause
+            // shield goes back on before the monitors restart.
+            endPauseSession()
+            return
+        }
         if isWindowActivity(activity) {
             guard let defaults = UserDefaults(suiteName: AppUsageConfiguration.group),
                   let config = AppUsageConfiguration.read(defaults),
@@ -42,6 +50,12 @@ final class ActivityMonitor: DeviceActivityMonitor {
     }
 
     override func intervalDidEnd(for activity: DeviceActivityName) {
+        // A pause activity covers the whole day; its end is a second chance to
+        // put the shield back if a threshold callback was missed.
+        if activity.rawValue == AppUsageConfiguration.pauseSessionActivity {
+            endPauseSession()
+            return
+        }
         // A crossing window has two legs. The evening leg ends at 23:59, but the
         // quiet hours are still running, so only the morning leg (or the single
         // same-day leg) can clear the shield.
@@ -71,6 +85,21 @@ final class ActivityMonitor: DeviceActivityMonitor {
         }
     }
 
+    /// Puts the pause rule's shield back and forgets the session. An unreadable
+    /// rule still clears the session record and stops the activity: leaving a
+    /// stale session live would be worse than a shield the app can rebuild.
+    private func endPauseSession() {
+        guard let defaults = UserDefaults(suiteName: AppUsageConfiguration.group) else { return }
+        let store = PauseRuleStore(defaults: defaults)
+        store.clearSession()
+        DeviceActivityCenter().stopMonitoring([.init(AppUsageConfiguration.pauseSessionActivity)])
+        guard let config = AppUsageConfiguration.read(defaults), config.mode == .pause else {
+            pause.clearAllSettings()
+            return
+        }
+        config.shield(pause)
+    }
+
     private func isWindowActivity(_ activity: DeviceActivityName) -> Bool {
         activity.rawValue == AppUsageConfiguration.windowActivity
             || activity.rawValue == AppUsageConfiguration.windowEveningActivity
@@ -87,6 +116,14 @@ final class ActivityMonitor: DeviceActivityMonitor {
 
     override func eventDidReachThreshold(_ event: DeviceActivityEvent.Name, activity: DeviceActivityName) {
         defer { checkLayers() }
+        if event.rawValue == AppUsageConfiguration.pauseSessionEvent,
+           activity.rawValue == AppUsageConfiguration.pauseSessionActivity {
+            // The session's minutes of use are spent: re-shield and stop the
+            // activity, in that order, so a stopped monitor never leaves the app
+            // open.
+            endPauseSession()
+            return
+        }
         guard event.rawValue == AppUsageConfiguration.event, activity.rawValue == AppUsageConfiguration.activity,
               let defaults = UserDefaults(suiteName: AppUsageConfiguration.group),
               let config = AppUsageConfiguration.read(defaults), config.mode == .dailyBudget else { return }
@@ -136,12 +173,23 @@ final class ActivityMonitor: DeviceActivityMonitor {
             .lowerBound(uptime: TrustedTime.uptime, boot: TrustedTime.bootSession)
         let quietHoursActive = config?.mode == .quietHours
             && config?.windowActive(deviceNow: Date(), trustedNow: trusted) == true
+        // A pause rule has no shield while its session runs; that is the rule
+        // working, not a layer that stopped.
+        let pauseSession = PauseRuleStore(defaults: defaults).loadSession().map {
+            PauseRule.sessionIsToday($0) && !PauseRule.sessionExpired($0)
+        } ?? false
+        // The guard is a saved layer like the main rule: expected when saved,
+        // observed through its own store, so a lost guard is told, not silent.
+        let shields = AppUsageConfiguration.appShieldWatch(config: config,
+            guardConfig: AppUsageConfiguration.readGuard(defaults),
+            quietHoursActive: quietHoursActive, alwaysShieldSet: hasShield(always),
+            windowShieldSet: hasShield(window), guardShieldSet: hasShield(guardStore),
+            pauseSessionActive: pauseSession, pauseShieldSet: hasShield(pause))
         let observed = LayerAlertPolicy.Observation(
             authorized: AuthorizationCenter.shared.authorizationStatus == .approved,
             webFilterSet: webFilterSet,
-            appShieldsExpected: config?.mode == .always || quietHoursActive,
-            appShieldsSet: config?.mode == .always ? hasShield(always)
-                : quietHoursActive && hasShield(window))
+            appShieldsExpected: shields.expected,
+            appShieldsSet: shields.set)
         let posted = LayerAlertPolicy.posted(LayerAlertPolicy.loadMemory(storage), for: watch)
         let decision = LayerAlertPolicy.decide(watch: watch, deviceNow: Date(), trustedNow: trusted,
                                                observed: observed, alreadyPosted: posted)

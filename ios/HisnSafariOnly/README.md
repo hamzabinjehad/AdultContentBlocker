@@ -29,6 +29,25 @@ Open `ios/HisnSafari.xcodeproj`, select HisnSafari, and sign with the user's own
 available development team. Account quotas, certificates, profiles and device
 trust still apply. Do not remove full-edition entitlements to conceal failures.
 
+## Device evidence — 2026-11-06
+
+- Fixed before this run: the limited app still assumed the pre-1.1.4
+  **four-part** bundle — it read a six-part `rules-metadata.json` as
+  unverifiable, hid parts 5 and 6 and disabled reload. It now uses
+  `MobileProtectionPolicy.blockerIdentifiers.count` everywhere; a
+  `test_safari_only.py` assertion pins it. The Python suite passes 40 tests.
+- Built and installed the **domain-only + reused-ID candidate, version 1.6.0,
+  build 10** (six blockers, `app.hisn.safari` + `blocker2–6` + the reused
+  `HisnText` ID for part one; no new App IDs, no quota hit), development-signed
+  with the Personal Team `J58UU95FT3` on the connected iPhone 11 (iOS 27.2,
+  Developer Mode enabled).
+- Install succeeded (`devicectl`); **launch was again denied** with the OS
+  security error until the developer profile is trusted in Settings →
+  General → VPN & Device Management. That trust step remains the owner's.
+- Free profiles expire after seven days; this build's profiles were issued
+  2026-11-06 and expire around 2026-11-13 UTC. Reinstall to renew; this is not
+  distribution.
+
 ## Device evidence — 2026-10-13
 
 - Built and verified the development-signed domain-only bundle, version 1.1.2,

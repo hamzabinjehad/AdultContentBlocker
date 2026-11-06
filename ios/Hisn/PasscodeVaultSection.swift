@@ -25,7 +25,7 @@ struct PasscodeVaultSection: View {
 
     var body: some View {
         Section {
-            Text("vault.body").font(.callout)
+            Text("vault.summary").font(.callout)
             switch vault.phase {
             case nil:
                 if vault.storageHealthy { createControls }
@@ -59,11 +59,15 @@ struct PasscodeVaultSection: View {
                     .font(.footnote).foregroundStyle(HisnPalette.warning)
             }
             DisclosureGroup("vault.limitsTitle") {
-                Text("vault.limits").font(.footnote).foregroundStyle(.secondary)
-                Text("vault.writeDown").font(.footnote).foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("vault.body")
+                    Text("vault.limits")
+                    Text("vault.writeDown")
+                }
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .padding(.top, 6)
             }
-        } header: {
-            Text("vault.title")
         }
         .onAppear { vault.reload() }
         .onReceive(Self.ticker) { _ in vault.tick() }
@@ -182,8 +186,14 @@ struct PasscodeVaultSection: View {
     @ViewBuilder private func setupSteps(passcode: String, hidesAt: Date) -> some View {
         passcodeView(passcode)
         Text("vault.steps").font(.callout)
-        Text("vault.moreLocks").font(.callout)
-        Label("vault.writeDown", systemImage: "square.and.pencil")
+        DisclosureGroup("vault.moreLocksTitle") {
+            Text("vault.moreLocks")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .padding(.top, 6)
+        }
+        .font(.footnote)
+        Label("vault.writeDown.short", systemImage: "square.and.pencil")
             .font(.footnote).foregroundStyle(.secondary)
         Link("vault.appleGuide", destination: URL(string: "https://support.apple.com/en-gb/105121")!)
         Text("vault.hidesSoon").font(.footnote).foregroundStyle(.secondary)

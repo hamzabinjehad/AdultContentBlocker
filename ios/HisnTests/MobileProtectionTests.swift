@@ -1352,3 +1352,101 @@ final class SetupHonestyTests: XCTestCase {
     }
 
 }
+
+// MARK: - Browser and VPN guard
+
+/// The guard is a second, independent always-block rule. These tests cover the
+/// parts that run everywhere: validity, the mirrored record, the freeze, the
+/// layer-loss watch inputs, and the controller's refusals. The shield itself
+/// needs Family Controls authorization and a real device, like the main rule.
+final class GuardRuleTests: XCTestCase {
+    private func freshDefaults() throws -> UserDefaults {
+        let suite = "hisn.tests.guard." + UUID().uuidString
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        addTeardownBlock { defaults.removePersistentDomain(forName: suite) }
+        return defaults
+    }
+
+    func testGuardMustBeAlwaysBlockWithANonemptySelection() {
+        let empty = FamilyActivitySelection()
+        XCTAssertFalse(AppUsageConfiguration(selection: empty, mode: .always, minutes: 30).isGuardValid,
+                       "An empty guard selection must never create an all-device shield")
+        XCTAssertFalse(AppUsageConfiguration(selection: empty, mode: .dailyBudget, minutes: 30).isGuardValid,
+                       "A budget is not always-block; a guard may not half-apply another mode")
+        XCTAssertFalse(AppUsageConfiguration(selection: empty, mode: .quietHours, minutes: 30).isGuardValid,
+                       "Quiet hours are not always-block; a guard may not half-apply another mode")
+    }
+
+    func testGuardIsFrozenLikeEverySavedRuleDuringACommitment() {
+        let empty = FamilyActivitySelection()
+        let guardRule = AppUsageConfiguration(selection: empty, mode: .always, minutes: 30)
+        let changed = AppUsageConfiguration(selection: empty, mode: .always, minutes: 60)
+        XCTAssertTrue(guardRule.permits(guardRule, committed: true), "An identical save is a no-op")
+        XCTAssertFalse(guardRule.permits(changed, committed: true),
+                       "Even a field the guard never reads is a rule change while frozen")
+        XCTAssertTrue(guardRule.permits(changed, committed: false))
+    }
+
+    func testGuardStoreRefusesInvalidRecordsAndKeepsATombstone() throws {
+        let defaults = try freshDefaults()
+        XCTAssertNil(AppUsageConfiguration.readGuard(defaults))
+        let notAlwaysBlock = AppUsageConfiguration(selection: FamilyActivitySelection(), mode: .dailyBudget, minutes: 30)
+        XCTAssertThrowsError(try AppUsageConfiguration.guardRuleStore(defaults)
+            .save(try JSONEncoder().encode(notAlwaysBlock))) { error in
+            XCTAssertEqual(error as? MirroredRuleStore.Failure, .invalidPayload,
+                           "The store itself must refuse a record the reader would reject")
+        }
+        XCTAssertNil(AppUsageConfiguration.readGuard(defaults))
+        // A tombstone: a stale legacy copy cannot resurrect a cleared guard.
+        try AppUsageConfiguration.guardRuleStore(defaults).save(nil)
+        defaults.set(try JSONEncoder().encode(notAlwaysBlock), forKey: AppUsageConfiguration.guardKey)
+        XCTAssertNil(AppUsageConfiguration.readGuard(defaults),
+                     "The versioned tombstone takes precedence over any legacy payload")
+        // A damaged legacy record reads as no guard, never as a shielded guess.
+        defaults.set(Data([0xFF, 0xFE]), forKey: AppUsageConfiguration.guardKey)
+        XCTAssertNil(AppUsageConfiguration.readGuard(defaults))
+    }
+
+    func testLayerWatchCountsTheGuardAsItsOwnSavedLayer() {
+        let none: AppUsageConfiguration? = nil
+        let guardRule: AppUsageConfiguration? = AppUsageConfiguration(selection: FamilyActivitySelection(),
+                                                                      mode: .always, minutes: 30)
+        XCTAssertEqual(AppUsageConfiguration.appShieldWatch(config: nil, guardConfig: nil,
+            quietHoursActive: false, alwaysShieldSet: false, windowShieldSet: false,
+            guardShieldSet: false).expected, false, "No rules: no expectation")
+        XCTAssertEqual(AppUsageConfiguration.appShieldWatch(config: none, guardConfig: nil,
+            quietHoursActive: false, alwaysShieldSet: true, windowShieldSet: false,
+            guardShieldSet: false).set, false, "A stale shield alone is not evidence of a rule")
+        XCTAssertTrue(AppUsageConfiguration.appShieldWatch(config: guardRule, guardConfig: nil,
+            quietHoursActive: false, alwaysShieldSet: true, windowShieldSet: false,
+            guardShieldSet: false).expected, "The guard is expected when saved")
+        XCTAssertFalse(AppUsageConfiguration.appShieldWatch(config: nil, guardConfig: guardRule,
+            quietHoursActive: false, alwaysShieldSet: false, windowShieldSet: false,
+            guardShieldSet: false).set, "A saved guard whose shield is missing is a lost layer")
+        XCTAssertTrue(AppUsageConfiguration.appShieldWatch(config: nil, guardConfig: guardRule,
+            quietHoursActive: false, alwaysShieldSet: false, windowShieldSet: false,
+            guardShieldSet: true).set)
+        let budget: AppUsageConfiguration? = AppUsageConfiguration(selection: FamilyActivitySelection(),
+                                                                   mode: .dailyBudget, minutes: 30)
+        XCTAssertFalse(AppUsageConfiguration.appShieldWatch(config: budget, guardConfig: nil,
+            quietHoursActive: false, alwaysShieldSet: false, windowShieldSet: true,
+            guardShieldSet: false).expected, "A reached budget shields, but the watch expects rules, not markers")
+    }
+
+    @MainActor func testGuardControllerRefusalsAreHonest() {
+        let usage = AppUsageController(defaults: UserDefaults(suiteName: "hisn.tests.guard." + UUID().uuidString))
+        let empty = AppUsageConfiguration(selection: FamilyActivitySelection(), mode: .always, minutes: 30)
+        usage.applyGuard(empty, rulesLocked: true, storageHealthy: true)
+        XCTAssertEqual(usage.guardErrorKey, "apps.locked",
+                       "A running commitment freezes the guard like every rule")
+        usage.clearGuard(rulesLocked: true, storageHealthy: true)
+        XCTAssertEqual(usage.guardErrorKey, "apps.locked")
+        XCTAssertNil(usage.errorKey, "A refused guard does not put an error on the main rule")
+        usage.applyGuard(empty, rulesLocked: false, storageHealthy: true)
+        XCTAssertEqual(usage.guardErrorKey, "apps.guard.empty",
+                       "An empty selection is named, not folded into a generic failure")
+        usage.clearGuard(rulesLocked: false, storageHealthy: true)
+        XCTAssertEqual(usage.guardErrorKey, "apps.failed",
+                       "Without Family Controls authorization nothing is claimed to work")
+    }
+}

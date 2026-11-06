@@ -49,7 +49,7 @@ struct ProtectionPlanCard: View {
                     layerRow(
                         icon: "hourglass",
                         title: "screentime.layer",
-                        detail: Text(LocalizedStringKey(protection.screenTimeState.rawValue)),
+                        detail: Text(screenTimeDetail),
                         ready: protection.screenTimeConfigured
                     )
                     HisnDivider()
@@ -86,7 +86,7 @@ struct ProtectionPlanCard: View {
     private var removalRow: some View {
         HisnAdaptiveRow(
             title: "lock.title",
-            detail: Text(LocalizedStringKey(removal.level.rawValue))
+            detail: Text(removalLevel)
         ) {
             switch removal.evidence {
             case .verified?:
@@ -111,6 +111,24 @@ struct ProtectionPlanCard: View {
         case .enabled: return "dns.enabled"
         case .differentConfiguration: return "dns.different"
         case .unavailable: return "dns.unavailable"
+        }
+    }
+
+    /// The overview stays short: the full explanation of an uncheckable
+    /// simulator layer is in Setup, not under a plan row.
+    private var screenTimeDetail: LocalizedStringKey {
+        switch protection.screenTimeState {
+        case .unavailable: return "overview.screentimeUnavailable"
+        default: return LocalizedStringKey(protection.screenTimeState.rawValue)
+        }
+    }
+
+    private var removalLevel: LocalizedStringKey {
+        switch removal.level {
+        case .selfOnly: return "overview.lock.level.selfOnly"
+        case .passcodeVault: return "overview.lock.level.vault"
+        case .familyGuardian: return "overview.lock.level.guardian"
+        case .supervised: return "overview.lock.level.supervised"
         }
     }
 }
@@ -279,6 +297,14 @@ struct RulesCard: View {
                                                     ? "overview.rules.notSet" : "plan.configured")),
                     action: onApps
                 )
+                HisnDivider()
+                ruleButton(
+                    icon: "safari",
+                    tint: HisnPalette.good,
+                    title: "overview.rules.guard",
+                    detail: guardDetail,
+                    action: onApps
+                )
             }
         }
     }
@@ -320,5 +346,15 @@ struct RulesCard: View {
             .font(.caption.weight(.semibold))
             .foregroundStyle(.tertiary)
             .accessibilityHidden(true)
+    }
+
+    private var guardDetail: Text {
+        guard let guardConfiguration = usage.guardConfiguration else {
+            return Text(LocalizedStringKey("overview.rules.notSet"))
+        }
+        let count = guardConfiguration.selection.applicationTokens.count
+            + guardConfiguration.selection.categoryTokens.count
+            + guardConfiguration.selection.webDomainTokens.count
+        return Text("overview.rules.guardCount \(count)")
     }
 }

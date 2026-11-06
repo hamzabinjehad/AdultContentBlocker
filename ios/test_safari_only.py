@@ -28,6 +28,15 @@ class SafariOnlyTests(unittest.TestCase):
         for forbidden in ["import FamilyControls", "import ManagedSettings", "import NetworkExtension"]:
             self.assertNotIn(forbidden, source)
 
+    def test_the_limited_app_checks_every_part_the_project_ships(self):
+        # The project has shipped six blockers since the full app's 1.1.4; the
+        # limited app once hardcoded four, which read a six-part bundle's
+        # metadata as unverifiable and hid parts 5 and 6.
+        source = (ROOT / "HisnSafariOnly/SafariOnlyApp.swift").read_text()
+        self.assertIn("MobileProtectionPolicy.blockerIdentifiers.count", source)
+        for stale in ["(1...4)", "0..<4", "parts == 4", "count: 4)", "total: 4", "/ 4\""]:
+            self.assertNotIn(stale, source, f"stale four-part assumption: {stale!r}")
+
     def test_complete_parts_and_shared_scanner(self):
         for index in range(1, prepare_rules.PARTS + 1):
             self.assertIn(f"app.hisn.safari.blocker{index}", self.project)

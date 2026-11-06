@@ -30,6 +30,13 @@ struct CustomSitesSection: View {
                 Text(LocalizedStringKey(message)).font(.footnote)
                     .foregroundStyle(message == "sites.added" || message == "sites.removed" ? Color.secondary : HisnPalette.warning)
             }
+            DisclosureGroup("sites.details") {
+                Text("sites.scope")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 6)
+            }
+            .font(.footnote)
         } header: {
             HStack {
                 Text("sites.title")
@@ -38,7 +45,8 @@ struct CustomSitesSection: View {
                     .monospacedDigit()
             }
         } footer: {
-            Text(protection.customSitesLocked ? "sites.lockedScope" : "sites.scope")
+            Text(protection.customSitesLocked ? "sites.lockedScope" : "sites.scopeShort")
+                .font(.footnote)
         }
     }
 

@@ -9,8 +9,10 @@ booted iPhone 17 (iOS 26.5) with the 1.4.0 and 1.5.0 development builds. The
 from the 1.4.0 `AccessibilityTests` run at 1024 × 1366 with the default text
 size, and the after images come from the new `UIRenderTests` run at the same
 size. The two harnesses use the same `UIHostingController` and
-`drawHierarchy` path. iPad images are downscaled to 1800 px on the long side to
-keep the repository small.
+`drawHierarchy` path. The 1.4.0 iPad renders were exported at 3× and downscaled
+to 1800 px on the long side; the 1.5.0 after renders use one point per pixel
+(1024 × 1366), which keeps the render test inside the simulator's memory limit.
+Both are layout evidence, not pixel snapshots.
 
 This simulator has no Family Controls entitlement and no configured layers, so
 the app honestly shows the layer checks as unavailable and the plan at 0 of 3.

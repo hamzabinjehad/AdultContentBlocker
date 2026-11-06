@@ -8,6 +8,73 @@ The plan to finish the iPhone/iPad app, including which Apple-supported lock
 level stops deletion and what each one cannot stop, is in
 [the iOS end-goal plan](../docs/IOS_IMPROVEMENT_PLAN.md).
 
+## 1.7.0 the pause rule
+
+A fourth app-rule mode, chosen rather than imposed: the shield asks **Is this
+important?** instead of only closing.
+
+- **Pause first.** The shield's secondary button hands a request to Hisn —
+  directly on iOS 26.5 and later, through a local notification before that. The
+  shield never grants anything itself; a request older than ten minutes is
+  ignored.
+- **A ten-second breath.** The app presents a ring that must finish before
+  **Open for N minutes** becomes available. Closing the screen spends nothing
+  and the app stays shielded.
+- **A bounded session.** One open buys the chosen minutes (1–30), and the rule
+  allows 1–10 opens per day. The DeviceActivity monitor ends the session at its
+  threshold; a session from another day, or older than any possible reading of
+  its minutes, is re-shielded by the monitor's reconciliation.
+- **Its own store and a mirrored day record.** A damaged budget record reads as
+  unreadable and closes the day rather than handing out a fresh budget.
+- The editor offers the mode with opens and session minutes, in English and
+  Arabic; every other mode keeps the one-button shield.
+
+Version 1.7.0, build 11. `./test.sh ios` passes **40 Python and 242 simulator
+tests**; the new `PauseRuleTests` cover the budget, session bounds, handoff
+freshness and damaged records. Real shielding and the shield's pause action
+need a signed, entitled device; see [the 1.7.0 record](../docs/IOS_1.7.0.md).
+
+## 1.6.0 the bypass guard and the Lock Center
+
+Two changes; no Safari list, commitment, Screen Time, DNS, pause or shield
+behaviour changed.
+
+- **A browser and VPN guard.** A second, independent always-block app rule: pick
+  the browsers and VPN apps that route around Safari blocking, and they stay
+  shielded beside whatever mode the main rule uses for other apps — always
+  block, a daily budget or quiet hours. The guard has its own mirrored record
+  and its own `ManagedSettingsStore`; a running commitment freezes it like
+  every saved rule; the DeviceActivity monitor's layer-loss check expects it
+  and observes its own store; the overview rules card shows its count or
+  **Not set**. It adds no new permission or entitlement. Apple combines the
+  shields of Hisn's named stores on the device; Hisn reading its own records
+  back is configuration evidence, not a blocking test, and revoking Screen
+  Time access in Settings removes the guard with every other rule.
+- **A Lock Center for removal protection.** Setup step 3's flat removal
+  section becomes the ladder as its own object: the current level with its
+  evidence (verified this session, confirmed by you, or no lock) and any
+  stale-confirmation reason, then one row per rung — passcode vault, family
+  guardian, supervised — each stating what it stops and the exit it keeps,
+  with the guardian request and its consent sheet, the supervised-setup
+  guidance, and the person's own confirmations with the optional deletion
+  self-test. The footer states what no level stops: an Apple Account password
+  can reset a Screen Time passcode, erasing the device removes every lock, and
+  another device is never covered. **No app can make itself undeletable on an
+  unsupervised iPhone; the ladder is the honest answer, and the Lock Center
+  says so on the screen.**
+
+Design research re-ran REA 6.8.0 `inspect-artifact` on the built 1.6.0 app
+(evidence
+`ev_33f65972e29c1415eeeb05ff3265387c087bb9caef117ca19f02ab494da6cf9e`); it
+remains a static inventory with no native Swift analysis, and the design
+decisions come from the recorded 1.5.0 audit's principles. Captures are in
+[design/ios-ui-1.6.0](../design/ios-ui-1.6.0/README.md).
+
+Version 1.6.0, build 10. `./test.sh ios` passes **39 Python and 221 simulator
+tests**; no Apple team, Family Controls entitlement, signed build or
+physical-device acceptance is claimed, and the guard's real shielding needs a
+signed, entitled device. See [the 1.6.0 record](../docs/IOS_1.6.0.md).
+
 ## 1.5.0 a calmer overview and a guided setup
 
 This is a UI/UX pass, not a rules change. The overview is now a card stack:
@@ -21,6 +88,13 @@ start the commitment, seal a passcode — with the detailed controls and the fou
 checks one level down. The app-limit editor shows always-block, daily budget and
 quiet hours as three visible rows instead of a menu. Settings is grouped cards
 for language, the Safari extension, gray screen, privacy and about.
+
+The same pass reduced what a person has to read before acting: the Safari, Screen
+Time, DNS, family, router, Safari-extension, app-limit, blocked-site, vault and
+removal sections lead with a short line and keep the full scope one disclosure
+down; Setup issues collapse behind their count; the overview plan uses short
+states. The stale "Hisn 1–4" guide text is corrected to **Hisn 1–6** in both
+languages.
 
 The design research is in
 [the REA audit](../docs/REA_AUDIT_IOS_2026-11-04.md), and the before/after

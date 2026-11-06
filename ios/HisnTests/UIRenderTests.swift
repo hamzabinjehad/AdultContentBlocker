@@ -85,7 +85,12 @@ final class UIRenderTests: XCTestCase {
         host.view.frame = CGRect(origin: .zero, size: size)
         try await Task.sleep(nanoseconds: 300_000_000)
         host.view.layoutIfNeeded()
-        return UIGraphicsImageRenderer(size: size).image { _ in
+        // One point per pixel. Eighteen full-resolution simulator captures at
+        // 3x retain too much bitmap memory and the test process is killed;
+        // this is layout evidence, not a pixel snapshot.
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = 1
+        return UIGraphicsImageRenderer(size: size, format: format).image { _ in
             host.view.drawHierarchy(in: CGRect(origin: .zero, size: size), afterScreenUpdates: true)
         }
     }

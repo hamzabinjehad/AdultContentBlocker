@@ -79,7 +79,7 @@
 "commitment.shortScope" = "يقفل المواقع المحجوبة وحدود التطبيقات داخل حصن، وليس الحذف أو إلغاء الصلاحيات من إعدادات Apple. أضف طبقات الحجب أدناه.";
 "commitment.details" = "كيف تعمل الطبقات وما حدودها";
 "commitment.active" = "قفل الحماية قائم";
-"commitment.rulesFrozen" = "القواعد المحفوظة مجمّدة: المواقع المحجوبة وحدود التطبيقات.";
+"commitment.rulesFrozen" = "القواعد المحفوظة مجمّدة: المواقع المحجوبة وحدود التطبيقات وحاجب المتصفحات وVPN.";
 "commitment.until" = "موعد النهاية المختار";
 "commitment.noEarlyRelease" = "لا إلغاء مبكر ولا تقصير ولا تغيير للقواعد المحفوظة داخل حصن. يبقى التزامك مسجلاً بعد إغلاق التطبيق.";
 "commitment.duration" = "المدة";
@@ -106,6 +106,19 @@
 "apps.consent" = "تطبيق هذه القيود على التطبيقات؟";
 "apps.consentBody" = "قد تصبح التطبيقات والفئات والمواقع المختارة غير متاحة. أبقِ الخدمات الضرورية متاحة. أثناء الالتزام لا يمكنك تغيير هذه القواعد داخل حصن. تخص هذه الإعدادات جهازك، وليس الراوتر. يبقى إلغاء الصلاحيات والحذف ممكنين من إعدادات Apple.";
 "apps.clear" = "إزالة قيود التطبيقات (خارج الالتزام)";
+"apps.guard.title" = "حاجب المتصفحات وVPN";
+"apps.guard.none" = "لا حاجب: المتصفحات الأخرى وتطبيقات VPN تبقى متاحة";
+"apps.guard.active" = "الحاجب يعمل: التطبيقات المختارة محجوبة دائمًا";
+"apps.guard.choose" = "اختر المتصفحات وتطبيقات VPN";
+"apps.guard.count %lld" = "%lld من التطبيقات والفئات والمواقع محجوبة دائمًا";
+"apps.guard.remove" = "إزالة الحاجب (خارج الالتزام)";
+"apps.guard.apply" = "احجب هذه التطبيقات دائمًا";
+"apps.guard.consentTitle" = "حجب التطبيقات المختارة دائمًا؟";
+"apps.guard.consentBody %lld" = "لن تفتح %lld من التطبيقات أو الفئات أو المواقع المختارة إلا على درع حصن حتى تزيل الحاجب هنا. تجمع آبل هذا الدرع مع قاعدة التطبيقات الأخرى. هذا دليل إعداد، لا اختبار حجب.";
+"apps.guard.empty" = "اختر تطبيقًا أو فئة أو موقعًا واحدًا على الأقل لحجبه.";
+"apps.guard.scope" = "حجب Safari لا يصل إلى المتصفحات الأخرى ولا إلى تطبيق VPN. اختر ما يُحجب دائمًا؛ يبقى الحاجب بجانب أي قاعدة تضبطها لتطبيقات أخرى، ويتجمد أثناء الالتزام مثل كل قاعدة محفوظة.";
+"apps.guard.details" = "كيف يجتمع هذا مع قاعدة التطبيقات";
+"apps.guard.merge" = "الحاجب قاعدة «حجب دائم» ثانية مستقلة في متجرها الخاص عند آبل. تجمع آبل دروع متاجر قواعد حصن على الجهاز؛ يقرأ حصن سجلاته ويعرضها، وهذا دليل إعداد لا إثبات حجب كل تطبيق مختار. إلغاء صلاحية وقت الشاشة من الإعدادات يزيل الحاجب مع كل القواعد.";
 "Optional router app-domain layer" = "طبقة اختيارية لنطاقات التطبيقات على الراوتر";
 "Enter reviewed app-service hostnames, one per line. Hisn does not infer servers from an app name. Shared hosting can affect unrelated services." = "أدخل نطاقات خوادم التطبيق بعد مراجعتها، نطاقًا في كل سطر. لا يستنتج حصن الخوادم من اسم التطبيق. قد يؤثر حجب الاستضافة المشتركة على خدمات أخرى.";
 "App-service domains" = "نطاقات خوادم التطبيقات";
@@ -190,7 +203,7 @@
 "browserfirst.visual.body" = "افتح إعدادات إضافة Hisn Text. في «طبقات الحماية»، اضبط «فحص الوسائط الإباحية» و«تمويه الأشخاص» كلّاً على حدة. اختر إيقاف التمويه أو النساء أو الرجال أو جميع الأشخاص.";
 "browserfirst.visual.appearance" = "يعتمد تمويه الأشخاص على الوجوه المكتشفة. خيارا النساء والرجال تقديران للمظهر، لا للهوية أو لوجود محتوى إباحي. قد يخطئ التقدير وقد لا يُكتشف بعض الأشخاص.";
 "browserfirst.visual.unverified" = "تخص الإعدادات البصرية سفاري، ولا يتحقق منها هذا التطبيق. لم يُتحقق بعد من الكشف البصري على الأجهزة الفعلية. يمكن فحص الصور وإطارات الفيديو المتاحة فقط.";
-"browserfirst.details" = "حظر التطبيقات وحدود التغطية";
+"browserfirst.details" = "كيف يعمل Hisn Text وحدوده";
 "safari.parts.details" = "مراجعة حاصرات النطاقات الستة";
 "removal.setup.title" = "إعداد الحماية من الحذف";
 "removal.setup.mobile" = "على الآيفون والآيباد، سياسات إدارة Chrome لا تحمي حصن. يستطيع ولي الأمر تقييد حذف التطبيقات باستخدام مدة استخدام الجهاز. التفويض الفردي للتحكم الذاتي لا يمنع الحذف. لا يستطيع حصن التحقق من جميع القيود اليدوية؛ اتبع دليل أبل واختبر الإعدادات مع ولي الأمر، مع الاحتفاظ بإمكانية الاسترداد.";
@@ -297,6 +310,18 @@
 
 /* Work package B: honest, guided setup (lock level, vault and commitment dates, setup order, vault guide) */
 "lock.title" = "الحماية من الحذف";
+"lock.center.title" = "كم يصعب إزالة حصن";
+"lock.center.intro" = "لا تتيح آبل لأي تطبيق أن يجعل نفسه غير قابل للحذف على آيفون غير مُدار بالإشراف. هذه المستويات المدعومة، من الأضعف أولًا؛ ولا يدّعي حصن مستوى لا يستطيع إثباته.";
+"lock.center.ladder" = "المستويات";
+"lock.center.honesty" = "لا يوقف أي مستوى كل شيء: كلمة سر حساب Apple تعيد تعيين رمز وقت الشاشة، ومسح الجهاز يزيل كل قفل، وجهاز آخر غير مشمول أبدًا. لا يعرض حصن مستوى «مؤكدًا من آبل» إلا إذا أكدته آبل خلال هذه الجلسة.";
+"lock.rung.vault.stops" = "خزنة الرمز — لا يمكن حذف التطبيقات، حصن منها، حتى التاريخ الذي اخترته.";
+"lock.rung.vault.exit" = "المخرج: يمكن إعادة تعيين رمز وقت الشاشة بكلمة سر حساب Apple؛ ومسح الهاتف يزيل كل شيء.";
+"lock.rung.vault.how" = "اختم الرمز في القسم أعلاه، ثم أكد المستوى أدناه.";
+"lock.rung.guardian.stops" = "ولي العائلة — منظّم عائلتك في «المشاركة العائلية» يحتفظ برمز وقت الشاشة.";
+"lock.rung.guardian.exit" = "المخرج: القرار بيد الولي.";
+"lock.rung.supervised.stops" = "جهاز مُشرف — الإشراف مع ملف حصن يمنع حذف التطبيقات ويُبقي DNS ومرشح الويب مفعّلين.";
+"lock.rung.supervised.exit" = "المخرج: حامل كلمة سر إزالة الملف؛ واستعادة الجهاز كاملة تبقى متاحة.";
+"lock.rung.supervised.how" = "إعداد جهاز مُشرف";
 "lock.level.selfOnly" = "ذاتي فقط: يمكنك حذف حصن أو إيقاف وصوله في أي وقت";
 "lock.level.passcodeVault" = "خزنة الرمز: يحتفظ حصن برمز مدة استخدام الجهاز";
 "lock.level.familyGuardian" = "وليّ أمر في العائلة: شخص من عائلتك يملك القفل";
@@ -445,6 +470,8 @@
 "overview.rules.sites" = "المواقع المحظورة";
 "overview.rules.siteCount %lld" = "%lld موقعًا محظورًا";
 "overview.rules.apps" = "حدود التطبيقات";
+"overview.rules.guard" = "حاجب المتصفحات وVPN";
+"overview.rules.guardCount %lld" = "%lld محجوب دائمًا";
 "overview.rules.notSet" = "غير مضبوطة";
 "plan.openSetup" = "راجع إعداد الحماية";
 
@@ -464,7 +491,7 @@
 "setup.detail.commitment.title" = "حدود التطبيقات والقفل";
 "apps.sheet.title" = "حدود التطبيقات";
 "commitment.sheet.title" = "قفل الحماية";
-"setup.detail.vault.title" = "رمز المرور والحماية من الإزالة";
+"setup.detail.vault.title" = "خزنة رمز المرور";
 
 /* 1.5.0 settings cards */
 "settings.safari.title" = "إضافة Safari";
@@ -472,3 +499,54 @@
 "settings.privacy.summary" = "لا يسجّل حصن المواقع التي تزورها. تتم المطابقة على هذا الجهاز، دون حساب أو مزامنة سحابية.";
 "settings.privacy.details" = "اقرأ ملاحظة الخصوصية الكاملة";
 "settings.about.tagline" = "حماية خاصة على الجهاز للآيفون والآيباد.";
+
+/* 1.5.0 shorter visible copy; full explanations stay in disclosures */
+"overview.screentimeUnavailable" = "يلزم جهاز موقّع";
+"overview.lock.level.selfOnly" = "ذاتي فقط";
+"overview.lock.level.vault" = "خزنة رمز المرور";
+"overview.lock.level.guardian" = "وصي عائلي";
+"overview.lock.level.supervised" = "جهاز خاضع للإشراف";
+"setup.checks.footnote" = "فحوص إعدادات، وليست اختبار حجب.";
+"settings.gray.summary" = "تقلّل جاذبية الصور دون حجب التطبيقات.";
+"settings.gray.details" = "السبب والطريقة";
+"safari.steps.short" = "فعّل Hisn 1–6 من إعدادات إضافات Safari، ثم أعد تحميل القواعد.";
+"safari.details" = "أين تفعّل الأجزاء";
+"screentime.details" = "ما يغطيه هذا المرشح";
+"sites.details" = "حدود القائمة";
+"sites.scopeShort" = "حتى 49 موقعًا، مع النطاقات الفرعية.";
+"apps.scopeShort" = "يُطبق على هذا الجهاز، وليس قفلًا للهاتف كله.";
+"browserfirst.summary" = "يفحص نص صفحات Safari. وصوله منفصل وغير متحقق منه هنا.";
+"browserfirst.enable.short" = "فعّل Hisn Text من إعدادات إضافات Safari.";
+"browserfirst.access.short" = "اسمح بالمواقع التي تريد فحصها.";
+"browserfirst.visual.short" = "اختياري: اضبط الفحوص البصرية في الإضافة.";
+"dns.stepsShort" = "جهّز الملف، ثم فعّل DNS حصن العائلي من الإعدادات.";
+"dns.details" = "تفاصيل DNS وحدوده";
+"network.stepsShort" = "استخدم دليل الراوتر، ثم تحقق من كل جهاز.";
+"network.details" = "تفاصيل الراوتر وحدوده";
+"network.routerRules" = "متقدم: قواعد نطاقات التطبيقات";
+"family.details" = "ما يغطيه هذا";
+"vault.summary" = "يحفظ حصن رمز Screen Time حتى تاريخك.";
+"vault.moreLocksTitle" = "أقفال أقوى قبل الختم";
+"vault.writeDown.short" = "اكتبه الآن؛ يمكن لمن ينظر أن ينسخه.";
+"removal.details" = "ما تستطيع حماية الإزالة منعه وما لا تستطيع";
+
+// Pause rule (1.7.0)
+"apps.pause" = "اسأل أولًا، مع توقف";
+"apps.pauseOpens %lld" = "%lld فتحات يوميًا";
+"apps.pauseMinutes %lld" = "%lld دقيقة لكل فتحة";
+"apps.pauseScope" = "يسأل الدرع قبل فتح التطبيق. توقف عشر ثوانٍ يمنح جلسة واحدة؛ وعند انتهاء دقائقها يعود الدرع. تُحسب الفتحات يوميًا، واليوم الذي لا يبقى فيه فتحات يبقى مغلقًا.";
+"apps.pauseConsent" = "لا يُمنح فتح إلا بعد إكمال توقف متعمد، للدقائق التي تختارها. لا يفتح حصن التطبيق عنك؛ يبقى الدرع ما لم تأخذ التوقف.";
+"apps.health.pauseConfigured" = "قاعدة التوقف محفوظة؛ هذا ليس اختبارًا للحجب";
+"apps.pauseLive" = "هناك جلسة توقف قيد التشغيل";
+"apps.pauseFailed" = "تعذّر بدء جلسة التوقف";
+"pauseRule.title" = "توقف قبل الفتح";
+"pauseRule.body" = "تنفّس مع الحلقة. لا يُفتح شيء حتى يكتمل التوقف.";
+"pauseRule.countdown" = "الثواني المتبقية في التوقف";
+"pauseRule.open %lld" = "افتح لمدة %lld دقيقة";
+"pauseRule.keepClosed" = "أبقِه مغلقًا";
+"pauseRule.granted %lld" = "افتح لمدة %lld دقيقة";
+"pauseRule.grantedBody" = "عند انتهاء الدقائق يعود الدرع. كل فتحة تُحسب ضمن حد اليوم.";
+"pauseRule.noOpens" = "لا فتحات متبقية اليوم";
+"pauseRule.noOpensBody" = "يبقى التطبيق محجوبًا حتى الغد.";
+"pauseRule.unreadable" = "تعذّرت قراءة سجل التوقف المحفوظ، فيبقى اليوم مغلقًا.";
+"pauseRule.done" = "تم";

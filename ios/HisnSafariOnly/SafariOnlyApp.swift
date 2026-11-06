@@ -32,7 +32,7 @@ struct SafariEditionRoot: View {
     private var enabledCount: Int { protection.enabled.filter { $0 == true }.count }
     private var statusTitle: LocalizedStringKey {
         if protection.busy { return "working" }
-        return enabledCount == 4 && protection.verified && !protection.failed
+        return enabledCount == protection.partCount && protection.verified && !protection.failed
             ? "design.safari.configured" : "design.safari.attention"
     }
 
@@ -67,10 +67,11 @@ struct SafariEditionRoot: View {
                         Text(LocalizedStringKey(protection.domainOnly ? "limited.domainOnlyScope" : "limited.configOnly"))
                             .font(.callout).foregroundStyle(.secondary)
                         HStack(alignment: .firstTextBaseline) {
-                            Text(verbatim: "\(enabledCount) / 4").font(.largeTitle.weight(.bold)).monospacedDigit()
+                            Text(verbatim: "\(enabledCount) / \(protection.partCount)")
+                                .font(.largeTitle.weight(.bold)).monospacedDigit()
                             Text("design.safari.parts").font(.callout).foregroundStyle(.secondary)
                         }
-                        ProgressView(value: Double(enabledCount), total: 4)
+                        ProgressView(value: Double(enabledCount), total: Double(protection.partCount))
                             .accessibilityLabel("design.safari.parts")
                         Button("setup.continue") { page = 1 }.buttonStyle(.borderedProminent)
                     }.padding(.vertical, 8)
@@ -78,7 +79,7 @@ struct SafariEditionRoot: View {
                 Section("design.layers.heading") {
                     Label(LocalizedStringKey(protection.verified ? "limited.listReady" : "limited.listUnavailable"),
                           systemImage: protection.verified ? "checkmark.seal" : "exclamationmark.triangle")
-                    ForEach(0..<4) { index in
+                    ForEach(0..<protection.partCount, id: \.self) { index in
                         HStack(spacing: 12) {
                             Image(systemName: protection.enabled[index] == true ? "checkmark.circle.fill" : "circle")
                                 .foregroundStyle(protection.enabled[index] == true ? Color.teal : Color.secondary)
@@ -142,7 +143,11 @@ struct SafariEditionRoot: View {
 
 @MainActor
 final class SafariOnlyProtection: ObservableObject {
-    @Published private(set) var enabled: [Bool?] = Array(repeating: nil, count: 4)
+    /// The full project's own part count; the limited edition ships every part
+    /// the full app does, so it must never assume an older four-part bundle.
+    let partCount = MobileProtectionPolicy.blockerIdentifiers.count
+    @Published private(set) var enabled: [Bool?] = Array(repeating: nil,
+                                                          count: MobileProtectionPolicy.blockerIdentifiers.count)
     @Published private(set) var busy = false
     @Published private(set) var failed = false
     @Published private(set) var checkedAt: Date?
@@ -153,7 +158,7 @@ final class SafariOnlyProtection: ObservableObject {
         let prefix=Bundle.main.bundleIdentifier ?? "app.hisn.safari"
         domainOnly=Bundle.main.object(forInfoDictionaryKey: "HisnLimitedDomainOnly") as? String == "YES"
         let reuse=Bundle.main.object(forInfoDictionaryKey: "HisnLimitedReuseTextID") as? String == "YES"
-        identifiers = (1...4).map { reuse && $0 == 1 ? "\(prefix).HisnText" : "\(prefix).blocker\($0)" }
+        identifiers = (1...partCount).map { reuse && $0 == 1 ? "\(prefix).HisnText" : "\(prefix).blocker\($0)" }
         verified = Self.listVerified(at: Bundle.main.bundleURL)
     }
     func refresh() async {
@@ -189,10 +194,12 @@ final class SafariOnlyProtection: ObservableObject {
     struct Summary: Decodable { let count: Int; let version: Int; let parts: Int }
     struct Part: Decodable { let count: Int; let version: Int; let sha256: String }
     nonisolated static func listVerified(at url: URL) -> Bool {
+        let partCount = MobileProtectionPolicy.blockerIdentifiers.count
         guard let raw = try? Data(contentsOf: url.appendingPathComponent("rules-metadata.json")),
-              let summary = try? JSONDecoder().decode(Summary.self, from: raw), summary.parts == 4 else { return false }
+              let summary = try? JSONDecoder().decode(Summary.self, from: raw),
+              summary.parts == partCount else { return false }
         var parts: [MobileProtectionPolicy.SafariListPart] = []
-        for index in 1...4 {
+        for index in 1...partCount {
             let folder = url.appendingPathComponent("PlugIns/Hisn\(index).appex")
             guard let data = try? Data(contentsOf: folder.appendingPathComponent("rules.json")),
                   let metadata = try? Data(contentsOf: folder.appendingPathComponent("rules-metadata.json")),

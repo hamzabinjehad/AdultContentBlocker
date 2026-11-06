@@ -16,14 +16,32 @@ enum ShieldTextPolicy {
         case english, arabic
     }
 
-    enum Reason: String, Equatable {
+    enum Reason: Equatable {
         case always, dailyBudget, quietHours, unknown
+        /// A pause rule with opens left: the shield asks the question instead of
+        /// only closing the app.
+        case pause(remaining: Int, opens: Int)
+        /// A pause rule with nothing left today.
+        case pauseClosed
+        /// A pause rule whose saved opens could not be read. Closed for the day
+        /// rather than handing out opens a damaged record might have created.
+        case pauseUnreadable
     }
 
     struct Copy: Equatable {
         let title: String
         let subtitle: String
         let primaryButton: String
+        /// Only a pause rule has a second action. It opens Hisn to the pause
+        /// screen; it never opens the shielded app itself.
+        var secondaryButton: String?
+
+        init(title: String, subtitle: String, primaryButton: String, secondaryButton: String? = nil) {
+            self.title = title
+            self.subtitle = subtitle
+            self.primaryButton = primaryButton
+            self.secondaryButton = secondaryButton
+        }
     }
 
     // MARK: - Language
@@ -77,6 +95,7 @@ enum ShieldTextPolicy {
 
     static func reason(configuration: AppUsageConfiguration?,
                        budgetReached: Bool,
+                       pauseBudget: PauseRule.Budget = .unreadable,
                        now: Date,
                        trustedNow: Date?) -> Reason {
         guard let configuration else { return .unknown }
@@ -90,12 +109,35 @@ enum ShieldTextPolicy {
         case .quietHours:
             return configuration.windowActive(deviceNow: now, trustedNow: trustedNow)
                 ? .quietHours : .unknown
+        case .pause:
+            switch pauseBudget {
+            case .opens(let remaining): return .pause(remaining: remaining, opens: configuration.opens)
+            case .exhausted: return .pauseClosed
+            case .unreadable: return .pauseUnreadable
+            }
+        }
+    }
+
+    // MARK: - The handoff notification
+
+    /// On iOS versions before the shield can open Hisn itself, the pause action
+    /// posts a notification; tapping it opens Hisn, where the pause screen is
+    /// waiting. Both strings name the app, so the person knows which paused.
+    static func handoffNotification(appName: String?, language: Language) -> (title: String, body: String) {
+        let name = appName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        switch language {
+        case .english:
+            return (title: name.isEmpty ? "Pause before opening" : "Pause before opening \(name)",
+                    body: "Tap to take the pause in Hisn. Nothing opens until you finish it.")
+        case .arabic:
+            return (title: name.isEmpty ? "توقف قبل الفتح" : "توقف قبل فتح \(name)",
+                    body: "اضغط لتأخذ التوقف في حصن. لا يُفتح شيء حتى تُكمله.")
         }
     }
 
     // MARK: - Copy
 
-    static func copy(for reason: Reason, language: Language) -> Copy {
+    static func copy(for reason: Reason, language: Language, appName: String? = nil) -> Copy {
         switch (reason, language) {
         case (.always, .english):
             return Copy(title: "Hisn is protecting this app",
@@ -129,19 +171,54 @@ enum ShieldTextPolicy {
             return Copy(title: "حصن يحمي هذا التطبيق",
                         subtitle: "افتح حصن لمراجعة القاعدة المحفوظة.",
                         primaryButton: "حسنًا")
+        case (.pause(let remaining, let opens), .english):
+            let count = "\(remaining) of \(opens) opens left today"
+            return Copy(title: "Is this important?",
+                        subtitle: appName.map { "\($0) · \(count)" } ?? count,
+                        primaryButton: "Close",
+                        secondaryButton: "Pause first")
+        case (.pause(let remaining, let opens), .arabic):
+            let count = "متبقٍ \(remaining) من \(opens) فتحات اليوم"
+            return Copy(title: "هل هذا مهم؟",
+                        subtitle: appName.map { "\($0) · \(count)" } ?? count,
+                        primaryButton: "إغلاق",
+                        secondaryButton: "توقف أولًا")
+        case (.pauseClosed, .english):
+            return Copy(title: "No opens left today",
+                        subtitle: "You used today's opens. This app stays closed until tomorrow.",
+                        primaryButton: "Close")
+        case (.pauseClosed, .arabic):
+            return Copy(title: "لا فتحات متبقية اليوم",
+                        subtitle: "استخدمت فتحات اليوم. يبقى هذا التطبيق مغلقًا حتى الغد.",
+                        primaryButton: "إغلاق")
+        case (.pauseUnreadable, .english):
+            return Copy(title: "Today’s opens are closed",
+                        subtitle: "Hisn could not read today’s opens, so it kept them closed. They return tomorrow.",
+                        primaryButton: "Close")
+        case (.pauseUnreadable, .arabic):
+            return Copy(title: "أُغلقت فتحات اليوم",
+                        subtitle: "لم يستطع حصن قراءة فتحات اليوم، فأبقاها مغلقة. تعود غدًا.",
+                        primaryButton: "إغلاق")
         }
     }
 
     /// Everything the shield extension needs in one call.
     static func shieldCopy(defaults: UserDefaults?,
+                           appName: String? = nil,
                            now: Date = Date(),
                            preferredLanguages: [String] = Locale.preferredLanguages) -> Copy {
         let config = configuration(in: defaults)
+        let pauseBudget: PauseRule.Budget = config?.mode == .pause
+            ? PauseRuleStore(defaults: defaults).budget(
+                opens: config?.opens ?? PauseRule.defaultOpens, now: now)
+            : .unreadable
         let reason = reason(configuration: config,
                             budgetReached: budgetReachedToday(in: defaults),
+                            pauseBudget: pauseBudget,
                             now: now,
                             trustedNow: trustedNow(in: defaults))
         return copy(for: reason,
-                    language: language(defaults: defaults, preferredLanguages: preferredLanguages))
+                    language: language(defaults: defaults, preferredLanguages: preferredLanguages),
+                    appName: appName)
     }
 }
