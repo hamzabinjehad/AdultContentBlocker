@@ -1,5 +1,9 @@
 # Hisn Android UI and UX refresh — 2026-10-30
 
+> Historical. The 2026-11-05 pass replaces the Protection, Rules and Guide
+> presentation and adds the first-run permission checklist; see
+> [ANDROID_UX_2026-11-05.md](ANDROID_UX_2026-11-05.md).
+
 Development preview. This pass changes presentation only: no enforcement,
 permission, consent, persistence, notification-delivery or commitment rule was
 added, removed or weakened. The current tree carries version 0.8.2

@@ -34,9 +34,12 @@ public final class SavedSettings {
         managedStrict = flag(values, "managed_strict");
         suspendBlocked = flag(values, "suspend_blocked");
         timeLimits = AppTimeLimit.parse(names(values, "time_limits"));
+        // A file saved before per-day schedules chose no day mask: every day, as those
+        // versions' single every-day window already did.
         schedule = new DailyAppSchedule(flag(values, "schedule_enabled"), number(values, "schedule_start", 1320),
                 number(values, "schedule_end", 420), names(values, "schedule_apps"),
-                flag(values, "schedule_all_apps"));
+                flag(values, "schedule_all_apps"), number(values, "schedule_days",
+                        DailyAppSchedule.ALL_DAYS));
     }
 
     /** The rule fields of saved values. Missing fields read as the defaults of Hisn 0.5.3 and earlier. */
@@ -131,6 +134,7 @@ public final class SavedSettings {
         values.put("schedule_end", schedule.endMinute);
         values.put("schedule_apps", schedule.apps);
         values.put("schedule_all_apps", schedule.allApps);
+        values.put("schedule_days", schedule.days);
         values.put("remaining", clock.remainingAtCheckpoint);
         values.put("elapsed", clock.elapsedAtCheckpoint);
         values.put("boot", clock.bootAtCheckpoint);

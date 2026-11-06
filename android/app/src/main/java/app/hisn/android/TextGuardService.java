@@ -391,16 +391,17 @@ public final class TextGuardService extends AccessibilityService {
             }
             java.time.LocalTime local = java.time.LocalTime.now();
             int minute = local.getHour() * 60 + local.getMinute();
+            java.time.DayOfWeek day = java.time.LocalDate.now().getDayOfWeek();
             List<GuardWindows.Window> scanned = new ArrayList<>();
             boolean scheduledOnScreen = false;
             for (GuardWindows.Window window : windows) {
-                if (rules.schedule.blocks(window.app, minute)) {
+                if (rules.schedule.blocks(window.app, minute, day)) {
                     inspection.record(InspectionHealth.Outcome.COMPLETE);
                     intervene(window.app, window.id, window.active, false, true, false, false, false);
                     return;
                 }
                 if (rules.scannedApps.contains(window.app) && rules.hasWordProtection()) scanned.add(window);
-                scheduledOnScreen |= rules.schedule.selects(window.app, minute);
+                scheduledOnScreen |= rules.schedule.selects(window.app, minute, day);
             }
             boolean shortVideoOnScreen = false;
             if (rules.shortVideoEnabled) {
@@ -485,7 +486,7 @@ public final class TextGuardService extends AccessibilityService {
     private static boolean isSelected(PolicyStore.Snapshot rules, String name) {
         return rules.blockedApps.contains(name) || rules.scannedApps.contains(name)
                 || rules.timeLimits.monitored(name)
-                || rules.schedule.selects(name, minuteOfDay())
+                || rules.schedule.selects(name, minuteOfDay(), dayOfWeek())
                 || (rules.shortVideoEnabled && ShortVideoSurfaces.watches(name));
     }
 
@@ -511,6 +512,10 @@ public final class TextGuardService extends AccessibilityService {
     private static int minuteOfDay() {
         java.time.LocalTime now = java.time.LocalTime.now();
         return now.getHour() * 60 + now.getMinute();
+    }
+
+    private static java.time.DayOfWeek dayOfWeek() {
+        return java.time.LocalDate.now().getDayOfWeek();
     }
 
     /** A visible Shorts or Reels player, found by its view ID; no text is read. */

@@ -15,6 +15,13 @@ it adds no enforcement layer and relaxes no rule. The APK and certificate
 fingerprints for both releases are recorded in
 [the 1.1.0 record](../docs/ANDROID_1.1.0.md).
 
+1.1.1 is a development build: a schedule can repeat on chosen weekdays, with a
+Monday-first day mask, a day picker in the editor, overnight windows anchored to
+the day they start on, and every-day defaults for files saved before this
+version. It adds no permission or stored field beyond the schedule's own mask;
+no signed APK or device run is claimed. See
+[the 1.1.1 record](../docs/ANDROID_1.1.1.md).
+
 The Play build is produced from the same source but is not uploaded; its
 accessibility declaration still needs Google Play review, and the direct
 build's removal guard is deliberately absent from it.

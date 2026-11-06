@@ -7,6 +7,7 @@ import android.app.NotificationManager;
 import android.app.TimePickerDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ShortcutInfo;
@@ -36,6 +37,7 @@ import android.view.WindowManager;
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.view.accessibility.AccessibilityManager;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -46,12 +48,15 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.time.DayOfWeek;
 import java.time.LocalTime;
+import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
@@ -118,22 +123,24 @@ public final class MainActivity extends Activity {
     private TextView seedFreshness;
     private TextView networkCheckState;
     private TextView watchdogState;
-    private TextView networkStats;
+    private String diagnosticsText = "";
     private Button startDns;
     private boolean dnsPrimaryStyle;
     private Button checkNetwork;
     private Button notifSettings;
     private Button privateDnsSettings;
 
-    private TextView layerTextState;
     private TextView textState;
-    private TextView visualState;
-    private TextView shortVideoState;
-    private TextView grayState;
-    private TextView commitmentState;
-    private TextView uninstallState;
-    private TextView managedState;
-    private Button uninstallAction;
+    private Button accessibilityAction;
+    private Ui.SettingRow homeBlockedRow;
+    private Ui.SettingRow homeTextRow;
+    private Ui.SettingRow homeVisualRow;
+    private Ui.SettingRow homeScheduleRow;
+    private Ui.SettingRow homeTimeRow;
+    private Ui.SettingRow homeCommitmentRow;
+    private Ui.SettingRow homeUninstallRow;
+    private Ui.SettingRow settingsUninstallRow;
+    private Ui.SettingRow settingsPermissionsRow;
 
     private Switch adultToggle;
     private Switch visualToggle;
@@ -145,29 +152,23 @@ public final class MainActivity extends Activity {
     private Ui.SettingRow blockedRow;
     private Ui.SettingRow scannedRow;
     private Ui.SettingRow browserRow;
-    private Button scheduleEdit;
+    private Ui.SettingRow scheduleRow;
     private TextView timeLimitState;
-    private Button timeLimitEdit;
+    private Ui.SettingRow timeLimitRow;
     private LinearLayout rulesLockCard;
     private TextView rulesLockText;
     private LinearLayout setupCard;
     private Ui.Disclosure dnsAdvanced;
-    private TextView batteryState;
-    private Button batteryAction;
+    private Ui.SettingRow batteryRow;
     private TextView scheduleState;
     private TextView commitmentStateRules;
-    private TextView commitmentNote;
-    private TextView adminState;
+    private Ui.SettingRow commitmentRow;
 
-    private EditText testerRule;
-    private EditText testerSample;
-    private TextView testerResult;
     private SetupGuide.Step currentSetupStep = SetupGuide.Step.CHOOSE_RULES;
 
-    /** Open dialogs showing the person's lists, whether the word tester shows their text, and whether
-     * this window currently has FLAG_SECURE. */
+    /** Open dialogs showing the person's lists, and whether this window currently has FLAG_SECURE. */
     private int privateDialogs;
-    private boolean testerPrivate, secured;
+    private boolean secured;
     private PolicyStore settings;
     private long lastUninstallSyncAt;
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -233,7 +234,7 @@ public final class MainActivity extends Activity {
         brand.setOrientation(LinearLayout.VERTICAL);
         TextView title = Ui.text(this, getString(R.string.app_name), 19, R.color.text_primary);
         title.setTypeface(Ui.medium());
-        TextView subtitle = Ui.text(this, getString(R.string.subtitle, BuildConfig.VERSION_NAME), 11,
+        TextView subtitle = Ui.text(this, getString(R.string.app_tagline), 11,
                 R.color.text_tertiary);
         brand.addView(title);
         brand.addView(subtitle);
@@ -403,7 +404,6 @@ public final class MainActivity extends Activity {
         } else {
             pages[selectedPage].setAlpha(1f);
         }
-        updateTesterPrivacy();
         if (selectedPage == PAGE_RULES) refreshRuleSummaries();
     }
 
@@ -532,21 +532,9 @@ public final class MainActivity extends Activity {
         attentionCard.setVisibility(View.GONE);
         page.addView(attentionCard, Ui.margins(this, 0, 12));
 
-        LinearLayout pauseCard = Ui.card(this);
-        Ui.SettingRow pauseRow = Ui.settingRow(this, R.drawable.ic_pulse,
-                getString(R.string.pause_voluntary_action), getString(R.string.pause_voluntary_summary),
-                view -> startActivity(new Intent(this, RestrictionActivity.class)
-                        .putExtra("voluntary", true)));
-        pauseCard.addView(pauseRow.root);
-        page.addView(pauseCard, Ui.margins(this, 0, 12));
-
         LinearLayout network = addCard(page, R.drawable.ic_network, R.string.section_network);
         networkState = statusLine();
         network.addView(networkState);
-        TextView seedVersion = Ui.caption(this, getString(R.string.dns_seed_version,
-                BuildConfig.DOMAIN_SEED_VERSION, seedDate(BuildConfig.DOMAIN_SEED_BUILT)));
-        seedVersion.setPadding(0, Ui.dp(this, 8), 0, 0);
-        network.addView(seedVersion);
         seedFreshness = Ui.body(this, "");
         seedFreshness.setTextColor(Ui.color(this, R.color.warning));
         seedFreshness.setVisibility(View.GONE);
@@ -561,14 +549,15 @@ public final class MainActivity extends Activity {
         network.addView(seedFreshness);
         startDns = Ui.button(this, R.string.dns_start, Ui.ButtonKind.TONAL);
         network.addView(startDns, Ui.buttonParams(this));
-        startDns.setOnClickListener(v -> new AlertDialog.Builder(this)
-                .setTitle(R.string.dns_consent_title).setMessage(R.string.dns_consent_body)
-                .setNegativeButton(android.R.string.cancel, null)
-                .setPositiveButton(R.string.dns_continue, (dialog, which) -> requestDns()).show());
+        startDns.setOnClickListener(v -> showDnsConsent());
         Button vpnSettings = Ui.button(this, R.string.dns_settings, Ui.ButtonKind.GHOST);
         LinearLayout advanced = new LinearLayout(this);
         advanced.setOrientation(LinearLayout.VERTICAL);
         advanced.addView(vpnSettings, Ui.buttonParams(this));
+        TextView seedVersion = Ui.caption(this, getString(R.string.dns_seed_version,
+                BuildConfig.DOMAIN_SEED_VERSION, seedDate(BuildConfig.DOMAIN_SEED_BUILT)));
+        seedVersion.setPadding(0, Ui.dp(this, 8), 0, 0);
+        advanced.addView(seedVersion);
         vpnSettings.setOnClickListener(v -> reviewVpnSettings());
         safeSearchToggle = Ui.toggle(this, getString(R.string.dns_safe_search_switch),
                 getString(R.string.dns_safe_search_hint));
@@ -630,42 +619,61 @@ public final class MainActivity extends Activity {
         dnsAdvanced = Ui.disclosure(this, getString(R.string.dns_advanced), advanced);
         network.addView(dnsAdvanced.root, Ui.margins(this, 0, 4));
 
-        LinearLayout apps = addCard(page, R.drawable.ic_apps, R.string.section_app_layer);
-        layerTextState = statusLine();
-        apps.addView(layerTextState);
-        visualState = statusLine();
-        apps.addView(visualState, Ui.margins(this, 10, 0));
-        shortVideoState = statusLine();
-        apps.addView(shortVideoState, Ui.margins(this, 10, 0));
-        grayState = statusLine();
-        apps.addView(grayState, Ui.margins(this, 10, 0));
-        commitmentState = statusLine();
-        apps.addView(commitmentState, Ui.margins(this, 10, 0));
-        Button openRules = Ui.button(this, R.string.open_rules, Ui.ButtonKind.TONAL);
-        apps.addView(openRules, Ui.buttonParams(this));
-        openRules.setOnClickListener(view -> showPage(PAGE_RULES, true));
+        LinearLayout rulesCard = Ui.card(this);
+        rulesCard.addView(Ui.sectionHeader(this, R.drawable.ic_tune, getString(R.string.home_rules_title)));
 
-        LinearLayout uninstall = addCard(page, R.drawable.ic_lock, R.string.section_uninstall);
-        uninstallState = statusLine();
-        uninstall.addView(uninstallState);
-        managedState = statusLine();
-        managedState.setVisibility(View.GONE);
-        uninstall.addView(managedState, Ui.margins(this, 8, 0));
-        uninstallAction = Ui.button(this, R.string.uninstall_action, Ui.ButtonKind.TONAL);
-        uninstall.addView(uninstallAction, Ui.buttonParams(this));
-        uninstallAction.setOnClickListener(view -> showUninstallDialog());
+        homeBlockedRow = Ui.settingRow(this, R.drawable.ic_apps,
+                getString(R.string.choose_blocked_apps), getString(R.string.none_chosen),
+                view -> chooseApps(false));
+        rulesCard.addView(homeBlockedRow.root);
+        rulesCard.addView(Ui.divider(this));
+
+        homeTextRow = Ui.settingRow(this, R.drawable.ic_text,
+                getString(R.string.home_adult_text), getString(R.string.state_off),
+                view -> editAdultMode());
+        rulesCard.addView(homeTextRow.root);
+        rulesCard.addView(Ui.divider(this));
+
+        homeVisualRow = Ui.settingRow(this, R.drawable.ic_image,
+                getString(R.string.home_image_checks), getString(R.string.state_off),
+                view -> editVisualMode());
+        rulesCard.addView(homeVisualRow.root);
+        rulesCard.addView(Ui.divider(this));
+
+        homeScheduleRow = Ui.settingRow(this, R.drawable.ic_calendar,
+                getString(R.string.section_schedule), getString(R.string.state_off),
+                view -> editSchedule());
+        rulesCard.addView(homeScheduleRow.root);
+        rulesCard.addView(Ui.divider(this));
+
+        homeTimeRow = Ui.settingRow(this, R.drawable.ic_clock,
+                getString(R.string.section_time_limits), getString(R.string.state_off),
+                view -> editTimeLimits());
+        rulesCard.addView(homeTimeRow.root);
+        rulesCard.addView(Ui.divider(this));
+
+        homeCommitmentRow = Ui.settingRow(this, R.drawable.ic_lock,
+                getString(R.string.section_commitment), getString(R.string.state_off),
+                view -> chooseCommitment());
+        rulesCard.addView(homeCommitmentRow.root);
+        rulesCard.addView(Ui.divider(this));
+
+        homeUninstallRow = Ui.settingRow(this, R.drawable.ic_shield,
+                getString(R.string.section_uninstall), getString(R.string.state_off),
+                view -> showUninstallDialog());
+        rulesCard.addView(homeUninstallRow.root);
+        page.addView(rulesCard, Ui.margins(this, 0, 10));
+
+        standaloneSettingRow(page, R.drawable.ic_pulse,
+                R.string.pause_voluntary_action, getString(R.string.pause_voluntary_summary),
+                view -> startActivity(new Intent(this, RestrictionActivity.class)
+                        .putExtra("voluntary", true)));
     }
 
     // ------------------------------------------------------------------ rules page
 
     private void buildRulesPage(LinearLayout page) {
         page.addView(Ui.pageTitle(this, getString(R.string.rules_heading)), Ui.margins(this, 6, 8));
-        page.addView(Ui.body(this, getString(R.string.rules_intro_short)), Ui.margins(this, 0, 6));
-        Ui.Disclosure aboutRules = Ui.disclosure(this, getString(R.string.rules_about),
-                getString(R.string.rules_help));
-        aboutRules.root.setBackgroundResource(R.drawable.bg_card_soft);
-        aboutRules.root.setPadding(Ui.dp(this, 16), 0, Ui.dp(this, 16), Ui.dp(this, 4));
-        page.addView(aboutRules.root, Ui.margins(this, 0, 12));
 
         rulesLockCard = Ui.card(this);
         rulesLockCard.setBackgroundResource(R.drawable.bg_warning_card);
@@ -688,29 +696,28 @@ public final class MainActivity extends Activity {
         page.addView(rulesLockCard, Ui.margins(this, 0, 10));
 
         LinearLayout builtin = addCard(page, R.drawable.ic_shield, R.string.section_builtin);
-        adultToggle = Ui.toggle(this, getString(R.string.toggle_adult), getString(R.string.adult_mode_off));
+        adultToggle = Ui.toggle(this, getString(R.string.toggle_adult));
         adultToggle.setOnClickListener(view -> {
             adultToggle.setChecked(!adultToggle.isChecked());
             editAdultMode();
         });
         builtin.addView(adultToggle);
         builtin.addView(Ui.divider(this));
-        visualToggle = Ui.toggle(this, getString(R.string.toggle_visual), getString(R.string.visual));
+        visualToggle = Ui.toggle(this, getString(R.string.toggle_visual));
         visualToggle.setOnClickListener(view -> {
             visualToggle.setChecked(!visualToggle.isChecked());
             editVisualMode();
         });
         builtin.addView(visualToggle);
         builtin.addView(Ui.divider(this));
-        shortVideoToggle = Ui.toggle(this, getString(R.string.toggle_short_video),
-                getString(R.string.short_video_off));
+        shortVideoToggle = Ui.toggle(this, getString(R.string.toggle_short_video));
         shortVideoToggle.setOnClickListener(view -> {
             shortVideoToggle.setChecked(!shortVideoToggle.isChecked());
             editShortVideo();
         });
         builtin.addView(shortVideoToggle);
         builtin.addView(Ui.divider(this));
-        grayToggle = Ui.toggle(this, getString(R.string.gray_title), getString(R.string.gray_off));
+        grayToggle = Ui.toggle(this, getString(R.string.gray_title));
         grayToggle.setOnClickListener(view -> {
             grayToggle.setChecked(!grayToggle.isChecked());
             editGray();
@@ -720,11 +727,9 @@ public final class MainActivity extends Activity {
         LinearLayout accessibility = addCard(page, R.drawable.ic_text, R.string.section_accessibility);
         textState = statusLine();
         accessibility.addView(textState);
-        accessibility.addView(Ui.caption(this, getString(R.string.text_guard_recheck_note)),
-                Ui.margins(this, 8, 0));
-        Button connect = Ui.button(this, R.string.enable_text_guard, Ui.ButtonKind.TONAL);
-        accessibility.addView(connect, Ui.buttonParams(this));
-        connect.setOnClickListener(view -> showAccessibilityDisclosure());
+        accessibilityAction = Ui.button(this, R.string.enable_text_guard, Ui.ButtonKind.TONAL);
+        accessibility.addView(accessibilityAction, Ui.buttonParams(this));
+        accessibilityAction.setOnClickListener(view -> showAccessibilityDisclosure());
 
         LinearLayout custom = addCard(page, R.drawable.ic_tune, R.string.section_rules_custom);
         domainsRow = Ui.settingRow(this, R.drawable.ic_network,
@@ -753,185 +758,253 @@ public final class MainActivity extends Activity {
                 view -> showBrowserCoverage());
         appRules.addView(browserRow.root);
 
-        LinearLayout limits = addCard(page, R.drawable.ic_clock, R.string.section_time_limits);
-        timeLimitState = statusLine();
-        limits.addView(timeLimitState);
-        timeLimitEdit = Ui.button(this, R.string.time_limits_edit_button, Ui.ButtonKind.TONAL);
-        limits.addView(timeLimitEdit, Ui.buttonParams(this));
-        timeLimitEdit.setOnClickListener(view -> editTimeLimits());
+        timeLimitRow = standaloneSettingRow(page, R.drawable.ic_clock,
+                R.string.section_time_limits, getString(R.string.state_off), view -> editTimeLimits());
+        timeLimitState = timeLimitRow.summary;
 
-        LinearLayout schedule = addCard(page, R.drawable.ic_calendar, R.string.section_schedule);
-        scheduleState = statusLine();
-        schedule.addView(scheduleState);
-        scheduleEdit = Ui.button(this, R.string.schedule_edit_button, Ui.ButtonKind.TONAL);
-        schedule.addView(scheduleEdit, Ui.buttonParams(this));
-        scheduleEdit.setOnClickListener(view -> editSchedule());
+        scheduleRow = standaloneSettingRow(page, R.drawable.ic_calendar,
+                R.string.section_schedule, getString(R.string.state_off), view -> editSchedule());
+        scheduleState = scheduleRow.summary;
 
-        LinearLayout commitment = addCard(page, R.drawable.ic_clock, R.string.section_commitment);
-        commitmentStateRules = statusLine();
-        commitment.addView(commitmentStateRules);
-        Button commitmentChoice = Ui.button(this, R.string.commitment_setup, Ui.ButtonKind.TONAL);
-        commitment.addView(commitmentChoice, Ui.buttonParams(this));
-        commitmentChoice.setOnClickListener(view -> chooseCommitment());
-        commitmentNote = Ui.caption(this, getString(R.string.commitment_locked_note));
-        commitmentNote.setVisibility(View.GONE);
-        commitment.addView(commitmentNote, Ui.margins(this, 8, 0));
-
-        LinearLayout privateCard = Ui.card(this);
-        Ui.Disclosure privateScreens = Ui.disclosure(this, getString(R.string.section_private_screens),
-                getString(R.string.private_screens));
-        privateCard.addView(privateScreens.root);
-        page.addView(privateCard, Ui.margins(this, 0, 10));
+        commitmentRow = standaloneSettingRow(page, R.drawable.ic_clock,
+                R.string.section_commitment, getString(R.string.state_off),
+                view -> chooseCommitment());
+        commitmentStateRules = commitmentRow.summary;
     }
 
-    // ------------------------------------------------------------------ guide page
+    /** A tappable settings row that stands on its own, the way ScreenZen's Options list does. */
+    private Ui.SettingRow standaloneSettingRow(LinearLayout page, int iconRes, int titleRes,
+            CharSequence summary, View.OnClickListener click) {
+        Ui.SettingRow row = Ui.settingRow(this, iconRes, getString(titleRes), summary, click);
+        row.root.setBackgroundResource(R.drawable.bg_row_card);
+        row.root.setPadding(Ui.dp(this, 18), Ui.dp(this, 10), Ui.dp(this, 12), Ui.dp(this, 10));
+        page.addView(row.root, Ui.margins(this, 0, 10));
+        return row;
+    }
+
+    // ------------------------------------------------------------------ settings page
 
     private void buildGuidePage(LinearLayout page) {
-        page.addView(Ui.pageTitle(this, getString(R.string.app_goal_title)), Ui.margins(this, 6, 6));
-        page.addView(Ui.body(this, getString(R.string.app_goal_short)), Ui.margins(this, 0, 6));
-        Ui.Disclosure howItWorks = Ui.disclosure(this, getString(R.string.app_goal_more),
-                getString(R.string.app_goal_body));
-        howItWorks.root.setBackgroundResource(R.drawable.bg_card_soft);
-        howItWorks.root.setPadding(Ui.dp(this, 16), 0, Ui.dp(this, 16), Ui.dp(this, 4));
-        page.addView(howItWorks.root, Ui.margins(this, 0, 10));
+        page.addView(Ui.pageTitle(this, getString(R.string.nav_guide)), Ui.margins(this, 6, 6));
 
-        LinearLayout steps = addCard(page, R.drawable.ic_check, R.string.section_setup_steps);
-        for (View step : numberedSteps(getString(R.string.guide_steps_core))) steps.addView(step);
-        LinearLayout optionalSteps = new LinearLayout(this);
-        optionalSteps.setOrientation(LinearLayout.VERTICAL);
-        for (View step : numberedSteps(getString(R.string.guide_steps_more))) {
-            optionalSteps.addView(step);
-        }
-        steps.addView(Ui.disclosure(this, getString(R.string.guide_more_steps), optionalSteps).root,
-                Ui.margins(this, 0, 2));
+        LinearLayout protection = Ui.card(this);
+        protection.addView(Ui.sectionHeader(this, R.drawable.ic_shield,
+                getString(R.string.settings_protection_title)));
 
-        LinearLayout limits = addCard(page, R.drawable.ic_info, R.string.section_limits);
-        limits.addView(Ui.disclosure(this, getString(R.string.guide_limits_title),
-                getString(R.string.guide_limits_body)).root);
+        settingsUninstallRow = Ui.settingRow(this, R.drawable.ic_shield,
+                getString(R.string.section_uninstall), getString(R.string.state_off),
+                view -> showUninstallDialog());
+        protection.addView(settingsUninstallRow.root);
+        protection.addView(Ui.divider(this));
 
-        LinearLayout privacy = addCard(page, R.drawable.ic_lock, R.string.section_privacy);
-        privacy.addView(Ui.body(this, getString(R.string.privacy_short)));
-        Ui.Disclosure privateScreens = Ui.disclosure(this, getString(R.string.section_private_screens),
-                getString(R.string.private_screens));
-        privacy.addView(privateScreens.root, Ui.margins(this, 6, 0));
-        privacy.addView(Ui.disclosure(this, getString(R.string.guide_details),
-                getString(R.string.privacy)).root, Ui.margins(this, 0, 2));
+        settingsPermissionsRow = Ui.settingRow(this, R.drawable.ic_text,
+                getString(R.string.settings_permissions), getString(R.string.state_off),
+                view -> showPermissionsDialog());
+        protection.addView(settingsPermissionsRow.root);
+        protection.addView(Ui.divider(this));
 
-        LinearLayout uninstall = addCard(page, R.drawable.ic_lock, R.string.uninstall_title);
-        LinearLayout uninstallDetails = new LinearLayout(this);
-        uninstallDetails.setOrientation(LinearLayout.VERTICAL);
-        uninstallDetails.addView(Ui.body(this, getString(R.string.uninstall_scope)));
-        uninstallDetails.addView(Ui.body(this, getString(R.string.uninstall_guide)),
-                Ui.margins(this, 8, 0));
-        uninstallDetails.addView(Ui.caption(this, getString(R.string.uninstall_setup_note)),
-                Ui.margins(this, 8, 0));
-        uninstall.addView(Ui.disclosure(this, getString(R.string.guide_details),
-                uninstallDetails).root);
-        Button uninstallActionGuide = Ui.button(this, R.string.uninstall_action, Ui.ButtonKind.GHOST);
-        uninstall.addView(uninstallActionGuide, Ui.buttonParams(this));
-        uninstallActionGuide.setOnClickListener(view -> showUninstallDialog());
+        batteryRow = Ui.settingRow(this, R.drawable.ic_pulse,
+                getString(R.string.battery_title), getString(R.string.state_off),
+                view -> requestBatteryExemption());
+        protection.addView(batteryRow.root);
+        protection.addView(Ui.divider(this));
 
-        LinearLayout admin = addCard(page, R.drawable.ic_shield, R.string.admin_title);
-        adminState = statusLine();
-        admin.addView(adminState);
-        Button adminSetup = Ui.button(this, R.string.admin_setup, Ui.ButtonKind.TONAL);
-        admin.addView(adminSetup, Ui.buttonParams(this));
-        adminSetup.setOnClickListener(view -> new AlertDialog.Builder(this)
-                .setTitle(R.string.admin_title).setMessage(R.string.admin_explanation)
-                .setNegativeButton(android.R.string.cancel, null)
-                .setPositiveButton(R.string.admin_continue, (dialog, which) -> {
-                    Intent request = new Intent(android.app.admin.DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
-                            .putExtra(android.app.admin.DevicePolicyManager.EXTRA_DEVICE_ADMIN,
-                                    CommitmentAdminReceiver.component(this))
-                            .putExtra(android.app.admin.DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-                                    getString(R.string.admin_explanation));
-                    startActivity(request);
-                }).show());
+        Ui.SettingRow guardianRow = Ui.settingRow(this, R.drawable.ic_shield,
+                getString(R.string.guardian_pair_title), getString(R.string.settings_guardian_summary),
+                view -> startActivity(new Intent(this, GuardianPairActivity.class)));
+        protection.addView(guardianRow.root);
+        page.addView(protection, Ui.margins(this, 0, 12));
 
-        LinearLayout battery = addCard(page, R.drawable.ic_pulse, R.string.battery_title);
-        battery.addView(Ui.body(this, getString(R.string.battery_body)));
-        batteryState = statusLine();
-        battery.addView(batteryState);
-        batteryAction = Ui.button(this, R.string.battery_action, Ui.ButtonKind.TONAL);
-        battery.addView(batteryAction, Ui.buttonParams(this));
-        batteryAction.setOnClickListener(view -> requestBatteryExemption());
+        LinearLayout about = Ui.card(this);
+        about.addView(Ui.sectionHeader(this, R.drawable.ic_book,
+                getString(R.string.settings_about_title)));
+
+        Ui.SettingRow intro = Ui.settingRow(this, R.drawable.ic_book,
+                getString(R.string.settings_replay_intro), getString(R.string.settings_intro_summary),
+                view -> startActivity(new Intent(this, WelcomeActivity.class)));
+        about.addView(intro.root);
+        about.addView(Ui.divider(this));
+
+        Ui.SettingRow how = Ui.settingRow(this, R.drawable.ic_shield,
+                getString(R.string.app_goal_more), getString(R.string.settings_how_summary),
+                view -> new AlertDialog.Builder(this).setTitle(R.string.app_goal_title)
+                        .setMessage(R.string.app_goal_body)
+                        .setPositiveButton(android.R.string.ok, null).show());
+        about.addView(how.root);
+        about.addView(Ui.divider(this));
+
+        Ui.SettingRow limits = Ui.settingRow(this, R.drawable.ic_info,
+                getString(R.string.guide_limits_title), getString(R.string.settings_limits_summary),
+                view -> new AlertDialog.Builder(this).setTitle(R.string.guide_limits_title)
+                        .setMessage(R.string.guide_limits_body)
+                        .setPositiveButton(android.R.string.ok, null).show());
+        about.addView(limits.root);
+        about.addView(Ui.divider(this));
+
+        Ui.SettingRow privacy = Ui.settingRow(this, R.drawable.ic_lock,
+                getString(R.string.section_privacy), getString(R.string.settings_privacy_summary),
+                view -> new AlertDialog.Builder(this).setTitle(R.string.section_privacy)
+                        .setMessage(getString(R.string.privacy) + "\n\n"
+                                + getString(R.string.private_screens))
+                        .setPositiveButton(android.R.string.ok, null).show());
+        about.addView(privacy.root);
+        about.addView(Ui.divider(this));
+
+        Ui.SettingRow diagnostics = Ui.settingRow(this, R.drawable.ic_pulse,
+                getString(R.string.section_diagnostics), getString(R.string.settings_diagnostics_summary),
+                view -> showDiagnosticsDialog());
+        about.addView(diagnostics.root);
+        about.addView(Ui.divider(this));
+
+        Ui.SettingRow tester = Ui.settingRow(this, R.drawable.ic_tune,
+                getString(R.string.tester), getString(R.string.settings_tester_summary),
+                view -> showTesterDialog());
+        about.addView(tester.root);
+        about.addView(Ui.divider(this));
+
+        Ui.SettingRow notices = Ui.settingRow(this, R.drawable.ic_book,
+                getString(R.string.notices_title), getString(R.string.settings_notices_summary),
+                view -> Notices.show(this));
+        about.addView(notices.root);
+        about.addView(Ui.divider(this));
+
+        Ui.SettingRow aboutRow = Ui.settingRow(this, R.drawable.ic_info,
+                getString(R.string.settings_about), getString(R.string.settings_about_summary,
+                        BuildConfig.VERSION_NAME),
+                view -> new AlertDialog.Builder(this).setTitle(R.string.settings_about)
+                        .setMessage(getString(R.string.app_goal_short) + "\n\n"
+                                + getString(R.string.subtitle, BuildConfig.VERSION_NAME))
+                        .setPositiveButton(android.R.string.ok, null).show());
+        about.addView(aboutRow.root);
+        page.addView(about, Ui.margins(this, 0, 12));
         refreshBatteryState();
+    }
 
-        LinearLayout guardian = addCard(page, R.drawable.ic_shield, R.string.guardian_pair_title);
-        guardian.addView(Ui.body(this, getString(R.string.guardian_pair_body)));
-        Button guardianAction = Ui.button(this, R.string.guardian_pair_action, Ui.ButtonKind.GHOST);
-        guardian.addView(guardianAction, Ui.buttonParams(this));
-        guardianAction.setOnClickListener(view ->
-                startActivity(new Intent(this, GuardianPairActivity.class)));
+    private void showPermissionsDialog() {
+        LinearLayout form = new LinearLayout(this);
+        form.setOrientation(LinearLayout.VERTICAL);
+        form.setPadding(Ui.dp(this, 12), Ui.dp(this, 4), Ui.dp(this, 12), Ui.dp(this, 4));
+        addPermissionRow(form, R.drawable.ic_text, R.string.perm_access_title,
+                () -> Permissions.accessibility(this),
+                view -> openSettings(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)));
+        form.addView(Ui.divider(this));
+        addPermissionRow(form, R.drawable.ic_clock, R.string.perm_usage_title,
+                () -> Permissions.usage(this),
+                view -> openSettings(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)));
+        form.addView(Ui.divider(this));
+        addPermissionRow(form, R.drawable.ic_apps, R.string.perm_overlay_title,
+                () -> Permissions.overlay(this),
+                view -> openSettings(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        android.net.Uri.parse("package:" + getPackageName()))));
+        form.addView(Ui.divider(this));
+        addPermissionRow(form, R.drawable.ic_alert, R.string.perm_notify_title,
+                () -> Permissions.notifications(this),
+                view -> openSettings(new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                        .putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName())));
+        form.addView(Ui.divider(this));
+        addPermissionRow(form, R.drawable.ic_pulse, R.string.perm_battery_title,
+                () -> Permissions.battery(this), view -> requestBatteryExemption());
+        ScrollView scroll = new ScrollView(this);
+        scroll.addView(form, new ScrollView.LayoutParams(
+                ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT));
+        new AlertDialog.Builder(this).setTitle(R.string.settings_permissions).setView(scroll)
+                .setPositiveButton(android.R.string.ok, null).show();
+    }
 
-        LinearLayout diagnostics = addCard(page, R.drawable.ic_pulse, R.string.section_diagnostics);
-        networkStats = Ui.text(this, getString(R.string.dns_stats_empty), 13, R.color.text_secondary);
-        networkStats.setLineSpacing(Ui.dp(this, 3), 1.12f);
-        networkStats.setTextIsSelectable(true);
-        diagnostics.addView(networkStats);
-        diagnostics.addView(Ui.caption(this, getString(R.string.diagnostics_hint)),
-                Ui.margins(this, 6, 0));
-        Button copyDiagnostics = Ui.button(this, R.string.copy_diagnostics, Ui.ButtonKind.QUIET);
-        diagnostics.addView(copyDiagnostics, Ui.buttonParams(this));
-        copyDiagnostics.setOnClickListener(view ->
-                copyText(networkStats.getText().toString(), R.string.diagnostics_copied));
+    private void addPermissionRow(LinearLayout form, int icon, int titleRes,
+            java.util.function.BooleanSupplier granted, View.OnClickListener click) {
+        boolean on = granted.getAsBoolean();
+        Ui.SettingRow row = Ui.settingRow(this, icon, getString(titleRes),
+                getString(on ? R.string.perm_on : R.string.perm_off), click);
+        form.addView(row.root);
+    }
 
-        LinearLayout tools = addCard(page, R.drawable.ic_tune, R.string.section_tools);
-        TextView testerHeading = Ui.strong(this, getString(R.string.tester));
-        testerHeading.setTextSize(16);
-        tools.addView(testerHeading);
-        tools.addView(Ui.body(this, getString(R.string.tester_help)), Ui.margins(this, 4, 0));
-        tools.addView(Ui.caption(this, getString(R.string.tester_private)), Ui.margins(this, 6, 0));
-        testerRule = Ui.input(this, R.string.rule_hint, true);
-        testerRule.setMinLines(3);
-        testerRule.setMaxLines(6);
-        tools.addView(testerRule, Ui.margins(this, 10, 0));
-        testerSample = Ui.input(this, R.string.sample_hint, true);
-        testerSample.setMinLines(2);
-        testerSample.setMaxLines(5);
-        tools.addView(testerSample, Ui.margins(this, 8, 0));
+    private void openSettings(Intent intent) {
+        try { startActivity(intent); }
+        catch (RuntimeException unavailable) {
+            Toast.makeText(this, R.string.perm_settings_unavailable, Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void showDiagnosticsDialog() {
+        LinearLayout form = new LinearLayout(this);
+        form.setOrientation(LinearLayout.VERTICAL);
+        form.setPadding(Ui.dp(this, 20), Ui.dp(this, 4), Ui.dp(this, 20), Ui.dp(this, 8));
+        TextView stats = Ui.text(this, diagnosticsText, 13, R.color.text_secondary);
+        stats.setTextIsSelectable(true);
+        form.addView(stats);
+        form.addView(Ui.caption(this, getString(R.string.diagnostics_hint)),
+                Ui.margins(this, 8, 0));
+        Button copy = Ui.button(this, R.string.copy_diagnostics, Ui.ButtonKind.QUIET);
+        copy.setOnClickListener(view -> copyText(diagnosticsText, R.string.diagnostics_copied));
+        form.addView(copy, Ui.buttonParams(this));
+        ScrollView scroll = new ScrollView(this);
+        scroll.addView(form, new ScrollView.LayoutParams(
+                ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT));
+        new AlertDialog.Builder(this).setTitle(R.string.section_diagnostics).setView(scroll)
+                .setPositiveButton(android.R.string.ok, null).show();
+    }
+
+    private void showTesterDialog() {
+        LinearLayout form = new LinearLayout(this);
+        form.setOrientation(LinearLayout.VERTICAL);
+        form.setPadding(Ui.dp(this, 20), Ui.dp(this, 4), Ui.dp(this, 20), Ui.dp(this, 12));
+        form.addView(Ui.body(this, getString(R.string.tester_help)));
+        form.addView(Ui.caption(this, getString(R.string.tester_private)), Ui.margins(this, 6, 0));
+        EditText rule = Ui.input(this, R.string.rule_hint, true);
+        rule.setMinLines(3);
+        rule.setMaxLines(6);
+        form.addView(rule, Ui.margins(this, 10, 0));
+        EditText sample = Ui.input(this, R.string.sample_hint, true);
+        sample.setMinLines(2);
+        sample.setMaxLines(5);
+        form.addView(sample, Ui.margins(this, 8, 0));
         Button check = Ui.button(this, R.string.test_button, Ui.ButtonKind.TONAL);
-        tools.addView(check, Ui.buttonParams(this));
-        testerResult = Ui.text(this, getString(R.string.tester_result_hint), 14, R.color.text_tertiary);
-        testerResult.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
-        tools.addView(testerResult, Ui.margins(this, 8, 0));
+        form.addView(check, Ui.buttonParams(this));
+        TextView result = Ui.text(this, getString(R.string.tester_result_hint), 14,
+                R.color.text_tertiary);
+        result.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+        form.addView(result, Ui.margins(this, 8, 0));
 
         TextWatcher clearResult = new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence text, int start, int count, int after) { }
             @Override public void onTextChanged(CharSequence text, int start, int before, int count) {
-                setTesterResult(R.string.tester_result_hint, R.color.text_tertiary);
-                updateTesterPrivacy();
+                result.setText(R.string.tester_result_hint);
+                result.setTextColor(Ui.color(MainActivity.this, R.color.text_tertiary));
             }
             @Override public void afterTextChanged(Editable text) { }
         };
-        testerRule.addTextChangedListener(clearResult);
-        testerSample.addTextChangedListener(clearResult);
+        rule.addTextChangedListener(clearResult);
+        sample.addTextChangedListener(clearResult);
         check.setOnClickListener(v -> {
-            String ruleText = testerRule.getText().toString();
-            String sampleText = testerSample.getText().toString();
+            String sampleText = sample.getText().toString();
             if (sampleText.trim().isEmpty()) {
-                setTesterResult(R.string.invalid, R.color.danger);
+                result.setText(R.string.invalid);
+                result.setTextColor(Ui.color(this, R.color.danger));
                 return;
             }
             if (sampleText.codePointCount(0, sampleText.length()) > TEXT_LIMIT) {
-                setTesterResult(R.string.too_long, R.color.danger);
+                result.setText(R.string.too_long);
+                result.setTextColor(Ui.color(this, R.color.danger));
                 return;
             }
             try {
-                WordMatcher matcher = WordRuleList.compile(ruleText);
+                WordMatcher matcher = WordRuleList.compile(rule.getText().toString());
                 boolean matched = !matcher.matches(sampleText).isEmpty();
-                setTesterResult(matched ? R.string.match : R.string.no_match,
-                        matched ? R.color.warning : R.color.success);
+                result.setText(matched ? R.string.match : R.string.no_match);
+                result.setTextColor(Ui.color(this, matched ? R.color.warning : R.color.success));
             } catch (IllegalArgumentException error) {
-                setTesterResult(R.string.invalid, R.color.danger);
+                result.setText(R.string.invalid);
+                result.setTextColor(Ui.color(this, R.color.danger));
             }
         });
 
-        LinearLayout notices = addCard(page, R.drawable.ic_book, R.string.notices_title);
-        notices.addView(Ui.body(this, getString(R.string.notices_help)));
-        Button noticesOpen = Ui.button(this, R.string.notices_open, Ui.ButtonKind.GHOST);
-        notices.addView(noticesOpen, Ui.buttonParams(this));
-        noticesOpen.setOnClickListener(view -> Notices.show(this));
+        ScrollView scroll = new ScrollView(this);
+        scroll.addView(form, new ScrollView.LayoutParams(
+                ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT));
+        AlertDialog dialog = new AlertDialog.Builder(this).setTitle(R.string.tester)
+                .setView(scroll).setPositiveButton(android.R.string.ok, null).create();
+        showPrivate(dialog);
     }
 
     // ------------------------------------------------------------------ page building helpers
@@ -967,10 +1040,11 @@ public final class MainActivity extends Activity {
         view.setContentDescription(text);
     }
 
-    private void setTesterResult(int textRes, int colorRes) {
-        if (testerResult == null) return;
-        testerResult.setText(textRes);
-        testerResult.setTextColor(Ui.color(this, colorRes));
+    /** A status line that is also the second half of a row's spoken label. */
+    private void setRowStatus(Ui.SettingRow row, CharSequence text, int kind) {
+        if (row == null) return;
+        setStatus(row.summary, text, kind);
+        row.root.setContentDescription(row.title.getText() + ". " + text);
     }
 
     /**
@@ -1105,16 +1179,17 @@ public final class MainActivity extends Activity {
         if (domainsRow != null) domainsRow.setSummary(domains);
         if (wordsRow != null) wordsRow.setSummary(words);
         if (blockedRow != null) blockedRow.setSummary(blocked);
+        if (homeBlockedRow != null) homeBlockedRow.setSummary(blocked);
         if (scannedRow != null) scannedRow.setSummary(scanned);
         if (browserRow != null) browserRow.setSummary(browsers);
     }
 
     private void updateToggle(Switch toggle, int titleRes, CharSequence summary) {
         if (toggle == null) return;
-        String key = summary == null ? "" : summary.toString();
-        if (key.equals(toggle.getTag())) return;
-        toggle.setTag(key);
-        Ui.setToggleText(toggle, getString(titleRes), summary);
+        // The switch itself shows the state. The detail behind a layer belongs in
+        // the disclosure that appears when it is turned on, not in a second line
+        // under every row.
+        Ui.setToggleText(toggle, getString(titleRes), null);
     }
 
     // ------------------------------------------------------------------ refresh
@@ -1169,9 +1244,6 @@ public final class MainActivity extends Activity {
             visualReason = refreshVisual(rules, remaining, permission);
             refreshGray(remaining);
         } else {
-            setStatus(visualState, getString(R.string.policy_unavailable), Ui.ATTENTION);
-            setStatus(grayState, getString(R.string.policy_unavailable), Ui.ATTENTION);
-            setStatus(shortVideoState, getString(R.string.policy_unavailable), Ui.ATTENTION);
             Ui.setEnabledWithAlpha(visualToggle, false);
             Ui.setEnabledWithAlpha(grayToggle, false);
             Ui.setEnabledWithAlpha(shortVideoToggle, false);
@@ -1199,8 +1271,10 @@ public final class MainActivity extends Activity {
         boolean notificationsOff = !notificationsEnabled();
         boolean notificationsAttention = LayerWatchdog.lastCheckedAt(this) > 0 && notificationsOff;
 
+        boolean dnsExpected = current == DnsVpnService.State.OFF
+                && DnsVpnService.resumeRequested(this);
         boolean needsAttention = guard.needsAttention || current == DnsVpnService.State.ERROR
-                || current == DnsVpnService.State.DEGRADED || privateDnsBypass
+                || current == DnsVpnService.State.DEGRADED || dnsExpected || privateDnsBypass
                 || check == DnsVpnService.CheckState.FAILED || visualReason != 0
                 || unknown || restored || uninstallAttention || managedAttention
                 || watchdogLost || notificationsAttention;
@@ -1299,21 +1373,22 @@ public final class MainActivity extends Activity {
         Ui.setTextIfChanged(startDns, getString(current == DnsVpnService.State.STARTING
                 ? R.string.state_starting : canStartDns ? R.string.dns_start : R.string.dns_on_button));
         Ui.setEnabledWithAlpha(startDns, settings != null && canStartDns);
-        Ui.setTextIfChanged(networkStats, getString(R.string.dns_summary,
+        diagnosticsText = getString(R.string.dns_summary,
                 getString(R.string.dns_stats, DnsVpnService.domains, DnsVpnService.blocked.get(),
                         DnsVpnService.forwarded.get(), DnsVpnService.rewritten.get(),
                         DnsVpnService.errors.get()),
                 getString(R.string.dns_packet_diagnostics, DnsVpnService.unsupportedPackets.get(),
                         DnsVpnService.unsupportedTcpPackets.get(), DnsVpnService.malformedPackets.get()),
                 getString(R.string.dns_benign_packets, DnsVpnService.ignoredPackets.get(),
-                        DnsVpnService.refusedTlsConnections.get()),
+                        DnsVpnService.refusedTlsConnections.get(),
+                        DnsVpnService.blockedResolvers.get()),
                 getString(R.string.dns_recoveries, DnsVpnService.recoveries.get()),
                 getString(DnsVpnService.networkMonitoring ? R.string.dns_monitor_active
                         : R.string.dns_monitor_inactive, DnsVpnService.networkChanges.get()),
                 getString(R.string.dns_cancelled_network_requests,
                         DnsVpnService.cancelledNetworkRequests.get()),
                 getString(R.string.dns_tcp_stats, DnsVpnService.tcpQueries.get(),
-                        DnsVpnService.tcpReplies.get(), DnsVpnService.udpTruncated.get())));
+                        DnsVpnService.tcpReplies.get(), DnsVpnService.udpTruncated.get()));
 
         int checkText;
         int checkKind;
@@ -1355,13 +1430,17 @@ public final class MainActivity extends Activity {
             case SETTINGS_UNAVAILABLE: textRes = R.string.policy_unavailable; textKind = Ui.ATTENTION; break;
             default: textRes = R.string.text_guard_disabled; textKind = Ui.OFF; break;
         }
-        // textState lives on the Rules page; layerTextState is the copy on Protection.
-        setStatus(layerTextState, getString(textRes), textKind);
         setStatus(textState, getString(textRes), textKind);
-
-        boolean adminActive = CommitmentAdminReceiver.isActive(this);
-        setStatus(adminState, getString(adminActive ? R.string.admin_active : R.string.admin_off),
-                adminActive ? Ui.ON : Ui.OFF);
+        if (accessibilityAction != null) {
+            boolean connected = guard == GuardHealth.ACTIVE || guard == GuardHealth.LIMITED
+                    || guard == GuardHealth.READY_NO_RULES;
+            accessibilityAction.setVisibility(connected ? View.GONE : View.VISIBLE);
+        }
+        if (homeTextRow != null) {
+            boolean adultOn = rules != null && rules.adultWordsEnabled;
+            homeTextRow.setSummary(getString(!adultOn ? R.string.state_off
+                    : guard == GuardHealth.ACTIVE ? R.string.state_on : R.string.state_attention));
+        }
 
         String commitment;
         if (!settingsReadable) {
@@ -1373,10 +1452,16 @@ public final class MainActivity extends Activity {
         }
         int commitmentKind = !settingsReadable || unknown ? Ui.ATTENTION
                 : remaining == 0 ? Ui.OFF : Ui.ON;
-        setStatus(commitmentState, commitment, commitmentKind);
-        setStatus(commitmentStateRules, commitment, commitmentKind);
-        if (commitmentNote != null) {
-            commitmentNote.setVisibility(settingsReadable && remaining > 0 ? View.VISIBLE : View.GONE);
+        setRowStatus(commitmentRow, commitment, commitmentKind);
+        if (homeCommitmentRow != null) {
+            homeCommitmentRow.setSummary(!settingsReadable ? getString(R.string.state_attention)
+                    : remaining == 0 ? getString(R.string.state_off)
+                    : getString(R.string.home_commitment_on, Durations.remaining(this, remaining)));
+        }
+        if (settingsPermissionsRow != null) {
+            settingsPermissionsRow.setSummary(getString(R.string.settings_permissions_summary,
+                    getString(Permissions.accessibility(this) ? R.string.perm_on : R.string.perm_off),
+                    getString(Permissions.notifications(this) ? R.string.perm_on : R.string.perm_off)));
         }
         restoredCard.setVisibility(restored ? View.VISIBLE : View.GONE);
 
@@ -1431,8 +1516,8 @@ public final class MainActivity extends Activity {
         setRowEnabled(blockedRow, editable);
         setRowEnabled(scannedRow, editable);
         setRowEnabled(browserRow, editable);
-        Ui.setEnabledWithAlpha(scheduleEdit, editable);
-        Ui.setEnabledWithAlpha(timeLimitEdit, editable);
+        setRowEnabled(scheduleRow, editable);
+        setRowEnabled(timeLimitRow, editable);
         if (rulesLockCard == null || rulesLockText == null) return;
         rulesLockCard.setVisibility(locked ? View.VISIBLE : View.GONE);
         if (locked) {
@@ -1499,7 +1584,7 @@ public final class MainActivity extends Activity {
             attentionCard.setVisibility(View.GONE);
             return;
         }
-        if (attentionDetails != null) attentionDetails.setExpanded(false);
+        if (attentionDetails != null) attentionDetails.setExpanded(true);
         for (Integer item : items) {
             LinearLayout row = new LinearLayout(this);
             row.setOrientation(LinearLayout.HORIZONTAL);
@@ -1530,8 +1615,6 @@ public final class MainActivity extends Activity {
                 || (rules.schedule.enabled && rules.schedule.isConfigured())
                 || (!rules.scannedApps.isEmpty() && (rules.hasWordProtection() || rules.visualEnabled))
                 || rules.shortVideoEnabled;
-        int shortVideo = rules.shortVideoEnabled ? R.string.short_video_on : R.string.short_video_off;
-        setStatus(shortVideoState, getString(shortVideo), rules.shortVideoEnabled ? Ui.ON : Ui.OFF);
         updateToggle(shortVideoToggle, R.string.toggle_short_video,
                 getString(rules.shortVideoEnabled ? R.string.short_video_on_short
                         : R.string.short_video_toggle_summary));
@@ -1678,17 +1761,33 @@ public final class MainActivity extends Activity {
         }
     }
 
+    private void showDnsConsent() {
+        LinearLayout form = new LinearLayout(this);
+        form.setOrientation(LinearLayout.VERTICAL);
+        form.setPadding(Ui.dp(this, 20), Ui.dp(this, 4), Ui.dp(this, 20), Ui.dp(this, 8));
+        form.addView(Ui.body(this, getString(R.string.dns_consent_short)));
+        form.addView(Ui.disclosure(this, getString(R.string.full_disclosure),
+                getString(R.string.dns_consent_body)).root, Ui.margins(this, 8, 0));
+        new AlertDialog.Builder(this).setTitle(R.string.dns_consent_title).setView(form)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.dns_continue, (dialog, which) -> requestDns()).show();
+    }
+
     private void showAccessibilityDisclosure() {
-        new AlertDialog.Builder(this).setTitle(R.string.accessibility_title)
-                .setMessage(BuildConfig.SELF_PROTECTION
-                        ? R.string.accessibility_disclosure_direct : R.string.accessibility_disclosure)
+        LinearLayout form = new LinearLayout(this);
+        form.setOrientation(LinearLayout.VERTICAL);
+        form.setPadding(Ui.dp(this, 20), Ui.dp(this, 4), Ui.dp(this, 20), Ui.dp(this, 8));
+        form.addView(Ui.body(this, getString(R.string.accessibility_short)));
+        form.addView(Ui.disclosure(this, getString(R.string.full_disclosure),
+                getString(BuildConfig.SELF_PROTECTION ? R.string.accessibility_disclosure_direct
+                        : R.string.accessibility_disclosure)).root, Ui.margins(this, 8, 0));
+        new AlertDialog.Builder(this).setTitle(R.string.accessibility_title).setView(form)
                 .setNegativeButton(android.R.string.cancel, null)
                 .setPositiveButton(R.string.open_accessibility, (dialog, which) ->
                         startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))).show();
     }
 
     private int refreshVisual(PolicyStore.Snapshot rules, long remaining, Boolean permission) {
-        if (visualState == null) return 0;
         int label;
         int kind;
         int attention = 0;
@@ -1731,7 +1830,13 @@ public final class MainActivity extends Activity {
                 default: label = R.string.visual_waiting; kind = Ui.ON; break;
             }
         }
-        setStatus(visualState, getString(label), kind);
+        if (homeVisualRow != null) {
+            homeVisualRow.setSummary(getString(!rules.visualEnabled ? R.string.state_off
+                    : kind == Ui.ON ? R.string.state_on
+                    : kind == Ui.UNSUPPORTED ? R.string.state_unsupported
+                    : kind == Ui.STARTING ? R.string.state_starting
+                    : R.string.state_attention));
+        }
         updateToggle(visualToggle, R.string.toggle_visual, rules.visualEnabled
                 ? getString(label) : getString(R.string.visual_toggle_summary));
         visualToggle.setChecked(rules.visualEnabled);
@@ -1741,23 +1846,9 @@ public final class MainActivity extends Activity {
     }
 
     private void refreshGray(long remaining) {
-        if (grayState == null) return;
         ScreenGray.reassert(this);
         boolean wanted = ScreenGray.wanted(this);
         boolean gray = ScreenGray.isGray(this);
-        int text;
-        int kind;
-        if (wanted && remaining > 0) {
-            text = R.string.gray_committed;
-            kind = Ui.ON;
-        } else if (gray) {
-            text = R.string.gray_on;
-            kind = Ui.ON;
-        } else {
-            text = R.string.gray_status_off;
-            kind = Ui.OFF;
-        }
-        setStatus(grayState, getString(text), kind);
         updateToggle(grayToggle, R.string.gray_title, getString(wanted && remaining > 0
                 ? R.string.gray_committed : gray ? R.string.gray_on : R.string.gray_off));
         grayToggle.setChecked(wanted);
@@ -1765,26 +1856,29 @@ public final class MainActivity extends Activity {
     }
 
     private void refreshSchedule(DailyAppSchedule schedule) {
-        if (scheduleState == null) return;
         if (!schedule.enabled || !schedule.isConfigured()) {
-            setStatus(scheduleState, getString(R.string.schedule_off), Ui.OFF);
+            setRowStatus(scheduleRow, getString(R.string.schedule_off), Ui.OFF);
+            if (homeScheduleRow != null) homeScheduleRow.setSummary(getString(R.string.state_off));
             return;
         }
         LocalTime now = LocalTime.now();
         int minute = now.getHour() * 60 + now.getMinute();
-        setStatus(scheduleState, getString(schedule.allApps ? R.string.schedule_summary_all
+        String days = scheduleDays(this, schedule.days);
+        setRowStatus(scheduleRow, getString(schedule.allApps ? R.string.schedule_summary_all
                         : R.string.schedule_summary, schedule.apps.size(),
                 scheduleTime(schedule.startMinute), scheduleTime(schedule.endMinute),
-                getString(schedule.activeAt(minute) ? R.string.schedule_window_active
-                        : R.string.schedule_window_inactive)), Ui.ON);
+                getString(schedule.activeAt(minute, java.time.LocalDate.now().getDayOfWeek())
+                        ? R.string.schedule_window_active : R.string.schedule_window_inactive), days), Ui.ON);
+        if (homeScheduleRow != null) homeScheduleRow.setSummary(getString(R.string.home_schedule_value,
+                scheduleTime(schedule.startMinute), scheduleTime(schedule.endMinute), days));
     }
 
     /** Daily time limits are a saved rule plus a separate Android Usage access grant. Show both,
      *  so a configured limit without the grant never reads as enforced. */
     private void refreshTimeLimits(PolicyStore.Snapshot rules) {
-        if (timeLimitState == null) return;
         if (!rules.timeLimits.configured()) {
-            setStatus(timeLimitState, getString(R.string.time_limits_off), Ui.OFF);
+            setRowStatus(timeLimitRow, getString(R.string.time_limits_off), Ui.OFF);
+            if (homeTimeRow != null) homeTimeRow.setSummary(getString(R.string.state_off));
             return;
         }
         int count = rules.timeLimits.size();
@@ -1801,7 +1895,12 @@ public final class MainActivity extends Activity {
         }
         boolean access = AppUsage.hasAccess(this);
         if (!access) summary = getString(R.string.time_limits_summary_access, summary);
-        setStatus(timeLimitState, summary, access ? Ui.ON : Ui.ATTENTION);
+        setRowStatus(timeLimitRow, summary, access ? Ui.ON : Ui.ATTENTION);
+        if (homeTimeRow != null) {
+            homeTimeRow.setSummary(access
+                    ? getResources().getQuantityString(R.plurals.time_limits_summary, count, count)
+                    : getString(R.string.state_attention));
+        }
     }
 
     private String timeLimitText(int minutes) {
@@ -1830,14 +1929,20 @@ public final class MainActivity extends Activity {
         return format.format(new Date(minute * 60_000L));
     }
 
+    /** "Every day" or a short count of chosen days, for the schedule row summaries. */
+    static String scheduleDays(Context context, int days) {
+        if (days == DailyAppSchedule.ALL_DAYS) return context.getString(R.string.schedule_days_every);
+        int count = Integer.bitCount(days);
+        return context.getResources().getQuantityString(R.plurals.schedule_days_count, count, count);
+    }
+
     // ------------------------------------------------------------------ dialogs and actions
 
     private void editAdultMode() {
         if (settings == null || refuseIfRulesLocked()) return;
         boolean enabled = settings.snapshot().adultWordsEnabled;
-        new AlertDialog.Builder(this).setTitle(enabled ? R.string.adult_mode_disable : R.string.adult_mode_enable)
-                .setMessage(R.string.adult_mode_disclosure).setNegativeButton(android.R.string.cancel, null)
-                .setPositiveButton(R.string.save_rules, (dialog, which) -> {
+        showLayerConsent(enabled ? R.string.adult_mode_disable : R.string.adult_mode_enable,
+                R.string.adult_mode_short, R.string.adult_mode_disclosure, () -> {
                     try {
                         PolicyStore.Snapshot rules = settings.snapshot();
                         settings.update(settings.domainText(), settings.wordText(), rules.blockedApps,
@@ -1850,36 +1955,47 @@ public final class MainActivity extends Activity {
                             refreshStatus();
                         }
                     } catch (RuntimeException refused) { showRefusal(refused); }
-                }).show();
+                });
     }
 
     private void editShortVideo() {
         if (settings == null || refuseIfRulesLocked()) return;
         boolean enabled = settings.snapshot().shortVideoEnabled;
-        new AlertDialog.Builder(this).setTitle(enabled ? R.string.short_video_disable : R.string.short_video_enable)
-                .setMessage(R.string.short_video_disclosure).setNegativeButton(android.R.string.cancel, null)
-                .setPositiveButton(R.string.save_rules, (dialog, which) -> {
+        showLayerConsent(enabled ? R.string.short_video_disable : R.string.short_video_enable,
+                R.string.short_video_short, R.string.short_video_disclosure, () -> {
                     try {
                         settings.updateShortVideo(!enabled);
                         refreshStatus();
                     } catch (RuntimeException unavailable) {
                         Toast.makeText(this, R.string.rules_locked, Toast.LENGTH_LONG).show();
                     }
-                }).show();
+                });
     }
 
     private void editVisualMode() {
         if (settings == null || refuseIfRulesLocked() || Build.VERSION.SDK_INT < 34) return;
         boolean enabled = settings.snapshot().visualEnabled;
-        new AlertDialog.Builder(this).setTitle(enabled ? R.string.visual_disable : R.string.visual_enable)
-                .setMessage(R.string.visual_disclosure).setNegativeButton(android.R.string.cancel, null)
-                .setPositiveButton(R.string.save_rules, (dialog, which) -> {
+        showLayerConsent(enabled ? R.string.visual_disable : R.string.visual_enable,
+                R.string.visual_short, R.string.visual_disclosure, () -> {
                     try {
                         settings.updateVisual(!enabled);
                         refreshStatus();
                         if (!enabled && settings.snapshot().scannedApps.isEmpty()) chooseApps(true);
                     } catch (RuntimeException refused) { showRefusal(refused); }
-                }).show();
+                });
+    }
+
+    /** One short paragraph, then the full disclosure only for anyone who opens it. */
+    private void showLayerConsent(int titleRes, int shortRes, int fullRes, Runnable onAccept) {
+        LinearLayout form = new LinearLayout(this);
+        form.setOrientation(LinearLayout.VERTICAL);
+        form.setPadding(Ui.dp(this, 20), Ui.dp(this, 4), Ui.dp(this, 20), Ui.dp(this, 8));
+        form.addView(Ui.body(this, getString(shortRes)));
+        form.addView(Ui.disclosure(this, getString(R.string.full_disclosure),
+                getString(fullRes)).root, Ui.margins(this, 8, 0));
+        new AlertDialog.Builder(this).setTitle(titleRes).setView(form)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.save_rules, (dialog, which) -> onAccept.run()).show();
     }
 
     /** With adb's permission Hisn switches it; otherwise Settings has the same switch. */
@@ -2034,6 +2150,53 @@ public final class MainActivity extends Activity {
         showPrivate(dialog);
     }
 
+    /** Pick the weekdays a schedule starts on; a zero-day rule is not allowed. */
+    private void chooseScheduleDays(int[] days, Ui.SettingRow row) {
+        DayOfWeek[] week = DayOfWeek.values();
+        Locale locale = getResources().getConfiguration().getLocales().get(0);
+        LinearLayout form = new LinearLayout(this);
+        form.setOrientation(LinearLayout.VERTICAL);
+        form.setPadding(Ui.dp(this, 20), Ui.dp(this, 8), Ui.dp(this, 20), 0);
+        form.addView(Ui.caption(this, getString(R.string.schedule_days_help)));
+        boolean[] checked = new boolean[week.length];
+        for (int index = 0; index < week.length; index++) {
+            boolean on = (days[0] & DailyAppSchedule.bitOf(week[index])) != 0;
+            checked[index] = on;
+            CheckBox box = new CheckBox(this);
+            box.setText(week[index].getDisplayName(TextStyle.FULL, locale));
+            box.setTextColor(Ui.color(this, R.color.text_primary));
+            box.setTextSize(16);
+            box.setMinHeight(Ui.dp(this, 48));
+            box.setChecked(on);
+            int at = index;
+            box.setOnCheckedChangeListener((button, value) -> checked[at] = value);
+            form.addView(box);
+        }
+        ScrollView scroll = new ScrollView(this);
+        scroll.addView(form, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle(R.string.schedule_days_title)
+                .setView(scroll)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.schedule_save, null).create();
+        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                .setOnClickListener(view -> {
+                    int mask = 0;
+                    for (int index = 0; index < week.length; index++) {
+                        if (checked[index]) mask |= DailyAppSchedule.bitOf(week[index]);
+                    }
+                    if (mask == 0) {
+                        Toast.makeText(this, R.string.schedule_days_error, Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    days[0] = mask;
+                    row.setSummary(scheduleDays(this, mask));
+                    dialog.dismiss();
+                }));
+        showPrivate(dialog);
+    }
+
     private void editSchedule() {
         if (settings == null || refuseIfRulesLocked()) return;
         final DailyAppSchedule existing;
@@ -2043,6 +2206,7 @@ public final class MainActivity extends Activity {
             return;
         }
         int[] minutes = {existing.startMinute, existing.endMinute};
+        int[] days = {existing.days};
         boolean[] allApps = {existing.allApps};
         Set<String> selected = new LinkedHashSet<>(existing.apps);
         LinearLayout form = new LinearLayout(this);
@@ -2075,6 +2239,15 @@ public final class MainActivity extends Activity {
             minutes[1] = hour * 60 + minute;
             end.setText(getString(R.string.schedule_end, scheduleTime(minutes[1])));
         }, minutes[1] / 60, minutes[1] % 60, android.text.format.DateFormat.is24HourFormat(this)).show());
+
+        // The days the window starts on. A window that wraps past midnight
+        // carries into the following morning, so the row names the start day
+        // and the summary says "Every day" for the common case.
+        final Ui.SettingRow[] daysRow = {null};
+        daysRow[0] = Ui.settingRow(this, R.drawable.ic_calendar,
+                getString(R.string.schedule_days_title), scheduleDays(this, days[0]),
+                view -> chooseScheduleDays(days, daysRow[0]));
+        form.addView(daysRow[0].root, Ui.margins(this, 10, 0));
 
         // Two modes: block the apps below, or block everything except the apps below.
         Switch mode = Ui.toggle(this, getString(R.string.schedule_mode_list),
@@ -2127,7 +2300,7 @@ public final class MainActivity extends Activity {
                     }
                     try {
                         settings.updateSchedule(new DailyAppSchedule(
-                                enabled.isChecked(), minutes[0], minutes[1], selected, keep));
+                                enabled.isChecked(), minutes[0], minutes[1], selected, keep, days[0]));
                         dialog.dismiss();
                         refreshStatus();
                         Toast.makeText(this, R.string.rules_saved, Toast.LENGTH_SHORT).show();
@@ -2406,9 +2579,7 @@ public final class MainActivity extends Activity {
 
     private UninstallProtectionController.Status refreshUninstallState() {
         if (settings == null) {
-            setStatus(uninstallState, getString(R.string.policy_unavailable), Ui.ATTENTION);
-            Ui.setEnabledWithAlpha(uninstallAction, false);
-            managedState.setVisibility(View.GONE);
+            setHomeUninstall(Ui.ATTENTION);
             return null;
         }
         UninstallProtectionController.Status status = UninstallProtectionController.read(this);
@@ -2431,89 +2602,70 @@ public final class MainActivity extends Activity {
             // is the protection, and a running lock arms it on its own.
             boolean committed = ProtectionLock.locked(status.remainingMillis);
             boolean connected = TextGuardService.connected;
-            CharSequence label;
             int kind;
-            if (committed && !connected) {
-                label = getString(R.string.self_protection_state_lock_inactive);
-                kind = Ui.ATTENTION;
-            } else if (committed) {
-                // The lock states carry the remaining time; keep the format call
-                // on the exact resource so lint and the translator see the argument.
-                label = settings.installLock()
-                        ? getString(R.string.self_protection_state_lock_on_installs,
-                        Durations.remaining(this, status.remainingMillis))
-                        : getString(R.string.self_protection_state_lock_on,
-                        Durations.remaining(this, status.remainingMillis));
-                kind = Ui.ON;
-            } else if (!status.keepInstalled) {
-                label = getString(settings.installLock() ? R.string.self_protection_state_installs_only
-                        : R.string.self_protection_state_off);
-                kind = settings.installLock() ? Ui.ON : Ui.OFF;
-            } else if (connected) {
-                label = getString(settings.installLock() ? R.string.self_protection_state_on_installs
-                        : R.string.self_protection_state_on);
-                kind = Ui.ON;
-            } else {
-                label = getString(R.string.self_protection_state_inactive);
-                kind = Ui.ATTENTION;
-            }
-            setStatus(uninstallState, label, kind);
-            managedState.setVisibility(View.GONE);
-            Ui.setEnabledWithAlpha(uninstallAction, true);
+            if (committed && !connected) kind = Ui.ATTENTION;
+            else if (committed) kind = Ui.ON;
+            else if (!status.keepInstalled) kind = settings.installLock() ? Ui.ON : Ui.OFF;
+            else if (connected) kind = Ui.ON;
+            else kind = Ui.ATTENTION;
+            setHomeUninstall(kind);
             return status;
         }
-        int text;
-        int kind;
         switch (state) {
-            case ADMIN_ONLY: text = R.string.uninstall_state_admin; kind = Ui.OFF; break;
-            case READY: text = R.string.uninstall_state_ready; kind = Ui.OFF; break;
-            case PROTECTED:
-                text = R.string.uninstall_state_protected;
-                kind = Ui.ON;
-                break;
-            case OUT_OF_SYNC: text = R.string.uninstall_state_sync; kind = Ui.ATTENTION; break;
-            case UNAVAILABLE:
-            default:
-                text = status.error != null ? R.string.uninstall_state_error
-                        : R.string.uninstall_state_unavailable;
-                kind = status.error != null ? Ui.ATTENTION : Ui.OFF;
-                break;
+            case PROTECTED: setHomeUninstall(Ui.ON); break;
+            case OUT_OF_SYNC: setHomeUninstall(Ui.ATTENTION); break;
+            case UNAVAILABLE: setHomeUninstall(status.error != null ? Ui.ATTENTION : Ui.OFF); break;
+            default: setHomeUninstall(Ui.OFF); break;
         }
-        if (state == UninstallProtection.State.PROTECTED && status.remainingMillis > 0) {
-            setStatus(uninstallState, getString(R.string.uninstall_state_protected_commitment,
-                    Durations.remaining(this, status.remainingMillis)), Ui.ON);
-        } else {
-            setStatus(uninstallState, getString(text), kind);
-        }
-        Ui.setEnabledWithAlpha(uninstallAction, true);
-        refreshManagedState(status);
         return status;
     }
 
-    /**
-     * The managed lockdown is a second opt-in on top of the uninstall block.
-     * Show the platform readback, never the saved switch alone: a restriction
-     * Android did not accept is described as out of sync, not as protection.
-     */
-    private void refreshManagedState(UninstallProtectionController.Status status) {
-        if (managedState == null) return;
-        if (!status.deviceOwner) {
-            managedState.setVisibility(View.GONE);
-            return;
+    private void setHomeUninstall(int kind) {
+        CharSequence summary = getString(kind == Ui.ON ? R.string.state_on
+                : kind == Ui.ATTENTION ? R.string.state_attention : R.string.state_off);
+        int color = Ui.color(this, kind == Ui.ON ? R.color.success
+                : kind == Ui.ATTENTION || (kind == Ui.OFF && BuildConfig.SELF_PROTECTION)
+                ? R.color.warning : R.color.text_tertiary);
+        if (homeUninstallRow != null) {
+            homeUninstallRow.setSummary(summary);
+            homeUninstallRow.summary.setTextColor(color);
         }
-        managedState.setVisibility(View.VISIBLE);
-        if (!status.managedLockdown) {
-            setStatus(managedState, getString(R.string.managed_lockdown_off), Ui.OFF);
-        } else if (!status.managedMatches()) {
-            setStatus(managedState, getString(R.string.managed_lockdown_sync), Ui.ATTENTION);
-        } else if (status.desiredRestrictions().isEmpty()) {
-            setStatus(managedState, getString(R.string.managed_lockdown_idle), Ui.OFF);
-        } else if (status.managedStrict && Build.VERSION.SDK_INT >= 29) {
-            setStatus(managedState, getString(R.string.managed_lockdown_strict_on), Ui.ON);
-        } else if (status.suspendBlocked) {
-            setStatus(managedState, getString(R.string.managed_lockdown_suspend_on), Ui.ON);
-        } else {
-            setStatus(managedState, getString(R.string.managed_lockdown_on), Ui.ON);
+        if (settingsUninstallRow != null) {
+            settingsUninstallRow.setSummary(summary);
+            settingsUninstallRow.summary.setTextColor(color);
+        }
+    }
+
+    /** The full platform state, shown only inside the uninstall dialog. */
+    private CharSequence uninstallLongStatus(UninstallProtectionController.Status status) {
+        if (BuildConfig.SELF_PROTECTION && !status.deviceOwner) {
+            boolean committed = ProtectionLock.locked(status.remainingMillis);
+            boolean connected = TextGuardService.connected;
+            if (settings == null) return getString(R.string.policy_unavailable);
+            if (committed && !connected) return getString(R.string.self_protection_state_lock_inactive);
+            if (committed) return getString(settings.installLock()
+                            ? R.string.self_protection_state_lock_on_installs
+                            : R.string.self_protection_state_lock_on,
+                    Durations.remaining(this, status.remainingMillis));
+            if (!status.keepInstalled) return getString(settings.installLock()
+                    ? R.string.self_protection_state_installs_only : R.string.self_protection_state_off);
+            if (connected) return getString(settings.installLock()
+                    ? R.string.self_protection_state_on_installs : R.string.self_protection_state_on);
+            return getString(R.string.self_protection_state_inactive);
+        }
+        switch (status.state()) {
+            case ADMIN_ONLY: return getString(R.string.uninstall_state_admin);
+            case READY: return getString(R.string.uninstall_state_ready);
+            case PROTECTED:
+                return status.remainingMillis > 0
+                        ? getString(R.string.uninstall_state_protected_commitment,
+                        Durations.remaining(this, status.remainingMillis))
+                        : getString(R.string.uninstall_state_protected);
+            case OUT_OF_SYNC: return getString(R.string.uninstall_state_sync);
+            case UNAVAILABLE:
+            default:
+                return getString(status.error != null ? R.string.uninstall_state_error
+                        : R.string.uninstall_state_unavailable);
         }
     }
 
@@ -2529,6 +2681,9 @@ public final class MainActivity extends Activity {
         form.addView(Ui.body(this, getString(status.deviceOwner ? R.string.uninstall_dialog_body_owner
                 : screenGuard ? R.string.self_protection_dialog_body
                 : R.string.uninstall_dialog_body_unmanaged)));
+        TextView current = Ui.caption(this, uninstallLongStatus(status));
+        current.setPadding(0, Ui.dp(this, 12), 0, 0);
+        form.addView(current);
 
         Switch keepSwitch = null;
         if (status.deviceOwner || screenGuard) {
@@ -2602,9 +2757,11 @@ public final class MainActivity extends Activity {
         form.addView(Ui.divider(this), Ui.margins(this, 14, 2));
         Button primary;
         if (status.deviceOwner || screenGuard) {
-            primary = Ui.button(this, R.string.uninstall_apply, Ui.ButtonKind.PRIMARY);
+            boolean turningOn = !settings.uninstallLock();
+            primary = Ui.button(this, turningOn ? R.string.uninstall_turn_on : R.string.uninstall_apply,
+                    Ui.ButtonKind.PRIMARY);
             primary.setOnClickListener(view -> {
-                applyUninstallChoice(keep != null && keep.isChecked(),
+                applyUninstallChoice(turningOn || (keep != null && keep.isChecked()),
                         install != null ? install.isChecked() : settings.installLock(),
                         status.deviceOwner && lockdown != null
                                 ? lockdown.isChecked() : settings.managedLockdown(),
@@ -2763,13 +2920,10 @@ public final class MainActivity extends Activity {
     }
 
     private void refreshBatteryState() {
-        if (batteryState == null || batteryAction == null) return;
-        android.os.PowerManager power = (android.os.PowerManager) getSystemService(POWER_SERVICE);
-        boolean ignoring = power != null
-                && power.isIgnoringBatteryOptimizations(getPackageName());
-        batteryState.setText(ignoring ? R.string.battery_allowed : R.string.battery_limited);
-        batteryState.setTextColor(Ui.color(this, ignoring ? R.color.text_secondary : R.color.warning));
-        batteryAction.setVisibility(ignoring ? View.GONE : View.VISIBLE);
+        if (batteryRow == null) return;
+        boolean ignoring = Permissions.battery(this);
+        batteryRow.setSummary(getString(ignoring ? R.string.settings_battery_on
+                : R.string.settings_battery_off));
     }
 
     private void requestBatteryExemption() {
@@ -2811,17 +2965,10 @@ public final class MainActivity extends Activity {
 
     // ------------------------------------------------------------------ window privacy and lifecycle
 
-    /** The word tester is private while it is on screen holding the person's text. */
-    private void updateTesterPrivacy() {
-        testerPrivate = selectedPage == PAGE_GUIDE && testerRule != null
-                && (testerRule.length() > 0 || testerSample.length() > 0);
-        updateSecure();
-    }
-
     /** FLAG_SECURE: Android leaves the window out of screenshots, screen recording and the recent-apps
      * preview. It does not hide the text from accessibility services or from anyone looking. */
     private void updateSecure() {
-        boolean secure = privateDialogs > 0 || testerPrivate;
+        boolean secure = privateDialogs > 0;
         if (secure == secured) return; // Each flag change relayouts the window; not on every keystroke.
         secured = secure;
         if (secure) getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);

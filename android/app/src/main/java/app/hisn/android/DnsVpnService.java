@@ -33,6 +33,7 @@ import app.hisn.core.DnsTcpServer;
 import app.hisn.core.DomainSeed;
 import app.hisn.core.DomainPolicy;
 import app.hisn.core.EncryptedDnsProviders;
+import app.hisn.core.EncryptedDnsResolvers;
 import app.hisn.core.Ipv4DnsPacket;
 import app.hisn.core.Ipv4TcpPacket;
 import app.hisn.core.TlsDnsTransport;
@@ -105,6 +106,7 @@ public final class DnsVpnService extends VpnService {
     public static final AtomicLong udpTruncated = new AtomicLong();
     /** Unrelated packets (other protocols or ports, IPv6): counted, never treated as DNS failures. */
     public static final AtomicLong ignoredPackets = new AtomicLong();
+    public static final AtomicLong blockedResolvers = new AtomicLong();
     public static final AtomicLong refusedTlsConnections = new AtomicLong();
     public static final AtomicLong recoveries = new AtomicLong();
     /** Strict Private DNS (a provider hostname) on the underlying network lets system DNS bypass this tunnel. */
@@ -265,7 +267,7 @@ public final class DnsVpnService extends VpnService {
             getSystemService(NotificationManager.class).cancel(ALERT_ID);
             domains = 0; blocked.set(0); forwarded.set(0); rewritten.set(0); errors.set(0); lastDnsFailure = "NONE";
             unsupportedPackets.set(0); malformedPackets.set(0); unsupportedTcpPackets.set(0);
-            ignoredPackets.set(0); refusedTlsConnections.set(0); recoveries.set(0);
+            ignoredPackets.set(0); blockedResolvers.set(0); refusedTlsConnections.set(0); recoveries.set(0);
             networkChanges.set(0); networkMonitoring = false; privateDnsStrict = false;
             cancelledNetworkRequests.set(0);
             tcpQueries.set(0); tcpReplies.set(0); udpTruncated.set(0);
@@ -399,8 +401,13 @@ public final class DnsVpnService extends VpnService {
                 domains = seed.domainCount;
                 readPrivateDns();
                 Builder builder = new Builder().setSession(getString(R.string.dns_notification_title))
-                        .setMtu(1500).addAddress("10.111.0.1", 32).addDnsServer("10.111.0.2")
-                        .addRoute("10.111.0.2", 32).allowFamily(OsConstants.AF_INET6);
+                        .setMtu(1500).addAddress("10.111.0.1", 32).addAddress("fd00:111::1", 128)
+                        .addDnsServer("10.111.0.2").addRoute("10.111.0.2", 32)
+                        .allowFamily(OsConstants.AF_INET6);
+                // Apps that hard-code a public encrypted-DNS resolver never ask Hisn's
+                // server. Route those fixed addresses here and drop them in the reader.
+                for (String address : EncryptedDnsResolvers.ipv4()) builder.addRoute(address, 32);
+                for (String address : EncryptedDnsResolvers.ipv6()) builder.addRoute(address, 128);
                 // Apps targeting API 29+ get a metered VPN by default, which makes Wi-Fi look metered to
                 // every app. false inherits the underlying network's metered state instead.
                 if (Build.VERSION.SDK_INT >= 29) builder.setMetered(false);
@@ -470,6 +477,11 @@ public final class DnsVpnService extends VpnService {
                         int size = input.read(buffer);
                         if (size <= 0) continue;
                         byte[] raw = Arrays.copyOf(buffer, size);
+                        if (EncryptedDnsResolvers.blocks(raw)) {
+                            blockedResolvers.incrementAndGet();
+                            ignoredPackets.incrementAndGet();
+                            continue;
+                        }
                         Ipv4DnsPacket packet = Ipv4DnsPacket.parse(raw, SERVER);
                         if (packet == null) {
                             Ipv4TcpPacket tcpPacket = Ipv4TcpPacket.parse(raw, SERVER);

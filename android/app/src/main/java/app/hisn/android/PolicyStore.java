@@ -442,6 +442,7 @@ public final class PolicyStore {
                 && a.schedule.startMinute == b.schedule.startMinute
                 && a.schedule.endMinute == b.schedule.endMinute
                 && a.schedule.allApps == b.schedule.allApps
+                && a.schedule.days == b.schedule.days
                 && a.schedule.apps.equals(b.schedule.apps);
     }
 
