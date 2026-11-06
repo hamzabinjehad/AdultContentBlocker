@@ -48,6 +48,11 @@ globalThis.chrome = {
     setBadgeBackgroundColor: async values => { actionWrites.push(["color", values]); if (rejectAction) throw new Error("badge color rejected"); },
     setTitle: async values => { actionWrites.push(["title", values]); if (rejectAction) throw new Error("action title rejected"); actionTitle = values.title; },
   },
+  extension: {
+    // The Mac app records this beside the heartbeat. A test that leaves it
+    // undefined would never exercise the field the bridge now stores.
+    isAllowedIncognitoAccess: (callback) => callback(true),
+  },
   runtime: {
     onInstalled: { addListener() {} }, onStartup: { addListener() {} },
     onMessage: { addListener(fn) { listener = fn; } },
@@ -86,8 +91,13 @@ const fire = (ms) => {
   for (const t of timers.filter(timer => !timer.cancelled && timer.ms === ms)) { t.cancelled = true; t.fn(); }
 };
 let nativeCalls = 0;
+const nativeMessages = [];
 const realSend = globalThis.chrome.runtime.sendNativeMessage;
-globalThis.chrome.runtime.sendNativeMessage = async (...a) => { nativeCalls++; return realSend(...a); };
+globalThis.chrome.runtime.sendNativeMessage = async (...a) => {
+  nativeCalls++;
+  nativeMessages.push(a[1]);
+  return realSend(...a);
+};
 const { DEFAULT_STATE, booted, ensureAlarms, restoreWorkerProtection, ALARMS, ensureBlocked, applyRules, toolbarStatus } = await import("../background.js");
 const OPTIONS = { id: "hisnextid", url: "chrome-extension://hisnextid/options.html" };
 const PAGE = { id: "hisnextid", url: "https://evil.example/", tab: { id: 3 }, frameId: 0 };
@@ -96,6 +106,8 @@ let checks = 0;
 function check(ok, label) { checks++; if (!ok) throw new Error(label); }
 await booted;
 await toolbarStatus.whenIdle();
+check(nativeMessages.some((message) => message?.incognitoAllowed === true),
+      "the heartbeat reports whether the extension may run in private windows");
 check(actionWrites.some(([kind, values]) => kind === "badge" && values.text === "?")
       && actionBadge === "" && actionTitle === "Hisn — Rules and registrations verified",
       "worker starts checking and clears toolbar uncertainty only after verified browser application");

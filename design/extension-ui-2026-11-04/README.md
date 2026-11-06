@@ -37,6 +37,9 @@ unchanged.
     quiet "Close this tab" link;
   - the correction/report section is a collapsed disclosure;
   - reduced motion keeps the orb still and hides the halo.
+- **Less copy.** Page subtitles, shortcut descriptions and the long language
+  list are gone. Long hints, block reasons and pause reminders were shortened;
+  the block page now carries one short reminder and one short breath cue.
 - **Arabic and RTL.** All new copy has Arabic; logical properties and mirrored
   chevrons keep the layout RTL-correct. The new labels were checked in the
   Arabic preview and the settings suite's Arabic viewport checks.
@@ -56,13 +59,16 @@ coverage or enforcement evidence.
 Additional after captures: [Arabic popup](after-popup-light-ar.png),
 [Arabic overview](after-options-overview-ar.png),
 [Rules](after-options-rules.png), [Visual checks](after-options-media.png),
-[Content options](after-options-settings.png), and
+[Content options](after-options-settings.png),
+[Arabic content options](after-options-settings-ar.png), and
 [Arabic block page](after-blocked-ar.png). Real-worker captures:
 [dark popup](after-popup-dark-en.png), [dark Arabic popup](after-popup-dark-ar.png),
-[dark overview](after-options-overview-dark-en.png), and
-[dark rules](after-options-rules-dark-en.png). The dark overview was captured
-while the worker was still in its initial "Checking protection" state. Narrow
-captures: [Arabic overview](after-options-overview-narrow-ar.png),
+[dark overview](after-options-overview-dark-en.png),
+[dark rules](after-options-rules-dark-en.png),
+[dark content options](after-options-settings-dark-en.png),
+[dark lock](after-options-lock-dark-en.png) and
+[dark block page](after-blocked-dark-en.png). Narrow captures:
+[Arabic overview](after-options-overview-narrow-ar.png),
 [visual checks](after-options-media-narrow.png) and
 [block page](after-blocked-narrow.png) at 390 px width.
 
@@ -78,13 +84,11 @@ captures: [Arabic overview](after-options-overview-narrow-ar.png),
   recorded rather than hidden.
 - A real-worker Playwright run in Helium loaded the unpacked extension,
   verified the baseline and repair readback, and captured the dark English and
-  dark Arabic popup plus the dark overview and rules page. It stopped at the
-  visual-checks page because Helium reports the local visual engine as
-  `unsupported-runtime`; the media page therefore remains visually unverified
-  in this environment. Branded Chrome 156 refused to load the unpacked
-  extension, so the full `ui-qa.cjs` actual-toolbar scenario did not run.
-- The dark overview capture is in its initial "Checking protection" state, not
-  a settled active state.
+  dark Arabic popup, dark overview, rules, content options, lock and block page.
+  The visual-checks page was not captured because Helium reports the local
+  visual engine as `unsupported-runtime`; branded Chrome 156 refused to load
+  the unpacked extension, so the full `ui-qa.cjs` actual-toolbar scenario did
+  not run.
 - No user study, screen-reader audit or physical-device review was run.
 
 ## Research input

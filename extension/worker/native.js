@@ -28,6 +28,40 @@ function withTimeout(promise, ms, what) {
 }
 
 /**
+ * Whether the browser lets this extension run in private/incognito windows.
+ *
+ * Chrome's "Allow in Incognito" switch is the person's, not the extension's:
+ * a spanning manifest makes one process possible but does not turn the
+ * permission on. The Mac app records this answer and shows a private-window
+ * gap it would otherwise miss. Older Chrome versions and other engines may
+ * not offer the API; `undefined` means "no answer", not "not allowed".
+ */
+function incognitoAccess() {
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (value) => {
+      if (done) return;
+      done = true;
+      resolve(value);
+    };
+    try {
+      if (typeof chrome?.extension?.isAllowedIncognitoAccess !== "function") {
+        finish(undefined);
+        return;
+      }
+      // A browser API that never calls back must not hold the heartbeat.
+      const timer = setTimeout(() => finish(undefined), 1000);
+      chrome.extension.isAllowedIncognitoAccess((allowed) => {
+        clearTimeout(timer);
+        finish(!!allowed);
+      });
+    } catch {
+      finish(undefined);
+    }
+  });
+}
+
+/**
  * Ask the native app for the authoritative lock state.
  *
  * A malformed or timed-out reply is a visibility failure first: it marks the
@@ -37,9 +71,13 @@ function withTimeout(promise, ms, what) {
  */
 export async function pollNative() {
   let reply;
+  let incognitoAllowed;
   try {
+    incognitoAllowed = await incognitoAccess();
+    const message = { type: "getLockState" };
+    if (typeof incognitoAllowed === "boolean") message.incognitoAllowed = incognitoAllowed;
     reply = await withTimeout(
-      chrome.runtime.sendNativeMessage(NATIVE_HOST, { type: "getLockState" }),
+      chrome.runtime.sendNativeMessage(NATIVE_HOST, message),
       NATIVE_TIMEOUT_MS, "native host");
     if (!reply || !Number.isFinite(reply.lockUntil)) {
       throw new Error("malformed reply");

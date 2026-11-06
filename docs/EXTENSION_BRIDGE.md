@@ -5,7 +5,10 @@ clock, the app-owned site lists and the browser guard. The two talk over
 Chromium **native messaging**: the extension calls
 `chrome.runtime.sendNativeMessage("app.hisn.bridge", {type: "getLockState"})`,
 and the app's `HisnBridge` executable replies. A silent bridge during a lock is
-treated as tampering, so the extension fails closed to Strict.
+treated as tampering, so the extension fails closed to Strict. From 1.5.2 the
+request may also carry `incognitoAllowed` (whether Chrome lets the extension
+run in private windows); the bridge records it beside the heartbeat and older
+bridges ignore the extra field.
 
 ## Why there are two extension IDs
 

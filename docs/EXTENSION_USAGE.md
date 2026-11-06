@@ -3,7 +3,7 @@
 ## Without the macOS app
 
 Prepare a clean, browser-specific unpacked folder with
-`python3 extension/prepare_unpacked.py --out dist/hisn-unpacked-chrome-1.5.0`,
+`python3 extension/prepare_unpacked.py --out dist/hisn-unpacked-chrome-1.5.2`,
 then select that folder in **Load unpacked** in a supported Chromium browser.
 Use a fresh output name for another browser or update; existing folders are
 never overwritten. This excludes generated `_metadata` caches while preserving

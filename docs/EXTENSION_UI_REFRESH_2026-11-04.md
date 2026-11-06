@@ -84,6 +84,7 @@ score. The pass kept those constraints.
 | One status, one next action | Popup and overview keep one status hero; the primary action is unchanged, and secondary actions are quieter. | Matches Hisn's existing hierarchy and the competitors' calm dashboards. |
 | Grouped, scannable cards | Six protection layers became distinct icon tiles with state pills; settings cards got consistent headers, spacing and switches. | The state answer is faster to read than five identical shield rows. |
 | Close-tab parity | The block page gained a quiet "Close this tab" link beside the existing new-tab and settings actions. | Gives the same low-friction exit the competitor block page offers, without adding an unlock path. |
+| Fewer words at the decision point | Page subtitles, shortcut descriptions and the long language list were removed; long hints, block reasons and pause reminders were shortened. | The redesigned screens still carried too much explanatory text; the shortest truthful sentence now carries the decision. |
 | Calm depth | Soft status tints, a restrained ambient background, one radius/shadow scale and a breathing halo. | Visual calm supports the product's stated goal; it does not imitate any competitor's palette, logo, font or animation. |
 
 The localized labels added in this pass are Hisn's own English and Arabic
@@ -115,11 +116,11 @@ copy: `opt.overview.sub`, `opt.mode.standardShortDesc`,
 - Most visual captures of Hisn were made in an isolated preview harness with a
   mocked extension bridge, not a real toolbar popup. A separate real-worker
   Playwright run in Helium verified the actual worker baseline and repair
-  readback and captured the dark English/Arabic popup and dark overview/rules
-  page. That run stopped at the visual-checks page because Helium reports the
-  local visual engine as `unsupported-runtime`; branded Chrome 156 refused to
-  load the unpacked extension, so the full `ui-qa.cjs` actual-toolbar scenario
-  did not complete. The dark overview capture is in its initial checking state.
+  readback and captured the dark English/Arabic popup plus the dark overview,
+  rules, content options, lock and block page. The visual-checks page was not
+  captured because Helium reports the local visual engine as
+  `unsupported-runtime`; branded Chrome 156 refused to load the unpacked
+  extension, so the full `ui-qa.cjs` actual-toolbar scenario did not complete.
 - `extension/test/run.sh`, `popup.html`, `blocked.html` and a clean run of
   `settings.html` passed. The settings harness's file-import checks are
   timing-sensitive and also failed intermittently with the pre-change files
