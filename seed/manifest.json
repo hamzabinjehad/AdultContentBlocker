@@ -1,61 +1,61 @@
 {
   "artifacts": {
     "dnr_block_rules.json": {
-      "bytes": 9617635,
-      "sha256": "bd2cfc8224b2b0c7f68077d9753e73848a0c26e2827b4c336517cd727cf1f95e"
+      "bytes": 9653297,
+      "sha256": "7b33f5b6f06d8c9e010e51237432094b71db622baadcf7135c0c2bbf8146f2b1"
     },
     "dnr_keyword_rules.json": {
       "bytes": 79908,
-      "sha256": "efb2750c8e92e08992cd1aa47d5f16825bc6938a1fa2e93172b4ccc39a55e45d"
+      "sha256": "606f1b077a73d2b0fd629924af43b313c207e545019b3fb404b0593da6fdedd6"
     },
     "domains.index": {
       "bytes": 8192,
       "sha256": "7d2c7ac4888bfd75cd5f56e8d61f69595121183afc81556c876732fd3782c62f"
     },
     "domains.packed": {
-      "bytes": 135370919,
-      "sha256": "d2182946a9a454385f7a6193eac656b86f35491b274fde09c8e569a1adc339fe"
+      "bytes": 135417799,
+      "sha256": "f87b87970c6caeeb7d0a7e73db5e1d00dd424a1bea24659a23d55635792e91e7"
     },
     "domains.packed.deflate": {
-      "bytes": 21373172,
-      "sha256": "8a2a65ec1a8e539f9d58f74669d1bbb236f9a473a0090ae441b5e4b42134d5eb"
+      "bytes": 21387974,
+      "sha256": "3503621ae04b7e08bc4b33943d4b76450ade70883fe07d193b5cfd2a207f2201"
     },
     "domains.txt": {
-      "bytes": 135371051,
-      "sha256": "5b7ebd1e51a30728727846922471163828ef98d8f35abe1a8fe80aaa034fd341"
+      "bytes": 135417931,
+      "sha256": "0ff6043510aa8db49784d2de20e503a3683dcbd6e2f7a1081350fcc268474f1e"
     },
     "domains_core.txt": {
-      "bytes": 4285312,
-      "sha256": "afe96421f9941153f300dc03a1962535d33e943db0f37d0d1d79111ea4765d50"
+      "bytes": 4310290,
+      "sha256": "0ab6bd7855ff1af32b11275735ff2f95c48099a394cf5617aba5d1a11641b3ed"
     },
     "terms.json": {
       "bytes": 288545,
       "sha256": "70a59c9d3089ff9d0e39f34ab49dc489597eca889e9c18e161418ea797b18d9b"
     }
   },
-  "built_at": "2026-10-30T17:33:25+00:00",
+  "built_at": "2026-11-06T11:36:27+00:00",
   "core_capacity": 240000,
-  "core_domain_count": 239885,
+  "core_domain_count": 236586,
   "core_fill": {
-    "candidates": 269625,
+    "candidates": 268308,
     "capacity": 240000,
-    "core_after": 239885,
-    "core_sources_collapsed": 125309,
-    "deferred": 1261,
-    "eligible": 115952,
+    "core_after": 236586,
+    "core_sources_collapsed": 121185,
+    "deferred": 80,
+    "eligible": 115596,
     "enabled": true,
-    "headroom": 115,
+    "headroom": 3414,
     "min_sources": 2,
-    "room": 114691,
-    "selected": 114691,
+    "room": 118815,
+    "selected": 115516,
     "sources": [
       "blocklistproject-porn",
       "oisd-nsfw"
     ]
   },
   "dnr_keyword_rule_count": 116,
-  "dnr_rule_count": 480,
-  "domain_count": 5276448,
+  "dnr_rule_count": 474,
+  "domain_count": 5280200,
   "host_term_count": 116,
   "never_block_removed": 20,
   "schema": 1,
@@ -71,12 +71,12 @@
       "ok": true
     },
     {
-      "domains": 92336,
+      "domains": 88187,
       "id": "hagezi-nsfw",
       "ok": true
     },
     {
-      "domains": 490036,
+      "domains": 492477,
       "id": "oisd-nsfw",
       "ok": true
     },

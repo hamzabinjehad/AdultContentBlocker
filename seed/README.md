@@ -7,7 +7,7 @@ enforces something rather than nothing.
 ```
 manifest.json       the signed manifest of the build this was cut from
 manifest.json.sig   its Ed25519 signature
-domains_core.txt    the budgeted core tier (239,885 domains in v5)
+domains_core.txt    the budgeted core tier (236,586 domains in v5)
 terms.json          the keyword layer, for domains registered since the build
 ```
 
@@ -35,7 +35,7 @@ is re-cut. Without the private key on your machine, dispatch the *Build and
 publish blocklist* workflow with **refresh_seed** ticked and CI commits the
 re-signed bundle to your branch.
 
-The full 5,276,448-domain list is not committed; `blocklist/build.py` builds it and CI
+The full 5,280,200-domain list is not committed; `blocklist/build.py` builds it and CI
 publishes it to the `lists` branch. The version in this manifest is also where
 CI starts its counter when nothing has been published yet, so a fresh install
 never rejects the first published list as a rollback.
