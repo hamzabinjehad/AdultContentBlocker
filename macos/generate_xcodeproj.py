@@ -83,6 +83,11 @@ APP_SOURCES = SHARED + [
     "Hisn/LockManager.swift",
     "Hisn/NativeMessagingInstaller.swift",
     "Hisn/ProtectionStatus.swift",
+    # Private-window evidence, the narrow profile, and its consent sheet.
+    "Hisn/PrivateBrowsing.swift",
+    "Hisn/ManagedMode.swift",
+    "Hisn/PrivateBrowsingView.swift",
+    "Hisn/WelcomeView.swift",
     # During a lock, closes browsers Hisn is not running inside.
     "Hisn/BrowserGuard.swift",
     "Hisn/BrowserProfileEvidence.swift",
@@ -143,6 +148,8 @@ TEST_SOURCES = ["HisnTests/BlocklistStoreTests.swift",
                 "HisnTests/OnboardingTests.swift",
                 "HisnTests/NetworkDNSProbeTests.swift",
                 "HisnTests/PauseTests.swift",
+                "HisnTests/PrivateBrowsingTests.swift",
+                "HisnTests/ManagedModeTests.swift",
                 "HisnTests/SiteCheckerTests.swift",
                 "../shared/tests/MirroredRuleStoreTests.swift"]
 
@@ -392,8 +399,8 @@ def main() -> int:
     app_settings = {
         "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
         "CODE_SIGN_ENTITLEMENTS": "Hisn/Hisn.entitlements",
-        "CURRENT_PROJECT_VERSION": "25",
-        "MARKETING_VERSION": "1.1.13",
+        "CURRENT_PROJECT_VERSION": "28",
+        "MARKETING_VERSION": "1.1.16",
         "ENABLE_HARDENED_RUNTIME": "YES",
         "INFOPLIST_FILE": "Hisn/Info.plist",
         "PRODUCT_BUNDLE_IDENTIFIER": APP_BUNDLE_ID,
@@ -404,8 +411,8 @@ def main() -> int:
     }
     filter_settings = {
         "CODE_SIGN_ENTITLEMENTS": "HisnFilter/HisnFilter.entitlements",
-        "CURRENT_PROJECT_VERSION": "25",
-        "MARKETING_VERSION": "1.1.13",
+        "CURRENT_PROJECT_VERSION": "28",
+        "MARKETING_VERSION": "1.1.16",
         "ENABLE_HARDENED_RUNTIME": "YES",
         "INFOPLIST_FILE": "HisnFilter/Info.plist",
         "PRODUCT_BUNDLE_IDENTIFIER": FILTER_BUNDLE_ID,
@@ -415,8 +422,8 @@ def main() -> int:
     }
     bridge_settings = {
         "CODE_SIGN_ENTITLEMENTS": "HisnBridge/HisnBridge.entitlements",
-        "CURRENT_PROJECT_VERSION": "25",
-        "MARKETING_VERSION": "1.1.13",
+        "CURRENT_PROJECT_VERSION": "28",
+        "MARKETING_VERSION": "1.1.16",
         "ENABLE_HARDENED_RUNTIME": "YES",
         "GENERATE_INFOPLIST_FILE": "YES",
         "PRODUCT_NAME": '"$(TARGET_NAME)"',

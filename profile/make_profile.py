@@ -137,6 +137,28 @@ def p_removal_password(password: str) -> dict:
     )
 
 
+def p_hisn_managed(organization_name: str) -> dict:
+    """
+    Mark the app as managed by an organization.
+
+    This is a custom settings payload for the app's own preference domain
+    (`app.hisn.Hisn`). The app reads it with
+    `CFPreferencesAppValueIsForced`; a `defaults write` cannot fake it. In
+    managed mode the app hides local removal and weakening controls and shows
+    the organization name. The payload does not make the profile unremovable:
+    that is `PayloadRemovalDisallowed` plus MDM/account separation, and an
+    administrator can still remove any local profile.
+    """
+    name = organization_name.strip() or "Your organization"
+    return payload(
+        "app.hisn.Hisn", "managed",
+        "Hisn Managed Mode",
+        f"Marks this Mac as managed by {name}. Local removal and weakening controls in Hisn are disabled.",
+        HisnManaged=True,
+        OrganizationName=name,
+    )
+
+
 def p_restrictions() -> dict:
     """
     com.apple.applicationaccess.
@@ -455,6 +477,8 @@ def build(args: argparse.Namespace) -> tuple[dict, str]:
     payloads = [
         p_dns(args.doh, args.dns_addresses, args.supervised),
         p_restrictions(),
+        *([p_hisn_managed(getattr(args, "organization_name", "Your organization"))]
+           if getattr(args, "managed", False) else []),
         p_removal_password(removal_password),
         p_chrome(args.extension_id, args.update_url,
                  lock_devtools=not args.allow_devtools,
@@ -557,6 +581,13 @@ def main() -> int:
     ap.add_argument("--separate-layers", action="store_true",
                     help="Write separate network and browser profiles instead of one combined file. Does not install or apply them; each can remain after the app or the other profile is removed.")
     ap.add_argument("--display-name", default="Hisn Content Protection")
+    ap.add_argument("--managed", action="store_true",
+                    help="Mark the Mac as managed by an organization. The app "
+                         "hides local removal and weakening controls; the "
+                         "profile still needs MDM/account separation and "
+                         "PayloadRemovalDisallowed to be hard to remove.")
+    ap.add_argument("--organization-name", default="Your organization",
+                    help="Name shown in Hisn's managed banner (with --managed).")
     ap.add_argument("--supervised", action="store_true",
                     help="Emit supervision-only keys (ProhibitDisablement).")
     ap.add_argument("--allow-devtools", action="store_true",

@@ -1,6 +1,49 @@
 import Foundation
 import CryptoKit
 
+/// The filter's aggregate count of denied flows for one local day.
+///
+/// A number and a day key, nothing else: no host, app, path or address is
+/// recorded anywhere, and the type has no field that could carry one. The day
+/// key is the local "yyyy-MM-dd" the count belongs to. `count(on:)` answers
+/// zero for any other day, so a filter that stays up across midnight starts
+/// the new day at zero without a timer or a reset write. The count is capped:
+/// past the cap the app can only say "many", and an unbounded counter in a
+/// long-running extension buys nothing.
+public struct BlockedFlowTally: Equatable {
+    public static let cap = 9_999
+
+    private var day: String
+    private var count: Int
+
+    public init(now: Date = Date(), calendar: Calendar = .current) {
+        day = Self.dayKey(for: now, calendar: calendar)
+        count = 0
+    }
+
+    /// Denied flows on the local day `now` belongs to.
+    public func count(on now: Date, calendar: Calendar = .current) -> Int {
+        Self.dayKey(for: now, calendar: calendar) == day ? count : 0
+    }
+
+    /// Count one denied flow, moving to a new day first when needed.
+    public mutating func note(at now: Date, calendar: Calendar = .current) {
+        let key = Self.dayKey(for: now, calendar: calendar)
+        if key != day {
+            day = key
+            count = 0
+        }
+        if count < Self.cap { count += 1 }
+    }
+
+    /// The local calendar day as "yyyy-MM-dd" — the key both sides compare.
+    public static func dayKey(for date: Date, calendar: Calendar = .current) -> String {
+        let parts = calendar.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d",
+                      parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
+    }
+}
+
 /// Loads, verifies and answers questions about the blocklist.
 ///
 /// Two hard requirements shape this type:
@@ -84,6 +127,29 @@ public final class BlocklistStore {
     private var keywordExemptHosts: Set<String> = []
     private var _version: Int = 0
     private var _domainCount: Int = 0
+
+    // MARK: - Blocked-flow tally
+
+    /// Denied flows so far this local day, or zero. An aggregate count ONLY:
+    /// no host, app or address is ever recorded anywhere in this store. The
+    /// tally exists so the app can say the filter is acting without building
+    /// the browsing history this product must never keep. It resets when the
+    /// local day changes and when the filter process restarts, and it is
+    /// evidence of nothing but itself.
+    public func blockedFlowsToday(now: Date = Date()) -> (day: String, count: Int) {
+        let tally = tallyLock.withLock { self.tally }
+        return (BlockedFlowTally.dayKey(for: now), tally.count(on: now))
+    }
+
+    private let tallyLock = NSLock()
+    private var tally = BlockedFlowTally()
+
+    /// Count one denied flow. The list queue is concurrent and this is a
+    /// write, so the tally has its own lock rather than serialising every
+    /// lookup in the packet path.
+    private func noteDeniedFlow(_ now: Date) {
+        tallyLock.withLock { tally.note(at: now) }
+    }
 
     private let queue = DispatchQueue(label: "app.hisn.blocklist",
                                       attributes: .concurrent)
@@ -378,12 +444,23 @@ public final class BlocklistStore {
 
     /// Identification is lazy because it involves Security framework work.
     /// The callback must not call back into this store.
+    ///
+    /// A deny verdict also feeds the aggregate tally — the only "what
+    /// happened" this store ever records, and a count, never a host. Allowed
+    /// flows, the overwhelming majority, take the same path as before.
     public func shouldBlockFlow(host: String?, sourceAppIdentifier: () -> String?) -> Bool {
         queue.sync {
+            let verdict: Bool
             if !networkBlockedApps.isEmpty, let app = sourceAppIdentifier(),
-               networkBlockedApps.contains(app) { return true }
-            guard let host, !host.isEmpty else { return networkStrict }
-            return networkStrict ? !allowedInStrictMode(host) : blocked(host)
+               networkBlockedApps.contains(app) {
+                verdict = true
+            } else if let host, !host.isEmpty {
+                verdict = networkStrict ? !allowedInStrictMode(host) : blocked(host)
+            } else {
+                verdict = networkStrict
+            }
+            if verdict { noteDeniedFlow(Date()) }
+            return verdict
         }
     }
 

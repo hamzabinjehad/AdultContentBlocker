@@ -108,13 +108,12 @@ public final class FilterSync: ObservableObject {
         if Set(merged.guardAllowed) != Set(authority.guardAllowed) {
             requests.append(.setGuardAllowed(merged.guardAllowed))
         }
-        for request in requests {
-            guard let reply = await FilterLink.shared.submit(request) else { break }
-            latest = reply.status
-            if !reply.accepted {
-                lastRefusal = reply.refusal
-                NSLog("[Hisn] filter refused %@: %@", "\(request)", reply.refusal ?? "")
-            }
+        let applied = await Self.apply(requests, from: latest) { request in
+            await FilterLink.shared.submit(request)
+        }
+        latest = applied.status
+        if let refusal = applied.refusals.last {
+            lastRefusal = refusal
         }
 
         // Mirrors ← merged. The lock is ADOPTED — the authority's identity
@@ -162,6 +161,35 @@ public final class FilterSync: ObservableObject {
     /// Kick a sync without waiting for it — for call sites that just saved.
     public nonisolated static func soon() {
         Task { @MainActor in await FilterSync.shared.sync() }
+    }
+
+    /// Run the queued authority requests in order.
+    ///
+    /// A reply that never arrives — the filter restarting, an IPC hiccup —
+    /// used to abandon the REST of the batch until the next 20-second tick,
+    /// so one dropped answer could leave the hand lists unpushed for that
+    /// whole window. Each request carries a full state rather than a patch,
+    /// so the batch can continue past a nil answer: whatever was missed is
+    /// reconciled by the same comparison on the next tick, and only ever in
+    /// the stricter direction.
+    ///
+    /// Static and seam-injected so a test can script the transport without
+    /// standing up a filter.
+    nonisolated static func apply(_ requests: [PolicyRequest],
+                                  from latest: PolicyStatus,
+                                  submit: (PolicyRequest) async -> PolicyResponse?) async
+        -> (status: PolicyStatus, refusals: [String]) {
+        var status = latest
+        var refusals: [String] = []
+        for request in requests {
+            guard let reply = await submit(request) else { continue }
+            status = reply.status
+            if !reply.accepted {
+                refusals.append(reply.refusal ?? "")
+                NSLog("[Hisn] filter refused %@: %@", "\(request)", reply.refusal ?? "")
+            }
+        }
+        return (status, refusals)
     }
 }
 

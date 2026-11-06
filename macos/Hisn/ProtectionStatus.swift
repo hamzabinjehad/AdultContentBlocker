@@ -57,6 +57,12 @@ public struct ProtectionEvidence: Equatable {
     /// Live authority diagnostics, separate from whether its process runs.
     public var policyRecoveryRequired: Bool
     public var policyPersistenceError: String?
+    /// Installed browsers whose private windows are not covered. Nil when the
+    /// caller did not read private-browsing evidence, so unit tests and
+    /// surfaces that do not own browser policy keep the old layer set.
+    public var privateBrowsing: PrivateBrowsingStatus?
+    /// The managed-organization profile, when one supplied a forced flag.
+    public var managedMode: ManagedMode?
 
     /// Fewer than this and the hosts file is not a blocklist, it is a few
     /// hand-written lines.
@@ -70,7 +76,9 @@ public struct ProtectionEvidence: Equatable {
     public init(filter: FilterEvidence, extensionLastSeen: Date?, now: Date = Date(),
                 hostsEntries: Int? = nil, filterCanRun: Bool = true,
                 filterBlock: FilterBuildBlock? = nil,
-                policyRecoveryRequired: Bool = false, policyPersistenceError: String? = nil) {
+                policyRecoveryRequired: Bool = false, policyPersistenceError: String? = nil,
+                privateBrowsing: PrivateBrowsingStatus? = nil,
+                managedMode: ManagedMode? = nil) {
         self.filter = filter
         self.extensionLastSeen = extensionLastSeen
         self.now = now
@@ -79,6 +87,8 @@ public struct ProtectionEvidence: Equatable {
         self.filterBlock = filterBlock
         self.policyRecoveryRequired = policyRecoveryRequired
         self.policyPersistenceError = policyPersistenceError
+        self.privateBrowsing = privateBrowsing
+        self.managedMode = managedMode
     }
 
     /// Read fresh from the shared container — the only honest source, since
@@ -113,6 +123,20 @@ public struct ProtectionEvidence: Equatable {
             filterBlock: FilterLink.shared.buildBlock,
             policyRecoveryRequired: authority?.record.recoveryRequired ?? false,
             policyPersistenceError: authority?.persistenceError)
+    }
+
+    /// The same evidence plus the browser policy the window shows. Kept
+    /// separate from `current` so tests and non-browser surfaces do not
+    /// inherit whatever browsers happen to be installed on the test host.
+    public static func live(filter: FilterController.Availability,
+                            authority: PolicyStatus? = nil,
+                            privateBrowsing: PrivateBrowsingStatus? = PrivateBrowsingStatus.current(),
+                            managedMode: ManagedMode? = ManagedMode.current())
+        -> ProtectionEvidence {
+        var evidence = current(filter: filter, authority: authority)
+        evidence.privateBrowsing = privateBrowsing
+        evidence.managedMode = managedMode
+        return evidence
     }
 }
 
@@ -164,6 +188,7 @@ public enum StatusAction: Equatable {
     case updateList
     case installExtension
     case reconnectExtension
+    case privateBrowsing
 
     public var title: String {
         switch self {
@@ -172,6 +197,7 @@ public enum StatusAction: Equatable {
         case .updateList:         return String(localized: "Download the block list")
         case .installExtension:   return String(localized: "How to connect a browser")
         case .reconnectExtension: return String(localized: "Reconnect the browser")
+        case .privateBrowsing:    return String(localized: "Review private windows")
         }
     }
 }
@@ -213,6 +239,27 @@ public struct ProtectionStatus: Equatable {
     public let headline: String
     public let summary: String
     public let layers: [Layer]
+    public let managed: ManagedMode?
+
+    public var isManaged: Bool { managed?.isManaged == true }
+
+    /// The line under the headline. `summary` names every broken layer and is
+    /// right for VoiceOver and diagnostics; this is the short version the
+    /// Overview can show without turning the status hero into a paragraph.
+    public var heroSummary: String {
+        if level == .active || level == .checking || isPrivateWindowOnlyGap { return summary }
+        let ready = layers.filter(\.ok).count
+        return String(localized: "\(ready) of \(layers.count) layers ready. The rest need attention.")
+    }
+
+    /// Every enforcement layer except private windows is ready. The
+    /// browser-extension status is green, which is exactly when a person
+    /// would otherwise assume private windows are covered too.
+    public var isPrivateWindowOnlyGap: Bool {
+        level == .partial
+            && layers.contains { $0.id == "privateBrowsing" && $0.state == .problem }
+            && layers.allSatisfy { $0.ok || $0.id == "privateBrowsing" }
+    }
 
     /// Would a lock started now actually block anything? Consulted by the
     /// Lock page, which repeats the answer at the point of decision.
@@ -234,6 +281,12 @@ public struct ProtectionStatus: Equatable {
         }
         let ext = Self.extensionLayer(lastSeen: evidence.extensionLastSeen, now: evidence.now)
         let hosts = evidence.hostsEntries.map(Self.hostsLayer)
+        let privateLayer = evidence.privateBrowsing.flatMap(Self.privateBrowsingLayer)
+        let managedLayer: Layer? = evidence.managedMode?.isManaged == true
+            ? Layer(name: String(localized: "Organization policy"),
+                    detail: String(localized: "Managed by \(evidence.managedMode?.displayName ?? ManagedMode.none.displayName). Local removal and weakening controls are disabled."),
+                    state: .ok, action: nil)
+            : nil
         let policy: Layer?
         if evidence.policyRecoveryRequired {
             policy = Layer(name: String(localized: "Saved protection policy"),
@@ -247,7 +300,11 @@ public struct ProtectionStatus: Equatable {
             policy = nil
         }
         layers = [filter.identified(as: "filter")] + (hosts.map { [$0.identified(as: "hosts")] } ?? [])
-            + [ext.identified(as: "extension")] + (policy.map { [$0.identified(as: "policy")] } ?? [])
+            + [ext.identified(as: "extension")]
+            + (privateLayer.map { [$0.identified(as: "privateBrowsing")] } ?? [])
+            + (managedLayer.map { [$0.identified(as: "managed")] } ?? [])
+            + (policy.map { [$0.identified(as: "policy")] } ?? [])
+        managed = evidence.managedMode
 
         // A hosts fallback only covers clients using the OS resolver. Keep
         // it useful, but never promote it to the system filter's coverage.
@@ -256,10 +313,18 @@ public struct ProtectionStatus: Equatable {
             level = .checking
             headline = String(localized: "Checking status")
             summary = String(localized: "Reading the system filter’s state…")
-        } else if filter.ok && ext.ok && policy == nil {
+        } else if filter.ok && ext.ok && (privateLayer?.ok ?? true) && policy == nil {
             level = .active
             headline = String(localized: "Protection active")
-            summary = String(localized: "The system filter and the browser extension are both running.")
+            summary = privateLayer == nil
+                ? String(localized: "The system filter and the browser extension are both running.")
+                : String(localized: "The system filter, the browser extension and private windows are all covered.")
+        } else if privateLayer?.state == .problem && filter.ok && ext.ok && policy == nil {
+            // This is the specific state the person must not miss: every other
+            // layer is green, but a private window has no Hisn inside it.
+            level = .partial
+            headline = String(localized: "Private windows are open")
+            summary = String(localized: "Everything else is running. Private windows skip the browser extension, so Hisn cannot check those pages.")
         } else if okCount > 0 {
             level = .partial
             headline = String(localized: "Partially active")
@@ -324,6 +389,32 @@ public struct ProtectionStatus: Equatable {
             return Layer(name: name, detail: String(localized: "Running"),
                          state: .ok, action: nil)
         }
+    }
+
+    private static func privateBrowsingLayer(_ status: PrivateBrowsingStatus) -> Layer? {
+        // Safari and hardened forks have no supported policy; the browser
+        // guard still acts on them, but they are not a policy layer. Listing
+        // them here would keep every Mac permanently "partial" and teach the
+        // person to ignore the status.
+        guard status.hasControllableBrowser else { return nil }
+        let name = String(localized: "Private windows")
+        let openNames = status.openNames
+        if !status.open.isEmpty {
+            return Layer(name: name,
+                         detail: String(localized: "Open in \(openNames) — those windows have no Hisn inside"),
+                         state: .problem, action: .privateBrowsing)
+        }
+        let disabledNames = status.disabled.map(\.name).formatted(.list(type: .and))
+        let extensionNames = status.extensionChecked.map(\.name).formatted(.list(type: .and))
+        let detail: String
+        if !status.disabled.isEmpty && !status.extensionChecked.isEmpty {
+            detail = String(localized: "Off in \(disabledNames); checked by the extension in \(extensionNames)")
+        } else if !status.disabled.isEmpty {
+            detail = String(localized: "Off in \(disabledNames)")
+        } else {
+            detail = String(localized: "Checked by the extension in \(extensionNames)")
+        }
+        return Layer(name: name, detail: detail, state: .ok, action: nil)
     }
 
     private static func extensionLayer(lastSeen: Date?, now: Date) -> Layer {

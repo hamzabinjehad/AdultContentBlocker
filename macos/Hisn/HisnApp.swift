@@ -62,12 +62,18 @@ struct HisnApp: App {
                 }
             }
         // Started at login the app has no window; this is the way back to it,
-        // and the lock's time left without opening anything.
+        // and the lock's time left without opening anything. While a lock
+        // runs, the countdown replaces the app's name — the same fact the
+        // sidebar and the menu show, readable without a click.
         MenuBarExtra {
             StatusMenu()
         } label: {
             Label {
-                Text("Hisn")
+                if let remaining = icon.remainingText {
+                    Text(verbatim: remaining)
+                } else {
+                    Text("Hisn")
+                }
             } icon: {
                 Image(nsImage: icon.image)
             }
@@ -153,6 +159,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Task { @MainActor in ScreenGrayscale.shared.start() }
         Task { @MainActor in
             await FilterController.shared.reassertIfNeeded()
+        }
+        // The list check is the app's only launch-time network traffic. The
+        // previous list stays enforced, so waiting a few seconds costs no
+        // protection and keeps the first frame quiet — the launch no longer
+        // looks like an app that is "downloading something" before it has
+        // explained itself. The hourly tick still runs afterwards.
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 30 * 1_000_000_000)
             await ListUpdater.shared.updateIfStale()
         }
         // Started at login by the LaunchAgent (`macos/install.sh`): run the

@@ -16,13 +16,19 @@ struct ContentView: View {
     @StateObject private var lock = LockManager.shared
     @StateObject private var filter = FilterController.shared
     @ObservedObject private var navigation = AppNavigation.shared
-    @State private var showSiteCheck = false
+    @State private var activeSheet: ActiveSheet?
+    @AppStorage("hisn.welcome.completed") private var welcomeCompleted = false
+
+    private enum ActiveSheet: String, Identifiable {
+        case siteCheck, privateBrowsing, welcome
+        var id: String { rawValue }
+    }
 
     private var page: Page? { navigation.page }
 
     /// The pinned Lock action bar reads the same status the Overview does.
     private var lockPageStatus: ProtectionStatus {
-        ProtectionStatus(ProtectionEvidence.current(filter: filter.availability,
+        ProtectionStatus(ProtectionEvidence.live(filter: filter.availability,
                                                     authority: FilterSync.shared.status))
     }
 
@@ -104,16 +110,17 @@ struct ContentView: View {
                     switch page ?? .overview {
                     case .overview:
                         OverviewPage(lock: lock, filter: filter,
-                                     openSiteCheck: { showSiteCheck = true }) { navigation.page = $0 }
+                                     openSiteCheck: { activeSheet = .siteCheck }) { navigation.page = $0 }
                     case .setup:
                         SetupPage(filter: filter) { navigation.page = $0 }
                     case .rules:
                         RulesPage(isLocked: lock.isLocked,
-                                  openSiteCheck: { showSiteCheck = true })
+                                  managed: ManagedMode.current(),
+                                  openSiteCheck: { activeSheet = .siteCheck })
                     case .lock:
                         LockPage(lock: lock, filter: filter)
                     case .settings:
-                        SettingsPage(isLocked: lock.isLocked)
+                        SettingsPage(isLocked: lock.isLocked, managed: ManagedMode.current())
                     }
                 }
                 }
@@ -133,7 +140,7 @@ struct ContentView: View {
             .navigationSubtitle(Text((page ?? .overview).subtitle))
             .toolbar {
                 ToolbarItemGroup(placement: .primaryAction) {
-                    Button { showSiteCheck = true } label: {
+                    Button { activeSheet = .siteCheck } label: {
                         Label("Check a website", systemImage: "magnifyingglass")
                     }
                     .help("Check a website")
@@ -147,21 +154,53 @@ struct ContentView: View {
             }
         }
         .frame(minWidth: 760, minHeight: 560)
-        .sheet(isPresented: $showSiteCheck) {
-            SiteCheckSheet(isLocked: lock.isLocked,
-                           strict: lock.isLocked && lock.state.mode == "strict")
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .siteCheck:
+                SiteCheckSheet(isLocked: lock.isLocked,
+                               strict: lock.isLocked && lock.state.mode == "strict")
+            case .privateBrowsing:
+                PrivateBrowsingSheet()
+            case .welcome:
+                WelcomeView()
+            }
         }
         .onChange(of: navigation.siteCheckRequested) { requested in
             guard requested else { return }
             navigation.siteCheckRequested = false
-            showSiteCheck = true
+            activeSheet = .siteCheck
+        }
+        .onChange(of: navigation.privateBrowsingRequested) { requested in
+            guard requested else { return }
+            navigation.privateBrowsingRequested = false
+            activeSheet = .privateBrowsing
+        }
+        .onChange(of: navigation.welcomeRequested) { requested in
+            guard requested else { return }
+            navigation.welcomeRequested = false
+            activeSheet = .welcome
         }
         .onAppear {
             // A menu-bar request can arrive before this window exists; the
             // change handler only sees requests made after the view appears.
             if navigation.siteCheckRequested {
                 navigation.siteCheckRequested = false
-                showSiteCheck = true
+                activeSheet = .siteCheck
+            }
+            if navigation.privateBrowsingRequested {
+                navigation.privateBrowsingRequested = false
+                activeSheet = .privateBrowsing
+            }
+            if navigation.welcomeRequested {
+                navigation.welcomeRequested = false
+                activeSheet = .welcome
+            }
+            // A login-agent launch creates a window only to close it again.
+            // Presenting the welcome there marked it seen before the person
+            // ever saw it; the menu bar's Open Hisn asks for it explicitly.
+            if !welcomeCompleted, !AppDelegate.isHostingTests,
+               !AppDelegate.isAgentManaged {
+                activeSheet = .welcome
             }
         }
         .task {
@@ -347,7 +386,7 @@ private struct SidebarStatus: View {
     let open: () -> Void
 
     var body: some View {
-        let protection = ProtectionStatus(ProtectionEvidence.current(
+        let protection = ProtectionStatus(ProtectionEvidence.live(
             filter: filter.availability, authority: sync.status))
         Button(action: open) {
             VStack(alignment: .leading, spacing: 5) {
@@ -420,6 +459,21 @@ private struct PageSection<Content: View>: View {
             content
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// A quiet line that says the protections are not the person's to remove.
+/// It is informational: the app has already hidden the local bypass controls.
+private struct ManagedBanner: View {
+    let managed: ManagedMode
+
+    var body: some View {
+        Label(String(localized: "Managed by \(managed.displayName). Your organization controls these protections."),
+              systemImage: "building.2.fill")
+            .font(.callout.weight(.medium))
+            .foregroundStyle(Color.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityElement(children: .combine)
     }
 }
 
@@ -507,7 +561,7 @@ private struct OverviewPage: View {
     }
 
     private var protectionEvidence: ProtectionEvidence {
-        ProtectionEvidence.current(filter: filter.availability, authority: sync.status)
+        ProtectionEvidence.live(filter: filter.availability, authority: sync.status)
     }
 
     private var laptopReadiness: LaptopSetupReadiness {
@@ -536,6 +590,9 @@ private struct OverviewPage: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
+            if let managed = protection.managed, managed.isManaged {
+                ManagedBanner(managed: managed)
+            }
             ForEach(guardian.alerts) { alert in
                 Label(String(localized: "\(alert.name) is about to close.") + " "
                       + BrowserGuard.message(name: alert.name, reason: alert.reason),
@@ -546,6 +603,9 @@ private struct OverviewPage: View {
             }
 
             // The answer, then the one place that explains anything missing.
+            // The private-window gap is a tile and a primary action inside
+            // this card; repeating it as a second card below made the same
+            // fact appear three times on one screen.
             protectionCard
 
             // Every warning sits immediately under the status it qualifies,
@@ -647,14 +707,16 @@ private struct OverviewPage: View {
         .sheet(isPresented: $showBrowserHelp) { BrowserSetupHelp() }
         .onAppear {
             rememberReadiness(protection)
-            showLayerDetails = shouldShowLayerDetails(protection)
+            // The hero and its one action carry the answer; the evidence is
+            // one click away. Auto-opening a long diagnostic list on every
+            // problem is what made the Overview read as a wall of text.
+            showLayerDetails = false
         }
         .onChange(of: lock.now) { _ in
             clockAssessment = clockMonitor.assessment(wall: Date(), uptime: CommitmentClock.continuousTime)
         }
         .onChange(of: protection) { current in
             rememberReadiness(current)
-            showLayerDetails = shouldShowLayerDetails(current)
         }
         .task { await readSetup() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
@@ -682,6 +744,23 @@ private struct OverviewPage: View {
         setup = SetupChecklist(evidence)
     }
 
+    /// Denied flows the filter itself reports for today, or nil before it has
+    /// answered and when the reply belongs to another day. A count only: the
+    /// filter keeps no host, app or address, so it is safe to show beside the
+    /// evidence.
+    private var todayBlocked: Int? {
+        guard let health = sync.status?.health,
+              health.blockedToday > 0,
+              health.blockedDay == BlockedFlowTally.dayKey(for: Date()) else { return nil }
+        return health.blockedToday
+    }
+
+    private var privateLayer: ProtectionStatus.Layer? {
+        protection.layers.first { $0.id == "privateBrowsing" }
+    }
+
+    private var privateGap: Bool { privateLayer?.state == .problem }
+
     private var protectionCard: some View {
         Card {
             VStack(alignment: .leading, spacing: 14) {
@@ -691,7 +770,7 @@ private struct OverviewPage: View {
                         Text(protection.headline)
                             .font(.title2.weight(.semibold))
                             .accessibilityAddTraits(.isHeader)
-                        Text(protection.summary)
+                        Text(protection.heroSummary)
                             .font(.callout)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -708,14 +787,31 @@ private struct OverviewPage: View {
                 // real alternative, so a missing layer never competes with
                 // starting a lock for the same click.
                 HStack(spacing: 10) {
-                    Button(primaryActionTitle) { goTo(primaryActionPage) }
+                    if privateGap {
+                        Button("Prevent private browsing…") {
+                            AppNavigation.shared.privateBrowsingRequested = true
+                        }
                         .buttonStyle(.borderedProminent)
                         .controlSize(.large)
-                        .disabled(primaryActionDisabled)
-                    if let secondaryAction {
-                        Button(secondaryAction.title) { secondaryAction.action() }
-                            .buttonStyle(.bordered)
+                        if lock.isLocked {
+                            Button("Manage lock") { goTo(.lock) }
+                                .buttonStyle(.bordered)
+                                .controlSize(.large)
+                        } else if !laptopReadiness.isReady {
+                            Button("Review setup") { goTo(.setup) }
+                                .buttonStyle(.bordered)
+                                .controlSize(.large)
+                        }
+                    } else {
+                        Button(primaryActionTitle) { goTo(primaryActionPage) }
+                            .buttonStyle(.borderedProminent)
                             .controlSize(.large)
+                            .disabled(primaryActionDisabled)
+                        if let secondaryAction {
+                            Button(secondaryAction.title) { secondaryAction.action() }
+                                .buttonStyle(.bordered)
+                                .controlSize(.large)
+                        }
                     }
                     Spacer(minLength: 0)
                 }
@@ -725,6 +821,10 @@ private struct OverviewPage: View {
                         LabeledContent("Protection layers reporting ready",
                             value: "\(protection.layers.filter { $0.ok }.count) / \(protection.layers.count)")
                             .accessibilityIdentifier("plan.configuredLayers")
+                        if let blocked = todayBlocked {
+                            LabeledContent("Blocked connections today", value: "\(blocked)")
+                                .accessibilityIdentifier("overview.blockedToday")
+                        }
                         Text("Readiness is not proof that every route is blocked. Router protection is checked separately.")
                             .font(.caption).foregroundStyle(.secondary)
                         ForEach(protection.layers) { layer in
@@ -748,10 +848,6 @@ private struct OverviewPage: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Protection: \(protection.headline). \(protection.summary)")
-    }
-
-    private func shouldShowLayerDetails(_ status: ProtectionStatus) -> Bool {
-        status.hasProblems || status.layers.contains { !$0.ok } || status.level == .checking
     }
 
     /// The main call to action follows the actual state: finish setup when a
@@ -788,10 +884,14 @@ private struct OverviewPage: View {
         return ("Take a pause…", { PauseWindowController.shared.show() })
     }
 
-    /// Three tiles answer "which layers are ready?" in the same glance as the
-    /// headline. Details are one disclosure down; a problem opens it.
+    /// One tile per layer, in two columns. The old single row held three
+    /// short names; with private windows added, four tiles in one row
+    /// truncated "Hosts-file blocklist" and "Browser extension" at the
+    /// window's minimum width.
     private var layerTiles: some View {
-        HStack(spacing: 8) {
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: 8),
+                            GridItem(.flexible(), spacing: 8)],
+                  spacing: 8) {
             ForEach(protection.layers) { layer in
                 LayerTile(layer: layer)
             }
@@ -923,6 +1023,9 @@ private struct OverviewPage: View {
                     browser and make sure the Hisn extension is turned on; \
                     this row updates within a minute.
                     """)
+
+            case .privateBrowsing:
+                AppNavigation.shared.privateBrowsingRequested = true
             }
         }
     }
@@ -1293,7 +1396,7 @@ struct SetupPage: View {
     @State private var copied: String?
     @State private var expandedStages: Set<ProtectedSetup.Stage.ID> = []
     @State private var lastChecked: Date?
-    @State private var privateProfileNotice: String?
+    @State private var privateStatus = PrivateBrowsingStatus.current(force: true)
     @AppStorage("hisn.setup.administratorConfirmed") private var administratorConfirmed = false
     @AppStorage("hisn.setup.recoveryConfirmed") private var recoveryConfirmed = false
 
@@ -1303,8 +1406,10 @@ struct SetupPage: View {
     }
 
     private var protectionEvidence: ProtectionEvidence {
-        ProtectionEvidence.current(filter: filter.availability, authority: sync.status)
+        ProtectionEvidence.live(filter: filter.availability, authority: sync.status)
     }
+
+    private var managed: ManagedMode { protectionEvidence.managedMode ?? .none }
 
     private var laptopReadiness: LaptopSetupReadiness {
         LaptopSetupReadiness(protection: protectionEvidence,
@@ -1335,6 +1440,9 @@ struct SetupPage: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
+            if managed.isManaged {
+                ManagedBanner(managed: managed)
+            }
             // One card answers both questions the page exists for: is this Mac
             // protected, and how far through setup am I? The page title bar
             // already says "Protected Setup", so a second heading saying it
@@ -1365,35 +1473,36 @@ struct SetupPage: View {
                                 .font(.callout.weight(.medium))
                                 .foregroundStyle(.secondary)
                         }
-                        Text("These checks cover this Mac and make protection harder to disable. Network protection, other devices, and recovery access are checked separately.")
-                            .font(.caption).foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
             }
 
             // Private windows are the one profile item with a narrow fix: a
-            // single policy disables them without touching DNS. Offer that
-            // instead of sending the person to the full hardening profile for
-            // one setting.
-            if let openPrivate = privateWindowsOpen {
+            // single policy disables them without touching DNS. The sheet
+            // lists every installed browser, asks once, and reports what it
+            // cannot control instead of pretending.
+            if !privateStatus.open.isEmpty {
                 Card {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Label(String(localized: "Private windows are open in \(openPrivate)."),
-                              systemImage: "eye.slash")
-                            .font(.headline)
-                        Text("A small profile disables private and incognito windows in those browsers. It changes nothing else — no DNS, no guest windows.")
-                            .font(.callout).foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                        HStack(alignment: .firstTextBaseline, spacing: 12) {
-                            Button("Create the private-windows profile…") { createPrivateWindowsProfile() }
-                                .controlSize(.large)
-                            if let notice = privateProfileNotice {
-                                Text(notice)
-                                    .font(.caption).foregroundStyle(.secondary)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
+                    HStack(alignment: .top, spacing: 14) {
+                        Image(systemName: "eye.slash.fill")
+                            .font(.title2)
+                            .foregroundStyle(Color.orange)
+                            .frame(width: 38, height: 38)
+                            .background(Color.orange.opacity(0.12), in: Circle())
+                            .accessibilityHidden(true)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Private windows are open in \(privateStatus.openNames).")
+                                .font(.headline)
+                            Text("Those windows skip the browser extension. One small profile disables them and changes nothing else.")
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
+                        Spacer(minLength: 12)
+                        Button("Prevent private browsing…") {
+                            AppNavigation.shared.privateBrowsingRequested = true
+                        }
+                        .controlSize(.large)
                     }
                 }
             }
@@ -1421,7 +1530,7 @@ struct SetupPage: View {
                                 Toggle("A trusted person keeps the separate administrator password, and I use only this standard account.", isOn: $administratorConfirmed)
                                     .toggleStyle(.checkbox)
                                     .fixedSize(horizontal: false, vertical: true)
-                                    .disabled(lock.isLocked || stage.steps.contains { $0.state != .done })
+                                    .disabled(lock.isLocked || managed.isManaged || stage.steps.contains { $0.state != .done })
                                 Text("Confirmed by you. Hisn can check account permissions, but cannot know who holds a password.")
                                     .font(.callout).foregroundStyle(.secondary)
                                     .fixedSize(horizontal: false, vertical: true)
@@ -1584,23 +1693,6 @@ struct SetupPage: View {
         }
     }
 
-    /// Names of installed browsers whose private windows are not locked, or
-    /// nil when there are none.
-    private var privateWindowsOpen: String? {
-        let names = (checklist?.browsers ?? []).filter { !$0.incognitoLocked }.map(\.name)
-        guard !names.isEmpty else { return nil }
-        return names.formatted(.list(type: .and))
-    }
-
-    private func createPrivateWindowsProfile() {
-        do {
-            try PrivateWindowsProfile.openForInstallation()
-            privateProfileNotice = String(localized: "Approve “Hisn private windows disabled” in System Settings › Device Management, then Check again.")
-        } catch {
-            privateProfileNotice = error.localizedDescription
-        }
-    }
-
     private func openSystemSettings(_ pane: String) {
         guard let url = URL(string: "x-apple.systempreferences:\(pane)") else { return }
         if !NSWorkspace.shared.open(url) {
@@ -1631,6 +1723,8 @@ struct SetupPage: View {
         // The filter can change while disk/DNS evidence is being collected.
         evidence.systemFilterRunning = LaptopSetupReadiness.filterIsReady(protectionEvidence)
         checklist = SetupChecklist(evidence)
+        PrivateBrowsingStatus.invalidateCache()
+        privateStatus = PrivateBrowsingStatus.current(force: true)
         lastChecked = Date()
     }
 }
@@ -1948,7 +2042,7 @@ private struct LockPage: View {
     /// Would a lock started now block anything? Read from the same status the
     /// Overview shows, so the two can never disagree.
     private var protectionStatus: ProtectionStatus {
-        ProtectionStatus(ProtectionEvidence.current(filter: filter.availability,
+        ProtectionStatus(ProtectionEvidence.live(filter: filter.availability,
                                                     authority: FilterSync.shared.status))
     }
 
@@ -2338,11 +2432,20 @@ private struct ScheduleSection: View {
 /// missed.
 private struct RulesPage: View {
     let isLocked: Bool
+    let managed: ManagedMode
     let openSiteCheck: () -> Void
+
+    private var restricted: Bool { isLocked || managed.isManaged }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 30) {
-            if isLocked {
+            if managed.isManaged {
+                ManagedBanner(managed: managed)
+                Text("You can add blocks and remove allowances. Removing a block or adding an allowance requires your administrator.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else if isLocked {
                 Label("""
                       A lock is running. You can add blocks and remove \
                       allowances; the reverse waits until it ends.
@@ -2355,7 +2458,7 @@ private struct RulesPage: View {
             // The lists a person came here to edit come first. The browser
             // guide is real, but it is a second visit, not a landing page:
             // three paragraphs of prose pushed every control below the fold.
-            SiteListsSection(isLocked: isLocked)
+            SiteListsSection(isLocked: restricted)
             Divider()
             // A read-only question about the lists just read, kept next to
             // them rather than buried in the guide.
@@ -2369,9 +2472,9 @@ private struct RulesPage: View {
             .buttonStyle(.plain)
             .accessibilityIdentifier("rules.siteCheck")
             Divider()
-            UserBlocksSection(isLocked: isLocked)
+            UserBlocksSection(isLocked: restricted)
             Divider()
-            BrowsersSection(isLocked: isLocked)
+            BrowsersSection(isLocked: restricted)
             Divider()
             BrowserFirstGuide()
         }
@@ -3080,6 +3183,7 @@ struct BrowsersSection: View {
 /// only that half — nothing here can approve anything by itself.
 struct PartnerSection: View {
     let isLocked: Bool
+    let managed: ManagedMode
 
     @State private var keyText = ""
     @State private var current = PartnerService.currentKey()
@@ -3109,15 +3213,18 @@ struct PartnerSection: View {
                 Text("Check with your partner that their page shows the same fingerprint.")
                     .font(.caption).foregroundStyle(.secondary)
             }
-            if !isLocked || current == nil {
+            if (!isLocked && !managed.isManaged) || current == nil {
                 HStack {
                     TextField("HISN-PK-…", text: $keyText)
                         .textFieldStyle(.roundedBorder)
                         .font(.body.monospaced())
                     Button(current == nil ? "Save key" : "Replace key") { save(keyText) }
-                        .disabled(keyText.trimmingCharacters(in: .whitespaces).isEmpty || isLocked)
+                        .disabled(keyText.trimmingCharacters(in: .whitespaces).isEmpty || isLocked || managed.isManaged)
                 }
-                if isLocked {
+                if managed.isManaged {
+                    Text("Managed by \(managed.displayName). Changing the partner key requires your administrator.")
+                        .font(.caption).foregroundStyle(.secondary)
+                } else if isLocked {
                     Text("A lock is running, so a partner key can only be added once it ends.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
@@ -3132,7 +3239,7 @@ struct PartnerSection: View {
 
     private func save(_ key: String?) {
         do {
-            try PartnerService.saveKey(key, locked: isLocked)
+            try PartnerService.saveKey(key, locked: isLocked || managed.isManaged)
             FilterSync.soon()
             current = PartnerService.currentKey()
             keyText = ""
@@ -3209,6 +3316,7 @@ struct PartnerReleaseCard: View {
 
 private struct SettingsPage: View {
     let isLocked: Bool
+    let managed: ManagedMode
 
     @State private var settings = Inspection.Settings.default
     @State private var saved = Inspection.Settings.default
@@ -3218,12 +3326,17 @@ private struct SettingsPage: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
+            if managed.isManaged {
+                ManagedBanner(managed: managed)
+            }
             // Each group is one card. A flat column of headings and dividers
             // gave every control the same weight and read as one long form;
             // grouped cards match the rest of the app.
             Card {
             PageSection(title: "Content checking",
-                    subtitle: isLocked
+                    subtitle: managed.isManaged
+                        ? "Managed by \(managed.displayName). You can turn checks on and raise sensitivity; the reverse requires your administrator."
+                        : isLocked
                         ? "A lock is running. You can turn checks on and raise sensitivity; the reverse waits until it ends."
                         : "These run on top of the site lists, and catch pages the lists have never seen.",
                     systemImage: "text.magnifyingglass") {
@@ -3280,14 +3393,18 @@ private struct SettingsPage: View {
             Card {
                 VStack(alignment: .leading, spacing: 14) {
                     ExtensionVisualGuidance()
-                    Button("How to connect a browser") { showBrowserHelp = true }
-                        .controlSize(.large)
+                    HStack(spacing: 14) {
+                        Button("How to connect a browser") { showBrowserHelp = true }
+                            .controlSize(.large)
+                        Button("How Hisn works") { AppNavigation.shared.welcomeRequested = true }
+                            .controlSize(.large)
+                    }
                 }
             }
 
-            Card { PartnerSection(isLocked: isLocked) }
+            Card { PartnerSection(isLocked: isLocked, managed: managed) }
 
-            Card { GrayscaleSection(isLocked: isLocked) }
+            Card { GrayscaleSection(isLocked: isLocked, managed: managed) }
 
             Card { LanguageSection() }
 
@@ -3305,7 +3422,7 @@ private struct SettingsPage: View {
 
     private func save() {
         do {
-            try Inspection.save(settings, locked: isLocked)
+            try Inspection.save(settings, locked: isLocked || managed.isManaged)
             FilterSync.soon()
             saved = settings
             isError = false
@@ -3321,6 +3438,7 @@ private struct SettingsPage: View {
 /// keeps it on.
 private struct GrayscaleSection: View {
     let isLocked: Bool
+    let managed: ManagedMode
     @ObservedObject private var grayscale = ScreenGrayscale.shared
 
     var body: some View {
@@ -3331,10 +3449,15 @@ private struct GrayscaleSection: View {
                 Text("Make the screen gray")
             }
             .toggleStyle(.switch)
-            .disabled(!ScreenGrayscale.isAvailable || (grayscale.isOn && isLocked))
+            .disabled(!ScreenGrayscale.isAvailable
+                      || (grayscale.isOn && (isLocked || managed.isManaged)))
 
             if !ScreenGrayscale.isAvailable {
                 Text("This version of macOS does not let Hisn change the screen. Turn on Grayscale in System Settings › Accessibility › Display › Color Filters instead.")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else if grayscale.isOn && managed.isManaged {
+                Text("Managed by \(managed.displayName). The screen stays gray while the organization requires it.")
                     .font(.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             } else if grayscale.isOn && isLocked {

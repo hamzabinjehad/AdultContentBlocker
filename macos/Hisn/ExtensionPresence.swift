@@ -28,14 +28,37 @@ public enum ExtensionPresence {
         BrowserCheckInIdentity.key(browser: bundleID, processID: processID).map { "extensionSeen.\($0)" }
     }
 
-    /// Called by the bridge on every heartbeat.
+    /// The extension's own answer to "may I run in private windows?" — the
+    /// one piece of evidence the Mac app cannot read from policy alone. It is
+    /// recorded alongside the heartbeat so a policy change in the browser is
+    /// followed within the same thirty-second check-in.
+    public static func incognitoKey(forBrowser bundleID: String) -> String {
+        "extensionIncognito.\(bundleID)"
+    }
+
+    public static func incognitoKey(forBrowser bundleID: String, processID: Int32) -> String? {
+        BrowserCheckInIdentity.key(browser: bundleID, processID: processID)
+            .map { "extensionIncognito.\($0)" }
+    }
+
+    public static let incognitoFreshFor: TimeInterval = 90
+
+    /// Called by the bridge on every heartbeat. `incognitoAllowed` is absent
+    /// from older extensions and is left untouched in that case rather than
+    /// being silently treated as "not allowed".
     public static func record(browser bundleID: String?, processID: Int32? = nil, at now: Date = Date(),
-                              in defaults: UserDefaults?) {
+                              incognitoAllowed: Bool? = nil, in defaults: UserDefaults?) {
         defaults?.set(now, forKey: anyBrowserKey)
         if let bundleID, !bundleID.isEmpty {
             defaults?.set(now, forKey: key(forBrowser: bundleID))
             if let processID, let processKey = key(forBrowser: bundleID, processID: processID) {
                 defaults?.set(now, forKey: processKey)
+            }
+            if let incognitoAllowed {
+                defaults?.set(incognitoAllowed, forKey: incognitoKey(forBrowser: bundleID))
+                if let processID, let processKey = incognitoKey(forBrowser: bundleID, processID: processID) {
+                    defaults?.set(incognitoAllowed, forKey: processKey)
+                }
             }
         }
     }
@@ -50,6 +73,22 @@ public enum ExtensionPresence {
                                 in defaults: UserDefaults?) -> Date? {
         guard let processKey = key(forBrowser: bundleID, processID: processID) else { return nil }
         return defaults?.object(forKey: processKey) as? Date
+    }
+
+    /// The browser's most recent incognito answer, only while its heartbeat is
+    /// fresh. A stale value is not evidence about the current browser session.
+    public static func incognitoAllowed(browser bundleID: String, in defaults: UserDefaults?,
+                                        now: Date = Date()) -> Bool? {
+        guard let defaults,
+              let seen = lastSeen(browser: bundleID, in: defaults) else { return nil }
+        let age = now.timeIntervalSince(seen)
+        // The bridge target compiles this file but not BrowserGuardPolicy;
+        // keep the skew bound local and the same sixty seconds.
+        guard age >= -60,
+              age < incognitoFreshFor,
+              let value = defaults.object(forKey: incognitoKey(forBrowser: bundleID)) as? Bool
+        else { return nil }
+        return value
     }
 
     public static func launchingBrowserPID() -> Int32? {

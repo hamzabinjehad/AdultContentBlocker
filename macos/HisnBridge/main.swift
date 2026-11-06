@@ -86,7 +86,13 @@ func handle(_ message: [String: Any]) -> [String: Any] {
         // Recorded per browser as well, for `BrowserGuard`: during a lock the
         // app closes a browser whose extension has stopped checking in, and
         // "checking in from somewhere" cannot tell it which browser that is.
-        ExtensionPresence.record(browser: launchingBrowser, processID: launchingBrowserPID, in: defaults)
+        // The extension also reports whether the browser lets it run in
+        // private windows. Policy is stronger when it is installed, but this
+        // is the only evidence available for an unpacked extension whose
+        // "Allow in Incognito" toggle the person controls by hand.
+        let incognitoAllowed = message["incognitoAllowed"] as? Bool
+        ExtensionPresence.record(browser: launchingBrowser, processID: launchingBrowserPID,
+                                 incognitoAllowed: incognitoAllowed, in: defaults)
         // And to the filter, over the code-signed channel, where the browser
         // guard trusts it: a `defaults write` loop can fake the stamp above,
         // not this one.

@@ -603,6 +603,42 @@ final class PolicyAuthorityTests: XCTestCase {
                                       requirement: nil).isConfigured)
         }
     }
+
+    // MARK: App-side reconciliation batch
+
+    /// One dropped XPC answer must not abandon the requests behind it: each
+    /// request is a whole state, so the batch can continue and the next tick
+    /// reconciles whatever the missing reply would have applied.
+    func testRequestBatchContinuesPastADroppedReply() async {
+        let status = A.status(applied([.setLists(customBlocks: ["a.example"], allowlist: [])]),
+                              health: FilterHealth(domainCount: 5))
+        let requests: [PolicyRequest] = [
+            .setLists(customBlocks: ["a.example"], allowlist: []),
+            .setUserBlocks(terms: ["gambling"], apps: ["com.example.app"]),
+        ]
+        var seen: [PolicyRequest] = []
+        let result = await FilterSync.apply(requests, from: status) { request in
+            seen.append(request)
+            guard request != requests[0] else { return nil }
+            return PolicyResponse(accepted: true, refusal: nil, status: status)
+        }
+        XCTAssertEqual(seen, requests, "the request after the dropped answer still runs")
+        XCTAssertEqual(result.status, status)
+        XCTAssertTrue(result.refusals.isEmpty)
+    }
+
+    func testRequestBatchCollectsRefusalsInOrder() async {
+        let status = A.status(PolicyRecord(), health: FilterHealth())
+        let requests: [PolicyRequest] = [
+            .setLists(customBlocks: ["a.example"], allowlist: []),
+            .setUserBlocks(terms: [], apps: []),
+        ]
+        let result = await FilterSync.apply(requests, from: status) { request in
+            let refusal = request == requests[0] ? "first refused" : "second refused"
+            return PolicyResponse(accepted: false, refusal: refusal, status: status)
+        }
+        XCTAssertEqual(result.refusals, ["first refused", "second refused"])
+    }
 }
 
 /// Two copies of policy, one answer: the stricter.

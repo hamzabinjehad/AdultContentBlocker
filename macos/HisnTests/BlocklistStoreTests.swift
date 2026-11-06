@@ -27,6 +27,72 @@ final class WebProtectionPolicyTests: XCTestCase {
     }
 }
 
+/// The aggregate denied-flow tally: a count and a day, nothing else.
+final class BlockedFlowTallyTests: XCTestCase {
+    private var calendar: Calendar = {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        return calendar
+    }()
+
+    private func date(_ year: Int, _ month: Int, _ day: Int,
+                      _ hour: Int = 12, _ minute: Int = 0) -> Date {
+        var parts = DateComponents()
+        parts.year = year; parts.month = month; parts.day = day
+        parts.hour = hour; parts.minute = minute
+        return calendar.date(from: parts)!
+    }
+
+    func testCountsFlowsOnTheSameLocalDay() {
+        var tally = BlockedFlowTally(now: date(2026, 11, 6), calendar: calendar)
+        for _ in 0..<3 { tally.note(at: date(2026, 11, 6, 18), calendar: calendar) }
+        XCTAssertEqual(tally.count(on: date(2026, 11, 6, 23), calendar: calendar), 3)
+    }
+
+    func testAnotherDayReadsZeroWithoutResettingTheStoredDay() {
+        var tally = BlockedFlowTally(now: date(2026, 11, 6), calendar: calendar)
+        tally.note(at: date(2026, 11, 6), calendar: calendar)
+        XCTAssertEqual(tally.count(on: date(2026, 11, 7), calendar: calendar), 0)
+        // Reading tomorrow must not erase today's count.
+        XCTAssertEqual(tally.count(on: date(2026, 11, 6, 23), calendar: calendar), 1)
+    }
+
+    func testFirstFlowAfterMidnightStartsANewDay() {
+        var tally = BlockedFlowTally(now: date(2026, 11, 6), calendar: calendar)
+        for _ in 0..<4 { tally.note(at: date(2026, 11, 6, 23), calendar: calendar) }
+        tally.note(at: date(2026, 11, 7, 0), calendar: calendar)
+        XCTAssertEqual(tally.count(on: date(2026, 11, 7, 1), calendar: calendar), 1)
+        XCTAssertEqual(tally.count(on: date(2026, 11, 6, 23), calendar: calendar), 0)
+    }
+
+    func testCountStopsAtTheCap() {
+        var tally = BlockedFlowTally(now: date(2026, 11, 6), calendar: calendar)
+        let noon = date(2026, 11, 6)
+        for _ in 0..<(BlockedFlowTally.cap + 50) { tally.note(at: noon, calendar: calendar) }
+        XCTAssertEqual(tally.count(on: noon, calendar: calendar), BlockedFlowTally.cap)
+    }
+
+    func testDayKeyIsTheZeroPaddedLocalDate() {
+        XCTAssertEqual(BlockedFlowTally.dayKey(for: date(2026, 1, 2), calendar: calendar),
+                       "2026-01-02")
+        // The same instant can be two different local days; the key follows
+        // the supplied calendar, which is how the filter and the app agree.
+        var berlin = Calendar(identifier: .gregorian)
+        berlin.timeZone = TimeZone(identifier: "Europe/Berlin")!
+        let lateUTC = date(2026, 11, 6, 23, 30)
+        XCTAssertEqual(BlockedFlowTally.dayKey(for: lateUTC, calendar: calendar), "2026-11-06")
+        XCTAssertEqual(BlockedFlowTally.dayKey(for: lateUTC, calendar: berlin), "2026-11-07")
+    }
+
+    func testStoreStartsWithNoBlockedFlowsAndNamesToday() {
+        let store = BlocklistStore()
+        let now = Date()
+        let tally = store.blockedFlowsToday(now: now)
+        XCTAssertEqual(tally.count, 0)
+        XCTAssertEqual(tally.day, BlockedFlowTally.dayKey(for: now))
+    }
+}
+
 // MARK: - Helpers
 
 private func hex(_ bytes: some Sequence<UInt8>) -> String {

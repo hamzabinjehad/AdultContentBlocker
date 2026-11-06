@@ -193,4 +193,26 @@ final class LockScheduleTests: XCTestCase {
         XCTAssertNil(ScheduleStore.pending())
         XCTAssertEqual(ScheduleStore.current(), night)
     }
+
+    @MainActor
+    func testMenuBarCountdownIsMinuteGranularAndRoundsUp() {
+        XCTAssertNil(MenuBarIcon.coarseRemaining(seconds: 0))
+        XCTAssertNil(MenuBarIcon.coarseRemaining(seconds: -30))
+        XCTAssertNil(MenuBarIcon.coarseRemaining(seconds: .infinity))
+        XCTAssertNil(MenuBarIcon.coarseRemaining(seconds: .nan))
+        // Rounded UP: a lock with 61 seconds left reads the same as one with
+        // two minutes, and a lock in its last second still reads "1 min".
+        XCTAssertEqual(MenuBarIcon.coarseRemaining(seconds: 1),
+                       MenuBarIcon.coarseRemaining(seconds: 60))
+        XCTAssertEqual(MenuBarIcon.coarseRemaining(seconds: 61),
+                       MenuBarIcon.coarseRemaining(seconds: 120))
+        XCTAssertNotEqual(MenuBarIcon.coarseRemaining(seconds: 60),
+                          MenuBarIcon.coarseRemaining(seconds: 61))
+        // Whole-minute text: two instants inside the same minute read the
+        // same, and a second on either side of a minute boundary differs.
+        XCTAssertEqual(MenuBarIcon.coarseRemaining(seconds: 7 * 86_400 + 1),
+                       MenuBarIcon.coarseRemaining(seconds: 7 * 86_400 + 59))
+        XCTAssertNotEqual(MenuBarIcon.coarseRemaining(seconds: 7 * 86_400),
+                          MenuBarIcon.coarseRemaining(seconds: 7 * 86_400 + 1))
+    }
 }

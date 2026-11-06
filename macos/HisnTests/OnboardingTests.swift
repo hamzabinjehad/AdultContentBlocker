@@ -184,17 +184,70 @@ final class OnboardingTests: XCTestCase {
         }
     }
 
+    func testOverviewRendersAtMinimumWidth() async throws {
+        let original = AppNavigation.shared.page
+        defer { AppNavigation.shared.page = original }
+        AppNavigation.shared.page = .overview
+        let host = NSHostingView(rootView: ContentView()
+            .environment(\.locale, Locale(identifier: "en"))
+            .environment(\.layoutDirection, .leftToRight)
+            .frame(width: 760, height: 900))
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 760, height: 900),
+            styleMask: [.titled], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        window.contentView = host
+        defer { window.close() }
+        window.orderFront(nil)
+        try await Task.sleep(nanoseconds: 400_000_000)
+        host.layoutSubtreeIfNeeded()
+        let bitmap = try XCTUnwrap(host.bitmapImageRepForCachingDisplay(in: host.bounds))
+        host.cacheDisplay(in: host.bounds, to: bitmap)
+        let data = try XCTUnwrap(bitmap.representation(using: .png, properties: [:]))
+        XCTAssertGreaterThan(data.count, 2000)
+        try data.write(to: URL(fileURLWithPath: "/tmp/hisn-overview-760-en.png"))
+    }
+
+    func testWelcomeAndPrivateBrowsingRenderInBothLanguages() async throws {
+        for language in ["en", "ar"] {
+            for (name, view) in [
+                ("welcome", AnyView(WelcomeView())),
+                ("private-browsing", AnyView(PrivateBrowsingSheet())),
+            ] {
+                let host = NSHostingView(rootView: view
+                    .environment(\.locale, Locale(identifier: language))
+                    .environment(\.layoutDirection, language == "ar" ? .rightToLeft : .leftToRight)
+                    .frame(width: 640, height: 560))
+                let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 640, height: 560),
+                    styleMask: [.titled], backing: .buffered, defer: false)
+                window.isReleasedWhenClosed = false
+                window.contentView = host
+                defer { window.close() }
+                window.orderFront(nil)
+                try await Task.sleep(nanoseconds: 250_000_000)
+                host.layoutSubtreeIfNeeded()
+                let bitmap = try XCTUnwrap(host.bitmapImageRepForCachingDisplay(in: host.bounds))
+                host.cacheDisplay(in: host.bounds, to: bitmap)
+                let data = try XCTUnwrap(bitmap.representation(using: .png, properties: [:]))
+                XCTAssertGreaterThan(data.count, 2000)
+                // Written unconditionally: these are layout captures used by
+                // the design pass, and the test host cannot inherit a shell
+                // environment variable through xcodebuild's test action.
+                try data.write(to: URL(fileURLWithPath: "/tmp/hisn-\(name)-\(language).png"))
+            }
+        }
+    }
+
     func testHistoricalSetupVisitDoesNotCertifyANewProcess() throws {
         let name = TestNamespace.make()
         defer { TestNamespace.dispose(name) }
         let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
-        XCTAssertEqual(AppNavigation.firstPage(defaults: defaults, hostingTests: false), .setup)
-        XCTAssertEqual(AppNavigation.firstPage(defaults: defaults, hostingTests: false), .setup)
+        XCTAssertEqual(AppNavigation.firstPage(defaults: defaults, hostingTests: false), .overview)
+        XCTAssertEqual(AppNavigation.firstPage(defaults: defaults, hostingTests: false), .overview)
         defaults.set(true, forKey: "hisn.openedOnSetup")
         defaults.set(true, forKey: "hisn.setup.administratorConfirmed")
         defaults.set(true, forKey: "hisn.setup.recoveryConfirmed")
-        XCTAssertEqual(AppNavigation.firstPage(defaults: defaults, hostingTests: false), .setup,
-                       "a visit or human confirmation is not live protection evidence")
+        XCTAssertEqual(AppNavigation.firstPage(defaults: defaults, hostingTests: false), .overview,
+                       "the Overview is the answer; Setup is one explicit click away")
         XCTAssertEqual(AppNavigation.firstPage(defaults: defaults, hostingTests: true), .overview)
     }
 

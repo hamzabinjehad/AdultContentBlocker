@@ -141,15 +141,41 @@ public struct FilterHealth: Codable, Equatable {
     public var keywordSource: String
     public var listVersion: Int
     public var startedAt: Date
+    /// Denied flows so far this local day — an aggregate count, never a host.
+    /// Optional in the decoder so a reply from an older filter still reads.
+    public var blockedToday: Int
+    /// The local "yyyy-MM-dd" day `blockedToday` belongs to.
+    public var blockedDay: String
 
     public init(domainCount: Int = 0, hostTermCount: Int = 0,
                 keywordSource: String = "none", listVersion: Int = 0,
-                startedAt: Date = Date()) {
+                startedAt: Date = Date(),
+                blockedToday: Int = 0, blockedDay: String = "") {
         self.domainCount = domainCount
         self.hostTermCount = hostTermCount
         self.keywordSource = keywordSource
         self.listVersion = listVersion
         self.startedAt = startedAt
+        self.blockedToday = blockedToday
+        self.blockedDay = blockedDay
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case domainCount, hostTermCount, keywordSource, listVersion, startedAt
+        case blockedToday, blockedDay
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        domainCount = try c.decode(Int.self, forKey: .domainCount)
+        hostTermCount = try c.decode(Int.self, forKey: .hostTermCount)
+        keywordSource = try c.decode(String.self, forKey: .keywordSource)
+        listVersion = try c.decode(Int.self, forKey: .listVersion)
+        startedAt = try c.decode(Date.self, forKey: .startedAt)
+        // An older filter's reply carries no tally; that reads as "not
+        // counting", which is the honest description of that build.
+        blockedToday = try c.decodeIfPresent(Int.self, forKey: .blockedToday) ?? 0
+        blockedDay = try c.decodeIfPresent(String.self, forKey: .blockedDay) ?? ""
     }
 }
 

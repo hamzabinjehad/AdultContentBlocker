@@ -141,11 +141,14 @@ final class FilterDataProvider: NEFilterDataProvider {
     /// The same facts for the app, over XPC — evidence from the process that
     /// holds them, which the root-scoped defaults above cannot deliver.
     private func health() -> FilterHealth {
-        FilterHealth(domainCount: store.domainCount,
-                     hostTermCount: store.hostTermCount,
-                     keywordSource: keywordSource,
-                     listVersion: store.version,
-                     startedAt: startedAt)
+        let tally = store.blockedFlowsToday()
+        return FilterHealth(domainCount: store.domainCount,
+                            hostTermCount: store.hostTermCount,
+                            keywordSource: keywordSource,
+                            listVersion: store.version,
+                            startedAt: startedAt,
+                            blockedToday: tally.count,
+                            blockedDay: tally.day)
     }
 
     override func stopFilter(with reason: NEProviderStopReason,

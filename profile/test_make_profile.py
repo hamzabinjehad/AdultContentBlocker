@@ -636,3 +636,23 @@ class TestIncognito(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class TestManagedMode(unittest.TestCase):
+    """The organization flag is a forced app-domain payload, not app state."""
+
+    def test_managed_adds_the_forced_app_payload(self):
+        profile = build(managed=True, organization_name="Example Institute")
+        managed = payload(profile, "app.hisn.Hisn")
+        self.assertIsNotNone(managed)
+        self.assertIs(managed["HisnManaged"], True)
+        self.assertEqual(managed["OrganizationName"], "Example Institute")
+        self.assertIs(profile["PayloadRemovalDisallowed"], True)
+
+    def test_an_unmanaged_profile_does_not_claim_to_be_managed(self):
+        self.assertIsNone(payload(build(), "app.hisn.Hisn"))
+
+    def test_an_empty_organization_name_gets_a_neutral_label(self):
+        profile = build(managed=True, organization_name="   ")
+        self.assertEqual(payload(profile, "app.hisn.Hisn")["OrganizationName"],
+                         "Your organization")

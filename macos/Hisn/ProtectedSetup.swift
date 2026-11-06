@@ -55,8 +55,8 @@ struct LaptopSetupReadiness: Equatable {
 
     var summary: String {
         isReady
-            ? String(localized: "The filter, browser connection, detected standard profiles, installation files, and outside-lock browser requirement are confirmed. This is not proof that every route is blocked.")
-            : String(localized: "Installing or opening Hisn does not finish protection setup. Complete the missing checks below; your current commitment is unchanged.")
+            ? String(localized: "The functional checks on this Mac pass. This is not proof that every route is blocked.")
+            : String(localized: "Complete the missing checks below. Your current commitment is unchanged.")
     }
 
     static func filterIsReady(_ evidence: ProtectionEvidence) -> Bool {

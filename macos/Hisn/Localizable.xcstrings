@@ -185,6 +185,23 @@
         }
       }
     },
+    "%@: %@" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@: %@"
+          }
+        }
+      }
+    },
     "%lld domains" : {
       "localizations" : {
         "ar" : {
@@ -245,6 +262,38 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "%lld more checks below." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld فحصاً إضافياً أدناه."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld more checks below."
+          }
+        }
+      }
+    },
+    "%lld of %lld layers ready. The rest need attention." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld من %2$lld طبقات جاهزة. البقية تحتاج انتباهًا."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld of %lld layers ready. The rest need attention."
           }
         }
       }
@@ -417,6 +466,22 @@
         }
       }
     },
+    "A lock" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قفل"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A lock"
+          }
+        }
+      }
+    },
     "A lock has to be between %@ and %@." : {
       "localizations" : {
         "ar" : {
@@ -555,12 +620,60 @@
         }
       }
     },
+    "A lock is running. Hisn will not offer to re-enable private windows until it ends." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "القفل قيد التشغيل. لن يعرض حصن إعادة تفعيل النوافذ الخاصة حتى ينتهي."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A lock is running. Hisn will not offer to re-enable private windows until it ends."
+          }
+        }
+      }
+    },
     "A lock is running. The screen stays gray until it ends." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "القفل يعمل. تبقى الشاشة رمادية حتى ينتهي."
+          }
+        }
+      }
+    },
+    "A lock is running. This stays as it is until the lock ends." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "القفل قيد التشغيل. يبقى هذا كما هو حتى ينتهي القفل."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A lock is running. This stays as it is until the lock ends."
+          }
+        }
+      }
+    },
+    "A lock is running. Wait until it ends to change this." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "القفل قيد التشغيل. انتظر حتى ينتهي لتغيير هذا."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A lock is running. Wait until it ends to change this."
           }
         }
       }
@@ -642,6 +755,7 @@
       }
     },
     "A small profile disables private and incognito windows in those browsers. It changes nothing else — no DNS, no guest windows." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -916,12 +1030,45 @@
         }
       }
     },
+    "Approve “Hisn private windows disabled” in System Settings › Device Management, then check again." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وافق على «حصن: النوافذ الخاصة معطّلة» في إعدادات النظام › إدارة الأجهزة، ثم تحقق مرة أخرى."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Approve “Hisn private windows disabled” in System Settings › Device Management, then check again."
+          }
+        }
+      }
+    },
     "Approve “Hisn private windows disabled” in System Settings › Device Management, then Check again." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "وافق على «Hisn private windows disabled» في إعدادات النظام › إدارة الجهاز، ثم اضغط «تحقّق مرة أخرى»."
+          }
+        }
+      }
+    },
+    "Approve the profile in System Settings" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وافق على ملف التعريف في إعدادات النظام"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Approve the profile in System Settings"
           }
         }
       }
@@ -942,6 +1089,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "اسأل نفسك ما الذي أوصلك إلى هنا: الوقت أو المكان أو المزاج. هذا ما تغيّره بعد ذلك."
+          }
+        }
+      }
+    },
+    "Back" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "رجوع"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back"
           }
         }
       }
@@ -1018,6 +1181,29 @@
         }
       }
     },
+    "Blocked connections today" : {
+
+    },
+    "Blocked connections today" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الاتصالات المحجوبة اليوم"
+          }
+        }
+      }
+    },
+    "Blocked connections today: %lld" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الاتصالات المحجوبة اليوم: %lld"
+          }
+        }
+      }
+    },
     "Blocked on top of the built-in lists." : {
       "localizations" : {
         "ar" : {
@@ -1070,6 +1256,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "يحجب كل شيء عدا المواقع التي تسمح بها. لا يمكن لقائمة حجب أن تغطي كل المواقع؛ وهذا يستطيع."
+          }
+        }
+      }
+    },
+    "Blocks known adult sites on this Mac, not only in one browser." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يحجب المواقع الإباحية المعروفة على هذا الجهاز، وليس في متصفح واحد فقط."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blocks known adult sites on this Mac, not only in one browser."
           }
         }
       }
@@ -1435,6 +1637,22 @@
         }
       }
     },
+    "Browsers Hisn cannot disable private windows in" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متصفحات لا يستطيع حصن تعطيل النوافذ الخاصة فيها"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Browsers Hisn cannot disable private windows in"
+          }
+        }
+      }
+    },
     "Calm" : {
       "localizations" : {
         "ar" : {
@@ -1621,6 +1839,38 @@
         }
       }
     },
+    "Checked by the extension" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يتحقق منها الامتداد"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checked by the extension"
+          }
+        }
+      }
+    },
+    "Checked by the extension in %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يتحقق منها الامتداد في %1$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checked by the extension in %@"
+          }
+        }
+      }
+    },
     "Checking" : {
       "localizations" : {
         "ar" : {
@@ -1795,6 +2045,22 @@
         }
       }
     },
+    "Complete the missing checks below. Your current commitment is unchanged." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أكمل الفحوصات الناقصة أدناه. التزامك الحالي لم يتغيّر."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complete the missing checks below. Your current commitment is unchanged."
+          }
+        }
+      }
+    },
     "Confirmed by you, not checked by Hisn. Keep recovery details somewhere you can reach without this Mac." : {
       "localizations" : {
         "ar" : {
@@ -1867,6 +2133,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "فحص المحتوى"
+          }
+        }
+      }
+    },
+    "Continue" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متابعة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
           }
         }
       }
@@ -1974,11 +2256,28 @@
       }
     },
     "Create the private-windows profile…" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "أنشئ ملف تعريف النوافذ الخاصة…"
+          }
+        }
+      }
+    },
+    "Create the profile" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إنشاء ملف التعريف"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create the profile"
           }
         }
       }
@@ -2384,12 +2683,44 @@
         }
       }
     },
+    "Every app" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كل التطبيقات"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every app"
+          }
+        }
+      }
+    },
     "Every day" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "كل يوم"
+          }
+        }
+      }
+    },
+    "Everything else is running. Private windows skip the browser extension, so Hisn cannot check those pages." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كل شيء آخر يعمل. النوافذ الخاصة تتجاوز امتداد المتصفح، لذا لا يستطيع حصن فحص تلك الصفحات."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Everything else is running. Private windows skip the browser extension, so Hisn cannot check those pages."
           }
         }
       }
@@ -2865,6 +3196,22 @@
         }
       }
     },
+    "Hisn re-read the policy. Private windows are now disabled in %@." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أعاد حصن قراءة السياسة. النوافذ الخاصة معطّلة الآن في %1$@."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hisn re-read the policy. Private windows are now disabled in %@."
+          }
+        }
+      }
+    },
     "Hisn stays in the background when its window closes; the separately installed login agent restarts it after a crash or force-quit. Detection is periodic, not instant. Standard Default/Profile folders are checked; custom paths, guest and private windows are unverified. Explicitly trusted unknown apps bypass extension checks. Administrator changes can bypass the guard. Save work before enabling it." : {
       "localizations" : {
         "ar" : {
@@ -2907,6 +3254,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hisn will close %1$@ in %2$lld seconds"
+          }
+        }
+      }
+    },
+    "Hisn will create a configuration profile that disables private windows in %@. It changes nothing else. You approve it in System Settings." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سينشئ حصن ملف تعريف يعطّل النوافذ الخاصة في %1$@. لا يغيّر أي شيء آخر. توافق عليه من إعدادات النظام."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hisn will create a configuration profile that disables private windows in %@. It changes nothing else. You approve it in System Settings."
           }
         }
       }
@@ -2957,6 +3320,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ساعات"
+          }
+        }
+      }
+    },
+    "How Hisn works" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كيف يعمل حصن"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How Hisn works"
           }
         }
       }
@@ -3324,6 +3703,7 @@
       }
     },
     "Installing or opening Hisn does not finish protection setup. Complete the missing checks below; your current commitment is unchanged." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -3603,6 +3983,22 @@
         }
       }
     },
+    "Later" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لاحقاً"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Later"
+          }
+        }
+      }
+    },
     "Layer details" : {
       "localizations" : {
         "ar" : {
@@ -3655,6 +4051,7 @@
       }
     },
     "Limits of these checks" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -3832,6 +4229,22 @@
         }
       }
     },
+    "Makes protection harder to turn off when you need a commitment." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يجعل إيقاف الحماية أصعب عندما تحتاج إلى التزام."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Makes protection harder to turn off when you need a commitment."
+          }
+        }
+      }
+    },
     "Manage lock" : {
       "localizations" : {
         "ar" : {
@@ -3842,12 +4255,156 @@
         }
       }
     },
+    "Managed by %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مُدار بواسطة %1$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Managed by %@"
+          }
+        }
+      }
+    },
+    "Managed by %@. Changing the partner key requires your administrator." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مُدار بواسطة %1$@. تغيير مفتاح الشريك يتطلب موافقة مديرك."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Managed by %@. Changing the partner key requires your administrator."
+          }
+        }
+      }
+    },
+    "Managed by %@. Local removal and weakening controls are disabled." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مُدار بواسطة %1$@. أزرار الإزالة وتخفيف الحماية المحلية معطّلة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Managed by %@. Local removal and weakening controls are disabled."
+          }
+        }
+      }
+    },
+    "Managed by %@. Only your administrator can remove this policy." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مُدار بواسطة %1$@. مديرك وحده يستطيع إزالة هذه السياسة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Managed by %@. Only your administrator can remove this policy."
+          }
+        }
+      }
+    },
+    "Managed by %@. Private windows must stay off on this Mac." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مُدار بواسطة %1$@. يجب أن تبقى النوافذ الخاصة معطّلة على هذا الجهاز."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Managed by %@. Private windows must stay off on this Mac."
+          }
+        }
+      }
+    },
+    "Managed by %@. The screen stays gray while the organization requires it." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مُدار بواسطة %1$@. تبقى الشاشة رمادية ما دامت المؤسسة تطلب ذلك."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Managed by %@. The screen stays gray while the organization requires it."
+          }
+        }
+      }
+    },
+    "Managed by %@. You can turn checks on and raise sensitivity; the reverse requires your administrator." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مُدار بواسطة %1$@. يمكنك تفعيل الفحوصات ورفع الحساسية؛ أما العكس فيتطلب موافقة مديرك."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Managed by %@. You can turn checks on and raise sensitivity; the reverse requires your administrator."
+          }
+        }
+      }
+    },
+    "Managed by %@. Your organization controls these protections." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مُدار بواسطة %1$@. مؤسستك تتحكم في هذه الحمايات."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Managed by %@. Your organization controls these protections."
+          }
+        }
+      }
+    },
     "Match keywords in addresses" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "طابق الكلمات في العناوين"
+          }
+        }
+      }
+    },
+    "Matching stays on this Mac. There is no account and no browsing log." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المطابقة تتم على هذا الجهاز. لا يوجد حساب ولا سجل تصفح."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Matching stays on this Mac. There is no account and no browsing log."
           }
         }
       }
@@ -3893,6 +4450,7 @@
       }
     },
     "Mixed-content sites can still contain adult material. Strict mode restricts allowed destinations, but cannot certify everything on an allowed site. Custom profiles, tunnels, administrator changes, and recovery access need separate checks." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -4098,6 +4656,38 @@
         }
       }
     },
+    "No Chromium or Firefox browser is installed, so there is no private-window setting Hisn can change here." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يوجد متصفح Chromium أو Firefox مثبّت، لذا لا يوجد إعداد للنوافذ الخاصة يستطيع حصن تغييره هنا."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Chromium or Firefox browser is installed, so there is no private-window setting Hisn can change here."
+          }
+        }
+      }
+    },
+    "No Chromium or Firefox browser is installed, so there is nothing to disable here." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يوجد متصفح Chromium أو Firefox مثبّت، لذا لا يوجد ما يمكن تعطيله هنا."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Chromium or Firefox browser is installed, so there is nothing to disable here."
+          }
+        }
+      }
+    },
     "No early self-release during a fixed commitment. Partner recovery remains available; this does not prevent an administrator from removing protection." : {
       "localizations" : {
         "ar" : {
@@ -4224,11 +4814,28 @@
       }
     },
     "No supported Chromium browser is installed, so there is nothing to disable." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "لا يوجد متصفح Chromium مدعوم مثبّت، لذا لا يوجد ما يمكن تعطيله."
+          }
+        }
+      }
+    },
+    "No supported Chromium or Firefox browser is installed, so there is nothing to disable." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يوجد متصفح Chromium أو Firefox مدعوم مثبّت، لذا لا يوجد ما يمكن تعطيله."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No supported Chromium or Firefox browser is installed, so there is nothing to disable."
           }
         }
       }
@@ -4265,6 +4872,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "لم يتم التأكد: %@"
+          }
+        }
+      }
+    },
+    "Not controlled by Hisn" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "غير خاضع لتحكم حصن"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not controlled by Hisn"
           }
         }
       }
@@ -4315,6 +4938,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "غير مقفل"
+          }
+        }
+      }
+    },
+    "Not now" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ليس الآن"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not now"
           }
         }
       }
@@ -4446,6 +5085,38 @@
         }
       }
     },
+    "Off in %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "معطّلة في %1$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Off in %@"
+          }
+        }
+      }
+    },
+    "Off in %@; checked by the extension in %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "معطّلة في %1$@؛ ويتحقق منها الامتداد في %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Off in %@; checked by the extension in %@"
+          }
+        }
+      }
+    },
     "OK" : {
       "localizations" : {
         "ar" : {
@@ -4526,6 +5197,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "نطاق واحد في كل سطر — يمكنك لصق رابط كامل وسيؤخذ النطاق منه. النطاقات الفرعية مشمولة تلقائيًا، فـ example.com يشمل cdn.example.com أيضًا."
+          }
+        }
+      }
+    },
+    "One gap to close" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ثغرة واحدة لإغلاقها"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One gap to close"
           }
         }
       }
@@ -4616,6 +5303,22 @@
         }
       }
     },
+    "Open in %@ — those windows have no Hisn inside" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مفتوحة في %1$@ — لا يوجد حصن داخل تلك النوافذ"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open in %@ — those windows have no Hisn inside"
+          }
+        }
+      }
+    },
     "Open local HTTP page" : {
       "localizations" : {
         "ar" : {
@@ -4628,6 +5331,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Open local HTTP page"
+          }
+        }
+      }
+    },
+    "Open Overview" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فتح النظرة العامة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Overview"
           }
         }
       }
@@ -4782,6 +5501,22 @@
         }
       }
     },
+    "Organization policy" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سياسة المؤسسة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Organization policy"
+          }
+        }
+      }
+    },
     "Other / I don't know" : {
       "localizations" : {
         "ar" : {
@@ -4799,6 +5534,7 @@
       }
     },
     "Other missing checks" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -4940,6 +5676,54 @@
         }
       }
     },
+    "Prevent private browsing" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "منع التصفح الخاص"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prevent private browsing"
+          }
+        }
+      }
+    },
+    "Prevent private browsing?" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هل تريد منع التصفح الخاص؟"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prevent private browsing?"
+          }
+        }
+      }
+    },
+    "Prevent private browsing…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "منع التصفح الخاص…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prevent private browsing…"
+          }
+        }
+      }
+    },
     "Previously ready layers are no longer confirmed. Recheck their configuration." : {
       "localizations" : {
         "ar" : {
@@ -4966,6 +5750,70 @@
         }
       }
     },
+    "Private windows" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "النوافذ الخاصة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Private windows"
+          }
+        }
+      }
+    },
+    "Private windows are covered in every browser Hisn can control." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "النوافذ الخاصة مغطاة في كل متصفح يستطيع حصن التحكم فيه."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Private windows are covered in every browser Hisn can control."
+          }
+        }
+      }
+    },
+    "Private windows are off" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "النوافذ الخاصة معطّلة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Private windows are off"
+          }
+        }
+      }
+    },
+    "Private windows are open" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "النوافذ الخاصة مفتوحة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Private windows are open"
+          }
+        }
+      }
+    },
     "Private windows are open in %@." : {
       "localizations" : {
         "ar" : {
@@ -4976,12 +5824,60 @@
         }
       }
     },
+    "Private windows are still open in %@." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ما زالت النوافذ الخاصة مفتوحة في %1$@."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Private windows are still open in %@."
+          }
+        }
+      }
+    },
     "private windows in %@" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "النوافذ الخاصة في %@"
+          }
+        }
+      }
+    },
+    "Private windows skip the browser extension. Disabling them is the one way to close that gap without turning private browsing into a monitored window." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "النوافذ الخاصة تتجاوز امتداد المتصفح. تعطيلها هو الطريقة الوحيدة لإغلاق هذه الثغرة دون تحويل التصفح الخاص إلى نافذة مراقبة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Private windows skip the browser extension. Disabling them is the one way to close that gap without turning private browsing into a monitored window."
+          }
+        }
+      }
+    },
+    "Private windows skip the browser extension. Hisn can disable them in the browsers below." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "النوافذ الخاصة تتجاوز امتداد المتصفح. يستطيع حصن تعطيلها في المتصفحات أدناه."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Private windows skip the browser extension. Hisn can disable them in the browsers below."
           }
         }
       }
@@ -5193,6 +6089,22 @@
         }
       }
     },
+    "Reads page text the lists have never seen. Chrome, Helium and other Chromium browsers." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يقرأ نص الصفحات التي لم ترها القوائم من قبل. Chrome وHelium ومتصفحات Chromium الأخرى."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reads page text the lists have never seen. Chrome, Helium and other Chromium browsers."
+          }
+        }
+      }
+    },
     "Reads the page itself, so it catches explicit content on an ordinary site. Chrome and Edge only." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -5346,6 +6258,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "أزِل %@"
+          }
+        }
+      }
+    },
+    "Remove the Hisn private-windows profile here." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أزل ملف تعريف النوافذ الخاصة من هنا."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove the Hisn private-windows profile here."
           }
         }
       }
@@ -5532,6 +6460,22 @@
         }
       }
     },
+    "Review private windows" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مراجعة النوافذ الخاصة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Review private windows"
+          }
+        }
+      }
+    },
     "Review setup" : {
       "localizations" : {
         "ar" : {
@@ -5647,6 +6591,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "يعمل: كل التطبيقات، ولا تتجاوزه أي VPN."
+          }
+        }
+      }
+    },
+    "Safari and hardened browsers do not accept the private-browsing policy. Hisn still blocks listed addresses through the system filter, and the browser guard closes unsupported browsers while Hisn runs." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Safari والمتصفحات المشددة لا تقبل سياسة التصفح الخاص. ما زال حصن يحجب العناوين المدرجة عبر مرشح النظام، ويغلق حارس المتصفح المتصفحات غير المدعومة أثناء تشغيل حصن."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Safari and hardened browsers do not accept the private-browsing policy. Hisn still blocks listed addresses through the system filter, and the browser guard closes unsupported browsers while Hisn runs."
           }
         }
       }
@@ -5987,6 +6947,22 @@
         }
       }
     },
+    "Skip" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تخطي"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip"
+          }
+        }
+      }
+    },
     "Some protection layers need attention. Your commitment remains active; review the checks below." : {
       "localizations" : {
         "ar" : {
@@ -6268,6 +7244,22 @@
         }
       }
     },
+    "System Settings opened with “Hisn private windows disabled” ready to install. Approve it under Device Management, then return here." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فُتحت إعدادات النظام وملف «حصن: النوافذ الخاصة معطّلة» جاهز للتثبيت. وافق عليه ضمن إدارة الأجهزة، ثم عد إلى هنا."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "System Settings opened with “Hisn private windows disabled” ready to install. Approve it under Device Management, then return here."
+          }
+        }
+      }
+    },
     "Take a moment before you go on" : {
       "localizations" : {
         "ar" : {
@@ -6366,6 +7358,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "هذا ليس عنوان موقع إلكتروني"
+          }
+        }
+      }
+    },
+    "That’s the idea" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذه هي الفكرة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That’s the idea"
           }
         }
       }
@@ -6483,6 +7492,7 @@
       }
     },
     "The filter, browser connection, detected standard profiles, installation files, and outside-lock browser requirement are confirmed. This is not proof that every route is blocked." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -6494,6 +7504,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The filter, browser connection, detected standard profiles, installation files, and outside-lock browser requirement are confirmed. This is not proof that every route is blocked."
+          }
+        }
+      }
+    },
+    "The functional checks on this Mac pass. This is not proof that every route is blocked." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الفحوصات الوظيفية على هذا الجهاز ناجحة. هذا ليس دليلاً على حجب كل مسار."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The functional checks on this Mac pass. This is not proof that every route is blocked."
           }
         }
       }
@@ -6628,6 +7654,38 @@
         }
       }
     },
+    "The Overview shows what is running and the one next step. Setup holds the detailed checks whenever you want them." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعرض النظرة العامة ما يعمل والخطوة التالية الوحيدة. يحتفظ الإعداد بالفحوصات المفصلة وقتما تريدها."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Overview shows what is running and the one next step. Setup holds the detailed checks whenever you want them."
+          }
+        }
+      }
+    },
+    "The policy is not readable yet. Approve the profile in System Settings, then check again." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم تُقرأ السياسة بعد. وافق على ملف التعريف في إعدادات النظام، ثم تحقق مرة أخرى."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The policy is not readable yet. Approve the profile in System Settings, then check again."
+          }
+        }
+      }
+    },
     "The standard profile list could not be verified. This unknown result alone does not close the browser." : {
       "localizations" : {
         "ar" : {
@@ -6695,6 +7753,22 @@
         }
       }
     },
+    "The system filter, the browser extension and private windows are all covered." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مرشح النظام وامتداد المتصفح والنوافذ الخاصة كلها مغطاة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The system filter, the browser extension and private windows are all covered."
+          }
+        }
+      }
+    },
     "The window is open now: saving starts a lock until %@." : {
       "localizations" : {
         "ar" : {
@@ -6732,6 +7806,7 @@
       }
     },
     "These checks cover this Mac and make protection harder to disable. Network protection, other devices, and recovery access are checked separately." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -6986,6 +8061,55 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "هذا سيقصّر قفلًا نشطًا، وهذا غير مسموح."
+          }
+        }
+      }
+    },
+    "Those windows skip the browser extension, so Hisn cannot check the pages inside them." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تتجاوز تلك النوافذ امتداد المتصفح، لذا لا يستطيع حصن فحص الصفحات بداخلها."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Those windows skip the browser extension, so Hisn cannot check the pages inside them."
+          }
+        }
+      }
+    },
+    "Those windows skip the browser extension. One small profile disables them and changes nothing else." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تتجاوز تلك النوافذ امتداد المتصفح. ملف تعريف صغير يعطّلها ولا يغيّر أي شيء آخر."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Those windows skip the browser extension. One small profile disables them and changes nothing else."
+          }
+        }
+      }
+    },
+    "Three layers, each covering a different way around the others." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ثلاث طبقات، كل منها تغطي طريقة مختلفة للالتفاف على الأخرى."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Three layers, each covering a different way around the others."
           }
         }
       }
@@ -7351,6 +8475,22 @@
         }
       }
     },
+    "What happens next" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ما الذي يحدث الآن"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What happens next"
+          }
+        }
+      }
+    },
     "What text checking cannot detect" : {
       "localizations" : {
         "ar" : {
@@ -7481,6 +8621,38 @@
         }
       }
     },
+    "You can add blocks and remove allowances. Removing a block or adding an allowance requires your administrator." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يمكنك إضافة حجب وإزالة استثناءات. أما إزالة حجب أو إضافة استثناء فتتطلب موافقة مديرك."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can add blocks and remove allowances. Removing a block or adding an allowance requires your administrator."
+          }
+        }
+      }
+    },
+    "You can change that later in Setup or from the Overview." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يمكنك تغيير ذلك لاحقاً من الإعداد أو من النظرة العامة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can change that later in Setup or from the Overview."
+          }
+        }
+      }
+    },
     "You set this up on a calmer day, for a moment like this one." : {
       "localizations" : {
         "ar" : {
@@ -7501,6 +8673,23 @@
         }
       }
     },
+    "You’re ready" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أنت جاهز"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You’re ready"
+          }
+        }
+      }
+    },
     "Your account owns them, so even after the account split you could replace the program the browsers talk to. Install Hisn again from the Hisn folder; it asks for the Mac’s password." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -7508,6 +8697,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "حسابك يملكها، فحتى بعد فصل الحسابات تستطيع استبدال البرنامج الذي تتحدث إليه المتصفحات. ثبّت حصن مجددًا من مجلد حصن؛ سيطلب كلمة مرور الماك."
+          }
+        }
+      }
+    },
+    "Your browser" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متصفحك"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your browser"
           }
         }
       }
@@ -7561,6 +8766,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "قفلك يعمل، لكن لا شيء يفرضه بعد. لن يحجب شيئًا حتى تكتمل الخطوات أعلاه."
+          }
+        }
+      }
+    },
+    "your organization" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مؤسستك"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "your organization"
           }
         }
       }

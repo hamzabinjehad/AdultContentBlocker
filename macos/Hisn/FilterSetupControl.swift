@@ -102,23 +102,14 @@ struct LaptopSetupStatusView: View {
                 Button("Review next step") { review(next) }
                     .accessibilityIdentifier("setup.reviewNextStep")
             }
+            // The stage list below is the complete list; repeating every
+            // missing check here made the top of Setup a second, shorter copy
+            // of the page. One next step is enough above the fold.
             if readiness.issues.count > 1 {
-                DisclosureGroup("Other missing checks") {
-                    ForEach(Array(readiness.issues.dropFirst())) { issue in
-                        Text(LocalizedStringKey(readiness.detail(issue)))
-                            .font(.callout)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .padding(.top, 6)
-                    }
-                }
+                Text(String(localized: "\(readiness.issues.count - 1) more checks below."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-            DisclosureGroup("Limits of these checks") {
-                Text("Mixed-content sites can still contain adult material. Strict mode restricts allowed destinations, but cannot certify everything on an allowed site. Custom profiles, tunnels, administrator changes, and recovery access need separate checks.")
-                    .font(.caption).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 4)
-            }
-            .font(.caption)
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("setup.laptopReadiness")
