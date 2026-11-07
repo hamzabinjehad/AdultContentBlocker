@@ -35,18 +35,26 @@ def main(safari_only: bool = False, domain_only: bool = False,
     scanner = "HisnText"
     shield_config = "HisnShieldConfig"
     shield_action = "HisnShieldAction"
+    proxy = "HisnDNSProxy"
     names = ([app, *blockers, *([] if domain_only else [scanner])] if safari_only
-             else [app, *blockers, monitor, scanner, shield_config, shield_action, tests])
+             else [app, *blockers, monitor, scanner, shield_config, shield_action, proxy, tests])
     sources = {
         app: ["Hisn/HisnMobileApp.swift", "Hisn/MobileRootView.swift", "Hisn/ProtectionController.swift",
               "Hisn/MobileCommitmentStore.swift", "Hisn/CommitmentSection.swift",
-              "Hisn/AppUsageController.swift", "Hisn/AppUsageSection.swift", "Hisn/BrowserFirstSection.swift",
+              "Hisn/AppUsageController.swift", "Hisn/BrowserFirstSection.swift",
               "Hisn/CustomSitesSection.swift", "../shared/apple/CustomSitePolicy.swift",
               "Hisn/PasscodeVault.swift", "Hisn/PasscodeVaultSection.swift", "Hisn/HisnPalette.swift",
               "Hisn/HisnUI.swift", "Hisn/OverviewCards.swift", "Hisn/SetupViews.swift",
               "Hisn/Pause.swift", "Hisn/PauseRuleGrantView.swift", "Hisn/ProtectionHero.swift",
+              "Hisn/HisnTheme.swift", "Hisn/TodayView.swift", "Hisn/AppsView.swift",
+              "Hisn/PracticeView.swift", "Hisn/MoreView.swift", "Hisn/DNSRouteProbe.swift",
+              "Hisn/DNSCustomSitesShare.swift",
               "Shared/AppUsageConfiguration.swift", "Shared/ShieldTextPolicy.swift",
-              "Shared/PauseRule.swift",
+              "Shared/PauseRule.swift", "Shared/DNSMessage.swift", "Shared/DomainIndex.swift",
+              "Shared/HostTermPolicy.swift", "Shared/DNSFilterEngine.swift",
+              "Shared/DNSUpstream.swift",
+              "../shared/apple/TextNormalizer.swift", "../shared/apple/Punycode.swift",
+              "../shared/apple/AdultTldGuard.swift",
               "../shared/apple/RouterAppDomains.swift", "../shared/apple/RouterAppDomainsView.swift",
               "../shared/apple/CommitmentPolicy.swift", "../shared/apple/MobileProtectionPolicy.swift",
               "../shared/apple/MirroredRuleStore.swift", "../shared/apple/ReadinessHistory.swift",
@@ -55,7 +63,7 @@ def main(safari_only: bool = False, domain_only: bool = False,
                 "HisnTests/CustomSiteTests.swift", "HisnTests/PasscodeVaultTests.swift",
                 "HisnTests/AccessibilityTests.swift", "HisnTests/CommitmentHoldsTests.swift",
                 "HisnTests/PauseTests.swift", "HisnTests/PauseRuleTests.swift",
-                "HisnTests/QuietHoursTests.swift",
+                "HisnTests/QuietHoursTests.swift", "HisnTests/DNSFilterTests.swift",
                 "HisnTests/ShieldTextPolicyTests.swift", "HisnTests/UIRenderTests.swift",
                 "../shared/tests/MirroredRuleStoreTests.swift"],
         monitor: ["HisnActivityMonitor/ActivityMonitor.swift", "Shared/AppUsageConfiguration.swift",
@@ -71,6 +79,13 @@ def main(safari_only: bool = False, domain_only: bool = False,
                         "Shared/ShieldTextPolicy.swift", "Shared/AppUsageConfiguration.swift",
                         "Shared/PauseRule.swift",
                         "../shared/apple/MirroredRuleStore.swift", "../shared/apple/TrustedTime.swift"],
+        proxy: ["HisnDNSProxy/DNSProxyProvider.swift", "Shared/DNSMessage.swift",
+                "Shared/DomainIndex.swift", "Shared/HostTermPolicy.swift",
+                "Shared/DNSFilterEngine.swift", "Shared/DNSUpstream.swift",
+                "../shared/apple/TextNormalizer.swift", "../shared/apple/Punycode.swift",
+                "../shared/apple/AdultTldGuard.swift",
+                "../shared/apple/CustomSitePolicy.swift", "../shared/apple/MirroredRuleStore.swift",
+                "../shared/apple/ReadinessHistory.swift"],
         **{name: ["HisnBlocker/ContentBlockerRequestHandler.swift"] for name in blockers},
     }
     # The Safari-only candidate has no Family Controls entitlement, so it does
@@ -81,7 +96,7 @@ def main(safari_only: bool = False, domain_only: bool = False,
                        "Hisn/Assets.xcassets", privacy, "Hisn/Notices.txt"],
                  tests: ["fixtures/safari_cases.json"],
                  monitor: [privacy], scanner: [privacy],
-                 shield_config: [privacy], shield_action: [privacy],
+                 shield_config: [privacy], shield_action: [privacy], proxy: [privacy],
                  **{blocker: [privacy] for blocker in blockers}}
     if safari_only:
         sources[app] = ["HisnSafariOnly/SafariOnlyApp.swift", "../shared/apple/MobileProtectionPolicy.swift"]
@@ -126,7 +141,7 @@ def main(safari_only: bool = False, domain_only: bool = False,
     })
     base = {"SDKROOT": "iphoneos", "IPHONEOS_DEPLOYMENT_TARGET": "16.0", "SWIFT_VERSION": "5.0",
             "TARGETED_DEVICE_FAMILY": q("1,2"), "CODE_SIGN_STYLE": "Automatic",
-            "DEVELOPMENT_TEAM": '""', "CURRENT_PROJECT_VERSION": "11", "MARKETING_VERSION": "1.7.0",
+            "DEVELOPMENT_TEAM": '""', "CURRENT_PROJECT_VERSION": "14", "MARKETING_VERSION": "1.8.0",
             "CLANG_ENABLE_MODULES": "YES", "CLANG_ENABLE_OBJC_ARC": "YES",
             "ENABLE_USER_SCRIPT_SANDBOXING": "NO", "SUPPORTED_PLATFORMS": q("iphoneos iphonesimulator"),
             "SUPPORTS_MACCATALYST": "NO", "PRODUCT_NAME": q("$(TARGET_NAME)"),
@@ -167,6 +182,7 @@ def main(safari_only: bool = False, domain_only: bool = False,
                         [refs[path] for path in resources.get(name, [])])]
         extra = {"PRODUCT_BUNDLE_IDENTIFIER": q(app_identifier if name == app else
                  "app.hisn.mobile.tests" if name == tests else "app.hisn.mobile.activity" if name == monitor
+                 else f"{app_identifier}.dnsproxy" if name == proxy
                  else f"{app_identifier}.HisnText" if name == scanner
                  else f"{app_identifier}.shieldconfig" if name == shield_config
                  else f"{app_identifier}.shieldaction" if name == shield_action
@@ -194,13 +210,13 @@ def main(safari_only: bool = False, domain_only: bool = False,
             extra["ASSETCATALOG_COMPILER_APPICON_NAME"] = "AppIcon"
             embedded = []
             for blocker in [name for name in names
-                            if name in [*blockers, monitor, scanner, shield_config, shield_action]]:
+                            if name in [*blockers, monitor, scanner, shield_config, shield_action, proxy]]:
                 embedded.append(p.add(oid("ios-embed", blocker), "PBXBuildFile", {
                     "fileRef": products[blocker], "settings": "{ATTRIBUTES = (RemoveHeadersOnCopy, );}"}))
                 deps.append(dependency(name, blocker))
             phases.append(p.add(oid("ios-embed-phase"), "PBXCopyFilesBuildPhase", {
                 "buildActionMask": "2147483647", "dstPath": '""', "dstSubfolderSpec": "13",
-                "files": writer.plist_array(embedded), "name": q("Embed Safari Extensions"),
+                "files": writer.plist_array(embedded), "name": q("Embed extensions"),
                 "runOnlyForDeploymentPostprocessing": "0"}))
         elif name == monitor:
             extra.update({"INFOPLIST_FILE": "HisnActivityMonitor/Info.plist",
@@ -225,6 +241,18 @@ def main(safari_only: bool = False, domain_only: bool = False,
             extra.update({"INFOPLIST_FILE": "HisnShieldAction/Info.plist",
                           "CODE_SIGN_ENTITLEMENTS": "HisnShieldAction/HisnShieldAction.entitlements",
                           "APPLICATION_EXTENSION_API_ONLY": "YES", "SKIP_INSTALL": "YES"})
+        elif name == proxy:
+            extra.update({"INFOPLIST_FILE": "HisnDNSProxy/Info.plist",
+                          "CODE_SIGN_ENTITLEMENTS": "HisnDNSProxy/HisnDNSProxy.entitlements",
+                          "APPLICATION_EXTENSION_API_ONLY": "YES", "SKIP_INSTALL": "YES"})
+            script = ('set -eu\nPYTHON="${HISN_PYTHON:-python3}"\n'
+                      '"$PYTHON" "$SRCROOT/prepare_rules.py" --dns '
+                      '--output "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH"\n')
+            phases.append(p.add(oid("ios-verify-dns", name), "PBXShellScriptBuildPhase", {
+                "name": q("Verify signed seed and compile DNS filter data"), "buildActionMask": "2147483647",
+                "files": "()", "inputPaths": "()", "outputPaths": "()", "alwaysOutOfDate": "1",
+                "shellPath": "/bin/sh", "shellScript": q(script).replace("\n", "\\n"),
+                "runOnlyForDeploymentPostprocessing": "0"}))
         elif name == tests:
             extra.update({"GENERATE_INFOPLIST_FILE": "YES", "BUNDLE_LOADER": q("$(TEST_HOST)"),
                           "TEST_HOST": q("$(BUILT_PRODUCTS_DIR)/HisnMobile.app/HisnMobile")})

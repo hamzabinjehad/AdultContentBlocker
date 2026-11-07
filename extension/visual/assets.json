@@ -65,10 +65,25 @@
       "sha256": "06bafa45fdad2579ba0e43b0c9b2c6290287c99c4203c300254a462b38a307f6",
       "source": "buffer package license"
     },
+    "wasm/tfjs-backend-wasm.wasm": {
+      "bytes": 311123,
+      "sha256": "70a5d516060464e5269f01c74bac1772d6b8ab6cb612acf16b5cdaf61f78d892",
+      "source": "@tensorflow/tfjs-backend-wasm@4.22.0 tfjs-backend-wasm.wasm"
+    },
+    "wasm/tfjs-backend-wasm-simd.wasm": {
+      "bytes": 424594,
+      "sha256": "77ebb28a6d34f371dbbf2086b7f2de8994acd8ea5a3cf1fa24d2c26c840cac7b",
+      "source": "@tensorflow/tfjs-backend-wasm@4.22.0 tfjs-backend-wasm-simd.wasm"
+    },
+    "wasm/tfjs-backend-wasm-threaded-simd.wasm": {
+      "bytes": 435643,
+      "sha256": "c052228d4bef185c27bbe59a9e029570c78bbb9f08b3cb46b597851650373de2",
+      "source": "@tensorflow/tfjs-backend-wasm@4.22.0 tfjs-backend-wasm-threaded-simd.wasm"
+    },
     "engine.bundle.js": {
-      "bytes": 5518076,
-      "sha256": "b282533fa8fa974c0d6224c12542b06845a663c7921f0a3612d952f4c236db38",
-      "source": "engine.js; pinned pnpm-lock.yaml; NSFWJS MobileNetV2 weights embedded from nsfwjs@4.4.0"
+      "bytes": 5518348,
+      "sha256": "2809872b18551f13e356d6d498a62682d936a863194959aeea574593f415a317",
+      "source": "engine.js; pinned pnpm-lock.yaml; NSFWJS MobileNetV2 weights embedded from nsfwjs@4.4.0; TFJS WASM backend kernels"
     },
     "engine.bundle.js.LEGAL.txt": {
       "bytes": 108712,

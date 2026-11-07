@@ -104,12 +104,17 @@ public final class MainActivity extends Activity {
     private int selectedPage;
     private int sidePadding;
 
+    private TextView appBarTitle;
+    private TextView appBarSubtitle;
+
     private TextView statusTitle;
     private TextView statusBody;
     private Ui.ShieldView heroShield;
     private Ui.LayerTile layerDns;
     private Ui.LayerTile layerApps;
     private Ui.LayerTile layerImages;
+    private LinearLayout heroCard;
+    private boolean heroAttention;
     private LinearLayout attentionCard;
     private LinearLayout attentionList;
     private Ui.Disclosure attentionDetails;
@@ -120,6 +125,7 @@ public final class MainActivity extends Activity {
     private TextView setupState;
     private Button setupNext;
     private TextView networkState;
+    private Ui.StatusPill networkPill;
     private TextView seedFreshness;
     private TextView networkCheckState;
     private TextView watchdogState;
@@ -130,8 +136,7 @@ public final class MainActivity extends Activity {
     private Button notifSettings;
     private Button privateDnsSettings;
 
-    private TextView textState;
-    private Button accessibilityAction;
+    private Ui.SettingRow accessibilityRow;
     private Ui.SettingRow homeBlockedRow;
     private Ui.SettingRow homeTextRow;
     private Ui.SettingRow homeVisualRow;
@@ -228,16 +233,18 @@ public final class MainActivity extends Activity {
         appBarRow = new LinearLayout(this);
         appBarRow.setOrientation(LinearLayout.HORIZONTAL);
         appBarRow.setGravity(Gravity.CENTER_VERTICAL);
-        appBarRow.setPadding(sidePadding, Ui.dp(this, 10), sidePadding, Ui.dp(this, 10));
-        appBarRow.addView(Ui.iconInTile(this, R.drawable.ic_shield, R.color.accent, 40, 24));
+        appBarRow.setPadding(sidePadding, Ui.dp(this, 6), sidePadding, Ui.dp(this, 6));
+        appBarRow.addView(Ui.iconInTile(this, R.drawable.ic_shield, R.color.accent, 38, 22));
         LinearLayout brand = new LinearLayout(this);
         brand.setOrientation(LinearLayout.VERTICAL);
-        TextView title = Ui.text(this, getString(R.string.app_name), 19, R.color.text_primary);
-        title.setTypeface(Ui.medium());
-        TextView subtitle = Ui.text(this, getString(R.string.app_tagline), 11,
+        // The bar names the page once. On Protection it carries the product name and tagline;
+        // the other pages swap in the page name, so their content needs no second title.
+        appBarTitle = Ui.text(this, getString(R.string.app_name), 18, R.color.text_primary);
+        appBarTitle.setTypeface(Ui.medium());
+        appBarSubtitle = Ui.text(this, getString(R.string.app_tagline), 11,
                 R.color.text_tertiary);
-        brand.addView(title);
-        brand.addView(subtitle);
+        brand.addView(appBarTitle);
+        brand.addView(appBarSubtitle);
         LinearLayout.LayoutParams brandParams = new LinearLayout.LayoutParams(0,
                 LinearLayout.LayoutParams.WRAP_CONTENT, 1);
         brandParams.setMarginStart(Ui.dp(this, 12));
@@ -333,8 +340,8 @@ public final class MainActivity extends Activity {
                                 | android.view.WindowInsets.Type.displayCutout());
                 android.graphics.Insets ime = insets.getInsets(android.view.WindowInsets.Type.ime());
                 view.setPadding(bars.left, 0, bars.right, 0);
-                appBarRow.setPadding(sidePadding, Ui.dp(this, 10) + bars.top,
-                        sidePadding, Ui.dp(this, 10));
+                appBarRow.setPadding(sidePadding, Ui.dp(this, 6) + bars.top,
+                        sidePadding, Ui.dp(this, 6));
                 boolean keyboard = ime.bottom > 0;
                 navBar.setVisibility(keyboard ? View.GONE : View.VISIBLE);
                 navRow.setPadding(sidePadding, Ui.dp(this, 4), sidePadding,
@@ -404,7 +411,18 @@ public final class MainActivity extends Activity {
         } else {
             pages[selectedPage].setAlpha(1f);
         }
+        updateAppBar();
         if (selectedPage == PAGE_RULES) refreshRuleSummaries();
+    }
+
+    /** Protection keeps the product name; the other pages name themselves in the same bar. */
+    private void updateAppBar() {
+        if (appBarTitle == null) return;
+        boolean home = selectedPage == PAGE_PROTECTION;
+        int titleRes = home ? R.string.app_name
+                : selectedPage == PAGE_RULES ? R.string.nav_rules : R.string.nav_guide;
+        Ui.setTextIfChanged(appBarTitle, getString(titleRes));
+        appBarSubtitle.setVisibility(home ? View.VISIBLE : View.GONE);
     }
 
     private boolean handleBack() {
@@ -454,6 +472,7 @@ public final class MainActivity extends Activity {
         });
 
         LinearLayout hero = new LinearLayout(this);
+        heroCard = hero;
         hero.setOrientation(LinearLayout.VERTICAL);
         hero.setBackgroundResource(R.drawable.bg_hero);
         hero.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -461,21 +480,21 @@ public final class MainActivity extends Activity {
 
         heroShield = new Ui.ShieldView(this);
         LinearLayout.LayoutParams shieldParams = new LinearLayout.LayoutParams(
-                Ui.dp(this, 116), Ui.dp(this, 116));
+                Ui.dp(this, 92), Ui.dp(this, 92));
         shieldParams.gravity = Gravity.CENTER_HORIZONTAL;
         hero.addView(heroShield, shieldParams);
 
-        statusTitle = Ui.text(this, getString(R.string.status_title), 27, R.color.text_primary);
+        statusTitle = Ui.text(this, getString(R.string.status_title), 23, R.color.text_primary);
         statusTitle.setTypeface(Ui.medium());
         statusTitle.setGravity(Gravity.CENTER);
-        statusTitle.setLineSpacing(Ui.dp(this, 3), 1.05f);
+        statusTitle.setLineSpacing(Ui.dp(this, 2), 1.08f);
         statusTitle.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
         LinearLayout.LayoutParams statusTitleParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         statusTitleParams.topMargin = Ui.dp(this, 16);
         hero.addView(statusTitle, statusTitleParams);
 
-        statusBody = Ui.text(this, "", 15, R.color.text_secondary);
+        statusBody = Ui.text(this, "", 14, R.color.text_secondary);
         statusBody.setGravity(Gravity.CENTER);
         statusBody.setLineSpacing(Ui.dp(this, 4), 1.16f);
         LinearLayout.LayoutParams statusBodyParams = new LinearLayout.LayoutParams(
@@ -532,7 +551,20 @@ public final class MainActivity extends Activity {
         attentionCard.setVisibility(View.GONE);
         page.addView(attentionCard, Ui.margins(this, 0, 12));
 
-        LinearLayout network = addCard(page, R.drawable.ic_network, R.string.section_network);
+        LinearLayout network = Ui.card(this);
+        LinearLayout networkHead = new LinearLayout(this);
+        networkHead.setOrientation(LinearLayout.HORIZONTAL);
+        networkHead.setGravity(Gravity.CENTER_VERTICAL);
+        networkHead.setPadding(0, Ui.dp(this, 12), 0, Ui.dp(this, 8));
+        TextView networkTitle = Ui.text(this, getString(R.string.section_network), 17,
+                R.color.text_primary);
+        networkTitle.setTypeface(Ui.medium());
+        Ui.heading(networkTitle);
+        networkHead.addView(networkTitle, new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        networkPill = Ui.statusPill(this, getString(R.string.state_off), Ui.OFF);
+        networkHead.addView(networkPill.root);
+        network.addView(networkHead);
         networkState = statusLine();
         network.addView(networkState);
         seedFreshness = Ui.body(this, "");
@@ -618,53 +650,56 @@ public final class MainActivity extends Activity {
         });
         dnsAdvanced = Ui.disclosure(this, getString(R.string.dns_advanced), advanced);
         network.addView(dnsAdvanced.root, Ui.margins(this, 0, 4));
+        page.addView(network, Ui.margins(this, 0, 12));
 
+        page.addView(Ui.sectionLabel(this, getString(R.string.home_rules_title)));
         LinearLayout rulesCard = Ui.card(this);
-        rulesCard.addView(Ui.sectionHeader(this, R.drawable.ic_tune, getString(R.string.home_rules_title)));
 
+        // One line per rule: the answer sits at the end of the row, so the whole
+        // set fits on one screen and the eye can compare states down the column.
         homeBlockedRow = Ui.settingRow(this, R.drawable.ic_apps,
-                getString(R.string.choose_blocked_apps), getString(R.string.none_chosen),
+                getString(R.string.choose_blocked_apps), "", getString(R.string.none_chosen),
                 view -> chooseApps(false));
         rulesCard.addView(homeBlockedRow.root);
         rulesCard.addView(Ui.divider(this));
 
         homeTextRow = Ui.settingRow(this, R.drawable.ic_text,
-                getString(R.string.home_adult_text), getString(R.string.state_off),
+                getString(R.string.home_adult_text), "", getString(R.string.state_off),
                 view -> editAdultMode());
         rulesCard.addView(homeTextRow.root);
         rulesCard.addView(Ui.divider(this));
 
         homeVisualRow = Ui.settingRow(this, R.drawable.ic_image,
-                getString(R.string.home_image_checks), getString(R.string.state_off),
+                getString(R.string.home_image_checks), "", getString(R.string.state_off),
                 view -> editVisualMode());
         rulesCard.addView(homeVisualRow.root);
         rulesCard.addView(Ui.divider(this));
 
         homeScheduleRow = Ui.settingRow(this, R.drawable.ic_calendar,
-                getString(R.string.section_schedule), getString(R.string.state_off),
+                getString(R.string.section_schedule), "", getString(R.string.state_off),
                 view -> editSchedule());
         rulesCard.addView(homeScheduleRow.root);
         rulesCard.addView(Ui.divider(this));
 
         homeTimeRow = Ui.settingRow(this, R.drawable.ic_clock,
-                getString(R.string.section_time_limits), getString(R.string.state_off),
+                getString(R.string.section_time_limits), "", getString(R.string.state_off),
                 view -> editTimeLimits());
         rulesCard.addView(homeTimeRow.root);
         rulesCard.addView(Ui.divider(this));
 
         homeCommitmentRow = Ui.settingRow(this, R.drawable.ic_lock,
-                getString(R.string.section_commitment), getString(R.string.state_off),
+                getString(R.string.section_commitment), "", getString(R.string.state_off),
                 view -> chooseCommitment());
         rulesCard.addView(homeCommitmentRow.root);
         rulesCard.addView(Ui.divider(this));
 
         homeUninstallRow = Ui.settingRow(this, R.drawable.ic_shield,
-                getString(R.string.section_uninstall), getString(R.string.state_off),
+                getString(R.string.section_uninstall), "", getString(R.string.state_off),
                 view -> showUninstallDialog());
         rulesCard.addView(homeUninstallRow.root);
         page.addView(rulesCard, Ui.margins(this, 0, 10));
 
-        standaloneSettingRow(page, R.drawable.ic_pulse,
+        standaloneSettingRow(page, R.drawable.ic_pause,
                 R.string.pause_voluntary_action, getString(R.string.pause_voluntary_summary),
                 view -> startActivity(new Intent(this, RestrictionActivity.class)
                         .putExtra("voluntary", true)));
@@ -673,8 +708,6 @@ public final class MainActivity extends Activity {
     // ------------------------------------------------------------------ rules page
 
     private void buildRulesPage(LinearLayout page) {
-        page.addView(Ui.pageTitle(this, getString(R.string.rules_heading)), Ui.margins(this, 6, 8));
-
         rulesLockCard = Ui.card(this);
         rulesLockCard.setBackgroundResource(R.drawable.bg_warning_card);
         LinearLayout lockRow = new LinearLayout(this);
@@ -695,7 +728,7 @@ public final class MainActivity extends Activity {
         rulesLockCard.setVisibility(View.GONE);
         page.addView(rulesLockCard, Ui.margins(this, 0, 10));
 
-        LinearLayout builtin = addCard(page, R.drawable.ic_shield, R.string.section_builtin);
+        LinearLayout builtin = addCard(page, R.string.section_builtin);
         adultToggle = Ui.toggle(this, getString(R.string.toggle_adult));
         adultToggle.setOnClickListener(view -> {
             adultToggle.setChecked(!adultToggle.isChecked());
@@ -724,14 +757,13 @@ public final class MainActivity extends Activity {
         });
         builtin.addView(grayToggle);
 
-        LinearLayout accessibility = addCard(page, R.drawable.ic_text, R.string.section_accessibility);
-        textState = statusLine();
-        accessibility.addView(textState);
-        accessibilityAction = Ui.button(this, R.string.enable_text_guard, Ui.ButtonKind.TONAL);
-        accessibility.addView(accessibilityAction, Ui.buttonParams(this));
-        accessibilityAction.setOnClickListener(view -> showAccessibilityDisclosure());
+        // The service is a status, not a form: one standalone row answers on/off, and the tap
+        // opens the same disclosure the old button did.
+        accessibilityRow = standaloneSettingRow(page, R.drawable.ic_text,
+                R.string.section_accessibility, "", getString(R.string.state_off),
+                view -> showAccessibilityDisclosure());
 
-        LinearLayout custom = addCard(page, R.drawable.ic_tune, R.string.section_rules_custom);
+        LinearLayout custom = addCard(page, R.string.section_rules_custom);
         domainsRow = Ui.settingRow(this, R.drawable.ic_network,
                 getString(R.string.edit_domains), getString(R.string.none_saved),
                 view -> editRules(true));
@@ -742,7 +774,7 @@ public final class MainActivity extends Activity {
                 view -> editRules(false));
         custom.addView(wordsRow.root);
 
-        LinearLayout appRules = addCard(page, R.drawable.ic_apps, R.string.section_apps);
+        LinearLayout appRules = addCard(page, R.string.section_apps);
         blockedRow = Ui.settingRow(this, R.drawable.ic_lock,
                 getString(R.string.choose_blocked_apps), getString(R.string.none_chosen),
                 view -> chooseApps(false));
@@ -775,9 +807,14 @@ public final class MainActivity extends Activity {
     /** A tappable settings row that stands on its own, the way ScreenZen's Options list does. */
     private Ui.SettingRow standaloneSettingRow(LinearLayout page, int iconRes, int titleRes,
             CharSequence summary, View.OnClickListener click) {
-        Ui.SettingRow row = Ui.settingRow(this, iconRes, getString(titleRes), summary, click);
+        return standaloneSettingRow(page, iconRes, titleRes, summary, null, click);
+    }
+
+    private Ui.SettingRow standaloneSettingRow(LinearLayout page, int iconRes, int titleRes,
+            CharSequence summary, CharSequence value, View.OnClickListener click) {
+        Ui.SettingRow row = Ui.settingRow(this, iconRes, getString(titleRes), summary, value, click);
         row.root.setBackgroundResource(R.drawable.bg_row_card);
-        row.root.setPadding(Ui.dp(this, 18), Ui.dp(this, 10), Ui.dp(this, 12), Ui.dp(this, 10));
+        row.root.setPaddingRelative(Ui.dp(this, 26), Ui.dp(this, 12), Ui.dp(this, 26), Ui.dp(this, 12));
         page.addView(row.root, Ui.margins(this, 0, 10));
         return row;
     }
@@ -785,14 +822,11 @@ public final class MainActivity extends Activity {
     // ------------------------------------------------------------------ settings page
 
     private void buildGuidePage(LinearLayout page) {
-        page.addView(Ui.pageTitle(this, getString(R.string.nav_guide)), Ui.margins(this, 6, 6));
-
+        page.addView(Ui.sectionLabel(this, getString(R.string.settings_protection_title)));
         LinearLayout protection = Ui.card(this);
-        protection.addView(Ui.sectionHeader(this, R.drawable.ic_shield,
-                getString(R.string.settings_protection_title)));
 
         settingsUninstallRow = Ui.settingRow(this, R.drawable.ic_shield,
-                getString(R.string.section_uninstall), getString(R.string.state_off),
+                getString(R.string.section_uninstall), "", getString(R.string.state_off),
                 view -> showUninstallDialog());
         protection.addView(settingsUninstallRow.root);
         protection.addView(Ui.divider(this));
@@ -815,9 +849,8 @@ public final class MainActivity extends Activity {
         protection.addView(guardianRow.root);
         page.addView(protection, Ui.margins(this, 0, 12));
 
+        page.addView(Ui.sectionLabel(this, getString(R.string.settings_about_title)));
         LinearLayout about = Ui.card(this);
-        about.addView(Ui.sectionHeader(this, R.drawable.ic_book,
-                getString(R.string.settings_about_title)));
 
         Ui.SettingRow intro = Ui.settingRow(this, R.drawable.ic_book,
                 getString(R.string.settings_replay_intro), getString(R.string.settings_intro_summary),
@@ -863,7 +896,7 @@ public final class MainActivity extends Activity {
         about.addView(Ui.divider(this));
 
         Ui.SettingRow notices = Ui.settingRow(this, R.drawable.ic_book,
-                getString(R.string.notices_title), getString(R.string.settings_notices_summary),
+                getString(R.string.notices_title), "",
                 view -> Notices.show(this));
         about.addView(notices.root);
         about.addView(Ui.divider(this));
@@ -1009,9 +1042,9 @@ public final class MainActivity extends Activity {
 
     // ------------------------------------------------------------------ page building helpers
 
-    private LinearLayout addCard(LinearLayout page, int iconRes, int titleRes) {
+    private LinearLayout addCard(LinearLayout page, int titleRes) {
+        page.addView(Ui.sectionLabel(this, getString(titleRes)));
         LinearLayout card = Ui.card(this);
-        card.addView(Ui.sectionHeader(this, iconRes, getString(titleRes)));
         page.addView(card, Ui.margins(this, 0, 12));
         return card;
     }
@@ -1043,8 +1076,19 @@ public final class MainActivity extends Activity {
     /** A status line that is also the second half of a row's spoken label. */
     private void setRowStatus(Ui.SettingRow row, CharSequence text, int kind) {
         if (row == null) return;
+        if (row.value != null) {
+            row.setValue(text, kind);
+            return;
+        }
         setStatus(row.summary, text, kind);
         row.root.setContentDescription(row.title.getText() + ". " + text);
+    }
+
+    /** Writes a row's answer where that row keeps it: the trailing value or the second line. */
+    private void setRowValue(Ui.SettingRow row, CharSequence text, int kind) {
+        if (row == null) return;
+        if (row.value != null) row.setValue(text, kind);
+        else setRowStatus(row, text, kind);
     }
 
     /**
@@ -1179,7 +1223,7 @@ public final class MainActivity extends Activity {
         if (domainsRow != null) domainsRow.setSummary(domains);
         if (wordsRow != null) wordsRow.setSummary(words);
         if (blockedRow != null) blockedRow.setSummary(blocked);
-        if (homeBlockedRow != null) homeBlockedRow.setSummary(blocked);
+        if (homeBlockedRow != null) setRowValue(homeBlockedRow, blocked, Ui.OFF);
         if (scannedRow != null) scannedRow.setSummary(scanned);
         if (browserRow != null) browserRow.setSummary(browsers);
     }
@@ -1283,6 +1327,11 @@ public final class MainActivity extends Activity {
                 ? R.string.protection_partial : R.string.status_title);
         Ui.setTextIfChanged(statusTitle, title);
         statusTitle.setTextColor(Ui.color(this, needsAttention ? R.color.warning : R.color.text_primary));
+        if (heroCard != null && heroAttention != needsAttention) {
+            heroAttention = needsAttention;
+            heroCard.setBackgroundResource(needsAttention
+                    ? R.drawable.bg_hero_attention : R.drawable.bg_hero);
+        }
         heroShield.setState(needsAttention ? Ui.ATTENTION
                 : current == DnsVpnService.State.STARTING || guard == GuardHealth.LIMITED
                 ? Ui.STARTING
@@ -1351,7 +1400,7 @@ public final class MainActivity extends Activity {
             case RUNNING: networkText = R.string.dns_running; break;
             case DEGRADED: networkText = R.string.dns_degraded; break;
             case ERROR: networkText = R.string.dns_error; break;
-            default: networkText = R.string.network; break;
+            default: networkText = R.string.dns_off_body; break;
         }
         String network = privateDnsBypass
                 ? getString(R.string.dns_private_dns_strict, getString(networkText))
@@ -1366,13 +1415,19 @@ public final class MainActivity extends Activity {
         }
         if (privateDnsBypass) networkKind = Ui.ATTENTION;
         setStatus(networkState, network, networkKind);
+        if (networkPill != null) {
+            networkPill.setState(getString(networkKind == Ui.ON ? R.string.state_on
+                    : networkKind == Ui.ATTENTION ? R.string.state_attention
+                    : networkKind == Ui.STARTING ? R.string.state_starting : R.string.state_off),
+                    networkKind);
+        }
         privateDnsSettings.setVisibility(privateDnsBypass ? View.VISIBLE : View.GONE);
         if (privateDnsBypass && dnsAdvanced != null) dnsAdvanced.setExpanded(true);
 
-        boolean canStartDns = current == DnsVpnService.State.OFF || current == DnsVpnService.State.ERROR;
-        Ui.setTextIfChanged(startDns, getString(current == DnsVpnService.State.STARTING
-                ? R.string.state_starting : canStartDns ? R.string.dns_start : R.string.dns_on_button));
-        Ui.setEnabledWithAlpha(startDns, settings != null && canStartDns);
+        boolean canStartDns = settings != null
+                && (current == DnsVpnService.State.OFF || current == DnsVpnService.State.ERROR);
+        startDns.setVisibility(canStartDns ? View.VISIBLE : View.GONE);
+        Ui.setTextIfChanged(startDns, getString(R.string.dns_start));
         diagnosticsText = getString(R.string.dns_summary,
                 getString(R.string.dns_stats, DnsVpnService.domains, DnsVpnService.blocked.get(),
                         DnsVpnService.forwarded.get(), DnsVpnService.rewritten.get(),
@@ -1430,16 +1485,12 @@ public final class MainActivity extends Activity {
             case SETTINGS_UNAVAILABLE: textRes = R.string.policy_unavailable; textKind = Ui.ATTENTION; break;
             default: textRes = R.string.text_guard_disabled; textKind = Ui.OFF; break;
         }
-        setStatus(textState, getString(textRes), textKind);
-        if (accessibilityAction != null) {
-            boolean connected = guard == GuardHealth.ACTIVE || guard == GuardHealth.LIMITED
-                    || guard == GuardHealth.READY_NO_RULES;
-            accessibilityAction.setVisibility(connected ? View.GONE : View.VISIBLE);
-        }
+        setRowValue(accessibilityRow, getString(textRes), textKind);
         if (homeTextRow != null) {
             boolean adultOn = rules != null && rules.adultWordsEnabled;
-            homeTextRow.setSummary(getString(!adultOn ? R.string.state_off
-                    : guard == GuardHealth.ACTIVE ? R.string.state_on : R.string.state_attention));
+            setRowValue(homeTextRow, getString(!adultOn ? R.string.state_off
+                    : guard == GuardHealth.ACTIVE ? R.string.state_on : R.string.state_attention),
+                    !adultOn ? Ui.OFF : guard == GuardHealth.ACTIVE ? Ui.ON : Ui.ATTENTION);
         }
 
         String commitment;
@@ -1454,9 +1505,10 @@ public final class MainActivity extends Activity {
                 : remaining == 0 ? Ui.OFF : Ui.ON;
         setRowStatus(commitmentRow, commitment, commitmentKind);
         if (homeCommitmentRow != null) {
-            homeCommitmentRow.setSummary(!settingsReadable ? getString(R.string.state_attention)
+            setRowValue(homeCommitmentRow, !settingsReadable ? getString(R.string.state_attention)
                     : remaining == 0 ? getString(R.string.state_off)
-                    : getString(R.string.home_commitment_on, Durations.remaining(this, remaining)));
+                    : getString(R.string.home_commitment_on, Durations.remaining(this, remaining)),
+                    !settingsReadable ? Ui.ATTENTION : remaining == 0 ? Ui.OFF : Ui.ON);
         }
         if (settingsPermissionsRow != null) {
             settingsPermissionsRow.setSummary(getString(R.string.settings_permissions_summary,
@@ -1526,12 +1578,13 @@ public final class MainActivity extends Activity {
         }
     }
 
+    /** A frozen row keeps its text readable: a lock replaces the chevron instead of a grey wash. */
     private static void setRowEnabled(Ui.SettingRow row, boolean enabled) {
         if (row == null) return;
         row.root.setEnabled(enabled);
         row.root.setClickable(enabled);
         row.root.setFocusable(enabled);
-        row.root.setAlpha(enabled ? 1f : 0.45f);
+        row.setLocked(!enabled);
     }
 
     /** A short refusal before a dialog opens; the backend still re-checks the change. */
@@ -1830,13 +1883,11 @@ public final class MainActivity extends Activity {
                 default: label = R.string.visual_waiting; kind = Ui.ON; break;
             }
         }
-        if (homeVisualRow != null) {
-            homeVisualRow.setSummary(getString(!rules.visualEnabled ? R.string.state_off
-                    : kind == Ui.ON ? R.string.state_on
-                    : kind == Ui.UNSUPPORTED ? R.string.state_unsupported
-                    : kind == Ui.STARTING ? R.string.state_starting
-                    : R.string.state_attention));
-        }
+        setRowValue(homeVisualRow, getString(!rules.visualEnabled ? R.string.state_off
+                : kind == Ui.ON ? R.string.state_on
+                : kind == Ui.UNSUPPORTED ? R.string.state_unsupported
+                : kind == Ui.STARTING ? R.string.state_starting
+                : R.string.state_attention), !rules.visualEnabled ? Ui.OFF : kind);
         updateToggle(visualToggle, R.string.toggle_visual, rules.visualEnabled
                 ? getString(label) : getString(R.string.visual_toggle_summary));
         visualToggle.setChecked(rules.visualEnabled);
@@ -1858,7 +1909,7 @@ public final class MainActivity extends Activity {
     private void refreshSchedule(DailyAppSchedule schedule) {
         if (!schedule.enabled || !schedule.isConfigured()) {
             setRowStatus(scheduleRow, getString(R.string.schedule_off), Ui.OFF);
-            if (homeScheduleRow != null) homeScheduleRow.setSummary(getString(R.string.state_off));
+            setRowValue(homeScheduleRow, getString(R.string.state_off), Ui.OFF);
             return;
         }
         LocalTime now = LocalTime.now();
@@ -1869,8 +1920,8 @@ public final class MainActivity extends Activity {
                 scheduleTime(schedule.startMinute), scheduleTime(schedule.endMinute),
                 getString(schedule.activeAt(minute, java.time.LocalDate.now().getDayOfWeek())
                         ? R.string.schedule_window_active : R.string.schedule_window_inactive), days), Ui.ON);
-        if (homeScheduleRow != null) homeScheduleRow.setSummary(getString(R.string.home_schedule_value,
-                scheduleTime(schedule.startMinute), scheduleTime(schedule.endMinute), days));
+        setRowValue(homeScheduleRow, getString(R.string.home_schedule_value,
+                scheduleTime(schedule.startMinute), scheduleTime(schedule.endMinute), days), Ui.ON);
     }
 
     /** Daily time limits are a saved rule plus a separate Android Usage access grant. Show both,
@@ -1878,7 +1929,7 @@ public final class MainActivity extends Activity {
     private void refreshTimeLimits(PolicyStore.Snapshot rules) {
         if (!rules.timeLimits.configured()) {
             setRowStatus(timeLimitRow, getString(R.string.time_limits_off), Ui.OFF);
-            if (homeTimeRow != null) homeTimeRow.setSummary(getString(R.string.state_off));
+            setRowValue(homeTimeRow, getString(R.string.state_off), Ui.OFF);
             return;
         }
         int count = rules.timeLimits.size();
@@ -1896,11 +1947,9 @@ public final class MainActivity extends Activity {
         boolean access = AppUsage.hasAccess(this);
         if (!access) summary = getString(R.string.time_limits_summary_access, summary);
         setRowStatus(timeLimitRow, summary, access ? Ui.ON : Ui.ATTENTION);
-        if (homeTimeRow != null) {
-            homeTimeRow.setSummary(access
-                    ? getResources().getQuantityString(R.plurals.time_limits_summary, count, count)
-                    : getString(R.string.state_attention));
-        }
+        setRowValue(homeTimeRow, access
+                ? getResources().getQuantityString(R.plurals.time_limits_summary, count, count)
+                : getString(R.string.state_attention), access ? Ui.ON : Ui.ATTENTION);
     }
 
     private String timeLimitText(int minutes) {
@@ -2626,13 +2675,15 @@ public final class MainActivity extends Activity {
         int color = Ui.color(this, kind == Ui.ON ? R.color.success
                 : kind == Ui.ATTENTION || (kind == Ui.OFF && BuildConfig.SELF_PROTECTION)
                 ? R.color.warning : R.color.text_tertiary);
-        if (homeUninstallRow != null) {
-            homeUninstallRow.setSummary(summary);
-            homeUninstallRow.summary.setTextColor(color);
-        }
-        if (settingsUninstallRow != null) {
-            settingsUninstallRow.setSummary(summary);
-            settingsUninstallRow.summary.setTextColor(color);
+        for (Ui.SettingRow row : new Ui.SettingRow[] {homeUninstallRow, settingsUninstallRow}) {
+            if (row == null) continue;
+            if (row.value != null) {
+                row.setValue(summary, kind);
+                row.value.setTextColor(color);
+            } else {
+                row.setSummary(summary);
+                row.summary.setTextColor(color);
+            }
         }
     }
 
@@ -2949,17 +3000,19 @@ public final class MainActivity extends Activity {
         return manager != null && manager.areNotificationsEnabled();
     }
 
+    /** The same two sources as Permissions.accessibility: the manager cache, then Android's own value. */
     private Boolean guardPermissionEnabled() {
         try {
             AccessibilityManager manager = getSystemService(AccessibilityManager.class);
-            if (manager == null) return null;
-            for (AccessibilityServiceInfo info : manager.getEnabledAccessibilityServiceList(
-                    AccessibilityServiceInfo.FEEDBACK_ALL_MASK)) {
-                android.content.pm.ServiceInfo service = info.getResolveInfo().serviceInfo;
-                if (getPackageName().equals(service.packageName)
-                        && TextGuardService.class.getName().equals(service.name)) return true;
+            if (manager != null) {
+                for (AccessibilityServiceInfo info : manager.getEnabledAccessibilityServiceList(
+                        AccessibilityServiceInfo.FEEDBACK_ALL_MASK)) {
+                    android.content.pm.ServiceInfo service = info.getResolveInfo().serviceInfo;
+                    if (getPackageName().equals(service.packageName)
+                            && TextGuardService.class.getName().equals(service.name)) return true;
+                }
             }
-            return false;
+            return Permissions.accessibilityInSettings(this);
         } catch (RuntimeException unavailable) { return null; }
     }
 

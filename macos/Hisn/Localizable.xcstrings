@@ -1,6 +1,12 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "" : {
+      "shouldTranslate" : false
+    },
+    "·" : {
+      "shouldTranslate" : false
+    },
     "“%@” is too short to block safely. Words need at least %lld letters — shorter ones match parts of ordinary words and block pages you need." : {
       "localizations" : {
         "ar" : {
@@ -18,6 +24,7 @@
       }
     },
     "%@ · until %@" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -185,6 +192,22 @@
         }
       }
     },
+    "%@–%@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "من %1$@ إلى %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@–%2$@"
+          }
+        }
+      }
+    },
     "%@: %@" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -278,6 +301,32 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld more checks below."
+          }
+        }
+      }
+    },
+    "%lld of %lld" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld من %2$lld"
+          }
+        }
+      }
+    },
+    "%lld of %lld layers are working. Start with the first row that needs attention." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعمل %1$lld من %2$lld طبقات. ابدأ بالصف الأول الذي يحتاج انتباهًا."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld layers are working. Start with the first row that needs attention."
           }
         }
       }
@@ -415,11 +464,38 @@
       }
     },
     "2. If they agree, their Hisn Partner page gives them an approval to send back. Paste it here:" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "2. إن وافق، تعطيه صفحة «شريك حصن» موافقةً يرسلها إليك. الصقها هنا:"
+          }
+        }
+      }
+    },
+    "2. Paste their approval here:" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2. ألصق الموافقة هنا:"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2. Paste their approval here:"
+          }
+        }
+      }
+    },
+    "48-hour release or partner approval" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إفراج بعد 48 ساعة أو موافقة الشريك"
           }
         }
       }
@@ -494,6 +570,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "A lock has to be between %1$@ and %2$@."
+          }
+        }
+      }
+    },
+    "A lock is a promise with a deadline." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "القفل وعد له موعد نهائي."
           }
         }
       }
@@ -610,6 +696,22 @@
         }
       }
     },
+    "A lock is running. Add blocks and remove allowances; the reverse waits." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قفل قيد التشغيل. يمكنك إضافة الحجب وإزالة الاستثناءات؛ والعكس ينتظر."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A lock is running. Add blocks and remove allowances; the reverse waits."
+          }
+        }
+      }
+    },
     "A lock is running. Apps can be allowed again once it ends." : {
       "localizations" : {
         "ar" : {
@@ -679,6 +781,7 @@
       }
     },
     "A lock is running. You can add blocks and remove allowances; the reverse waits until it ends." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -689,6 +792,7 @@
       }
     },
     "A lock is running. You can turn checks on and raise sensitivity; the reverse waits until it ends." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -740,6 +844,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "يستغرق طلب الإنهاء %@ حتى يسري، ولا يمكن تعجيله. يستطيع شريك المحاسبة الموافقة عليه فورًا."
+          }
+        }
+      }
+    },
+    "A site covered by a wider rule you added is shown as blocked and left alone." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الموقع الذي تغطيه قاعدة أوسع أضفتها يظهر محجوبًا ويُترك كما هو."
+          }
+        }
+      }
+    },
+    "A site here is blocked in every app Hisn runs. Subdomains are included, so example.com also covers cdn.example.com. Adding a block works during a lock." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الموقع هنا محجوب في كل تطبيق يعمل فيه حصن. تشمل القاعدة النطاقات الفرعية، لذا يغطي example.com أيضًا cdn.example.com. إضافة حجب تعمل أثناء القفل."
+          }
+        }
+      }
+    },
+    "A site here stays reachable even when the published list names it. In strict mode only these sites are reachable. Withdrawing an allowance works during a lock; adding one waits until it ends." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الموقع هنا يبقى متاحًا حتى لو ذكرته القائمة المنشورة. في الوضع الصارم لا يبقى متاحًا سواه. سحب السماح يعمل أثناء القفل؛ إضافة سماح جديد تنتظر انتهاءه."
           }
         }
       }
@@ -851,22 +985,22 @@
         }
       }
     },
-    "Add to Always block" : {
+    "Add to block list" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "أضف إلى قائمة الحجب الدائم"
+            "value" : "أضف إلى قائمة الحجب"
           }
         }
       }
     },
-    "Added to Always block." : {
+    "Added to the block list." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "أُضيف إلى قائمة الحجب الدائم."
+            "value" : "أُضيف إلى قائمة الحجب."
           }
         }
       }
@@ -891,6 +1025,16 @@
         }
       }
     },
+    "Adding works now. Removing waits." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإضافة تعمل الآن. الإزالة تنتظر."
+          }
+        }
+      }
+    },
     "Additional protection" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -898,6 +1042,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "حماية إضافية"
+          }
+        }
+      }
+    },
+    "Adds these sites to your block list, on top of the adult-content lists. Optional — nothing here is needed for adult-content protection." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تضيف هذه المواقع إلى قائمة الحجب لديك، فوق قوائم المحتوى الإباحي. اختياري — لا شيء هنا مطلوب لحماية المحتوى الإباحي."
           }
         }
       }
@@ -949,12 +1103,32 @@
         }
       }
     },
-    "Already on the Always block list." : {
+    "Allow list" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "موجود بالفعل في قائمة الحجب الدائم."
+            "value" : "قائمة السماح"
+          }
+        }
+      }
+    },
+    "Already blocked by" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "محجوب سابقًا بواسطة"
+          }
+        }
+      }
+    },
+    "Already on the block list." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "موجود بالفعل في قائمة الحجب."
           }
         }
       }
@@ -980,6 +1154,7 @@
       }
     },
     "Always available. Making the lock weaker is not." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1016,6 +1191,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "والمزيد"
+          }
+        }
+      }
+    },
+    "App" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التطبيق"
           }
         }
       }
@@ -1171,6 +1356,26 @@
         }
       }
     },
+    "Block distractions too?" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "احجب المشتّتات أيضًا؟"
+          }
+        }
+      }
+    },
+    "Block list" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قائمة الحجب"
+          }
+        }
+      }
+    },
     "Block list version" : {
       "localizations" : {
         "ar" : {
@@ -1181,10 +1386,18 @@
         }
       }
     },
-    "Blocked connections today" : {
-
+    "Blocked" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "محجوب"
+          }
+        }
+      }
     },
     "Blocked connections today" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1210,6 +1423,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تُحجب إضافةً إلى القوائم المدمجة."
+          }
+        }
+      }
+    },
+    "Blocked today" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المحجوب اليوم"
           }
         }
       }
@@ -1276,6 +1499,22 @@
         }
       }
     },
+    "Blocks nothing until setup is finished." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يحجب شيئًا حتى يكتمل الإعداد."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blocks nothing until setup is finished."
+          }
+        }
+      }
+    },
     "Blocks the app's internet access. It still opens, and still works offline — stopping a launch needs Screen Time, which no app can do for you." : {
       "localizations" : {
         "ar" : {
@@ -1317,6 +1556,7 @@
       }
     },
     "Breathing pause" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1419,6 +1659,7 @@
       }
     },
     "browser.live.checked" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1786,6 +2027,22 @@
         }
       }
     },
+    "Check automatic date and time." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تحقق من التاريخ والوقت التلقائيين."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check automatic date and time."
+          }
+        }
+      }
+    },
     "Check Cloudflare DNS on this Mac" : {
       "localizations" : {
         "ar" : {
@@ -1917,6 +2174,16 @@
         }
       }
     },
+    "Checking this Mac" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "جارٍ فحص هذا الجهاز"
+          }
+        }
+      }
+    },
     "Checking this Mac..." : {
       "localizations" : {
         "ar" : {
@@ -1964,6 +2231,7 @@
       }
     },
     "Choose what your network allows, regardless of the router brand or internet provider. Hisn does not configure routers automatically yet." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -1975,6 +2243,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Choose what your network allows, regardless of the router brand or internet provider. Hisn does not configure routers automatically yet."
+          }
+        }
+      }
+    },
+    "Choose what your network allows." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختر ما تسمح به شبكتك."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose what your network allows."
           }
         }
       }
@@ -2035,6 +2319,16 @@
         }
       }
     },
+    "Commitment" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الالتزام"
+          }
+        }
+      }
+    },
     "Company" : {
       "localizations" : {
         "ar" : {
@@ -2072,6 +2366,7 @@
       }
     },
     "Confirmed by you. Hisn can check account permissions, but cannot know who holds a password." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -2313,6 +2608,7 @@
       }
     },
     "Daily lock at %@, until %@." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -2339,6 +2635,7 @@
       }
     },
     "design.localPrivacy" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -2445,6 +2742,7 @@
       }
     },
     "Device time could not be confirmed. Check automatic date and time. Your saved commitment deadline has not changed." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -2487,11 +2785,28 @@
       }
     },
     "Do this last. Keep a separate working administrator account; never remove the last administrator." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "نفّذ هذه الخطوة أخيرًا. احتفظ بحساب مسؤول منفصل يعمل؛ ولا تحذف آخر حساب مسؤول أبدًا."
+          }
+        }
+      }
+    },
+    "Do this last. Keep a separate working administrator account; never remove the last administrator. Confirmed by you. Hisn can check account permissions, but cannot know who holds a password." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افعل هذا أخيرًا. أبقِ حساب مسؤول منفصلًا وعاملًا؛ لا تحذف آخر مسؤول. تؤكده أنت. يستطيع حصن قراءة صلاحيات الحساب، لكنه لا يعرف من يحتفظ بكلمة المرور."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Do this last. Keep a separate working administrator account; never remove the last administrator. Confirmed by you. Hisn can check account permissions, but cannot know who holds a password."
           }
         }
       }
@@ -2536,6 +2851,27 @@
         }
       }
     },
+    "Duration" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المدة"
+          }
+        }
+      }
+    },
+    "Each chip adds the exact site to your block list. You can remove one at any time in Blocking Rules." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كل زر يضيف الموقع نفسه إلى قائمة الحجب لديك. يمكنك إزالة أي منها في أي وقت من قواعد الحجب."
+          }
+        }
+      }
+    },
     "Each step closes a way around the others. Do them in this order, with your partner for the ones they hold — the account split last, because it is the one that makes the rest stick." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2573,6 +2909,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "طُلب الإنهاء المبكر"
+          }
+        }
+      }
+    },
+    "Edit" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعديل"
           }
         }
       }
@@ -2647,6 +2993,22 @@
         }
       }
     },
+    "Enforces %lld of %lld layers." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يفرض %1$lld من %2$lld طبقات."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enforces %1$lld of %2$lld layers."
+          }
+        }
+      }
+    },
     "Enter a domain or paste a link. Subdomains are included, and adding a block works during a lock." : {
       "localizations" : {
         "ar" : {
@@ -2709,6 +3071,16 @@
         }
       }
     },
+    "Every layer Hisn can check is running." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كل طبقة يستطيع حصن فحصها تعمل الآن."
+          }
+        }
+      }
+    },
     "Everything else is running. Private windows skip the browser extension, so Hisn cannot check those pages." : {
       "localizations" : {
         "ar" : {
@@ -2725,12 +3097,38 @@
         }
       }
     },
+    "Explain" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تفسير"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Explain"
+          }
+        }
+      }
+    },
     "Extension removed or disabled: %@" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "الإضافة محذوفة أو معطّلة: %@"
+          }
+        }
+      }
+    },
+    "Extra sites added" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المواقع الإضافية المضافة"
           }
         }
       }
@@ -2827,12 +3225,48 @@
         }
       }
     },
+    "Finish" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إنهاء"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finish"
+          }
+        }
+      }
+    },
+    "Finish protecting this Mac" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أكمل حماية هذا الجهاز"
+          }
+        }
+      }
+    },
     "Finish setup" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "أكمل الإعداد"
+          }
+        }
+      }
+    },
+    "First run" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أول تشغيل"
           }
         }
       }
@@ -3050,6 +3484,7 @@
       }
     },
     "Guide selected from your details. Check that the official instructions cover your model and version before changing settings." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -3324,6 +3759,16 @@
         }
       }
     },
+    "How Hisn checks" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كيف يفحص حصن"
+          }
+        }
+      }
+    },
     "How Hisn works" : {
       "localizations" : {
         "ar" : {
@@ -3351,6 +3796,7 @@
       }
     },
     "How long?" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -3529,6 +3975,7 @@
       }
     },
     "If macOS asks, allow the filter under System Settings › General › Login Items & Extensions." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -3554,6 +4001,22 @@
         }
       }
     },
+    "If they agree, their Hisn Partner page gives them an approval to send back." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إذا وافقوا، تعطيهم صفحة شريك حصن موافقة يرسلونها إليك."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If they agree, their Hisn Partner page gives them an approval to send back."
+          }
+        }
+      }
+    },
     "If you choose, use Add app below to block the native app's new internet connections, then use its website with the Hisn extension connected. Do not add the service's domain to blocked sites if you want its website to remain available. Existing connections and cached or offline content are not removed." : {
       "localizations" : {
         "ar" : {
@@ -3565,6 +4028,7 @@
       }
     },
     "Immediate, and never without them." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -3767,6 +4231,16 @@
         }
       }
     },
+    "It ends in an adult-only top-level domain, so every name under it is blocked." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ينتهي بنطاق مخصّص للبالغين فقط، لذا كل اسم تحته محجوب."
+          }
+        }
+      }
+    },
     "It is not on the bundled core list (version %lld) or your own lists." : {
       "localizations" : {
         "ar" : {
@@ -3847,22 +4321,22 @@
         }
       }
     },
-    "It is on your Always allowed list. Neither the published list nor strict mode will block it." : {
+    "It is on your allow list. Neither the published list nor strict mode will block it." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "إنه في قائمة «مسموح دائمًا». لذلك لن تحجبه القائمة المنشورة ولا الوضع الصارم."
+            "value" : "إنه في قائمة السماح لديك. لا تحجبه القائمة المنشورة ولا الوضع الصارم."
           }
         }
       }
     },
-    "It is on your Always block list." : {
+    "It is on your block list." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "إنه في قائمة «احجب هذه دائمًا»."
+            "value" : "إنه في قائمة الحجب لديك."
           }
         }
       }
@@ -3943,6 +4417,16 @@
         }
       }
     },
+    "Last check" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "آخر فحص"
+          }
+        }
+      }
+    },
     "Last checked" : {
       "localizations" : {
         "ar" : {
@@ -4000,11 +4484,22 @@
       }
     },
     "Layer details" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "تفاصيل الطبقات"
+          }
+        }
+      }
+    },
+    "Layers" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الطبقات"
           }
         }
       }
@@ -4021,6 +4516,7 @@
       }
     },
     "Length" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -4077,6 +4573,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "موجّه روابط فقط — يبقى مفتوحًا لأنه يرسل الروابط إلى متصفح ولا يعرض الصفحات."
+          }
+        }
+      }
+    },
+    "List" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "القائمة"
           }
         }
       }
@@ -4148,7 +4654,6 @@
       }
     },
     "Locked" : {
-      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -4194,6 +4699,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "خفض الحساسية"
+          }
+        }
+      }
+    },
+    "Make it harder to stop" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اجعل إيقافها أصعب"
           }
         }
       }
@@ -4267,6 +4782,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Managed by %@"
+          }
+        }
+      }
+    },
+    "Managed by %@." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يديره %@."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Managed by %@."
           }
         }
       }
@@ -4352,6 +4883,7 @@
       }
     },
     "Managed by %@. You can turn checks on and raise sensitivity; the reverse requires your administrator." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -4523,6 +5055,16 @@
         }
       }
     },
+    "Network protection" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حماية الشبكة"
+          }
+        }
+      }
+    },
     "Network protection not verified" : {
       "localizations" : {
         "ar" : {
@@ -4581,6 +5123,32 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "التالي"
+          }
+        }
+      }
+    },
+    "Next daily lock %@–%@." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "القفل اليومي القادم من %1$@ إلى %2$@."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Next daily lock %1$@–%2$@."
+          }
+        }
+      }
+    },
+    "Next step" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الخطوة التالية"
           }
         }
       }
@@ -4688,6 +5256,26 @@
         }
       }
     },
+    "No daily lock scheduled." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا قفل يومي مجدول."
+          }
+        }
+      }
+    },
+    "No early self-release" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا إفراج ذاتي مبكر"
+          }
+        }
+      }
+    },
     "No early self-release during a fixed commitment. Partner recovery remains available; this does not prevent an administrator from removing protection." : {
       "localizations" : {
         "ar" : {
@@ -4767,6 +5355,32 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "لا يوجد قفل يعمل."
+          }
+        }
+      }
+    },
+    "No lock running" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا قفل يعمل الآن"
+          }
+        }
+      }
+    },
+    "No partner set up." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يوجد شريك معيّن."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No partner set up."
           }
         }
       }
@@ -4866,6 +5480,26 @@
         }
       }
     },
+    "Not blocked" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "غير محجوب"
+          }
+        }
+      }
+    },
+    "Not checked yet" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يُفحص بعد"
+          }
+        }
+      }
+    },
     "Not confirmed: %@" : {
       "localizations" : {
         "ar" : {
@@ -4958,6 +5592,16 @@
         }
       }
     },
+    "Not protected yet" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "غير محمي بعد"
+          }
+        }
+      }
+    },
     "Not responding — last heard from %@" : {
       "localizations" : {
         "ar" : {
@@ -5018,6 +5662,16 @@
         }
       }
     },
+    "Nothing allowed beyond the published list." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا شيء مسموح به خارج القائمة المنشورة."
+          }
+        }
+      }
+    },
     "Nothing blocks domains outside the browser yet. Run this in the Hisn folder; it asks for the Mac’s password." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -5025,6 +5679,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "لا شيء يحجب النطاقات خارج المتصفح بعد. شغّل هذا في مجلد حصن؛ سيطلب كلمة مرور الماك."
+          }
+        }
+      }
+    },
+    "Nothing is blocking right now. Fix the first step below." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا شيء يحجب الآن. أصلح الخطوة الأولى أدناه."
           }
         }
       }
@@ -5049,7 +5713,18 @@
         }
       }
     },
+    "Nothing is blocking yet. The first step is below." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا شيء يحجب بعد. الخطوة الأولى أدناه."
+          }
+        }
+      }
+    },
     "Nothing is set up to enforce a lock yet — it would run but block nothing. Finish setup on the Overview page first." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -5081,6 +5756,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Null address observed for this sample"
+          }
+        }
+      }
+    },
+    "Off" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "متوقف"
           }
         }
       }
@@ -5201,6 +5887,16 @@
         }
       }
     },
+    "One gap left" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ثغرة واحدة متبقية"
+          }
+        }
+      }
+    },
     "One gap to close" : {
       "localizations" : {
         "ar" : {
@@ -5223,6 +5919,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "واحدة في كل سطر. تُحجب الصفحة حين تتكرر فيها هذه الكلمات بما يكفي — لذا فالكلمة الشائعة تحجب صفحات عادية أيضًا. الحد الأدنى %lld أحرف."
+          }
+        }
+      }
+    },
+    "Only allowlisted sites stay reachable" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا تبقى متاحة إلا المواقع المسموحة"
           }
         }
       }
@@ -5336,6 +6042,7 @@
       }
     },
     "Open Overview" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -5383,6 +6090,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "افتح الإعدادات"
+          }
+        }
+      }
+    },
+    "Open setup" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افتح الإعداد"
           }
         }
       }
@@ -5501,6 +6218,26 @@
         }
       }
     },
+    "Optional" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختياري"
+          }
+        }
+      }
+    },
+    "Optional. Tap sites to add them to your block list. Adult content stays covered." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختياري. اضغط على المواقع لإضافتها إلى قائمة الحجب. المحتوى الإباحي يبقى محجوبًا."
+          }
+        }
+      }
+    },
     "Organization policy" : {
       "localizations" : {
         "ar" : {
@@ -5606,6 +6343,16 @@
         }
       }
     },
+    "Partly protected" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "محمي جزئيًا"
+          }
+        }
+      }
+    },
     "Partner key removed." : {
       "localizations" : {
         "ar" : {
@@ -5646,6 +6393,16 @@
         }
       }
     },
+    "Pauses today" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "وقفات اليوم"
+          }
+        }
+      }
+    },
     "Pauses today: %lld" : {
       "localizations" : {
         "ar" : {
@@ -5672,6 +6429,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "اختر مهمة صغيرة أجّلتها وامنحها عشر دقائق."
+          }
+        }
+      }
+    },
+    "Popular distraction sites" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مواقع تشتيت شائعة"
           }
         }
       }
@@ -5724,7 +6491,24 @@
         }
       }
     },
+    "Previously ready layers are no longer confirmed." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الطبقات الجاهزة سابقًا لم تعد مؤكدة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Previously ready layers are no longer confirmed."
+          }
+        }
+      }
+    },
     "Previously ready layers are no longer confirmed. Recheck their configuration." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -5825,6 +6609,7 @@
       }
     },
     "Private windows are still open in %@." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -5867,6 +6652,7 @@
       }
     },
     "Private windows skip the browser extension. Hisn can disable them in the browsers below." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -5882,12 +6668,38 @@
         }
       }
     },
+    "Private windows skip the extension." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "النوافذ الخاصة تتجاوز الإضافة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Private windows skip the extension."
+          }
+        }
+      }
+    },
     "Protect browsing settings" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "حماية إعدادات التصفح"
+          }
+        }
+      }
+    },
+    "Protected" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "محمي"
           }
         }
       }
@@ -5990,6 +6802,7 @@
       }
     },
     "Protection layers reporting ready" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -6012,6 +6825,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تحتاج الحماية إلى اهتمام"
+          }
+        }
+      }
+    },
+    "Protection stays on. A lock makes it harder to turn off." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الحماية تعمل دائمًا. القفل يجعل إيقافها أصعب."
           }
         }
       }
@@ -6258,6 +7081,27 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "أزِل %@"
+          }
+        }
+      }
+    },
+    "Remove from Always block" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أزل من «احجب هذه دائمًا»"
+          }
+        }
+      }
+    },
+    "Remove from block list" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أزل من قائمة الحجب"
           }
         }
       }
@@ -6667,7 +7511,24 @@
         }
       }
     },
+    "Saved protection history could not be read." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّرت قراءة سجل الحماية المحفوظ."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saved protection history could not be read."
+          }
+        }
+      }
+    },
     "Saved protection history could not be read. Current checks are still shown below." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -6734,6 +7595,7 @@
       }
     },
     "See whether an address is on your lists or blocked for another reason." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -6744,6 +7606,7 @@
       }
     },
     "See whether an address would be blocked, and which list decides it." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -6775,6 +7638,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "فصل صلاحيات المسؤول"
+          }
+        }
+      }
+    },
+    "Set a daily lock" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اضبط قفلًا يوميًا"
           }
         }
       }
@@ -6963,7 +7836,34 @@
         }
       }
     },
+    "Some layers need attention. The lock stays active." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بعض الطبقات تحتاج انتباهًا. يبقى القفل نشطًا."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Some layers need attention. The lock stays active."
+          }
+        }
+      }
+    },
+    "Some layers still need attention. A lock can run now, but it blocks only what is ready." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بعض الطبقات ما زالت تحتاج انتباهًا. يمكن بدء قفل الآن، لكنه يحجب ما هو جاهز فقط."
+          }
+        }
+      }
+    },
     "Some protection layers need attention. Your commitment remains active; review the checks below." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -7163,6 +8063,16 @@
         }
       }
     },
+    "Step %lld of %lld" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الخطوة %1$lld من %2$lld"
+          }
+        }
+      }
+    },
     "Step outside or wash your face, then take five slow breaths." : {
       "localizations" : {
         "ar" : {
@@ -7204,12 +8114,12 @@
         }
       }
     },
-    "Strict mode is on, and this site is not on your Always allowed list." : {
+    "Strict mode is on, and this site is not on your allow list." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "الوضع الصارم مفعّل، وهذا الموقع ليس في قائمة «مسموح دائمًا»."
+            "value" : "الوضع الصارم مفعّل، وهذا الموقع ليس في قائمة السماح لديك."
           }
         }
       }
@@ -7409,12 +8319,32 @@
         }
       }
     },
+    "The checks below turn the layers on. Work through them in order." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الفحوص أدناه تشغّل الطبقات. نفّذها بالترتيب."
+          }
+        }
+      }
+    },
     "The content filter could not start: %@" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "تعذّر تشغيل مرشّح المحتوى: %@"
+          }
+        }
+      }
+    },
+    "The detail behind the status." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التفاصيل خلف الحالة."
           }
         }
       }
@@ -7466,6 +8396,7 @@
       }
     },
     "The filter picks up a new list within a few seconds. If this row does not change, the download failed — check the internet connection and try again." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -7593,11 +8524,32 @@
       }
     },
     "The link to the browser was re-registered. Open the browser and make sure the Hisn extension is turned on; this row updates within a minute." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "أُعيد تسجيل الربط مع المتصفح. افتح المتصفح وتأكد أن إضافة حصن مفعّلة؛ سيتحدث هذا السطر خلال دقيقة."
+          }
+        }
+      }
+    },
+    "The lock cannot be shortened after it starts." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يمكن تقصير القفل بعد بدئه."
+          }
+        }
+      }
+    },
+    "The lock is running. Manage it to see the time left and the way out." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "القفل يعمل. أدِرْه لترى الوقت المتبقي وطريق الخروج."
           }
         }
       }
@@ -7655,6 +8607,7 @@
       }
     },
     "The Overview shows what is running and the one next step. Setup holds the detailed checks whenever you want them." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -7682,6 +8635,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The policy is not readable yet. Approve the profile in System Settings, then check again."
+          }
+        }
+      }
+    },
+    "The published list, plus anything you add." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "القائمة المنشورة، وكل ما تضيفه."
           }
         }
       }
@@ -7805,6 +8768,17 @@
         }
       }
     },
+    "These are ordinary distraction sites, not adult-content rules. Adult-content protection runs whether or not you choose any." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذه مواقع تشتيت عادية، وليست قواعد للمحتوى الإباحي. حماية المحتوى الإباحي تعمل سواء اخترت شيئًا أم لا."
+          }
+        }
+      }
+    },
     "These checks cover this Mac and make protection harder to disable. Network protection, other devices, and recovery access are checked separately." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -7834,6 +8808,7 @@
       }
     },
     "These run on top of the site lists, and catch pages the lists have never seen." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -7957,7 +8932,24 @@
         }
       }
     },
+    "This lock blocks nothing until setup is finished." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذا القفل لا يحجب شيئًا حتى يكتمل الإعداد."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This lock blocks nothing until setup is finished."
+          }
+        }
+      }
+    },
     "This lock would enforce %lld of %lld protection layers." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -8082,7 +9074,24 @@
         }
       }
     },
+    "Those windows skip the browser extension." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تتجاوز تلك النوافذ إضافة المتصفح."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Those windows skip the browser extension."
+          }
+        }
+      }
+    },
     "Those windows skip the browser extension. One small profile disables them and changes nothing else." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -8098,7 +9107,24 @@
         }
       }
     },
+    "Three layers, all on this Mac." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ثلاث طبقات، كلها على هذا الماك."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Three layers, all on this Mac."
+          }
+        }
+      }
+    },
     "Three layers, each covering a different way around the others." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -8148,6 +9174,16 @@
         }
       }
     },
+    "Today" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اليوم"
+          }
+        }
+      }
+    },
     "Too short to use: %@." : {
       "localizations" : {
         "ar" : {
@@ -8170,6 +9206,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "too short: %1$lld (minimum %2$lld letters)"
+          }
+        }
+      }
+    },
+    "Tools" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أدوات"
           }
         }
       }
@@ -8271,6 +9317,7 @@
       }
     },
     "Two lists of your own, on top of the published list." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -8323,6 +9370,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "يُفتح القفل في %@. يمكنك إلغاء هذا، لكن لا يمكنك تعجيله."
+          }
+        }
+      }
+    },
+    "until" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إلى"
           }
         }
       }
@@ -8426,11 +9483,22 @@
       }
     },
     "Visual checks" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "الفحص البصري"
+          }
+        }
+      }
+    },
+    "Visual checks in the extension" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الفحوص البصرية في الإضافة"
           }
         }
       }
@@ -8441,6 +9509,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "بانتظار موافقتك في إعدادات النظام"
+          }
+        }
+      }
+    },
+    "Websites" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المواقع"
           }
         }
       }
@@ -8475,7 +9553,18 @@
         }
       }
     },
+    "What gets blocked" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ما الذي يُحجب"
+          }
+        }
+      }
+    },
     "What happens next" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -8492,6 +9581,7 @@
       }
     },
     "What text checking cannot detect" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -8622,6 +9712,7 @@
       }
     },
     "You can add blocks and remove allowances. Removing a block or adding an allowance requires your administrator." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -8638,6 +9729,7 @@
       }
     },
     "You can change that later in Setup or from the Overview." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -8649,6 +9741,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "You can change that later in Setup or from the Overview."
+          }
+        }
+      }
+    },
+    "You can change these later in Blocking Rules." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يمكنك تغييرها لاحقًا من قواعد الحجب."
           }
         }
       }
@@ -8761,6 +9863,7 @@
       }
     },
     "Your lock is running, but nothing is enforcing it yet. It will block nothing until the steps above are done." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -8782,6 +9885,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "your organization"
+          }
+        }
+      }
+    },
+    "Your own block and allow lists, on top of the published list." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "قائمتاك الخاصتان للحجب والسماح، فوق القائمة المنشورة."
           }
         }
       }
@@ -8817,6 +9930,7 @@
       }
     },
     "Your sites" : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {

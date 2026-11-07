@@ -38,7 +38,7 @@ class CoverageTests(unittest.TestCase):
 
     def test_page_names_every_surface_and_tier(self):
         page = coverage.DOC.read_text()
-        for surface in ("Chromium extension", "Mac content filter", "Safari on iPhone/iPad",
+        for surface in ("Chromium extension", "Mac content filter", "Safari and DNS on iPhone/iPad",
                         "Android DNS", "Router / network DNS"):
             self.assertIn(surface, page)
         seed, _ = coverage.facts()

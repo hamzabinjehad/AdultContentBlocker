@@ -17,6 +17,7 @@ import app.hisn.core.GuardWindows;
 import app.hisn.core.VisualCadence;
 import app.hisn.core.VisualDuty;
 import app.hisn.core.VisualFrameGate;
+import app.hisn.core.VisualRetry;
 import app.hisn.core.VisualHealth;
 import app.hisn.core.VisualHealth.State;
 import java.util.ArrayList;
@@ -45,6 +46,7 @@ final class VisualGuard implements AutoCloseable {
     private final VisualFrameGate gate = new VisualFrameGate();
     private final VisualDuty duty = new VisualDuty();
     private final VisualCadence cadence = new VisualCadence();
+    private final VisualRetry retry = new VisualRetry();
     private final PowerManager power;
     private final Set<String> excluded;
     private VisualClassifier classifier;
@@ -259,6 +261,7 @@ final class VisualGuard implements AutoCloseable {
             verdict = VisualTestHooks.verdict(service.getPackageName(), target.app, verdict, SystemClock.uptimeMillis());
             if (!"block".equals(verdict) && !"allow".equals(verdict)) { fail(); return; }
             samples++;
+            retry.recovered();
             cadence.finished(target.id, signature);
             health.report(State.SAMPLED);
             if ("block".equals(verdict)) {
@@ -269,9 +272,10 @@ final class VisualGuard implements AutoCloseable {
         finally { sampleEnded(); }
     }
 
+    /** A failed load or frame: free the engine, then return after a bounded backoff, not a flat 30 s. */
     private void fail() {
         resetEngine();
-        retryAfter = SystemClock.uptimeMillis() + 30000;
+        retryAfter = SystemClock.uptimeMillis() + retry.failed();
         health.report(State.ERROR);
     }
 

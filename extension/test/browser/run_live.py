@@ -13,6 +13,7 @@ import errno
 import http.server
 import json
 import os
+import re
 from pathlib import Path
 import secrets
 import signal
@@ -206,7 +207,7 @@ def make_server(root, harness):
     return server, verdict, endpoint, harness_path
 
 
-def run_harness(browser, harness, timeout=45, linux=None):
+def run_harness(browser, harness, timeout=45, linux=None, query=""):
     if not 0 < timeout <= 120:
         raise ValueError("harness timeout must be between zero and 120 seconds")
     server, verdict, _, harness_path = make_server(ROOT, harness)
@@ -225,7 +226,7 @@ def run_harness(browser, harness, timeout=45, linux=None):
             is_linux = sys.platform.startswith("linux") if linux is None else linux
             if is_linux:
                 flags.extend(["--no-sandbox", "--disable-dev-shm-usage"])
-            flags.append(f"http://127.0.0.1:{server.server_address[1]}" + quote(harness_path))
+            flags.append(f"http://127.0.0.1:{server.server_address[1]}" + quote(harness_path) + query)
             log_path = scratch / "browser.log"
             with log_path.open("wb") as log:
                 process = subprocess.Popen(flags, stdout=log, stderr=log, start_new_session=True)
@@ -262,11 +263,17 @@ def main():
     parser.add_argument("--harness", default="harness.html")
     parser.add_argument("--timeout", type=float, default=45)
     args = parser.parse_args()
-    harness = (HARNESS_ROOT / args.harness).resolve()
+    # A harness may carry a query string (`page.html?only=wasm`). It is part of
+    # the URL, never part of the file path, so the same fixtures can select a
+    # scenario without another copy of the page.
+    name, separator, query = args.harness.partition("?")
+    if separator and not re.fullmatch(r"[A-Za-z0-9=&_.-]*", query):
+        parser.error("harness query has unsupported characters")
+    harness = (HARNESS_ROOT / name).resolve()
     if (not harness.is_relative_to(HARNESS_ROOT) or harness.suffix != ".html"
             or not harness.is_file() or not args.browser.is_file()):
         parser.error("existing browser and local HTML harness are required")
-    return run_harness(args.browser, harness, args.timeout)
+    return run_harness(args.browser, harness, args.timeout, query="?" + query if separator else "")
 
 
 if __name__ == "__main__":

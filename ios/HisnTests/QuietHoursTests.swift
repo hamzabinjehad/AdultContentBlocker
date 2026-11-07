@@ -166,14 +166,136 @@ final class QuietHoursTests: XCTestCase {
         XCTAssertEqual(AppUsageConfiguration.windowStoreName, "hisn.apps.window")
     }
 
+
+    // MARK: - Weekdays
+
+    private var utc: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        return calendar
+    }
+
+    /// 2 November 2026 is a Monday; the crossing-window cases lean on that.
+    private func day(_ monthDay: Int, _ hour: Int, _ minute: Int = 0) -> Date {
+        utc.date(from: DateComponents(year: 2026, month: 11, day: monthDay,
+                                      hour: hour, minute: minute))!
+    }
+
+    func testEveryDayIsTheDefaultForRulesSavedBeforeWeekdays() {
+        typealias C = AppUsageConfiguration
+        XCTAssertEqual(C.allDays, 0b111_1111)
+        let rule = C(selection: empty, mode: .quietHours, minutes: 30,
+                     windowStart: 22 * 60, windowEnd: 7 * 60)
+        XCTAssertEqual(rule.days, C.allDays)
+        XCTAssertTrue(C.isValidDays(rule.days))
+        XCTAssertFalse(C.isValidDays(0), "no day is never a valid window")
+        XCTAssertFalse(C.isValidDays(0b1000_0000), "only seven bits exist")
+    }
+
+    func testDaysAreMondayFirst() {
+        typealias C = AppUsageConfiguration
+        XCTAssertEqual(C.dayBit(day(2, 9), calendar: utc), 0b000_0001, "Monday")
+        XCTAssertEqual(C.dayBit(day(3, 9), calendar: utc), 0b000_0010, "Tuesday")
+        XCTAssertEqual(C.dayBit(day(6, 9), calendar: utc), 0b001_0000, "Friday")
+        XCTAssertEqual(C.dayBit(day(7, 9), calendar: utc), 0b010_0000, "Saturday")
+        XCTAssertEqual(C.dayBit(day(8, 9), calendar: utc), 0b100_0000, "Sunday")
+        XCTAssertEqual(C.weekdayMask, 0b001_1111)
+        XCTAssertEqual(C.weekendMask, 0b110_0000)
+    }
+
+    func testACrossingWindowBelongsToTheDayItStarts() {
+        typealias C = AppUsageConfiguration
+        // Saturday 01:00 is Friday night: a weekdays-only window still holds.
+        XCTAssertEqual(C.windowStartDay(start: 22 * 60, end: 7 * 60, at: day(7, 1), calendar: utc),
+                       utc.startOfDay(for: day(6, 12)))
+        XCTAssertTrue(C.windowActive(start: 22 * 60, end: 7 * 60, days: C.weekdayMask,
+                                     at: day(7, 1), calendar: utc))
+        // Saturday 23:00 begins a Saturday window: weekends only.
+        XCTAssertTrue(C.windowActive(start: 22 * 60, end: 7 * 60, days: C.weekendMask,
+                                     at: day(7, 23), calendar: utc))
+        XCTAssertFalse(C.windowActive(start: 22 * 60, end: 7 * 60, days: C.weekdayMask,
+                                      at: day(7, 23), calendar: utc))
+        // Sunday 01:00 is still Saturday night.
+        XCTAssertTrue(C.windowActive(start: 22 * 60, end: 7 * 60, days: C.weekendMask,
+                                     at: day(8, 1), calendar: utc))
+        XCTAssertFalse(C.windowActive(start: 22 * 60, end: 7 * 60, days: C.weekdayMask,
+                                      at: day(8, 1), calendar: utc))
+        // Sunday 23:00 begins a Sunday window: not a weekday.
+        XCTAssertFalse(C.windowActive(start: 22 * 60, end: 7 * 60, days: C.weekdayMask,
+                                      at: day(8, 23), calendar: utc))
+    }
+
+    func testASameDayWindowUsesItsOwnDay() {
+        typealias C = AppUsageConfiguration
+        XCTAssertTrue(C.windowActive(start: 9 * 60, end: 17 * 60, days: C.weekdayMask,
+                                     at: day(2, 10), calendar: utc), "Monday")
+        XCTAssertFalse(C.windowActive(start: 9 * 60, end: 17 * 60, days: C.weekdayMask,
+                                      at: day(7, 10), calendar: utc), "Saturday")
+        XCTAssertTrue(C.windowActive(start: 9 * 60, end: 17 * 60, days: C.weekendMask,
+                                     at: day(7, 10), calendar: utc))
+    }
+
+    func testAMorningLegBelongsToTheEveningBefore() {
+        typealias C = AppUsageConfiguration
+        // Saturday 00:10 keeps Friday night's shield when Friday is chosen.
+        XCTAssertTrue(C.windowLegAllowed(C.windowMorningActivity, days: C.weekdayMask,
+                                         at: day(7, 0, 10), calendar: utc))
+        XCTAssertFalse(C.windowLegAllowed(C.windowMorningActivity, days: C.weekdayMask,
+                                          at: day(8, 0, 10), calendar: utc), "Sunday night is not a weekday night")
+        XCTAssertTrue(C.windowLegAllowed(C.windowEveningActivity, days: C.weekendMask,
+                                         at: day(7, 22), calendar: utc))
+    }
+
+    func testEitherClockUsesItsOwnStartDay() {
+        typealias C = AppUsageConfiguration
+        // Device clock says Saturday evening (not a weekday); Apple's reading
+        // still puts the instant on Friday night in another zone: keep it.
+        XCTAssertTrue(C.windowActive(start: 22 * 60, end: 7 * 60, days: C.weekdayMask,
+                                     deviceNow: day(7, 22), trustedNow: day(6, 23), calendar: utc))
+        // Both clocks on unselected start days: clear.
+        XCTAssertFalse(C.windowActive(start: 22 * 60, end: 7 * 60, days: C.weekdayMask,
+                                      deviceNow: day(7, 22), trustedNow: day(7, 23), calendar: utc))
+    }
+
+    func testQuietHoursWithNoChosenDayIsNotValid() {
+        typealias C = AppUsageConfiguration
+        // The rule's own validity also requires a selection, which the
+        // simulator's picker cannot produce; the day clause is pinned directly.
+        XCTAssertFalse(C.isValidDays(0))
+        XCTAssertTrue(C.isValidDays(C.weekdayMask))
+        XCTAssertTrue(C.isValidDays(C.weekendMask))
+        XCTAssertTrue(C.isValidWindow(start: 22 * 60, end: 7 * 60))
+    }
+
+    func testWeekdaysAreFrozenDuringACommitment() {
+        typealias C = AppUsageConfiguration
+        let everyDay = C(selection: empty, mode: .quietHours, minutes: 30,
+                         windowStart: 22 * 60, windowEnd: 7 * 60)
+        let weekdays = C(selection: empty, mode: .quietHours, minutes: 30,
+                         windowStart: 22 * 60, windowEnd: 7 * 60, days: C.weekdayMask)
+        XCTAssertFalse(everyDay.permits(weekdays, committed: true))
+        XCTAssertTrue(everyDay.permits(everyDay, committed: true))
+        XCTAssertTrue(everyDay.permits(weekdays, committed: false))
+    }
+
+    func testRulesSavedBeforeWeekdaysDecodeAsEveryDay() throws {
+        let rule = AppUsageConfiguration(selection: empty, mode: .quietHours, minutes: 30,
+                                         windowStart: 22 * 60, windowEnd: 7 * 60,
+                                         days: AppUsageConfiguration.weekendMask)
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(
+            with: JSONEncoder().encode(rule)) as? [String: Any])
+        object.removeValue(forKey: "days")
+        let decoded = try JSONDecoder().decode(
+            AppUsageConfiguration.self, from: JSONSerialization.data(withJSONObject: object))
+        XCTAssertEqual(decoded.days, AppUsageConfiguration.allDays)
+    }
+
     @MainActor func testQuietHoursEditorRendersInBothLanguages() async throws {
         let protection = ProtectionController(commitmentStore: MemoryCommitmentStore())
         let usage = AppUsageController(defaults: nil)
         for language in ["en", "ar"] {
-            let view = List {
-                AppUsageSection(protection: protection, usage: usage, initialMode: .quietHours)
-            }
-            .listStyle(.insetGrouped)
+            let view = RuleEditorView(protection: protection, usage: usage,
+                                      guardMode: false, initialMode: .quietHours)
             .environment(\.locale, Locale(identifier: language))
             .environment(\.layoutDirection, language == "ar" ? .rightToLeft : .leftToRight)
             let image = try await render(view, size: CGSize(width: 390, height: 844))

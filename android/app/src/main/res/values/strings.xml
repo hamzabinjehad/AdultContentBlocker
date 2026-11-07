@@ -5,6 +5,8 @@
     <string name="status_title">Protection is off</string>
     <string name="status_body">Enable the layers you choose, then review each status. DNS, selected-app restrictions and sampled image/video checks have different coverage. A protection lock freezes saved rules; it does not by itself stop Android from disabling or removing Hisn.</string>
     <string name="network">DNS filtering · Off</string>
+    <!-- Shown under the DNS header when the layer is off, where "DNS filtering · Off" would repeat the header. -->
+    <string name="dns_off_body">Not running. No domain is filtered until you turn this on.</string>
     <string name="dns_seed_version">Domain list v%1$d · built %2$s</string>
     <string name="dns_start">Set up DNS filtering</string>
     <string name="dns_on_button">DNS filtering is on</string>
@@ -61,7 +63,7 @@
     <string name="visual_short">Hisn takes temporary screenshots of apps you choose and classifies them on this phone. It pauses while you type. Screenshots are not saved or sent. Android 14 or newer.</string>
     <string name="visual_disclosure">Hisn will use Android accessibility screenshots to inspect the windows of apps you explicitly select for inspection, including split-screen, pop-up and picture-in-picture windows. A bundled adult-image model processes downscaled samples on this device. Samples are not saved or uploaded. No camera or microphone is used.\n\nScreenshots can contain private images and messages. Hisn skips a window while you are typing in it: while that window has input focus and an identified editable or password field in it is focused. Sensitive content may still appear elsewhere, including in a field of a window you have moved away from. Select only apps you want captured.\n\nWhile a selected app has a window on screen, a sample is requested about every two seconds: about every second while it scrolls or changes, and up to every five seconds while the screen stays still. One window is sampled at a time, with one request at a time; several selected windows take turns. Nothing is sampled while the screen is off. Flagged samples return you to Home with a restriction notice, or close a flagged picture-in-picture window where Android allows it. This restricts the whole app screen; it does not blur individual images or pause individual videos. Content can appear before intervention. Small images, short video frames, secure windows and classification mistakes leave gaps. Unknown samples are not marked clean. Android 14+ is required.\n\nThis option is off by default. A protection lock freezes it and the selected apps until the period ends; Android can still revoke access or remove Hisn.</string>
     <string name="restriction_visual">An image or sampled video frame on this screen was flagged by the experimental adult-content detector. The model can make mistakes.</string>
-    <string name="commitment">Protection lock · Off</string>
+    <string name="commitment">Off</string>
     <string name="rules_heading">Your protection rules</string>
     <string name="next_step">Next step</string>
     <string name="rules_intro_short">Choose what Hisn blocks or checks. Every rule below is saved on this phone.</string>
@@ -80,6 +82,8 @@
     <string name="browsers_keep_only">Keep only this</string>
     <string name="browsers_keep_only_note">Use “Keep only this” to select every other installed browser, then save. Leave one browser unselected if you want to keep browsing after the block.</string>
     <string name="browsers_help">These installed apps can open ordinary web links. A browser is covered when Hisn blocks it, when the text and image inspection runs in it, or when the DNS layer is on. Uncovered browsers start checked: tap Block selected to refuse them. The DNS layer filters names only, so a browser with its own VPN, Tor or private DNS resolver can leave that path — block that app instead.</string>
+    <string name="browsers_private_note">Private windows get the same layers: the DNS filter still sees their requests, and the text and image inspection still samples the browser window. Private mode is not a way around Hisn.</string>
+    <string name="browsers_private_limit">Android cannot switch another browser\'s private mode off unless the phone is managed by a device owner. On an ordinary phone the only way to remove it is to block that browser.</string>
     <string name="browsers_limit_note">Blocking a browser returns you to Home with a notice; it does not stop you installing another browser, and Android settings can still change or disable it.</string>
     <string name="browsers_block_action">Block selected</string>
     <string name="browser_state_blocked">Blocked now</string>
@@ -88,9 +92,9 @@
     <string name="browser_state_uncovered">No Hisn layer covers this browser</string>
     <string name="schedule_edit">Scheduled app blocking</string>
     <string name="schedule_edit_button">Edit schedule</string>
-    <string name="schedule_off">App schedule · Off</string>
-    <string name="schedule_summary">App schedule · Selected apps: %1$d · %2$s–%3$s · %4$s · %5$s</string>
-    <string name="schedule_summary_all">App schedule · All apps except %1$d · %2$s–%3$s · %4$s · %5$s</string>
+    <string name="schedule_off">Off</string>
+    <string name="schedule_summary">Selected apps: %1$d · %2$s–%3$s · %4$s · %5$s</string>
+    <string name="schedule_summary_all">All apps except %1$d · %2$s–%3$s · %4$s · %5$s</string>
     <string name="schedule_days_every">Every day</string>
     <string name="schedule_days_title">Days this window repeats on</string>
     <string name="schedule_days_help">A window such as 22:00–07:00 that repeats on Monday runs Monday evening into Tuesday morning.</string>
@@ -134,7 +138,7 @@
         <item quantity="one">%1$d day</item>
         <item quantity="other">%1$d days</item>
     </plurals>
-    <string name="commitment_remaining">Protection lock · About %1$s remaining</string>
+    <string name="commitment_remaining">About %1$s remaining</string>
     <plurals name="remaining_hours">
         <item quantity="one">%1$d hour</item>
         <item quantity="other">%1$d hours</item>
@@ -466,7 +470,7 @@
     <string name="settings_battery_off">Android may pause it</string>
     <string name="section_time_limits">Daily time limits</string>
     <string name="time_limits_edit_button">Edit daily limits</string>
-    <string name="time_limits_off">Daily time limits · Off</string>
+    <string name="time_limits_off">Off</string>
     <string name="time_limits_help">Choose apps and one daily foreground-time limit. When the limit is reached, Hisn closes the app and returns you home until local midnight. Hisn reads Android’s own on-device usage record; no usage event leaves the phone.</string>
     <string name="time_limits_choose_apps">Apps with a daily limit</string>
     <string name="time_limits_limit_title">Daily limit for these apps</string>

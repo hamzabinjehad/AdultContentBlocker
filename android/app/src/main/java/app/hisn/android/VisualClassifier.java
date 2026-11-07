@@ -26,7 +26,7 @@ final class VisualClassifier implements AutoCloseable {
     private String actualBackend;
     private final Context context;
     private final VisualExecutionPolicy execution;
-    private static boolean preferCpuAfterGpuFailure;
+    private static boolean skipGpuAfterFailure;
     private final Runnable timeout = this::failed;
 
     VisualClassifier(Context context, Consumer<String> loaded) {
@@ -35,7 +35,7 @@ final class VisualClassifier implements AutoCloseable {
 
     @android.annotation.SuppressLint({"SetJavaScriptEnabled", "JavascriptInterface"})
     VisualClassifier(Context context, String backend, Consumer<String> loaded) {
-        execution = new VisualExecutionPolicy(backend, preferCpuAfterGpuFailure);
+        execution = new VisualExecutionPolicy(backend, skipGpuAfterFailure);
         this.context = context;
         pending = loaded;
         request = "load";
@@ -62,12 +62,16 @@ final class VisualClassifier implements AutoCloseable {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) { return true; }
             @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 String path = request.getUrl().getPath();
+                boolean wasm = path.matches("/visual/wasm/tfjs-backend-wasm(-simd|-threaded-simd)?\\.wasm");
                 if ("https".equals(request.getUrl().getScheme()) && "hisn.invalid".equals(request.getUrl().getHost())
                         && ("/visual/android.html".equals(path) || "/visual/android.js".equals(path)
-                        || "/visual/engine.bundle.js".equals(path))) {
+                        || "/visual/engine.bundle.js".equals(path) || wasm)) {
                     try {
-                        return new WebResourceResponse(path.endsWith("html") ? "text/html" : "text/javascript",
-                                "UTF-8", context.getAssets().open(path.substring(1)));
+                        // instantiateStreaming requires the exact WASM media type;
+                        // a correct body with text/plain is refused by the browser.
+                        String type = path.endsWith(".html") ? "text/html" : wasm ? "application/wasm" : "text/javascript";
+                        return new WebResourceResponse(type, wasm ? null : "UTF-8",
+                                context.getAssets().open(path.substring(1)));
                     } catch (java.io.IOException unavailable) { /* return a closed response */ }
                 }
                 return new WebResourceResponse("text/plain", "UTF-8", 403, "Blocked",
@@ -94,7 +98,8 @@ final class VisualClassifier implements AutoCloseable {
             handler.post(() -> {
                 if (!execution.accepts(token) || web == null || request == null || !request.equals(id)) return;
                 if ("load".equals(id)) {
-                    ready = "ready:cpu".equals(verdict) || "ready:webgl".equals(verdict);
+                    ready = "ready:cpu".equals(verdict) || "ready:webgl".equals(verdict)
+                            || "ready:wasm".equals(verdict);
                     actualBackend = ready ? verdict.substring(6) : null;
                     if (ready) finish("ready"); else failed();
                 } else if ("allow".equals(verdict) || "block".equals(verdict)) finish(verdict);
@@ -143,7 +148,7 @@ final class VisualClassifier implements AutoCloseable {
         handler.removeCallbacks(timeout);
         ready = false;
         boolean retry = execution.failed("load".equals(request));
-        if (execution.preferCpuAfterFailure()) preferCpuAfterGpuFailure = true;
+        if (execution.skipGpuAfterFailure()) skipGpuAfterFailure = true;
         if (retry) {
             try { openRuntime(); }
             catch (RuntimeException unavailable) { finish("unknown"); }

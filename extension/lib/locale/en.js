@@ -237,7 +237,7 @@ export default {
   "opt.overview.sub": "What is on in this browser, and what needs attention.",
   "opt.nav.rules": "Rules",
   "opt.nav.lock": "Lock",
-  "opt.nav.settings": "Settings",
+  "opt.nav.settings": "Content",
   "opt.layers": "Browser protection",
   "opt.layer.domains": "Sites and addresses",
   "opt.layer.search": "SafeSearch",

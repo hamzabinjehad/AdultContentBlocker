@@ -29,18 +29,23 @@ Coverage is the bigger gap in practice, and it is the one most tools ignore.
 
 | Route | Status | Handled by |
 |---|---|---|
-| Known adult domain | Closed | 5.28M-domain signed full list, 240k core tier in the clients, all layers |
-| New domain, registered today | **Open in blocklist mode** | Strict allowlist mode |
+| Known adult domain | Closed | 5.28M-domain signed full list, 240k core tier in the clients (Safari blockers and the iPhone/iPad system-DNS filter included), all layers |
+| New domain, registered today | **Partly closed** | The adult-TLD rail (`.adult`, `.porn`, `.sex`, `.xxx`) on every client and the 116-term hostname layer on the Mac, Chrome, Android DNS and the iPhone/iPad DNS filter; any other new TLD or random name is **open in blocklist mode**, and strict allowlist mode is the only complete answer |
 | Mirrors, proxies, "unblock" sites | **Partly open** | Strict mode; upstream lists chase these forever |
 | Adult content inside X, Reddit, Telegram | **Open in blocklist mode** | Strict mode only |
 | Image/video search results | Partial | SafeSearch enforcement via DNS |
 | Content on a shared CDN | Closed | Apex-only safety rail (see below) |
 
 A blocklist is a losing race by construction: someone else adds domains, you
-copy them, and the gap between the two is your exposure. The only mode that
-approaches full coverage is **strict allowlist** — deny everything, permit the
-handful of sites the user names when starting a session. That is why it is a
-first-class mode here rather than a future feature.
+copy them, and the gap between the two is your exposure. Two cheap rails narrow
+it: a hostname whose final label is a sponsored adult TLD is refused before any
+list can carry it, and a hostname whose own labels name adult material is
+judged by the signed keyword layer (both are on-device policy, not a list
+update). They do not close the row for a random new name under a generic TLD.
+The only mode that approaches full coverage is **strict allowlist** — deny
+everything, permit the handful of sites the user names when starting a
+session. That is why it is a first-class mode here rather than a future
+feature.
 
 ### The CDN sub-case
 

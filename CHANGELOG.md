@@ -5,6 +5,543 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
+## Mac — unreleased, 2026-11-07
+
+### Added
+
+- **Optional distraction-site chips in first run and Blocking Rules.** Twelve
+  named sites — YouTube, Reddit, X, Instagram, Facebook, TikTok, Twitch, Netflix,
+  Hacker News, Amazon, Pinterest and LinkedIn — can be added to the person's
+  block list with one tap. Every chip names the site; there is no category that
+  hides what is blocked. A chip writes through the existing guarded
+  `SiteLists.save`, so a selected chip is already in the list the filter and
+  the extension read. A site covered by a wider hand-written rule is shown as
+  blocked and the chip does not remove the parent rule. Adding still works
+  during a lock or a managed policy; removal still waits. The adult-content
+  lists, lock, partner path, browser guard and private-window policy are
+  unchanged.
+- **A three-decision first run.** The welcome sheet now has three steps with a
+  three-segment progress bar: how the layers work, the optional distraction
+  sites, and the private-window decision. **Not now** on the private-window
+  step continues to Setup instead of closing the pass.
+
+### Changed
+
+- **Blocking Rules is one list card.** A `Block list / Allow list` segmented
+  control replaces the two full editors printed one above the other. The card
+  keeps the established **Always block these** / **Always allowed** headings,
+  per-list empty copy, one shared Save/Revert pair and a **Check a website**
+  action beside the lists. Both drafts stay in memory, so switching tabs loses
+  no edit and the pair guard is unchanged.
+- **One vocabulary for the lists.** Site-checker and chip actions now say
+  **block list** instead of **Always block**, matching the Rules card. The
+  list headings and the allow-list explanations keep their established names.
+
+### Redesigned — craft pass
+
+- **The Mac window is no longer a card grid.** Warm paper and ink surfaces with
+  a deep ink-blue accent replace the default system-blue cards; a New York
+  serif statement marks one answer per page; tracked section labels, 28-point
+  controls and hairlines replace the repeated rounded heading cards and the
+  "Explain" text on every row. The info button is now icon-only.
+- **Overview** is a two-column composition: one layer table and a narrow rail
+  for the next step, today's numbers and tools. The next daily lock is
+  actionable from the rail. **Lock** is a compact composer with duration chips,
+  a serif length figure, mode captions, a collapsed daily schedule and a slim
+  footer. **Setup** collapses network protection into an optional disclosure
+  and moves **Check again** next to the status. **Settings** is a native grouped
+  form, with the mislabelled visual-checks card fixed to
+  **Browser extension → Visual checks in the extension**. **Rules** groups words
+  and apps with their Save row. The welcome sheet and pause use the same
+  editorial voice; the pause now has circular breath progress.
+- No protection rule, consent sentence, partner path, lock rule or privacy
+  promise changed. No screen-time budget, timed disable, streak or account was
+  added.
+- Record: [Mac craft pass](docs/MACOS_CRAFT_2026-11-07.md); captures:
+  [design/macos-craft-2026-11-07](design/macos-craft-2026-11-07/README.md).
+
+### Verification
+
+- `HisnTests/ExtraSitesTests` — 6 data tests.
+- `HisnTests/MacUIRefreshTests/testExtraSitesRenderForReview` — English and
+  Arabic first-run and picker captures, including selected and parent-covered
+  chips.
+- The Rules page is in the full page render and the Arabic render set.
+- `python3 macos/check_localization.py --xliff …` — 815 strings, all with
+  Arabic.
+- Full Mac suite — 587 tests, 0 failures.
+
+Records:
+[Mac extra sites and rules](docs/MACOS_EXTRA_SITES_2026-11-07.md) and the
+[Mac craft pass](docs/MACOS_CRAFT_2026-11-07.md); current captures:
+[design/macos-craft-2026-11-07](design/macos-craft-2026-11-07/README.md).
+
+### Limits
+
+- No user study, VoiceOver audit or physical-Mac install.
+- The chips are a convenience over the existing custom block list, not a new
+  protection layer.
+- The time-budget, timed-disable, open-count and streak ideas visible in the
+  ScreenZen reference were deliberately not added: they would introduce a
+  weakening surface or a motivational claim the product does not make.
+
+## iPhone & iPad 1.8.0 — 2026-11-07
+
+### Added
+
+- **A device-wide DNS filter.** `HisnDNSProxy` is a Network Extension DNS
+  proxy: while it is on, iOS sends system DNS questions through Hisn. The
+  signed core tier (236,586 domains), the four adult TLDs, the 116 reviewed
+  hostname terms and the person's saved sites are answered locally with
+  NXDOMAIN; allowed names are resolved by Cloudflare Families over HTTPS with
+  a validated fallback. This replaces the old Family DNS profile, which used
+  Cloudflare's categories rather than Hisn's list and covered no non-WebKit
+  app. UDP and TCP flows, EDNS payload sizes, TC fallback, response matching
+  and a bounded query gate are implemented; nothing is logged or stored.
+- **Build-verified DNS data.** `ios/prepare_rules.py --dns` verifies the
+  Ed25519-signed seed and the signed `terms.json` and writes
+  `dns-domains.txt`, `dns-host-terms.json` and `dns-metadata.json` into the
+  extension. The extension re-checks both SHA-256 digests and the count before
+  it will start; a damaged domain list fails closed, and a damaged terms file
+  leaves the list enforcing.
+- **The route check.** The app asks the system resolver for a fresh random
+  name under the reserved `hisn.invalid` domain and expects Hisn's own
+  `203.0.113.7`. It is labelled as evidence about this app's resolver path,
+  not about every app.
+- **The direct build.** `ios/direct/build_direct.sh` builds a Release IPA
+  outside the App Store, checks every embedded extension and its data, and
+  writes the IPA's size and SHA-256 to `build-info.json`. `--adhoc` signs each
+  bundle with its entitlement requests. `ios/direct/make_source.py` writes and
+  checks the AltStore/SideStore source JSON from the IPA's own bytes.
+  [docs/IOS_DIRECT.md](docs/IOS_DIRECT.md) records the install paths and the
+  entitlement facts.
+- **Shared policy code.** `TextNormalizer`, `Punycode` and `AdultTldGuard`
+  moved to `shared/apple/`, so the Mac and the iOS DNS filter compile one copy
+  of the keyword and adult-TLD rules. The Mac project follows the move; its
+  behaviour is unchanged.
+
+### Changed
+
+- **The DNS layer is now Hisn's own policy.** The app's Setup → DNS section is
+  **DNS filter** with On/Off, readback (On · all apps, Saved · not on, Another
+  DNS filter is on, Off, Could not check) and the route check. A commitment
+  freezes turning it off; turning it on only tightens.
+- The app entitlement moves from `dns-settings` to `dns-proxy`. A provisioning
+  profile that only carries DNS Settings must be reissued. The Family Controls
+  requirement for the Screen Time layers is unchanged, and the direct build
+  does not bypass it.
+- The person's saved blocked sites are mirrored to the App Group for the DNS
+  extension, which re-reads them on a short cache; the Screen Time filter
+  keeps its own copy.
+- Both localizations rewrite the DNS copy to describe system-DNS scope,
+  DoH/DoT bypass, Cloudflare visibility, the absence of history and the
+  route-check limit. English and Arabic keys stay identical.
+- Version 1.8.0, build 14.
+
+### Verification
+
+- `./test.sh python`: the rules suite adds four DNS-generation tests (exact
+  bytes and digests, determinism, the shipped seed, and rejection of tampered,
+  missing, wrongly-versioned or invalid terms); the privacy suite pins the
+  `com.apple.networkextension.dns-proxy` extension point and both entitlement
+  files; the new `test_direct.py` builds a fake IPA, checks the source JSON
+  against its bytes, refuses HTTP or non-IPA URLs and syntax-checks the build
+  script.
+- `./test.sh ios`, 7 November 2026 on the iPhone 17 simulator (iOS 26.5):
+  **55 Python and 271 simulator tests, 0 failures**. The 19 new simulator tests
+  in `DNSFilterTests.swift` cover the query parser and its hostile inputs,
+  NXDOMAIN and TC replies, response matching, the domain index, the hostname
+  rules and punycode, the engine's reasons and asset digests, and the
+  resolver's fallback and size bounds.
+- **Not exercised:** the Network Extension provider, the iOS permission
+  prompt, real UDP/TCP flow handling, Cloudflare reachability, the route
+  check on a device, battery, memory, and the direct install. The Simulator
+  cannot run a DNS proxy; `test.sh ios` removes the appex before installing
+  the test host. No signed IPA, App Store upload or physical-device
+  acceptance is claimed.
+
+[the 1.8.0 record](docs/IOS_1.8.0.md) ·
+[direct distribution](docs/IOS_DIRECT.md) ·
+[the iOS README](ios/README.md)
+
+## Browser extension 1.5.3 — 2026-11-06
+
+### Added
+
+- **An always-on adult-TLD guard.** `rules/adult_tlds.json` is a new static
+  ruleset at `PRIORITY_LIST`: a document whose host ends in `.adult`, `.porn`,
+  `.sex` or `.xxx` lands on the block page with the site-list reason, and every
+  embedded resource type from such a host is dropped. A name registered after
+  the last list build is therefore blocked without waiting for a list update.
+  The hand allowlist still outranks it, as it does the published list.
+- `lib/policy.js` exports `ADULT_TLDS` and `isAdultTld()`. `decide` models the
+  guard for browser-only installs and the open-tab sweep now sends an already
+  open guarded tab to the block page with the `domain` reason.
+- `test/adult-tlds.test.js` asserts the ruleset's two rules, the four TLDs and
+  nothing else, and the URL boundaries: absolute FQDN trailing dot, userinfo,
+  port, subdomains, `notxxx.com`, `porn.example.com`, `xxx.evil.com`, a path and
+  the deliberate `.cam` non-guard.
+- `blocklist/terms/policy_cases.json` gains five cross-language cases; the Mac
+  `PolicyContractTests` and the extension's `policy.test.js` both assert them.
+
+### Changed
+
+- The ruleset is appended last in `manifest.json`, never inserted before an
+  existing one: Chromium keys its compiled static-rule cache by position.
+  `ruleset-order.test.js` records it, `check_package.py` pins it to the repo
+  bytes, and `MANIFEST.md` explains the guard.
+- Version 1.5.3. The packaged zip name follows the manifest version.
+
+### Fixed
+
+- **The popup status renders whole again.** `popup.js` still referenced the
+  `badge` and `appLevel` identifiers that 1.5.1 deleted with the private-window
+  row. The `getState` promise rejected after the hero and three layers were
+  painted, so the Hisn-app row stuck on "Checking…", the lock block stayed an
+  empty amber strip, and notices, the quick-block row and Details never
+  rendered. The app row paints its indicator and its word from one connection
+  state again, and a browser check now fails on any popup script error or
+  unhandled rejection.
+- **The embedded settings use the popup they are in.** The editor hides the
+  duplicate popup header, keeps one 38 px bar (Back, language, Open full page),
+  and gives the frame 456×534. Inside it, the five sections share one tab row
+  with no horizontal scrollbar (Settings was previously off-screen), the
+  language row, pinned full-page footer and shortcut tiles that repeat the
+  tabs are hidden, the page area grows from roughly 270 px to 461 px, and the
+  scroll region no longer draws a clipped focus ring. The language switch stays
+  in the compact bar, and the ambiguous Settings tab is renamed Content beside
+  its "Content options" heading.
+- Captures and measurements:
+  [design/extension-popup-2026-11-06](design/extension-popup-2026-11-06/README.md);
+  engineering record:
+  [the popup UX note](docs/EXTENSION_POPUP_UX_2026-11-06.md).
+
+### Verification
+
+- `extension/test/run.sh` — all JavaScript suites pass, including 63/63
+  adult-TLD checks and the shared policy fixture.
+- `extension/test/browser/run.sh popup.html` — PASS, including the new
+  no-script-error check, the app-row paint, the compact editor chrome and focus,
+  and the editor language switch.
+- `extension/test/browser/run.sh embedded.html` — PASS on the new focused
+  harness: five tabs in one 452 px row in English and Arabic, no horizontal
+  overflow, hidden full-page furniture, a 461 px page area, the Repair action
+  above the fold, no scroll-region focus ring, and the narrow wrap fallback.
+  `settings.html` remains timing-sensitive in this harness on a loaded machine
+  (the file-import scenarios fail on some runs with the same files restored);
+  that is recorded, not hidden.
+- `./test.sh extension` — the unpacked-load Python checks pass (45 tests), the
+  package check passes, and the evaluation corpus keeps its 0/22 adult misses
+  and 0/28 benign blocks. The browser-runner exit-status test is timing
+  sensitive under load and passed when rerun alone; the full browser suite was
+  not run on this machine.
+
+### Limits
+
+- The guard covers four TLDs, not every generic TLD; a random new `.com` still
+  depends on the list or the 116 hostname terms.
+- `.cam` is deliberately excluded: it has ordinary camera and webcam uses.
+- Static rulesets are enforcement only where Chrome sees the request; a
+  service-worker cache response is unchanged.
+- The popup captures are isolated previews with a mocked bridge at 480×600,
+  not a real toolbar popup. The embedded settings page still scrolls as a
+  dashboard, and no user study, screen-reader audit or physical-device review
+  was run.
+
+## Mac 1.1.17 — 2026-11-06
+
+### Added
+
+- **An explicit adult-TLD rail.** `AdultTldGuard.swift` (shared by the app, the
+  filter and the bridge) treats a final label of `.adult`, `.porn`, `.sex` or
+  `.xxx` as blocked. `BlocklistStore.blocked` checks it after the hand
+  allowance and before the published list, so the answer does not depend on a
+  list generation or on `terms.json` loading. `.cam` is not guarded.
+- The site checker names the rule: a new `SiteCheckResult.Source.adultTld`
+  answer says the address ends in an adult-only TLD, in English and Arabic. It
+  answers even when the installed list cannot be read, rather than reporting
+  `listUnavailable`.
+
+### Verification
+
+- `./test.sh macos` — 578 XCTest cases, 0 failures; 721 strings, all with
+  Arabic. The new `AdultTldGuardTests` and `SiteCheckerTests` cases pass.
+
+### Limits
+
+- Policy constant, not a list update: a new domain under any other TLD is still
+  the list's job.
+- Unsigned/unnotarized development build; no Developer ID, notarization or
+  physical-device acceptance is claimed.
+- The rare non-adult site on an adult-sponsored TLD is over-blocked by design;
+  the hand allowance is the escape hatch.
+
+## iPhone & iPad 1.7.2 — 2026-11-06
+
+### Added
+
+- **Adult-TLD rules in the Safari blockers.** `prepare_rules.py` appends one
+  rule per adult-sponsored TLD (`.adult`, `.porn`, `.sex`, `.xxx`) to the final
+  blocker part, which had 3,414 unused slots. The generated total becomes
+  236,590 rules, still below the 240,000-rule cap. A name registered after the
+  seed build is blocked in Safari instead of waiting for an app update.
+- `ios/test_rules.py` asserts the guard is only in the last part, that a full
+  final part plus the guard is rejected rather than truncated, and the URL
+  boundaries (`notxxx.com`, `porn.example.com`, `xxx.evil.com`, a path and
+  `.cam` are allowed).
+- The WebKit compile test now compiles the final part with the guard rules, so
+  the Safari regex subset is checked by the engine, not only by Python.
+
+### Verification
+
+- `python3 -m unittest discover -s ios -p 'test_*.py'` — 44 tests pass.
+- `./test.sh ios` — 252 simulator tests, 0 failures; WebKit compiled all six
+  Safari parts, including the guard, in 311.6 s of the part-compile test.
+
+### Limits
+
+- Simulator-tested only. Real Safari shielding and the enabled state of all six
+  blockers need a signed, entitled device.
+- The guard lives in the final blocker part; losing that part loses the guard
+  with its domain slice.
+- `.cam` is deliberately excluded; other new TLDs and random names still need
+  the list or Hisn Text.
+- No runtime list update was added.
+
+## Android 1.2.2 — 2026-11-06
+
+### Added
+
+- **The hostname-keyword layer reaches Android DNS.** `HostTermPolicy` applies
+  the same contract as the Mac and Chrome: 59 token terms, 57 substring terms,
+  `never_keyword` removal, keyword-exempt hosts, Arabic/Persian folds, punycode
+  decoding, trailing-digit and keyboard-hold variants. A new host such as
+  `arab-sex-tube.com` is blocked by the DNS tunnel even though no seed list
+  carries it, while `essex.gov.uk`, `sussex.ac.uk`, `tasks.office.com`,
+  `milford.ct.us`, `pornic.fr`, JINS and Kos stay reachable. Decisions are
+  cached (bounded at 8,192).
+- **An adult-TLD rail in the same policy.** A name ending in `.adult`, `.porn`,
+  `.sex` or `.xxx` is blocked before the seed lookup. Both rails sit after the
+  person's saved domain allowance and before the seed, and the same composed
+  policy judges CNAME/DNAME/SVCB targets through `DnsReplyGuard`.
+- `HostTermPolicyTest` asserts all 42 shared `host_cases.json` cases against
+  the real signed terms plus the named safety cases and the malformed-policy
+  refusals. `AdultTldPolicyTest` covers the TLD rail and the `.cam` exclusion.
+- `AdultPolicyAssets` now reads and verifies `terms.json` once for the DNS
+  service before the tunnel starts, using the existing pinned
+  `TERMS_SEED_SHA256`; a failure leaves the seed enforcing and the keyword
+  layer off rather than loading unverified bytes.
+
+### Changed
+
+- **The browser coverage dialog answers the private-window question where the
+  browser list is.** It now states that incognito tabs still get the DNS layer
+  and the text and image inspection, and that Android cannot switch another
+  browser's private mode off unless the phone is managed by a device owner. Two
+  strings, English and Arabic; no layer, rule or permission changed. The
+  coverage analysis behind it is in
+  [docs/ANDROID_PRIVATE_WINDOWS_AND_PLATFORMS_2026-11-06.md](docs/ANDROID_PRIVATE_WINDOWS_AND_PLATFORMS_2026-11-06.md).
+
+### Verification
+
+- `android/test-core.sh` (JDK 17+) — every core suite passes, including the two
+  new classes. `check-strings.py` and `check-notices.py` pass; no string,
+  permission, activity, service or stored field changed.
+
+### Limits
+
+- Android DNS still cannot see paths, queries, IP literals, DoH to an unlisted
+  resolver, or another VPN; the RSA remain the layer's largest holes. The
+  guard closes the hostname half only.
+- A hand allowance outranks both rails; that is the false-positive escape hatch.
+- No Play upload is claimed and the seed is unchanged. 1.2.1's
+  accessibility-grant and classifier fixes are retained. A 1.2.2 build
+  (versionCode 31) was compiled and installed in place on the owner's phone
+  after this entry: it carries this entry's DNS policy, the 1.2.1 fixes and the
+  protection pass's service-lifecycle repair — the guard now arms itself from
+  its first accessibility event when Android rebinds it without repeating
+  `onServiceConnected`. Record:
+  [docs/ANDROID_PROTECTION_PASS_2026-11-06.md](docs/ANDROID_PROTECTION_PASS_2026-11-06.md).
+
+## Android 1.2.1 — 2026-11-06
+
+### Fixed
+
+- **A granted accessibility service could read as "permission required".** After
+  the service was turned back on in Android Settings, the dashboard still showed
+  the layer as missing while Settings showed it on and `dumpsys accessibility`
+  listed it enabled and bound: the check trusted only
+  `AccessibilityManager.getEnabledAccessibilityServiceList`, whose cached copy a
+  long-lived process can keep stale. `app.hisn.core.AccessibilityGrant` now reads
+  Android's own `enabled_accessibility_services` value as the second source,
+  gated on `accessibility_enabled = 1`, and accepts both entry formats Android
+  writes. A bound-but-stale service now reads **reconnect required**, never a
+  missing permission. Both call sites (`Permissions.accessibility` and
+  `MainActivity.guardPermissionEnabled`) use it.
+- **A classifier failure blinded the image layer for a flat 30 s.**
+  `VisualGuard.fail()` freed the model and refused sampling for 30 s, so one
+  killed WebView renderer, JavaScript timeout or dropped frame cost half a
+  minute plus a ~2.2 s model reload. `app.hisn.core.VisualRetry` retries after
+  **5 s**, doubles each further failure, keeps the previous **30 s** cap and is
+  cleared by any finished sample. The engine is still freed on failure, so a
+  broken engine cannot loop.
+
+### Changed
+
+- `test-live-visual.py` is hold-aware: a detection holds the app for
+  `TextGuardService.BLOCK_HOLD_MILLIS` (60 s), so the driver now asserts the
+  hold, waits it out and only then asserts that ordinary sampling recovers. Its
+  adb timeout went 25 → 45 s. The ten-check suite passes against 1.2.1.
+
+### Verification
+
+- `android/test-core.sh` — all suites pass, with the new `AccessibilityGrant`
+  (both entry formats, separators, near-miss packages, the isolated test
+  package) and `VisualRetry` (5/10/20/30 s, cap, reset) tests; strings pass with
+  553 strings and 16 plurals in English and Arabic.
+- `:app:assembleDebug`, `:app:assembleDebugAndroidTest` and
+  `:app:assembleRelease -PhisnDistribution=direct` pass; `:app:lintDebug`
+  reports 0 errors.
+- `test-live-visual.py` on the owner's Samsung SM-G990B2, isolated visual-check
+  build next to the owner's app: 10 checks pass — real capture and benign
+  inference, moving-frame sampling, editable and password pause, secure window
+  unreadable, synthetic intervention after a real verdict, the 60 s hold, the
+  hold ending with sampling recovered, leaving the app, and opt-out.
+- Measured on the same phone with the real model: 8 samples in 30 s on a still
+  fixture (~3.8 s) and 17 in 30 s on a moving one (~1.8 s), matching the 2 s
+  base, the 1 s fast interval and the still back-off.
+- 1.2.1 (versionCode 30) installed in place over 1.2.0 with the owner's key;
+  saved rules and the running protection lock survived, DNS filtering was
+  restarted and the guard reconnected. Record:
+  [docs/ANDROID_PROTECTION_PASS_2026-11-06.md](docs/ANDROID_PROTECTION_PASS_2026-11-06.md).
+
+### Limits
+
+- No adult-positive corpus was used. The image layer's adult recall and
+  precision remain unestablished, and the fixture block is a synthetic hook
+  after a real allow verdict, not a model detection.
+- Real applications, real video playback, battery, thermal and long-run
+  behaviour were not measured; the cadence numbers come from synthetic fixtures.
+- The stale-cache condition was observed on the phone but not reproduced under
+  control; the new parser is unit-tested and the wiring is two call sites.
+- DNS query failures on this network (54 → 55 over a minute while 85 → 91
+  queries were forwarded) are reported, not explained; no DNS behaviour changed.
+- The accessibility service was destroyed and re-created repeatedly on the test
+  phone while it was driven from adb, and the guard's reported state followed
+  it. Battery optimisation is not the cause (device-idle whitelisted,
+  `RUN_ANY_IN_BACKGROUND` allowed); the cause was not established, and the guard
+  reconnected after a full disable/enable. A quiet-phone capture around a drop
+  is the next step.
+
+## Android 1.2.0 — 2026-11-06
+
+### Changed
+
+- **One line per rule.** The Protection rule list answers in a trailing column:
+  a 22 dp line icon, a title, and **On**, **Off**, a time range, **7 hours
+  left** or an app count at the end of the row. The filled icon tile is gone,
+  rows are 54 dp high instead of 62–74 dp, and the seven rules now fit above the
+  fold on the owner's phone instead of needing about 1,250 of 2,340 px.
+- **Section labels instead of icon-tiled headers.** A quiet 12.5 sp label sits
+  above each card, so a page has one heading level less and only items carry
+  icons. Applied to Protection, Rules and Settings.
+- **The app bar names the page.** Protection keeps **Hisn** and its tagline;
+  Rules and Settings show their own names. The separate page titles are gone,
+  the bar is 56 dp high instead of 68 dp, and the duplicate heading is removed.
+- **The hero follows its verdict.** The Protection card is amber with an amber
+  border while something needs attention and the blue accent otherwise; the mark
+  is 92 dp instead of 116 dp.
+- **The DNS card states the consequence.** Its header carries a state pill and
+  one honest sentence. When the layer is off it says *Not running. No domain is
+  filtered until you turn this on.* (`dns_off_body`, English and Arabic) instead
+  of repeating `DNS filtering · Off` under a header that already said it. The
+  dead **DNS filtering is on** button is gone: a start action appears only when
+  there is something to start.
+- **App protection is a status row, not a card.** On Rules it is one row with
+  its state and the same disclosure the old button opened, in place of a card
+  that held a lone "Connected" line.
+- **Frozen rows stay readable.** A locked row shows a lock where the chevron was
+  at 0.72 alpha; disabled controls sit at 0.58 instead of 0.45, which failed
+  contrast on the second line.
+- **Row summaries stop repeating their own titles** — `Daily time limits · Off`
+  becomes `Off`, `Protection lock · About 8 hours remaining` becomes
+  `About 8 hours remaining`, and the same for the schedule and its all-apps
+  variant, in English and Arabic.
+- **Smaller screens.** The voluntary pause's exit is a quiet button rather than
+  the loudest control (an enforced pause keeps the way out primary); the
+  first-run mark is 124 dp (116 dp on the lock page); the pause row uses a pause
+  icon instead of the diagnostics bars; **Licenses and sources** no longer
+  describes itself in a second line.
+
+### Added
+
+- `Ui.sectionLabel`, `Ui.statusPill`, trailing-value rows with
+  `SettingRow.setValue` / `setLocked`, the `bg_hero_attention` drawable, the
+  `ic_pause` drawable and the `dns_off_body` string in English and Arabic. No
+  new permission, activity, service or stored field.
+
+### Verification
+
+- `android/check-strings.py` — 553 strings, 16 plurals and 543 source references
+  matched in English and Arabic; `android/check-notices.py` passes;
+  `android/test-core.sh` passes every core suite.
+- `:app:assembleDebug`, `:app:lintDebug` (0 errors) and a release-signed direct
+  build (`-PhisnDistribution=direct`) pass.
+- The release APK was installed in place over 1.1.1 on the owner's Samsung
+  SM-G990B2 (Android 16, 1080 × 2340, 420 dpi override) with the owner's key.
+  Saved rules and the running protection lock were preserved; Android disabled
+  the accessibility service when the package was replaced, it was re-enabled in
+  Settings and the guard reconnected, and DNS filtering was started again from
+  the app's own consent sheet. Captures in English light, English dark and
+  Arabic dark:
+  [design/android-ui-2026-11-06](design/android-ui-2026-11-06/README.md), record
+  in [docs/ANDROID_UI_2026-11-06.md](docs/ANDROID_UI_2026-11-06.md).
+
+### Limits
+
+- Presentation only: no enforcement layer, permission, stored value, disclosure
+  or commitment rule changed, and nothing new is claimed about what any layer
+  blocks.
+- Large font scales, tablets, landscape and every row state were not captured;
+  the trailing answer is one line with an end ellipsis.
+- ScreenZen was observed read-only on the same phone for structure only; no
+  code, asset, string, colour or data model was copied.
+- No signed APK is published and no Play upload is claimed. The APK built here
+  is local.
+
+## iPhone & iPad 1.7.1 — 2026-11-06
+
+### Added
+
+- **Chosen weekdays for quiet hours.** A Monday-first day mask on the
+  quiet-hours rule: rules saved before this release run every day, a window that
+  crosses midnight belongs to the day it starts on, and each window leg is
+  checked against that day by the monitor (the morning leg checks yesterday).
+  The editor gains day chips with the UI language's initials and every-day /
+  weekdays / weekend presets; the rule row says *weekdays*, *weekends* or *N
+  days*. A weekday change is frozen during a commitment like every other field.
+- **End now for a running pause session.** Today and the Apps rule row show a
+  running session with the minutes it bought and an action that re-shields
+  immediately. It only tightens, so a commitment does not refuse it.
+- **The commitment deadline on Today.** An active commitment now shows its end
+  date on the first screen instead of only in More.
+- **Handoff guidance before iOS 26.5.** The pause editor explains that the
+  shield's **Pause first** reaches Hisn through a notification and offers to
+  allow notifications, or to open Settings when they were declined.
+
+### Changed
+
+- The quiet-hours sentence no longer says "every day"; the days phrase carries
+  that, and the shield copy no longer calls the window daily.
+- `apps.windowScope` states the day rule, including the midnight case.
+
+### Verification
+
+- `./test.sh ios` — **40 Python and 252 simulator tests, 0 failures** on the
+  iPhone 17 simulator (iOS 26.5); nine new weekday tests.
+- No entitlement, signed build or device acceptance is claimed. Record:
+  [the 1.7.1 note](docs/IOS_1.7.1.md).
+
 ## iPhone & iPad 1.7.0 — 2026-11-06
 
 ### Added
@@ -37,10 +574,35 @@ bump without an entry here is an unfinished release.
 - The shield's secondary button is only configured for a pause rule with opens
   left; every other mode keeps the existing one-button shield.
 
+- **Four places instead of three tabs: Today, Apps, Practice, More.** The
+  first screen now answers "what do I do now?" — one deep card for the
+  protection state and its single action, the week's practice streak, the app
+  rules in a sentence, and one practice card. The checks, plan, Lock Center,
+  commitment, vault, sites and settings moved one tap into More; nothing was
+  deleted. The old Setup tab's three steps are still there, with their exact
+  words.
+- **A rule editor that fits a decision.** Apps shows each rule as a row with
+  the system-drawn app icons, one sentence and the opens as dots. The editor
+  is a sheet: pick apps, choose one of four modes (pause, always, daily limit,
+  quiet hours) with a one-line description each, then only the numbers that
+  mode uses. `AppUsageSection` and `GuardSection` are removed; the rules keep
+  the same controller calls, validation and frozen-rule rules.
+- **The practice pause in the shield's navy.** `PauseView` and the handoff
+  screen share the shield's deep card, mark and rounded type, so the system
+  screen and the app screen read as one voice. A finished breath records the
+  practice day that the streak counts.
+- **The design language.** Warm paper/ink canvas, one indigo accent, calm green
+  for "held", ember for attention, rounded display type, one filled action per
+  screen; every state is also carried by an icon and words. All four tabs
+  render at the largest accessibility sizes and in Arabic RTL, and body text
+  stays at 4.5:1 or better on its surface.
+
 ### Verification
 
-- `./test.sh ios` — **40 Python and 242 simulator tests, 0 failures** on the
-  iPhone 17 simulator (iOS 26.5); 21 new pause-rule tests.
+- `./test.sh ios` — **40 Python and 243 simulator tests, 0 failures** on the
+  iPhone 17 simulator (iOS 26.5); 21 pause-rule tests.
+- `UIRenderTests` now renders all four tabs in English, Arabic, dark mode and
+  iPad, plus the pause handoff, the rule editor and More in both styles.
 - `PauseRuleTests` cover day rollover, budget exhaustion, damaged and
   conflicting records, session bounds, handoff freshness and the practice-day
   history without Apple's Screen Time service.

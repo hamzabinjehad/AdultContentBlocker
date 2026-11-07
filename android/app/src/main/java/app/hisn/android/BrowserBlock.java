@@ -41,8 +41,14 @@ final class BrowserBlock {
 
         root.addView(Ui.body(activity, activity.getString(R.string.browsers_help)),
                 Ui.margins(activity, 0, 8));
-        root.addView(Ui.caption(activity, activity.getString(R.string.browsers_keep_only_note)),
+        // The question every browser list raises: does private mode escape this? It does not,
+        // and on an ordinary phone it also cannot be switched off from here.
+        root.addView(Ui.caption(activity, activity.getString(R.string.browsers_private_note)),
+                Ui.margins(activity, 0, 4));
+        root.addView(Ui.caption(activity, activity.getString(R.string.browsers_private_limit)),
                 Ui.margins(activity, 0, 0));
+        root.addView(Ui.caption(activity, activity.getString(R.string.browsers_keep_only_note)),
+                Ui.margins(activity, 8, 0));
         List<CheckBox> boxes = new ArrayList<>();
         List<String> names = new ArrayList<>();
 

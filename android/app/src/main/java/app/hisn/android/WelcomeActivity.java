@@ -223,7 +223,7 @@ public final class WelcomeActivity extends Activity {
     // ------------------------------------------------------------------ intro
 
     private void renderIntro() {
-        ImageView icon = Ui.iconInTile(this, INTRO_ICONS[page], R.color.accent, 164, 96);
+        ImageView icon = Ui.iconInTile(this, INTRO_ICONS[page], R.color.accent, 124, 70);
         icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
         LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(
                 Ui.dp(this, 164), Ui.dp(this, 164));
@@ -439,7 +439,7 @@ public final class WelcomeActivity extends Activity {
 
     private void renderLock() {
         content.setGravity(Gravity.CENTER_HORIZONTAL | Gravity.CENTER_VERTICAL);
-        ImageView icon = Ui.iconInTile(this, R.drawable.ic_lock, R.color.accent, 140, 82);
+        ImageView icon = Ui.iconInTile(this, R.drawable.ic_lock, R.color.accent, 116, 66);
         icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
         LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(
                 Ui.dp(this, 140), Ui.dp(this, 140));

@@ -1,0 +1,129 @@
+<!doctype html><meta charset="utf-8"><title>Hisn embedded settings tests</title>
+<style>body{font:14px system-ui}iframe{width:452px;height:530px;border:1px solid #ddd}pre{white-space:pre-wrap}</style>
+<h1>Settings inside the popup: 452 × 530</h1>
+<pre id="summary" data-result="pending">Running…</pre><div id="frames"></div>
+<script type="module">
+// The popup embeds options.html at roughly 452×530 with ?popup=1. This harness
+// pins that compact surface on its own: the regular settings suite is a
+// 740-pixel desktop page and its file-import scenarios are timing-sensitive,
+// so the compact layout is better checked in a small, isolated frame.
+const results = [];
+const check = (ok, label) => { results.push(`${ok ? "ok" : "FAIL"} ${label}`); if (!ok) throw new Error(label); };
+const pause = () => new Promise((resolve) => setTimeout(resolve, 100));
+try {
+  const source = await (await fetch("../../options.html")).text();
+  async function frame(language = "en", width = 452, height = 530) {
+    const fixture = {
+      appPresent: false, mode: "blocklist", lockUntil: 0, lastHeartbeat: Date.now(),
+      failClosed: false, customBlocks: ["example.com"], allowlist: [], customTerms: [],
+      textAllow: [], ignoreTerms: [], disputed: [], inspectText: true, textSensitivity: 50,
+      desiredRevision: 1, appliedRevision: 1,
+      enforcement: { version: 1, status: "applied", desiredRevision: 1, appliedRevision: 1,
+        layers: { domains: "applied", search: "applied", text: "applied", visual: "off" },
+        downloadedRules: { domains: 0, keywords: 0, listVersion: 0 } },
+    };
+    const mock = `<script>
+      window.fixture = ${JSON.stringify(fixture)};
+      window.reads = 0;
+      window.writes = 0;
+      window.chrome = {
+        storage: { onChanged: { addListener() {} },
+          local: { get: async () => (${JSON.stringify(language)} ? { uiLanguage: ${JSON.stringify(language)} } : {}),
+                   set: async () => {} } },
+        runtime: { getManifest() { return { version: '1.0.0' }; },
+          sendMessage(msg, cb) {
+            if (msg.type === 'getState') { reads++; return cb(structuredClone(fixture)); }
+            if (msg.type === 'getVisualStatus') return cb({state:'disabled',available:true,supportedPersonModes:['off','all','female','male']});
+            if (msg.type === 'forceSync') return cb({ok:false});
+            if (msg.type === 'repairProtection') return cb({ok:true});
+            if (msg.type === 'update') { writes++; Object.assign(fixture, msg.patch); return cb({ok:true,state:structuredClone(fixture)}); }
+          } }
+      };
+    <\/script>`;
+    const f = document.createElement("iframe");
+    f.style.width = `${width}px`;
+    f.style.height = `${height}px`;
+    f.srcdoc = source.replace('<head>', `<head><base href="${new URL('../../options.html', location.href).href}">${mock}`);
+    document.getElementById("frames").append(f);
+    await new Promise((resolve) => f.onload = resolve);
+    for (let attempt = 0; attempt < 50 && !f.contentWindow.reads; attempt++) await pause();
+    if (!f.contentWindow.reads) throw new Error("embedded settings module did not initialize within 5 seconds");
+    // options.js adds this from ?popup=1. The harness sets it directly because
+    // a srcdoc document cannot carry a query string.
+    f.contentDocument.body.classList.add("popup-embedded");
+    await pause();
+    return f;
+  }
+  const english = await frame("en"), e = english.contentDocument, ew = english.contentWindow;
+  const nav = e.querySelector(".sidebar nav"), links = [...nav.querySelectorAll("a")];
+  check(e.documentElement.scrollWidth <= ew.innerWidth,
+    `the embedded page never scrolls sideways (${e.documentElement.scrollWidth} ≤ ${ew.innerWidth})`);
+  check(links.length === 5, "all five sections remain in the embedded tab row");
+  check(nav.scrollWidth <= nav.clientWidth,
+    `the tab row fits instead of hiding the last section behind a horizontal scroll (${nav.scrollWidth} ≤ ${nav.clientWidth})`);
+  const navRect = nav.getBoundingClientRect();
+  check(links.every((link) => {
+    const rect = link.getBoundingClientRect();
+    return rect.left >= navRect.left - 0.5 && rect.right <= navRect.right + 0.5 && rect.width > 20 && rect.height >= 40;
+  }), "every tab stays on screen at a comfortable touch height");
+  check(links.every((link) => link.scrollWidth <= link.clientWidth),
+    "every tab label fits its own cell instead of being clipped");
+  check(links.map((link) => link.textContent.trim()).join("|") === "Overview|Rules|Visual checks|Lock|Content",
+    "the embedded tab row carries the section names");
+  check(ew.getComputedStyle(e.querySelector(".extension-footer")).display === "none",
+    "the full-page footer no longer pins itself under the embedded content");
+  check(ew.getComputedStyle(e.querySelector(".lang-pick")).display === "none",
+    "the language row gives its height back to the page");
+  check(ew.getComputedStyle(e.querySelector(".dashboard-shortcuts")).display === "none",
+    "the overview does not repeat the tab bar as shortcut tiles");
+  check(ew.getComputedStyle(e.querySelector(".sidebar .brand")).display === "none",
+    "the embedded page does not repeat the popup's brand");
+  const page = e.getElementById("overview");
+  check(!page.hidden && page.clientHeight >= 400,
+    `the page gets the popup's height, not a third of it (${page.clientHeight}px)`);
+  check(page.scrollHeight > page.clientHeight, "the compact page scrolls rather than cutting content off");
+  const pageRect = page.getBoundingClientRect();
+  const repair = e.getElementById("repairProtection").getBoundingClientRect();
+  check(repair.height >= 38 && repair.bottom <= pageRect.top + page.clientHeight + 1,
+    "the repair action is visible without scrolling on the embedded overview");
+  page.focus();
+  await pause();
+  check(ew.getComputedStyle(page).outlineStyle === "none",
+    "focusing the scroll region never draws a clipped focus ring around the page");
+  for (const view of ["rules", "media", "lock", "settings"]) {
+    e.querySelector(`.sidebar nav a[href="#${view}"]`).click();
+    await pause();
+    check(!e.getElementById(view).hidden && e.getElementById("overview").hidden,
+      `the ${view} tab opens its page`);
+    check(e.documentElement.scrollWidth <= ew.innerWidth,
+      `the ${view} page has no horizontal overflow`);
+  }
+  // Arabic: five longer labels, still one row, still no sideways scroll.
+  const arabic = await frame("ar"), a = arabic.contentDocument, aw = arabic.contentWindow;
+  const arabicNav = a.querySelector(".sidebar nav"), arabicLinks = [...arabicNav.querySelectorAll("a")];
+  check(a.documentElement.dir === "rtl" && a.documentElement.lang === "ar", "the embedded page mirrors in Arabic");
+  check(arabicNav.scrollWidth <= arabicNav.clientWidth,
+    `the Arabic tab row fits without horizontal scrolling (${arabicNav.scrollWidth} ≤ ${arabicNav.clientWidth})`);
+  const arabicRect = arabicNav.getBoundingClientRect();
+  check(arabicLinks.every((link) => {
+    const rect = link.getBoundingClientRect();
+    return rect.left >= arabicRect.left - 0.5 && rect.right <= arabicRect.right + 0.5 && link.scrollWidth <= link.clientWidth;
+  }), "every Arabic tab label stays inside the row");
+  check(a.documentElement.scrollWidth <= aw.innerWidth, "the Arabic embedded page has no horizontal overflow");
+  check(a.getElementById("uiLanguage").value === "ar", "Arabic keeps its language choice");
+  // A very narrow popup wraps the tabs onto two equal rows rather than
+  // clipping them. The 480 px surface is the normal case; this is a fallback.
+  english.style.width = "330px";
+  await pause();
+  const narrowNav = e.querySelector(".sidebar nav");
+  check(narrowNav.scrollWidth <= narrowNav.clientWidth,
+    "a very narrow embedded surface wraps the tabs instead of clipping them");
+  check([...narrowNav.querySelectorAll("a")].every((link) => link.getBoundingClientRect().width >= 60),
+    "wrapped tabs keep a usable target width");
+  document.getElementById("summary").dataset.result = "pass";
+} catch (error) {
+  results.push(`FAIL ${error.stack}`);
+  document.getElementById("summary").dataset.result = "fail";
+}
+document.getElementById("summary").textContent = results.join("\n");
+</script>

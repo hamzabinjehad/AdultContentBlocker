@@ -11,7 +11,7 @@ hisn_test_output=$(mktemp -d "${TMPDIR:-/tmp}/hisn-core.XXXXXX")
 # Test class files stay in a newly created temporary directory; no repo files are changed.
 hisn_java_bin=${JAVA_HOME:+$JAVA_HOME/bin/}
 "${hisn_java_bin}javac" -d "$hisn_test_output" core/src/main/java/app/hisn/core/*.java core/src/test/java/app/hisn/core/*.java
-for hisn_test in TextFolding WordMatcher VisibleTextSample LabelScan GuardWindows VisualCadence InterventionRepeat GuardHealth SetupGuide DomainPolicy BrowserCanary BrowserCoverage DnsPolicy DnsUdpTruncation DnsExchange DnsTunnelProbe DnsTunnelTcpProbe DnsReplyGuard Ipv4DnsPacket Ipv4TcpPacket DnsTcpServer DnsTcpFallback DnsPacketKind EncryptedDnsProviders EncryptedDnsResolvers DnsHealth DnsNotice PolicyChangeError RemainingTime CommitmentClock DailyAppSchedule AppTimeLimit PauseTally ShortVideoSurfaces UninstallProtection ProtectionLock ManagedRestrictions AlwaysOnVpn BlockedAppSuspension GuardianPairing GuardianPolicy SafeSearch DnsPolicyRewrite BrowserAllowlist DomainListHash LayerWatch SeedFreshness SelfProtectionScreens VisualFrameGate VisualExecutionPolicy InspectionHealth VisualHealth VisualDuty ResolverFailover UnderlyingNetwork SettingsIntegrity SavedSettings; do
+for hisn_test in TextFolding AdultTldPolicy WordMatcher VisibleTextSample LabelScan GuardWindows VisualCadence VisualRetry AccessibilityGrant InterventionRepeat GuardHealth SetupGuide DomainPolicy BrowserCanary BrowserCoverage DnsPolicy DnsUdpTruncation DnsExchange DnsTunnelProbe DnsTunnelTcpProbe DnsReplyGuard Ipv4DnsPacket Ipv4TcpPacket DnsTcpServer DnsTcpFallback DnsPacketKind EncryptedDnsProviders EncryptedDnsResolvers DnsHealth DnsNotice PolicyChangeError RemainingTime CommitmentClock DailyAppSchedule AppTimeLimit PauseTally ShortVideoSurfaces UninstallProtection ProtectionLock ManagedRestrictions AlwaysOnVpn BlockedAppSuspension GuardianPairing GuardianPolicy SafeSearch DnsPolicyRewrite BrowserAllowlist DomainListHash LayerWatch SeedFreshness SelfProtectionScreens VisualFrameGate VisualExecutionPolicy InspectionHealth VisualHealth VisualDuty ResolverFailover UnderlyingNetwork SettingsIntegrity SavedSettings; do
     "${hisn_java_bin}java" -cp "$hisn_test_output" "app.hisn.core.${hisn_test}Test"
 done
 # Compile the actual release-only hook separately: it must remain a no-op without Android APIs.
@@ -38,6 +38,21 @@ for rule in rules:
     print(str(int(rule['w'])) + '\t' + rule.get('l', 'neg') + '\t' + rule['t'])
 PY
 "${hisn_java_bin}java" -cp "$hisn_test_output" app.hisn.core.AdultTextPolicyTest "$hisn_test_output/adult-terms.tsv"
+# Hostname keyword fixture: the same signed terms, exemptions and shared cases the Mac and Chrome use.
+python3 - <<'PY' > "$hisn_test_output/host-policy.tsv"
+import json
+seed = json.load(open('../seed/terms.json'))
+for entry in seed['host_terms']:
+    assert not any(c in entry['t'] for c in '\r\n\t')
+    print(entry['kind'] + '\t' + entry['t'])
+for term in seed['never_keyword']:
+    print('never\t' + term)
+for host in seed.get('keyword_exempt_hosts', []):
+    print('exempt\t' + host)
+for case in json.load(open('../blocklist/terms/host_cases.json'))['cases']:
+    print('case\t' + ('1' if case['block'] else '0') + '\t' + case['host'])
+PY
+"${hisn_java_bin}java" -cp "$hisn_test_output" app.hisn.core.HostTermPolicyTest "$hisn_test_output/host-policy.tsv"
 "${hisn_java_bin}java" -cp "$hisn_test_output" app.hisn.core.AdultTextCorpusTest "$hisn_test_output/adult-terms.tsv" core/src/test/resources/adult-text-corpus.tsv
 "${hisn_java_bin}keytool" -genkeypair -alias hisn-test -keyalg EC -groupname secp256r1 -dname CN=localhost \
     -ext SAN=dns:localhost -validity 2 -storetype PKCS12 -keystore "$hisn_test_output/tls.p12" \

@@ -58,6 +58,14 @@ public final class AdultTextPolicyTest {
             check(!policy.blocks(sample), "benign/boundary sample stays available: " + sample);
         }
         check(!policy.blocks(null), "null sample is empty");
+        // The event fast path needs a call to action; a bare label waits for the whole screen.
+        for (String sample : Arrays.asList("Watch porn", "FREE hentai now", "Download adult videos",
+                "مشاهدة سكس", "تحميل محتوى إباحي مجانا", "Watch p.o.r.n videos"))
+            check(policy.blocksPromotion(sample), "single-line promotion detected: " + sample);
+        for (String sample : Arrays.asList("Porn", "Porn videos", "Pornography", "hentai",
+                "sex education", "Watch sex education", "Porn addiction recovery", "Watch a sexual health presentation",
+                "A normal day", "محتوى إباحي", "شاهد التربية الجنسية"))
+            check(!policy.blocksPromotion(sample), "single line alone does not block: " + sample);
         for (String label : Arrays.asList("Porn videos", "p.o.r.n images", "محتوى إباحي", "صور اباحيه"))
             check(policy.blocks(label), "complete explicit media label detected: " + label);
         for (String label : Arrays.asList("Research about porn videos", "Porn videos addiction recovery",

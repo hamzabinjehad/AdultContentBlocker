@@ -27,6 +27,45 @@ final class WebProtectionPolicyTests: XCTestCase {
     }
 }
 
+/// The adult-TLD rail: a sponsored adult TLD needs no list entry, no keyword
+/// layer and no readable generation.
+final class AdultTldGuardTests: XCTestCase {
+    func testSponsoredAdultTldsAreBlockedWithoutAnyListOrTerms() {
+        let store = BlocklistStore()
+        for host in ["new.porn", "cdn.new.xxx", "brand.adult", "a.b.sex",
+                     "NEW.PORN.", " porn ", "xxx"] {
+            XCTAssertTrue(store.isBlocked(host: host), host)
+        }
+    }
+
+    func testOrdinaryAndGenericTldsStayReachable() {
+        let store = BlocklistStore()
+        for host in ["example.com", "example.cam", "notporn.com", "porn.example.com",
+                     "xxx.example.com", "foo.xxx.example.com"] {
+            XCTAssertFalse(store.isBlocked(host: host), host)
+        }
+    }
+
+    func testAHandAllowanceStillWins() {
+        let store = BlocklistStore()
+        store.setAllowlist(["new.porn"])
+        XCTAssertFalse(store.isBlocked(host: "new.porn"))
+        XCTAssertFalse(store.isBlocked(host: "cdn.new.porn"))
+        XCTAssertTrue(store.isBlocked(host: "other.porn"))
+    }
+
+    func testTheRailIsAnExactFinalLabelNotASubstring() {
+        XCTAssertTrue(AdultTldGuard.matches(host: "new.porn"))
+        XCTAssertTrue(AdultTldGuard.matches(host: "PORN"))
+        XCTAssertTrue(AdultTldGuard.matches(host: "new.porn."))
+        XCTAssertFalse(AdultTldGuard.matches(host: "porn.example.com"))
+        XCTAssertFalse(AdultTldGuard.matches(host: "notporn.com"))
+        XCTAssertFalse(AdultTldGuard.matches(host: "cam"))
+        XCTAssertFalse(AdultTldGuard.matches(host: ""))
+        XCTAssertFalse(AdultTldGuard.matches(host: "."))
+    }
+}
+
 /// The aggregate denied-flow tally: a count and a day, nothing else.
 final class BlockedFlowTallyTests: XCTestCase {
     private var calendar: Calendar = {

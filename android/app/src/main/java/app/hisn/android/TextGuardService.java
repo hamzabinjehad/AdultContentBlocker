@@ -34,6 +34,8 @@ import app.hisn.core.VisibleTextSample;
  * picture-in-picture included). Does not consume event text or retain screen content. */
 public final class TextGuardService extends AccessibilityService {
     public static volatile boolean connected;
+    /** Setup ran in this service instance; reset when Android unbinds it. */
+    private boolean started;
     /** Setup finished and events are handled; the boot shield waits for this. */
     static volatile boolean ready;
     /** Set by an incomplete or failed inspection; cleared by a later complete one. */
@@ -135,6 +137,19 @@ public final class TextGuardService extends AccessibilityService {
 
     @Override protected void onServiceConnected() {
         connected = true;
+        startGuard();
+    }
+
+    /**
+     * Sets the guard up once. Android normally calls {@link #onServiceConnected}, but a service that
+     * the system rebound after an accessibility toggle has been seen alive and bound without a fresh
+     * callback, which left {@code connected} false and the guard unarmed while the service was in
+     * fact receiving events. The first event therefore retries the setup instead of trusting the
+     * callback alone; every step here is idempotent.
+     */
+    private void startGuard() {
+        if (started) return;
+        started = true;
         handler.removeCallbacks(checkpoint);
         handler.post(checkpoint);
         try {
@@ -262,6 +277,8 @@ public final class TextGuardService extends AccessibilityService {
     }
 
     @Override public void onAccessibilityEvent(AccessibilityEvent event) {
+        // An event proves this instance is alive even when the bind callback was not repeated.
+        if (!started) { connected = true; startGuard(); }
         if (connected && visual == null) visual = newVisualGuard();
         // Only a window change discards an in-flight image sample. Scrolls and content changes
         // in feeds and videos are constant; the frame gate still requires the same app and
@@ -834,6 +851,7 @@ public final class TextGuardService extends AccessibilityService {
     @Override public boolean onUnbind(Intent intent) {
         connected = false;
         ready = false;
+        started = false;
         handler.removeCallbacks(checkpoint);
         onInterrupt();
         return super.onUnbind(intent);
@@ -843,6 +861,7 @@ public final class TextGuardService extends AccessibilityService {
         removeGuardOverlay();
         connected = false;
         ready = false;
+        started = false;
         handler.removeCallbacks(checkpoint);
         onInterrupt();
         super.onDestroy();

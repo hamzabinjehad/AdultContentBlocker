@@ -454,33 +454,60 @@ html[dir=rtl] button.layer-link .icon{transform:scaleX(-1)}
 @media(prefers-reduced-motion:reduce){.popup *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
 /* ── Popup editor (embedded settings) ─────────────────────────────────── */
-.popup-editor{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px;padding-top:4px}
-.popup-editor-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none}
-.popup-editor-actions button{min-height:40px}
-.popup-editor iframe{width:100%;flex:1;min-height:0;border:1px solid var(--line);border-radius:var(--r);background:var(--bg)}
-.popup-editing>.popup-scroll,.popup-editing>.actions,.popup-editing>.privacy-note,.popup-editing>#connectionMessage,.popup-editing .popup-header .lang-switch{display:none}
-body.popup.popup-editing{height:600px;max-height:100vh;min-height:0;overflow:hidden}
-.popup-embedded .settings-shell{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}
-.popup-embedded .sidebar{position:static;height:auto;padding:8px;border:0;border-bottom:1px solid var(--line);gap:4px}
-.popup-embedded .sidebar>.brand,.popup-embedded .sidebar>.privacy-note,.popup-embedded .sidebar-status{display:none}
-.popup-embedded .sidebar nav{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:4px;padding:3px}
-.popup-embedded .sidebar nav a{min-height:44px;white-space:nowrap;flex:none;padding:7px 9px}
+/* The popup gives the editor its whole surface: one compact bar for leaving,
+   one row of tabs, and everything else is the page. The dashboard's brand,
+   language picker, shortcut tiles and footer are full-page furniture; keeping
+   them here squeezed the actual settings into a third of the popup. */
+.popup-editor{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px;padding-top:0}
+.popup-editor-actions{display:flex;align-items:center;justify-content:flex-start;gap:6px;flex:none}
+.popup-editor-actions button{min-height:38px;padding:6px 11px;border-radius:10px;font-size:12.5px;gap:6px}
+.popup-editor-actions .icon{width:15px;height:15px}
+.popup-editor-actions #openFullSettings{margin-inline-start:auto}
+.popup-editor-actions .popup-editor-lang{background:transparent;border-color:transparent;color:var(--muted);font-weight:560;padding:6px 9px}
+.popup-editor-actions .popup-editor-lang:hover:not(:disabled){background:var(--surface-2);color:var(--fg)}
+html[dir=rtl] .popup-editor-actions .icon{transform:scaleX(-1)}
+.popup-editor iframe{width:100%;flex:1;min-height:0;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.popup-editing>.popup-scroll,.popup-editing>.actions,.popup-editing>.privacy-note,.popup-editing>#connectionMessage,.popup-editing>.popup-header{display:none}
+body.popup.popup-editing{height:600px;max-height:100vh;min-height:0;overflow:hidden;padding:10px 12px 12px}
+.popup-embedded .settings-shell{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);height:100dvh}
+.popup-embedded .sidebar{position:static;height:auto;padding:6px;border:0;border-bottom:1px solid var(--line);gap:0}
+.popup-embedded .sidebar>.brand,.popup-embedded .sidebar>.privacy-note,.popup-embedded .sidebar-status,.popup-embedded .lang-pick{display:none}
+.popup-embedded .sidebar nav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;padding:0;overflow:visible}
+.popup-embedded .sidebar nav a{min-height:42px;justify-content:center;gap:0;padding:5px 3px;font-size:12px;font-weight:560;line-height:1.25;text-align:center;white-space:normal;border-radius:9px}
+.popup-embedded .sidebar nav a .icon{display:none}
 .popup-embedded .sidebar nav a[aria-current=page]::before{display:none}
-.popup-embedded .lang-pick{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0}
-.popup-embedded .lang-pick select{min-height:36px}
-.popup-embedded main{padding:14px 9px 8px}
+.popup-embedded .settings-shell>main{padding:8px 8px 6px}
+.popup-embedded .extension-footer,.popup-embedded .dashboard-shortcuts{display:none}
+.popup-embedded .page-view{padding:0 2px 10px;scrollbar-gutter:auto;scrollbar-width:thin;scrollbar-color:var(--line-strong) transparent}
+.popup-embedded .page-view:focus,.popup-embedded .page-view:focus-visible{outline:none}
+.popup-embedded .sidebar nav:focus,.popup-embedded .sidebar nav:focus-visible{outline:none}
+.popup-embedded .page-view>h1{font-size:18px;margin-bottom:12px}
+.popup-embedded .page-heading{margin-bottom:12px}
+.popup-embedded .status-section{padding:14px;gap:10px;margin-bottom:12px;border-radius:var(--r-lg)}
+.popup-embedded .status-symbol{width:44px;height:44px}
+.popup-embedded .status-symbol .icon{width:22px;height:22px}
+.popup-embedded .status-actions{gap:6px}
+.popup-embedded .status-actions button{min-height:38px}
+.popup-embedded .dashboard-grid{gap:10px;margin-bottom:10px}
+.popup-embedded .dashboard-grid>.card{padding:14px}
+.popup-embedded .protection-layers{margin-top:10px;gap:8px}
+.popup-embedded .protection-layers li{padding:10px}
+.popup-embedded .list-update{padding:14px;margin-bottom:10px}
+.popup-embedded .overview-details{margin-top:2px}
+.popup-embedded.settings fieldset{padding:16px;margin-bottom:12px}
+.popup-embedded.settings legend{padding-bottom:10px;margin-bottom:12px;font-size:14.5px}
 .popup-embedded .save-bar{padding:8px;margin-top:8px}
 .popup-embedded .save-bar button{min-height:44px}
-.popup-embedded .page-view{scrollbar-gutter:auto}
-.popup-embedded .protection-layers{grid-template-columns:minmax(0,1fr)}
-.popup-embedded .dashboard-shortcuts{grid-template-columns:minmax(0,1fr)}
 @media(max-height:500px),(max-width:320px){
   body.popup.popup-editing{height:auto;max-height:none;min-height:600px;overflow:auto}
   .popup-editing .popup-editor{flex:none;height:500px}
 }
+@media(max-width:360px){
+  .popup-embedded .sidebar nav{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
 @media(max-width:320px){
-  body.popup.popup-editing{padding:12px}
-  .popup-embedded main{padding:10px 6px 6px}
+  body.popup.popup-editing{padding:10px}
+  .popup-embedded .settings-shell>main{padding:6px 4px 4px}
   .popup-embedded .visual-row{padding:12px;grid-template-columns:minmax(0,1fr) auto}
   .popup-embedded .visual-row .card-icon{display:none}
   .popup-embedded .person-targets{grid-template-columns:minmax(0,1fr)}

@@ -247,7 +247,7 @@ struct StatusMenu: View {
             Text("Blocked connections today: \(health.blockedToday)")
         }
         Divider()
-        Button("Open Hisn") {
+        Button {
             MainWindow.show(.overview, open: openWindow)
             // The agent launches with no window. This is the first moment the
             // person asks to see the app, so it is the right moment for the
@@ -255,23 +255,41 @@ struct StatusMenu: View {
             if !UserDefaults.standard.bool(forKey: "hisn.welcome.completed") {
                 AppNavigation.shared.welcomeRequested = true
             }
+        } label: {
+            Label("Open Hisn", systemImage: "macwindow")
         }
         if !lock.isLocked {
             // The moment a lock matters most is the moment it is hardest to
             // go and set one up: one click from the menu bar, then a
             // confirmation that names the end.
-            Menu("Lock now") {
+            Menu {
                 ForEach(QuickLock.lengths, id: \.self) { seconds in
                     Button(LockManager.describe(seconds)) { QuickLock.confirmAndStart(seconds) }
                 }
+            } label: {
+                Label("Lock now", systemImage: "lock.fill")
             }
-            Button("Start a lock…") { MainWindow.show(.lock, open: openWindow) }
+            Button {
+                MainWindow.show(.lock, open: openWindow)
+            } label: {
+                Label("Start a lock…", systemImage: "clock")
+            }
         }
-        Button("Take a pause…") { PauseWindowController.shared.show() }
-        Button("Block a site…") { QuickBlock.promptAndAdd() }
-        Button("Check a website…") {
+        Button {
+            PauseWindowController.shared.show()
+        } label: {
+            Label("Take a pause…", systemImage: "wind")
+        }
+        Button {
+            QuickBlock.promptAndAdd()
+        } label: {
+            Label("Block a site…", systemImage: "hand.raised")
+        }
+        Button {
             AppNavigation.shared.siteCheckRequested = true
             MainWindow.show(.overview, open: openWindow)
+        } label: {
+            Label("Check a website…", systemImage: "magnifyingglass")
         }
         if ScreenGrayscale.isAvailable {
             // A checkmark item. During a lock it can be ticked, not cleared.
@@ -280,8 +298,16 @@ struct StatusMenu: View {
                 set: { grayscale.set($0) }))
                 .disabled(grayscale.isOn && (lock.isLocked || ManagedMode.current().isManaged))
         }
-        Button("Setup") { MainWindow.show(.setup, open: openWindow) }
+        Button {
+            MainWindow.show(.setup, open: openWindow)
+        } label: {
+            Label("Setup", systemImage: "checklist")
+        }
         Divider()
-        Button("Hide Hisn") { MainWindow.hide() }
+        Button {
+            MainWindow.hide()
+        } label: {
+            Label("Hide Hisn", systemImage: "eye.slash")
+        }
     }
 }

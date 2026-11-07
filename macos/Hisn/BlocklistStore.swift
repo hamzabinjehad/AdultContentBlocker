@@ -284,6 +284,11 @@ public final class BlocklistStore {
         let host = Self.canonicalHost(host)
         if WebProtectionPolicy.isBlocked(host) { return true }
         if allowedByHand(host) { return false }
+        // A sponsored adult TLD needs no list entry. It sits after the hand
+        // allowance — the escape hatch a false positive keeps — and before the
+        // list, so it still works when the list is missing or the terms file
+        // failed to load.
+        if AdultTldGuard.matches(host: host) { return true }
         if listSaysBlocked(host: host) { return true }
         return hostMatchesTerm(host)
     }

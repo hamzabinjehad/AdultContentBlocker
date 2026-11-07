@@ -10,9 +10,9 @@ const canonical = readFile('../visual/engine.js').replace(/^import[\s\S]*?;\n/gm
 const sourceFactory = (dependencies) => Function(...Object.keys(dependencies), canonical + '\nreturn createVisualEngine;')(...Object.values(dependencies));
 const classes = ['Porn', 'Hentai', 'Sexy', 'Neutral', 'Drawing'];
 const capture = (width = 1, height = 1) => ({ id: 'test', width, height, rgba: btoa('\0'.repeat(width * height * 4)) });
-function harness({ explicit = false, failedFaceLoad = false, malformedFaces = false, probabilities = [.92, .08], mirroredProbabilities = probabilities, holdFaceLoad = false } = {}) {
+function harness({ explicit = false, failedFaceLoad = false, malformedFaces = false, probabilities = [.92, .08], mirroredProbabilities = probabilities, holdFaceLoad = false, backend = 'cpu', unavailable = [] } = {}) {
   let finishFaceLoad;
-  const calls = { adult: 0, face: 0, gender: 0, genderLoads: 0, disposed: 0, pads: [], reverses: [], faceShape: null, config: null };
+  const calls = { adult: 0, face: 0, gender: 0, genderLoads: 0, disposed: 0, pads: [], reverses: [], faceShape: null, config: null, wasmPaths: [], backends: [] };
   class Tensor {
     constructor(shape, data = null) { this.shape = shape; this.values = data; }
     slice(_begin, size) { return new Tensor(this.shape.map((edge, index) => size[index] < 0 ? edge : size[index])); }
@@ -25,7 +25,9 @@ function harness({ explicit = false, failedFaceLoad = false, malformedFaces = fa
     data() { return Promise.resolve(this.values); }
     dispose() { calls.disposed++; }
   }
-  const tf = { setBackend: async () => true, getBackend: () => 'cpu', ready: async () => {},
+  let activeBackend = null;
+  const tf = { setBackend: async name => { if (unavailable.includes(name)) return false; activeBackend = name; calls.backends.push(name); return true; },
+    getBackend: () => activeBackend ?? 'cpu', ready: async () => {},
     tidy: fn => fn(), tensor3d: (_bytes, shape) => new Tensor(shape), tensor1d: values => new Tensor([values.length]),
     pad: (image, pads) => { calls.pads.push(pads); return new Tensor(image.shape.map((edge, index) => edge + pads[index][0] + pads[index][1])); },
     reverse: (image, axes) => { calls.reverses.push({ shape: image.shape, axes }); return new Tensor(image.shape); },
@@ -45,10 +47,10 @@ function harness({ explicit = false, failedFaceLoad = false, malformedFaces = fa
     calls.adult++; const scores = explicit ? [.8, .02, .01, .16, .01] : [.01, .01, .01, .96, .01];
     return classes.map((className, index) => ({ className, probability: scores[index] }));
   } });
-  const createVisualEngine = sourceFactory({ tf, Human, loadNSFW, MobileNetV2Model: {},
+  const createVisualEngine = sourceFactory({ tf, Human, loadNSFW, MobileNetV2Model: {}, setWasmPaths: paths => { calls.wasmPaths.push(paths); },
     adultDecision, appearancePrediction, needsAppearanceConfirmation, confirmAppearance, faceDetections, personDecision, squareFrame, unpadFaces,
     visualPreferences, PERSON_MODES, validateCapture, LocalInferenceQueue });
-  return { engine: createVisualEngine({ baseURL: 'https://local.test/', backend: 'cpu' }), calls,
+  return { engine: createVisualEngine({ baseURL: 'https://local.test/', backend }), calls,
     finishFaceLoad: () => finishFaceLoad() };
 }
 {
@@ -61,6 +63,33 @@ function harness({ explicit = false, failedFaceLoad = false, malformedFaces = fa
   await h.engine.prepare({personBlur:'female'});
   check(h.engine.status().state === 'ready' && h.calls.genderLoads === 1 && h.calls.face === 0,
     'a later explicit opt-in can prepare missing local models without inspecting a dummy frame');
+}
+{
+  // An unattached Android WebView exposes no GPU surface. The ladder must reach
+  // WASM with the packaged path, and warm the kernels before the first capture.
+  const h = harness({ backend: 'auto', unavailable: ['webgl'] });
+  await h.engine.prepare({ inspectVisual: true });
+  const status = h.engine.status({ inspectVisual: true });
+  check(status.state === 'ready' && status.backend === 'wasm', 'auto falls back to the WASM backend when WebGL is unavailable');
+  check(h.calls.wasmPaths.join() === 'https://local.test/wasm/', 'WASM kernels load from the packaged visual directory, never a CDN');
+  check(h.calls.adult === 0, 'prepare adds no extra adult pass; the model loader owns the warm-up');
+}
+{
+  const h = harness({ backend: 'auto', unavailable: ['webgl', 'wasm'] });
+  await h.engine.prepare({ inspectVisual: true });
+  check(h.engine.status({ inspectVisual: true }).backend === 'cpu' && h.calls.adult === 0,
+    'the ladder ends on the CPU backend without a redundant warm-up');
+}
+{
+  const h = harness({ backend: 'wasm' });
+  await h.engine.prepare({ inspectVisual: true });
+  check(h.calls.backends[0] === 'wasm' && h.engine.status({ inspectVisual: true }).backend === 'wasm',
+    'an explicitly requested backend is tried first');
+}
+{
+  let error = null;
+  try { harness({ backend: 'remote' }); } catch (caught) { error = caught; }
+  check(error && /Unsupported visual backend/.test(error.message), 'an unknown backend name is rejected instead of silently downgraded');
 }
 {
   const h = harness();

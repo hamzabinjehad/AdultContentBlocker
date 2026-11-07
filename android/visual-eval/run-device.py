@@ -51,7 +51,7 @@ def main():
     parser.add_argument("--corpus", required=True, type=Path)
     parser.add_argument("--report", required=True, type=Path)
     parser.add_argument("--confirm-reviewed-corpus", action="store_true")
-    parser.add_argument("--backend", choices=("auto", "cpu", "webgl"), default="auto")
+    parser.add_argument("--backend", choices=("auto", "cpu", "wasm", "webgl"), default="auto")
     args = parser.parse_args()
     raw_manifest = (args.corpus / "manifest.json").read_bytes()
     if len(raw_manifest) > 131072:

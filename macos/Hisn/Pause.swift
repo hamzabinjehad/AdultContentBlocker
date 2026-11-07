@@ -179,6 +179,9 @@ final class PauseWindowController: NSObject, NSWindowDelegate {
         let window = NSWindow(contentViewController: NSHostingController(rootView: view))
         window.title = String(localized: "Take a pause…")
         window.styleMask = [.titled, .closable]
+        // The pause follows the system appearance like every other surface.
+        window.titlebarAppearsTransparent = true
+        window.backgroundColor = .windowBackgroundColor
         window.isReleasedWhenClosed = false
         window.delegate = self
         window.center()
@@ -218,15 +221,18 @@ public struct PauseView: View {
     }
 
     public var body: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: 16) {
             VStack(spacing: 6) {
+                HnMark(size: 26)
+                    .padding(.bottom, 4)
                 Text("Take a moment before you go on")
-                    .font(.title2.weight(.semibold))
+                    .font(.system(size: 25, weight: .semibold, design: .serif))
+                    .foregroundStyle(HnPalette.ink)
                     .multilineTextAlignment(.center)
                     .accessibilityAddTraits(.isHeader)
                 Text("A private pause. Nothing here is recorded except today’s count.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .font(.hnCallout())
+                    .foregroundStyle(HnPalette.muted)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -244,63 +250,66 @@ public struct PauseView: View {
 
             footer
         }
-        .padding(28)
+        .padding(26)
         .frame(minWidth: 420, minHeight: 560)
-        .background(background)
+        .background(HnPalette.canvas)
         .onAppear {
             guard tally == nil else { return }
             tally = PauseStore.record(now: clock(), defaults: defaults)
         }
     }
 
-    private var background: some View {
-        LinearGradient(colors: [
-            Color.accentColor.opacity(0.10),
-            Color(nsColor: .windowBackgroundColor),
-            Color(nsColor: .windowBackgroundColor),
-        ], startPoint: .topLeading, endPoint: .bottomTrailing)
-    }
-
     private func breathing(_ breath: PauseBreath.Snapshot) -> some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 16) {
             ZStack {
                 Circle()
-                    .stroke(Color.accentColor.opacity(0.16), lineWidth: 2)
-                    .frame(width: 250, height: 250)
+                    .stroke(HnPalette.line, lineWidth: 1)
+                    .frame(width: 262, height: 262)
+                Circle()
+                    .trim(from: 0, to: breath.progress)
+                    .stroke(HnPalette.accent, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                    .frame(width: 262, height: 262)
+                    .accessibilityHidden(true)
                 Circle()
                     .fill(RadialGradient(colors: [
-                        Color.accentColor.opacity(0.30),
-                        Color.accentColor.opacity(0.10),
-                    ], center: .center, startRadius: 8, endRadius: 125))
-                    .frame(width: 250, height: 250)
+                        HnPalette.accent.opacity(0.34),
+                        HnPalette.accent.opacity(0.05),
+                    ], center: .center, startRadius: 8, endRadius: 130))
+                    .frame(width: 230, height: 230)
                     .scaleEffect(breath.scale)
                     .accessibilityHidden(true)
-                VStack(spacing: 6) {
+                VStack(spacing: 7) {
                     Image(systemName: "wind")
-                        .font(.title2)
-                        .foregroundStyle(Color.accentColor)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(HnPalette.accent)
                         .accessibilityHidden(true)
                     Text(breath.inhaling ? "Breathe in…" : "Breathe out slowly…")
-                        .font(.headline)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(HnPalette.ink)
                         .multilineTextAlignment(.center)
+                    HStack(spacing: 4) {
+                        ForEach(0..<PauseBreath.cycles, id: \.self) { index in
+                            Capsule()
+                                .fill(index < breath.cycle ? HnPalette.accent : HnPalette.line)
+                                .frame(width: 11, height: 2)
+                        }
+                    }
+                    .padding(.top, 2)
+                    .accessibilityHidden(true)
                 }
             }
-            .frame(width: 260, height: 260)
+            .frame(width: 280, height: 280)
             .accessibilityElement(children: .combine)
             .accessibilityLabel(Text(breath.inhaling ? "Breathe in…" : "Breathe out slowly…"))
-
-            ProgressView(value: breath.progress)
-                .progressViewStyle(.linear)
-                .tint(Color.accentColor)
-                .frame(width: 260)
-                .accessibilityLabel(Text("Breathing pause"))
+            .accessibilityValue(Text("\(breath.cycle) of \(PauseBreath.cycles)"))
 
             Text(pauseReminder(pauseReminderIndex(forCount: tally?.count ?? 1)))
-                .font(.callout)
-                .foregroundStyle(.secondary)
+                .font(.hnCallout())
+                .foregroundStyle(HnPalette.muted)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, 8)
+                .padding(.horizontal, 10)
         }
     }
 
@@ -308,63 +317,67 @@ public struct PauseView: View {
         VStack(spacing: 16) {
             Label("Well done. The urge passes faster than it feels.",
                   systemImage: "checkmark.circle.fill")
-                .font(.headline)
-                .foregroundStyle(.green)
+                .font(.system(size: 18, weight: .semibold, design: .serif))
+                .foregroundStyle(HnPalette.calm)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
 
             Text("What do you need right now?")
-                .font(.callout)
-                .foregroundStyle(.secondary)
+                .font(.hnCallout())
+                .foregroundStyle(HnPalette.muted)
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                 ForEach(PauseNeed.allCases) { need in
-                    Button {
+                    HnButton(title: need.title,
+                             kind: selectedNeed == need ? .filled : .quiet,
+                             fullWidth: true) {
                         selectedNeed = need
-                    } label: {
-                        Text(need.title)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 8)
                     }
-                    .buttonStyle(.bordered)
-                    .tint(selectedNeed == need ? Color.accentColor : nil)
                 }
             }
             .frame(maxWidth: 360)
 
             if let selectedNeed {
                 Text(selectedNeed.tip)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .font(.hnCallout())
+                    .foregroundStyle(HnPalette.muted)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, 8)
                     .transition(.opacity)
             }
 
-            Button("Breathe again") {
+            HnButton(title: "Breathe again", systemImage: "arrow.clockwise", kind: .text) {
                 selectedNeed = nil
                 started = Date()
             }
-            .buttonStyle(.link)
         }
         .padding(.top, 8)
     }
 
     private var footer: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 7) {
+            HnHairline()
             if let tally {
-                Text("Pauses today: \(tally.count)")
-                    .font(.callout.weight(.medium))
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Pauses today")
+                        .font(.hnCaption())
+                        .foregroundStyle(HnPalette.muted)
+                    Spacer()
+                    Text(verbatim: "\(tally.count)")
+                        .font(.hnFigure(20))
+                        .foregroundStyle(HnPalette.ink)
+                }
             }
             Text("Each time you walk away, the habit gets weaker.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(.hnCaption())
+                .foregroundStyle(HnPalette.faint)
                 .multilineTextAlignment(.center)
-            Button("Close", action: onClose)
+            HnButton(title: "Close", kind: .outline) { onClose() }
                 .keyboardShortcut(.cancelAction)
-                .padding(.top, 4)
+                .padding(.top, 2)
         }
         .frame(maxWidth: .infinity)
+        .padding(.top, 4)
     }
 }

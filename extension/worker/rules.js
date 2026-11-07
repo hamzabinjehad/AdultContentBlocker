@@ -45,9 +45,14 @@ const RULESET_PATHS = "paths";
 // Opt-in: Shorts, Reels, Explore and TikTok, for people who find short-video
 // feeds a way in. Off unless chosen, so it is not part of the baseline.
 const RULESET_SHORT_VIDEO = "short_video";
+// Adult-sponsored TLDs. A policy constant and a static ruleset, so it is
+// present before the worker's first wake and is part of the baseline every
+// apply must read back — not an optional layer that a missing readback could
+// quietly retire.
+const RULESET_ADULT_TLDS = "adult_tlds";
 export const BASELINE_RULESETS = [RULESET_BLOCKLIST, RULESET_KEYWORDS, RULESET_SAFESEARCH,
                                   RULESET_PATHS, RULESET_WEB_PROTECTION, RULESET_EVASION,
-                                  RULESET_ENCODED_QUERIES];
+                                  RULESET_ENCODED_QUERIES, RULESET_ADULT_TLDS];
 
 /*
  * The dynamic rules — strict catch-all, allowlist carve-outs, custom blocks —

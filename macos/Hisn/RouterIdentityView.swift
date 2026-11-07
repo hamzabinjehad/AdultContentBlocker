@@ -5,37 +5,42 @@ struct RouterIdentityView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Which router does your family use?").font(.headline)
-            TextField("Router name or model, for example Deco X50", text: $profile.model)
-                .textFieldStyle(.roundedBorder)
-                .onChange(of: profile.model) { value in profile.model = RouterProfile.clean(value) }
-            Text("Find the model on the device label or in its official app. Do not enter passwords or serial numbers. These details stay in this setup screen.")
-                .font(.caption).foregroundStyle(.secondary)
-            Picker("Router family", selection: $profile.family) {
-                ForEach(RouterFamily.allCases) { family in
-                    if family == .unknown { Text("Other / I don't know").tag(family) }
-                    else { Text(verbatim: family.name).tag(family) }
+            HStack(spacing: 6) {
+                Text("Which router does your family use?")
+                    .font(.system(.callout).weight(.semibold))
+                    .foregroundStyle(HnPalette.ink)
+                HnExplain {
+                    Text("Find the model on the device label or in its official app. Do not enter passwords or serial numbers. These details stay in this setup screen.")
                 }
+                Spacer(minLength: 0)
             }
-            .pickerStyle(.menu)
+            TextField("Router name or model, for example Deco X50", text: $profile.model)
+                .hnField()
+                .onChange(of: profile.model) { value in profile.model = RouterProfile.clean(value) }
+            HStack(spacing: 8) {
+                Picker("Router family", selection: $profile.family) {
+                    ForEach(RouterFamily.allCases) { family in
+                        if family == .unknown { Text("Other / I don't know").tag(family) }
+                        else { Text(verbatim: family.name).tag(family) }
+                    }
+                }
+                .pickerStyle(.menu)
+                .labelsHidden()
+                Spacer(minLength: 0)
+            }
             if let suggestion = RouterFamily.suggestion(for: profile.model), suggestion != profile.family {
-                Button {
+                HnButton(title: "Use the guide for \(suggestion.name)", kind: .quiet) {
                     profile.family = suggestion
-                } label: {
-                    Text("Use the guide for \(suggestion.name)")
                 }
             }
             DisclosureGroup("Hardware and firmware version (optional)") {
                 TextField("Version shown in the router's own settings", text: $profile.firmware)
-                    .textFieldStyle(.roundedBorder)
+                    .hnField()
                     .onChange(of: profile.firmware) { value in profile.firmware = RouterProfile.clean(value) }
+                    .padding(.top, 4)
             }
-            if profile.family != .unknown {
-                Text("Guide selected from your details. Check that the official instructions cover your model and version before changing settings.")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
+            .font(.hnCaption())
         }
-        .font(.callout)
         .fixedSize(horizontal: false, vertical: true)
     }
 }
@@ -46,7 +51,9 @@ struct RouterFamilyInstructions: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Instructions for this router family").font(.headline)
+            Text("Instructions for this router family")
+                .font(.system(.callout).weight(.semibold))
+                .foregroundStyle(HnPalette.ink)
             if profile.excludesBuiltInAdguard {
                 Text("GL.iNet lists this model as unsupported for built-in AdGuard Home. Use filtering DNS or a separate always-on filtering server instead.")
             } else {
@@ -60,7 +67,8 @@ struct RouterFamilyInstructions: View {
                     URL(string: "https://github.com/AdguardTeam/AdGuardHome/wiki/Hosts-Blocklists")!)
             }
         }
-        .font(.callout)
+        .font(.hnCaption())
+        .foregroundStyle(HnPalette.muted)
         .fixedSize(horizontal: false, vertical: true)
     }
 }

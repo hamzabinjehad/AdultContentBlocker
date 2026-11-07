@@ -99,7 +99,7 @@ final class AccessibilityTests: XCTestCase {
         ]
         for language in ["en", "ar"] {
             for (size, typeSize) in cases {
-                for tab in 0...2 {
+                for tab in 0...3 {
                     let view = MobileRootView(protection: ProtectionController(commitmentStore: MemoryCommitmentStore()),
                                               language: .constant(language), initialTab: tab)
                         .environment(\.locale, Locale(identifier: language))
@@ -167,7 +167,7 @@ final class AccessibilityTests: XCTestCase {
         }
         for language in ["en", "ar"] {
             for (size, typeSize) in cases {
-                for tab in 0...2 {
+                for tab in 0...3 {
                     let view = Group {
                         if tab < 2 {
                             MobileRootView(protection: protection, language: .constant(language),

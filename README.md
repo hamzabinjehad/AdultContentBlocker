@@ -14,18 +14,56 @@ you the lock; Hisn adds the coverage those built-in filters miss. Read
 
 ## Latest
 
+- **iPhone & iPad 1.8.0 — a device-wide DNS filter, and a direct build.** The
+  new `HisnDNSProxy` Network Extension answers Hisn's signed list (236,586
+  domains), the four adult TLDs, the 116 hostname terms and the person's saved
+  sites with a local NXDOMAIN for **every app's system DNS**, and sends only
+  allowed names to Cloudflare Families over HTTPS. The old Family DNS profile
+  used Cloudflare's categories rather than Hisn's list and covered no
+  non-WebKit app; it is gone. Domain and term data are generated from the
+  signature-verified seed at build time and checked again by SHA-256 at start;
+  a damaged domain list stops the extension, while a damaged term file leaves
+  the domain list enforcing. The app gains on/off, readback, a route self-check
+  through a reserved `hisn.invalid` alias and a commitment freeze. It is
+  distributed **directly** as an IPA outside the App Store
+  (`ios/direct/build_direct.sh` plus an AltStore source from
+  `make_source.py`); Apple still enforces `dns-proxy` and Family Controls, so
+  the installer's profile must carry them. Simulator-tested only; the extension
+  and install need a signed device. [1.8.0 record](docs/IOS_1.8.0.md) ·
+  [direct install](docs/IOS_DIRECT.md).
+- **Hisn Vault (web)** — the Screen Time passcode can now be kept **off the
+  device**: a static page in [`website/`](website/) seals it under a random
+  32-byte key, wraps that key to a partner's P-256 key **and** to a future drand
+  quicknet round, and shows the code once for the setup window. Deleting the app,
+  clearing the browser or reading the file reveals nothing; the date path opens
+  only when the threshold network has produced that round's beacon. 16 Node
+  tests (including a live beacon round-trip) and a headless-Chrome end-to-end
+  pass; no hosting, no account, and the Apple Account reset / erase / another
+  device limits are unchanged. Record: [the web vault note](docs/WEB_VAULT.md).
+- **Unlisted-host guard, every surface** — a name under `.adult`, `.porn`,
+  `.sex` or `.xxx` is now blocked by the **extension 1.5.3**, **Mac 1.1.17**,
+  **iPhone & iPad 1.7.2** (and **1.8.0**'s system-DNS filter) and **Android 1.2.2** before any list has heard of
+  it; the four rules are policy constants, so they answer without a list entry
+  (the Android DNS service still needs its seed to start). **Android** also
+  gains the 116-term hostname-keyword layer the Mac and Chrome already had,
+  read from the signed seed before the DNS tunnel starts. A hand allowance still wins, `.cam` is deliberately not guarded, and
+  random new generic-TLD names remain list-dependent. Details and limits:
+  [the guard record](docs/BLOCKING_GUARD_2026-11-06.md).
 - **Blocklist v6** — the first signed list generation is published:
   **5,274,046 domains**, 239,885 core and 5,831 terms, verified over HTTPS and
   served with HTTP 200. The bundled seed stays v5, re-cut on 6 November with
   **236,586 core** domains, 5,280,200 in the full list and the six MDisk/TeraBox
   link hosts added from the adult-apps research; iOS and Android still update
   with an app build.
-- **Extension 1.5.2** — the heartbeat now reports whether the browser lets Hisn
-  run in private windows (`isAllowedIncognitoAccess`). The Mac app records that
-  per browser and shows an uncovered private-window gap instead of letting a
-  green "Browser extension" row imply the private window is monitored. 1.5.1's
-  removal of the browser-side private-window mode and 1.5.0's **Move your
-  rules** export/import remain.
+- **Extension 1.5.3** — the adult-TLD guard above, plus a popup repair: the
+  status screen paints its Hisn-app row, lock strip, notices and Details again
+  after a 1.5.1 reference error, and the settings page embedded in the popup
+  now gets the popup's height. One row of five tabs fits, the full-page footer
+  and language row are gone from the embedded view, the language switch moves
+  into the compact editor bar, and the ambiguous "Settings" tab is renamed
+  "Content" beside the Content options page. 1.5.2's private-window heartbeat
+  answer and 1.5.0's **Move your rules** export/import remain. Record:
+  [the popup UX note](docs/EXTENSION_POPUP_UX_2026-11-06.md).
 - **iPhone & iPad 1.7.0** — a **pause rule**: a fourth app-rule mode where the
   shield asks **Is this important?** instead of only closing. **Pause first**
   hands the request to Hisn, a ten-second breath unlocks one session of the
@@ -39,11 +77,17 @@ you the lock; Hisn adds the coverage those built-in filters miss. Read
   the authority request batch; and the menu bar shows the lock's coarse time
   left. 1.1.15's Organization Mode and 1.1.14's first-run/private-window pass
   remain.
-- **Android 1.1.1** — the app schedule can repeat on chosen weekdays. One
-  Monday-first day mask, an overnight window that belongs to the day it starts
-  on, a day picker in the editor, and every-day defaults for schedules saved
-  before this version; the protection lock still checks coverage across all
-  seven days.
+- **Android 1.2.2** — the DNS tunnel now applies the same hostname-keyword
+  contract as the Mac and Chrome (`HostTermPolicy`, the adult TLDs and the Arabic
+  and Franco-Arabic folds) to names no seed list carries, after the person's own
+  allowance. Two fixes from the day's live protection pass ride with it: a
+  granted accessibility service no longer reads as **Permission required** when
+  Android's cached manager list is stale, and the guard arms itself from its
+  first event if Android rebinds it without repeating the callback. A classifier
+  failure retries after 5 s with a doubling backoff capped at the previous 30 s
+  instead of blinding the photo/video layer for half a minute. The day's
+  interface pass (one line per rule, section labels, a page-aware bar, a hero
+  tinted by its verdict) and 1.1.1's weekday schedule are unchanged.
 - **iPhone & iPad 1.6.0** — a **browser and VPN guard**: a second,
   always-block app rule for the browsers and VPN apps that route around Safari
   blocking, frozen during a commitment and watched by the monitor's layer-loss
@@ -72,7 +116,7 @@ you the lock; Hisn adds the coverage those built-in filters miss. Read
   published on GitHub Releases; the Play AAB is not uploaded.
 
 These are development candidates. No store listing or physical-device
-acceptance is claimed; the Android 1.1.0 direct APK is the published build (1.1.1
+acceptance is claimed; the Android 1.1.0 direct APK is the published build (1.2.2
 is a development build) and the Play AAB is not uploaded. The exact state is in
 [versions](docs/VERSIONS.md) and [1.0 readiness](docs/1.0_READINESS.md).
 
@@ -91,22 +135,32 @@ research behind the pass, including the REA comparison with ScreenZen, is in
 [the 2026-11-04 note](docs/EXTENSION_UI_REFRESH_2026-11-04.md).
 
 <p align="center">
-  <img src="design/macos-ui-1.1.11/after-overview.png" width="560" alt="Hisn Mac overview with per-layer status tiles">
+  <img src="design/macos-craft-2026-11-07/overview-light.png" width="560" alt="Hisn Mac overview with a serif status statement, a layer table and a commitment rail">
 </p>
 
-The Mac window leads with one status hero, a tile per protection layer and one
-state-aware action. Setup, Blocking Rules, Lock, Settings and the read-only
-site checker are captured in the
-[Mac 1.1.11 design record](design/macos-ui-1.1.11/README.md).
+The Mac window is a warm-paper surface with a two-column Overview, a layer
+table, a compact commitment rail and one serif statement per page. The current
+captures, including dark, Arabic RTL and the 760-point layout, are in the
+[Mac craft pass](design/macos-craft-2026-11-07/README.md).
+
+<p align="center">
+  <img src="design/android-ui-2026-11-06/10-after-protection-en-light.png" width="280" alt="Hisn Android protection page with one line per rule">
+  <img src="design/android-ui-2026-11-06/04-after-protection-en-dark.png" width="280" alt="Hisn Android protection page in dark mode">
+</p>
+
+The Android app answers in a trailing column: one line per rule, a state pill on
+each layer's card, and a hero tinted by its own verdict. The three tabs in
+English, Arabic RTL and both palettes are in the
+[Android UI pass record](design/android-ui-2026-11-06/README.md).
 
 ## Platforms
 
 | Platform | What it does | State | Start here |
 | --- | --- | --- | --- |
-| Browser extension (Chromium) | Blocks listed domains, checks page text in the page's language, optional local image/video checks, portable hand lists | 1.5.0 | [Using the extension](docs/EXTENSION_USAGE.md) |
-| Mac | Content-filter system extension, browser guard, locks, authority checks, accountability partner, root guardian daemon, an on-demand breathing pause, a read-only site checker and an aggregate blocked-connection count | 1.1.16, needs a signed build | [Mac setup](docs/SETUP.md) |
-| iPhone & iPad | Six Safari blockers, Safari text extension, Screen Time app limits with a custom bilingual shield, a browser and VPN guard, a pause rule with a daily opens budget, optional family DNS, protection lock for saved rules, an on-demand pause, daily quiet hours and a removal-protection Lock Center | 1.7.0, development | [iOS README](ios/README.md) |
-| Android | DNS filtering, selected-app and word restrictions, per-app daily time limits, first-run welcome, voluntary pause, optional image checks, browser-coverage screen, schedules, protection lock that freezes saved rules, opt-in device-owner uninstall guard and managed lockdown, direct-build removal guard, layer watchdog and bundled-list freshness warning | 1.1.0 direct published; Play AAB not uploaded | [Android README](android/README.md) · [1.1 record](docs/ANDROID_1.1.0.md) |
+| Browser extension (Chromium) | Blocks listed domains and adult TLDs, checks page text in the page's language, optional local image/video checks, portable hand lists | 1.5.3 | [Using the extension](docs/EXTENSION_USAGE.md) |
+| Mac | Content-filter system extension, adult-TLD and hostname guards, browser guard, locks, authority checks, accountability partner, root guardian daemon, an on-demand breathing pause, a read-only site checker and an aggregate blocked-connection count | 1.1.17, needs a signed build | [Mac setup](docs/SETUP.md) |
+| iPhone & iPad | A device-wide DNS filter with the adult-TLD and hostname guards, six Safari blockers, Safari text extension, Screen Time app limits with a custom bilingual shield, a browser and VPN guard, a pause rule with a daily opens budget, protection lock for saved rules, an on-demand pause, daily quiet hours and a removal-protection Lock Center; distributed directly as a signed-on-install IPA | 1.8.0, development · needs a signed device | [iOS README](ios/README.md) · [direct install](docs/IOS_DIRECT.md) |
+| Android | DNS filtering with the adult-TLD and hostname guards, selected-app and word restrictions, per-app daily time limits, first-run welcome, voluntary pause, optional image checks, browser-coverage screen, schedules, protection lock that freezes saved rules, opt-in device-owner uninstall guard and managed lockdown, direct-build removal guard, layer watchdog and bundled-list freshness warning | 1.2.2 development; 1.1.0 direct APK published, Play AAB not uploaded | [Android README](android/README.md) · [1.2 record](docs/ANDROID_UI_2026-11-06.md) |
 | Network / router | Verified signed DNS rules for administrator import | Tools only | [Network tools](network/README.md) |
 
 Seed **v5** raises the bundled core from 159,768 to **239,885 domains** on every
@@ -173,7 +227,7 @@ network/         capability planning + verified DNS-rule publication            
 profile/         .mobileconfig generator: DNS, DoH, Private Relay                (Python)
 extension/       Chromium MV3 extension + opt-in local visual engine             (JS)
 macos/           the app + content filter                                        (Swift)
-ios/             universal iPhone/iPad app, Safari blockers + optional family DNS (Swift)
+ios/             universal iPhone/iPad app, Safari blockers + device DNS filter (Swift)
 android/         DNS, selected-app/text and opt-in visual protection preview      (Java)
 ipados/          iPad-specific documentation; shares the ios/ target
 shared/apple/    portable Apple-platform configuration and protection-state code

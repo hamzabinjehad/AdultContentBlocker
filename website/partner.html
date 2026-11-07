@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light dark">
+<title>Hisn Vault — partner key</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<!--
+  The partner's half. This page never talks to a network (connect-src 'none'):
+  the keypair is generated here, the private half stays in this browser, and the
+  release is a line the partner sends back by whatever channel they already use.
+
+  The partner sees a random release key, not the person's code.
+-->
+<header class="top">
+  <a class="brand" href="./index.html"><span class="ar">حصن</span><span class="dot">·</span><span>Hisn</span></a>
+  <div class="top-actions">
+    <span class="pill" id="surface-pill">Partner</span>
+    <button class="ghost" type="button" data-lang-button>العربية</button>
+  </div>
+</header>
+
+<main id="app" aria-live="polite"></main>
+
+<footer>
+  <span id="footer-note">No account, no server, no analytics. Keep a backup of your key.</span>
+  <a href="index.html" id="footer-vault">Vault</a>
+</footer>
+
+<noscript>This page needs JavaScript. Nothing is sent anywhere.</noscript>
+
+<script type="module" src="lib/partner-app.js"></script>
+</body>
+</html>

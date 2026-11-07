@@ -16,7 +16,7 @@ final class UIRenderTests: XCTestCase {
         ]
         for language in ["en", "ar"] {
             for (size, name, style) in cases {
-                for tab in 0...2 {
+                for tab in 0...3 {
                     let view = MobileRootView(
                         protection: ProtectionController(commitmentStore: MemoryCommitmentStore()),
                         language: .constant(language),
@@ -69,6 +69,61 @@ final class UIRenderTests: XCTestCase {
             attachment.name = "detail-\(name)"
             attachment.lifetime = .keepAlways
             add(attachment)
+        }
+    }
+
+    /// The pause handoff and the editor are the two screens a person meets only
+    /// at a decision. They are rendered separately so a layout break cannot
+    /// hide behind the tabs.
+    @MainActor func testDecisionScreensRender() async throws {
+        let suite = "hisn.tests.ui.decisions." + UUID().uuidString
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let protection = ProtectionController(commitmentStore: MemoryCommitmentStore())
+        let usage = AppUsageController(defaults: defaults)
+        let screens: [(String, AnyView)] = [
+            ("pause-flow", AnyView(PauseRuleGrantView(usage: usage, appName: "Threads",
+                                                      startedAt: Date().addingTimeInterval(-11),
+                                                      onClose: {}))),
+            ("pause-flow-ar", AnyView(PauseRuleGrantView(usage: usage, appName: "Threads",
+                                                         startedAt: Date().addingTimeInterval(-11),
+                                                         onClose: {})
+                .environment(\.layoutDirection, .rightToLeft)
+                .environment(\.locale, Locale(identifier: "ar")))),
+            ("rule-editor", AnyView(RuleEditorView(protection: protection, usage: usage,
+                                                   guardMode: false, initialMode: .pause))),
+            ("rule-editor-days", AnyView(RuleEditorView(protection: protection, usage: usage,
+                                                        guardMode: false,
+                                                        initialMode: .quietHours))),
+            ("more", AnyView(NavigationStack {
+                MoreView(protection: protection, usage: usage,
+                         vault: PasscodeVaultController(storage: MemoryPasscodeVaultStorage(),
+                                                        clock: { Date() }),
+                         lockDevice: LockConfirmationDevice(stores: [MemoryLockMarkerStore()]),
+                         language: .constant("en"))
+            })),
+        ]
+        // The weekday chips sit below the fold on a phone; the iPad render shows
+        // the whole editor.
+        let padDays = AnyView(RuleEditorView(protection: protection, usage: usage,
+                                             guardMode: false, initialMode: .quietHours))
+        let padImage = try await render(padDays, size: CGSize(width: 1024, height: 1366), style: .light)
+        let padAttachment = XCTAttachment(image: padImage)
+        padAttachment.name = "decision-rule-editor-days-pad"
+        padAttachment.lifetime = .keepAlways
+        add(padAttachment)
+
+        for (name, screen) in screens {
+            for style in [UIUserInterfaceStyle.light, .dark] {
+                let image = try await render(screen, size: CGSize(width: 390, height: 844), style: style)
+                let pixels = try XCTUnwrap(image.cgImage?.dataProvider?.data) as Data
+                let shades = Set(stride(from: 0, to: pixels.count, by: 97).map { pixels[$0] })
+                XCTAssertGreaterThan(shades.count, 8, "A blank image is not evidence of rendered UI")
+                let attachment = XCTAttachment(image: image)
+                attachment.name = "decision-\(name)-\(style == .dark ? "dark" : "light")"
+                attachment.lifetime = .keepAlways
+                add(attachment)
+            }
         }
     }
 

@@ -44,14 +44,14 @@ TESTS_BUNDLE_ID = "app.hisn.HisnTests"
 # Sources shared between targets. The app owns them; the other two compile the
 # same files rather than linking a framework, which keeps the extension a
 # single self-contained bundle with no embedded dylib to sign and load.
-SHARED = ["Hisn/BlocklistStore.swift", "Hisn/LockStore.swift",
+SHARED = ["../shared/apple/AdultTldGuard.swift", "Hisn/BlocklistStore.swift", "Hisn/LockStore.swift",
           "../shared/apple/CommitmentPolicy.swift",
           "Hisn/WebProtectionPolicy.swift",
           "Hisn/PartnerService.swift", "Hisn/SiteLists.swift",
           # The keyword layer. `BlocklistStore.hostMatchesTerm` calls into both,
           # so they are shared by the same three targets it is — the app, the
           # network extension and the bridge.
-          "Hisn/TextNormalizer.swift", "Hisn/Punycode.swift",
+          "../shared/apple/TextNormalizer.swift", "../shared/apple/Punycode.swift",
           # Inspection settings: the app authors them, the bridge
           # reports them, so both targets need the file.
           "Hisn/Inspection.swift",
@@ -66,6 +66,11 @@ APP_SOURCES = SHARED + [
     "../shared/apple/MirroredRuleStore.swift",
     "../shared/apple/ReadinessHistory.swift",
     "Hisn/ContentView.swift",
+    # The window's shared palette, type and surfaces.
+    "Hisn/HisnTheme.swift",
+    # Optional distraction-site chips, shared by first run and Blocking Rules.
+    "Hisn/ExtraSites.swift",
+    "Hisn/ExtraSitesView.swift",
     "Hisn/BrowserFirstGuide.swift",
     "Hisn/FilterController.swift",
     "Hisn/FilterSetupControl.swift",
@@ -146,11 +151,14 @@ TEST_SOURCES = ["HisnTests/BlocklistStoreTests.swift",
                 "HisnTests/ScreenGrayscaleTests.swift",
                 "HisnTests/FilterActivationTests.swift",
                 "HisnTests/OnboardingTests.swift",
+                "HisnTests/ExtraSitesTests.swift",
                 "HisnTests/NetworkDNSProbeTests.swift",
                 "HisnTests/PauseTests.swift",
                 "HisnTests/PrivateBrowsingTests.swift",
                 "HisnTests/ManagedModeTests.swift",
                 "HisnTests/SiteCheckerTests.swift",
+                # Layout captures for the Mac UI pass (not pixel assertions).
+                "HisnTests/MacUIRefreshTests.swift",
                 "../shared/tests/MirroredRuleStoreTests.swift"]
 
 # The signed seed list, bundled into the extension so a machine that has never
@@ -399,8 +407,8 @@ def main() -> int:
     app_settings = {
         "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
         "CODE_SIGN_ENTITLEMENTS": "Hisn/Hisn.entitlements",
-        "CURRENT_PROJECT_VERSION": "28",
-        "MARKETING_VERSION": "1.1.16",
+        "CURRENT_PROJECT_VERSION": "29",
+        "MARKETING_VERSION": "1.1.17",
         "ENABLE_HARDENED_RUNTIME": "YES",
         "INFOPLIST_FILE": "Hisn/Info.plist",
         "PRODUCT_BUNDLE_IDENTIFIER": APP_BUNDLE_ID,
@@ -411,8 +419,8 @@ def main() -> int:
     }
     filter_settings = {
         "CODE_SIGN_ENTITLEMENTS": "HisnFilter/HisnFilter.entitlements",
-        "CURRENT_PROJECT_VERSION": "28",
-        "MARKETING_VERSION": "1.1.16",
+        "CURRENT_PROJECT_VERSION": "29",
+        "MARKETING_VERSION": "1.1.17",
         "ENABLE_HARDENED_RUNTIME": "YES",
         "INFOPLIST_FILE": "HisnFilter/Info.plist",
         "PRODUCT_BUNDLE_IDENTIFIER": FILTER_BUNDLE_ID,
@@ -422,8 +430,8 @@ def main() -> int:
     }
     bridge_settings = {
         "CODE_SIGN_ENTITLEMENTS": "HisnBridge/HisnBridge.entitlements",
-        "CURRENT_PROJECT_VERSION": "28",
-        "MARKETING_VERSION": "1.1.16",
+        "CURRENT_PROJECT_VERSION": "29",
+        "MARKETING_VERSION": "1.1.17",
         "ENABLE_HARDENED_RUNTIME": "YES",
         "GENERATE_INFOPLIST_FILE": "YES",
         "PRODUCT_NAME": '"$(TARGET_NAME)"',

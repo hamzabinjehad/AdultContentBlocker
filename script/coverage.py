@@ -18,6 +18,9 @@ EXTENSION_RULES = ROOT / "extension/rules/dnr_block_rules.json"
 DOC = ROOT / "docs/COVERAGE.md"
 SAFARI_BLOCKERS = 6
 SAFARI_CAPACITY = 40_000
+# Kept in step with extension/lib/policy.js, prepare_rules.ADULT_TLDS,
+# AdultTldGuard.swift and AdultTldPolicy.java.
+GUARD_TLDS = 4
 
 
 def facts():
@@ -77,7 +80,7 @@ build.
 
 | Tier | Domains | Where it fits |
 | --- | --- | --- |
-| Core (bundled) | {core} | The browser extension, the six Safari blockers, the iOS app and the Android DNS seed |
+| Core (bundled) | {core} | The browser extension, the six Safari blockers, the iOS Safari blockers and DNS filter, and the Android DNS seed |
 | Full (buildable) | {full} | The Mac socket filter and the network DNS build; published to the `lists` branch (v6 on 2026-11-03: 5,274,046), not bundled in any client and too large for the browser and Safari tiers |
 | Keyword layer | {terms} terms | Page-text scoring in the extension, Safari text extension and Android selected-app checks |
 
@@ -94,14 +97,17 @@ part of the bundled core.
 
 | Surface | Domain tier | Page text | Visual | Short video | Native apps |
 | --- | --- | --- | --- | --- | --- |
-| Chromium extension | Core · {core} domains, {static_rules} static rules | Yes (language-aware: en/ar/de/es/fr/it/pt, evasion) | Opt-in, hide-first on supported sites | Opt-in (YouTube, Instagram, Facebook, Snapchat, TikTok) | No |
-| Mac content filter | Full · {full} domains once a published generation is installed; core seed before that | No native-app text | No | No | All apps at host/flow level |
-| Safari on iPhone/iPad | Core · {core} domains in six blockers | Safari text extension | Opt-in local | No | WebKit only |
-| Android DNS | Core · {core} domains | Selected apps via accessibility | Selected apps, Android 14+ | Selected apps | Selected apps only |
+| Chromium extension | Core · {core} domains, {static_rules} static rules + an adult-TLD guard ({GUARD_TLDS} TLDs) | Yes (language-aware: en/ar/de/es/fr/it/pt, evasion) | Opt-in, hide-first on supported sites | Opt-in (YouTube, Instagram, Facebook, Snapchat, TikTok) | No |
+| Mac content filter | Full · {full} domains once a published generation is installed; core seed before that; {GUARD_TLDS} adult TLDs always | No native-app text | No | No | All apps at host/flow level |
+| Safari and DNS on iPhone/iPad | Core · {core} domains + {GUARD_TLDS} adult-TLD rules in six blockers, and the same list plus {host_terms} hostname terms in the DNS filter | Safari text extension | Opt-in local | No | Every app's system DNS (names only); page content WebKit only |
+| Android DNS | Core · {core} domains, plus {GUARD_TLDS} adult TLDs and {host_terms} hostname terms | Selected apps via accessibility | Selected apps, Android 14+ | Selected apps | Selected apps only |
 | Router / network DNS | The resolver's categories, not Hisn's list | No | No | No | Any device on that network |
 
 {host_terms} host terms are also bundled for hosts registered after the
-build; they are not a substitute for the domain tier.
+build, and every client applies an adult-TLD rail (`.adult`, `.porn`, `.sex`,
+`.xxx`) without a list entry. Neither is a substitute for the domain tier:
+the rail covers four registries and the terms are a bounded vocabulary, not
+classification.
 
 ## What this table does not claim
 

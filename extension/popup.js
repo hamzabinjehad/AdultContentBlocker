@@ -76,6 +76,13 @@ function render(state) {
   paintLayer("textIndicator", "textStatus", enforcement.layers.text.level, textEnabled);
   paintLayer("visualIndicator", "visualStatus", visual.level, visualEnabled,
     visualEnabled && visual.available === false);
+  // The app row is a connection, not an enforcement receipt: fresh means
+  // connected, a known app that has gone quiet means attention, no app at all
+  // means the optional row is off. Paint the icon and the word together so the
+  // row cannot contradict itself.
+  const appLevel = state && connection.fresh ? "active" : state?.appPresent ? "partial" : "off";
+  document.getElementById("appIndicator").className = `layer-indicator ${appLevel}`;
+  const badge = document.getElementById("connectionBadge");
   badge.className = `layer-state ${appLevel}`;
   badge.textContent = !state ? t("badge.unavailable")
     : !connection.managed ? t("popup.optional")
@@ -295,14 +302,19 @@ send({ type: "getState" }, REPLY_TIMEOUT_MS).then((state) => {
   render(state.ok === false ? undefined : state);
 });
 
-// The language switch: the other language's own name, one tap.
+// The language switch: the other language's own name, one tap. The status
+// header and the embedded settings bar both carry it, because the settings
+// page's own language row no longer fits inside the popup.
 const langSwitch = document.getElementById("langSwitch");
+const editorLangSwitch = document.getElementById("editorLangSwitch");
 function labelSwitch() {
-  langSwitch.textContent = t("lang.switchTo");
-  langSwitch.lang = language() === "ar" ? "en" : "ar";
+  for (const button of [langSwitch, editorLangSwitch]) {
+    button.textContent = t("lang.switchTo");
+    button.lang = language() === "ar" ? "en" : "ar";
+  }
 }
 labelSwitch();
-langSwitch.addEventListener("click", async () => {
+async function switchLanguage() {
   const next = language() === "ar" ? "en" : "ar";
   setLanguage(next);
   await savePreference(next).catch(() => {});
@@ -312,4 +324,6 @@ langSwitch.addEventListener("click", async () => {
   labelSwitch();
   renderPageLanguage();
   if (lastState !== undefined) render(lastState);
-});
+}
+langSwitch.addEventListener("click", switchLanguage);
+editorLangSwitch.addEventListener("click", switchLanguage);

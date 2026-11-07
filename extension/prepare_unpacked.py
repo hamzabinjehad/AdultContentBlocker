@@ -39,6 +39,8 @@ VISUAL_REQUIRED = (
     "visual/notices/mediapipe-Apache-2.0.txt", "visual/notices/nsfwjs-LICENSE.txt",
     "visual/notices/@vladmandic-human-LICENSE.txt", "visual/notices/tensorflowjs-Apache-2.0.txt",
     "visual/notices/buffer-LICENSE.txt",
+    "visual/wasm/tfjs-backend-wasm.wasm", "visual/wasm/tfjs-backend-wasm-simd.wasm",
+    "visual/wasm/tfjs-backend-wasm-threaded-simd.wasm",
 )
 MODULE_IMPORT = re.compile(
     r"^\s*(?:import|export)\s+(?:[^;\"']*?\bfrom\s*)?[\"']([^\"']+)[\"']",

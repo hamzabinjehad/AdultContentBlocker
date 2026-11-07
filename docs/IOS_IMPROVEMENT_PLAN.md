@@ -28,6 +28,20 @@ forums (links inline). Nothing here has been tested on a real iPhone yet.
 > the system-rendered shield still needs a signed-device test. See
 > [the 1.4.0 record](IOS_1.4.0.md).
 >
+> **1.8.0 update (2026-11-07):** the owner chose **direct distribution**. The
+> DNS layer is now a Network Extension **DNS proxy** (`HisnDNSProxy`) that runs
+> Hisn's own signed core tier, adult TLDs, hostname terms and saved sites for
+> system DNS, and sends only allowed names to Cloudflare Families over HTTPS;
+> the old Cloudflare-category DNS-settings profile is gone. The tested app is
+> packaged as an IPA outside the App Store by `ios/direct/build_direct.sh`, with
+> an AltStore/SideStore source generated from its bytes
+> ([IOS_DIRECT.md](IOS_DIRECT.md)). This does not bypass Apple's control of
+> entitlements: the profile must still include Network Extensions
+> (`dns-proxy`) and, for the Screen Time layers, Family Controls. The DNS proxy
+> is a public, Apple-supported Network Extension; it is not a full packet
+> tunnel and still occupies the system VPN/DNS-proxy slot. M3's URL filter and
+> device matrix remain open. See [the 1.8.0 record](IOS_1.8.0.md).
+>
 > **1.6.0 update (2026-11-06):** M2.5 is done in code — a **browser and VPN
 > guard**, a second, independent always-block rule with its own mirrored record
 > and ManagedSettingsStore, frozen during a commitment and included in the
@@ -340,7 +354,11 @@ steps; start them first. M3 can run in parallel with M2 once the device exists.
 ## Non-goals
 
 - Any claim that Hisn is undeletable, or 100% blocking.
-- Workarounds of Apple's controls, hidden features, or VPN tricks.
+- Workarounds of Apple's controls or hidden features. Hisn's DNS proxy is a
+  documented Network Extension; the direct build changes where the IPA is
+  downloaded from, not what Apple's code signing and entitlement servers grant.
+  A full packet tunnel, a jailbreak tweak or a hidden screen reader is still a
+  non-goal.
 - Content outside WebKit and Safari (non-WebKit browsers only take part if they
   choose to support the URL filter).
 - Accounts, servers or logs that see what the person browses. A URL filter server,

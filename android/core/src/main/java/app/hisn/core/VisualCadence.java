@@ -5,27 +5,40 @@ import java.util.Map;
 
 /** How often selected-window image sampling runs. Android-free so the policy is tested.
  *
- * About every 2 s by default. While a selected window scrolls or its content changes (accessibility
- * events) it samples every {@link #FAST_MILLIS}, never sooner after the previous sample started, and
- * no poll runs sooner than {@link #FAST_MILLIS} after the previous poll, whether or not it sampled.
- * A video or animation that sends no events still keeps the default, because each sample's coarse
- * signature differs from the last one of the same window. When every window in the rotation gave
- * an unchanged sample and no events arrive, the interval grows by 1 s per unchanged round up to
- * {@link #STILL_MAX_MILLIS}; with the screen off, polls (which never sample) slow to
- * {@link #OFF_MILLIS}. One inference at a time and the frame gate are the caller's, unchanged.
+ * A moving surface is sampled every {@link #FAST_MILLIS}; a still one backs off from
+ * {@link #BASE_MILLIS} to {@link #STILL_MAX_MILLIS}. A new or changed window (the person switched
+ * apps, opened a player, rotated or split the screen) may be sampled at once after
+ * {@link #MIN_WAIT_MILLIS}, because the previous frame belonged to another window and its verdict
+ * can never be applied here. No sample is ever requested sooner than {@link #FAST_MILLIS} after the
+ * previous one started, and no poll runs sooner than {@link #POLL_FLOOR_MILLIS} after the previous
+ * poll, whether or not it sampled. A sample whose coarse signature changed also counts as activity,
+ * so a video that sends no accessibility events keeps the fast interval instead of the still
+ * back-off. With the screen off, polls (which never sample) slow to {@link #OFF_MILLIS}. One
+ * inference at a time and the frame gate are the caller's, unchanged.
  */
 public final class VisualCadence {
-    public static final long FAST_MILLIS = 1000, BASE_MILLIS = 2000, STILL_STEP_MILLIS = 1000,
-            STILL_MAX_MILLIS = 5000, OFF_MILLIS = 10000, ACTIVE_FOR_MILLIS = 2000, MIN_WAIT_MILLIS = 200;
+    /** The shortest distance between two samples while a surface is moving. */
+    public static final long FAST_MILLIS = 250, BASE_MILLIS = 1000, STILL_STEP_MILLIS = 500,
+            STILL_MAX_MILLIS = 2000, OFF_MILLIS = 10000, ACTIVE_FOR_MILLIS = 1500,
+            MIN_WAIT_MILLIS = 50, POLL_FLOOR_MILLIS = 100;
     private static final int STILL_MAX = (int) ((STILL_MAX_MILLIS - BASE_MILLIS) / STILL_STEP_MILLIS);
 
-    private boolean active, started, polled;
+    private boolean active, started, polled, changed;
     private long lastActivity, lastStart, lastPoll;
     /** Per window id: the last signature and how many unchanged samples followed it. */
     private final Map<Integer, long[]> windows = new HashMap<>();
 
-    /** A selected window scrolled, changed content or changed state. */
+    /** A selected window scrolled or changed content. */
     public synchronized void activity(long now) {
+        active = true;
+        lastActivity = now;
+        for (long[] window : windows.values()) window[1] = 0;
+    }
+
+    /** A new, changed or refocused window: its first frame may be sampled without waiting out the
+     * previous window's interval. A poll still needs {@link #POLL_FLOOR_MILLIS} after the last one. */
+    public synchronized void windowChanged(long now) {
+        changed = true;
         active = true;
         lastActivity = now;
         for (long[] window : windows.values()) window[1] = 0;
@@ -34,6 +47,7 @@ public final class VisualCadence {
     /** A poll ran, whether or not it sampled. */
     public synchronized void polled(long now) {
         polled = true;
+        changed = false;
         lastPoll = now;
     }
 
@@ -43,13 +57,24 @@ public final class VisualCadence {
         lastStart = now;
     }
 
-    /** A sample finished with a verdict. {@code signature} summarises the downscaled frame. */
-    public synchronized void finished(int window, long signature) {
+    /** A sample finished with a verdict. {@code signature} summarises the downscaled frame.
+     * A different signature is activity: the surface moved, so keep the fast interval even when
+     * the app sends no accessibility events (a playing video, an animation). */
+    public synchronized void finished(int window, long signature, long now) {
         long[] last = windows.get(window);
         if (last == null && windows.size() >= GuardWindows.MAX_WINDOWS) windows.clear();
-        if (last == null) windows.put(window, new long[]{signature, 0});
-        else if (last[0] == signature) last[1] = Math.min(last[1] + 1, STILL_MAX);
-        else { last[0] = signature; last[1] = 0; }
+        if (last == null) {
+            windows.put(window, new long[]{signature, 0});
+            return;
+        }
+        if (last[0] == signature) {
+            last[1] = Math.min(last[1] + 1, STILL_MAX);
+        } else {
+            last[0] = signature;
+            last[1] = 0;
+            active = true;
+            lastActivity = now;
+        }
     }
 
     /** Forgets windows no longer in the rotation, so a closed window neither holds nor keeps a back-off. */
@@ -71,14 +96,20 @@ public final class VisualCadence {
         return BASE_MILLIS + still * STILL_STEP_MILLIS;
     }
 
-    /** The shortest wait before a poll may run again: the interval since the last sample started, and
-     * at least {@link #FAST_MILLIS} after the last poll and {@link #MIN_WAIT_MILLIS} from now, so an
-     * event or a finished sample can bring a poll forward but never make polls more frequent. */
+    /** The shortest wait before a poll may run again: the interval since the last sample started,
+     * at least {@link #POLL_FLOOR_MILLIS} after the last poll and {@link #MIN_WAIT_MILLIS} from now.
+     * A changed window may ignore the previous window's interval but never the poll floor, so a
+     * burst of window events cannot make polls more frequent than the floor allows. */
     public synchronized long earliest(boolean interactive, long now) {
         long interval = interval(interactive, now);
         if (!interactive) return interval;
-        long wait = started && now >= lastStart ? Math.min(interval, lastStart + interval - now) : MIN_WAIT_MILLIS;
-        if (polled && now >= lastPoll) wait = Math.max(wait, lastPoll + FAST_MILLIS - now);
+        long wait;
+        if (changed) {
+            wait = MIN_WAIT_MILLIS;
+        } else {
+            wait = started && now >= lastStart ? Math.min(interval, lastStart + interval - now) : MIN_WAIT_MILLIS;
+        }
+        if (polled && now >= lastPoll) wait = Math.max(wait, lastPoll + POLL_FLOOR_MILLIS - now);
         return Math.max(MIN_WAIT_MILLIS, wait);
     }
 

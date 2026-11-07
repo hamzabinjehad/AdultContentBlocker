@@ -7,14 +7,23 @@ past version; *superseded* documents point to their replacement. Start with the
 ## Start here
 
 - [Setting it up, in order](SETUP.md): The ordered setup steps: second person, network, Mac app, extension, profile, Screen Time, phone and account split.
+- [Night curfew](CURFEW.md): `script/curfew.py` turns the display off on non-allowed apps from 22:00 to 04:00, and the Screen Time/Downtime and Hisn-schedule equivalents on the phones.
+- [Fortifying the three devices](FORTIFY.md): `script/fortify.py` applies the automatable layers on the Mac, the Android phone and the iPhone, and reports the layers it cannot close (Telegram, X, unsupervised iOS).
+- [Fortify run, 2026-11-06](FORTIFY_RUN_2026-11-06.md): What the three attached devices read, the Android strict-DNS regression the run caught, and the owner actions that remain.
 - [1.0 readiness](1.0_READINESS.md): One finish line across the four platforms: versions, local evidence, artifacts, unproven claims and the owner/device actions that remain.
 - [Publish readiness, 2026-11-02](PUBLISH_READINESS_2026-11-02.md): The full verification run, reproducible and unsigned artifacts, what is genuinely publishable in the repository, and the owner actions still required.
 - [Versions and release state](VERSIONS.md): The pinned version/build of every platform, generated and checked from the manifests.
+- [Direct iPhone/iPad install](IOS_DIRECT.md): The IPA built outside the App Store, the install paths and the entitlements Apple still enforces.
+- [The unlisted-host guard, 2026-11-06](BLOCKING_GUARD_2026-11-06.md): The adult-TLD rail on the extension, Mac, iPhone/iPad and Android, the hostname-keyword layer Android now shares with the Mac and Chrome, the cross-language fixtures, and the limits that remain. Code and local tests; no signed artifact or device run.
 - [Content coverage by surface](COVERAGE.md): The core, full and keyword tiers, what each client actually carries, and what the table does not claim.
 - [Privacy policy](../PRIVACY.md) and [support](../SUPPORT.md): The public statements, troubleshooting and safe reporting route.
 - [Threat model](THREAT_MODEL.md): Treats the user as the adversary and covers coverage gaps, tamper resistance, failure modes and what not to build.
 - [Why Hisn beside Screen Time](POSITIONING.md): Explains why Hisn adds coverage (Arabic terms, page text, non-Safari Mac browsers) and leaves the lock to Screen Time.
 - [Development notes](DEVELOPMENT.md): Building, signing, the seed bundle, the extension, the Mac app and native messaging.
+
+## Web vault
+
+- [Hisn Vault: the lock, off the device](WEB_VAULT.md): A static site that seals a Screen Time passcode to a drand round or a partner's key, so the code survives deleting the app, a cleared browser or reading the file. Why the key belongs off-device, the exact crypto, the threat table, what was run, and the limits (Apple Account reset, erase, hosting trust). Code in `website/`; no hosting yet.
 
 ## Using Hisn
 
@@ -23,6 +32,9 @@ past version; *superseded* documents point to their replacement. Start with the
 
 ## Mac
 
+- [Mac craft pass, 2026-11-07](MACOS_CRAFT_2026-11-07.md): The ink-and-paper surface: warm neutral canvas, deep ink-blue accent, one serif statement per page, a two-column Overview, a compact lock composer, grouped settings, icon-only help, and a pause with circular breath progress. Design captures in `design/macos-craft-2026-11-07/`. No policy changes.
+- [Mac extra sites and rules, 2026-11-07](MACOS_EXTRA_SITES_2026-11-07.md): Optional distraction-site chips in first run and Blocking Rules, a three-step first run, and the two site editors folded into one segmented card with a card-level site checker. Presentation and convenience only; no new weakening surface. Captures in `design/macos-extra-sites-2026-11-07/`.
+- [Mac UI pass, 2026-11-07](MACOS_UI_2026-11-07.md): Native Mac surfaces and a system-blue accent replace the borrowed warm-paper/indigo palette; page, section and control explanations move behind an Explain popover. Design captures in `design/macos-ui-2026-11-07/`. No policy changes.
 - [Mac UI/UX pass, 2026-11-02](MACOS_UI_UX_2026-11-02.md): Persistent sidebar status, a lock action in every window toolbar, a single Overview primary action, Go/Protection menus with keyboard shortcuts, and RTL render captures. No policy changes.
 - [Mac filter health contract](HEALTH.md): The status keys the Mac filter, updater and bridge write, and how the app should report them.
 
@@ -39,8 +51,11 @@ past version; *superseded* documents point to their replacement. Start with the
 
 ## iPhone and iPad
 
+- [iPhone and iPad 1.8.0](IOS_1.8.0.md): A device-wide DNS filter as a Network Extension — Hisn's signed 236,586-domain core tier, the adult TLDs, the 116 hostname terms and the person's saved sites answered locally, Cloudflare Families as the validated HTTPS upstream — plus the direct IPA build and AltStore source generator. Simulator-tested only; no signed device.
+- [Installing iPhone/iPad without the App Store](IOS_DIRECT.md): The direct IPA, what each sideload path can grant, which entitlements Apple still enforces, hosting and verifying a download, and what may not be claimed.
 - [Apple platform structure](APPLE_PLATFORMS.md): How macOS, iOS and iPadOS code is laid out, what each protects, and cross-platform development rules.
-- [iPhone and iPad 1.7.0](IOS_1.7.0.md): The pause rule — a shield that asks **Is this important?**, a **Pause first** handoff to the app, a ten-second breath that unlocks one bounded session, daily opens and session minutes, and a monitor that re-shields at the end. Simulator-tested only.
+- [iPhone and iPad 1.7.1](IOS_1.7.1.md): Chosen weekdays for the quiet-hours rule (a window that crosses midnight belongs to its start day), **End now** for a running pause session, the commitment deadline on Today, and an honest notification prompt for the pre-26.5 shield handoff. Simulator-tested only.
+- [iPhone and iPad 1.7.0](IOS_1.7.0.md): The pause rule — a shield that asks **Is this important?**, a **Pause first** handoff to the app, a ten-second breath that unlocks one bounded session, daily opens and session minutes, and a monitor that re-shields at the end — and the app rebuilt as Today, Apps, Practice and More in a paper/ink palette with rounded display type. Simulator-tested only.
 - [iPhone and iPad 1.6.0](IOS_1.6.0.md): The browser and VPN guard — a second, always-block rule for the apps that route around Safari blocking, frozen with the commitment and watched by the monitor — and the Lock Center, the removal ladder as one object with each level's exit stated. Simulator-tested only.
 - [iPhone and iPad end-goal plan](IOS_IMPROVEMENT_PLAN.md): The lock ladder on iPhone (vault, guardian, supervised, time-locked), a per-layer audit with code references, which Android features iOS can match with public APIs, and milestones M0-M6 with what is done.
 - [App Store readiness](IOS_STORE.md): Entitlement, listing copy, privacy label, App Review notes, screenshots, TestFlight and submission checklist.
@@ -52,6 +67,9 @@ past version; *superseded* documents point to their replacement. Start with the
 - [Android implementation status](ANDROID_IMPLEMENTATION_STATUS.md): Table of each Android protection layer, what code exists and how far it was verified, as of 0.9.0.
 - [Android live protection test](ANDROID_LIVE_TEST_2026-10-30.md): Emulator-only 2026-10-30 evidence for text and whole-app blocking, the DNS local-block/route checks and a verified one-day device-owner uninstall lock. Records the test-only fixture limitation and why the physical Samsung was not touched.
 - [Android UI and UX refresh](ANDROID_UI_REFRESH.md): The 2026-10-30 presentation pass: bottom navigation, a status-first Protection page with a concrete attention list, switches, searchable app lists, day/night palette, adaptive icon and splash, and the accessibility work. No policy or consent text changed.
+- [Android private windows, X/Reddit and Telegram, 2026-11-06](ANDROID_PRIVATE_WINDOWS_AND_PLATFORMS_2026-11-06.md): Why incognito cannot be switched off on an ordinary phone (and why DNS and screen inspection still cover it), what to block for X, viewer sites and Reddit, and what Telegram actually allows: block the app, inspect visible text and screen images, or nothing.
+- [Android protection pass, 2026-11-06](ANDROID_PROTECTION_PASS_2026-11-06.md): The live test of the photo/video layer (ten fixture checks on the owner's phone, measured sampling cadence), and two fixes: a granted accessibility service no longer reads as missing when Android's cached list is stale, and a classifier failure retries in 5 s instead of blinding the layer for 30 s.
+- [Android UI pass, 2026-11-06](ANDROID_UI_2026-11-06.md): One line per rule with the answer at the end of the row, quiet section labels instead of icon-tiled headers, a page-aware app bar, a hero tinted by its verdict, a DNS card that states the consequence, and a readable frozen state. Presentation only; captures in [design/android-ui-2026-11-06](../design/android-ui-2026-11-06/README.md).
 - [Android UI/UX refresh, 2026-11-05](ANDROID_UX_2026-11-05.md): The ScreenZen-informed first-run permission checklist, protection-rules list, Settings list and short consent sheets. The direct-build uninstall guard becomes a one-tap opt-in; Play builds still cannot block uninstall. Design record, no release claim.
 - [Android encrypted-DNS resolver blocking, 2026-11-05](ANDROID_ENCRYPTED_DNS_RESOLVERS_2026-11-05.md): Host routes for 18 IPv4 and 12 IPv6 dedicated public DoH/DoT resolver addresses, dropped in the DNS tunnel, with device evidence, tests and the limits kept.
 - [Android tamper resistance scope](ANDROID_TAMPER_RESISTANCE.md): What Android personal mode can and cannot do to resist removal, Play policy limits, and managed-device mode including the 0.8.0 lockdown restrictions and layer watchdog.
@@ -93,11 +111,13 @@ past version; *superseded* documents point to their replacement. Start with the
 - [REA-informed extension and Mac plan](REA_FUNCTIONALITY_PLAN.md): Prioritized extension and Mac backlog from REA study of Hisn, HaramBlur and SelfControl; partly done in 1.1.3.
 - [Tamper resistance next steps](TAMPER_RESISTANCE_NEXT.md): Recent anti-removal recovery work on browser, Mac and mobile, and the priority order for further hardening.
 - [Visual protection plan](VISUAL_PROTECTION_PLAN.md): Contract, library reuse decisions, implemented local visual engine, and remaining acceptance gates for image and video checks.
+- [Visual engine WASM fallback, 2026-11-07](VISUAL_ENGINE_WASM_2026-11-07.md): WebGL to WASM to CPU selection, packaged kernels, measured browser and Node latency, and the limits that remain unverified. Code and local tests; no accuracy or device claim.
 - [Android competitive testing plan](ANDROID_COMPETITIVE_TEST_PLAN.md): Early October 18 plan for safely testing HaramBlur and BlockerHero, plus a pre-app Hisn roadmap, now outdated. *Superseded by [ANDROID_1.0_PLAN.md](ANDROID_1.0_PLAN.md).*
 - [From personal use to publishing](LAUNCH.md): An early checklist for publishing: Apple signing, extension store, list licences, privacy policy and pricing decisions. *Superseded by [PUBLISHING_PLAN.md](PUBLISHING_PLAN.md).*
 
 ## Research
 
+- [macOS adult-content blockers, 2026-11-07](MACOS_COMPETITIVE_RESEARCH_2026-11-07.md): The macOS mechanisms behind Canopy, Covenant Eyes, Qustodio, Mobicip, Opal, Cold Turkey, SelfControl, Freedom, NextDNS and Screen Time; a coverage/control/trust matrix; where Hisn is already ahead; and a ranked backlog led by a Mac Safari extension, AI-chat adapters, named service bundles and shipping polish. Research record, no code or policy change.
 - [Apps that carry adult content on Android and iOS, 2026-11-06](ADULT_APPS_RESEARCH.md): The X/Twitter video-link pipeline through MDisk and TeraBox, the near-identical player apps built around it, and the six domains added to `extra_block` and the rebuilt seed as a result. Research record, not a blocking guarantee.
 - [Android research and execution plan](ANDROID_RESEARCH_PLAN.md): October 18 BlockerHero and HaramBlur study, Android platform limits and an early phased plan, now replaced. *Superseded by [ANDROID_1.0_PLAN.md](ANDROID_1.0_PLAN.md).*
 - [REA Android design audit, 2026-11-03](ANDROID_REA_SCREENZEN_2026-11-03.md): ScreenZen/BlockerHero research and the built Android 1.0.0 inventory behind the daily time-limit work. Design research, not a runtime or security assessment.
@@ -134,7 +154,9 @@ Per-version change and verification notes, newest first.
 
 ### iPhone and iPad
 
-- [iOS 1.7.0 release notes](IOS_1.7.0.md): A pause rule — a fourth app-rule mode where the shield asks **Is this important?**, **Pause first** hands the request to Hisn, a ten-second breath unlocks one bounded session, opens are limited per day, and the monitor re-shields at the session's end. 40 Python and 242 simulator tests; no entitlement or device. *Supersedes no prior lock claim: hard modes keep their one-button shield.*
+- [iOS 1.8.0 release notes](IOS_1.8.0.md): A device-wide DNS filter (Network Extension DNS proxy, build-verified list and terms, local NXDOMAIN, validated DoH upstream, route self-check, commitment freeze) and the direct IPA/AltStore distribution path; 18 new simulator tests, the DNS extension itself untested on a device.
+- [iOS 1.7.1 release notes](IOS_1.7.1.md): Chosen weekdays for quiet hours with the start-day rule and per-leg monitor checks, **End now** for a running pause session, the commitment deadline on Today, and a notification prompt where the pre-26.5 shield handoff needs one. 40 Python and 252 simulator tests; no entitlement or device.
+- [iOS 1.7.0 release notes](IOS_1.7.0.md): A pause rule — a fourth app-rule mode where the shield asks **Is this important?**, **Pause first** hands the request to Hisn, a ten-second breath unlocks one bounded session, opens are limited per day, and the monitor re-shields at the session's end — plus the ScreenZen-shaped rebuild: Today, Apps, Practice and More, a sheet rule editor, on-ink colours, and renders in both languages, dark mode and iPad. 40 Python and 243 simulator tests; no entitlement or device. *No enforcement claim changed: hard modes keep their one-button shield.*
 - [iOS 1.6.0 release notes](IOS_1.6.0.md): A browser and VPN guard (a second, independent always-block app rule with its own record and store, frozen by a commitment and watched by the monitor) and a Lock Center that turns removal protection into the honest ladder, one row per level, with the exits it keeps. 39 Python and 221 simulator tests; no entitlement, signed build or device.
 - [iOS 1.5.0 release notes](IOS_1.5.0.md): A calm card stack on the overview, direct editors for the lock, blocked sites and app limits, three guided Setup steps with a checks card, a visible app-limit mode selector, grouped Settings cards, and shorter visible copy behind per-section disclosures. The stale "Hisn 1–4" guide text is corrected to 1–6. No rule or enforcement change; 39 Python and 216 simulator tests. Simulator-tested only; no entitlement, signed build or device.
 - [iOS 1.4.0 release notes](IOS_1.4.0.md): Custom `ShieldConfiguration`/`ShieldAction` extensions name the saved rule in English or Arabic and offer only Close, with no unlock; eleven privacy-manifest bundles and two new Family Controls targets. Simulator-tested only; no entitlement, signed build or device.
@@ -176,6 +198,7 @@ Per-version change and verification notes, newest first.
 
 ### Browser extension
 
+- [Extension 1.5.3 popup and embedded-settings record, 2026-11-06](EXTENSION_POPUP_UX_2026-11-06.md): Restores the popup status render after a 1.5.1 reference error and gives the settings page embedded in the popup its height: one fitting tab row, no full-page footer or language row, a language switch in the compact bar, no clipped scroll-region focus ring, and the Settings tab renamed Content. Captures in `design/extension-popup-2026-11-06/`. No permission or enforcement change.
 - **Extension 1.5.2** (no separate note): the native heartbeat now carries `incognitoAllowed` from `chrome.extension.isAllowedIncognitoAccess`; packaged as `dist/hisn-extension-1.5.2.zip` (92 files, SHA-256 `ef3f7d8a9c8e2a290891ef92b56f2b44fdc3d0ad071cf83c44dfe6f41fc25d7f`). See the [changelog](../CHANGELOG.md).
 - [Extension 1.5.0 release notes](EXTENSION_1.5.0.md): Portable rules: export the five hand lists to a versioned JSON file and import one add-only; a lock withholds new allowances and corrections while applying new blocks and words; an app-managed browser refuses the import. No new permission or network path. Development candidate; no listing yet.
 - [Extension UI refresh and REA design input, 2026-11-04](EXTENSION_UI_REFRESH_2026-11-04.md): Status-tinted popup, six distinct layer tiles, a persistent sidebar status, cards and switches across settings, and a pause-first block page with a breathing orb, three-breath progress and a quiet close-tab exit. Records the REA 6.5.0 inspection of ScreenZen and what was deliberately not copied. No enforcement change. Captures in `design/extension-ui-2026-11-04/`.

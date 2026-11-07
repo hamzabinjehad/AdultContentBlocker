@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Hisn Protection",
   "short_name": "Hisn",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "homepage_url": "https://github.com/hamzabinjehad/AdultContentBlocker",
   "icons": {
     "16": "icons/icon-16.png",
@@ -73,6 +73,11 @@
         "id": "short_video",
         "enabled": false,
         "path": "rules/short_video.json"
+      },
+      {
+        "id": "adult_tlds",
+        "enabled": true,
+        "path": "rules/adult_tlds.json"
       }
     ]
   },
@@ -97,6 +102,6 @@
   "options_page": "options.html",
   "incognito": "spanning",
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'"
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
   }
 }

@@ -11,7 +11,7 @@ struct HisnMobileApp: App {
             MobileRootView(protection: protection, language: $language)
                 .environment(\.locale, language == "system" ? .autoupdatingCurrent : Locale(identifier: language))
                 .environment(\.layoutDirection, isArabic ? .rightToLeft : .leftToRight)
-                .tint(.blue)
+                .tint(HnPalette.accent)
                 .task { await protection.refresh() }
                 .onChange(of: phase) { next in
                     if next == .active { Task { await protection.refresh() } }

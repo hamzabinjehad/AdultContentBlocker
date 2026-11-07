@@ -8,8 +8,9 @@ enum MobileProtectionPolicy {
     static let blockerIdentifiers = (1...6).map { "\(appIdentifier).blocker\($0)" }
     static let perBlockerRuleLimit = 40_000
     static let bundledRuleLimit = perBlockerRuleLimit * blockerIdentifiers.count
-    static let dnsURL = URL(string: "https://family.cloudflare-dns.com/dns-query")!
-    static let dnsServers = ["1.1.1.3", "1.0.0.3", "2606:4700:4700::1113", "2606:4700:4700::1003"]
+    /// Hisn's DNS proxy extension. The provider bundle identifier is the only
+    /// evidence iOS gives the app that the running configuration is Hisn's.
+    static let dnsProviderBundleIdentifier = "app.hisn.mobile.dnsproxy"
 
     enum DNSState: Equatable {
         case unknown, absent, saved, enabled, differentConfiguration, unavailable
@@ -139,16 +140,13 @@ enum MobileProtectionPolicy {
             !lastReload.contains(false)
     }
 
-    static func dnsState(hasConfiguration: Bool, isEnabled: Bool,
-                         serverURL: URL?, servers: [String], matchDomains: [String]? = nil) -> DNSState {
-        guard hasConfiguration else { return .absent }
-        guard serverURL == dnsURL, Set(servers) == Set(dnsServers) else { return .differentConfiguration }
-        // A split-DNS configuration must not be reported as device-wide protection.
-        // nil/empty retains the system's unscoped configuration; an explicit
-        // empty-string domain selects the default resolver for all domains.
-        if let matchDomains, !matchDomains.isEmpty, !matchDomains.contains("") {
-            return .differentConfiguration
-        }
+    /// `providerBundleIdentifier` is nil when no DNS proxy is configured. Only
+    /// an enabled configuration naming Hisn's own extension counts as the
+    /// layer; a saved-but-off one is never presented as filtering anything.
+    static func dnsProxyState(providerBundleIdentifier: String?, isEnabled: Bool,
+                              expected: String = dnsProviderBundleIdentifier) -> DNSState {
+        guard let providerBundleIdentifier else { return .absent }
+        guard providerBundleIdentifier == expected else { return .differentConfiguration }
         return isEnabled ? .enabled : .saved
     }
 

@@ -10,6 +10,8 @@
 #     ./test.sh release      # distribution settings and installer tests (macOS)
 #     ./test.sh browser      # the scanner harness in headless Chrome (needs a
 #                            # Chromium-based browser; CI always runs it)
+#     ./test.sh website      # Hisn Vault logic and crypto (needs Node 20+;
+#                            # HISN_SKIP_NETWORK=1 drops the live drand checks)
 #
 # CI calls the named suites on the runner that can run them; a developer calls
 # it bare. Suites never skip themselves quietly: asking for one whose toolchain
@@ -56,7 +58,7 @@ suite_release() {
     bash macos/release/release.sh --check
     bash -n macos/release/release.sh macos/release/installer/preinstall \
         macos/release/installer/postinstall macos/install_native_host.sh macos/install.sh macos/install_update.sh \
-        script/build_and_run.sh
+        script/build_and_run.sh ios/direct/build_direct.sh
 }
 
 suite_extension() {
@@ -107,6 +109,8 @@ suite_browser() {
     check "browser: settings page" extension/test/browser/run.sh settings.html || rc=1
     echo "── extension: the popup, English and Arabic"
     check "browser: popup" extension/test/browser/run.sh popup.html || rc=1
+    echo "── extension: the embedded settings surface inside the popup"
+    check "browser: embedded settings" extension/test/browser/run.sh embedded.html || rc=1
     check "browser: visual pre-display gate" extension/test/browser/run.sh visual-gate.html || rc=1
     check "browser: visual admission and gallery fairness" extension/test/browser/run.sh visual-admission.html || rc=1
     check "browser: face effects" extension/test/browser/run.sh visual-effects.html || rc=1
@@ -115,6 +119,7 @@ suite_browser() {
     check "browser: exact-capture cache with real SHA-256" env HISN_HARNESS_REALTIME=1 extension/test/browser/run.sh visual-cache.html || rc=1
     check "browser: real cross-origin image reload and pixel binding" env HISN_HARNESS_REALTIME=1 extension/test/browser/run.sh visual-cors.html || rc=1
     check "browser: bundled visual models on CPU" env HISN_HARNESS_REALTIME=1 extension/test/browser/run.sh visual-real-engine.html || rc=1
+    check "browser: visual backend ladder and WASM latency" env HISN_HARNESS_REALTIME=1 extension/test/browser/run.sh visual-backends.html || rc=1
     check "browser: X player and visual-layer compatibility" extension/test/browser/run.sh feed-compatibility.html || rc=1
     echo "── extension: the block page, English and Arabic"
     check "browser: block page" extension/test/browser/run.sh blocked.html || rc=1
@@ -123,6 +128,12 @@ suite_browser() {
     echo "── extension: the scanner against evasive pages in a real browser"
     check "browser: scanner on live pages" extension/test/browser/scan_live.sh || rc=1
     return "$rc"
+}
+
+suite_website() {
+    echo "── website: vault policy and crypto"
+    command -v node >/dev/null || { echo "node not found: the website suite needs Node 20+" >&2; exit 1; }
+    ( cd website && node --test test/*.test.mjs )
 }
 
 suite_macos() {
@@ -182,8 +193,12 @@ print("platform=iOS Simulator,id=" + devices[0]["udid"])
         CODE_SIGNING_ALLOWED=NO \
         HISN_PYTHON="${HISN_PYTHON:-$(command -v python3)}" \
         ${XCODEBUILD_FLAGS:-}
+    # Network Extension provider points are not usable in the Simulator, and
+    # some runtimes refuse to install a host app that carries one. The DNS
+    # filter's policy is tested directly; its extension is a device build.
     rm -rf "$derived/Build/Products/Debug-iphonesimulator/HisnMobile.app/PlugIns/HisnShieldConfig.appex" \
-           "$derived/Build/Products/Debug-iphonesimulator/HisnMobile.app/PlugIns/HisnShieldAction.appex"
+           "$derived/Build/Products/Debug-iphonesimulator/HisnMobile.app/PlugIns/HisnShieldAction.appex" \
+           "$derived/Build/Products/Debug-iphonesimulator/HisnMobile.app/PlugIns/HisnDNSProxy.appex"
     xcodebuild test-without-building -project ios/HisnMobile.xcodeproj -scheme HisnMobile \
         -configuration Debug -destination "$destination" -derivedDataPath "$derived" \
         CODE_SIGNING_ALLOWED=NO \
@@ -196,8 +211,8 @@ if [ $# -eq 0 ]; then
 fi
 for s in "$@"; do
     case "$s" in
-        python|seed|extension|release|macos|browser|ios) "suite_$s" ;;
-        *) echo "unknown suite: $s (python|seed|extension|release|macos|browser|ios)" >&2; exit 2 ;;
+        python|seed|extension|release|macos|browser|ios|website) "suite_$s" ;;
+        *) echo "unknown suite: $s (python|seed|extension|release|macos|browser|ios|website)" >&2; exit 2 ;;
     esac
 done
 echo

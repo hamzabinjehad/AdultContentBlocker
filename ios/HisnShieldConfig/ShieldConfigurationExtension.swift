@@ -18,7 +18,7 @@ final class ShieldConfigurationExtension: ShieldConfigurationDataSource {
         static let background = UIColor(red: 0.043, green: 0.047, blue: 0.098, alpha: 1)
         static let title = UIColor.white
         static let subtitle = UIColor(white: 0.72, alpha: 1)
-        static let action = UIColor(red: 0.36, green: 0.36, blue: 0.96, alpha: 1)
+        static let action = UIColor(red: 0.74, green: 0.74, blue: 1, alpha: 1)
         static let quietAction = UIColor(white: 1, alpha: 0.12)
     }
 

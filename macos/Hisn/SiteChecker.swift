@@ -24,6 +24,8 @@ struct SiteCheckResult: Equatable, Sendable {
         case allowlist
         case publishedList
         case keyword
+        /// A sponsored adult TLD, independent of any list version.
+        case adultTld
         case strictMode
         case notListed
         case none
@@ -56,8 +58,11 @@ struct SiteCheckResult: Equatable, Sendable {
 /// 1. built-in search/viewer rules cannot be allowed;
 /// 2. a hand-typed block outranks a hand-typed allowance;
 /// 3. strict mode blocks everything except an allowance;
-/// 4. an allowance outranks the published list and keyword layer;
-/// 5. the published list, then the keyword layer.
+/// 4. an allowance outranks the published list, the adult-TLD rail and the
+///    keyword layer;
+/// 5. the adult-TLD rail blocks every name under `.xxx`, `.porn`, `.sex` and
+///    `.adult` without needing the list to be readable;
+/// 6. the published list, then the keyword layer.
 enum SiteCheckRules {
 
     /// - Parameter list: called only when the answer needs the installed list.
@@ -107,6 +112,16 @@ enum SiteCheckRules {
         if allows.contains(where: covers) {
             return SiteCheckResult(host: host, outcome: .allowed,
                                    source: .allowlist, listVersion: nil,
+                                   listSource: .none)
+        }
+
+        // A sponsored adult TLD needs no list entry and no list read. Naming it
+        // separately matters: the installed generation may be older than the
+        // domain, and an unreadable list must not turn a guarded TLD into
+        // "not blocked".
+        if AdultTldGuard.matches(host: host) {
+            return SiteCheckResult(host: host, outcome: .blocked,
+                                   source: .adultTld, listVersion: nil,
                                    listSource: .none)
         }
 

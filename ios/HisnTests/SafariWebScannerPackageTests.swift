@@ -39,6 +39,8 @@ final class SafariWebScannerPackageTests: XCTestCase {
             "seed/terms.json", "icons/icon-32.png", "icons/icon-128.png",
             "visual/capture.js", "visual/broker.js", "visual/decisions.js", "visual/queue.js",
             "visual/verdict-cache.js",
+            "visual/wasm/tfjs-backend-wasm.wasm", "visual/wasm/tfjs-backend-wasm-simd.wasm",
+            "visual/wasm/tfjs-backend-wasm-threaded-simd.wasm",
             "visual/assets.json", "visual/engine.bundle.js", "visual/engine.bundle.js.LEGAL.txt",
             "visual/models/blazeface.json", "visual/models/blazeface.bin",
             "visual/models/gender.json", "visual/models/gender.bin",

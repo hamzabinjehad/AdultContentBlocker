@@ -68,7 +68,9 @@ final class Ui {
         LinearLayout card = new LinearLayout(context);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setBackgroundResource(R.drawable.bg_card);
-        card.setPadding(dp(context, 20), dp(context, 18), dp(context, 20), dp(context, 18));
+        // Rows and switches carry their own vertical padding, so the card only adds a little:
+        // the list stays dense without the rows colliding with the rounded edge.
+        card.setPadding(dp(context, 18), dp(context, 8), dp(context, 18), dp(context, 8));
         card.setElevation(dp(context, 1));
         return card;
     }
@@ -89,29 +91,21 @@ final class Ui {
         return line;
     }
 
-    /** Section header inside a page: icon tile, title, optional supporting line. */
-    static LinearLayout sectionHeader(Context context, int iconRes, CharSequence title) {
-        LinearLayout row = new LinearLayout(context);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(0, dp(context, 4), 0, dp(context, 10));
-        row.addView(iconInTile(context, iconRes, R.color.accent, 36, 20), tileParams(context));
+    /**
+     * A quiet label above a card. It names the group without a second icon or a second heading,
+     * so the page reads as a list of answers rather than a wall of tiles.
+     */
+    static TextView sectionLabel(Context context, CharSequence text) {
         TextView label = new TextView(context);
-        label.setText(title);
-        label.setTextSize(19);
-        label.setTextColor(color(context, R.color.text_primary));
+        label.setText(text);
+        label.setTextSize(12.5f);
+        label.setTextColor(color(context, R.color.text_secondary));
         label.setTypeface(medium());
+        label.setLetterSpacing(0.06f);
         label.setIncludeFontPadding(false);
+        label.setPadding(dp(context, 2), dp(context, 18), dp(context, 2), dp(context, 8));
         heading(label);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0,
-                LinearLayout.LayoutParams.WRAP_CONTENT, 1);
-        params.setMarginStart(dp(context, 10));
-        row.addView(label, params);
-        return row;
-    }
-
-    private static LinearLayout.LayoutParams tileParams(Context context) {
-        return new LinearLayout.LayoutParams(dp(context, 36), dp(context, 36));
+        return label;
     }
 
     /** Page heading (larger than a card's section header). */
@@ -381,54 +375,159 @@ final class Ui {
         final LinearLayout root;
         final TextView title;
         final TextView summary;
+        /** Right-aligned short answer such as On, Off or 8 hours; null when the row has none. */
+        final TextView value;
+        private final ImageView chevron;
 
-        SettingRow(LinearLayout root, TextView title, TextView summary) {
+        SettingRow(LinearLayout root, TextView title, TextView summary, TextView value,
+                ImageView chevron) {
             this.root = root;
             this.title = title;
             this.summary = summary;
+            this.value = value;
+            this.chevron = chevron;
         }
 
         /** Keeps the row's spoken label in step when the same row changes meaning, as the schedule mode does. */
         void setTitle(CharSequence text) {
             setTextIfChanged(title, text);
-            root.setContentDescription(text + ". " + summary.getText());
+            describe();
         }
 
         /** Keeps the row's spoken label in step with its visible summary. */
         void setSummary(CharSequence text) {
             setTextIfChanged(summary, text);
-            root.setContentDescription(title.getText() + ". " + text);
+            describe();
+        }
+
+        /** Sets the trailing answer and colours it by kind: ON green, ATTENTION amber, OFF muted. */
+        void setValue(CharSequence text, int stateKind) {
+            if (value == null) {
+                setSummary(text);
+                return;
+            }
+            setTextIfChanged(value, text);
+            value.setTextColor(stateColor(value.getContext(), stateKind));
+            describe();
+        }
+
+        /** A locked row shows a lock instead of the chevron: the tap still explains why. */
+        void setLocked(boolean locked) {
+            chevron.setImageResource(locked ? R.drawable.ic_lock : R.drawable.ic_chevron_right);
+            chevron.setColorFilter(color(root.getContext(),
+                    locked ? R.color.text_secondary : R.color.text_tertiary));
+            root.setAlpha(locked ? 0.72f : 1f);
+        }
+
+        private void describe() {
+            StringBuilder spoken = new StringBuilder(title.getText());
+            if (summary.getText().length() > 0) spoken.append(". ").append(summary.getText());
+            if (value != null && value.getText().length() > 0) {
+                spoken.append(". ").append(value.getText());
+            }
+            root.setContentDescription(spoken);
         }
     }
 
     static SettingRow settingRow(Context context, int iconRes, CharSequence title, CharSequence summary,
             View.OnClickListener click) {
+        return settingRow(context, iconRes, title, summary, null, click);
+    }
+
+    /**
+     * One list row: a line icon, a title, an optional one-line summary and an optional trailing
+     * answer. The icon is drawn at row height rather than inside a filled tile, which keeps the
+     * text column wide and the list calm.
+     */
+    static SettingRow settingRow(Context context, int iconRes, CharSequence title, CharSequence summary,
+            CharSequence value, View.OnClickListener click) {
         LinearLayout row = new LinearLayout(context);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setBackgroundResource(R.drawable.bg_row);
         row.setPadding(dp(context, 8), dp(context, 12), dp(context, 8), dp(context, 12));
-        row.setMinimumHeight(dp(context, 62));
+        row.setMinimumHeight(dp(context, 54));
         row.setClickable(true);
         row.setFocusable(true);
-        row.addView(iconInTile(context, iconRes, R.color.accent, 38, 21));
+        row.addView(icon(context, iconRes, R.color.accent, 22));
         LinearLayout column = new LinearLayout(context);
         column.setOrientation(LinearLayout.VERTICAL);
         TextView name = strong(context, title);
-        name.setTextSize(16);
-        TextView detail = caption(context, summary);
-        detail.setPadding(0, dp(context, 3), 0, 0);
+        name.setTextSize(15.5f);
+        TextView detail = text(context, summary, 12.5f, R.color.text_tertiary);
+        detail.setPadding(0, dp(context, 2), 0, 0);
         column.addView(name);
         column.addView(detail);
         LinearLayout.LayoutParams columnParams = new LinearLayout.LayoutParams(0,
                 LinearLayout.LayoutParams.WRAP_CONTENT, 1);
-        columnParams.setMarginStart(dp(context, 14));
+        columnParams.setMarginStart(dp(context, 12));
         columnParams.setMarginEnd(dp(context, 8));
         row.addView(column, columnParams);
-        row.addView(icon(context, R.drawable.ic_chevron_right, R.color.text_tertiary, 20));
+        TextView trailing = null;
+        if (value != null) {
+            trailing = text(context, value, 13.5f, R.color.text_secondary);
+            trailing.setTypeface(medium());
+            trailing.setGravity(Gravity.END);
+            trailing.setMaxLines(1);
+            trailing.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            LinearLayout.LayoutParams valueParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            valueParams.setMarginEnd(dp(context, 8));
+            row.addView(trailing, valueParams);
+        }
+        ImageView chevron = icon(context, R.drawable.ic_chevron_right, R.color.text_tertiary, 18);
+        row.addView(chevron);
         row.setOnClickListener(click);
-        SettingRow holder = new SettingRow(row, name, detail);
+        SettingRow holder = new SettingRow(row, name, detail, trailing, chevron);
         holder.setSummary(summary);
+        if (value != null) holder.setValue(value, OFF);
+        return holder;
+    }
+
+    /**
+     * A short state chip: a dot and one or two words on a tinted pill. Used for a verdict that
+     * answers a question in the header of a card.
+     */
+    static final class StatusPill {
+        final LinearLayout root;
+        final TextView label;
+        private final View dot;
+
+        StatusPill(LinearLayout root, TextView label, View dot) {
+            this.root = root;
+            this.label = label;
+            this.dot = dot;
+        }
+
+        void setState(CharSequence text, int stateKind) {
+            Context context = root.getContext();
+            int tint = stateColor(context, stateKind);
+            label.setText(text);
+            label.setTextColor(tint);
+            dot.getBackground().setTint(tint);
+            GradientDrawable background = new GradientDrawable();
+            background.setColor(withAlpha(tint, 0.12f));
+            background.setCornerRadius(dp(context, 999));
+            root.setBackground(background);
+            root.setContentDescription(text);
+        }
+    }
+
+    static StatusPill statusPill(Context context, CharSequence text, int stateKind) {
+        LinearLayout pill = new LinearLayout(context);
+        pill.setOrientation(LinearLayout.HORIZONTAL);
+        pill.setGravity(Gravity.CENTER_VERTICAL);
+        pill.setPadding(dp(context, 10), dp(context, 5), dp(context, 11), dp(context, 5));
+        View dot = dot(context, color(context, R.color.text_tertiary), 6);
+        pill.addView(dot);
+        TextView label = text(context, text, 12.5f, R.color.text_secondary);
+        label.setTypeface(medium());
+        LinearLayout.LayoutParams labelParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        labelParams.setMarginStart(dp(context, 6));
+        pill.addView(label, labelParams);
+        StatusPill holder = new StatusPill(pill, label, dot);
+        holder.setState(text, stateKind);
         return holder;
     }
 
@@ -444,8 +543,8 @@ final class Ui {
         toggle.setTextColor(color(context, R.color.text_primary));
         toggle.setTypeface(medium());
         toggle.setLineSpacing(dp(context, 3), 1.12f);
-        toggle.setPadding(0, dp(context, 12), 0, dp(context, 12));
-        toggle.setMinHeight(dp(context, 58));
+        toggle.setPadding(0, dp(context, 10), 0, dp(context, 10));
+        toggle.setMinHeight(dp(context, 52));
         toggle.setGravity(Gravity.CENTER_VERTICAL);
         return toggle;
     }
@@ -574,9 +673,10 @@ final class Ui {
         return edit;
     }
 
+    /** Dims a disabled control without making its label unreadable: 0.45 fails contrast. */
     static void setEnabledWithAlpha(View view, boolean enabled) {
         view.setEnabled(enabled);
-        view.setAlpha(enabled ? 1f : 0.45f);
+        view.setAlpha(enabled ? 1f : 0.58f);
     }
 
     static LinearLayout.LayoutParams margins(Context context, int topDp, int bottomDp) {

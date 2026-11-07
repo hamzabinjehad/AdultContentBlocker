@@ -2,16 +2,107 @@
 
 **نسخة أولية فعلية:** تطبيق موحّد للهاتف والآيباد، مستقل عن الماك، بواجهة
 عربية وإنجليزية. يحوي ست إضافات لحجب مواقع Safari من قائمة حصن الأساسية،
-ومسارًا اختياريًا لإعداد DNS عائلي. لا يعني ذلك حجب كل التطبيقات أو كل المحتوى.
+ومرشّح DNS على مستوى الجهاز يستخدم قائمة حصن الموقّعة لكل تطبيق. لا يعني ذلك
+حجب كل المحتوى أو حماية غير قابلة للإزالة.
 
 The plan to finish the iPhone/iPad app, including which Apple-supported lock
 level stops deletion and what each one cannot stop, is in
-[the iOS end-goal plan](../docs/IOS_IMPROVEMENT_PLAN.md).
+[the iOS end-goal plan](../docs/IOS_IMPROVEMENT_PLAN.md). The direct build
+outside the App Store, and what each install path can grant, is in
+[IOS_DIRECT.md](../docs/IOS_DIRECT.md).
 
-## 1.7.0 the pause rule
+## 1.8.0 the device-wide DNS filter and the direct build
 
-A fourth app-rule mode, chosen rather than imposed: the shield asks **Is this
-important?** instead of only closing.
+Two changes. The DNS layer is now Hisn's own policy on the device, and the app
+is distributed directly as a signed-on-install IPA rather than through the App
+Store.
+
+- **A DNS proxy extension.** `HisnDNSProxy` is an `NEDNSProxyProvider` with the
+  `dns-proxy` entitlement. While it is on, every app's system DNS question
+  reaches it. The signed seed's 236,586 core domains, the four adult TLDs, the
+  116 reviewed hostname terms and the person's saved sites get a local
+  NXDOMAIN; allowed names go to Cloudflare Families over HTTPS with one
+  validated fallback endpoint. The old Family DNS profile used Cloudflare's
+  categories, not Hisn's list, and covered no non-WebKit app; it is gone.
+- **Verified data, fail closed.** `prepare_rules.py --dns` verifies the signed
+  seed and the signed terms and writes the domain file, the hostname-term file
+  and a metadata file with both digests. The extension checks the digests,
+  count and adult-TLD set before starting; a damaged domain list stops it, a
+  damaged terms file leaves the domain list enforcing.
+- **The app.** Setup → **DNS filter** has On, Off and **Check the DNS route**.
+  The check resolves a fresh random name under the reserved `hisn.invalid`
+  domain and expects Hisn's own `203.0.113.7`; it is labelled as this app's
+  resolver path, not device-wide proof. Readback distinguishes on, saved-off,
+  another filter, off and unknown. A commitment freezes turning it off.
+- **Bounded wire code.** New query parsing, NXDOMAIN/TC/SERVFAIL construction,
+  response matching, EDNS payload handling, UDP and TCP flows, and a 16-query
+  gate. Nothing is logged or stored.
+- **The direct build.** `ios/direct/build_direct.sh` produces the IPA outside
+  the App Store and refuses to package it unless every extension and its data
+  are present; `make_source.py` writes the AltStore/SideStore source from the
+  IPA's bytes. The IPA is unsigned until an installer signs it with a profile
+  that includes `dns-proxy` and, for the Screen Time layers, Family Controls.
+  Apple still enforces both entitlements; this is not a jailbreak and does not
+  make a restricted entitlement appear.
+
+Version 1.8.0, build 14. `./test.sh ios` passes **55 Python tests and 271
+simulator tests, 0 failures**, including 19 new tests for the DNS parser,
+index, hostname rules, engine and resolver and the Python DNS data,
+entitlement and source-JSON checks. The Network Extension
+itself, the permission prompt, real flow handling, Cloudflare reachability and
+the direct install need a signed device and are **not** claimed as tested. See
+[the 1.8.0 record](../docs/IOS_1.8.0.md) and
+[the direct install guide](../docs/IOS_DIRECT.md).
+
+## 1.7.2 the adult-TLD guard
+
+Safari's blockers now carry four rules for the adult-sponsored TLDs
+(`.adult`, `.porn`, `.sex`, `.xxx`) besides the 236,586 bundled domains. A
+domain registered after the seed build is blocked in Safari instead of waiting
+for an app update, and the rule matches only a host whose final label is one of
+the four, so `notxxx.com`, `porn.example.com` and `xxx.evil.com` stay reachable.
+`.cam` is deliberately excluded: it is a generic TLD with ordinary camera uses.
+
+The rules live in the last blocker part, which had 3,414 spare slots; the
+generated total is **236,590 rules**. The builder refuses a full final part
+plus the guard rather than truncating, and the WebKit compile test compiles the
+final part in the simulator, so Safari's regex subset is checked by the engine
+rather than only by Python. The guard is policy code, not a list update: the
+seed and its signature are unchanged, and no runtime download path was added.
+
+Version 1.7.2, build 13. `./test.sh ios` passes **44 Python tests** and **252
+simulator tests** (0 failures), including a WebKit compile of all six Safari
+parts with the four guard rules. No Apple team, Family Controls entitlement,
+signed build or physical-device acceptance is claimed. Details and limits:
+[the guard record](../docs/BLOCKING_GUARD_2026-11-06.md).
+
+## 1.7.1 weekdays and session control
+
+Three capabilities 1.7.0 left out:
+
+- **Chosen weekdays for quiet hours.** A Monday-first mask, every day by
+  default for saved rules. A window that crosses midnight belongs to the day it
+  starts on, so a weekdays-only 22:00–07:00 window holds through Saturday
+  morning and Friday night is a weekday night. The monitor checks each leg
+  (the morning leg checks yesterday); the editor adds day chips and presets.
+- **End now.** A running pause session is visible on Today and in the Apps rule
+  row, and can be ended immediately; the shield returns. The action only
+  tightens, so a commitment does not block it.
+- **The commitment deadline** is shown on Today, and **the pre-26.5 handoff**
+  explains the notification it needs and asks for permission.
+
+Version 1.7.1, build 12. `./test.sh ios` passes **40 Python and 252 simulator
+tests**; nine new weekday tests pin the mask, the start-day rule and the leg
+checks. Real shielding still needs a signed, entitled device; see
+[the 1.7.1 record](../docs/IOS_1.7.1.md).
+
+## 1.7.0 pause rules and the rebuilt app
+
+Two changes: a fourth app-rule mode that asks before it closes, and a rebuild of
+the app's screens around that decision.
+
+**The pause rule.** The shield asks **Is this important?** instead of only
+closing.
 
 - **Pause first.** The shield's secondary button hands a request to Hisn —
   directly on iOS 26.5 and later, through a local notification before that. The
@@ -23,16 +114,34 @@ important?** instead of only closing.
 - **A bounded session.** One open buys the chosen minutes (1–30), and the rule
   allows 1–10 opens per day. The DeviceActivity monitor ends the session at its
   threshold; a session from another day, or older than any possible reading of
-  its minutes, is re-shielded by the monitor's reconciliation.
+  its minutes, is re-shielded by reconciliation.
 - **Its own store and a mirrored day record.** A damaged budget record reads as
   unreadable and closes the day rather than handing out a fresh budget.
-- The editor offers the mode with opens and session minutes, in English and
-  Arabic; every other mode keeps the one-button shield.
 
-Version 1.7.0, build 11. `./test.sh ios` passes **40 Python and 242 simulator
-tests**; the new `PauseRuleTests` cover the budget, session bounds, handoff
-freshness and damaged records. Real shielding and the shield's pause action
-need a signed, entitled device; see [the 1.7.0 record](../docs/IOS_1.7.0.md).
+**The screens.** Four places, in a warm paper/ink palette with one indigo
+accent and rounded display type:
+
+- **Today** — one deep card for the protection state and its single action, the
+  week's practice streak, the app rules in a sentence, and a practice card.
+- **Apps** — a status pill, one row per rule with the system-drawn app icons,
+  the rule in a sentence and the opens as dots, the browser/VPN guard as its own
+  row, and a sheet editor that shows only the numbers the chosen mode uses.
+- **Practice** — the streak, the breath screen in the shield's navy, and three
+  honest lines about what a pause does and does not do.
+- **More** — the layer checks and plan, the Lock Center, the commitment, the
+  vault, allowed sites and settings. The old Setup tab's words are kept.
+
+All four tabs render at the largest accessibility sizes and in Arabic RTL;
+body text stays at 4.5:1 or better on its surface. `AppUsageSection` is removed
+and the rules keep the same controller calls, validation and frozen-rule rules.
+
+Version 1.7.0, build 11. `./test.sh ios` passes **40 Python and 243 simulator
+tests**; `PauseRuleTests` cover the budget, session bounds, handoff freshness
+and damaged records, and `UIRenderTests` renders every tab in both languages,
+dark mode and iPad plus the pause and editor screens. Real shielding and the
+shield's pause action need a signed, entitled device; see
+[the 1.7.0 record](../docs/IOS_1.7.0.md) and
+[the capture record](../design/ios-ui-1.7.0/README.md).
 
 ## 1.6.0 the bypass guard and the Lock Center
 
@@ -123,7 +232,7 @@ two Screen Time extensions:
 - **HisnShieldAction** answers the shield's one button with `.close`. It cannot
   unlock anything: the ManagedSettings shield remains applied until the rule
   ends or the person changes it in Hisn (outside a commitment). There is no
-  quick-unlock action to copy from ScreenZen.
+  quick-unlock action.
 - A missing or unreadable rule, a budget shield without its reached-day marker,
   or an outside-window quiet-hours shield gets a generic honest message rather
   than a false claim about which rule applies.
@@ -266,7 +375,8 @@ runner, for example `platform=iOS Simulator,name=iPhone 17 Pro`.
   a signed build to test.
 - Six Safari content blockers, each capped at 40,000 rules. The signed core
   seed is fully included, never silently truncated. The current seed has
-  239,885 domains; increasing capacity requires explicit additional targets.
+  236,586 core domains; increasing capacity requires explicit additional
+  targets.
 - Domain requests and descendant hostnames are matched with host boundaries.
   Safari applies rules without reporting visited sites to Hisn.
 - A separate **Hisn Text** Safari Web Extension uses the shared on-device text
@@ -277,8 +387,10 @@ runner, for example `platform=iOS Simulator,name=iPhone 17 Pro`.
   blurring of media with detected faces (all or estimated female/male faces).
   Normal videos stay available by default. The whole matching image/video is
   blurred; this is not whole-body recognition or an identity determination.
-- Optional encrypted Cloudflare Family DNS configuration, including IPv4 and
-  IPv6 resolver addresses. This uses **Cloudflare categories**, not Hisn's list.
+- A **device-wide DNS filter** extension: Hisn's signed list, adult TLDs,
+  hostname terms and saved sites answered locally, and Cloudflare Families as
+  the encrypted upstream for allowed names. This covers system DNS for every
+  app, not only WebKit, and does not store history.
 - Actual DNS enabled-state readback and separate Safari state for each part.
   Each Safari part distinguishes unknown, disabled, enabled and last-reload
   failure. A failed reload stays visible across status refreshes until that
@@ -303,9 +415,12 @@ shipping a new seed requires rebuilding and redistributing the app.
    `HisnActivityMonitor`, `HisnText`, `HisnShieldConfig` and `HisnShieldAction`.
    Keep extension bundle IDs prefixed by the app ID. If changing the app ID,
    also change `shared/apple/MobileProtectionPolicy.swift` and the generator.
-2. Enable the app's **Network Extensions → DNS Settings** signing capability.
-   The supplied entitlement is a request, not a grant: your provisioning profile
-   must actually include `dns-settings`.
+2. Enable **Network Extensions** on the app and `HisnDNSProxy` with the
+   **DNS Proxy** provider. The supplied entitlement is a request, not a grant:
+   your provisioning profile must actually include `dns-proxy`. The app's and
+   the extension's bundle identifiers must be `app.hisn.mobile` and
+   `app.hisn.mobile.dnsproxy`. A profile that only has the old DNS Settings
+   capability will not run 1.8.0.
 3. Enable **Family Controls** on the app, `HisnActivityMonitor`,
    `HisnShieldConfig` and `HisnShieldAction`. Each provisioning profile must
    include `com.apple.developer.family-controls`; the shield configuration
@@ -322,9 +437,11 @@ shipping a new seed requires rebuilding and redistributing the app.
    Open Hisn Text's Safari toolbar panel or extension options to opt into visual
    checking. These settings are stored in Safari, not synchronized with or
    locked by the native app commitment.
-6. Optional: choose **Prepare family DNS**, accept Apple's permission dialog,
-   then explicitly select **Hisn Family DNS** in system DNS settings. Return to
-   Hisn; a saved-but-disabled configuration remains visibly incomplete.
+6. Turn on **DNS filter** in Hisn, accept Apple's permission dialog for the
+   DNS proxy, then tap **Check the DNS route**. The check proves this app's
+   resolver path reached Hisn; it is not a device-wide blocking test. Return to
+   Hisn after changing the setting in iOS; a saved-but-off filter stays
+   visibly incomplete.
 7. Optional: authorize Hisn's personal Screen Time adult-site filter. Hisn
    applies it only after explicit consent and reads its configured state back;
    this is not proof of blocked traffic. Test ordinary browsing and filtering
@@ -335,10 +452,13 @@ shipping a new seed requires rebuilding and redistributing the app.
    revoke Family Controls access and confirm iOS removes the shields. None of
    this can be verified in the Simulator.
 
-Distribution through TestFlight/App Store requires your developer membership,
-signing/provisioning and review. No distributable signed IPA or store upload is
-produced by this development build. Do not ship the unsigned build as an
-installable phone app. Existing artwork is reused for the mobile app icon.
+Distribution is **direct**: `ios/direct/build_direct.sh` packages the tested
+app as an IPA, and `make_source.py` writes an AltStore/SideStore source. The
+IPA is unsigned until the installer signs it with a profile that includes
+`dns-proxy` (and Family Controls for the Screen Time layers). Do not publish an
+unsigned IPA as installable, and do not claim Apple's entitlement checks were
+bypassed. See [IOS_DIRECT.md](../docs/IOS_DIRECT.md). Existing artwork is
+reused for the mobile app icon.
 
 ## Coverage boundaries
 
@@ -362,10 +482,12 @@ wrong. Models and license notices are bundled; media is not uploaded or
 persisted. For optional native-app blocking while
 keeping its website available, select only the app, not its domain or an
 overlapping category. See [browser-first setup and tests](../docs/BROWSER_FIRST_PROTECTION.md).
-DNS can be bypassed by alternate DNS, tunnels, Private Relay or
-configuration removal; enabling it is not VPN-proof enforcement. There is no
-macOS system-extension installer on iOS, no hidden router setup, no phone/Mac
-settings synchronization, and no promise of undeletable or 100% protection.
+DNS can be bypassed by an app that speaks its own encrypted DNS, by alternate
+resolvers, tunnels, Private Relay or removing the extension; enabling it is not
+VPN-proof enforcement. The DNS filter sees names, not page content, and is not
+a full tunnel. There is no macOS system-extension installer on iOS, no hidden
+router setup, no phone/Mac settings synchronization, and no promise of
+undeletable or 100% protection.
 
 ### Safari visual adapter verification
 
@@ -550,8 +672,9 @@ future work. The monitor leaves shields untouched when rule reads fail.
 
 Checked 2026-10-03:
 
-- [Apple DNS Settings](https://developer.apple.com/documentation/networkextension/dns-settings)
-- [Apple DNS enabled state](https://developer.apple.com/documentation/networkextension/nednssettingsmanager/isenabled)
+- [Apple DNS proxy provider](https://developer.apple.com/documentation/networkextension/nednsproxyprovider)
+- [Apple DNS proxy manager](https://developer.apple.com/documentation/networkextension/nednsproxymanager)
+- [Apple Network Extension entitlements](https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.networking.networkextension)
 - [Creating a Safari content blocker](https://developer.apple.com/documentation/safariservices/creating-a-content-blocker)
 - [Safari content-blocker state and reload](https://developer.apple.com/documentation/safariservices/sfcontentblockermanager)
 - [Cloudflare Families and encrypted DNS endpoints](https://developers.cloudflare.com/1.1.1.1/setup/)
@@ -597,9 +720,10 @@ device.
 
 Overview and Setup now show a live, non-persisted configuration assessment.
 It requires nonempty bundled Safari parts with matching hashes, counts and
-versions, all six Safari blockers enabled, Hisn Screen Time readback, and
-matching enabled Family DNS before reporting all three layer configurations
-verified. A saved-but-disabled DNS configuration, revoked permission, failed
-reload, empty rules or unreadable commitment/history remains incomplete.
+versions, all six Safari blockers enabled, Hisn Screen Time readback, and a DNS
+proxy configuration that names Hisn's own extension and is enabled before
+reporting all three layer configurations verified. A saved-but-off DNS
+configuration, another app's DNS proxy, revoked permission, failed reload,
+empty rules or unreadable commitment/history remains incomplete.
 These checks do not activate settings silently or establish device-wide
 blocking, all-content coverage, VPN resistance or app-removal prevention.

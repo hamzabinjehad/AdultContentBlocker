@@ -2,12 +2,14 @@ package app.hisn.android;
 
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.app.NotificationManager;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.view.accessibility.AccessibilityManager;
+import app.hisn.core.AccessibilityGrant;
 
 /**
  * Read-only checks for the Android grants the onboarding checklist shows.
@@ -19,7 +21,33 @@ import android.view.accessibility.AccessibilityManager;
 final class Permissions {
     private Permissions() { }
 
+    /**
+     * True when the guard service is enabled. The manager's cached list is asked first; a device
+     * that has the service bound while its cache is stale would otherwise read as "permission
+     * missing" until the process restarts, so Android's own enabled-services value is the second
+     * source. That value is platform state Settings writes, never a switch Hisn saves.
+     */
     static boolean accessibility(Context context) {
+        if (listedByManager(context)) return true;
+        return Boolean.TRUE.equals(accessibilityInSettings(context));
+    }
+
+    /** Android's enabled-services value, readable without a permission; null when it cannot be read. */
+    static Boolean accessibilityInSettings(Context context) {
+        try {
+            ContentResolver resolver = context.getContentResolver();
+            if (Settings.Secure.getInt(resolver, Settings.Secure.ACCESSIBILITY_ENABLED, 0) != 1) {
+                return false;
+            }
+            return AccessibilityGrant.holds(
+                    Settings.Secure.getString(resolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES),
+                    context.getPackageName(), TextGuardService.class.getName());
+        } catch (RuntimeException unreadable) {
+            return null;
+        }
+    }
+
+    private static boolean listedByManager(Context context) {
         try {
             AccessibilityManager manager = context.getSystemService(AccessibilityManager.class);
             if (manager == null) return false;

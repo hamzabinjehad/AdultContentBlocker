@@ -77,3 +77,18 @@ lookahead, and it is what keeps `سكس` from matching `سكسونيا` (Saxony)
 expression is deliberately kept inside RE2's compiled-memory budget; Chrome
 reports an over-budget rule as `memoryLimitExceeded` and drops it without
 failing the load.
+
+## `declarative_net_request` adult_tlds ruleset
+`rules/adult_tlds.json` is the always-on adult-TLD guard. It sits at the same
+priority as the published domain list: documents are redirected to the block
+page (`reason=domain`) and every embedded resource type is dropped. The rule
+matches only a host whose FINAL label is `.adult`, `.porn`, `.sex` or `.xxx`,
+so `notxxx.com`, `porn.example.com` and `xxx.evil.com` do not match, and the
+hand allowlist (a higher priority) still wins. `.cam` is deliberately absent:
+it is a generic TLD with ordinary camera uses.
+
+The ruleset is appended last in `rule_resources` and must never be inserted
+before an existing entry: Chromium keys its compiled static-rule cache by
+position, and `test/ruleset-order.test.js` pins the order. `lib/policy.js`
+carries the same four TLDs (`ADULT_TLDS`) for `decide` and the open-tab sweep;
+`test/adult-tlds.test.js` asserts both sides and the URL boundaries.

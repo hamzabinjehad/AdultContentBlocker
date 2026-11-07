@@ -1,0 +1,16 @@
+{
+  "name": "hisn-vault-tlock",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Build-only dependency for Hisn Vault's time lock (drand tlock)",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "tlock-js": "0.9.0"
+  },
+  "devDependencies": {
+    "esbuild-wasm": "0.28.2"
+  }
+}

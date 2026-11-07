@@ -27,7 +27,7 @@ def main():
 
     def adb(*command):
         result = subprocess.run([args.adb, "-s", args.serial, *command], text=True,
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=25)
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=45)
         if result.returncode:
             raise RuntimeError("ADB operation failed: " + " ".join(command[:3]) + ": " + result.stderr.strip())
         if command[:3] == ("shell", "am", "start") and "Error:" in result.stdout:
@@ -126,10 +126,23 @@ def main():
                 "Synthetic one-shot intervention did not run: " + json.dumps(forced))
         passed({"check": "synthetic intervention after actual capture and inference", "accuracy_evidence": False})
 
-        resumed = scene("visual-normal", 8)
+        # TextGuardService holds a detected app for BLOCK_HOLD_MILLIS: reopening it while the
+        # hold runs must leave the app again, not resume sampling. Ordinary capture can only
+        # recover after the hold ends.
+        adb("shell", "am", "start", "--user", "0", "--activity-clear-task", "-W", "-n", SCENE,
+            "--es", "mode", "visual-normal")
+        time.sleep(2.5)
+        foreground = [line for line in adb("shell", "dumpsys", "activity", "activities").splitlines()
+                      if "ResumedActivity" in line]
+        require(not any(FIXTURE + "/app.hisn.android.GuardFixtureActivity" in line for line in foreground),
+                "A detected app was usable again inside the hold: " + " ".join(foreground))
+        passed({"check": "a detected app stays held after the intervention"})
+
+        time.sleep(62)
+        resumed = scene("visual-normal", 10)
         require(resumed["SAMPLES"] > forced["SAMPLES"] and resumed["INTERVENTIONS"] == forced["INTERVENTIONS"],
-                "Synthetic lease repeated or ordinary capture did not recover")
-        passed({"check": "one-shot expires; ordinary capture recovers"})
+                "Synthetic lease repeated or ordinary capture did not recover after the hold")
+        passed({"check": "one-shot expires and the hold ends; ordinary capture recovers"})
 
         adb("shell", "input", "keyevent", "3")
         time.sleep(6)

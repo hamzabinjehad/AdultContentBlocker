@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src data:; connect-src https://api.drand.sh; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light dark">
+<title>Hisn Vault</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<!--
+  Hisn Vault — an off-device lock.
+
+  The page is static. There is no account, no API and no analytics. A vault is a
+  JSON file you keep; its code is sealed under a key that is wrapped either to a
+  partner's P-256 key or to a future drand round. Opening needs one of those, so
+  clearing this browser, deleting an app or reading the file does not reveal it.
+
+  The only network request this page can make is to api.drand.sh, and only when
+  the time path is opened. The CSP above allows nothing else.
+-->
+<header class="top">
+  <a class="brand" href="./index.html"><span class="ar">حصن</span><span class="dot">·</span><span>Hisn</span></a>
+  <div class="top-actions">
+    <span class="pill" id="surface-pill">Vault</span>
+    <button class="ghost" type="button" data-lang-button>العربية</button>
+  </div>
+</header>
+
+<main id="app" aria-live="polite"></main>
+
+<footer>
+  <span id="footer-note">No account, no server, no analytics. The vault file is yours.</span>
+  <a href="partner.html" id="footer-partner">Partner key</a>
+</footer>
+
+<noscript>This page needs JavaScript. Nothing is sent anywhere; the code never leaves your browser.</noscript>
+
+<script src="lib/tlock.bundle.js"></script>
+<script type="module" src="lib/app.js"></script>
+</body>
+</html>

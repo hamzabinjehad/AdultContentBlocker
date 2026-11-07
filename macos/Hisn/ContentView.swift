@@ -67,92 +67,117 @@ struct ContentView: View {
         }
     }
 
+    private enum SidebarGroup: String, CaseIterable {
+        case protection, commitment, app
+
+        var title: LocalizedStringKey {
+            switch self {
+            case .protection: return "Protection"
+            case .commitment: return "Commitment"
+            case .app:        return "App"
+            }
+        }
+
+        var pages: [Page] {
+            switch self {
+            case .protection: return [.overview, .setup, .rules]
+            case .commitment: return [.lock]
+            case .app:        return [.settings]
+            }
+        }
+    }
+
     var body: some View {
         NavigationSplitView {
-            VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 8) {
-                Label("Hisn", systemImage: "shield.lefthalf.filled")
-                    .font(.title2.weight(.bold)).foregroundStyle(Color.accentColor)
-                Text("design.localPrivacy").font(.caption).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }.padding(20)
-            List(Page.allCases, selection: $navigation.page) { p in
-                HStack(spacing: 8) {
-                    Label(p.title, systemImage: p.systemImage)
-                    Spacer(minLength: 0)
-                    if p == .lock && lock.isLocked {
-                        Label(lock.remainingDescription, systemImage: "lock.fill")
-                            .labelStyle(.titleAndIcon)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
-                            .accessibilityLabel(Text("Locked · \(lock.remainingDescription) left"))
+            VStack(spacing: 0) {
+                brandHeader
+                VStack(alignment: .leading, spacing: 18) {
+                    ForEach(SidebarGroup.allCases, id: \.self) { group in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(group.title)
+                                .font(.system(size: 9.5, weight: .semibold))
+                                .textCase(.uppercase)
+                                .tracking(0.9)
+                                .foregroundStyle(HnPalette.faint)
+                                .padding(.horizontal, 10)
+                                .padding(.bottom, 2)
+                            ForEach(group.pages) { page in
+                                SidebarRow(page: page,
+                                           selected: (navigation.page ?? .overview) == page,
+                                           lockText: page == .lock && lock.isLocked ? lock.remainingDescription : nil) {
+                                    navigation.page = page
+                                }
+                            }
+                        }
                     }
                 }
-                .tag(p)
+                .padding(.horizontal, 8)
+                .padding(.top, 4)
+                Spacer(minLength: 0)
+
+                SidebarStatus(lock: lock, filter: filter) { navigation.page = .overview }
+                    .padding(.horizontal, 8)
+                    .padding(.bottom, 10)
             }
-            .listStyle(.sidebar)
-            Divider()
-            SidebarStatus(lock: lock, filter: filter) { navigation.page = .overview }
-                .padding(12)
-            }
-            .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 270)
+            .background(HnPalette.sidebar)
+            .navigationSplitViewColumnWidth(min: 212, ideal: 232, max: 268)
         } detail: {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                // The page name and one-line purpose are in the window title
-                // bar, where macOS puts them. Repeating them here as a large
-                // header pushed every page's real content below the fold and
-                // said the same thing three times on Setup (title bar, header,
-                // first section).
-                Group {
-                    switch page ?? .overview {
-                    case .overview:
-                        OverviewPage(lock: lock, filter: filter,
-                                     openSiteCheck: { activeSheet = .siteCheck }) { navigation.page = $0 }
-                    case .setup:
-                        SetupPage(filter: filter) { navigation.page = $0 }
-                    case .rules:
-                        RulesPage(isLocked: lock.isLocked,
-                                  managed: ManagedMode.current(),
-                                  openSiteCheck: { activeSheet = .siteCheck })
-                    case .lock:
-                        LockPage(lock: lock, filter: filter)
-                    case .settings:
-                        SettingsPage(isLocked: lock.isLocked, managed: ManagedMode.current())
+            HnCanvas {
+                ScrollView {
+                    Group {
+                        switch page ?? .overview {
+                        case .overview:
+                            OverviewPage(lock: lock, filter: filter,
+                                         openSiteCheck: { activeSheet = .siteCheck }) { navigation.page = $0 }
+                        case .setup:
+                            SetupPage(filter: filter) { navigation.page = $0 }
+                        case .rules:
+                            RulesPage(isLocked: lock.isLocked,
+                                      managed: ManagedMode.current(),
+                                      openSiteCheck: { activeSheet = .siteCheck })
+                        case .lock:
+                            LockPage(lock: lock, filter: filter)
+                        case .settings:
+                            SettingsPage(isLocked: lock.isLocked, managed: ManagedMode.current())
+                        }
+                    }
+                    .hnColumn()
+                    .padding(.horizontal, 32)
+                    .padding(.top, 28)
+                    .padding(.bottom, 40)
+                }
+                .id(page ?? .overview)
+                .scrollContentBackground(.hidden)
+                .background(HnPalette.canvas)
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    if page == .lock && !lock.isLocked {
+                        LockActionBar(lock: lock, status: lockPageStatus)
                     }
                 }
-                }
-                // A comfortable reading measure, left-aligned in a wide window
-                // rather than stretched across it.
-                .frame(maxWidth: 840, alignment: .leading)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(28)
             }
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                if page == .lock && !lock.isLocked {
-                    LockActionBar(lock: lock, status: lockPageStatus)
-                }
-            }
-            .background(Color(nsColor: .windowBackgroundColor))
-            .navigationTitle((page ?? .overview).title)
-            .navigationSubtitle(Text((page ?? .overview).subtitle))
+            .navigationTitle("Hisn")
             .toolbar {
                 ToolbarItemGroup(placement: .primaryAction) {
                     Button { activeSheet = .siteCheck } label: {
-                        Label("Check a website", systemImage: "magnifyingglass")
+                        Image(systemName: "magnifyingglass")
                     }
                     .help("Check a website")
 
-                    let title: LocalizedStringKey = lock.isLocked ? "Manage lock" : "Start a lock…"
-                    Button { navigation.page = .lock } label: {
-                        Label(title, systemImage: lock.isLocked ? "lock.fill" : "lock.open")
+                    if page != .lock {
+                        let title: LocalizedStringKey = lock.isLocked ? "Manage lock" : "Start a lock…"
+                        Button { navigation.page = .lock } label: {
+                            Label(title, systemImage: lock.isLocked ? "lock.fill" : "lock.open")
+                                .labelStyle(.titleAndIcon)
+                                .font(.system(size: 12, weight: .semibold))
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(HnPalette.accent)
+                        .help(title)
                     }
-                    .help(title)
                 }
             }
         }
+        .tint(HnPalette.accent)
         .frame(minWidth: 760, minHeight: 560)
         .sheet(item: $activeSheet) { sheet in
             switch sheet {
@@ -208,18 +233,138 @@ struct ContentView: View {
             await filter.reassertIfNeeded()
         }
     }
+
+    private var pageTitle: LocalizedStringKey {
+        (page ?? .overview).title
+    }
+
+    private var pageSubtitle: LocalizedStringKey {
+        (page ?? .overview).subtitle
+    }
+
+    private func accessibilityLabel(for page: Page) -> Text {
+        guard page == .lock, lock.isLocked else { return Text(page.title) }
+        return Text(page.title) + Text(verbatim: " · ") + Text("Locked · \(lock.remainingDescription) left")
+    }
+
+    private var brandHeader: some View {
+        HStack(spacing: 9) {
+            HnMark(size: 26)
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Hisn")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(HnPalette.ink)
+                Text(verbatim: "حصن")
+                    .font(.system(size: 10.5))
+                    .foregroundStyle(HnPalette.muted)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 18)
+        .padding(.bottom, 12)
+    }
+}
+
+/// One sidebar row. A quiet wash and a two-point accent rule mark the
+/// selected page; the label stays in ink so it reads like a Mac sidebar rather
+/// than a toolbar pill.
+private struct SidebarRow: View {
+    let page: ContentView.Page
+    let selected: Bool
+    let lockText: String?
+    let action: () -> Void
+
+    @State private var hovered = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 9) {
+                Image(systemName: page.systemImage)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(selected ? HnPalette.accentText : HnPalette.muted)
+                    .frame(width: 16)
+                    .accessibilityHidden(true)
+                Text(page.title)
+                    .font(.system(size: 12.5, weight: selected ? .semibold : .regular))
+                    .foregroundStyle(HnPalette.ink)
+                    .lineLimit(1)
+                Spacer(minLength: 4)
+                if let lockText {
+                    Text(verbatim: lockText)
+                        .font(.system(size: 9.5, weight: .medium))
+                        .foregroundStyle(HnPalette.faint)
+                        .lineLimit(1)
+                }
+            }
+            .padding(.horizontal, 10)
+            .frame(height: 29)
+            .background {
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(selected ? HnPalette.accentSoft
+                          : hovered ? HnPalette.soft : Color.clear)
+            }
+            .overlay(alignment: .leading) {
+                if selected {
+                    RoundedRectangle(cornerRadius: 1, style: .continuous)
+                        .fill(HnPalette.accent)
+                        .frame(width: 2, height: 15)
+                        .padding(.leading, 2)
+                }
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .onHover { hovered = $0 }
+        .accessibilityAddTraits(selected ? [.isSelected] : [])
+        .accessibilityLabel(lockText.map {
+            Text(page.title) + Text(verbatim: " · ") + Text("Locked · \($0) left")
+        } ?? Text(page.title))
+    }
 }
 
 // MARK: - Shared pieces
+
+/// The status in the words a person would use, rather than the diagnostic
+/// vocabulary in the model. The model keeps the full, precise summary for
+/// VoiceOver and the layer rows.
+extension ProtectionStatus {
+    var plainHeadline: String {
+        switch level {
+        case .checking:    return String(localized: "Checking this Mac")
+        case .active:      return String(localized: "Protected")
+        case .partial:     return isPrivateWindowOnlyGap
+            ? String(localized: "One gap left")
+            : String(localized: "Partly protected")
+        case .setupNeeded: return String(localized: "Not protected yet")
+        }
+    }
+
+    var plainSummary: String {
+        switch level {
+        case .checking:
+            return String(localized: "Reading the system filter’s state…")
+        case .active:
+            return String(localized: "Every layer Hisn can check is running.")
+        case .partial:
+            let ready = layers.filter(\.ok).count
+            return String(localized: "\(ready) of \(layers.count) layers are working. Start with the first row that needs attention.")
+        case .setupNeeded:
+            return layers.contains(where: { $0.state == .problem })
+                ? String(localized: "Nothing is blocking right now. Fix the first step below.")
+                : String(localized: "Nothing is blocking yet. The first step is below.")
+        }
+    }
+}
 
 /// One status language across the sidebar, the hero and the layer tiles.
 private extension ProtectionStatus.Level {
     var tint: Color {
         switch self {
-        case .active:      return .green
-        case .partial:     return .orange
-        case .setupNeeded: return .secondary
-        case .checking:    return .secondary
+        case .active:      return HnPalette.calm
+        case .partial:     return HnPalette.ember
+        case .setupNeeded: return HnPalette.muted
+        case .checking:    return HnPalette.muted
         }
     }
 
@@ -236,10 +381,10 @@ private extension ProtectionStatus.Level {
 private extension ProtectionStatus.Layer {
     var tint: Color {
         switch state {
-        case .ok:       return .green
-        case .problem:  return .orange
-        case .missing:  return .secondary
-        case .checking: return .secondary
+        case .ok:       return HnPalette.calm
+        case .problem:  return HnPalette.ember
+        case .missing:  return HnPalette.muted
+        case .checking: return HnPalette.muted
         }
     }
 
@@ -262,76 +407,69 @@ private extension ProtectionStatus.Layer {
     }
 }
 
-/// A layer as a small state tile: name, state word and colour. The detailed
-/// evidence stays in the disclosure below, so the same sentence is not printed
-/// twice on one card.
-private struct LayerTile: View {
+/// One layer in the Overview sheet: a state dot, the layer's own word, the
+/// evidence line and the state. The dot is the colour; the words carry the
+/// answer.
+private struct OverviewLayerRow: View {
     let layer: ProtectionStatus.Layer
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            HStack(spacing: 5) {
-                Image(systemName: layer.symbolName)
-                    .font(.caption.weight(.semibold))
-                    .accessibilityHidden(true)
-                Text(layer.name)
-                    .font(.caption.weight(.semibold))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.78)
-            }
-            .foregroundStyle(layer.tint)
-            Text(layer.stateLabel)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 9)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(layer.tint.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .strokeBorder(layer.tint.opacity(0.18), lineWidth: 1)
+        HStack(alignment: .top, spacing: 10) {
+            Circle()
+                .fill(layer.tint)
+                .frame(width: 6, height: 6)
+                .padding(.top, 6)
                 .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(layer.name)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(HnPalette.ink)
+                    Spacer(minLength: 8)
+                    Text(layer.stateLabel)
+                        .font(.system(size: 10.5, weight: .semibold))
+                        .foregroundStyle(layer.tint)
+                }
+                Text(layer.detail)
+                    .font(.hnCaption())
+                    .foregroundStyle(HnPalette.muted)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
+        .padding(.vertical, 9)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text(layer.name) + Text(verbatim: ": ") + Text(layer.stateLabel))
         .accessibilityHint(Text(layer.detail))
     }
 }
 
-/// One compact action row inside a card. The icon carries the task, the title
-/// says what happens, and the subtitle says why it is here.
-private struct ToolRow: View {
-    let systemImage: String
-    let title: LocalizedStringKey
-    let subtitle: LocalizedStringKey
-    var tint: Color = .accentColor
+/// One layer as a plain row inside the status card. The detail is a help tag,
+/// not a sentence on the page.
+private struct LayerStatusRow: View {
+    let layer: ProtectionStatus.Layer
 
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: systemImage)
-                .font(.body.weight(.semibold))
-                .foregroundStyle(tint)
-                .frame(width: 34, height: 34)
-                .background(tint.opacity(0.12), in: Circle())
+        HStack(spacing: 8) {
+            Image(systemName: layer.symbolName)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(layer.tint)
+                .frame(width: 16)
                 .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.body.weight(.medium))
-                Text(subtitle)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            Text(layer.name)
+                .font(.system(.callout))
+                .foregroundStyle(HnPalette.ink)
+                .lineLimit(1)
             Spacer(minLength: 8)
-            Image(systemName: "chevron.forward")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-                .accessibilityHidden(true)
+            Text(layer.stateLabel)
+                .font(.system(.caption))
+                .foregroundStyle(layer.tint)
         }
-        .padding(.vertical, 4)
-        .contentShape(Rectangle())
+        .padding(.vertical, 5)
+        .help(layer.detail)
         .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(layer.name) + Text(verbatim: ": ") + Text(layer.stateLabel))
+        .accessibilityHint(Text(layer.detail))
     }
 }
 
@@ -341,38 +479,16 @@ private struct ToolRow: View {
 private struct ProgressRing: View {
     let done: Int
     let total: Int
-    var diameter: CGFloat = 74
-
-    private var fraction: Double {
-        guard total > 0 else { return 0 }
-        return min(1, max(0, Double(done) / Double(total)))
-    }
+    var diameter: CGFloat = 66
 
     private var complete: Bool { total > 0 && done >= total }
 
     var body: some View {
-        ZStack {
-            Circle()
-                .stroke(Color.secondary.opacity(0.18), lineWidth: 7)
-            Circle()
-                .trim(from: 0, to: fraction)
-                .stroke(complete ? Color.green : Color.accentColor,
-                        style: StrokeStyle(lineWidth: 7, lineCap: .round))
-                .rotationEffect(.degrees(-90))
-            VStack(spacing: 0) {
-                Text(verbatim: "\(done)")
-                    .font(.title3.weight(.bold))
-                    .monospacedDigit()
-                Text(verbatim: "/\(total)")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .monospacedDigit()
-            }
-        }
-        .frame(width: diameter, height: diameter)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("Setup progress"))
-        .accessibilityValue(Text(String(localized: "\(done) of \(total) steps done.")))
+        HnRing(done: done, total: total, size: diameter,
+               tint: complete ? HnPalette.calm : HnPalette.accent)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text("Setup progress"))
+            .accessibilityValue(Text(String(localized: "\(done) of \(total) steps done.")))
     }
 }
 
@@ -385,42 +501,46 @@ private struct SidebarStatus: View {
     @ObservedObject private var sync = FilterSync.shared
     let open: () -> Void
 
+    @State private var hovered = false
+
     var body: some View {
         let protection = ProtectionStatus(ProtectionEvidence.live(
             filter: filter.availability, authority: sync.status))
         Button(action: open) {
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: 7) {
                     Circle()
                         .fill(protection.level.tint)
                         .frame(width: 7, height: 7)
                         .accessibilityHidden(true)
-                    Text(protection.headline)
-                        .font(.callout.weight(.medium))
+                    Text(verbatim: protection.plainHeadline)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(HnPalette.ink)
                         .lineLimit(1)
                     Spacer(minLength: 4)
                     Image(systemName: "chevron.forward")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(HnPalette.faint)
                         .accessibilityHidden(true)
                 }
                 Text(lock.isLocked
                      ? String(localized: "Locked · \(lock.remainingDescription) left")
-                     : String(localized: "No active lock"))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                     : String(localized: "No lock running"))
+                    .font(.system(size: 10.5))
+                    .foregroundStyle(HnPalette.muted)
                     .lineLimit(1)
             }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 9)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .background(hovered ? HnPalette.soft : Color.clear,
+                        in: RoundedRectangle(cornerRadius: 6, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .padding(10)
-        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
-        .overlay {
-            RoundedRectangle(cornerRadius: 10)
-                .strokeBorder(Color(nsColor: .separatorColor), lineWidth: 1)
-                .accessibilityHidden(true)
+        .onHover { hovered = $0 }
+        .overlay(alignment: .top) {
+            HnHairline().offset(y: -9)
         }
         .help("Overview")
         .accessibilityElement(children: .combine)
@@ -428,8 +548,8 @@ private struct SidebarStatus: View {
     }
 }
 
-/// A titled block with breathing room. The pages are built from these so
-/// spacing, titles and subtitles stay identical across them.
+/// A titled block with breathing room. The page's purpose lives in the
+/// `Explain` button beside the title, never as a paragraph under it.
 private struct PageSection<Content: View>: View {
     let title: LocalizedStringKey
     var subtitle: LocalizedStringKey? = nil
@@ -437,24 +557,13 @@ private struct PageSection<Content: View>: View {
     @ViewBuilder let content: Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 7) {
-                    if let systemImage {
-                        Image(systemName: systemImage)
-                            .font(.body.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                            .accessibilityHidden(true)
-                    }
-                    Text(title).font(.title3.weight(.semibold))
-                        .accessibilityAddTraits(.isHeader)
-                }
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                HnSectionLabel(title: title, systemImage: systemImage)
                 if let subtitle {
-                    Text(subtitle)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    HnExplain { Text(subtitle) }
                 }
+                Spacer(minLength: 0)
             }
             content
         }
@@ -468,12 +577,9 @@ private struct ManagedBanner: View {
     let managed: ManagedMode
 
     var body: some View {
-        Label(String(localized: "Managed by \(managed.displayName). Your organization controls these protections."),
-              systemImage: "building.2.fill")
-            .font(.callout.weight(.medium))
-            .foregroundStyle(Color.secondary)
-            .fixedSize(horizontal: false, vertical: true)
-            .accessibilityElement(children: .combine)
+        HnNotice(title: nil,
+                 verbatim: String(localized: "Managed by \(managed.displayName). Your organization controls these protections."),
+                 systemImage: "building.2.fill", level: .info)
     }
 }
 
@@ -482,16 +588,7 @@ private struct Card<Content: View>: View {
     @ViewBuilder let content: Content
 
     var body: some View {
-        content
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(16)
-            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 14))
-            .overlay {
-                RoundedRectangle(cornerRadius: 14)
-                    .strokeBorder(Color(nsColor: .separatorColor), lineWidth: 1)
-                    .accessibilityHidden(true)
-                    .allowsHitTesting(false)
-            }
+        HnCard { content }
     }
 }
 
@@ -514,8 +611,15 @@ private struct SaveRow: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer()
-            Button("Revert", action: revert).disabled(!canSave)
-            Button("Save", action: save).disabled(!canSave)
+            Button("Revert", action: revert)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .disabled(!canSave)
+            Button("Save", action: save)
+                .buttonStyle(.borderedProminent)
+                .tint(HnPalette.accent)
+                .controlSize(.small)
+                .disabled(!canSave)
                 .keyboardShortcut(.defaultAction)
         }
     }
@@ -531,13 +635,8 @@ private struct OverviewPage: View {
     let openSiteCheck: () -> Void
     let goTo: (ContentView.Page) -> Void
 
-    @State private var busy: StatusAction?
-    @State private var error: String?
-    @State private var showBrowserHelp = false
-    @State private var notice: String?
     @State private var previouslyReadyLayers: Set<String> = []
     @State private var historyStorageHealthy = true
-    @State private var showLayerDetails = true
     @State private var clockAssessment: CommitmentClock.Assessment = .consistent
     @State private var clockMonitor = CommitmentClock(wallAnchor: Date(), uptimeAnchor: CommitmentClock.continuousTime)
     @State private var readinessHistory = ReadinessHistory.deviceLocal(key: "hisn.mac.readiness",
@@ -580,137 +679,56 @@ private struct OverviewPage: View {
     @ObservedObject private var guardian = BrowserGuard.shared
     @State private var setup: SetupChecklist?
     @State private var readingSetup = false
-    @AppStorage("hisn.setup.administratorConfirmed") private var administratorConfirmed = false
-    @AppStorage("hisn.setup.recoveryConfirmed") private var recoveryConfirmed = false
-
-    private var protectedSetup: ProtectedSetup? {
-        setup.map { ProtectedSetup(checklist: $0, administratorConfirmed: administratorConfirmed,
-                                   recoveryConfirmed: recoveryConfirmed) }
-    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 22) {
+        VStack(alignment: .leading, spacing: 20) {
+            HnPageHeader(eyebrow: "Protection",
+                         verbatim: protection.plainHeadline,
+                         caption: protection.plainSummary)
+
             if let managed = protection.managed, managed.isManaged {
                 ManagedBanner(managed: managed)
             }
             ForEach(guardian.alerts) { alert in
-                Label(String(localized: "\(alert.name) is about to close.") + " "
-                      + BrowserGuard.message(name: alert.name, reason: alert.reason),
-                      systemImage: "exclamationmark.shield.fill")
-                    .font(.callout)
-                    .foregroundStyle(.orange)
-                    .fixedSize(horizontal: false, vertical: true)
+                HnNotice(title: nil,
+                         verbatim: String(localized: "\(alert.name) is about to close.") + " "
+                             + BrowserGuard.message(name: alert.name, reason: alert.reason),
+                         systemImage: "exclamationmark.shield.fill", level: .caution)
             }
 
-            // The answer, then the one place that explains anything missing.
-            // The private-window gap is a tile and a primary action inside
-            // this card; repeating it as a second card below made the same
-            // fact appear three times on one screen.
-            protectionCard
-
-            // Every warning sits immediately under the status it qualifies,
-            // before the next action. A lock that enforces nothing is the one
-            // combination neither card can state by itself.
+            // Warnings stay one line and sit under the state they qualify.
             if clockAssessment != .consistent {
-                Label("Device time could not be confirmed. Check automatic date and time. Your saved commitment deadline has not changed.",
-                      systemImage: "clock.badge.exclamationmark")
-                    .foregroundStyle(.orange)
-                    .fixedSize(horizontal: false, vertical: true)
+                HnNotice(title: nil,
+                         message: "Check automatic date and time.",
+                         systemImage: "clock.badge.exclamationmark", level: .caution)
             }
             if !historyStorageHealthy {
-                Label("Saved protection history could not be read. Current checks are still shown below.",
-                      systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(.orange)
+                HnNotice(title: nil,
+                         message: "Saved protection history could not be read.",
+                         systemImage: "exclamationmark.triangle", level: .caution)
             }
             if !lostLayers.isEmpty {
-                Label("Previously ready layers are no longer confirmed. Recheck their configuration.",
-                      systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(.orange)
-                ForEach(lostLayers) { layer in Text(layer.name).font(.callout) }
-                Button("Continue setup") { goTo(.setup) }
+                HnNotice(title: nil,
+                         message: "Previously ready layers are no longer confirmed.",
+                         systemImage: "exclamationmark.triangle", level: .caution,
+                         action: ("Continue setup", { goTo(.setup) }))
             } else if lock.isLocked && protection.hasProblems && protection.isEnforcingAnything {
-                Label("Some protection layers need attention. Your commitment remains active; review the checks below.",
-                      systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(.orange)
-                    .fixedSize(horizontal: false, vertical: true)
-                Button("Continue setup") { goTo(.setup) }
+                HnNotice(title: nil,
+                         message: "Some layers need attention. The lock stays active.",
+                         systemImage: "exclamationmark.triangle", level: .caution,
+                         action: ("Continue setup", { goTo(.setup) }))
             }
             if lock.isLocked && !protection.isEnforcingAnything
                 && protection.level != .checking {
-                Label("""
-                      Your lock is running, but nothing is enforcing it yet. \
-                      It will block nothing until the steps above are done.
-                      """,
-                      systemImage: "exclamationmark.triangle.fill")
-                    .font(.callout)
-                    .foregroundStyle(.orange)
-                    .fixedSize(horizontal: false, vertical: true)
+                HnNotice(title: nil,
+                         message: "This lock blocks nothing until setup is finished.",
+                         systemImage: "exclamationmark.triangle.fill", level: .problem)
             }
 
-            // One row to the place where the missing checks are explained.
-            // The full readiness card repeated the protection card's own
-            // missing-layer message, and the Setup page owns the detail.
-            if !laptopReadiness.isReady {
-                Button { goTo(.setup) } label: {
-                    Card {
-                        HStack(alignment: .center, spacing: 14) {
-                            Image(systemName: "checklist")
-                                .font(.title2)
-                                .foregroundStyle(Color.orange)
-                                .frame(width: 40, height: 40)
-                                .background(Color.orange.opacity(0.12), in: Circle())
-                                .accessibilityHidden(true)
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(LocalizedStringKey(laptopReadiness.headline))
-                                    .font(.headline)
-                                if let setup = protectedSetup {
-                                    Text(String(localized: "\(setup.doneCount) of \(setup.totalCount) steps done.")
-                                         + (setup.nextStage.map {
-                                             " · " + String(localized: "Next: \($0.title)")
-                                         } ?? ""))
-                                        .font(.callout)
-                                        .foregroundStyle(.secondary)
-                                        .lineLimit(1)
-                                        .minimumScaleFactor(0.85)
-                                } else {
-                                    Text(LocalizedStringKey(laptopReadiness.summary))
-                                        .font(.callout)
-                                        .foregroundStyle(.secondary)
-                                        .lineLimit(2)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
-                            }
-                            Spacer(minLength: 8)
-                            Image(systemName: "chevron.forward")
-                                .font(.caption)
-                                .foregroundStyle(.tertiary)
-                                .accessibilityHidden(true)
-                        }
-                    }
-                }
-                .buttonStyle(.plain)
-                .accessibilityElement(children: .combine)
-                .accessibilityIdentifier("setup.laptopReadiness")
-            }
-
-            lockCard
-            toolsCard
-
-            if let notice {
-                Text(notice).font(.callout).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            HnTwoColumn(railWidth: 260, main: { layersSheet }, rail: { rail })
         }
-        .alert("Something went wrong", isPresented: .constant(error != nil)) {
-            Button("OK") { error = nil }
-        } message: { Text(error ?? "") }
-        .sheet(isPresented: $showBrowserHelp) { BrowserSetupHelp() }
         .onAppear {
             rememberReadiness(protection)
-            // The hero and its one action carry the answer; the evidence is
-            // one click away. Auto-opening a long diagnostic list on every
-            // problem is what made the Overview read as a wall of text.
-            showLayerDetails = false
         }
         .onChange(of: lock.now) { _ in
             clockAssessment = clockMonitor.assessment(wall: Date(), uptime: CommitmentClock.continuousTime)
@@ -726,6 +744,178 @@ private struct OverviewPage: View {
         .onReceive(Timer.publish(every: 30, on: .main, in: .common).autoconnect()) { _ in
             Task { await readSetup() }
         }
+    }
+
+    /// The evidence, as a table. One sheet, one row per layer, no nested cards.
+    private var layersSheet: some View {
+        HnCard(padding: 0) {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    HnSectionLabel(title: "Layers",
+                                   trailing: Text(verbatim: "\(protection.layers.filter(\.ok).count) of \(protection.layers.count) ready"))
+                    HnExplain {
+                        Text(protection.summary)
+                        Text("Readiness is not proof that every route is blocked. Router protection is checked separately.")
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 15)
+                .padding(.bottom, 8)
+
+                ForEach(Array(protection.layers.enumerated()), id: \.element.id) { index, layer in
+                    OverviewLayerRow(layer: layer)
+                        .padding(.horizontal, 16)
+                    if index < protection.layers.count - 1 {
+                        HnHairline(inset: 16)
+                    }
+                }
+
+                HnHairline()
+                HStack(spacing: 8) {
+                    if let checked = guardian.lastChecked {
+                        Text("Last check")
+                        Text(checked, style: .time)
+                    } else {
+                        Text("Not checked yet")
+                    }
+                    Spacer(minLength: 8)
+                    HnButton(title: "Open setup", kind: .text) { goTo(.setup) }
+                }
+                .font(.hnCaption())
+                .foregroundStyle(HnPalette.faint)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Protection: \(protection.headline). \(protection.summary)")
+    }
+
+    /// The right rail is deliberately not a card. It is the page's decision,
+    /// its numbers and its two quiet tools, separated by hairlines.
+    private var rail: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 8) {
+                HnSectionLabel(title: "Next step")
+                Text(verbatim: railHeadline)
+                    .font(.hnDisplaySmall())
+                    .foregroundStyle(HnPalette.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(verbatim: railCaption)
+                    .font(.hnCaption())
+                    .foregroundStyle(HnPalette.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if privateGap {
+                    HnButton(title: "Prevent private browsing…", systemImage: "eye.slash",
+                             fullWidth: true) {
+                        AppNavigation.shared.privateBrowsingRequested = true
+                    }
+                    if !lock.isLocked {
+                        HnButton(title: "Review setup", kind: .quiet, fullWidth: true) {
+                            goTo(.setup)
+                        }
+                    }
+                } else {
+                    HnButton(title: primaryActionTitle, systemImage: primaryActionIcon,
+                             fullWidth: true, loading: primaryActionDisabled) {
+                        goTo(primaryActionPage)
+                    }
+                }
+            }
+
+            HnHairline()
+
+            VStack(alignment: .leading, spacing: 12) {
+                HnSectionLabel(title: "Today")
+                HStack(alignment: .top, spacing: 16) {
+                    if let blocked = todayBlocked {
+                        HnStat(value: "\(blocked)", label: "Blocked today")
+                    }
+                    HnStat(value: "\(pausesToday)", label: "Pauses today")
+                }
+                if let next = nextLock {
+                    HStack(spacing: 6) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(HnPalette.faint)
+                            .accessibilityHidden(true)
+                        Text(verbatim: String(localized: "Next daily lock \(next.start.formatted(date: .omitted, time: .shortened))–\(next.end.formatted(date: .omitted, time: .shortened))."))
+                    }
+                    .font(.hnCaption())
+                    .foregroundStyle(HnPalette.muted)
+                } else {
+                    HStack(spacing: 6) {
+                        Text("No daily lock scheduled.")
+                            .font(.hnCaption())
+                            .foregroundStyle(HnPalette.faint)
+                        Spacer(minLength: 8)
+                        HnButton(title: "Set a daily lock", kind: .text) {
+                            goTo(.lock)
+                        }
+                    }
+                }
+            }
+
+            HnHairline()
+
+            VStack(alignment: .leading, spacing: 2) {
+                HnSectionLabel(title: "Tools")
+                    .padding(.bottom, 4)
+                HnLinkRow(systemImage: "wind", title: "Take a pause…") {
+                    PauseWindowController.shared.show()
+                }
+                .accessibilityIdentifier("overview.pause")
+                HnLinkRow(systemImage: "magnifyingglass", title: "Check a website") {
+                    openSiteCheck()
+                }
+                .accessibilityIdentifier("overview.siteCheck")
+            }
+
+            HnHairline()
+            HStack(spacing: 6) {
+                Image(systemName: "lock.shield")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(HnPalette.faint)
+                Text("Matching stays on this Mac. There is no account and no browsing log.")
+                    .font(.hnCaption())
+                    .foregroundStyle(HnPalette.faint)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private var railHeadline: String {
+        if lock.isLocked { return String(localized: "Locked") }
+        if !laptopReadiness.isReady { return String(localized: "Finish setup") }
+        return String(localized: "No lock running")
+    }
+
+    private var railCaption: String {
+        if lock.isLocked {
+            return lockStatus.detail ?? String(localized: "The lock is running. Manage it to see the time left and the way out.")
+        }
+        if !laptopReadiness.isReady {
+            return String(localized: "Some layers still need attention. A lock can run now, but it blocks only what is ready.")
+        }
+        return String(localized: "Protection stays on. A lock makes it harder to turn off.")
+    }
+
+    private var pausesToday: Int {
+        guard let tally = PauseStore.load(),
+              tally.day == PauseTally.dayKey(for: lock.now) else { return 0 }
+        return tally.count
+    }
+
+    private var nextLock: DateInterval? {
+        ScheduleStore.current().nextWindow(after: lock.now)
+    }
+
+    private var primaryActionIcon: String {
+        if lock.isLocked { return "lock.fill" }
+        if protection.level == .checking { return "arrow.clockwise" }
+        if !laptopReadiness.isReady { return "checklist" }
+        return "lock.open"
     }
 
     private func readSetup() async {
@@ -761,95 +951,6 @@ private struct OverviewPage: View {
 
     private var privateGap: Bool { privateLayer?.state == .problem }
 
-    private var protectionCard: some View {
-        Card {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(alignment: .top, spacing: 14) {
-                    StatusDot(level: protection.level)
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(protection.headline)
-                            .font(.title2.weight(.semibold))
-                            .accessibilityAddTraits(.isHeader)
-                        Text(protection.heroSummary)
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    Spacer(minLength: 0)
-                }
-
-                // One tile per layer replaces the old chip strip plus a
-                // disclosure that repeated the same names and details.
-                layerTiles
-
-                // The one action sits directly under the answer, before the
-                // evidence. The secondary action only appears when it is a
-                // real alternative, so a missing layer never competes with
-                // starting a lock for the same click.
-                HStack(spacing: 10) {
-                    if privateGap {
-                        Button("Prevent private browsing…") {
-                            AppNavigation.shared.privateBrowsingRequested = true
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.large)
-                        if lock.isLocked {
-                            Button("Manage lock") { goTo(.lock) }
-                                .buttonStyle(.bordered)
-                                .controlSize(.large)
-                        } else if !laptopReadiness.isReady {
-                            Button("Review setup") { goTo(.setup) }
-                                .buttonStyle(.bordered)
-                                .controlSize(.large)
-                        }
-                    } else {
-                        Button(primaryActionTitle) { goTo(primaryActionPage) }
-                            .buttonStyle(.borderedProminent)
-                            .controlSize(.large)
-                            .disabled(primaryActionDisabled)
-                        if let secondaryAction {
-                            Button(secondaryAction.title) { secondaryAction.action() }
-                                .buttonStyle(.bordered)
-                                .controlSize(.large)
-                        }
-                    }
-                    Spacer(minLength: 0)
-                }
-
-                DisclosureGroup(isExpanded: $showLayerDetails) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        LabeledContent("Protection layers reporting ready",
-                            value: "\(protection.layers.filter { $0.ok }.count) / \(protection.layers.count)")
-                            .accessibilityIdentifier("plan.configuredLayers")
-                        if let blocked = todayBlocked {
-                            LabeledContent("Blocked connections today", value: "\(blocked)")
-                                .accessibilityIdentifier("overview.blockedToday")
-                        }
-                        Text("Readiness is not proof that every route is blocked. Router protection is checked separately.")
-                            .font(.caption).foregroundStyle(.secondary)
-                        ForEach(protection.layers) { layer in
-                            layerRow(layer)
-                        }
-                    }
-                    .padding(.top, 6)
-                } label: {
-                    Text("Layer details")
-                        .font(.callout.weight(.medium))
-                }
-            }
-        }
-        .overlay(alignment: .leading) {
-            RoundedRectangle(cornerRadius: 2, style: .continuous)
-                .fill(protection.level.tint)
-                .frame(width: 4)
-                .padding(.vertical, 14)
-                .padding(.leading, 1)
-                .accessibilityHidden(true)
-        }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("Protection: \(protection.headline). \(protection.summary)")
-    }
-
     /// The main call to action follows the actual state: finish setup when a
     /// layer is missing, otherwise start or manage the lock. “Start a lock”
     /// always remains reachable as the secondary action once anything enforces.
@@ -873,176 +974,7 @@ private struct OverviewPage: View {
         !lock.isLocked && protection.level == .checking
     }
 
-    private var secondaryAction: (title: LocalizedStringKey, action: () -> Void)? {
-        if lock.isLocked {
-            return ("Take a pause…", { PauseWindowController.shared.show() })
-        }
-        if !laptopReadiness.isReady {
-            return protection.isEnforcingAnything
-                ? ("Start a lock…", { goTo(.lock) }) : nil
-        }
-        return ("Take a pause…", { PauseWindowController.shared.show() })
-    }
 
-    /// One tile per layer, in two columns. The old single row held three
-    /// short names; with private windows added, four tiles in one row
-    /// truncated "Hosts-file blocklist" and "Browser extension" at the
-    /// window's minimum width.
-    private var layerTiles: some View {
-        LazyVGrid(columns: [GridItem(.flexible(), spacing: 8),
-                            GridItem(.flexible(), spacing: 8)],
-                  spacing: 8) {
-            ForEach(protection.layers) { layer in
-                LayerTile(layer: layer)
-            }
-        }
-    }
-
-    private func layerRow(_ layer: ProtectionStatus.Layer) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Image(systemName: layer.symbolName)
-                .foregroundStyle(layer.tint)
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(layer.name).font(.body.weight(.medium))
-                Text(layer.detail)
-                    .font(.callout)
-                    .foregroundStyle(layer.state == .problem ? Color.orange : Color.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                if let action = layer.action {
-                    Button(action.title) { perform(action) }
-                        .disabled(busy != nil || (action == .enableFilter && filter.isEnabling))
-                        .controlSize(.small)
-                        .padding(.top, 6)
-                }
-            }
-            Spacer()
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    private var lockCard: some View {
-        Card {
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Image(systemName: lockStatus.isLocked ? "lock.fill" : "lock.open")
-                    .foregroundStyle(lockStatus.isLocked ? Color.primary : Color.secondary)
-                    .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(lockStatus.headline)
-                        .font(.headline)
-                        .accessibilityAddTraits(.isHeader)
-                    if let detail = lockStatus.detail {
-                        Text(detail)
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    if !lockStatus.isLocked, let next = ScheduleStore.current().nextWindow(after: lock.now) {
-                        Label(String(localized: "Daily lock at \(next.start.formatted(date: .omitted, time: .shortened)), until \(next.end.formatted(date: .omitted, time: .shortened))."),
-                              systemImage: "calendar.badge.clock")
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                Spacer()
-                if lockStatus.isLocked {
-                    Button("Manage lock") { goTo(.lock) }
-                }
-            }
-        }
-    }
-
-    /// Two quiet tools rather than two competing cards. The pause changes no
-    /// rule and records only today's count, so it stays available during a
-    /// lock; the checker is read-only and explains an answer without changing
-    /// protection.
-    private var toolsCard: some View {
-        Card {
-            VStack(spacing: 0) {
-                Button { PauseWindowController.shared.show() } label: {
-                    ToolRow(systemImage: "wind",
-                            title: "Take a pause…",
-                            subtitle: "A private pause. Nothing here is recorded except today’s count.")
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("overview.pause")
-                Divider().padding(.leading, 46)
-                Button { openSiteCheck() } label: {
-                    ToolRow(systemImage: "magnifyingglass",
-                            title: "Check a website",
-                            subtitle: "See whether an address is on your lists or blocked for another reason.")
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("overview.siteCheck")
-            }
-        }
-    }
-
-    // MARK: Actions
-
-    /// Every problem row's button lands here. Each branch does the one thing
-    /// the row promised and nothing else; what it cannot do by itself (the
-    /// person clicking Allow in System Settings, a browser being opened) it
-    /// says in the notice under the cards.
-    private func perform(_ action: StatusAction) {
-        busy = action
-        notice = nil
-        Task { @MainActor in
-            defer { busy = nil }
-            switch action {
-            case .retryFilterCheck:
-                await filter.refresh()
-                await FilterSync.shared.sync()
-
-            case .enableFilter:
-                notice = String(localized: """
-                    If macOS asks, allow the filter under System Settings › \
-                    General › Login Items & Extensions.
-                    """)
-                do { try await filter.enable() }
-                catch { self.error = error.localizedDescription }
-
-            case .updateList:
-                await ListUpdater.shared.update()
-                await filter.refresh()
-                notice = String(localized: """
-                    The filter picks up a new list within a few seconds. \
-                    If this row does not change, the download failed — check \
-                    the internet connection and try again.
-                    """)
-
-            case .installExtension:
-                showBrowserHelp = true
-
-            case .reconnectExtension:
-                // Re-register the native-messaging link, then the only other
-                // thing that stops a heartbeat is the browser itself.
-                NativeMessagingInstaller.installIfNeeded()
-                notice = String(localized: """
-                    The link to the browser was re-registered. Open the \
-                    browser and make sure the Hisn extension is turned on; \
-                    this row updates within a minute.
-                    """)
-
-            case .privateBrowsing:
-                AppNavigation.shared.privateBrowsingRequested = true
-            }
-        }
-    }
-}
-
-private struct StatusDot: View {
-    let level: ProtectionStatus.Level
-
-    /// A tinted shield reads at a glance; the headline beside it carries the words.
-    var body: some View {
-        Image(systemName: level.symbolName)
-            .font(.title2)
-            .foregroundStyle(level.tint)
-            .frame(width: 40, height: 40)
-            .background(level.tint.opacity(0.12), in: Circle())
-            .accessibilityHidden(true)
-    }
 }
 
 /// “Would this be blocked?” — the question every list editor otherwise answers
@@ -1066,71 +998,83 @@ private struct SiteCheckSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .firstTextBaseline) {
-                Label("Check a website", systemImage: "magnifyingglass")
-                    .font(.title2.weight(.semibold))
+            HStack(spacing: 10) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(HnPalette.accent)
+                    .frame(width: 20, height: 24)
+                    .accessibilityHidden(true)
+                Text("Check a website")
+                    .font(.system(size: 22, weight: .semibold, design: .serif))
+                    .foregroundStyle(HnPalette.ink)
+                HnExplain {
+                    Text("A domain or a full link both work. Subdomains are covered by a parent domain.")
+                    Text("""
+                         This checks the address against the lists on this Mac. \
+                         It does not check page text, images or video, or whether \
+                         a browser profile has the extension.
+                         """)
+                }
                 Spacer()
-                Button("Close") { dismiss() }
-                    .keyboardShortcut(.cancelAction)
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 17))
+                        .foregroundStyle(HnPalette.faint)
+                }
+                .buttonStyle(.plain)
+                .keyboardShortcut(.cancelAction)
+                .help("Close")
+                .accessibilityLabel(Text("Close"))
             }
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 8) {
                     TextField("Enter a website or paste a link", text: $query)
-                        .textFieldStyle(.roundedBorder)
-                        .font(.body)
+                        .hnField()
                         .focused($fieldFocused)
                         .onSubmit(run)
                         .accessibilityIdentifier("siteCheck.field")
-                    Button(action: run) {
-                        Text(checking ? "Checking…" : "Check")
-                            .frame(minWidth: 64)
+                    HnButton(title: checking ? "Checking…" : "Check",
+                             systemImage: "arrow.forward", loading: checking) {
+                        run()
                     }
-                    .buttonStyle(.borderedProminent)
                     .disabled(normalized == nil || checking)
                     .accessibilityIdentifier("siteCheck.check")
                 }
-                Text("A domain or a full link both work. Subdomains are covered by a parent domain.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
 
             if checking {
-                ProgressView("Checking the lists on this Mac…")
-                    .controlSize(.small)
+                HStack(spacing: 8) {
+                    ProgressView().controlSize(.small)
+                    Text("Checking the lists on this Mac…")
+                        .font(.hnCaption()).foregroundStyle(HnPalette.muted)
+                }
             } else if let result {
                 resultCard(result)
             }
 
             if let notice {
-                Text(notice)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                Text(verbatim: notice)
+                    .font(.hnCallout())
+                    .foregroundStyle(HnPalette.muted)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
             Spacer(minLength: 0)
 
-            Divider()
+            Divider().overlay(HnPalette.line)
             HStack(alignment: .firstTextBaseline, spacing: 12) {
-                Text("""
-                     This checks the address against the lists on this Mac. \
-                     It does not check page text, images or video, or whether \
-                     a browser profile has the extension.
-                     """)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
                 if canAdd {
-                    Button("Add to Always block") { add() }
+                    HnButton(title: "Add to block list", kind: .quiet, compact: true) { add() }
                         .disabled(checking)
                         .accessibilityIdentifier("siteCheck.addBlock")
                 }
             }
         }
-        .padding(22)
+        .padding(24)
         .frame(width: 580)
+        .background(HnPalette.canvas)
         .task {
             fieldFocused = true
             SiteCheckService.prewarm()
@@ -1162,10 +1106,10 @@ private struct SiteCheckSheet: View {
         do {
             switch try SiteLists.addBlock(host, locked: isLocked) {
             case .added:
-                notice = String(localized: "Added to Always block.")
+                notice = String(localized: "Added to the block list.")
                 run()
             case .alreadyBlocked:
-                notice = String(localized: "Already on the Always block list.")
+                notice = String(localized: "Already on the block list.")
             case .invalid:
                 notice = String(localized: "That is not a domain.")
             }
@@ -1215,7 +1159,7 @@ private struct SiteCheckSheet: View {
             case .builtIn:
                 return String(localized: "It matches a built-in Hisn rule for search results or viewer pages.")
             case .customBlock:
-                return String(localized: "It is on your Always block list.")
+                return String(localized: "It is on your block list.")
             case .publishedList:
                 if result.listSource == .bundledCore {
                     if let version = result.listVersion {
@@ -1229,15 +1173,17 @@ private struct SiteCheckSheet: View {
                 return String(localized: "It is on the installed block list.")
             case .keyword:
                 return String(localized: "Its address matches a blocked keyword.")
+            case .adultTld:
+                return String(localized: "It ends in an adult-only top-level domain, so every name under it is blocked.")
             case .strictMode:
-                return String(localized: "Strict mode is on, and this site is not on your Always allowed list.")
+                return String(localized: "Strict mode is on, and this site is not on your allow list.")
             case .allowlist, .notListed, .none:
                 return ""
             }
         case .allowed:
             switch result.source {
             case .allowlist:
-                return String(localized: "It is on your Always allowed list. Neither the published list nor strict mode will block it.")
+                return String(localized: "It is on your allow list. Neither the published list nor strict mode will block it.")
             case .notListed:
                 if result.listSource == .bundledCore {
                     if let version = result.listVersion {
@@ -1259,31 +1205,33 @@ private struct SiteCheckSheet: View {
         let colour = tint(result)
         return HStack(alignment: .top, spacing: 12) {
             Image(systemName: symbol(result))
-                .font(.title3.weight(.semibold))
+                .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(colour)
-                .frame(width: 38, height: 38)
-                .background(colour.opacity(0.12), in: Circle())
+                .frame(width: 36, height: 36)
+                .background(colour.opacity(0.12),
+                            in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 4) {
                 Text(headline(result))
-                    .font(.headline)
+                    .font(.system(.callout).weight(.semibold))
+                    .foregroundStyle(HnPalette.ink)
                 let detail = detail(result)
                 if !detail.isEmpty {
-                    Text(detail)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
+                    Text(verbatim: detail)
+                        .font(.hnCaption())
+                        .foregroundStyle(HnPalette.muted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 if let host = result.host {
                     Text(verbatim: host)
                         .font(.system(.caption, design: .monospaced))
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(HnPalette.faint)
                         .textSelection(.enabled)
                 }
                 if result.listSource == .bundledCore {
                     Text("This answer uses the bundled core list. The full list has not been installed on this Mac.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.hnCaption())
+                        .foregroundStyle(HnPalette.muted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -1291,9 +1239,9 @@ private struct SiteCheckSheet: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(colour.opacity(0.07), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(colour.opacity(0.07), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .strokeBorder(colour.opacity(0.20), lineWidth: 1)
                 .accessibilityHidden(true)
         }
@@ -1310,14 +1258,23 @@ private struct BrowserSetupHelp: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Label("Connect a browser", systemImage: "puzzlepiece.extension")
-                .font(.title2.weight(.semibold))
-                .padding(.bottom, 18)
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
+            HStack(spacing: 11) {
+                Image(systemName: "puzzlepiece.extension")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(HnPalette.accent)
+                    .frame(width: 20, height: 24)
+                    .accessibilityHidden(true)
+                Text("Connect a browser")
+                    .font(.system(size: 22, weight: .semibold, design: .serif))
+                    .foregroundStyle(HnPalette.ink)
+                HnExplain {
                     Text("When enabled, the system filter checks network hostnames across this Mac. The extension separately checks webpage content in supported Chromium browsers, including Chrome, Brave and Helium.")
-                        .font(.callout).foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    Text("When enabled, the system filter also checks Safari and Firefox connections; this extension does not run in those browsers.")
+                }
+            }
+            .padding(.bottom, 14)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
                     Card {
                         VStack(alignment: .leading, spacing: 14) {
                             step(1, """
@@ -1334,18 +1291,20 @@ private struct BrowserSetupHelp: View {
                         }
                     }
                     ExtensionVisualGuidance()
-                    Text("When enabled, the system filter also checks Safari and Firefox connections; this extension does not run in those browsers.")
-                        .font(.caption).foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.trailing, 6)
             }
-            Divider().padding(.vertical, 16)
-            HStack { Spacer(); Button("Done") { dismiss() }.keyboardShortcut(.defaultAction).controlSize(.large) }
+            Divider().overlay(HnPalette.line).padding(.vertical, 16)
+            HStack {
+                Spacer()
+                HnButton(title: "Done", kind: .filled) { dismiss() }
+                    .keyboardShortcut(.defaultAction)
+            }
         }
         .padding(24)
         .frame(width: 560, height: 590)
+        .background(HnPalette.canvas)
     }
 
     private func step(_ n: Int, _ text: LocalizedStringKey) -> some View {
@@ -1360,17 +1319,16 @@ private struct BrowserSetupHelp: View {
 /// can read or change. Keep a discoverable, honest route to the extension UI.
 private struct ExtensionVisualGuidance: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Label("Visual checks", systemImage: "eye")
-                .font(.headline)
-            Text("Open the Hisn extension, choose Manage protection, then Visual checks. Adult-media checks and person blur are separate choices, saved in that browser.")
-                .font(.callout).fixedSize(horizontal: false, vertical: true)
-            Text("Person blur uses detected faces and can be off, all people, women or men. The women and men options estimate appearance; they do not identify a person or mean their image is adult content.")
-                .font(.callout).foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            Text("The app does not verify visual-check settings. Accessible images and sampled video frames can be checked locally; unreadable media and missed detections remain possible.")
-                .font(.caption).foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+        HStack(spacing: 6) {
+            Label("Visual checks in the extension", systemImage: "eye")
+                .font(.system(.callout).weight(.medium))
+                .foregroundStyle(HnPalette.ink)
+            HnExplain {
+                Text("Open the Hisn extension, choose Manage protection, then Visual checks. Adult-media checks and person blur are separate choices, saved in that browser.")
+                Text("Person blur uses detected faces and can be off, all people, women or men. The women and men options estimate appearance; they do not identify a person or mean their image is adult content.")
+                Text("The app does not verify visual-check settings. Accessible images and sampled video frames can be checked locally; unreadable media and missed detections remain possible.")
+            }
+            Spacer(minLength: 0)
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("settings.extensionVisualGuidance")
@@ -1395,6 +1353,7 @@ struct SetupPage: View {
     @State private var showBrowserHelp = false
     @State private var copied: String?
     @State private var expandedStages: Set<ProtectedSetup.Stage.ID> = []
+    @State private var showNetwork = false
     @State private var lastChecked: Date?
     @State private var privateStatus = PrivateBrowsingStatus.current(force: true)
     @AppStorage("hisn.setup.administratorConfirmed") private var administratorConfirmed = false
@@ -1439,18 +1398,17 @@ struct SetupPage: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 22) {
+        VStack(alignment: .leading, spacing: 20) {
+            HnPageHeader(eyebrow: "Setup", title: "Finish protecting this Mac",
+                         caption: "The checks below turn the layers on. Work through them in order.")
             if managed.isManaged {
                 ManagedBanner(managed: managed)
             }
             // One card answers both questions the page exists for: is this Mac
-            // protected, and how far through setup am I? The page title bar
-            // already says "Protected Setup", so a second heading saying it
-            // again only pushed the steps down. The ring makes the second
-            // answer readable before any of the prose.
+            // protected, and how far through setup am I?
             Card {
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack(alignment: .top, spacing: 18) {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(alignment: .top, spacing: 16) {
                         if let setup = protectedSetup {
                             ProgressRing(done: setup.doneCount, total: setup.totalCount)
                                 .padding(.top, 2)
@@ -1477,106 +1435,46 @@ struct SetupPage: View {
                 }
             }
 
-            // Private windows are the one profile item with a narrow fix: a
-            // single policy disables them without touching DNS. The sheet
-            // lists every installed browser, asks once, and reports what it
-            // cannot control instead of pretending.
-            if !privateStatus.open.isEmpty {
-                Card {
-                    HStack(alignment: .top, spacing: 14) {
-                        Image(systemName: "eye.slash.fill")
-                            .font(.title2)
-                            .foregroundStyle(Color.orange)
-                            .frame(width: 38, height: 38)
-                            .background(Color.orange.opacity(0.12), in: Circle())
-                            .accessibilityHidden(true)
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text("Private windows are open in \(privateStatus.openNames).")
-                                .font(.headline)
-                            Text("Those windows skip the browser extension. One small profile disables them and changes nothing else.")
-                                .font(.callout)
-                                .foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        Spacer(minLength: 12)
-                        Button("Prevent private browsing…") {
-                            AppNavigation.shared.privateBrowsingRequested = true
-                        }
-                        .controlSize(.large)
-                    }
+            HStack(spacing: 10) {
+                if let lastChecked {
+                    Text("Last checked").foregroundStyle(HnPalette.muted)
+                    Text(lastChecked, style: .time).foregroundStyle(HnPalette.muted)
+                } else {
+                    Text("Not checked yet").foregroundStyle(HnPalette.faint)
                 }
+                Spacer()
+                HnButton(title: "Check again", systemImage: "arrow.clockwise",
+                         kind: .quiet, loading: checking) {
+                    Task { await refresh() }
+                }
+            }
+            .font(.hnCaption())
+
+            // Private windows are the one profile item with a narrow fix: a
+            // single policy disables them without touching DNS.
+            if !privateStatus.open.isEmpty {
+                HnNotice(title: LocalizedStringKey("Private windows are open in \(privateStatus.openNames)."),
+                         message: "Those windows skip the browser extension.",
+                         systemImage: "eye.slash.fill", level: .caution,
+                         action: ("Prevent private browsing…", {
+                             AppNavigation.shared.privateBrowsingRequested = true
+                         }))
             }
 
             if let setup = protectedSetup {
                 ForEach(setup.stages) { stage in
-                    DisclosureGroup(isExpanded: Binding(
-                        get: { expandedStages.contains(stage.id) },
-                        set: { if $0 { expandedStages.insert(stage.id) } else { expandedStages.remove(stage.id) } }
-                    )) {
-                        VStack(alignment: .leading, spacing: 14) {
-                            ForEach(stage.steps) { row($0) }
-                            if stage.id == .recovery {
-                                Toggle("I know how to contact my trusted person and recover access if something goes wrong.", isOn: $recoveryConfirmed)
-                                    .toggleStyle(.checkbox)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                Text("Confirmed by you, not checked by Hisn. Keep recovery details somewhere you can reach without this Mac.")
-                                    .font(.callout).foregroundStyle(.secondary)
-                                    .fixedSize(horizontal: false, vertical: true)
-                            }
-                            if stage.id == .accounts {
-                                Text("Do this last. Keep a separate working administrator account; never remove the last administrator.")
-                                    .font(.callout).foregroundStyle(.secondary)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                Toggle("A trusted person keeps the separate administrator password, and I use only this standard account.", isOn: $administratorConfirmed)
-                                    .toggleStyle(.checkbox)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                    .disabled(lock.isLocked || managed.isManaged || stage.steps.contains { $0.state != .done })
-                                Text("Confirmed by you. Hisn can check account permissions, but cannot know who holds a password.")
-                                    .font(.callout).foregroundStyle(.secondary)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                if let authority = checklist?.authority {
-                                    AuthorityCard(authority: authority, isLocked: lock.isLocked)
-                                }
-                            }
-                        }
-                        .padding(.top, 12)
-                    } label: {
-                        HStack(spacing: 8) {
-                            Label(stage.title, systemImage: stage.isComplete ? "checkmark.circle.fill" : "circle")
-                                .font(.body.weight(.semibold))
-                                .foregroundStyle(stage.isComplete ? Color.green : Color.primary)
-                            Spacer(minLength: 8)
-                            if !stage.isComplete, stage.id == setup.nextStage?.id {
-                                Text("Next")
-                                    .font(.caption2.weight(.semibold))
-                                    .foregroundStyle(Color.accentColor)
-                                    .padding(.horizontal, 7)
-                                    .padding(.vertical, 2)
-                                    .background(Color.accentColor.opacity(0.12), in: Capsule())
-                            }
-                            Text(verbatim: "\(stage.steps.filter { $0.state == .done }.count)/\(stage.steps.count)")
-                                .font(.caption.monospacedDigit())
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    Divider()
+                    stageCard(stage, setup: setup)
                 }
             }
 
-            HStack {
-                if let lastChecked {
-                    Text("Last checked").foregroundStyle(.secondary)
-                    Text(lastChecked, style: .time).foregroundStyle(.secondary)
-                }
-                Spacer()
-                if checking { ProgressView().controlSize(.small) }
-                Button { Task { await refresh() } } label: {
-                    Label("Check again", systemImage: "arrow.clockwise")
-                }
-                    .disabled(checking)
+            DisclosureGroup(isExpanded: $showNetwork) {
+                NetworkSetupGuide()
+                    .padding(.top, 8)
+            } label: {
+                HnSectionLabel(title: "Network protection",
+                               trailing: Text("Optional"))
             }
-            Divider()
-            NetworkSetupGuide()
+            .font(.hnBody())
         }
         .task { await refresh() }
         // Most steps happen outside the app — a command in Terminal, a
@@ -1594,18 +1492,113 @@ struct SetupPage: View {
         }
     }
 
+    /// One stage as a card: a calm header row, and the steps as rows inside it
+    /// rather than a card inside a card. The open stage is the only one that
+    /// spends vertical space; every closed stage is one line.
+    @ViewBuilder
+    private func stageCard(_ stage: ProtectedSetup.Stage, setup: ProtectedSetup) -> some View {
+        let expanded = expandedStages.contains(stage.id)
+        let done = stage.steps.filter { $0.state == .done }.count
+        HnCard(padding: 0) {
+            VStack(alignment: .leading, spacing: 0) {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        if expanded { expandedStages.remove(stage.id) }
+                        else { expandedStages.insert(stage.id) }
+                    }
+                } label: {
+                    HStack(spacing: 9) {
+                        Image(systemName: stage.isComplete ? "checkmark.circle.fill" : "circle")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(stage.isComplete ? HnPalette.calm : HnPalette.faint)
+                            .accessibilityHidden(true)
+                        Text(stage.title)
+                            .font(.system(.callout).weight(.medium))
+                            .foregroundStyle(HnPalette.ink)
+                        if !stage.isComplete, stage.id == setup.nextStage?.id {
+                            HnBadge(text: "Next")
+                        }
+                        Spacer(minLength: 8)
+                        Text(verbatim: "\(done)/\(stage.steps.count)")
+                            .font(.system(.caption))
+                            .monospacedDigit()
+                            .foregroundStyle(HnPalette.muted)
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(HnPalette.faint)
+                            .rotationEffect(.degrees(expanded ? 180 : 0))
+                            .accessibilityHidden(true)
+                    }
+                    .padding(.horizontal, 16)
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                if expanded {
+                    Divider().overlay(HnPalette.line)
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(Array(stage.steps.enumerated()), id: \.element.id) { index, step in
+                            row(step)
+                            if index < stage.steps.count - 1 {
+                                Divider().overlay(HnPalette.line).padding(.leading, 25)
+                            }
+                        }
+                        if stage.id == .recovery {
+                            stageConfirmation(
+                                "I know how to contact my trusted person and recover access if something goes wrong.",
+                                note: "Confirmed by you, not checked by Hisn. Keep recovery details somewhere you can reach without this Mac.",
+                                isOn: $recoveryConfirmed, disabled: false)
+                        }
+                        if stage.id == .accounts {
+                            stageConfirmation(
+                                "A trusted person keeps the separate administrator password, and I use only this standard account.",
+                                note: "Do this last. Keep a separate working administrator account; never remove the last administrator. Confirmed by you. Hisn can check account permissions, but cannot know who holds a password.",
+                                isOn: $administratorConfirmed,
+                                disabled: lock.isLocked || managed.isManaged || stage.steps.contains { $0.state != .done })
+                            if let authority = checklist?.authority {
+                                AuthorityCard(authority: authority, isLocked: lock.isLocked)
+                                    .padding(.top, 8)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 2)
+                    .padding(.bottom, 10)
+                }
+            }
+        }
+    }
+
+    private func stageConfirmation(_ title: LocalizedStringKey, note: LocalizedStringKey,
+                                   isOn: Binding<Bool>, disabled: Bool) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Toggle(title, isOn: isOn)
+                .toggleStyle(.checkbox)
+                .font(.hnCallout())
+                .fixedSize(horizontal: false, vertical: true)
+                .disabled(disabled)
+            HnExplain { Text(note) }
+            Spacer(minLength: 0)
+        }
+        .padding(.top, 12)
+    }
+
     private func row(_ step: SetupChecklist.Step) -> some View {
-        Card {
-            HStack(alignment: .top, spacing: 10) {
-                Image(systemName: step.state == .done ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(step.state == .done ? Color.green : Color.secondary)
-                    .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(step.title).font(.body.weight(.medium))
-                    Text(step.detail)
-                        .font(.callout).foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    if case let .command(line) = step.action {
+        HStack(alignment: .top, spacing: 9) {
+            Image(systemName: step.state == .done ? "checkmark.circle.fill" : "circle")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(step.state == .done ? HnPalette.calm : HnPalette.faint)
+                .padding(.top, 2)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 5) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(step.title)
+                        .font(.system(.callout).weight(.medium))
+                        .foregroundStyle(HnPalette.ink)
+                    HnExplain { Text(verbatim: step.detail) }
+                    Spacer(minLength: 0)
+                }
+                if case let .command(line) = step.action {
                         DisclosureGroup("Administrator setup") {
                             HStack(spacing: 8) {
                                 Text(verbatim: line)
@@ -1629,8 +1622,8 @@ struct SetupPage: View {
                         }
                         .padding(.top, 4)
                     }
-                    stepAction(step)
-                    if step.id == .extensionManagement {
+                stepAction(step)
+                if step.id == .extensionManagement {
                         DisclosureGroup("removal.setup.title") {
                             VStack(alignment: .leading, spacing: 10) {
                                 Text("removal.setup.publish")
@@ -1649,45 +1642,45 @@ struct SetupPage: View {
                             .padding(.top, 8)
                         }
                     }
-                    if step.id == .systemFilter && step.state != .done {
-                        FilterSetupControl(filter: filter, showsBuildBlock: false)
-                    }
+                if step.id == .systemFilter && step.state != .done {
+                    FilterSetupControl(filter: filter, showsBuildBlock: false)
                 }
             }
+            Spacer(minLength: 0)
         }
+        .padding(.vertical, 11)
         .accessibilityElement(children: .contain)
     }
 
     @ViewBuilder private func stepAction(_ step: SetupChecklist.Step) -> some View {
         switch step.action {
         case .browserHelp:
-            Button("How to connect a browser") { showBrowserHelp = true }.controlSize(.small)
+            HnButton(title: "How to connect a browser", kind: .quiet, compact: true) { showBrowserHelp = true }
         case .partnerSettings:
-            Button("Open Settings") { goTo(.settings) }.controlSize(.small)
+            HnButton(title: "Open Settings", kind: .quiet, compact: true) { goTo(.settings) }
         case .screenTimeSettings:
-            Button("Open Screen Time") {
+            HnButton(title: "Open Screen Time", kind: .quiet, compact: true) {
                 if let url = URL(string: "x-apple.systempreferences:com.apple.Screen-Time-Settings.extension") {
                     NSWorkspace.shared.open(url)
                 }
-            }.controlSize(.small)
+            }
         case .enableFilter:
             FilterSetupControl(filter: filter)
         case .deviceManagementSettings:
             if step.id != .extensionManagement {
-                Button("Open Device Management") {
+                HnButton(title: "Open Device Management", kind: .quiet, compact: true) {
                     openSystemSettings("com.apple.Profiles-Settings.extension")
-                }.controlSize(.small)
+                }
             }
         case .accountsSettings:
-            Button("Open Users & Groups") {
+            HnButton(title: "Open Users & Groups", kind: .quiet, compact: true) {
                 openSystemSettings("com.apple.Users-Groups-Settings.extension")
             }
-            .controlSize(.small)
             .disabled(lock.isLocked)
         case .applicationsFolder:
-            Button("Open Applications") {
+            HnButton(title: "Open Applications", kind: .quiet, compact: true) {
                 NSWorkspace.shared.open(URL(fileURLWithPath: "/Applications", isDirectory: true))
-            }.controlSize(.small)
+            }
         case .command, .none:
             EmptyView()
         }
@@ -1742,9 +1735,16 @@ private struct AuthorityCard: View {
                 Image(systemName: icon)
                     .foregroundStyle(color)
                     .accessibilityHidden(true)
-                Text("Protection authority").font(.body.weight(.semibold))
+                Text("Protection authority")
+                    .font(.system(.callout).weight(.semibold))
+                    .foregroundStyle(HnPalette.ink)
+                HnExplain {
+                    Text("Hisn does not create the guardian account or store its password. A separate person types it.")
+                }
                 Spacer()
-                Text(levelText).font(.callout.weight(.medium)).foregroundStyle(color)
+                Text(levelText)
+                    .font(.system(.caption).weight(.semibold))
+                    .foregroundStyle(color)
             }
             row("Daily account", dailyText, ok: authority.dailyUserIsAdmin == false)
             row("Guardian account", guardianText, ok: authority.guardian == .ready)
@@ -1752,8 +1752,8 @@ private struct AuthorityCard: View {
             if isLocked {
                 Label("A lock is running, so administrator and removal changes are disabled until it ends.",
                       systemImage: "lock.fill")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .font(.hnCaption())
+                    .foregroundStyle(HnPalette.muted)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
                 if authority.level != .verified || authority.dailyUserIsAdmin == true {
@@ -1764,14 +1764,14 @@ private struct AuthorityCard: View {
                             MacAuthority.restoreAdminCommand(dailyUser: authority.dailyUser))
                 }
             }
-            Text("Hisn does not create the guardian account or store its password. A separate person types it.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(12)
-        .background(RoundedRectangle(cornerRadius: 10).fill(Color(nsColor: .controlBackgroundColor)))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.secondary.opacity(0.2)))
+        .padding(14)
+        .background(HnPalette.raised,
+                    in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(HnPalette.line, lineWidth: 1)
+        }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("setup.authority")
     }
@@ -1786,9 +1786,9 @@ private struct AuthorityCard: View {
 
     private var color: Color {
         switch authority.level {
-        case .verified: return .green
-        case .partial: return .orange
-        case .unavailable: return .secondary
+        case .verified: return HnPalette.calm
+        case .partial: return HnPalette.ember
+        case .unavailable: return HnPalette.muted
         }
     }
 
@@ -1829,11 +1829,12 @@ private struct AuthorityCard: View {
     private func row(_ title: LocalizedStringKey, _ value: LocalizedStringKey, ok: Bool) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Image(systemName: ok ? "checkmark.circle.fill" : "exclamationmark.circle")
-                .foregroundStyle(ok ? Color.green : Color.orange)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(ok ? HnPalette.calm : HnPalette.ember)
                 .accessibilityHidden(true)
-            Text(title).font(.callout)
+            Text(title).font(.hnCaption()).foregroundStyle(HnPalette.ink)
             Spacer()
-            Text(value).font(.callout).foregroundStyle(.secondary)
+            Text(value).font(.hnCaption()).foregroundStyle(HnPalette.muted)
                 .multilineTextAlignment(.trailing)
         }
     }
@@ -1967,34 +1968,29 @@ private struct LockActionBar: View {
     private var readyLayers: Int { status.layers.filter(\.ok).count }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            if status.isEnforcingAnything {
-                Label(String(localized: "This lock would enforce \(readyLayers) of \(status.layers.count) protection layers."),
-                      systemImage: "checkmark.shield")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            } else {
-                // Just-in-time, at the point of decision. Someone about to
-                // commit to a lock that enforces nothing is the one moment
-                // this warning earns its alarm.
-                Label("""
-                      Nothing is set up to enforce a lock yet — it would run \
-                      but block nothing. Finish setup on the Overview page first.
-                      """,
-                      systemImage: "exclamationmark.triangle.fill")
-                    .font(.callout)
-                    .foregroundStyle(.orange)
-                    .fixedSize(horizontal: false, vertical: true)
+        HStack(alignment: .center, spacing: 18) {
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: status.isEnforcingAnything ? "checkmark.shield.fill" : "exclamationmark.triangle.fill")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(status.isEnforcingAnything ? HnPalette.calm : HnPalette.ember)
+                    .padding(.top, 1)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(verbatim: status.isEnforcingAnything
+                         ? String(localized: "Enforces \(readyLayers) of \(status.layers.count) layers.")
+                         : String(localized: "Blocks nothing until setup is finished."))
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(HnPalette.ink)
+                    Text("The lock cannot be shortened after it starts.")
+                        .font(.hnCaption())
+                        .foregroundStyle(HnPalette.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
             }
-            Button {
+            HnButton(text: draft.startButtonTitle, systemImage: "lock.fill") {
                 showConfirm = true
-            } label: {
-                Text(draft.startButtonTitle)
-                    .frame(maxWidth: .infinity)
             }
-            .controlSize(.large)
-            .buttonStyle(.borderedProminent)
             .disabled(draft.selectedSeconds == nil || !draft.understandsLimits)
             .confirmationDialog(draft.confirmTitle, isPresented: $showConfirm,
                                 titleVisibility: .visible) {
@@ -2004,12 +2000,12 @@ private struct LockActionBar: View {
                 Text(draft.confirmMessage(enforcing: status.isEnforcingAnything))
             }
         }
-        .padding(.horizontal, 28)
-        .padding(.vertical, 14)
-        .frame(maxWidth: 840, alignment: .leading)
-        .frame(maxWidth: .infinity)
-        .background(.bar)
-        .overlay(alignment: .top) { Divider() }
+        .padding(.horizontal, 32)
+        .padding(.vertical, 10)
+        .frame(maxWidth: 980, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .center)
+        .background(HnPalette.card)
+        .overlay(alignment: .top) { Rectangle().fill(HnPalette.line).frame(height: 1) }
         .alert("Something went wrong", isPresented: .constant(error != nil)) {
             Button("OK") { error = nil }
         } message: { Text(error ?? "") }
@@ -2055,7 +2051,9 @@ private struct LockPage: View {
     private var selectedSeconds: TimeInterval? { draft.selectedSeconds }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 30) {
+        VStack(alignment: .leading, spacing: 26) {
+            HnPageHeader(eyebrow: "Commitment", title: "Make it harder to stop",
+                         caption: "A lock is a promise with a deadline.")
             Group {
                 if lock.isLocked { activeLock } else { setup }
             }
@@ -2096,162 +2094,199 @@ private struct LockPage: View {
 
     private var setup: some View {
         VStack(alignment: .leading, spacing: 22) {
-            PageSection(title: "How long?", systemImage: "clock") {
-                Picker("Length", selection: $draft.duration) {
-                    ForEach(LockManager.Duration.allCases) { d in
-                        Text(d.title).tag(d)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-
-                if draft.duration == .custom {
-                    HStack(spacing: 8) {
-                        TextField("How long", text: $draft.customAmount)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 80)
-                        Picker("Unit", selection: $draft.customUnit) {
-                            ForEach(CustomUnit.allCases) { Text($0.title).tag($0) }
+            VStack(alignment: .leading, spacing: 8) {
+                HnSectionLabel(title: "Duration")
+                HnCard {
+                    VStack(alignment: .leading, spacing: 14) {
+                        HStack(spacing: 5) {
+                            ForEach(LockManager.Duration.allCases) { choice in
+                                HnChip(verbatim: choice.title,
+                                       selected: draft.duration == choice) {
+                                    draft.duration = choice
+                                }
+                            }
                         }
-                        .labelsHidden()
-                        .frame(width: 100)
-                        Spacer()
-                    }
-                    .padding(.top, 2)
-                }
 
-                // The end date is the fact a commitment is made of, so it gets
-                // its own quiet band rather than one grey line under a picker.
-                HStack(spacing: 8) {
-                    Image(systemName: "calendar.badge.clock")
-                        .foregroundStyle(isCustomInvalid ? Color.red : Color.accentColor)
-                        .accessibilityHidden(true)
-                    Text(lengthHint)
-                        .font(.callout.weight(.medium))
-                        .foregroundStyle(isCustomInvalid ? Color.red : Color.primary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Spacer(minLength: 0)
+                        if draft.duration == .custom {
+                            HStack(spacing: 8) {
+                                TextField("How long", text: $draft.customAmount)
+                                    .hnField()
+                                    .frame(width: 92)
+                                    .accessibilityLabel(Text("How long"))
+                                Picker("Unit", selection: $draft.customUnit) {
+                                    ForEach(CustomUnit.allCases) { Text($0.title).tag($0) }
+                                }
+                                .labelsHidden()
+                                .frame(width: 118)
+                                Spacer(minLength: 0)
+                            }
+                        }
+
+                        HnHairline()
+
+                        HStack(alignment: .firstTextBaseline, spacing: 16) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                if let seconds = selectedSeconds {
+                                    Text(verbatim: LockManager.describe(seconds))
+                                        .font(.hnFigure(32))
+                                        .foregroundStyle(HnPalette.ink)
+                                    Text(verbatim: lengthHint)
+                                        .font(.hnCaption())
+                                        .foregroundStyle(HnPalette.muted)
+                                } else {
+                                    Text(verbatim: lengthHint)
+                                        .font(.hnDisplaySmall())
+                                        .foregroundStyle(isCustomInvalid ? HnPalette.danger : HnPalette.muted)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                            Spacer(minLength: 0)
+                        }
+                    }
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                .background((isCustomInvalid ? Color.red : Color.accentColor).opacity(0.08),
-                            in: RoundedRectangle(cornerRadius: 9, style: .continuous))
             }
 
-            PageSection(title: "Mode", systemImage: "lock.shield") {
-                Toggle("Fixed commitment until the chosen deadline", isOn: $draft.fixedCommitment)
-                    .toggleStyle(.switch)
-                // One description of what the chosen mode means, and it follows
-                // the toggle. Before, the fixed-commitment sentence was shown
-                // twice — once here, once in a card below — and it stayed on
-                // screen after the person turned the fixed commitment off.
-                Text(draft.fixedCommitment
-                     ? "No early self-release during a fixed commitment. Partner recovery remains available; this does not prevent an administrator from removing protection."
-                     : """
-                       Once started, you cannot shorten or cancel this. \
-                       Early release takes 48 hours, or an approval from \
-                       your accountability partner.
-                       """)
-                    .font(.callout).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                Toggle(isOn: $draft.strict) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Strict mode")
-                        Text("Blocks everything except sites you allow. A block list can never cover every site; this can.")
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 8) {
+                HnSectionLabel(title: "Mode")
+                HnCard {
+                    VStack(alignment: .leading, spacing: 0) {
+                        modeBlock(title: "Fixed commitment until the chosen deadline",
+                                  caption: draft.fixedCommitment
+                                    ? "No early self-release"
+                                    : "48-hour release or partner approval",
+                                  detail: draft.fixedCommitment
+                                    ? "No early self-release during a fixed commitment. Partner recovery remains available; this does not prevent an administrator from removing protection."
+                                    : """
+                                      Once started, you cannot shorten or cancel this. \
+                                      Early release takes 48 hours, or an approval from \
+                                      your accountability partner.
+                                      """,
+                                  isOn: $draft.fixedCommitment)
+                        HnHairline().padding(.vertical, 12)
+                        modeBlock(title: "Strict mode",
+                                  caption: "Only allowlisted sites stay reachable",
+                                  detail: "Blocks everything except sites you allow. A block list can never cover every site; this can.",
+                                  isOn: $draft.strict)
                     }
                 }
-                .toggleStyle(.switch)
             }
 
             if authority?.dailyUserIsAdmin == true {
-                Label("This account is still an administrator. It can remove Hisn during the lock. Complete the guardian split in Setup first.",
-                      systemImage: "exclamationmark.triangle.fill")
-                    .font(.callout)
-                    .foregroundStyle(.orange)
-                    .fixedSize(horizontal: false, vertical: true)
+                HnNotice(title: nil,
+                         message: "This account is still an administrator. It can remove Hisn during the lock. Complete the guardian split in Setup first.",
+                         systemImage: "exclamationmark.triangle.fill", level: .problem)
             }
 
-            Toggle("I understand this commitment does not prevent an administrator from removing protection. Keep essential services accessible.",
-                   isOn: $draft.understandsLimits)
+            HnHairline()
+            Toggle(isOn: $draft.understandsLimits) {
+                Text("I understand this commitment does not prevent an administrator from removing protection. Keep essential services accessible.")
+                    .font(.hnCaption())
+                    .foregroundStyle(HnPalette.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .toggleStyle(.checkbox)
+        }
+    }
 
+    /// One mode as a title, a switch, and the sentence that says what the
+    /// switch means. The detail follows the choice, so the fixed-commitment
+    /// sentence is never on screen while the fixed commitment is off.
+    private func modeBlock(title: LocalizedStringKey, caption: LocalizedStringKey,
+                           detail: LocalizedStringKey,
+                           isOn: Binding<Bool>) -> some View {
+        HStack(alignment: .center, spacing: 10) {
+            VStack(alignment: .leading, spacing: 1) {
+                HStack(spacing: 4) {
+                    Text(title)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(HnPalette.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                    HnExplain { Text(detail) }
+                }
+                Text(caption)
+                    .font(.hnCaption())
+                    .foregroundStyle(HnPalette.muted)
+            }
+            Spacer(minLength: 8)
+            Toggle(isOn: isOn) { EmptyView() }
+                .labelsHidden()
+                .toggleStyle(.switch)
+                .controlSize(.small)
+                .accessibilityLabel(Text(title))
         }
     }
 
     // MARK: Locked
 
     private var activeLock: some View {
-        VStack(alignment: .leading, spacing: 22) {
-            Card {
+        VStack(alignment: .leading, spacing: 20) {
+            HnCard {
                 VStack(alignment: .leading, spacing: 10) {
-                    HStack(alignment: .center, spacing: 10) {
+                    HStack(alignment: .center, spacing: 8) {
+                        HnBadge(verbatim: LockStatus.modeLabel(lock.state.mode),
+                                tint: lock.state.mode == "strict" ? HnPalette.ember : HnPalette.accent)
+                        Spacer(minLength: 8)
                         Image(systemName: lock.state.mode == "strict" ? "lock.shield.fill" : "lock.fill")
-                            .font(.title3)
-                            .foregroundStyle(Color.accentColor)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(HnPalette.accent)
                             .accessibilityHidden(true)
-                        Text(lock.remainingDescription)
-                            .font(.system(size: 34, weight: .semibold, design: .rounded))
-                            .monospacedDigit()
                     }
-                    Text(String(localized: """
-                         \(LockStatus.modeLabel(lock.state.mode)) · until \
-                         \(lock.state.deadline.formatted(date: .long, time: .shortened))
-                         """))
-                        .font(.callout).foregroundStyle(.secondary)
+                    Text(verbatim: lock.remainingDescription)
+                        .font(.hnNumber(36))
+                        .foregroundStyle(HnPalette.ink)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                    Text(verbatim: String(localized: "Ends \(lock.state.deadline.formatted(date: .long, time: .shortened))."))
+                        .font(.hnCallout())
+                        .foregroundStyle(HnPalette.muted)
                     ProgressView(value: lockProgress)
-                        .tint(Color.accentColor)
+                        .progressViewStyle(.linear)
+                        .tint(HnPalette.accent)
                         .accessibilityLabel(Text("Lock progress"))
                     HStack {
-                        Text(String(localized: "Started \(lock.state.startedAt.formatted(date: .abbreviated, time: .shortened))"))
+                        Text(verbatim: String(localized: "Started \(lock.state.startedAt.formatted(date: .abbreviated, time: .shortened))"))
                         Spacer()
-                        Text(String(localized: "Ends \(lock.state.deadline.formatted(date: .abbreviated, time: .shortened))"))
+                        Text(verbatim: String(localized: "Ends \(lock.state.deadline.formatted(date: .abbreviated, time: .shortened))"))
                     }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.hnCaption())
+                    .foregroundStyle(HnPalette.faint)
                 }
             }
 
             if let pending = lock.pendingSelfRelease {
-                Card {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Early release requested")
-                            .font(.body.weight(.medium))
-                        Text("Unlocks \(pending.formatted()). You can cancel this, but you cannot speed it up.")
-                            .font(.callout).foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                        Button("Cancel the request") { lock.cancelSelfRelease() }
-                            .controlSize(.small)
-                    }
-                }
+                HnNotice(title: "Early release requested",
+                         verbatim: String(localized: "Unlocks \(pending.formatted()). You can cancel this, but you cannot speed it up."),
+                         systemImage: "hourglass", level: .info,
+                         action: ("Cancel the request", { lock.cancelSelfRelease() }))
             }
 
             if lock.hasFixedCommitment {
-                Label("Your fixed commitment has not finished. Self-release is unavailable until it ends.", systemImage: "lock.fill")
-                    .font(.callout).foregroundStyle(.secondary)
+                HnNotice(title: nil,
+                         message: "Your fixed commitment has not finished. Self-release is unavailable until it ends.",
+                         systemImage: "lock.fill", level: .info)
             }
 
-            PageSection(title: "Make it stronger",
-                    subtitle: "Always available. Making the lock weaker is not.",
-                    systemImage: "arrow.up.shield") {
-                HStack {
-                    Button("Add a week") {
-                        showExtendConfirm = true
-                    }
-                    if lock.state.mode != "strict" {
-                        Button("Switch to strict") {
-                            do { try lock.tightenToStrict() }
-                            catch { self.error = error.localizedDescription }
+            VStack(alignment: .leading, spacing: 10) {
+                HnSectionHeader(title: "Make it stronger", systemImage: "arrow.up.shield")
+                HnCard {
+                    HStack(spacing: 10) {
+                        HnButton(title: "Add a week", systemImage: "plus", kind: .quiet) {
+                            showExtendConfirm = true
                         }
+                        if lock.state.mode != "strict" {
+                            HnButton(title: "Switch to strict", systemImage: "lock.shield", kind: .quiet) {
+                                do { try lock.tightenToStrict() }
+                                catch { self.error = error.localizedDescription }
+                            }
+                        }
+                        Spacer(minLength: 0)
                     }
                 }
             }
 
-            PageSection(title: "Your partner can end it now",
-                    subtitle: "Immediate, and never without them.",
-                    systemImage: "person.badge.shield.checkmark") {
-                PartnerReleaseCard(lock: lock)
+            VStack(alignment: .leading, spacing: 8) {
+                HnSectionHeader(title: "Your partner can end it now", systemImage: "person.badge.shield.checkmark")
+                HnCard { PartnerReleaseCard(lock: lock) }
             }
 
             if lock.pendingSelfRelease == nil && !lock.hasFixedCommitment {
@@ -2264,27 +2299,36 @@ private struct LockPage: View {
                 // it is the one people uninstall pre-emptively, and it is
                 // dangerous when someone genuinely needs the web. What keeps it
                 // honest is that the exit is slow and cannot be hurried.
-                PageSection(title: "Ending early",
-                        subtitle: """
-                            A release request takes \(LockManager.describe(LockManager.selfReleaseDelay)) \
-                            to arrive and cannot be hurried. Your accountability \
-                            partner can approve one immediately.
-                            """,
-                        systemImage: "arrow.uturn.backward") {
-                    Button("Request early release…") { showReleaseConfirm = true }
-                        .confirmationDialog(
-                            "Request early release?",
-                            isPresented: $showReleaseConfirm, titleVisibility: .visible
-                        ) {
-                            Button("Request it") { requestRelease() }
-                            Button("Never mind", role: .cancel) {}
-                        } message: {
-                            Text("""
-                                 The lock would end \(Date().addingTimeInterval(LockManager.selfReleaseDelay).formatted()). \
-                                 You can cancel the request at any time, but you \
-                                 cannot make it arrive sooner.
-                                 """)
+                VStack(alignment: .leading, spacing: 8) {
+                    HnSectionHeader(title: "Ending early", systemImage: "arrow.uturn.backward")
+                    HnCard {
+                        HStack(spacing: 8) {
+                            HnButton(title: "Request early release…", kind: .outline) {
+                                showReleaseConfirm = true
+                            }
+                            HnExplain {
+                                Text(verbatim: String(localized: """
+                                    A release request takes \(LockManager.describe(LockManager.selfReleaseDelay)) \
+                                    to arrive and cannot be hurried. Your accountability \
+                                    partner can approve one immediately.
+                                    """))
+                            }
+                            Spacer(minLength: 0)
                         }
+                    }
+                    .confirmationDialog(
+                        "Request early release?",
+                        isPresented: $showReleaseConfirm, titleVisibility: .visible
+                    ) {
+                        Button("Request it") { requestRelease() }
+                        Button("Never mind", role: .cancel) {}
+                    } message: {
+                        Text("""
+                             The lock would end \(Date().addingTimeInterval(LockManager.selfReleaseDelay).formatted()). \
+                             You can cancel the request at any time, but you \
+                             cannot make it arrive sooner.
+                             """)
+                    }
                 }
             }
         }
@@ -2341,54 +2385,100 @@ private struct ScheduleSection: View {
     @State private var pending = ScheduleStore.pending()
     @State private var message: String?
 
+    @State private var expanded = false
+
     var body: some View {
-        PageSection(title: "Every day",
-                subtitle: """
-                    A lock that starts itself at the same time each day and ends with the \
-                    window. Making it stronger takes effect now; making it weaker waits \
-                    24 hours, so switching it off at the last minute is no way out.
-                    """,
-                systemImage: "calendar.badge.clock") {
-            Toggle("Lock every day", isOn: $draft.enabled)
-                .toggleStyle(.switch)
-            HStack(spacing: 18) {
-                DatePicker("From", selection: time(\.start), displayedComponents: .hourAndMinute)
-                DatePicker("Until", selection: time(\.end), displayedComponents: .hourAndMinute)
-                Spacer()
-            }
-            .disabled(!draft.enabled)
-            Toggle("Strict mode", isOn: $draft.strict)
-                .toggleStyle(.switch)
-                .disabled(!draft.enabled)
-
-            // Saving inside an open window starts the lock at once — said
-            // before Save, not discovered after it.
-            if draft.enabled, draft != saved,
-               let window = draft.window(containing: LockStore.trustedNow()) {
-                Label(String(localized: "The window is open now: saving starts a lock until \(window.end.formatted(date: .omitted, time: .shortened))."),
-                      systemImage: "exclamationmark.triangle.fill")
-                    .font(.callout).foregroundStyle(.orange)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            if let pending {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(String(localized: "A weaker schedule takes effect \(pending.at.formatted(date: .abbreviated, time: .shortened))."))
-                        .font(.callout).foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Spacer()
-                    Button("Cancel it") {
-                        ScheduleStore.cancelPending()
-                        reload()
-                    }
-                    .controlSize(.small)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                HnSectionLabel(title: "Every day")
+                HnExplain {
+                    Text("""
+                         A lock that starts itself at the same time each day and ends with the \
+                         window. Making it stronger takes effect now; making it weaker waits \
+                         24 hours, so switching it off at the last minute is no way out.
+                         """)
                 }
             }
 
-            SaveRow(message: message, isError: false, canSave: draft != saved,
-                    save: save, revert: { reload() })
+            HnCard {
+                VStack(alignment: .leading, spacing: 12) {
+                    HnToggleRow(title: "Lock every day", isOn: $draft.enabled)
+
+                    if draft.enabled, !expanded {
+                        HStack(spacing: 8) {
+                            Text("From")
+                            Text(verbatim: clock(draft.start))
+                            Text("until")
+                            Text(verbatim: clock(draft.end))
+                            if draft.strict {
+                                Text("·")
+                                Text("Strict mode")
+                            }
+                            Spacer(minLength: 8)
+                            HnButton(title: "Edit", kind: .text) { expanded = true }
+                        }
+                        .font(.hnBody())
+                        .foregroundStyle(HnPalette.muted)
+                    }
+
+                    if expanded {
+                        HStack(spacing: 16) {
+                            DatePicker("From", selection: time(\.start), displayedComponents: .hourAndMinute)
+                            DatePicker("Until", selection: time(\.end), displayedComponents: .hourAndMinute)
+                            Spacer(minLength: 0)
+                        }
+                        .font(.hnBody())
+                        .disabled(!draft.enabled)
+
+                        HnToggleRow(title: "Strict mode", isOn: $draft.strict)
+                            .disabled(!draft.enabled)
+                    }
+
+                    // Saving inside an open window starts the lock at once —
+                    // said before Save, not discovered after it.
+                    if draft.enabled, draft != saved,
+                       let window = draft.window(containing: LockStore.trustedNow()) {
+                        HnNotice(title: nil,
+                                 verbatim: String(localized: "The window is open now: saving starts a lock until \(window.end.formatted(date: .omitted, time: .shortened))."),
+                                 systemImage: "exclamationmark.triangle.fill", level: .caution)
+                    }
+
+                    if let pending {
+                        HStack(alignment: .firstTextBaseline, spacing: 10) {
+                            Text(verbatim: String(localized: "A weaker schedule takes effect \(pending.at.formatted(date: .abbreviated, time: .shortened))."))
+                                .font(.hnCaption()).foregroundStyle(HnPalette.muted)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Spacer(minLength: 8)
+                            HnButton(title: "Cancel it", kind: .text) {
+                                ScheduleStore.cancelPending()
+                                reload()
+                            }
+                        }
+                    }
+
+                    if expanded || draft != saved {
+                        SaveRow(message: message, isError: false, canSave: draft != saved,
+                                save: save, revert: { reload() })
+                    }
+                }
+            }
         }
         .onAppear { reload() }
+        .onChange(of: draft) { new in
+            if new != saved { expanded = true }
+        }
+    }
+
+    private var summary: String {
+        var text = String(localized: "\(clock(draft.start))–\(clock(draft.end))")
+        if draft.strict { text += " · " + String(localized: "Strict mode") }
+        return text
+    }
+
+    private func clock(_ minutes: Int) -> String {
+        let start = Calendar.current.startOfDay(for: Date())
+            .addingTimeInterval(TimeInterval(minutes * 60))
+        return start.formatted(date: .omitted, time: .shortened)
     }
 
     /// A time of day in minutes, as the Date a DatePicker wants.
@@ -2438,45 +2528,20 @@ private struct RulesPage: View {
     private var restricted: Bool { isLocked || managed.isManaged }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 30) {
+        VStack(alignment: .leading, spacing: 20) {
+            HnPageHeader(eyebrow: "Blocking Rules", title: "What gets blocked",
+                         caption: "The published list, plus anything you add.")
             if managed.isManaged {
                 ManagedBanner(managed: managed)
-                Text("You can add blocks and remove allowances. Removing a block or adding an allowance requires your administrator.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
             } else if isLocked {
-                Label("""
-                      A lock is running. You can add blocks and remove \
-                      allowances; the reverse waits until it ends.
-                      """,
-                      systemImage: "lock.fill")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                HnNotice(title: nil,
+                         message: "A lock is running. Add blocks and remove allowances; the reverse waits.",
+                         systemImage: "lock.fill", level: .info)
             }
-            // The lists a person came here to edit come first. The browser
-            // guide is real, but it is a second visit, not a landing page:
-            // three paragraphs of prose pushed every control below the fold.
-            SiteListsSection(isLocked: restricted)
-            Divider()
-            // A read-only question about the lists just read, kept next to
-            // them rather than buried in the guide.
-            Button { openSiteCheck() } label: {
-                Card {
-                    ToolRow(systemImage: "magnifyingglass",
-                            title: "Check a website",
-                            subtitle: "See whether an address would be blocked, and which list decides it.")
-                }
-            }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("rules.siteCheck")
-            Divider()
+            SiteListsSection(isLocked: restricted, openSiteCheck: openSiteCheck)
             UserBlocksSection(isLocked: restricted)
-            Divider()
             BrowsersSection(isLocked: restricted)
-            Divider()
-            BrowserFirstGuide()
+            HnCard { BrowserFirstGuide() }
         }
     }
 }
@@ -2487,14 +2552,78 @@ private struct RulesPage: View {
 /// is about the pair: while a lock runs you may add blocks and withdraw
 /// allowances, and neither of the opposites. Saving them separately would let
 /// a refused half leave the other half applied.
+///
+/// The two lists share one card and one pair of Save/Revert buttons, with a
+/// segmented control choosing which one is on screen. The old page printed both
+/// editors in full, so the allowlist — usually the shorter, quieter list — took
+/// the same vertical space and the same visual weight as the block list. The
+/// segment labels keep both list names visible, and the counts and the pair
+/// guard are unchanged.
 struct SiteListsSection: View {
     let isLocked: Bool
+    let openSiteCheck: () -> Void
 
     /// The add field's placeholder. Held in a String property so SwiftUI uses
     /// the verbatim initializer: an example domain is not UI copy and must not
     /// become a translation key.
     private let exampleDomain = "example.com"
 
+    private enum ListTab: String, CaseIterable, Identifiable {
+        case block, allow
+
+        var id: String { rawValue }
+
+        var title: LocalizedStringKey {
+            switch self {
+            case .block: return "Block list"
+            case .allow: return "Allow list"
+            }
+        }
+
+        var heading: LocalizedStringKey {
+            switch self {
+            case .block: return "Always block these"
+            case .allow: return "Always allowed"
+            }
+        }
+
+        /// A sentence under the segmented control. It says what the list is
+        /// for without a paragraph; the longer rules live in Explain.
+        var shortRule: LocalizedStringKey {
+            switch self {
+            case .block:
+                return "On top of the published list."
+            case .allow:
+                return "Reachable even if the published list names it. In strict mode nothing else is reachable."
+            }
+        }
+
+        var explanation: LocalizedStringKey {
+            switch self {
+            case .block:
+                return """
+                    A site here is blocked in every app Hisn runs. Subdomains are \
+                    included, so example.com also covers cdn.example.com. Adding a \
+                    block works during a lock.
+                    """
+            case .allow:
+                return """
+                    A site here stays reachable even when the published list names \
+                    it. In strict mode only these sites are reachable. Withdrawing \
+                    an allowance works during a lock; adding one waits until it ends.
+                    """
+            }
+        }
+
+        var empty: LocalizedStringKey {
+            switch self {
+            case .block: return "No extra sites. The published list still applies."
+            case .allow: return "Nothing allowed beyond the published list."
+            }
+        }
+    }
+
+    @State private var tab: ListTab = .block
     @State private var blockText = ""
     @State private var allowText = ""
     @State private var savedBlockText = ""
@@ -2508,24 +2637,173 @@ struct SiteListsSection: View {
         blockText != savedBlockText || allowText != savedAllowText
     }
 
+    private var activeText: Binding<String> {
+        tab == .block ? $blockText : $allowText
+    }
+
+    private var activeNewEntry: Binding<String> {
+        tab == .block ? $newBlock : $newAllow
+    }
+
+    private var activeDomains: [String] {
+        SiteLists.parse(activeText.wrappedValue).domains
+    }
+
+    private var activeSummary: (text: String, hasProblem: Bool) {
+        Self.summarize(activeText.wrappedValue)
+    }
+
     var body: some View {
-        PageSection(title: "Your sites",
-                    subtitle: "Two lists of your own, on top of the published list.",
-                    systemImage: "list.bullet.rectangle") {
-            listEditor("Always block these",
-                       subtitle: "On top of the published list.",
-                       text: $blockText,
-                       newEntry: $newBlock)
+        PageSection(title: "Websites",
+                    subtitle: "Your own block and allow lists, on top of the published list.",
+                    systemImage: "globe") {
+            Card {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(spacing: 8) {
+                        Picker("List", selection: $tab) {
+                            ForEach(ListTab.allCases) { list in
+                                Text(list.title).tag(list)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                        .frame(maxWidth: 260)
 
-            listEditor("Always allowed",
-                       subtitle: "Reachable even if the published list names it. In strict mode nothing else is reachable.",
-                       text: $allowText,
-                       newEntry: $newAllow)
+                        Spacer(minLength: 8)
 
-            SaveRow(message: message, isError: isError, canSave: isDirty,
-                    save: save, revert: load)
+                        HnButton(title: "Check a website", systemImage: "magnifyingglass",
+                                 kind: .quiet, compact: true) {
+                            openSiteCheck()
+                        }
+                        .help("Check a website")
+                    }
+
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Text(tab.shortRule)
+                            .font(.hnCaption())
+                            .foregroundStyle(HnPalette.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                        HnExplain { Text(tab.explanation) }
+                        Spacer(minLength: 0)
+                    }
+
+                    if tab == .block {
+                        ExtraSitesPicker(blocks: SiteLists.parse(blockText).domains,
+                                         isLocked: isLocked) { domain in
+                            toggleSuggestion(domain)
+                        }
+                        Divider().overlay(HnPalette.line).padding(.vertical, 2)
+                    }
+
+                    domainEditor
+
+                    SaveRow(message: message, isError: isError, canSave: isDirty,
+                            save: save, revert: load)
+                }
+            }
         }
         .onAppear(perform: load)
+        .onChange(of: tab) { _ in message = nil }
+    }
+
+    /// The rows, the one-line add field, and the bulk editor for the selected
+    /// list. Both lists keep their own draft text, so switching tabs never
+    /// discards an edit or hides a dirty state from Save.
+    private var domainEditor: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(tab.heading)
+                    .font(.system(.callout).weight(.medium))
+                    .foregroundStyle(HnPalette.ink)
+                if !activeSummary.text.isEmpty {
+                    Text(verbatim: activeSummary.text)
+                        .font(.hnCaption())
+                        .foregroundStyle(activeSummary.hasProblem ? HnPalette.ember : HnPalette.muted)
+                }
+                Spacer(minLength: 0)
+            }
+
+            if activeDomains.isEmpty {
+                HStack(spacing: 8) {
+                    Image(systemName: "tray")
+                        .foregroundStyle(HnPalette.faint)
+                        .accessibilityHidden(true)
+                    Text(tab.empty)
+                        .font(.hnCaption())
+                        .foregroundStyle(HnPalette.muted)
+                    Spacer(minLength: 0)
+                }
+                .padding(.vertical, 6)
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(activeDomains, id: \.self) { domain in
+                        HStack(spacing: 10) {
+                            Image(systemName: "globe")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(HnPalette.faint)
+                                .accessibilityHidden(true)
+                            Text(domain)
+                                .font(.system(.callout, design: .monospaced))
+                                .foregroundStyle(HnPalette.ink)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                            Spacer(minLength: 8)
+                            Button { removeActive(domain) } label: {
+                                Image(systemName: "trash")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundStyle(HnPalette.faint)
+                            }
+                            .buttonStyle(.borderless)
+                            .help("Remove")
+                            .accessibilityLabel(Text("Remove"))
+                        }
+                        .padding(.vertical, 6)
+                        if domain != activeDomains.last {
+                            Divider()
+                        }
+                    }
+                }
+            }
+
+            HStack(spacing: 8) {
+                // A String variable, not a literal: the placeholder is an
+                // example domain, not UI copy.
+                TextField(exampleDomain, text: activeNewEntry)
+                    .hnField()
+                    .onSubmit { addActive() }
+                    .accessibilityLabel(Text(tab.heading))
+                HnButton(title: "Add", kind: .quiet) { addActive() }
+                    .disabled(SiteLists.normalize(activeNewEntry.wrappedValue) == nil)
+            }
+
+            // Bulk editing is one paste away, with the rules that apply to it
+            // next to the box rather than at the top of the section.
+            DisclosureGroup("Paste a list") {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("""
+                         One domain per line — a full URL is fine, it becomes \
+                         just the domain. Subdomains are included automatically, \
+                         so example.com also covers cdn.example.com.
+                         """)
+                        .font(.hnCaption()).foregroundStyle(HnPalette.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                    TextEditor(text: activeText)
+                        .font(.system(.callout, design: .monospaced))
+                        .foregroundStyle(HnPalette.ink)
+                        .scrollContentBackground(.hidden)
+                        .padding(8)
+                        .background(HnPalette.raised,
+                                    in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                        .accessibilityLabel(Text(tab.heading))
+                        .frame(height: 88)
+                        .overlay(RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            .strokeBorder(activeSummary.hasProblem ? HnPalette.ember.opacity(0.7)
+                                                                   : HnPalette.lineStrong, lineWidth: 1))
+                }
+                .padding(.top, 6)
+            }
+            .font(.callout)
+        }
     }
 
     private func load() {
@@ -2538,114 +2816,27 @@ struct SiteListsSection: View {
         message = nil
     }
 
-    /// One list as its own card, one domain per row. The old single text box
-    /// made a five-site list look like a paragraph and gave no way to take one
-    /// site back out without editing text; bulk paste stays one disclosure
-    /// down.
-    private func listEditor(_ title: LocalizedStringKey, subtitle: LocalizedStringKey,
-                            text: Binding<String>, newEntry: Binding<String>) -> some View {
-        // Counted from the same parser Save uses, so the number here and the
-        // outcome on Save can never disagree. A dropped line is the failure
-        // this exists to prevent: it looks identical to a saved one and is only
-        // discovered when the page you meant to block opens.
-        let summary = Self.summarize(text.wrappedValue)
-        let domains = SiteLists.parse(text.wrappedValue).domains
-        return Card {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(title).font(.headline)
-                    if !summary.text.isEmpty {
-                        Text(summary.text)
-                            .font(.caption)
-                            .foregroundStyle(summary.hasProblem ? Color.orange : Color.secondary)
-                    }
-                    Spacer(minLength: 0)
-                }
-                Text(subtitle).font(.caption).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                if domains.isEmpty {
-                    HStack(spacing: 8) {
-                        Image(systemName: "tray")
-                            .foregroundStyle(.tertiary)
-                            .accessibilityHidden(true)
-                        Text("No extra sites. The published list still applies.")
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                        Spacer(minLength: 0)
-                    }
-                    .padding(.vertical, 6)
-                } else {
-                    VStack(spacing: 0) {
-                        ForEach(domains, id: \.self) { domain in
-                            HStack(spacing: 10) {
-                                Image(systemName: "globe")
-                                    .font(.caption)
-                                    .foregroundStyle(.tertiary)
-                                    .accessibilityHidden(true)
-                                Text(domain)
-                                    .font(.system(.body, design: .monospaced))
-                                    .lineLimit(1)
-                                    .truncationMode(.middle)
-                                Spacer(minLength: 8)
-                                Button { remove(domain, from: text) } label: {
-                                    Image(systemName: "trash")
-                                }
-                                .buttonStyle(.borderless)
-                                .help("Remove")
-                                .accessibilityLabel(Text("Remove"))
-                            }
-                            .padding(.vertical, 6)
-                            if domain != domains.last {
-                                Divider()
-                            }
-                        }
-                    }
-                }
-
-                HStack(spacing: 8) {
-                    // A String variable, not a literal: the placeholder is an
-                    // example domain, not UI copy, so it must not enter the
-                    // translation catalog as a key of its own.
-                    TextField(exampleDomain, text: newEntry)
-                        .textFieldStyle(.roundedBorder)
-                        .onSubmit { add(to: text, from: newEntry) }
-                        .accessibilityLabel(title)
-                    Button("Add") { add(to: text, from: newEntry) }
-                        .disabled(SiteLists.normalize(newEntry.wrappedValue) == nil)
-                }
-
-                // Bulk editing is still one paste away, with the rules that
-                // apply to it next to the box rather than at the top of the
-                // section.
-                DisclosureGroup("Paste a list") {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("""
-                             One domain per line — a full URL is fine, it becomes \
-                             just the domain. Subdomains are included automatically, \
-                             so example.com also covers cdn.example.com.
-                             """)
-                            .font(.caption).foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                        TextEditor(text: text)
-                            .font(.system(.body, design: .monospaced))
-                            .scrollContentBackground(.hidden)
-                            .accessibilityLabel(title)
-                            .frame(height: 88)
-                            .overlay(RoundedRectangle(cornerRadius: 6)
-                                .stroke(summary.hasProblem ? Color.orange.opacity(0.7)
-                                                           : Color.secondary.opacity(0.35)))
-                    }
-                    .padding(.top, 6)
-                }
-                .font(.callout)
-            }
-        }
+    /// A chip edits the block-list draft only. The list stays the single
+    /// source of truth, so a chip cannot be selected while its domain is not
+    /// saved in the list below it.
+    private func toggleSuggestion(_ domain: String) {
+        let current = SiteLists.parse(blockText).domains
+        let next = ExtraSites.toggling(domain, in: current)
+        guard next != current else { return }
+        blockText = next.joined(separator: "\n")
     }
 
     /// Rows and the add field both write into the same newline text the save
     /// path already parses, so there is one source of truth and no second
     /// format to keep in sync.
+    private func addActive() {
+        add(to: activeText, from: activeNewEntry)
+    }
+
+    private func removeActive(_ domain: String) {
+        remove(domain, from: activeText)
+    }
+
     private func add(to text: Binding<String>, from entry: Binding<String>) {
         guard let updated = Self.adding(entry.wrappedValue, to: text.wrappedValue) else { return }
         text.wrappedValue = updated
@@ -2713,7 +2904,6 @@ struct SiteListsSection: View {
         }
     }
 }
-
 /// Words and apps the person blocks by hand.
 ///
 /// Separate from `SiteListsSection` because the two ask different questions.
@@ -2733,88 +2923,91 @@ struct UserBlocksSection: View {
     private var isDirty: Bool { wordsText != savedWordsText || apps != savedApps }
 
     var body: some View {
-        PageSection(title: "Your words and apps",
-                subtitle: "Blocked on top of the built-in lists.",
-                systemImage: "text.badge.minus") {
-            // --- words ---------------------------------------------------
-            Card {
+        HnGroup(title: "Your words and apps",
+                subtitle: "Blocked on top of the built-in lists.") {
+            HnGroupRow {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Words").font(.headline)
-                    Text("""
-                         One per line. A page is blocked when these appear often \
-                         enough in it — so a common word blocks ordinary pages \
-                         too. Minimum \(UserBlocks.minimumTermLength) letters.
-                         """)
-                        .font(.caption).foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    HStack(spacing: 6) {
+                        Text("Words")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(HnPalette.ink)
+                        HnExplain {
+                            Text("""
+                                 One per line. A page is blocked when these appear often \
+                                 enough in it — so a common word blocks ordinary pages \
+                                 too. Minimum \(UserBlocks.minimumTermLength) letters.
+                                 """)
+                        }
+                        Spacer(minLength: 0)
+                    }
                     ZStack(alignment: .topLeading) {
                         if wordsText.isEmpty {
                             Text("gambling\nbetting odds")
-                                .font(.system(.body, design: .monospaced))
-                                .foregroundStyle(.tertiary)
+                                .font(.system(size: 12, design: .monospaced))
+                                .foregroundStyle(HnPalette.faint)
                                 .padding(.horizontal, 5).padding(.vertical, 8)
                                 .allowsHitTesting(false)
                         }
                         TextEditor(text: $wordsText)
-                            .font(.system(.body, design: .monospaced))
+                            .font(.system(size: 12, design: .monospaced))
                             .scrollContentBackground(.hidden)
                             .accessibilityLabel("Words")
                     }
-                    .frame(height: 88)
-                    .overlay(RoundedRectangle(cornerRadius: 6)
-                        .stroke(wordsSummary.hasProblem ? Color.orange.opacity(0.7)
-                                                        : Color.secondary.opacity(0.35)))
-                    // Live, from the same parser Save uses. Catches the too-short
-                    // words and the 200-word cap here, where they can be fixed,
-                    // rather than as a refusal after Save.
-                    Text(wordsSummary.text)
-                        .font(.caption)
-                        .foregroundStyle(wordsSummary.hasProblem ? Color.orange : Color.secondary)
+                    .frame(height: 84)
+                    .padding(.horizontal, 6)
+                    .background(HnPalette.raised,
+                                in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .strokeBorder(wordsSummary.hasProblem ? HnPalette.ember.opacity(0.7)
+                                                              : HnPalette.line, lineWidth: 1))
+                    Text(verbatim: wordsSummary.text)
+                        .font(.hnCaption())
+                        .foregroundStyle(wordsSummary.hasProblem ? HnPalette.ember : HnPalette.muted)
                         .frame(minHeight: 12, alignment: .leading)
                 }
             }
 
-            // --- apps ----------------------------------------------------
-            Card {
+            HnHairline(inset: 16)
+
+            HnGroupRow {
                 VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Label("Apps", systemImage: "app.badge")
-                            .font(.headline)
+                    HStack(spacing: 6) {
+                        Text("Apps")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(HnPalette.ink)
+                        HnExplain {
+                            Text("""
+                                 Blocks the app's internet access. It still opens, and \
+                                 still works offline — stopping a launch needs Screen \
+                                 Time, which no app can do for you.
+                                 """)
+                        }
                         Spacer()
-                        Button("Add app…") { pickApp() }
-                            .controlSize(.small)
+                        HnButton(title: "Add app…", systemImage: "plus", kind: .quiet,
+                                 compact: true) { pickApp() }
                     }
-                    // Said plainly rather than discovered later. Someone who blocks
-                    // a note-taking app and finds it still opens will conclude the
-                    // feature is broken, when it is working exactly as designed.
-                    Text("""
-                         Blocks the app's internet access. It still opens, and \
-                         still works offline — stopping a launch needs Screen \
-                         Time, which no app can do for you.
-                         """)
-                        .font(.caption).foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
 
                     if apps.isEmpty {
                         HStack(spacing: 8) {
                             Image(systemName: "tray")
-                                .foregroundStyle(.tertiary)
+                                .foregroundStyle(HnPalette.faint)
                                 .accessibilityHidden(true)
                             Text("No apps blocked.")
-                                .font(.callout).foregroundStyle(.secondary)
+                                .font(.hnCaption()).foregroundStyle(HnPalette.muted)
                             Spacer(minLength: 0)
                         }
-                        .padding(.vertical, 4)
+                        .padding(.vertical, 3)
                     } else {
                         VStack(spacing: 0) {
                             ForEach(apps, id: \.self) { id in
                                 HStack(spacing: 9) {
                                     appIcon(for: id)
                                     VStack(alignment: .leading, spacing: 1) {
-                                        Text(verbatim: displayName(for: id)).font(.callout)
+                                        Text(verbatim: displayName(for: id))
+                                            .font(.system(size: 12.5))
                                         Text(verbatim: id)
-                                            .font(.caption2)
-                                            .foregroundStyle(.tertiary)
+                                            .font(.system(size: 10.5))
+                                            .foregroundStyle(HnPalette.faint)
                                             .lineLimit(1)
                                             .truncationMode(.middle)
                                     }
@@ -2832,15 +3025,18 @@ struct UserBlocksSection: View {
                                           : "Remove")
                                 }
                                 .padding(.vertical, 5)
-                                if id != apps.last { Divider() }
+                                if id != apps.last { HnHairline(inset: 27) }
                             }
                         }
                     }
                 }
             }
 
-            SaveRow(message: message, isError: isError, canSave: isDirty,
-                    save: save, revert: load)
+            HnHairline(inset: 16)
+            HnGroupRow {
+                SaveRow(message: message, isError: isError, canSave: isDirty,
+                        save: save, revert: load)
+            }
         }
         .onAppear(perform: load)
     }
@@ -2990,7 +3186,6 @@ struct BrowsersSection: View {
     @State private var error: String?
 
     var body: some View {
-        Card {
         PageSection(title: "Browser protection",
                 subtitle: """
                     While browser protection is active, losing the extension \
@@ -2999,85 +3194,107 @@ struct BrowsersSection: View {
                     unsupported browsers also close.
                     """,
                 systemImage: "safari") {
-            Label("Browser protection is always on while Hisn runs.", systemImage: "lock.shield")
-                .font(.callout.weight(.medium))
-            Text("There is no off switch and no lock needed: if the extension stops answering, the browser shows a countdown and then closes.")
-                .font(.callout).foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            Text("""
-                Hisn stays in the background when its window closes; the separately \
-                installed login agent restarts it after a crash or force-quit. \
-                Detection is periodic, not instant. Standard Default/Profile folders \
-                are checked; custom paths, guest and private windows are unverified. \
-                Explicitly trusted unknown apps bypass extension checks. Administrator \
-                changes can bypass the guard. Save work before enabling it.
-                """)
-                .font(.callout).foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Text("browser.live.title").font(.headline)
-                    Spacer()
-                    Button("browser.live.refresh") { guardian.tick(); reload() }
-                }
-                Text("browser.live.cadence")
-                    .font(.caption).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                if let checked = guardian.lastChecked {
+            HnCard {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 6) {
+                        Label("Browser protection is always on while Hisn runs.", systemImage: "lock.shield")
+                            .font(.system(.callout).weight(.medium))
+                            .foregroundStyle(HnPalette.calm)
+                        HnExplain {
+                            Text("There is no off switch and no lock needed: if the extension stops answering, the browser shows a countdown and then closes.")
+                            Text("browser.live.cadence")
+                            Text("""
+                                Hisn stays in the background when its window closes; the separately \
+                                installed login agent restarts it after a crash or force-quit. \
+                                Detection is periodic, not instant. Standard Default/Profile folders \
+                                are checked; custom paths, guest and private windows are unverified. \
+                                Explicitly trusted unknown apps bypass extension checks. Administrator \
+                                changes can bypass the guard. Save work before enabling it.
+                                """)
+                        }
+                        Spacer(minLength: 0)
+                    }
+
+                    Divider()
+
                     HStack {
-                        Text("browser.live.checked")
-                        Text(checked, style: .time)
-                    }.font(.caption).foregroundStyle(.secondary)
-                }
-                if guardian.connections.isEmpty {
-                    Text("browser.live.none").foregroundStyle(.secondary)
-                }
-                ForEach(guardian.connections) { connection in
-                    connectionRow(connection)
-                }
-            }
-            if !guardian.profileIssues.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Standard profile checks").font(.subheadline.weight(.semibold))
-                    ForEach(guardian.profileIssues) { issue in
-                        profileIssueRow(issue)
+                        Text("browser.live.title")
+                            .font(.system(.callout).weight(.medium))
+                            .foregroundStyle(HnPalette.ink)
+                        Spacer()
+                        if let checked = guardian.lastChecked {
+                            Text(checked, style: .time)
+                                .font(.hnCaption()).foregroundStyle(HnPalette.faint)
+                        }
+                        HnButton(title: "browser.live.refresh", systemImage: "arrow.clockwise",
+                                 kind: .quiet, compact: true) { guardian.tick(); reload() }
+                    }
+                    if guardian.connections.isEmpty {
+                        Text("browser.live.none")
+                            .font(.hnCaption()).foregroundStyle(HnPalette.muted)
+                    }
+                    ForEach(guardian.connections) { connection in
+                        connectionRow(connection)
                     }
                 }
             }
-            if candidates.isEmpty {
-                Text("No browsers found.").font(.callout).foregroundStyle(.secondary)
-            }
-            ForEach(candidates) { c in
-                HStack(alignment: .firstTextBaseline) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(verbatim: c.name).font(.body.weight(.medium))
-                        Text(describe(c.coverage))
-                            .font(.callout).foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                        if !guardian.connections.contains(where: { $0.bundleID == c.bundleID }) {
-                            Text("browser.live.notRunning").font(.caption).foregroundStyle(.secondary)
+
+            if !guardian.profileIssues.isEmpty {
+                HnCard {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Standard profile checks")
+                            .font(.system(.callout).weight(.medium))
+                            .foregroundStyle(HnPalette.ink)
+                        ForEach(guardian.profileIssues) { issue in
+                            profileIssueRow(issue)
                         }
                     }
-                    Spacer()
-                    if BrowserGuardPolicy.canAllowException(bundleID: c.bundleID,
-                        linked: Set(NativeMessagingInstaller.browsers.map(\.bundleID))) {
-                        Toggle("Trust this app without extension checks", isOn: Binding(
-                            get: { c.coverage == .allowedByUser },
-                            set: { allow in
-                                do { try guardian.setAllowed(c.bundleID, allow) }
-                                catch { self.error = error.localizedDescription }
-                                reload()
-                            }))
-                            .toggleStyle(.switch)
-                            .controlSize(.small)
-                            .disabled(isLocked && c.coverage == .uncovered)
+                }
+            }
+
+            HnCard {
+                VStack(alignment: .leading, spacing: 0) {
+                    if candidates.isEmpty {
+                        Text("No browsers found.")
+                            .font(.hnCaption()).foregroundStyle(HnPalette.muted)
+                    }
+                    ForEach(Array(candidates.enumerated()), id: \.element.id) { index, c in
+                        HStack(alignment: .center, spacing: 8) {
+                            Text(verbatim: c.name)
+                                .font(.system(.callout).weight(.medium))
+                                .foregroundStyle(HnPalette.ink)
+                            HnExplain { Text(verbatim: describe(c.coverage)) }
+                            if !guardian.connections.contains(where: { $0.bundleID == c.bundleID }) {
+                                Text("browser.live.notRunning")
+                                    .font(.hnCaption()).foregroundStyle(HnPalette.faint)
+                            }
+                            Spacer(minLength: 8)
+                            if BrowserGuardPolicy.canAllowException(bundleID: c.bundleID,
+                                linked: Set(NativeMessagingInstaller.browsers.map(\.bundleID))) {
+                                Toggle(isOn: Binding(
+                                    get: { c.coverage == .allowedByUser },
+                                    set: { allow in
+                                        do { try guardian.setAllowed(c.bundleID, allow) }
+                                        catch { self.error = error.localizedDescription }
+                                        reload()
+                                    })) {
+                                    Text("Trust this app without extension checks")
+                                        .font(.hnCaption())
+                                        .foregroundStyle(HnPalette.muted)
+                                }
+                                .toggleStyle(.switch)
+                                .controlSize(.small)
+                                .disabled(isLocked && c.coverage == .uncovered)
+                            }
+                        }
+                        .padding(.vertical, 7)
+                        if index < candidates.count - 1 { Divider() }
                     }
                 }
             }
             if let error {
-                Text(error).font(.caption).foregroundStyle(.red)
+                Text(error).font(.hnCaption()).foregroundStyle(HnPalette.danger)
             }
-        }
         }
         .onAppear(perform: reload)
         .onChange(of: guardian.connections.map(\.id).sorted()) { _ in reload() }
@@ -3087,10 +3304,10 @@ struct BrowsersSection: View {
     private func connectionRow(_ connection: BrowserGuard.Connection) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             HStack {
-                Text(verbatim: connection.name).font(.body.weight(.semibold))
+                Text(verbatim: connection.name).font(.callout.weight(.medium))
                 Spacer()
                 Text(verbatim: "PID \(connection.id)")
-                    .font(.caption.monospaced()).foregroundStyle(.secondary)
+                    .font(.caption2.monospaced()).foregroundStyle(.secondary)
             }
             switch connection.state {
             case .connected:
@@ -3127,22 +3344,26 @@ struct BrowsersSection: View {
                 }
             }
         }
-        .font(.callout)
+        .font(.hnCaption())
         .fixedSize(horizontal: false, vertical: true)
-        .padding(12)
+        .padding(8)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 12))
+        .background(HnPalette.soft,
+                    in: RoundedRectangle(cornerRadius: 7, style: .continuous))
     }
 
     private func profileIssueRow(_ issue: BrowserGuard.ProfileIssue) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(verbatim: issue.browserName).font(.body.weight(.medium))
             if !issue.unprotected.isEmpty {
-                Label("Extension removed or disabled: \(issue.unprotected.joined(separator: ", "))",
-                      systemImage: "exclamationmark.shield")
-                    .font(.callout).foregroundStyle(.orange)
-                Text("Restore Hisn in these profiles; browser guarding can close this browser.")
-                    .font(.caption).foregroundStyle(.secondary)
+                HStack(spacing: 6) {
+                    Label("Extension removed or disabled: \(issue.unprotected.joined(separator: ", "))",
+                          systemImage: "exclamationmark.shield")
+                        .font(.caption).foregroundStyle(HnPalette.ember)
+                    HnExplain {
+                        Text("Restore Hisn in these profiles; browser guarding can close this browser.")
+                    }
+                }
             }
             if !issue.unconfirmed.isEmpty {
                 Label("Not confirmed: \(issue.unconfirmed.joined(separator: ", "))",
@@ -3150,8 +3371,13 @@ struct BrowsersSection: View {
                     .font(.callout).foregroundStyle(.secondary)
             }
             if !issue.enumerationVerified {
-                Text("The standard profile list could not be verified. This unknown result alone does not close the browser.")
-                    .font(.caption).foregroundStyle(.secondary)
+                HStack(spacing: 6) {
+                    Text("Not verified")
+                        .font(.caption).foregroundStyle(.secondary)
+                    HnExplain {
+                        Text("The standard profile list could not be verified. This unknown result alone does not close the browser.")
+                    }
+                }
             }
         }
         .fixedSize(horizontal: false, vertical: true)
@@ -3191,48 +3417,54 @@ struct PartnerSection: View {
     @State private var isError = false
 
     var body: some View {
-        PageSection(title: "Accountability partner",
+        HnGroup(title: "Accountability partner",
                 subtitle: """
                     Someone you trust who can end a lock early by approving \
                     it — immediately, but never without them. They open the Hisn \
                     Partner page on their own phone or computer, create a key \
                     there, and send you the code it shows under “Your key”.
-                    """,
-                systemImage: "person.badge.shield.checkmark") {
-            if let current {
-                HStack(alignment: .firstTextBaseline) {
-                    Label("Partner key set · \(PartnerService.fingerprint(current))",
-                          systemImage: "person.badge.shield.checkmark")
-                    Spacer()
-                    Button("Remove") { save(nil) }
-                        .help("""
-                              Removing the key removes the immediate exit. It is \
-                              always allowed; setting a new one waits for no lock.
-                              """)
+                    """) {
+            HnGroupRow {
+                VStack(alignment: .leading, spacing: 10) {
+                    if let current {
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Text(verbatim: String(localized: "Partner key set · \(PartnerService.fingerprint(current))"))
+                                .font(.hnBody())
+                                .foregroundStyle(HnPalette.calm)
+                            HnExplain {
+                                Text("Check with your partner that their page shows the same fingerprint.")
+                            }
+                            Spacer(minLength: 8)
+                            HnButton(title: "Remove", kind: .quiet, compact: true) {
+                                save(nil)
+                            }
+                            .help("Removing the key removes the immediate exit. It is always allowed; setting a new one waits for no lock.")
+                        }
+                    }
+                    if (!isLocked && !managed.isManaged) || current == nil {
+                        HStack(spacing: 8) {
+                            TextField("HISN-PK-…", text: $keyText)
+                                .hnField(monospaced: true)
+                            HnButton(title: current == nil ? "Save key" : "Replace key",
+                                     kind: .quiet) {
+                                save(keyText)
+                            }
+                            .disabled(keyText.trimmingCharacters(in: .whitespaces).isEmpty || isLocked || managed.isManaged)
+                        }
+                        if managed.isManaged {
+                            Text("Managed by \(managed.displayName). Changing the partner key requires your administrator.")
+                                .font(.hnCaption()).foregroundStyle(HnPalette.muted)
+                        } else if isLocked {
+                            Text("A lock is running, so a partner key can only be added once it ends.")
+                                .font(.hnCaption()).foregroundStyle(HnPalette.muted)
+                        }
+                    }
+                    if let message {
+                        Text(verbatim: message).font(.hnCaption())
+                            .foregroundStyle(isError ? HnPalette.danger : HnPalette.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
-                Text("Check with your partner that their page shows the same fingerprint.")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            if (!isLocked && !managed.isManaged) || current == nil {
-                HStack {
-                    TextField("HISN-PK-…", text: $keyText)
-                        .textFieldStyle(.roundedBorder)
-                        .font(.body.monospaced())
-                    Button(current == nil ? "Save key" : "Replace key") { save(keyText) }
-                        .disabled(keyText.trimmingCharacters(in: .whitespaces).isEmpty || isLocked || managed.isManaged)
-                }
-                if managed.isManaged {
-                    Text("Managed by \(managed.displayName). Changing the partner key requires your administrator.")
-                        .font(.caption).foregroundStyle(.secondary)
-                } else if isLocked {
-                    Text("A lock is running, so a partner key can only be added once it ends.")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-            }
-            if let message {
-                Text(message).font(.caption)
-                    .foregroundStyle(isError ? Color.red : Color.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
@@ -3263,37 +3495,50 @@ struct PartnerReleaseCard: View {
 
     var body: some View {
         if PartnerService.currentKey() == nil {
-            Text("""
-                 No accountability partner is set up, so the only way out is the \
-                 request below. You can add a partner in Settings after this lock.
-                 """)
-                .font(.callout).foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 8) {
+                Text("No partner set up.").font(.hnCallout()).foregroundStyle(HnPalette.muted)
+                HnExplain {
+                    Text("""
+                         No accountability partner is set up, so the only way out is the \
+                         request below. You can add a partner in Settings after this lock.
+                         """)
+                }
+                Spacer(minLength: 0)
+            }
         } else if let code = lock.partnerChallenge {
             VStack(alignment: .leading, spacing: 8) {
-                Text("1. Send this code to your partner:").font(.callout)
-                HStack {
-                    Text(verbatim: code).font(.callout.monospaced()).textSelection(.enabled)
-                    Spacer()
+                Text("1. Send this code to your partner:").font(.hnCallout())
+                HStack(spacing: 8) {
+                    Text(verbatim: code)
+                        .font(.system(.callout, design: .monospaced))
+                        .foregroundStyle(HnPalette.ink)
+                        .textSelection(.enabled)
+                    Spacer(minLength: 8)
                     Button("Copy") {
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(code, forType: .string)
-                    }.controlSize(.small)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
                 }
-                Text("""
-                     2. If they agree, their Hisn Partner page gives them an \
-                     approval to send back. Paste it here:
-                     """).font(.callout)
-                    .fixedSize(horizontal: false, vertical: true)
-                HStack {
+                HStack(spacing: 6) {
+                    Text("2. Paste their approval here:").font(.hnCallout())
+                    HnExplain {
+                        Text("""
+                             If they agree, their Hisn Partner page gives them an \
+                             approval to send back.
+                             """)
+                    }
+                    Spacer(minLength: 0)
+                }
+                HStack(spacing: 8) {
                     TextField("HISN-OK-…", text: $approval)
-                        .textFieldStyle(.roundedBorder)
-                        .font(.callout.monospaced())
-                    Button("End the lock") { release() }
+                        .hnField(monospaced: true)
+                    HnButton(title: "End the lock", kind: .quiet) { release() }
                         .disabled(approval.trimmingCharacters(in: .whitespaces).isEmpty || busy)
                 }
                 if let error {
-                    Text(error).font(.caption).foregroundStyle(.red)
+                    Text(error).font(.hnCaption()).foregroundStyle(HnPalette.danger)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -3325,90 +3570,85 @@ private struct SettingsPage: View {
     @State private var showBrowserHelp = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 24) {
+            HnPageHeader(eyebrow: "Settings", title: "How Hisn checks",
+                         caption: "The detail behind the status.")
             if managed.isManaged {
                 ManagedBanner(managed: managed)
             }
-            // Each group is one card. A flat column of headings and dividers
-            // gave every control the same weight and read as one long form;
-            // grouped cards match the rest of the app.
-            Card {
-            PageSection(title: "Content checking",
-                    subtitle: managed.isManaged
-                        ? "Managed by \(managed.displayName). You can turn checks on and raise sensitivity; the reverse requires your administrator."
-                        : isLocked
-                        ? "A lock is running. You can turn checks on and raise sensitivity; the reverse waits until it ends."
-                        : "These run on top of the site lists, and catch pages the lists have never seen.",
-                    systemImage: "text.magnifyingglass") {
-                Toggle(isOn: $settings.hostKeywords) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Match keywords in addresses")
-                        Text("Catches a site registered today, before any list has it. Works in every app on this Mac.")
-                            .font(.callout).foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-                .toggleStyle(.switch)
 
-                Toggle(isOn: $settings.text) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Check the words on a page")
-                        Text("Checks changing page text in supported Chromium browsers with Hisn connected. Detected X/Twitter posts are hidden individually; other sites use page-level checking. Images and videos without meaningful text can be missed.")
-                            .font(.callout).foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+            HnGroup(title: "Content checking") {
+                HnGroupRow {
+                    HnToggleRow(title: "Match keywords in addresses",
+                                detail: "Catches a site registered today, before any list has it. Works in every app on this Mac.",
+                                isOn: $settings.hostKeywords)
                 }
-                .toggleStyle(.switch)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text("How strict").font(.body)
-                        Spacer()
-                        Text(verbatim: "\(settings.textSensitivity)")
-                            .font(.callout).monospacedDigit()
-                            .foregroundStyle(.secondary)
-                    }
-                    Slider(value: Binding(
-                        get: { Double(settings.textSensitivity) },
-                        set: { settings.textSensitivity = Int($0) }
-                    ), in: 0...100, step: 5) {
-                        Text("How strict")
-                    }
-                    .labelsHidden()
-                    .disabled(!settings.text)
-                    Text("""
-                         Higher catches more, and blocks more pages that turn out \
-                         to be innocent. Medical and reference sites are exempt \
-                         from this check at any setting.
-                         """)
-                        .font(.caption).foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                HnHairline(inset: 16)
+                HnGroupRow {
+                    HnToggleRow(title: "Check the words on a page",
+                                detail: "Checks changing page text in supported Chromium browsers with Hisn connected. Detected X/Twitter posts are hidden individually; other sites use page-level checking. Images and videos without meaningful text can be missed.",
+                                isOn: $settings.text)
                 }
-
-                SaveRow(message: message, isError: isError,
-                        canSave: settings != saved, save: save, revert: load)
-            }
+                HnHairline(inset: 16)
+                HnGroupRow {
+                    VStack(alignment: .leading, spacing: 7) {
+                        HStack(spacing: 6) {
+                            Text("How strict")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(HnPalette.ink)
+                            HnExplain {
+                                Text("""
+                                     Higher catches more, and blocks more pages that turn out \
+                                     to be innocent. Medical and reference sites are exempt \
+                                     from this check at any setting.
+                                     """)
+                            }
+                            Spacer()
+                            HnBadge(verbatim: "\(settings.textSensitivity)")
+                        }
+                        Slider(value: Binding(
+                            get: { Double(settings.textSensitivity) },
+                            set: { settings.textSensitivity = Int($0) }
+                        ), in: 0...100, step: 5) {
+                            Text("How strict")
+                        }
+                        .labelsHidden()
+                        .tint(HnPalette.accent)
+                        .disabled(!settings.text)
+                    }
+                    .opacity(settings.text ? 1 : 0.5)
+                }
+                HnHairline(inset: 16)
+                HnGroupRow {
+                    SaveRow(message: message, isError: isError,
+                            canSave: settings != saved, save: save, revert: load)
+                }
             }
 
-            Card {
-                VStack(alignment: .leading, spacing: 14) {
+            HnGroup(title: "Browser extension") {
+                HnGroupRow {
                     ExtensionVisualGuidance()
-                    HStack(spacing: 14) {
-                        Button("How to connect a browser") { showBrowserHelp = true }
-                            .controlSize(.large)
-                        Button("How Hisn works") { AppNavigation.shared.welcomeRequested = true }
-                            .controlSize(.large)
+                }
+                HnHairline(inset: 16)
+                HnGroupRow {
+                    HnLinkRow(systemImage: "puzzlepiece.extension",
+                              title: "How to connect a browser") {
+                        showBrowserHelp = true
+                    }
+                }
+                HnHairline(inset: 16)
+                HnGroupRow {
+                    HnLinkRow(systemImage: "shield.lefthalf.filled",
+                              title: "How Hisn works") {
+                        AppNavigation.shared.welcomeRequested = true
                     }
                 }
             }
 
-            Card { PartnerSection(isLocked: isLocked, managed: managed) }
-
-            Card { GrayscaleSection(isLocked: isLocked, managed: managed) }
-
-            Card { LanguageSection() }
-
-            Card { DetailsSection() }
+            PartnerSection(isLocked: isLocked, managed: managed)
+            GrayscaleSection(isLocked: isLocked, managed: managed)
+            LanguageSection()
+            DetailsSection()
         }
         .onAppear(perform: load)
         .sheet(isPresented: $showBrowserHelp) { BrowserSetupHelp() }
@@ -3442,28 +3682,29 @@ private struct GrayscaleSection: View {
     @ObservedObject private var grayscale = ScreenGrayscale.shared
 
     var body: some View {
-        PageSection(title: "Gray screen",
-                    subtitle: "Shows everything on this Mac in shades of gray. Apps keep working; images and videos lose most of their pull.",
-                    systemImage: "circle.lefthalf.filled") {
-            Toggle(isOn: Binding(get: { grayscale.isOn }, set: { grayscale.set($0) })) {
-                Text("Make the screen gray")
-            }
-            .toggleStyle(.switch)
-            .disabled(!ScreenGrayscale.isAvailable
-                      || (grayscale.isOn && (isLocked || managed.isManaged)))
+        HnGroup(title: "Gray screen",
+                subtitle: "Shows everything on this Mac in shades of gray. Apps keep working; images and videos lose most of their pull.") {
+            HnGroupRow {
+                VStack(alignment: .leading, spacing: 7) {
+                    HnToggleRow(title: "Make the screen gray",
+                                isOn: Binding(get: { grayscale.isOn }, set: { grayscale.set($0) }))
+                        .disabled(!ScreenGrayscale.isAvailable
+                                  || (grayscale.isOn && (isLocked || managed.isManaged)))
 
-            if !ScreenGrayscale.isAvailable {
-                Text("This version of macOS does not let Hisn change the screen. Turn on Grayscale in System Settings › Accessibility › Display › Color Filters instead.")
-                    .font(.caption).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            } else if grayscale.isOn && managed.isManaged {
-                Text("Managed by \(managed.displayName). The screen stays gray while the organization requires it.")
-                    .font(.caption).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            } else if grayscale.isOn && isLocked {
-                Text("A lock is running. The screen stays gray until it ends.")
-                    .font(.caption).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                    if !ScreenGrayscale.isAvailable {
+                        Text("This version of macOS does not let Hisn change the screen. Turn on Grayscale in System Settings › Accessibility › Display › Color Filters instead.")
+                            .font(.hnCaption()).foregroundStyle(HnPalette.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                    } else if grayscale.isOn && managed.isManaged {
+                        Text("Managed by \(managed.displayName). The screen stays gray while the organization requires it.")
+                            .font(.hnCaption()).foregroundStyle(HnPalette.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                    } else if grayscale.isOn && isLocked {
+                        Text("A lock is running. The screen stays gray until it ends.")
+                            .font(.hnCaption()).foregroundStyle(HnPalette.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
             }
         }
     }
@@ -3476,27 +3717,31 @@ private struct LanguageSection: View {
     @State private var choice = AppLanguage.chosen
 
     var body: some View {
-        PageSection(title: "Language", systemImage: "globe") {
-            Picker("Language", selection: $choice) {
-                ForEach(AppLanguage.allCases) { Text(verbatim: $0.label).tag($0) }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .onChange(of: choice) { AppLanguage.choose($0) }
+        HnGroup(title: "Language") {
+            HnGroupRow {
+                VStack(alignment: .leading, spacing: 8) {
+                    Picker("Language", selection: $choice) {
+                        ForEach(AppLanguage.allCases) { Text(verbatim: $0.label).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .onChange(of: choice) { AppLanguage.choose($0) }
 
-            if AppLanguage.needsRestart(for: choice) {
-                if lock.isLocked {
-                    // Quit is refused during a lock, so no restart is offered.
-                    Text("Hisn switches language the next time it starts — after this lock, or when you next log in.")
-                        .font(.caption).foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                } else {
-                    HStack {
-                        Text("Hisn switches language when it restarts.")
-                            .font(.caption).foregroundStyle(.secondary)
-                        Spacer()
-                        Button("Restart now") { AppLanguage.restart() }
-                            .controlSize(.small)
+                    if AppLanguage.needsRestart(for: choice) {
+                        if lock.isLocked {
+                            Text("Hisn switches language the next time it starts — after this lock, or when you next log in.")
+                                .font(.hnCaption()).foregroundStyle(HnPalette.muted)
+                                .fixedSize(horizontal: false, vertical: true)
+                        } else {
+                            HStack {
+                                Text("Hisn switches language when it restarts.")
+                                    .font(.hnCaption()).foregroundStyle(HnPalette.muted)
+                                Spacer()
+                                HnButton(title: "Restart now", kind: .text) {
+                                    AppLanguage.restart()
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -3511,41 +3756,45 @@ private struct DetailsSection: View {
     private var defaults: UserDefaults? { UserDefaults(suiteName: LockStore.appGroup) }
 
     var body: some View {
-        PageSection(title: "Details", systemImage: "info.circle") {
-            Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 6) {
-                row("Block list version",
-                    value: defaults.map { "\($0.integer(forKey: "listVersion"))" } ?? "—")
-                row("Domains in the filter",
-                    value: defaults.map { $0.integer(forKey: "filterDomainCount").formatted() } ?? "—")
-                row("Last list check",
-                    value: (defaults?.object(forKey: "lastListCheck") as? Date)?
-                        .formatted(date: .abbreviated, time: .shortened) ?? String(localized: "never"))
-                row("Last list update",
-                    value: lastListUpdate?.formatted(date: .abbreviated, time: .shortened)
-                        ?? String(localized: "never"))
-                if ListUpdateFreshness.isStale(lastUpdate: lastListUpdate) {
-                    Text("The block list has not updated in over a week. The previous signed list is still enforced.")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-                if listUpdateFailed {
-                    Text("The last block-list update failed. The previous signed list is still enforced.")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-                row("Browser last connected",
-                    value: (defaults?.object(forKey: "extensionLastSeen") as? Date)?
-                        .formatted(date: .abbreviated, time: .shortened) ?? String(localized: "never"))
-                row("App version",
-                    value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—")
-                row("Guardian daemon",
-                    value: guardian.installed ? String(localized: "Installed") : String(localized: "Not installed"))
-                if let action = guardian.action {
-                    let when = guardian.at?.formatted(date: .abbreviated, time: .shortened) ?? ""
-                    row("Last guardian event",
-                        value: GuardianLogStatus.label(for: action) + (when.isEmpty ? "" : " · " + when))
+        HnGroup(title: "Details") {
+            HnGroupRow {
+                VStack(alignment: .leading, spacing: 10) {
+                    Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 6) {
+                        row("Block list version",
+                            value: defaults.map { "\($0.integer(forKey: "listVersion"))" } ?? "—")
+                        row("Domains in the filter",
+                            value: defaults.map { $0.integer(forKey: "filterDomainCount").formatted() } ?? "—")
+                        row("Last list check",
+                            value: (defaults?.object(forKey: "lastListCheck") as? Date)?
+                                .formatted(date: .abbreviated, time: .shortened) ?? String(localized: "never"))
+                        row("Last list update",
+                            value: lastListUpdate?.formatted(date: .abbreviated, time: .shortened)
+                                ?? String(localized: "never"))
+                        if ListUpdateFreshness.isStale(lastUpdate: lastListUpdate) {
+                            Text("The block list has not updated in over a week. The previous signed list is still enforced.")
+                                .font(.hnCaption()).foregroundStyle(HnPalette.muted)
+                        }
+                        if listUpdateFailed {
+                            Text("The last block-list update failed. The previous signed list is still enforced.")
+                                .font(.hnCaption()).foregroundStyle(HnPalette.muted)
+                        }
+                        row("Browser last connected",
+                            value: (defaults?.object(forKey: "extensionLastSeen") as? Date)?
+                                .formatted(date: .abbreviated, time: .shortened) ?? String(localized: "never"))
+                        row("App version",
+                            value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—")
+                        row("Guardian daemon",
+                            value: guardian.installed ? String(localized: "Installed") : String(localized: "Not installed"))
+                        if let action = guardian.action {
+                            let when = guardian.at?.formatted(date: .abbreviated, time: .shortened) ?? ""
+                            row("Last guardian event",
+                                value: GuardianLogStatus.label(for: action) + (when.isEmpty ? "" : " · " + when))
+                        }
+                    }
+                    .font(.system(size: 12))
+                    HnButton(title: "Licenses and sources", kind: .text) { showingNotices = true }
                 }
             }
-            .font(.callout)
-            Button("Licenses and sources") { showingNotices = true }
         }
         .sheet(isPresented: $showingNotices) { MacNoticesView() }
     }

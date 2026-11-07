@@ -502,29 +502,21 @@ final class MobileProtectionTests: XCTestCase {
     }
 
     func testSavingDNSIsNotTheSameAsEnablingIt() {
-        XCTAssertEqual(MobileProtectionPolicy.dnsState(hasConfiguration: false, isEnabled: true,
-            serverURL: nil, servers: []), .absent)
-        XCTAssertEqual(MobileProtectionPolicy.dnsState(hasConfiguration: true, isEnabled: false,
-            serverURL: MobileProtectionPolicy.dnsURL, servers: MobileProtectionPolicy.dnsServers), .saved)
-        XCTAssertEqual(MobileProtectionPolicy.dnsState(hasConfiguration: true, isEnabled: true,
-            serverURL: MobileProtectionPolicy.dnsURL, servers: MobileProtectionPolicy.dnsServers.reversed()), .enabled)
-        XCTAssertEqual(MobileProtectionPolicy.dnsState(hasConfiguration: true, isEnabled: true,
-            serverURL: URL(string: "https://cloudflare-dns.com/dns-query"),
-            servers: MobileProtectionPolicy.dnsServers), .differentConfiguration)
-        XCTAssertEqual(MobileProtectionPolicy.dnsState(hasConfiguration: true, isEnabled: true,
-            serverURL: MobileProtectionPolicy.dnsURL, servers: ["1.1.1.1"]), .differentConfiguration)
+        let hisn = MobileProtectionPolicy.dnsProviderBundleIdentifier
+        XCTAssertEqual(MobileProtectionPolicy.dnsProxyState(
+            providerBundleIdentifier: nil, isEnabled: true), .absent)
+        XCTAssertEqual(MobileProtectionPolicy.dnsProxyState(
+            providerBundleIdentifier: hisn, isEnabled: false), .saved)
+        XCTAssertEqual(MobileProtectionPolicy.dnsProxyState(
+            providerBundleIdentifier: hisn, isEnabled: true), .enabled)
     }
 
-    func testScopedDNSIsNotDeviceWideProtection() {
-        for scope in [["example.com"], ["."], [" "], ["com", "org"]] {
-            XCTAssertEqual(MobileProtectionPolicy.dnsState(hasConfiguration: true, isEnabled: true,
-                serverURL: MobileProtectionPolicy.dnsURL, servers: MobileProtectionPolicy.dnsServers,
-                matchDomains: scope), .differentConfiguration)
-        }
-        for scope: [String]? in [nil, [], [""], ["example.com", ""]] {
-            XCTAssertEqual(MobileProtectionPolicy.dnsState(hasConfiguration: true, isEnabled: true,
-                serverURL: MobileProtectionPolicy.dnsURL, servers: MobileProtectionPolicy.dnsServers,
-                matchDomains: scope), .enabled)
+    func testAnotherDNSFilterIsNotHisn() {
+        for provider in ["com.example.other", "", "app.hisn.mobile.dnsproxy2"] {
+            XCTAssertEqual(MobileProtectionPolicy.dnsProxyState(
+                providerBundleIdentifier: provider, isEnabled: true), .differentConfiguration)
+            XCTAssertEqual(MobileProtectionPolicy.dnsProxyState(
+                providerBundleIdentifier: provider, isEnabled: false), .differentConfiguration)
         }
     }
 

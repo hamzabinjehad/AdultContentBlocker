@@ -44,7 +44,8 @@ public final class VisualBenchmarkActivity extends Activity {
                 throw new IllegalStateException("Isolated benchmark package required");
             String backend = getIntent().getStringExtra("backend");
             if (backend == null) backend = "auto";
-            if (!"auto".equals(backend) && !"cpu".equals(backend) && !"webgl".equals(backend)) throw new IllegalArgumentException("Unsupported backend");
+            if (!"auto".equals(backend) && !"cpu".equals(backend) && !"wasm".equals(backend)
+                    && !"webgl".equals(backend)) throw new IllegalArgumentException("Unsupported backend");
             directory = new File(getFilesDir(), "visual_benchmark");
             byte[] manifestBytes = Files.readAllBytes(new File(directory, "manifest.json").toPath());
             if (manifestBytes.length > 131072) throw new IllegalArgumentException("Manifest too large");

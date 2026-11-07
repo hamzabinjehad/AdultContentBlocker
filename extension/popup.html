@@ -4,8 +4,9 @@
   <header class="popup-header"><div class="brand"><img src="icons/icon-48.png" width="26" height="26" alt=""><span data-i18n="brand.name">Hisn</span></div><button type="button" class="lang-switch" id="langSwitch" lang="ar">العربية</button></header>
   <section class="popup-editor" id="popupEditor" hidden aria-label="Protection settings" data-i18n-aria-label="popup.manage">
     <nav class="popup-editor-actions">
-      <button type="button" class="secondary" id="backToStatus" data-i18n="popup.back">Back</button>
-      <button type="button" class="secondary" id="openFullSettings" data-i18n="popup.fullPage">Open full page</button>
+      <button type="button" class="secondary popup-back" id="backToStatus"><span data-icon="chevron-left" aria-hidden="true"></span><span data-i18n="popup.back">Back</span></button>
+      <button type="button" class="popup-editor-lang" id="editorLangSwitch" lang="ar">العربية</button>
+      <button type="button" class="secondary popup-full" id="openFullSettings"><span data-icon="arrow-up-right" aria-hidden="true"></span><span data-i18n="popup.fullPage">Open full page</span></button>
     </nav>
     <iframe id="settingsFrame" title="Protection settings" data-i18n-title="popup.manage"></iframe>
   </section>

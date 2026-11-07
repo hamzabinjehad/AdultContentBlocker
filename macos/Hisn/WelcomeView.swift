@@ -2,57 +2,75 @@ import SwiftUI
 
 /// First-run explanation, in the order the app actually works.
 ///
-/// The window used to open on a twelve-step diagnostic page before the person
-/// knew what the app was. This is the shortest honest sequence: what the
-/// layers do, the one gap a browser extension cannot close by itself, and
-/// where to go next. Each screen asks for one decision; the detailed Setup
-/// page stays available, but it is no longer the front door.
+/// Three screens, each with one decision. The layer explanations live in
+/// `Explain` popovers, so the first screen is a short list rather than an
+/// essay; the optional extra blocks give the person a decision they can make
+/// immediately; the detailed Setup page stays available afterwards.
 struct WelcomeView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage("hisn.welcome.completed") private var welcomeCompleted = false
+    @ObservedObject private var lock = LockManager.shared
     @State private var step = 0
     @State private var showPrivateBrowsing = false
     @State private var privateStatus = PrivateBrowsingStatus.current(force: true)
     @State private var managed = ManagedMode.current()
+    @State private var extraBlocks: [String] = []
+    @State private var extraError: String?
 
     private let stepCount = 3
 
+    init(initialStep: Int = 0) {
+        _step = State(initialValue: min(max(initialStep, 0), 2))
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                Label("Hisn", systemImage: "shield.lefthalf.filled")
-                    .font(.headline)
-                    .foregroundStyle(Color.accentColor)
+            HStack(spacing: 8) {
+                HnMark(size: 24)
+                Text("Hisn")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(HnPalette.ink)
+                Text(verbatim: "حصن")
+                    .font(.system(size: 10.5))
+                    .foregroundStyle(HnPalette.muted)
                 Spacer()
                 Button("Skip") { dismiss() }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
+                    .buttonStyle(.borderless)
+                    .font(.system(.caption).weight(.medium))
+                    .foregroundStyle(HnPalette.muted)
             }
-            .padding(.horizontal, 26)
-            .padding(.top, 22)
+            .padding(.horizontal, 24)
+            .padding(.top, 20)
+
+            stepBar
+                .padding(.horizontal, 24)
+                .padding(.top, 12)
 
             ScrollView {
                 Group {
                     switch step {
                     case 0:  howItWorks
-                    case 1:  privateWindows
-                    default: ready
+                    case 1:  extraSites
+                    default: privateWindows
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .topLeading)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .padding(.horizontal, 26)
-            .padding(.top, 18)
+            .padding(.horizontal, 24)
+            .padding(.top, 16)
 
             footer
-                .padding(.horizontal, 26)
-                .padding(.bottom, 22)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 20)
         }
-        .frame(width: 640, height: 560)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .frame(width: 600, height: 560)
+        .background(HnPalette.canvas)
         .sheet(isPresented: $showPrivateBrowsing) {
             PrivateBrowsingSheet()
+        }
+        .onAppear {
+            extraBlocks = SiteLists.customBlocks()
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             PrivateBrowsingStatus.invalidateCache()
@@ -65,135 +83,158 @@ struct WelcomeView: View {
         }
     }
 
+    private var stepBar: some View {
+        HStack(spacing: 4) {
+            ForEach(0..<stepCount, id: \.self) { index in
+                Capsule()
+                    .fill(index <= step ? HnPalette.accent : HnPalette.soft)
+                    .frame(height: 3)
+            }
+        }
+        .animation(.easeInOut(duration: 0.16), value: step)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Step \(step + 1) of \(stepCount)"))
+    }
+
     // MARK: Step 1 — what the app does
 
     private var howItWorks: some View {
-        VStack(alignment: .leading, spacing: 22) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("How Hisn works")
-                    .font(.largeTitle.weight(.semibold))
-                    .accessibilityAddTraits(.isHeader)
-                Text("Three layers, each covering a different way around the others.")
-                    .font(.title3)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: 18) {
+            HnPageHeader(eyebrow: "First run", title: "How Hisn works",
+                         caption: "Three layers, all on this Mac.")
+
+            HnCard(padding: 0) {
+                VStack(spacing: 0) {
+                    layerRow("checkmark.shield.fill", "Every app",
+                             "Blocks known adult sites on this Mac, not only in one browser.",
+                             HnPalette.calm)
+                    HnHairline(inset: 44)
+                    layerRow("puzzlepiece.extension.fill", "Your browser",
+                             "Reads page text the lists have never seen. Chrome, Helium and other Chromium browsers.",
+                             HnPalette.accent)
+                    HnHairline(inset: 44)
+                    layerRow("lock.fill", "A lock",
+                             "Makes protection harder to turn off when you need a commitment.",
+                             HnPalette.ember)
+                }
             }
 
-            VStack(spacing: 14) {
-                layerRow("checkmark.shield.fill", "Every app",
-                         "Blocks known adult sites on this Mac, not only in one browser.", .green)
-                layerRow("puzzlepiece.extension.fill", "Your browser",
-                         "Reads page text the lists have never seen. Chrome, Helium and other Chromium browsers.", .blue)
-                layerRow("lock.fill", "A lock",
-                         "Makes protection harder to turn off when you need a commitment.", .orange)
+            HStack(spacing: 6) {
+                Image(systemName: "lock.shield")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(HnPalette.faint)
+                Text("Matching stays on this Mac. There is no account and no browsing log.")
+                    .font(.hnCaption())
+                    .foregroundStyle(HnPalette.muted)
             }
-
-            Text("Matching stays on this Mac. There is no account and no browsing log.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
-    // MARK: Step 2 — the private-window decision
+    // MARK: Step 2 — optional distraction blocks
+
+    /// A decision the person can make immediately, in the same list the Rules
+    /// page edits. It is optional and says so: adult-content protection never
+    /// depends on it.
+    private var extraSites: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HnPageHeader(eyebrow: "First run", title: "Block distractions too?",
+                         caption: "Optional. Tap sites to add them to your block list. Adult content stays covered.")
+
+            HnCard {
+                ExtraSitesPicker(blocks: extraBlocks,
+                                 isLocked: lock.isLocked || managed.isManaged,
+                                 showsHeader: false) { domain in
+                    toggleSuggestion(domain)
+                }
+            }
+
+            if let extraError {
+                HnNotice(title: nil, verbatim: extraError,
+                         systemImage: "exclamationmark.triangle.fill", level: .caution)
+            }
+
+            Text("You can change these later in Blocking Rules.")
+                .font(.hnCaption())
+                .foregroundStyle(HnPalette.muted)
+        }
+    }
+
+    /// First run writes each tap straight through the same guarded save the
+    /// list editor uses. There is no hidden draft: a chip that looks selected
+    /// is in the list the filter reads.
+    private func toggleSuggestion(_ domain: String) {
+        let next = ExtraSites.toggling(domain, in: extraBlocks)
+        guard next != extraBlocks else { return }
+        do {
+            try SiteLists.save(customBlocks: next, allowlist: SiteLists.allowlist(),
+                               locked: lock.isLocked || managed.isManaged)
+            extraBlocks = next
+            extraError = nil
+            FilterSync.soon()
+        } catch {
+            extraError = error.localizedDescription
+        }
+    }
+
+    // MARK: Step 3 — the private-window decision
 
     private var privateWindows: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("One gap to close")
-                    .font(.largeTitle.weight(.semibold))
-                    .accessibilityAddTraits(.isHeader)
-                Text("Private windows skip the browser extension. Hisn can disable them in the browsers below.")
-                    .font(.title3)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+        VStack(alignment: .leading, spacing: 16) {
+            HnPageHeader(eyebrow: "First run", title: "One gap to close",
+                         caption: "Private windows skip the extension.")
 
             if privateStatus.controllable.isEmpty {
                 Text("No Chromium or Firefox browser is installed, so there is nothing to disable here.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .font(.hnBody())
+                    .foregroundStyle(HnPalette.muted)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(privateStatus.controllable) { browser in
-                        HStack(spacing: 10) {
-                            Image(systemName: browser.family == .firefox ? "flame" : "globe")
-                                .foregroundStyle(browser.isCovered ? Color.green : Color.orange)
-                                .frame(width: 22)
-                                .accessibilityHidden(true)
-                            Text(browser.name).font(.callout.weight(.medium))
-                            Spacer(minLength: 8)
-                            Text(browser.stateKey)
-                                .font(.caption)
-                                .foregroundStyle(browser.isCovered ? Color.secondary : Color.orange)
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 9)
-                        if browser.id != privateStatus.controllable.last?.id {
-                            Divider().padding(.leading, 36)
+                HnCard(padding: 0) {
+                    VStack(spacing: 0) {
+                        ForEach(privateStatus.controllable) { browser in
+                            HStack(spacing: 9) {
+                                Image(systemName: browser.family == .firefox ? "flame" : "globe")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundStyle(browser.isCovered ? HnPalette.calm : HnPalette.ember)
+                                    .frame(width: 18)
+                                    .accessibilityHidden(true)
+                                Text(browser.name).font(.system(size: 13, weight: .medium))
+                                Spacer(minLength: 8)
+                                Text(browser.stateKey)
+                                    .font(.hnCaption())
+                                    .foregroundStyle(browser.isCovered ? HnPalette.muted : HnPalette.ember)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            if browser.id != privateStatus.controllable.last?.id {
+                                HnHairline(inset: 43)
+                            }
                         }
                     }
-                }
-                .background(Color(nsColor: .controlBackgroundColor),
-                            in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .strokeBorder(Color(nsColor: .separatorColor), lineWidth: 1)
-                        .accessibilityHidden(true)
                 }
 
                 if privateStatus.open.isEmpty {
-                    Label("Private windows are covered in every browser Hisn can control.",
-                          systemImage: "checkmark.shield.fill")
-                        .font(.callout.weight(.medium))
-                        .foregroundStyle(Color.green)
-                } else {
-                    HStack(spacing: 12) {
-                        Button("Prevent private browsing") { showPrivateBrowsing = true }
-                            .buttonStyle(.borderedProminent)
-                            .controlSize(.large)
-                        if managed.isManaged {
-                            Text("Managed by \(managed.displayName). Private windows must stay off on this Mac.")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        } else {
-                            Button("Not now") { step = 2 }
-                                .controlSize(.large)
-                        }
+                    HStack(spacing: 6) {
+                        Image(systemName: "checkmark.shield.fill")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(HnPalette.calm)
+                        Text("Private windows are covered in every browser Hisn can control.")
+                            .font(.hnCallout())
+                            .foregroundStyle(HnPalette.calm)
                     }
-                }
-            }
-        }
-    }
-
-    // MARK: Step 3 — where to go
-
-    private var ready: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("What happens next")
-                    .font(.largeTitle.weight(.semibold))
-                    .accessibilityAddTraits(.isHeader)
-                Text("The Overview shows what is running and the one next step. Setup holds the detailed checks whenever you want them.")
-                    .font(.title3)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            if !privateStatus.isCovered {
-                HStack(alignment: .top, spacing: 10) {
-                    Image(systemName: "eye.slash.fill")
-                        .foregroundStyle(Color.orange)
-                        .accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Private windows are still open in \(privateStatus.openNames).")
-                            .font(.callout.weight(.medium))
-                        Text("You can change that later in Setup or from the Overview.")
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    HStack(spacing: 10) {
+                        HnButton(title: "Prevent private browsing", systemImage: "eye.slash") {
+                            showPrivateBrowsing = true
+                        }
+                        if managed.isManaged {
+                            Text("Managed by \(managed.displayName).")
+                                .font(.hnCaption())
+                                .foregroundStyle(HnPalette.muted)
+                        } else {
+                            HnButton(title: "Not now", kind: .quiet) { finish() }
+                        }
+                        Spacer(minLength: 0)
                     }
                 }
             }
@@ -203,56 +244,49 @@ struct WelcomeView: View {
     // MARK: Footer
 
     private var footer: some View {
-        HStack(spacing: 12) {
-            HStack(spacing: 6) {
-                ForEach(0..<stepCount, id: \.self) { index in
-                    Circle()
-                        .fill(index == step ? Color.accentColor : Color.secondary.opacity(0.25))
-                        .frame(width: 7, height: 7)
-                }
-            }
-            .accessibilityHidden(true)
+        HStack(spacing: 10) {
             Spacer()
             if step > 0 {
-                Button("Back") { step -= 1 }
-                    .controlSize(.large)
+                HnButton(title: "Back", kind: .quiet) { step -= 1 }
             }
-            if step < stepCount - 1 {
-                Button("Continue") { step += 1 }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
+            if step == stepCount - 1 {
+                HnButton(title: "Finish", kind: .filled) { finish() }
                     .keyboardShortcut(.defaultAction)
             } else {
-                Button("Finish setup") {
-                    dismiss()
-                    AppNavigation.shared.open(.setup)
+                HnButton(title: "Continue", systemImage: "arrow.forward") {
+                    step += 1
                 }
-                .controlSize(.large)
-                Button("Open Overview") { dismiss() }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-                    .keyboardShortcut(.defaultAction)
+                .keyboardShortcut(.defaultAction)
             }
         }
     }
 
+    private func finish() {
+        dismiss()
+        AppNavigation.shared.open(.setup)
+    }
+
     private func layerRow(_ symbol: String, _ title: LocalizedStringKey,
                           _ detail: LocalizedStringKey, _ tint: Color) -> some View {
-        HStack(alignment: .top, spacing: 14) {
+        HStack(alignment: .top, spacing: 11) {
             Image(systemName: symbol)
-                .font(.title3)
+                .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(tint)
-                .frame(width: 38, height: 38)
-                .background(tint.opacity(0.12), in: Circle())
+                .frame(width: 20, height: 20)
+                .padding(.top, 1)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.headline)
+                Text(title)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(HnPalette.ink)
                 Text(detail)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .font(.hnCaption())
+                    .foregroundStyle(HnPalette.muted)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 11)
     }
 }

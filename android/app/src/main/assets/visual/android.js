@@ -2,7 +2,11 @@ import { createVisualEngine } from './engine.bundle.js';
 
 // Only packaged code runs in this WebView. Captures exist in memory for one request.
 const preferences = { inspectVisual: true, personBlur: 'off' };
-const backend = new URL(location.href).searchParams.get('backend') === 'webgl' ? 'webgl' : 'cpu';
+const requested = new URL(location.href).searchParams.get('backend');
+// 'auto' walks WebGL -> WASM -> CPU. An explicit name is tried first and still
+// degrades, so an unattached WebView without a GPU finishes on WASM instead of
+// the two-second JS CPU path.
+const backend = ['auto', 'webgl', 'wasm', 'cpu'].includes(requested) ? requested : 'auto';
 const engine = createVisualEngine({ baseURL: 'https://hisn.invalid/visual/', backend });
 window.hisnInspect = async (id, width, height, rgba) => {
   try {

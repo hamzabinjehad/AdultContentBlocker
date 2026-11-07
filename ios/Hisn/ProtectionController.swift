@@ -70,9 +70,17 @@ final class ProtectionController: ObservableObject {
     @Published private(set) var customSitesApplied = false
     @Published private(set) var customSiteMessage: String?
     private let customSiteStore: CustomSiteStore
+    /// Where the DNS extension reads the person's blocked sites. The Screen
+    /// Time filter keeps its own copy; this one is the DNS layer's.
+    private let dnsSitesShare: DNSCustomSitesPublishing
+    enum DNSRouteCheck: Equatable { case unchecked, running, passed, failed, unavailable }
+    /// Evidence from the last route check: the app's resolver path reached
+    /// Hisn, or it did not. Never a claim about every app or every request.
+    @Published private(set) var dnsRouteCheck: DNSRouteCheck = .unchecked
 
     init(commitmentStore: CommitmentPersistence? = nil, readinessHistory: ReadinessHistory? = nil,
          customSiteStore: CustomSiteStore? = nil,
+         dnsSitesShare: DNSCustomSitesPublishing? = nil,
          resourceBundleURL: URL = Bundle.main.bundleURL,
          clockSource: @escaping () -> (wall: Date, uptime: TimeInterval) = { (Date(), CommitmentClock.continuousTime) },
          serverTime: ServerTimeSource? = nil, shared: MonitorSharedState? = nil,
@@ -87,6 +95,7 @@ final class ProtectionController: ObservableObject {
         clockMonitor = CommitmentClock(wallAnchor: sample.wall, uptimeAnchor: sample.uptime)
         if sample.wall.timeIntervalSinceReferenceDate.isFinite { now = sample.wall }
         let isTest = NSClassFromString("XCTestCase") != nil
+        self.dnsSitesShare = dnsSitesShare ?? DNSCustomSitesShare.deviceLocal(isTest: isTest)
         self.commitmentStore = commitmentStore ?? (isTest ? MemoryCommitmentStore() : MobileCommitmentStore())
         // Tests never reach Apple's server, the real app group or the notification prompt.
         self.serverTime = serverTime ?? (isTest ? UnavailableServerTime() : AppleServerTime())
@@ -489,8 +498,23 @@ final class ProtectionController: ObservableObject {
     }
 
     private func loadCustomSites() {
-        do { customSites = try customSiteStore.load(); customSitesStorageHealthy = true }
-        catch { customSitesStorageHealthy = false; customSitesApplied = false }
+        do {
+            customSites = try customSiteStore.load()
+            customSitesStorageHealthy = true
+            // Keep the DNS extension's copy in step after an upgrade or a
+            // restore. Damage never overwrites the copy the extension had.
+            publishCustomSitesToDNS()
+        } catch {
+            customSitesStorageHealthy = false
+            customSitesApplied = false
+        }
+    }
+
+    /// The DNS extension reads this App Group key. A missing group or a failed
+    /// write costs the DNS layer its custom sites only; the seed list, the
+    /// adult-TLD rail and the hostname terms are unaffected.
+    private func publishCustomSitesToDNS() {
+        dnsSitesShare.publish(customSites)
     }
 
     /// Every saved rule is frozen while the commitment runs, including additions.
@@ -538,6 +562,7 @@ final class ProtectionController: ObservableObject {
             customSiteMessage = "sites.failed"
             return
         }
+        publishCustomSitesToDNS()
         // Applies the list only if the person's filter is already on; never enables it.
         readScreenTimeState()
     }
@@ -667,18 +692,7 @@ final class ProtectionController: ObservableObject {
         #endif
         publishWatch()
         updateWatchSchedule()
-        #if targetEnvironment(simulator)
-        dns = .unavailable
-        #else
-        do {
-            let manager = NEDNSSettingsManager.shared()
-            try await manager.loadFromPreferences()
-            let settings = manager.dnsSettings as? NEDNSOverHTTPSSettings
-            dns = MobileProtectionPolicy.dnsState(hasConfiguration: manager.dnsSettings != nil,
-                isEnabled: manager.isEnabled, serverURL: settings?.serverURL, servers: settings?.servers ?? [],
-                matchDomains: settings?.matchDomains)
-        } catch { dns = .unavailable }
-        #endif
+        await readDNSState()
         var states: [Bool?] = []
         for identifier in MobileProtectionPolicy.blockerIdentifiers {
             let enabled: Bool? = await withCheckedContinuation { continuation in
@@ -693,6 +707,8 @@ final class ProtectionController: ObservableObject {
         checkedAt = Date()
     }
 
+    /// Turns on Hisn's DNS proxy extension. iOS shows its own permission
+    /// prompt; the app only reads back what the system reports afterwards.
     func installDNS() async {
         guard !busy else { return }
         busy = true; errorKey = nil
@@ -702,21 +718,84 @@ final class ProtectionController: ObservableObject {
         errorKey = "dns.simulator"
         #else
         do {
-            let manager = NEDNSSettingsManager.shared()
+            let manager = NEDNSProxyManager.shared()
             try await manager.loadFromPreferences()
-            let settings = NEDNSOverHTTPSSettings(servers: MobileProtectionPolicy.dnsServers)
-            settings.serverURL = MobileProtectionPolicy.dnsURL
-            settings.matchDomains = [""]
-            manager.dnsSettings = settings
-            manager.localizedDescription = "Hisn Family DNS"
-            manager.onDemandRules = [NEOnDemandRuleConnect()]
+            let protocolConfiguration = NEDNSProxyProviderProtocol()
+            protocolConfiguration.providerBundleIdentifier =
+                MobileProtectionPolicy.dnsProviderBundleIdentifier
+            protocolConfiguration.serverAddress = "Hisn DNS"
+            manager.providerProtocol = protocolConfiguration
+            manager.localizedDescription = "Hisn DNS filter"
+            manager.isEnabled = true
             try await manager.saveToPreferences()
             // Saving is not enabling; read back what iOS actually reports.
-            await readState()
+            await readDNSState()
+            rememberConfiguredLayers()
+            if dns != .enabled { errorKey = "dns.failed" }
         } catch {
             dns = .unavailable
             errorKey = "dns.failed"
         }
+        #endif
+        dnsRouteCheck = .unchecked
+    }
+
+    func disableDNS() async {
+        updateClock()
+        guard !busy else { return }
+        guard !rulesLocked else { errorKey = "dns.locked"; return }
+        busy = true; errorKey = nil
+        defer { busy = false }
+        #if targetEnvironment(simulator)
+        dns = .unavailable
+        errorKey = "dns.simulator"
+        #else
+        do {
+            let manager = NEDNSProxyManager.shared()
+            try await manager.loadFromPreferences()
+            manager.isEnabled = false
+            try await manager.saveToPreferences()
+            await readDNSState()
+            rememberConfiguredLayers()
+        } catch {
+            errorKey = "dns.failed"
+        }
+        #endif
+        dnsRouteCheck = .unchecked
+    }
+
+    private func readDNSState() async {
+        #if targetEnvironment(simulator)
+        dns = .unavailable
+        #else
+        let previous = dns
+        do {
+            let manager = NEDNSProxyManager.shared()
+            try await manager.loadFromPreferences()
+            dns = MobileProtectionPolicy.dnsProxyState(
+                providerBundleIdentifier: manager.providerProtocol?.providerBundleIdentifier,
+                isEnabled: manager.isEnabled)
+        } catch { dns = .unavailable }
+        // A route result belongs to the configuration it was measured on. When
+        // the layer is no longer on, the old pass would be stale evidence.
+        if dns != previous, dns != .enabled { dnsRouteCheck = .unchecked }
+        #endif
+    }
+
+    /// Asks the system resolver for a random name only Hisn's proxy answers.
+    /// A pass is evidence about this app's DNS path, nothing wider.
+    func checkDNSRoute() async {
+        guard !busy else { return }
+        #if targetEnvironment(simulator)
+        dnsRouteCheck = .unavailable
+        #else
+        busy = true
+        defer { busy = false }
+        dnsRouteCheck = .running
+        let passed = await Task.detached(priority: .userInitiated) {
+            DNSRouteProbe.passes()
+        }.value
+        dnsRouteCheck = passed ? .passed : .failed
         #endif
     }
 

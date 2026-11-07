@@ -86,8 +86,11 @@ public final class RestrictionActivity extends Activity {
         body.setPadding(0, Ui.dp(this, 10), 0, 0);
         column.addView(body);
 
+        // A voluntary pause must not open with the loudest control on the screen: leaving is
+        // allowed, but the breath is the point. An enforced pause keeps the way out primary.
         Button home = Ui.button(this, voluntary ? R.string.pause_voluntary_done
-                : R.string.restriction_home, Ui.ButtonKind.PRIMARY);
+                : R.string.restriction_home,
+                voluntary ? Ui.ButtonKind.GHOST : Ui.ButtonKind.PRIMARY);
         column.addView(home, Ui.margins(this, 18, 0));
         home.setOnClickListener(view -> {
             if (voluntary) finish(); else goHome();

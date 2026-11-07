@@ -320,6 +320,15 @@ import Combine
         return .granted(minutes: config.minutes)
     }
 
+    /// Ends a running session early: the shield comes back immediately. It only
+    /// ever tightens, so a commitment does not block it.
+    func endPauseSessionNow() {
+        guard authorized, configuration?.mode == .pause else { return }
+        stopPauseSession()
+        configuration?.shield(pauseStore)
+        refresh()
+    }
+
     /// The handoff the shield left, if it is still fresh. Consuming it removes it,
     /// so a second foreground cannot present the same pause twice.
     func takePauseRequest(now: Date = Date()) -> PauseRule.Request? {
@@ -366,10 +375,21 @@ import Combine
         guard let defaults else { return }
         let store = PauseRuleStore(defaults: defaults)
         if let session = store.loadSession(),
-           PauseRule.sessionIsToday(session), !PauseRule.sessionExpired(session), registered {
-            pauseStore.clearAllSettings()
-            pauseSessionActive = true
-            return
+           PauseRule.sessionIsToday(session), !PauseRule.sessionExpired(session) {
+            // The activity registry can lag the startMonitoring call that
+            // granted this session by a moment. While the session is seconds
+            // old, re-register instead of cutting it; after that a missing
+            // registration means the monitor is gone and the shield returns.
+            var live = registered
+            if !live, Date().timeIntervalSince(session.startedAt) < 60,
+               (try? startPauseSession(config)) != nil {
+                live = true
+            }
+            if live {
+                pauseStore.clearAllSettings()
+                pauseSessionActive = true
+                return
+            }
         }
         if store.loadSession() != nil {
             DeviceActivityCenter().stopMonitoring([.init(AppUsageConfiguration.pauseSessionActivity)])

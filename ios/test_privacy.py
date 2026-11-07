@@ -62,7 +62,7 @@ class PrivacyManifestTests(unittest.TestCase):
         source = GENERATOR.read_text()
         self.assertIn('privacy = "Hisn/PrivacyInfo.xcprivacy"', source)
         self.assertIn("monitor: [privacy], scanner: [privacy]", source)
-        self.assertIn("shield_config: [privacy], shield_action: [privacy]", source)
+        self.assertIn("shield_config: [privacy], shield_action: [privacy], proxy: [privacy]", source)
         self.assertIn("**{blocker: [privacy] for blocker in blockers}", source)
         self.assertIn('".xcprivacy": "text.xml"', source)
         self.assertIn('refs[privacy]', source)
@@ -90,6 +90,28 @@ class PrivacyManifestTests(unittest.TestCase):
             self.assertIs(data["com.apple.developer.family-controls"], True)
         self.assertEqual(config["com.apple.security.application-groups"], ["group.app.hisn.mobile"])
 
+    def test_dns_proxy_extension_is_configured_and_entitled(self):
+        with (ROOT / "HisnDNSProxy/Info.plist").open("rb") as source:
+            info = plistlib.load(source)
+        extension = info["NSExtension"]
+        self.assertEqual(extension["NSExtensionPointIdentifier"],
+                         "com.apple.networkextension.dns-proxy")
+        self.assertTrue(extension["NSExtensionPrincipalClass"].endswith(".DNSProxyProvider"))
+        for relative in ["HisnDNSProxy/HisnDNSProxy.entitlements", "Hisn/Hisn.entitlements"]:
+            with (ROOT / relative).open("rb") as source:
+                data = plistlib.load(source)
+            self.assertEqual(data["com.apple.developer.networking.networkextension"],
+                             ["dns-proxy"], relative)
+        with (ROOT / "Hisn/Hisn.entitlements").open("rb") as source:
+            self.assertIs(plistlib.load(source)["com.apple.developer.family-controls"], True)
+        with (ROOT / "HisnDNSProxy/HisnDNSProxy.entitlements").open("rb") as source:
+            self.assertEqual(plistlib.load(source)["com.apple.security.application-groups"],
+                             ["group.app.hisn.mobile"])
+        generator = GENERATOR.read_text()
+        self.assertIn('prepare_rules.py" --dns', generator)
+        self.assertIn('f"{app_identifier}.dnsproxy"', generator)
+        self.assertIn("HisnDNSProxy/Info.plist", generator)
+
     def test_generated_project_references_the_manifest_for_every_bundle(self):
         project = PROJECT.read_text()
         reference = re.search(r"([0-9A-F]{24})  = \{\n\t\t\tisa = PBXFileReference;\n"
@@ -97,8 +119,9 @@ class PrivacyManifestTests(unittest.TestCase):
                               r'\t\t\tpath = "Hisn/PrivacyInfo\.xcprivacy";', project)
         self.assertIsNotNone(reference, "privacy manifest file reference missing from the project")
         # app + six blockers + monitor + scanner + shield config + shield action
-        self.assertEqual(project.count(f"fileRef = {reference.group(1)};"), 11)
-        for name in ["HisnShieldConfig.appex", "HisnShieldAction.appex"]:
+        # + the DNS proxy extension
+        self.assertEqual(project.count(f"fileRef = {reference.group(1)};"), 12)
+        for name in ["HisnShieldConfig.appex", "HisnShieldAction.appex", "HisnDNSProxy.appex"]:
             self.assertIn(name, project, f"{name} missing from the generated project")
 
 

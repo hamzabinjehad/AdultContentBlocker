@@ -1,5 +1,5 @@
 {
-  "_comment": "The decision contract, as cases. Asserted by extension/test/policy.test.js (against lib/policy.js `decide`) and macos/HisnTests/PolicyContractTests.swift (against BlocklistStore). `mode` is blocklist|strict; `listed` means the host is caught by the published rulesets — the domain list or a URL keyword rule, which the clients evaluate at the same rank; `expect` is allow|block. See docs/POLICY.md. Optional per case: `resourceType` (default main_frame) and `initiator` (the page making the request) — the Mac judges every socket by destination alone, so cases marked `browserOnly` describe the browser's plumbing carve-out (rule 6) and are skipped by the Swift suite.",
+  "_comment": "The decision contract, as cases. Asserted by extension/test/policy.test.js (against lib/policy.js `decide`) and macos/HisnTests/PolicyContractTests.swift (against BlocklistStore). `mode` is blocklist|strict; `listed` means the host is caught by the published rulesets \u2014 the domain list or a URL keyword rule, which the clients evaluate at the same rank; `expect` is allow|block. See docs/POLICY.md. Optional per case: `resourceType` (default main_frame) and `initiator` (the page making the request) \u2014 the Mac judges every socket by destination alone, so cases marked `browserOnly` describe the browser's plumbing carve-out (rule 6) and are skipped by the Swift suite.",
   "cases": [
     {
       "host": "example.com",
@@ -59,7 +59,7 @@
       "customBlocks": [],
       "listed": true,
       "expect": "allow",
-      "why": "RULE 2: the allowlist is an allowance in every mode — the escape valve for a false positive during a lock"
+      "why": "RULE 2: the allowlist is an allowance in every mode \u2014 the escape valve for a false positive during a lock"
     },
     {
       "host": "clip.pornhub.com",
@@ -186,7 +186,7 @@
       ],
       "listed": false,
       "expect": "block",
-      "why": "RULE 3: the more specific entry wins — a block on the subdomain beats an allowance on the apex"
+      "why": "RULE 3: the more specific entry wins \u2014 a block on the subdomain beats an allowance on the apex"
     },
     {
       "host": "docs.google.com",
@@ -441,7 +441,7 @@
       "resourceType": "image",
       "initiator": "news.example",
       "expect": "block",
-      "why": "strict mode: an allowed page may load its plumbing from anywhere EXCEPT a listed domain — the carve-out ranks below the published list"
+      "why": "strict mode: an allowed page may load its plumbing from anywhere EXCEPT a listed domain \u2014 the carve-out ranks below the published list"
     },
     {
       "host": "porn.example",
@@ -452,6 +452,53 @@
       "resourceType": "image",
       "expect": "block",
       "why": "the published list blocks a listed domain's images and fetches, not only its pages"
+    },
+    {
+      "host": "new.porn",
+      "mode": "blocklist",
+      "allowlist": [],
+      "customBlocks": [],
+      "listed": false,
+      "expect": "block",
+      "why": "a name under a sponsored adult TLD is blocked before any list can carry it"
+    },
+    {
+      "host": "cdn.new.xxx",
+      "mode": "blocklist",
+      "allowlist": [],
+      "customBlocks": [],
+      "listed": false,
+      "expect": "block",
+      "why": "the adult-TLD guard covers subdomains, including ones registered today"
+    },
+    {
+      "host": "brand.adult",
+      "mode": "blocklist",
+      "allowlist": [],
+      "customBlocks": [],
+      "listed": false,
+      "expect": "block",
+      "why": "adult is one of the four sponsored adult TLDs"
+    },
+    {
+      "host": "example.cam",
+      "mode": "blocklist",
+      "allowlist": [],
+      "customBlocks": [],
+      "listed": false,
+      "expect": "allow",
+      "why": "cam is a generic TLD with ordinary uses and is deliberately not a guard"
+    },
+    {
+      "host": "new.porn",
+      "mode": "blocklist",
+      "allowlist": [
+        "new.porn"
+      ],
+      "customBlocks": [],
+      "listed": false,
+      "expect": "allow",
+      "why": "a hand allowance outranks the adult-TLD guard, exactly as it outranks the list"
     }
   ]
 }

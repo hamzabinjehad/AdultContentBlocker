@@ -964,13 +964,7 @@ struct GuardAlertView: View {
                 .padding(22)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .background(
-                LinearGradient(colors: [
-                    Color(red: 0.055, green: 0.075, blue: 0.19),
-                    Color(red: 0.025, green: 0.035, blue: 0.10),
-                ], startPoint: .topLeading, endPoint: .bottomTrailing)
-                .ignoresSafeArea()
-            )
+            .background(HnPalette.canvas.ignoresSafeArea())
             .preferredColorScheme(.dark)
         }
         .accessibilityElement(children: .contain)
@@ -989,9 +983,9 @@ struct GuardAlertCard: View {
         max(0, Int(alert.closeAt.timeIntervalSince(now).rounded()))
     }
 
-    /// A fixed blue rather than the system accent: this panel must look the
-    /// same on every Mac, including a graphite accent or a test host.
-    private var accent: Color { Color(red: 0.36, green: 0.43, blue: 0.96) }
+    /// The app's fixed system blue: this panel must look the same on every
+    /// Mac, including a graphite accent or a test host.
+    private var accent: Color { HnPalette.accent }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -1000,16 +994,16 @@ struct GuardAlertCard: View {
                     .font(.system(size: 24, weight: .semibold))
                     .foregroundStyle(.white)
                     .frame(width: 52, height: 52)
-                    .background(accent, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .background(accent, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Protection interrupted")
                         .font(.caption.weight(.semibold))
                         .textCase(.uppercase)
-                        .foregroundStyle(.white.opacity(0.62))
+                        .foregroundStyle(HnPalette.muted)
                     Text("\(alert.name) is about to close")
                         .font(.title3.weight(.bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(HnPalette.ink)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
@@ -1017,17 +1011,17 @@ struct GuardAlertCard: View {
 
             Text(BrowserGuard.message(name: alert.name, reason: alert.reason))
                 .font(.callout)
-                .foregroundStyle(.white.opacity(0.76))
+                .foregroundStyle(HnPalette.muted)
                 .fixedSize(horizontal: false, vertical: true)
 
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(verbatim: "\(remaining)")
-                    .font(.system(size: 44, weight: .bold, design: .rounded))
+                    .font(.system(size: 40, weight: .bold))
                     .monospacedDigit()
-                    .foregroundStyle(.white)
+                    .foregroundStyle(HnPalette.ink)
                 Text("seconds left")
                     .font(.callout)
-                    .foregroundStyle(.white.opacity(0.62))
+                    .foregroundStyle(HnPalette.muted)
                 Spacer(minLength: 0)
             }
             .accessibilityElement(children: .combine)
@@ -1039,20 +1033,20 @@ struct GuardAlertCard: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 10)
                     .foregroundStyle(.white)
-                    .background(accent, in: Capsule())
+                    .background(accent, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
             }
             .buttonStyle(.plain)
 
             Text("Restoring the extension cancels the close.")
                 .font(.caption)
-                .foregroundStyle(.white.opacity(0.60))
+                .foregroundStyle(HnPalette.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(20)
-        .background(.white.opacity(0.065), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .padding(18)
+        .background(HnPalette.card, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .strokeBorder(.white.opacity(0.10), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(HnPalette.line, lineWidth: 1)
                 .accessibilityHidden(true)
         }
         .accessibilityElement(children: .contain)

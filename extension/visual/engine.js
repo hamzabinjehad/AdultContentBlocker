@@ -1,4 +1,5 @@
 import * as tf from '@tensorflow/tfjs';
+import { setWasmPaths } from '@tensorflow/tfjs-backend-wasm';
 import { load as loadNSFW } from 'nsfwjs/core';
 import { MobileNetV2Model } from 'nsfwjs/models/mobilenet_v2';
 import Human from '@vladmandic/human';
@@ -6,8 +7,16 @@ import { adultDecision, appearancePrediction, needsAppearanceConfirmation, confi
   visualPreferences, PERSON_MODES, validateCapture } from './decisions.js';
 import { LocalInferenceQueue } from './queue.js';
 
-export function createVisualEngine({ baseURL, backend = 'webgl' } = {}) {
+// WebGL is the fastest browser backend when the platform exposes a usable
+// context. WebAssembly is the fast fallback where it does not (an unattached
+// Android WebView has no GPU surface), and the plain JS CPU backend is last.
+// A requested backend is tried first, then the rest of this ladder, so a
+// missing graphics or WASM capability degrades instead of disabling the layer.
+const BACKENDS = Object.freeze(['webgl', 'wasm', 'cpu']);
+
+export function createVisualEngine({ baseURL, backend = 'auto' } = {}) {
   if (typeof baseURL !== 'string' || !baseURL.endsWith('/')) throw new Error('Missing packaged model base');
+  if (!['auto', ...BACKENDS].includes(backend)) throw new Error('Unsupported visual backend');
   let adult = null;
   let human = null;
   let gender = null;
@@ -17,6 +26,22 @@ export function createVisualEngine({ baseURL, backend = 'webgl' } = {}) {
   let failure = null;
   let selected = visualPreferences();
   let epoch = 0;
+
+  async function selectBackend() {
+    const order = backend === 'auto' ? BACKENDS : backend === 'cpu' ? ['cpu']
+      : [backend, ...BACKENDS.filter(candidate => candidate !== backend)];
+    for (const candidate of order) {
+      try {
+        if (candidate === 'wasm') setWasmPaths(`${baseURL}wasm/`);
+        if (!(await tf.setBackend(candidate))) continue;
+        await tf.ready();
+        return candidate;
+      } catch { /* The next backend in the ladder may still work. */ }
+    }
+    await tf.setBackend('cpu');
+    await tf.ready();
+    return 'cpu';
+  }
 
   async function prepare(preferences, expectedEpoch = epoch) {
     if (expectedEpoch !== epoch) return;
@@ -30,14 +55,11 @@ export function createVisualEngine({ baseURL, backend = 'webgl' } = {}) {
     currentState = 'loading';
     failure = null;
     loading = (async () => {
-      if (!backendReady) backendReady = (async () => {
-        let chosen = false;
-        try { chosen = await tf.setBackend(backend); } catch { /* no graphics backend */ }
-        if (!chosen) await tf.setBackend('cpu');
-        await tf.ready();
-      })();
+      if (!backendReady) backendReady = selectBackend();
       await backendReady;
       if (expectedEpoch !== epoch) return;
+      // NSFWJS's loader already runs one zero-tensor prediction as its own
+      // warm-up, so the first real capture is not paying kernel startup here.
       if (needAdult) adult = await loadNSFW('MobileNetV2', { modelDefinitions: [MobileNetV2Model] });
       if (expectedEpoch !== epoch) return;
       if (needHuman) {

@@ -47,6 +47,92 @@ an opt-in device-owner preview; the ordinary install remains removable, and
 actual blocked-uninstall and restriction acceptance needs a disposable
 provisioned device.
 
+## 1.2.2 the unlisted-host guard
+
+Two on-device rails now sit in front of the seed list in the DNS policy, after
+the person's saved domain allowance:
+
+- **Adult TLDs.** A name whose final label is `.adult`, `.porn`, `.sex` or
+  `.xxx` is blocked without a list entry. `.cam` is deliberately excluded: it
+  is generic and has ordinary camera uses.
+- **Hostname keywords.** The signed 116-term layer the Mac and Chrome already
+  use — 59 token terms, 57 substring terms, `never_keyword` removal and exempt
+  hosts. A new host such as `arab-sex-tube.com` is blocked even though no seed
+  list carries it, while `essex.gov.uk`, `sussex.ac.uk`, `tasks.office.com`,
+  `milford.ct.us`, `pornic.fr`, JINS and Kos stay reachable.
+
+The terms file is read synchronously from the APK-pinned `terms.json` before
+the tunnel starts, with the existing digest and version checks. A failure
+leaves the seed enforcing and the keyword layer off; unverified bytes are never
+used. Decisions are cached at 8,192 entries so a repeated DNS question does not
+repeat the folding work. The same composed policy judges CNAME/DNAME/SVCB
+targets through `DnsReplyGuard`.
+
+`sh test-core.sh` passes every core suite, including the new
+`HostTermPolicyTest` over all 42 shared `host_cases.json` cases and
+`AdultTldPolicyTest`. The 1.2.1 protection pass — the stale accessibility-grant
+read and the classifier retry rewrite — is retained. No new permission,
+activity, service or stored field was added; a signed 1.2.2 APK was not built
+for this pass. Version 1.2.2, versionCode 31. Details and limits:
+[the guard record](../docs/BLOCKING_GUARD_2026-11-06.md).
+
+## Protection pass (1.2.1–1.2.2)
+
+- **The permission check has a second source.** `AccessibilityManager`'s enabled
+  list is a cache; a process that outlived a re-enable can keep a stale copy and
+  report a running guard as **Permission required**. `Permissions.accessibility`
+  and `MainActivity.guardPermissionEnabled` now fall back to Android's own
+  `enabled_accessibility_services` value (gated on `accessibility_enabled = 1`,
+  both entry formats accepted, parsed by `app.hisn.core.AccessibilityGrant`). A
+  bound service with a stale cache reads **reconnect required**, which is true.
+- **A bound service can no longer stay unarmed.** The setup moved into an
+  idempotent `startGuard()` called from `onServiceConnected` and from the first
+  accessibility event, so a service that Android rebound without repeating the
+  callback is armed on its first event instead of sitting silent with
+  `connected` false.
+- **Classifier failures back off instead of blinding.** `VisualGuard.fail()`
+  used to refuse sampling for a flat 30 s and free the model. `VisualRetry`
+  retries after 5 s, doubles each further failure, keeps the 30 s cap and is
+  cleared by a finished sample.
+- **The live driver is hold-aware.** `test-live-visual.py` now asserts the 60 s
+  post-detection hold, waits it out, then asserts sampling recovers; its adb
+  timeout is 45 s. Ten checks pass on the owner's phone; measured cadence with
+  the real model is ~3.8 s on a still fixture and ~1.8 s on a moving one.
+- Record: [docs/ANDROID_PROTECTION_PASS_2026-11-06.md](../docs/ANDROID_PROTECTION_PASS_2026-11-06.md).
+
+## UI/UX pass (1.2.0)
+
+- **One line per rule.** `Ui.settingRow` is a 22 dp line icon, a 15.5 sp title,
+  an optional 12.5 sp summary and an optional trailing answer, 54 dp minimum
+  height. `SettingRow.setValue` writes the answer with its state colour and
+  keeps the spoken label in step; `setLocked` swaps the chevron for a lock
+  instead of washing the row out. The filled icon tile is gone.
+- **Sections are labels, not headers.** `Ui.sectionLabel` puts a quiet 12.5 sp
+  label above a card, so only items carry icons.
+- **The app bar names the page.** Protection shows **Hisn** and its tagline;
+  Rules and Settings show their own names, and the separate page titles were
+  removed. The bar is 56 dp high.
+- **Protection.** The hero is tinted by its own verdict
+  (`bg_hero_attention`). The DNS card has a headline with a `Ui.statusPill` and
+  a body that states the consequence when the layer is off (`dns_off_body`); the
+  start button appears only when there is something to start, so the disabled
+  `DNS filtering is on` button is gone.
+- **App protection** is a standalone status row on Rules with the same
+  disclosure its button opened, not a card holding one line.
+- **Row summaries stop repeating their titles** in English and Arabic
+  (`time_limits_off`, `schedule_off`, `schedule_summary`, `schedule_summary_all`,
+  `commitment`, `commitment_remaining`).
+- **The voluntary pause** uses a quiet exit; the enforced pause keeps its
+  primary way out. Disabled controls sit at 0.58 alpha instead of 0.45, which
+  failed contrast on the secondary line.
+- Verified on the owner's Samsung SM-G990B2 as a release-signed direct build
+  installed in place over 1.1.1 (replacing the package disables the
+  accessibility service; it was re-enabled and the guard reconnected, and DNS
+  filtering was restarted), in English light, English dark and Arabic dark;
+  captures in [design/android-ui-2026-11-06](../design/android-ui-2026-11-06/README.md),
+  record in [docs/ANDROID_UI_2026-11-06.md](../docs/ANDROID_UI_2026-11-06.md).
+  ScreenZen was observed read-only for structure only.
+
 ## UI/UX pass (1.1.0)
 
 - **First-run welcome.** Three skippable pages explain blocking, deliberate

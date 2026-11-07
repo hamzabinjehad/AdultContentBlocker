@@ -112,6 +112,31 @@ final class SiteCheckerTests: XCTestCase {
         XCTAssertEqual(result.source, .customBlock)
     }
 
+    func testAdultTldIsNamedEvenWhenTheListCannotBeRead() {
+        let result = check("new.porn", list: { _ in nil })
+        XCTAssertEqual(result.outcome, .blocked)
+        XCTAssertEqual(result.source, .adultTld)
+        XCTAssertEqual(result.listSource, .none)
+        XCTAssertNil(result.listVersion)
+
+        let listed = check("cdn.new.xxx", list: { _ in (12, false, false, .installed) })
+        XCTAssertEqual(listed.source, .adultTld)
+    }
+
+    func testAllowanceOutranksTheAdultTldRail() {
+        let result = check("new.porn", allows: ["new.porn"])
+        XCTAssertEqual(result.outcome, .allowed)
+        XCTAssertEqual(result.source, .allowlist)
+    }
+
+    func testCamAndOrdinaryTldsAreNotGuarded() {
+        for host in ["example.cam", "example.com", "porn.example.com"] {
+            let result = check(host)
+            XCTAssertEqual(result.outcome, .allowed, host)
+            XCTAssertEqual(result.source, .notListed, host)
+        }
+    }
+
     func testSubdomainOfAPublishedEntryMatches() {
         // The provider is the store's own parent-domain walk; the checker
         // passes the full host to it rather than re-implementing the walk.

@@ -1,0 +1,114 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Hisn packaged visual engine backend benchmark</title>
+<pre id="summary" data-result="pending">Loading the packaged engine…</pre>
+<script type="module">
+// Measure the real packaged engine on each backend it can select. This is a
+// startup/latency probe with synthetic, non-human captures — never an accuracy
+// benchmark, and never a promise that a phone has the same hardware.
+//
+//     extension/test/browser/run.sh visual-backends.html
+//     extension/test/browser/run.sh visual-backends.html?only=webgl
+//
+// The default run measures the packaged WASM path — the capability this check
+// exists to guard. CPU is covered by visual-real-engine.html; WebGL depends on
+// the graphics stack under test. Both are manual runs (?only=cpu, ?only=webgl):
+// a headless browser without a GPU can spend its whole startup budget in a
+// WebGL context before falling back, which would make the default check flaky
+// rather than informative.
+const summary = document.getElementById('summary');
+const results = [];
+let failed = false;
+const check = (condition, label) => {
+  results.push(`${condition ? 'ok' : 'FAIL'} ${label}`);
+  if (!condition) failed = true;
+};
+const requested = new URL(location.href).searchParams.get('only');
+const requestedBackends = requested ? [requested] : ['wasm'];
+if (requestedBackends.some(name => !['webgl', 'wasm', 'cpu'].includes(name))) {
+  results.push(`FAIL unknown backend filter: ${requested}`);
+  failed = true;
+}
+
+const SIZE = 384;
+function capture(id) {
+  const bytes = new Uint8Array(SIZE * SIZE * 4);
+  for (let y = 0; y < SIZE; y++) {
+    for (let x = 0; x < SIZE; x++) {
+      const i = (y * SIZE + x) * 4;
+      // Detail on both axes: a flat fill would not exercise resize/convolution
+      // timing the way a real photograph does.
+      bytes[i] = (x * 3 + y) & 255;
+      bytes[i + 1] = (y * 2 + (x >> 2)) & 255;
+      bytes[i + 2] = ((x ^ y) * 2) & 255;
+      bytes[i + 3] = 255;
+    }
+  }
+  let binary = '';
+  for (let offset = 0; offset < bytes.length; offset += 8192) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + 8192));
+  }
+  return { id, width: SIZE, height: SIZE, rgba: btoa(binary) };
+}
+
+const ADULT = { inspectVisual: true, personBlur: 'off' };
+const bounded = (promise, milliseconds) => Promise.race([
+  promise,
+  new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), milliseconds)),
+]);
+const now = () => performance.now();
+
+try {
+  const { createVisualEngine } = await import('../../visual/engine.bundle.js');
+  check(typeof createVisualEngine === 'function', 'the shipped engine bundle imports successfully');
+  const baseURL = new URL('../../visual/', location.href).href;
+  const fixture = capture('bench-input');
+  const observed = new Set();
+
+  for (const backend of requestedBackends) {
+    const engine = createVisualEngine({ baseURL, backend });
+    let load = 0, warm = 0, times = [], status = null;
+    try {
+      let started = now();
+      await bounded(engine.prepare(ADULT), 30000);
+      load = Math.round(now() - started);
+      status = engine.status(ADULT);
+      check(status.state === 'ready', `${backend}: selected a backend and loaded the required models`);
+      const actual = status.backend;
+      observed.add(actual);
+      check(['webgl', 'wasm', 'cpu'].includes(actual), `${backend}: reports a real backend (${actual})`);
+      // WASM is packaged with the engine, so a fallback past it is a real
+      // regression (missing kernel file, wrong MIME type or blocked CSP) —
+      // unlike WebGL, which depends on the machine's graphics stack.
+      if (backend === 'wasm') check(actual === 'wasm', 'wasm: the packaged WASM backend actually ran');
+      if (backend === 'cpu') check(actual === 'cpu', 'cpu: an explicit CPU request stayed on the CPU backend');
+      // The first inspect after prepare is warm for non-CPU backends; keep two
+      // later samples so a measurement is not dominated by one cold pass.
+      for (let i = 0; i < 3; i++) {
+        started = now();
+        const result = await bounded(engine.inspect(`${backend}-${i}`, { id: `${backend}-${i}`, width: SIZE, height: SIZE, rgba: fixture.rgba }, ADULT), 30000);
+        const elapsed = Math.round(now() - started);
+        if (i === 0) warm = elapsed; else times.push(elapsed);
+        check(result?.state === 'ready' && typeof result.adult?.block === 'boolean',
+          `${backend}: inspect ${i} returns an actual inspected verdict`);
+        check(result?.adult?.block === false, `${backend}: synthetic capture ${i} is not classified as adult content`);
+      }
+      times.sort((a, b) => a - b);
+      results.push(`${backend}: ${JSON.stringify({ requested: backend, actual, loadMs: load, firstInspectMs: warm,
+        medianWarmMs: times[Math.floor(times.length / 2)], samples: times })}`);
+    } catch (error) {
+      failed = true;
+      results.push(`FAIL ${backend}: ${error?.message || error}; status=${JSON.stringify(status)}`);
+    } finally {
+      engine.disable();
+    }
+  }
+  check(observed.size > 0, 'at least one backend completed the real-model path');
+  results.push(`backends measured: ${[...observed].join(', ') || '(none)'}`);
+} catch (error) {
+  failed = true;
+  results.push(`FAIL ${error.stack || error}`);
+}
+summary.textContent = results.join('\n');
+summary.dataset.result = failed ? 'fail' : 'pass';
+</script>

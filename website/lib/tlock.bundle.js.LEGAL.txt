@@ -1,0 +1,24 @@
+Bundled license information:
+
+@noble/hashes/utils.js:
+  /*! noble-hashes - MIT License (c) 2022 Paul Miller (paulmillr.com) */
+
+@noble/curves/utils.js:
+@noble/curves/abstract/modular.js:
+@noble/curves/abstract/curve.js:
+@noble/curves/abstract/weierstrass.js:
+@noble/curves/abstract/bls.js:
+@noble/curves/abstract/tower.js:
+@noble/curves/bls12-381.js:
+  /*! noble-curves - MIT License (c) 2022 Paul Miller (paulmillr.com) */
+
+ieee754/index.js:
+  /*! ieee754. BSD-3-Clause License. Feross Aboukhadijeh <https://feross.org/opensource> */
+
+buffer/index.js:
+  /*!
+   * The buffer module from node.js, for the browser.
+   *
+   * @author   Feross Aboukhadijeh <https://feross.org>
+   * @license  MIT
+   */

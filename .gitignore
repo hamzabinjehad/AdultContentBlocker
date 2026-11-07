@@ -42,6 +42,11 @@ extension/_metadata/
 # bundled runtime, model weights, and third-party notices remain tracked.
 extension/visual/node_modules/
 
+# Vault time-lock dependencies are build-time only. The lockfile, the bundled
+# runtime and the notices remain tracked.
+website/vendor/node_modules/
+website/vendor/dist/
+
 # Android release keystores (owner-supplied via HISN_ANDROID_KEYSTORE).
 *.jks
 *.keystore

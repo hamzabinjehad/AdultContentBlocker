@@ -48,6 +48,9 @@ struct AppUsageConfiguration: Codable {
     /// Opens a pause rule grants per calendar day. Ignored by the other modes,
     /// and kept only so a mode change does not silently lose the number.
     var opens: Int
+    /// Quiet-hours weekdays, Monday-first: bit 0 is Monday and bit 6 is Sunday.
+    /// The other modes ignore it; it is kept so a mode change loses nothing.
+    var days: Int
     /// Minutes after midnight for a quiet-hours window. They are kept on every
     /// rule so a mode change does not silently lose the person's chosen times.
     var windowStart: Int
@@ -56,17 +59,19 @@ struct AppUsageConfiguration: Codable {
     init(selection: FamilyActivitySelection, mode: Mode, minutes: Int,
          windowStart: Int = AppUsageConfiguration.defaultWindowStart,
          windowEnd: Int = AppUsageConfiguration.defaultWindowEnd,
-         opens: Int = PauseRule.defaultOpens) {
+         opens: Int = PauseRule.defaultOpens,
+         days: Int = AppUsageConfiguration.allDays) {
         self.selection = selection
         self.mode = mode
         self.minutes = minutes
         self.windowStart = windowStart
         self.windowEnd = windowEnd
         self.opens = opens
+        self.days = days
     }
 
     private enum CodingKeys: String, CodingKey {
-        case selection, mode, minutes, windowStart, windowEnd, opens
+        case selection, mode, minutes, windowStart, windowEnd, opens, days
     }
 
     /// Rules saved by 1.2.0 have no window fields; they decode with the default
@@ -81,6 +86,7 @@ struct AppUsageConfiguration: Codable {
         windowEnd = try container.decodeIfPresent(Int.self, forKey: .windowEnd)
             ?? Self.defaultWindowEnd
         opens = try container.decodeIfPresent(Int.self, forKey: .opens) ?? PauseRule.defaultOpens
+        days = try container.decodeIfPresent(Int.self, forKey: .days) ?? Self.allDays
     }
 
     func encode(to encoder: Encoder) throws {
@@ -91,6 +97,7 @@ struct AppUsageConfiguration: Codable {
         try container.encode(windowStart, forKey: .windowStart)
         try container.encode(windowEnd, forKey: .windowEnd)
         try container.encode(opens, forKey: .opens)
+        try container.encode(days, forKey: .days)
     }
 
     var isValid: Bool {
@@ -102,6 +109,7 @@ struct AppUsageConfiguration: Codable {
         case .dailyBudget: return (15...240).contains(minutes)
         case .quietHours:
             return Self.isValidWindow(start: windowStart, end: windowEnd)
+                && Self.isValidDays(days)
         case .pause:
             return PauseRule.sessionRange.contains(minutes) && PauseRule.opensRange.contains(opens)
         }
@@ -167,12 +175,76 @@ struct AppUsageConfiguration: Codable {
         return (parts.hour ?? 0) * 60 + (parts.minute ?? 0)
     }
 
+    /// Every day, Monday-first. The default for a rule saved before weekdays
+    /// existed, so nothing becomes unshielded because the field was absent.
+    static let allDays = 0b111_1111
+    static let weekdayMask = 0b001_1111   // Monday to Friday
+    static let weekendMask = 0b110_0000   // Saturday and Sunday
+
+    static func isValidDays(_ days: Int) -> Bool {
+        (1...allDays).contains(days)
+    }
+
+    /// Monday-first index, 0...6, for the device's local day. Foundation's
+    /// `weekday` is Sunday-first whatever the calendar's first weekday is.
+    static func dayIndex(_ date: Date, calendar: Calendar = .current) -> Int {
+        (calendar.component(.weekday, from: date) + 5) % 7
+    }
+
+    static func dayBit(_ date: Date, calendar: Calendar = .current) -> Int {
+        1 << dayIndex(date, calendar: calendar)
+    }
+
+    static func dayAllowed(_ days: Int, on date: Date, calendar: Calendar = .current) -> Bool {
+        isValidDays(days) && (days & dayBit(date, calendar: calendar)) != 0
+    }
+
+    /// The day a window callback belongs to. The morning leg of a crossing
+    /// window is the previous evening's window, so its day is yesterday.
+    static func windowLegStartDay(_ activity: String, at date: Date,
+                                  calendar: Calendar = .current) -> Date {
+        let today = calendar.startOfDay(for: date)
+        guard activity == windowMorningActivity else { return today }
+        return calendar.date(byAdding: .day, value: -1, to: today) ?? today
+    }
+
+    static func windowLegAllowed(_ activity: String, days: Int, at date: Date,
+                                 calendar: Calendar = .current) -> Bool {
+        dayAllowed(days, on: windowLegStartDay(activity, at: date, calendar: calendar),
+                   calendar: calendar)
+    }
+
+    /// The day the current quiet-hours window instance began: a window that
+    /// crosses midnight belongs to the evening it started, not to the morning
+    /// it ends. nil when the moment is outside every instance.
+    static func windowStartDay(start: Int, end: Int, at date: Date,
+                               calendar: Calendar = .current) -> Date? {
+        guard isValidWindow(start: start, end: end) else { return nil }
+        let minute = minuteOfDay(date, calendar: calendar)
+        let today = calendar.startOfDay(for: date)
+        if start < end {
+            return (minute >= start && minute < end) ? today : nil
+        }
+        if minute >= start { return today }
+        if minute < end {
+            return calendar.date(byAdding: .day, value: -1, to: today)
+        }
+        return nil
+    }
+
     static func windowActive(start: Int, end: Int, at date: Date,
                              calendar: Calendar = .current) -> Bool {
-        guard isValidWindow(start: start, end: end) else { return false }
-        let minute = minuteOfDay(date, calendar: calendar)
-        return start < end ? (minute >= start && minute < end)
-                           : (minute >= start || minute < end)
+        windowActive(start: start, end: end, days: allDays, at: date, calendar: calendar)
+    }
+
+    /// True when the moment is inside the window *and* the instance began on a
+    /// chosen weekday. A window that crosses midnight is judged by its start
+    /// day, so "weekdays only" does not bleed into Saturday morning.
+    static func windowActive(start: Int, end: Int, days: Int, at date: Date,
+                             calendar: Calendar = .current) -> Bool {
+        guard let startDay = windowStartDay(start: start, end: end, at: date, calendar: calendar)
+        else { return false }
+        return dayAllowed(days, on: startDay, calendar: calendar)
     }
 
     /// True if either clock is inside the window. Hisn clears a quiet-hours
@@ -180,13 +252,23 @@ struct AppUsageConfiguration: Codable {
     /// outside it, so moving the device clock forward cannot end it early.
     static func windowActive(start: Int, end: Int, deviceNow: Date, trustedNow: Date?,
                              calendar: Calendar = .current) -> Bool {
-        if windowActive(start: start, end: end, at: deviceNow, calendar: calendar) { return true }
+        windowActive(start: start, end: end, days: allDays, deviceNow: deviceNow,
+                     trustedNow: trustedNow, calendar: calendar)
+    }
+
+    /// Either clock inside a window instance that began on a chosen day keeps
+    /// the shield; only both clocks outside (or on an unchosen start day) clear it.
+    static func windowActive(start: Int, end: Int, days: Int, deviceNow: Date,
+                             trustedNow: Date?, calendar: Calendar = .current) -> Bool {
+        if windowActive(start: start, end: end, days: days, at: deviceNow, calendar: calendar) {
+            return true
+        }
         guard let trustedNow else { return false }
-        return windowActive(start: start, end: end, at: trustedNow, calendar: calendar)
+        return windowActive(start: start, end: end, days: days, at: trustedNow, calendar: calendar)
     }
 
     func windowActive(deviceNow: Date, trustedNow: Date?, calendar: Calendar = .current) -> Bool {
-        Self.windowActive(start: windowStart, end: windowEnd, deviceNow: deviceNow,
+        Self.windowActive(start: windowStart, end: windowEnd, days: days, deviceNow: deviceNow,
                           trustedNow: trustedNow, calendar: calendar)
     }
 
@@ -544,6 +626,7 @@ struct AppUsageConfiguration: Codable {
     func sameRule(as other: AppUsageConfiguration) -> Bool {
         mode == other.mode && minutes == other.minutes && opens == other.opens
             && windowStart == other.windowStart && windowEnd == other.windowEnd
+            && days == other.days
             && selection.applicationTokens == other.selection.applicationTokens
             && selection.categoryTokens == other.selection.categoryTokens
             && selection.webDomainTokens == other.selection.webDomainTokens

@@ -58,7 +58,9 @@ redistributed packages.
   engine in an extension offscreen document; Safari uses its nonpersistent
   background page. No camera, screen-recording or identity-recognition
   permission is requested. The extension does not upload or persist captures,
-  face descriptors or browsing URLs for this feature.
+  face descriptors or browsing URLs for this feature. The engine selects WebGL,
+  then its packaged WASM backend, then the JavaScript CPU backend; the measured
+  change and its limits are in [the engine note](VISUAL_ENGINE_WASM_2026-11-07.md).
 - Visible images and accessible sampled video frames are downscaled and queued
   with bounded work. Route/source changes, removed elements and cancelled
   requests discard stale results. This is periodic inspection, not analysis of

@@ -14,6 +14,7 @@ test suites assert every case: `PolicyContractTests.swift` against the store,
 | Input | Owner | Reaches the browser via |
 |---|---|---|
 | Published list + URL keyword rules | CI, signed | static rulesets and the downloaded list |
+| Adult-TLD rail (`.adult`, `.porn`, `.sex`, `.xxx`) | policy constant in every client | static ruleset on the browser; code in the Mac filter, the Safari rules and Android DNS |
 | Built-in search/viewer blocks | maintained `blocklist/web_protection.json` | generated static ruleset |
 | URL obfuscation aliases (`p0rn`, `s3x`) | reviewed alias table + signed host vocabulary | generated static ruleset |
 | Encoded Arabic search queries | signed Arabic page vocabulary | generated static ruleset |
@@ -26,10 +27,12 @@ below are identical.
 
 ## Rules
 
-1. **The published list, the keyword rules and the custom blocks always
-   apply.** A custom block is never loosened by anything.
+1. **The published list, the adult-TLD rail, the keyword rules and the custom
+   blocks always apply.** A custom block is never loosened by anything. The
+   rail is a policy constant rather than list content, so it also answers when
+   the list or the terms file cannot be read.
 2. **The allowlist is an allowance in every mode.** It overrides the published
-   list and the keyword rules — it is the one escape valve a false positive has
+   list, the adult-TLD rail and the keyword rules — it is the one escape valve a false positive has
    during a lock, when the lists cannot otherwise change — and in strict mode it
    is additionally the only thing reachable.
 3. **Most specific wins; ties go to the block.** When an allowlist entry and a
@@ -86,6 +89,15 @@ below are identical.
     reject drift, and `test/browser/dnr.sh` proves the rules compile in Chrome
     and match only where intended (including not matching `سكسونيا`).
 
+13. **A sponsored adult TLD is blocked without a list entry.** A host whose
+    final label is `.adult`, `.porn`, `.sex` or `.xxx` is refused by every
+    client, whatever generation it holds. `.cam` is deliberately excluded: it
+    is a generic TLD with ordinary camera uses. The rail sits below the hand
+    allowance and above the published list; the Mac site checker names it
+    `adultTld` instead of pretending the list decided. This closes the
+    "new domain, registered today" row for those four registries only, not for
+    every new generic-TLD name.
+
 ## Scope, stated plainly
 
 * The **filter** applies every rule to every socket the machine opens, whatever
@@ -108,8 +120,9 @@ and each group is one rule at `1000 + 2 × labels`, blocks one higher than
 allows. A request matches every group whose entry covers it; the highest
 priority among them is the most specific entry, and a tie between an allow and
 a block at the same depth goes to the block. Below the hand lists, the ladder
-is: strict catch-all 1, strict plumbing carve-out 2, published domain list 3,
-published URL keywords and path rules 4, obfuscation/encoded-query aliases 5.
+is: strict catch-all 1, strict plumbing carve-out 2, published domain list and
+adult-TLD rail 3, published URL keywords and path rules 4,
+obfuscation/encoded-query aliases 5.
 Built-in search/viewer blocks sit at 2000, above
 every hand-list rule. So any allowance outranks the published rules and
 carves through strict mode, while the plumbing carve-out — an allowed page's

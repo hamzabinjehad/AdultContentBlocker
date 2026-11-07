@@ -219,6 +219,20 @@ public final class AdultTextPolicy {
         return tokens != null && judge(tokens, true);
     }
 
+    /** Classify one event label before the full screen has been read. A call to action and a
+     * reviewed clear or strong signal are still required, so this can block a "Watch free porn"
+     * label immediately; a bare explicit label ("Porn") waits for {@link #blocksAnyLine}, which
+     * knows whether another line on the screen names protective context. */
+    public boolean blocksPromotion(String input) {
+        String[] tokens = tokens(input);
+        if (tokens == null) return false;
+        boolean promotion = false;
+        for (String token : tokens) {
+            if (isPromotion(token)) { promotion = true; break; }
+        }
+        return promotion && judge(tokens, false);
+    }
+
     /** Classify each line of a screen sample (one visible label per line) on its own, as
      * {@link #blocks} does, so unrelated medical or news wording never exempts an adult
      * promotion elsewhere. A bare explicit term ("Porn", "سكس") counts as a label only when

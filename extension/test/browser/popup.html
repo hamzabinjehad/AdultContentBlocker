@@ -30,6 +30,12 @@ try {
       window.repairCalls = 0;
       window.repairReply = {ok:true};
       window.close = () => {};
+      // A thrown render used to leave the lock row and the app row frozen on
+      // their opening copy. Catch it here as an error, not only as a mismatch.
+      window.__errors = [];
+      addEventListener('error', (event) => __errors.push(String(event.message)));
+      addEventListener('unhandledrejection', (event) =>
+        __errors.push(String(event.reason?.message || event.reason)));
       window.chrome = {
         storage: { local: { get: async () => ({uiLanguage:${JSON.stringify(language)}}),set:async()=>{} }, onChanged:{addListener(){}} },
         extension: { isAllowedIncognitoAccess: cb => cb(${privateAccess}) },
@@ -61,7 +67,12 @@ try {
     desiredRevision:1,appliedRevision:1,enforcement:{version:1,status:"applied",desiredRevision:1,appliedRevision:1,
       layers:{domains:"applied",search:"applied",text:"applied",visual:"off"},downloadedRules:{domains:0,keywords:0,listVersion:0}}};
   const solo = await frame(base), s = solo.contentDocument;
+  check(solo.contentWindow.__errors.length === 0,
+    `popup script runs without errors${solo.contentWindow.__errors.length ? `: ${solo.contentWindow.__errors.join('; ')}` : ''}`);
   check(s.getElementById("pHead").textContent === "Protection active", "standalone protection status");
+  check(s.getElementById("connectionBadge").textContent === "Optional"
+    && s.getElementById("appIndicator").classList.contains("off"),
+    "the app row paints its icon and word together when no app is installed");
   check(s.getElementById("lHead").textContent === "No active lock", "protection and lock are separate");
   check(s.getElementById("lockBlock").hidden, "inactive lock explanation does not crowd the popup");
   check(s.querySelector('#visualIndicator').closest('li').querySelector('[data-view="media"]'), "visual shortcut opens its dedicated page");
@@ -227,6 +238,34 @@ try {
       `${language}: repair keeps a comfortable touch target`);
     check(spacious.contentWindow.getComputedStyle(sd.getElementById("connectionAction")).position === "absolute", `${language}: reconnect label remains accessible without crowding the main action`);
   }
+  // The embedded settings surface owns the popup while it is open: one compact
+  // back bar, the whole rest of the popup for the page, and no duplicate brand.
+  const editor = await frame(base, "en", false, {width:480,height:600}), ed = editor.contentDocument;
+  ed.getElementById("openSettings").click(); await pause();
+  check(!ed.getElementById("popupEditor").hidden && ed.body.classList.contains("popup-editing"),
+    "manage protection opens the embedded settings surface");
+  check(ed.activeElement === ed.getElementById("backToStatus"),
+    "embedded settings place focus on the way back");
+  check(editor.contentWindow.getComputedStyle(ed.querySelector(".popup-header")).display === "none",
+    "the popup header yields its height to the embedded settings page");
+  const frameRect = ed.getElementById("settingsFrame").getBoundingClientRect();
+  check(frameRect.height >= 500 && frameRect.width >= 440,
+    `embedded settings use nearly the whole popup (${Math.round(frameRect.width)}×${Math.round(frameRect.height)})`);
+  ed.getElementById("openFullSettings").click(); await pause();
+  check(editor.contentWindow.opened === 1, "the full-page action escapes the popup when no draft is pending");
+  const editorLang = ed.getElementById("editorLangSwitch");
+  check(editorLang && editorLang.textContent === "العربية",
+    "the embedded editor keeps a one-tap language switch in its compact bar");
+  editorLang.click(); await pause();
+  check(ed.documentElement.dir === "rtl" && ed.getElementById("backToStatus").textContent.includes("رجوع"),
+    "the editor switches language without leaving settings");
+  ed.getElementById("backToStatus").click(); await pause();
+  check(ed.getElementById("popupEditor").hidden && !ed.body.classList.contains("popup-editing"),
+    "back returns to the status summary");
+  check(ed.activeElement === ed.getElementById("openSettings"),
+    "back returns focus to the control that opened settings");
+  check(editor.contentWindow.getComputedStyle(ed.querySelector(".popup-header")).display !== "none",
+    "returning from settings restores the popup header");
   document.getElementById("summary").dataset.result = "pass";
 } catch (error) {
   results.push(`FAIL ${error.stack}`); document.getElementById("summary").dataset.result = "fail";

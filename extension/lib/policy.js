@@ -17,8 +17,9 @@
  *
  * THE RULES, IN ONE PLACE
  * -----------------------
- *  1. The published list, the URL keyword rules and the hand-added blocks
- *     always apply; a custom block is never loosened by anything.
+ *  1. The published list, the adult-TLD rail, the URL keyword rules and the
+ *     hand-added blocks always apply; a custom block is never loosened by
+ *     anything.
  *  2. The allowlist is an allowance in EVERY mode. It overrides the published
  *     list and the keyword rules — it is the one escape valve a false
  *     positive has during a lock, when the lists cannot otherwise change —
@@ -109,6 +110,22 @@ export const PRIORITY_EVASION = 5;
 export const PRIORITY_HAND = 1000;
 const MAX_LABELS = 32;
 
+/**
+ * Sponsored adult TLDs, enforced by `rules/adult_tlds.json` at
+ * `PRIORITY_LIST`.
+ *
+ * A blocklist can only block a domain after someone has added it. These four
+ * TLDs are adult-sponsored at the registry, so every name under them — including
+ * one registered this morning, before any list could carry it — belongs to the
+ * same category the list exists to block. `.cam` is deliberately absent: it is
+ * a generic TLD with ordinary uses, and blocking it whole would take out
+ * non-adult sites.
+ *
+ * Keep `rules/adult_tlds.json` and this array in step; `adult-tlds.test.js`
+ * asserts both.
+ */
+export const ADULT_TLDS = Object.freeze(["adult", "porn", "sex", "xxx"]);
+
 /** What a page IS: the top document and any frame in it. */
 const DOCUMENT_TYPES = ["main_frame", "sub_frame"];
 /** What an allowed page may fetch from anywhere to render itself. */
@@ -188,6 +205,30 @@ export function canonicalHost(raw) {
   }
   if (/^[0-9]+$/.test(labels[labels.length - 1])) return null;
   return s;
+}
+
+/**
+ * True when the host's final label is one of `ADULT_TLDS`.
+ *
+ * Separate from `canonicalHost` on purpose: that function refuses a single
+ * label and strips `www.`, while this check must work on the raw hostname the
+ * browser carried (including an absolute FQDN's trailing dot) and must treat a
+ * bare `porn` the same as `anything.porn`.
+ */
+export function isAdultTld(raw) {
+  let s = String(raw ?? "").trim().toLowerCase();
+  const scheme = s.indexOf("://");
+  if (scheme >= 0) s = s.slice(scheme + 3);
+  const slash = s.indexOf("/");
+  if (slash >= 0) s = s.slice(0, slash);
+  const at = s.lastIndexOf("@");
+  if (at >= 0) s = s.slice(at + 1);
+  const colon = s.indexOf(":");
+  if (colon >= 0) s = s.slice(0, colon);
+  while (s.endsWith(".")) s = s.slice(0, -1);
+  if (!s) return false;
+  const dot = s.lastIndexOf(".");
+  return ADULT_TLDS.includes(dot >= 0 ? s.slice(dot + 1) : s);
 }
 
 /** Depth of a host, capped so a pathological entry cannot climb out of the
@@ -353,10 +394,14 @@ export function decide(state, hostname,
                        { listed = false, resourceType = "main_frame", initiator = null } = {}) {
   const host = String(hostname || "").toLowerCase().replace(/\.$/, "");
   const from = initiator ? String(initiator).toLowerCase().replace(/\.$/, "") : null;
+  const adultTld = isAdultTld(host);
   // SafeSearch transforms and headers do not decide hostname access.
   const rules = [...policyRules(state), ...WEB_PROTECTION_RULES].filter((r) =>
     r.action.type !== "modifyHeaders" && !r.action.redirect?.transform);
-  if (listed) {
+  // `listed` stands in for both always-on published rulesets: the domain list
+  // and the adult-TLD guard. The guard is what a brand-new name under a
+  // sponsored adult TLD meets before any list could carry it.
+  if (listed || adultTld) {
     rules.push({
       id: RULE_DOWNLOADED_BASE,
       priority: PRIORITY_LIST,
@@ -406,11 +451,11 @@ export function tabsToBlock(tabs, state) {
     if (!m) continue;
     const host = m[1];
     if (decide(state, host, { listed: false }) === "block") {
-      const custom = coveredBy((state.customBlocks || []).map(canonicalHost).filter(Boolean),
-                               host.toLowerCase().replace(/\.$/, ""));
-      const builtIn = WEB_PROTECTION_RULES.some((r) => ruleMatches(r,
-        host.toLowerCase().replace(/\.$/, ""), "main_frame", null));
-      out.push({ id: tab.id, reason: builtIn ? "domain" : custom ? "custom" : "strict" });
+      const cleaned = host.toLowerCase().replace(/\.$/, "");
+      const custom = coveredBy((state.customBlocks || []).map(canonicalHost).filter(Boolean), cleaned);
+      const builtIn = WEB_PROTECTION_RULES.some((r) => ruleMatches(r, cleaned, "main_frame", null));
+      const reason = builtIn || isAdultTld(cleaned) ? "domain" : custom ? "custom" : "strict";
+      out.push({ id: tab.id, reason });
     }
   }
   return out;

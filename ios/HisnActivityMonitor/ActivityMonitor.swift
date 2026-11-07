@@ -30,6 +30,13 @@ final class ActivityMonitor: DeviceActivityMonitor {
                 window.clearAllSettings()
                 return
             }
+            // The schedule fires every day; only the chosen weekdays shield. A
+            // crossing window's morning leg belongs to the previous evening.
+            guard AppUsageConfiguration.windowLegAllowed(activity.rawValue, days: config.days,
+                                                          at: Date()) else {
+                window.clearAllSettings()
+                return
+            }
             config.shield(window)
             return
         }

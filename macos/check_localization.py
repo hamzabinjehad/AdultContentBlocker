@@ -92,8 +92,10 @@ def check_xliff(path: Path, catalog: dict) -> list[str]:
             continue    # the bundle's name stays "Hisn"
         for u in f.iter(f"{XLIFF}trans-unit"):
             source = u.find(f"{XLIFF}source")
-            key = u.get("id") or (source.text if source is not None else "")
-            if key in catalog["strings"]:
+            key = u.get("id") or (source.text if source is not None else "") or ""
+            # String catalogs can carry a blank extraction unit; it is not a
+            # string the app shows, so it has no translation to check.
+            if key == "" or key in catalog["strings"]:
                 continue
             target = u.find(f"{XLIFF}target")
             if target is None or target.get("state") not in ("translated", "final"):

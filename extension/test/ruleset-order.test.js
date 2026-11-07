@@ -28,7 +28,7 @@ function check(ok, label) {
 
 // Every position as released, from 1.1.12 on. Append only.
 const SHIPPED = ["blocklist", "keywords", "safesearch", "web_protection", "evasion",
-                 "encoded_queries", "paths", "lockdown", "short_video"];
+                 "encoded_queries", "paths", "lockdown", "short_video", "adult_tlds"];
 
 const manifest = JSON.parse(readFile("../manifest.json"));
 const resources = manifest.declarative_net_request.rule_resources;

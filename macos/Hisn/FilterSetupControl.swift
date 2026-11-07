@@ -12,39 +12,38 @@ struct FilterSetupControl: View {
         VStack(alignment: .leading, spacing: 10) {
             if showsBuildBlock, let block = FilterLink.shared.buildBlock {
                 Text(block.explanation)
-                    .font(.callout).foregroundStyle(.orange)
+                    .font(.hnCaption()).foregroundStyle(HnPalette.ember)
                     .fixedSize(horizontal: false, vertical: true)
             }
             if filter.restartRequired {
                 Label("Restart required", systemImage: "arrow.clockwise")
-                    .foregroundStyle(.orange)
+                    .font(.hnCaption()).foregroundStyle(HnPalette.ember)
             } else if filter.needsUserApproval {
                 Label("Waiting for your approval in System Settings", systemImage: "hand.raised")
-                    .foregroundStyle(.orange)
+                    .font(.hnCaption()).foregroundStyle(HnPalette.ember)
             } else if filter.isEnabling {
                 ProgressView("Setting up the filter...").controlSize(.small)
             }
 
-            HStack {
-                Button {
+            HStack(spacing: 8) {
+                HnButton(title: "Enable system filter", systemImage: "shield.lefthalf.filled",
+                         kind: .quiet) {
                     Task { @MainActor in
                         do { try await filter.enable() }
                         catch { /* The controller publishes the error below. */ }
                     }
-                } label: {
-                    Label("Enable system filter", systemImage: "shield.lefthalf.filled")
                 }
                 .disabled(!FilterLink.shared.isConfigured || filter.isEnabling || filter.isEnabled || filter.restartRequired)
 
                 if filter.needsUserApproval {
-                    Button("Open System Settings") {
+                    HnButton(title: "Open System Settings", kind: .outline) {
                         NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/System Settings.app"))
                     }
                 }
             }
 
             if let error = filter.lastError {
-                Text(error).font(.callout).foregroundStyle(.orange)
+                Text(error).font(.hnCaption()).foregroundStyle(HnPalette.danger)
                     .fixedSize(horizontal: false, vertical: true)
                     .textSelection(.enabled)
             }
@@ -77,38 +76,52 @@ struct CopyableCommand: View {
     }
 }
 
-/// The same live-evidence explanation on Setup and Overview. Actions navigate
-/// to consented setup; rendering this card never enables a protection layer.
+/// The same live-evidence status on Setup and Overview. The one-line state is
+/// visible; what it means, and the detail of the next issue, live in `Explain`.
+/// Actions navigate to consented setup; rendering this card never enables a
+/// protection layer.
 struct LaptopSetupStatusView: View {
     let readiness: LaptopSetupReadiness
     let review: (LaptopSetupReadiness.Issue) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Label(LocalizedStringKey(readiness.headline), systemImage: readiness.isReady ? "checkmark.shield" : "checklist")
-                .font(.headline)
-                .foregroundStyle(readiness.isReady ? Color.green : Color.primary)
-                .accessibilityAddTraits(.isHeader)
-            Text(LocalizedStringKey(readiness.summary))
-                .font(.callout).foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 7) {
+                Image(systemName: readiness.isReady ? "checkmark.shield.fill" : "checklist")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(readiness.isReady ? HnPalette.calm : HnPalette.ember)
+                    .accessibilityHidden(true)
+                Text(LocalizedStringKey(readiness.headline))
+                    .font(.system(.title3).weight(.semibold))
+                    .foregroundStyle(HnPalette.ink)
+                    .accessibilityAddTraits(.isHeader)
+                HnExplain {
+                    Text(LocalizedStringKey(readiness.summary))
+                    if let next = readiness.issues.first {
+                        Text(verbatim: readiness.detail(next))
+                    }
+                }
+                Spacer(minLength: 0)
+            }
             if readiness.isChecking {
-                ProgressView("Checking this Mac...").controlSize(.small)
+                HStack(spacing: 6) {
+                    ProgressView().controlSize(.small)
+                    Text("Checking this Mac...").font(.hnCaption()).foregroundStyle(HnPalette.muted)
+                }
             }
             if let next = readiness.issues.first {
-                Text(LocalizedStringKey(readiness.detail(next)))
-                    .font(.callout)
-                    .fixedSize(horizontal: false, vertical: true)
-                Button("Review next step") { review(next) }
-                    .accessibilityIdentifier("setup.reviewNextStep")
-            }
-            // The stage list below is the complete list; repeating every
-            // missing check here made the top of Setup a second, shorter copy
-            // of the page. One next step is enough above the fold.
-            if readiness.issues.count > 1 {
-                Text(String(localized: "\(readiness.issues.count - 1) more checks below."))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 8) {
+                    HnButton(title: "Review next step", systemImage: "arrow.forward",
+                             kind: .quiet) { review(next) }
+                        .accessibilityIdentifier("setup.reviewNextStep")
+                    if readiness.issues.count > 1 {
+                        Text(String(localized: "\(readiness.issues.count - 1) more checks below."))
+                            .font(.hnCaption())
+                            .foregroundStyle(HnPalette.faint)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.top, 1)
             }
         }
         .accessibilityElement(children: .contain)

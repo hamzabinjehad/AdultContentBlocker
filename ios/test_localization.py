@@ -126,9 +126,10 @@ class LocalizationParityTests(unittest.TestCase):
     def test_the_lookup_scan_finds_the_app_text(self):
         # Guards the scanner itself: these are looked up through each pattern it handles.
         keys = referenced_keys()
-        for expected in ("tab.protection", "vault.title", "setup.status.configured",
-                         "apps.health.unchecked", "sites.locked", "plan.layers \\(protection.configuredContentLayers)",
-                         "screentime.notConfigured", "commitment.screenTimeLost"):
+        for expected in ("tab.today", "vault.title", "setup.status.configured",
+                         "apps.health.unchecked", "sites.locked",
+                         "screentime.notConfigured", "commitment.screenTimeLost",
+                         "today.title.protected", "apps.pause.explain \\(opens) \\(minutes)"):
             self.assertIn(expected, keys)
         self.assertGreater(len(keys), 150)
 

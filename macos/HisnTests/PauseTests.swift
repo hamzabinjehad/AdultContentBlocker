@@ -137,11 +137,12 @@ final class PauseTests: XCTestCase {
                                        closeAt: now.addingTimeInterval(42))
         for language in ["en", "ar"] {
             let view = NSHostingView(rootView: ZStack {
-                Color(red: 0.03, green: 0.04, blue: 0.11).ignoresSafeArea()
+                HnPalette.canvas.ignoresSafeArea()
                 GuardAlertCard(alert: alert, now: now, open: {})
                     .padding(22)
             }
             .environment(\.locale, Locale(identifier: language))
+            .preferredColorScheme(.dark)
             .environment(\.layoutDirection, language == "ar" ? .rightToLeft : .leftToRight)
             .frame(width: 460, height: 320))
             let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 460, height: 320),

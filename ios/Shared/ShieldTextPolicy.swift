@@ -157,11 +157,11 @@ enum ShieldTextPolicy {
                         primaryButton: "حسنًا")
         case (.quietHours, .english):
             return Copy(title: "Quiet hours",
-                        subtitle: "This app is shielded during your daily quiet-hours window.",
+                        subtitle: "This app is shielded during your quiet-hours window.",
                         primaryButton: "OK")
         case (.quietHours, .arabic):
             return Copy(title: "ساعات هادئة",
-                        subtitle: "هذا التطبيق محجوب خلال فترة الساعات الهادئة اليومية.",
+                        subtitle: "هذا التطبيق محجوب خلال نافذة الساعات الهادئة.",
                         primaryButton: "حسنًا")
         case (.unknown, .english):
             return Copy(title: "Hisn is protecting this app",

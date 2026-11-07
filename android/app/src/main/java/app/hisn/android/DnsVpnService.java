@@ -31,7 +31,9 @@ import app.hisn.core.SafeSearch;
 import app.hisn.core.DnsTunnelProbe;
 import app.hisn.core.DnsTcpServer;
 import app.hisn.core.DomainSeed;
+import app.hisn.core.AdultTldPolicy;
 import app.hisn.core.DomainPolicy;
+import app.hisn.core.HostTermPolicy;
 import app.hisn.core.EncryptedDnsProviders;
 import app.hisn.core.EncryptedDnsResolvers;
 import app.hisn.core.Ipv4DnsPacket;
@@ -399,6 +401,18 @@ public final class DnsVpnService extends VpnService {
                 }
                 if (closed) return;
                 domains = seed.domainCount;
+                // The hostname layer is read from the same APK-pinned signed
+                // terms asset as the text layer, synchronously, before the
+                // tunnel exists. A failure leaves the domain list enforcing
+                // and the keyword layer off; it never loads unverified bytes.
+                HostTermPolicy hostTerms;
+                try {
+                    hostTerms = AdultPolicyAssets.loadHostPolicy(DnsVpnService.this);
+                } catch (Exception unavailable) {
+                    hostTerms = null;
+                }
+                final HostTermPolicy hostGuard = hostTerms;
+                final AdultTldPolicy adultTlds = new AdultTldPolicy();
                 readPrivateDns();
                 Builder builder = new Builder().setSession(getString(R.string.dns_notification_title))
                         .setMtu(1500).addAddress("10.111.0.1", 32).addAddress("fd00:111::1", 128)
@@ -422,7 +436,12 @@ public final class DnsVpnService extends VpnService {
                 PolicyStore settings = PolicyStore.get(DnsVpnService.this);
                 DnsPolicy.Rules savedRules = hostname -> {
                     DomainPolicy.Decision custom = settings.snapshot().domains.evaluate(hostname);
-                    return custom == DomainPolicy.Decision.ALLOW ? seed.policy.evaluate(hostname) : custom;
+                    if (custom != DomainPolicy.Decision.ALLOW) return custom;
+                    // A hand allowance still outranks both rails, exactly as it
+                    // outranks the seed: the escape hatch for a false positive.
+                    if (adultTlds.matches(hostname)) return DomainPolicy.Decision.BLOCK;
+                    if (hostGuard != null && hostGuard.matches(hostname)) return DomainPolicy.Decision.BLOCK;
+                    return seed.policy.evaluate(hostname);
                 };
                 DnsPolicy.Rules rules = hostname -> EncryptedDnsProviders.blocks(hostname, privateDnsName)
                         ? DomainPolicy.Decision.BLOCK : browserTest.evaluate(hostname, savedRules);

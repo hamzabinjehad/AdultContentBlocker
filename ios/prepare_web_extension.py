@@ -53,6 +53,8 @@ VISUAL_ASSETS = frozenset({
     "notices/tensorflowjs-Apache-2.0.txt",
     "notices/nsfwjs-LICENSE.txt", "notices/@vladmandic-human-LICENSE.txt",
     "notices/buffer-LICENSE.txt", "engine.bundle.js.LEGAL.txt",
+    "wasm/tfjs-backend-wasm.wasm", "wasm/tfjs-backend-wasm-simd.wasm",
+    "wasm/tfjs-backend-wasm-threaded-simd.wasm",
 })
 VISUAL_MAX_BYTES = 32 * 1024 * 1024
 

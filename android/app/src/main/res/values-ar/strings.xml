@@ -5,6 +5,7 @@
     <string name="status_title">الحماية متوقفة</string>
     <string name="status_body">فعّل الطبقات التي تختارها وراجع حالة كل منها. يختلف نطاق DNS وتقييد التطبيقات وفحص الصور والفيديو. يقفل قفل الحماية القواعد المحفوظة، لكنه لا يمنع أندرويد وحده من تعطيل حصن أو إزالته.</string>
     <string name="network">فلترة DNS · متوقفة</string>
+    <string name="dns_off_body">متوقفة. لا يُحجب أي نطاق حتى تُفعّلها.</string>
     <string name="dns_seed_version">قائمة النطاقات v%1$d · بُنيت في %2$s</string>
     <string name="dns_seed_stale">القائمة المضمّنة عمرها %1$s. إصدار حصن الجديد الموقّع هو وسيلة تحديث القائمة الوحيدة في أندرويد؛ ثبّته عند توفره.</string>
     <plurals name="seed_age_days">
@@ -55,7 +56,7 @@
     <string name="dns_not_resumed_body">تعذّر على حصن إعادة تشغيل فلترة DNS بعد إعادة تشغيل الجهاز، مثلًا لأن موافقة VPN في أندرويد أُزيلت أو لأن VPN آخر مضبوط على التشغيل الدائم. افتح حصن لتشغيلها من جديد.</string>
     <string name="dns_failed_body">توقفت فلترة DNS بسبب خطأ. لن تُفلتر النطاقات حتى تفتح حصن وتشغّلها من جديد.</string>
     <string name="visual">فحص الصور والفيديو · متوقف</string>
-    <string name="commitment">قفل الحماية · متوقف</string>
+    <string name="commitment">متوقف</string>
     <string name="rules_heading">قواعد حمايتك</string>
     <string name="next_step">الخطوة التالية</string>
     <string name="rules_intro_short">اختر ما يحظره حصن أو يفحصه. كل قاعدة أدناه محفوظة على هذا الهاتف.</string>
@@ -74,6 +75,8 @@
     <string name="browsers_keep_only">أبقِ هذا فقط</string>
     <string name="browsers_keep_only_note">استخدم «أبقِ هذا فقط» لتحديد كل متصفحات أخرى مثبتة، ثم احفظ. اترك متصفحًا واحدًا غير محدد إذا أردت متابعة التصفح بعد الحظر.</string>
     <string name="browsers_help">هذه التطبيقات المثبتة تفتح روابط الويب. المتصفح مشمول إذا حجبته حصن، أو فُحصت فيه النصوص والصور، أو كان فلتر DNS يعمل. المتصفحات غير المشمولة تظهر محددة: اضغط احجب المحدد لرفضها. فلتر DNS يرشد الأسماء فقط، فالمتصفح الذي يستخدم VPN أو Tor أو خادم أسماء خاصًا به يمكنه تجاوز هذا المسار — احجب التطبيق نفسه في هذه الحالة.</string>
+    <string name="browsers_private_note">النوافذ الخاصة تحصل على الطبقات نفسها: فلترة DNS ما زالت ترى طلباتها، والفحص النصي والصوري ما زال يأخذ لقطة من نافذة المتصفح. الوضع الخاص ليس طريقًا للالتفاف على حصن.</string>
+    <string name="browsers_private_limit">لا يسمح أندرويد بإيقاف الوضع الخاص في متصفح آخر إلا إذا كان الهاتف مُدارًا من مالك جهاز. على هاتف عادي، الطريقة الوحيدة لإزالته هي حظر ذلك المتصفح.</string>
     <string name="browsers_limit_note">حجب المتصفح يعيدك إلى الشاشة الرئيسية مع إشعار؛ لا يمنعك من تثبيت متصفح آخر، ويمكن لإعدادات أندرويد تغييره أو تعطيله.</string>
     <string name="browsers_block_action">احجب المحدد</string>
     <string name="browser_state_blocked">محظور الآن</string>
@@ -82,9 +85,9 @@
     <string name="browser_state_uncovered">لا تغطيه أي طبقة في حصن</string>
     <string name="schedule_edit">جدول حظر التطبيقات</string>
     <string name="schedule_edit_button">تعديل الجدول</string>
-    <string name="schedule_off">جدول التطبيقات · متوقف</string>
-    <string name="schedule_summary">جدول التطبيقات · التطبيقات المختارة: %1$d · %2$s–%3$s · %4$s · %5$s</string>
-    <string name="schedule_summary_all">جدول التطبيقات · كل التطبيقات إلا %1$d · %2$s–%3$s · %4$s · %5$s</string>
+    <string name="schedule_off">متوقف</string>
+    <string name="schedule_summary">التطبيقات المختارة: %1$d · %2$s–%3$s · %4$s · %5$s</string>
+    <string name="schedule_summary_all">كل التطبيقات إلا %1$d · %2$s–%3$s · %4$s · %5$s</string>
     <string name="schedule_days_every">كل يوم</string>
     <string name="schedule_days_title">الأيام التي تتكرر فيها هذه الفترة</string>
     <string name="schedule_days_help">فترة مثل 22:00–07:00 تتكرر يوم الاثنين تغطي مساء الاثنين حتى صباح الثلاثاء.</string>
@@ -132,7 +135,7 @@
         <item quantity="many">%1$d يومًا</item>
         <item quantity="other">%1$d يوم</item>
     </plurals>
-    <string name="commitment_remaining">قفل الحماية نشط · بقي نحو %1$s</string>
+    <string name="commitment_remaining">بقي نحو %1$s</string>
     <!-- After "نحو": genitive forms (ساعتين، يومين). -->
     <plurals name="remaining_hours">
         <item quantity="zero">%1$d ساعة</item>
@@ -491,7 +494,7 @@
     <string name="settings_battery_off">قد يوقفه أندرويد</string>
     <string name="section_time_limits">حدود الوقت اليومية</string>
     <string name="time_limits_edit_button">تعديل الحدود اليومية</string>
-    <string name="time_limits_off">حدود الوقت اليومية · متوقفة</string>
+    <string name="time_limits_off">متوقف</string>
     <string name="time_limits_help">اختر تطبيقات وحدًا زمنيًا يوميًا لوقت الاستخدام. عند بلوغ الحد يغلق حصن التطبيق ويعيدك إلى الشاشة الرئيسية حتى منتصف الليل المحلي. يقرأ حصن سجل الاستخدام الذي يحتفظ به أندرويد على الجهاز؛ ولا تُرسل أي بيانات استخدام إلى أي مكان.</string>
     <string name="time_limits_choose_apps">تطبيقات لها حد يومي</string>
     <string name="time_limits_limit_title">الحد اليومي لهذه التطبيقات</string>

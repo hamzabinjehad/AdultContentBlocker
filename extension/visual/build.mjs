@@ -52,13 +52,32 @@ for (const [pkg, file] of [['nsfwjs', 'LICENSE'], ['@vladmandic/human', 'LICENSE
   await writeFile(path.join(root, name), data);
   artifacts[name] = { bytes: data.length, sha256: createHash('sha256').update(data).digest('hex'), source: `${pkg} package license` };
 }
+// The WASM backend loads its compiled kernels as separate binary assets. They
+// are copied from the pinned package and served beside the bundle — never
+// fetched at runtime. Threaded variants are included because the backend picks
+// one at load time; a missing file would silently fall back to the CPU backend.
+const wasmVersion = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8')).dependencies['@tensorflow/tfjs-backend-wasm'];
+const wasmDist = path.join(root, 'node_modules', '@tensorflow', 'tfjs-backend-wasm', 'dist');
+await mkdir(path.join(root, 'wasm'), { recursive: true });
+for (const file of ['tfjs-backend-wasm.wasm', 'tfjs-backend-wasm-simd.wasm', 'tfjs-backend-wasm-threaded-simd.wasm']) {
+  const data = await readFile(path.join(wasmDist, file));
+  if (!data.length || data.length > 2000000) throw new Error(`Invalid WASM asset ${file}`);
+  const name = `wasm/${file}`, previous = recorded?.artifacts?.[name];
+  if (offline && previous && (previous.bytes !== data.length
+      || previous.sha256 !== createHash('sha256').update(data).digest('hex'))) {
+    throw new Error(`Offline WASM asset differs from recorded build: ${name}`);
+  }
+  await writeFile(path.join(root, name), data);
+  artifacts[name] = { bytes: data.length, sha256: createHash('sha256').update(data).digest('hex'),
+    source: `@tensorflow/tfjs-backend-wasm@${wasmVersion} ${file}` };
+}
 await build({ entryPoints: [path.join(root, 'engine.js')], outfile: path.join(root, 'engine.bundle.js'),
   bundle: true, format: 'esm', platform: 'browser', target: ['chrome137', 'safari18'],
   alias: { '@vladmandic/human': path.join(root, 'node_modules/@vladmandic/human/dist/human.esm-nobundle.js') },
   minify: true, legalComments: 'linked', sourcemap: false });
 const bundle = await readFile(path.join(root, 'engine.bundle.js'));
 artifacts['engine.bundle.js'] = { bytes: bundle.length, sha256: createHash('sha256').update(bundle).digest('hex'),
-  source: 'engine.js; pinned pnpm-lock.yaml; NSFWJS MobileNetV2 weights embedded from nsfwjs@4.4.0' };
+  source: 'engine.js; pinned pnpm-lock.yaml; NSFWJS MobileNetV2 weights embedded from nsfwjs@4.4.0; TFJS WASM backend kernels' };
 const legal = await readFile(path.join(root, 'engine.bundle.js.LEGAL.txt'));
 artifacts['engine.bundle.js.LEGAL.txt'] = { bytes: legal.length, sha256: createHash('sha256').update(legal).digest('hex'), source: 'esbuild linked dependency notices' };
 await writeFile(path.join(root, 'assets.json'), JSON.stringify({ schema: 1, revision,

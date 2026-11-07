@@ -161,9 +161,8 @@ func pauseReminder(_ index: Int) -> LocalizedStringKey {
 
 // MARK: - Views
 
-/// The one positive action on the overview. It changes no rule and records only
-/// today's count, so it stays available during a commitment too. The count is
-/// shown only when the stored tally belongs to today.
+/// The one positive action on the old overview, kept for the Mac-style card
+/// layout. The 1.7.0 tabs use their own practice card.
 struct PauseCard: View {
     var count: Int?
     let action: () -> Void
@@ -214,67 +213,74 @@ struct PauseCard: View {
     }
 }
 
-/// The pause itself. The close control is always available; nothing on this
-/// screen waits for a timer to let the person leave.
+/// The pause itself, in the same deep navy as the shield: the system screen and
+/// the app agree about what a pause is. The close control is always available;
+/// nothing on this screen waits for a timer to let the person leave.
 struct PauseView: View {
     let onClose: () -> Void
     var defaults: UserDefaults
     var clock: () -> Date
+    /// The practice history the finished breath is written to. The app group by
+    /// default, so Today and Practice read the same streak.
+    var ruleStore: PauseRuleStore = .appGroup
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var started: Date
     @State private var tally: PauseTally?
     @State private var selectedNeed: PauseNeed?
+    @State private var practiceRecorded = false
 
     init(onClose: @escaping () -> Void,
          defaults: UserDefaults = .standard,
          clock: @escaping () -> Date = { Date() },
-         startedAt: Date = Date()) {
+         startedAt: Date = Date(),
+         ruleStore: PauseRuleStore = .appGroup) {
         self.onClose = onClose
         self.defaults = defaults
         self.clock = clock
+        self.ruleStore = ruleStore
         _started = State(initialValue: startedAt)
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            closeRow
-                .padding(.horizontal, 24)
-                .padding(.top, 10)
-            GeometryReader { inner in
-                ScrollView {
-                    VStack(spacing: 18) {
-                        titleBlock
-
-                        TimelineView(.animation(minimumInterval: reduceMotion ? 1 : 1.0 / 30.0,
-                                                paused: false)) { _ in
-                            let elapsed = max(0, clock().timeIntervalSince(started))
-                            let breath = PauseBreath.snapshot(at: elapsed)
-                            Group {
-                                if breath.finished {
-                                    completion
-                                } else {
-                                    breathing(breath)
-                                }
-                            }
-                            // The breathing stage has a fixed stage; the
-                            // completion stage is shorter and should not
-                            // leave a gap where the circle was.
-                            .frame(minHeight: breath.finished ? nil : 360)
-                        }
-
-                        footer
-                    }
+        ZStack {
+            HnPalette.inkCard.ignoresSafeArea()
+            RadialGradient(colors: [HnPalette.accent.opacity(0.34), .clear],
+                           center: .top, startRadius: 10, endRadius: 520)
+                .ignoresSafeArea()
+            VStack(spacing: 0) {
+                closeRow
                     .padding(.horizontal, 24)
-                    .padding(.vertical, 18)
-                    .frame(minHeight: inner.size.height)
-                    .frame(maxWidth: 560)
-                    .frame(maxWidth: .infinity)
+                    .padding(.top, 10)
+                GeometryReader { inner in
+                    ScrollView {
+                        VStack(spacing: 20) {
+                            titleBlock
+                            TimelineView(.animation(minimumInterval: reduceMotion ? 1 : 1.0 / 30.0,
+                                                    paused: false)) { _ in
+                                let elapsed = max(0, clock().timeIntervalSince(started))
+                                let breath = PauseBreath.snapshot(at: elapsed)
+                                Group {
+                                    if breath.finished {
+                                        completion
+                                    } else {
+                                        breathing(breath)
+                                    }
+                                }
+                                .frame(minHeight: breath.finished ? nil : 330)
+                            }
+                            footer
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 18)
+                        .frame(minHeight: inner.size.height)
+                        .frame(maxWidth: 560)
+                        .frame(maxWidth: .infinity)
+                    }
                 }
             }
         }
-        .background(background.ignoresSafeArea())
         .onAppear {
             guard tally == nil else { return }
             tally = PauseStore.record(now: clock(), defaults: defaults)
@@ -284,12 +290,13 @@ struct PauseView: View {
     private var titleBlock: some View {
         VStack(spacing: 6) {
             Text("pause.title")
-                .font(.title2.weight(.semibold))
+                .font(.system(.title2, design: .rounded).weight(.bold))
+                .foregroundStyle(HnPalette.onInk)
                 .multilineTextAlignment(.center)
                 .accessibilityAddTraits(.isHeader)
             Text("pause.body")
                 .font(.callout)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(HnPalette.onInkMuted)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -300,45 +307,36 @@ struct PauseView: View {
             Spacer()
             Button(action: onClose) {
                 Image(systemName: "xmark")
-                    .font(.body.weight(.semibold))
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(HnPalette.onInk)
                     .frame(width: 44, height: 44)
-                    .background(.thinMaterial, in: Circle())
+                    .background(Color.white.opacity(0.10), in: Circle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(Text("pause.close"))
         }
     }
 
-    private var background: some View {
-        LinearGradient(colors: [
-            Color.accentColor.opacity(0.10),
-            Color(uiColor: .systemBackground),
-            Color(uiColor: .systemBackground),
-        ], startPoint: .topLeading, endPoint: .bottomTrailing)
-    }
-
     private func breathing(_ breath: PauseBreath.Snapshot) -> some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 16) {
             ZStack {
                 Circle()
-                    .stroke(Color.accentColor.opacity(0.16), lineWidth: 2)
+                    .stroke(Color.white.opacity(0.14), lineWidth: 2)
                     .frame(width: 250, height: 250)
                 Circle()
                     .fill(RadialGradient(colors: [
-                        Color.accentColor.opacity(0.30),
-                        Color.accentColor.opacity(0.10),
+                        HnPalette.accent.opacity(0.55),
+                        HnPalette.accent.opacity(0.12),
                     ], center: .center, startRadius: 8, endRadius: 125))
-                    .frame(width: 250, height: 250)
+                    .frame(width: 236, height: 236)
                     .scaleEffect(breath.scale)
                     .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: breath.scale)
                     .accessibilityHidden(true)
-                VStack(spacing: 6) {
-                    Image(systemName: "wind")
-                        .font(.title2)
-                        .foregroundStyle(Color.accentColor)
-                        .accessibilityHidden(true)
+                VStack(spacing: 8) {
+                    HnMark(size: 30, tint: .white)
                     Text(breathLabel(breath.inhaling))
-                        .font(.headline)
+                        .font(.hnHeadline())
+                        .foregroundStyle(HnPalette.onInk)
                         .multilineTextAlignment(.center)
                 }
             }
@@ -348,13 +346,14 @@ struct PauseView: View {
 
             ProgressView(value: breath.progress)
                 .progressViewStyle(.linear)
-                .tint(Color.accentColor)
+                .tint(HnPalette.accent)
+                .background(Color.white.opacity(0.14))
                 .frame(maxWidth: 260)
                 .accessibilityLabel(Text("pause.progress"))
 
             Text(pauseReminder(pauseReminderIndex(forCount: tally?.count ?? 1)))
                 .font(.callout)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(HnPalette.onInkMuted)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 8)
@@ -363,15 +362,20 @@ struct PauseView: View {
 
     private var completion: some View {
         VStack(spacing: 16) {
-            Label("pause.done", systemImage: "checkmark.circle.fill")
-                .font(.headline)
-                .foregroundStyle(HisnPalette.good)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 8) {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(HnPalette.calm)
+                    .accessibilityHidden(true)
+                Text("pause.done")
+                    .font(.hnHeadline())
+                    .foregroundStyle(HnPalette.onInk)
+            }
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
 
             Text("pause.question")
                 .font(.callout)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(HnPalette.onInkMuted)
 
             LazyVGrid(columns: columns, spacing: 10) {
                 ForEach(PauseNeed.allCases) { need in
@@ -379,11 +383,15 @@ struct PauseView: View {
                         selectedNeed = need
                     } label: {
                         Text(need.title)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(selectedNeed == need ? .white : HnPalette.onInk)
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 8)
+                            .padding(.vertical, 11)
+                            .background(selectedNeed == need ? HnPalette.accent
+                                                            : Color.white.opacity(0.08),
+                                        in: Capsule())
                     }
-                    .buttonStyle(.bordered)
-                    .tint(selectedNeed == need ? Color.accentColor : nil)
+                    .buttonStyle(.plain)
                 }
             }
             .frame(maxWidth: 360)
@@ -391,20 +399,33 @@ struct PauseView: View {
             if let selectedNeed {
                 Text(selectedNeed.tip)
                     .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(HnPalette.onInkMuted)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, 8)
                     .transition(.opacity)
             }
 
-            Button("pause.again") {
+            Button {
                 selectedNeed = nil
                 started = clock()
+            } label: {
+                Text("pause.again")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(HnPalette.onInkAccent)
             }
-            .buttonStyle(.borderless)
+            .buttonStyle(.plain)
         }
         .padding(.top, 8)
+        .onAppear(perform: recordPracticeOnce)
+    }
+
+    /// The breath finishing is the practice. It is recorded once per view, so
+    /// replaying the completion state does not add a second day.
+    private func recordPracticeOnce() {
+        guard !practiceRecorded else { return }
+        practiceRecorded = true
+        ruleStore.recordPractice(now: clock())
     }
 
     private var columns: [GridItem] {
@@ -422,11 +443,12 @@ struct PauseView: View {
             if let tally {
                 Text("pause.count \(tally.count)")
                     .font(.callout.weight(.medium))
+                    .foregroundStyle(HnPalette.onInk)
                     .monospacedDigit()
             }
             Text("pause.footer")
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(HnPalette.onInkMuted)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)

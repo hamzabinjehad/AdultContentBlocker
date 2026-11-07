@@ -1,25 +1,22 @@
 import Security
 import SwiftUI
 
+/// The app's four places: what is true today, the apps Hisn holds, the pause
+/// practice, and everything that is not a daily decision. The order is the same
+/// on iPhone and iPad; the iPad splits it into a sidebar.
 struct MobileRootView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ObservedObject var protection: ProtectionController
     @Binding var language: String
     @State private var selectedTab = 0
-    @State private var showingNotices = false
     @State private var showingPause = false
-    @State private var showingLock = false
-    @State private var showingSites = false
-    @State private var showingAppLimits = false
     @State private var pauseCount: Int?
-    /// A pause request the shield handed over, waiting for the breath screen.
-    @State private var pauseRulePrompt: PauseRulePrompt?
+    @State private var practiceDays: Set<String> = []
+    @State private var streak = 0
+    @State private var pausePrompt: PauseRulePrompt?
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var usage = AppUsageController()
     @StateObject private var vault: PasscodeVaultController
-    /// The person's own confirmation of a lock Hisn cannot read; empty means none.
-    @AppStorage(MobileProtectionPolicy.lockAttestationKey) private var lockAttestationData = Data()
     /// The marker that confirmation must carry to count on this install on this iPhone.
     @StateObject private var lockDevice: LockConfirmationDevice
 
@@ -27,7 +24,7 @@ struct MobileRootView: View {
          vault: PasscodeVaultController? = nil, lockDevice: LockConfirmationDevice? = nil) {
         self.protection = protection
         self._language = language
-        self._selectedTab = State(initialValue: (0...2).contains(initialTab) ? initialTab : 0)
+        self._selectedTab = State(initialValue: (0...3).contains(initialTab) ? initialTab : 0)
         self._vault = StateObject(wrappedValue: vault ?? PasscodeVaultController())
         self._lockDevice = StateObject(wrappedValue: lockDevice ?? LockConfirmationDevice())
     }
@@ -38,77 +35,51 @@ struct MobileRootView: View {
                 NavigationSplitView {
                     List(selection: Binding<Int?>(get: { selectedTab },
                                                   set: { if let value = $0 { selectedTab = value } })) {
-                        Label("tab.protection", systemImage: "shield.lefthalf.filled").tag(0)
-                        Label("tab.setup", systemImage: "checklist").tag(1)
-                        Label("tab.settings", systemImage: "gearshape").tag(2)
+                        Label("tab.today", systemImage: "house").tag(0)
+                        Label("tab.apps", systemImage: "shield.lefthalf.filled").tag(1)
+                        Label("tab.practice", systemImage: "wind").tag(2)
+                        Label("tab.more", systemImage: "ellipsis.circle").tag(3)
                     }
                     .navigationTitle("app.name")
+                    .tint(HnPalette.accent)
                 } detail: {
                     NavigationStack {
-                        tabContent.navigationTitle(pageTitle)
+                        tabContent
+                            .toolbar(.hidden, for: .navigationBar)
                     }
                 }
             } else {
                 TabView(selection: $selectedTab) {
-                    NavigationStack { overview.navigationTitle("app.name") }
-                        .tabItem { Label("tab.protection", systemImage: "shield.lefthalf.filled") }
+                    NavigationStack { today.toolbar(.hidden, for: .navigationBar) }
+                        .tabItem { Label("tab.today", systemImage: "house") }
                         .tag(0)
-                    NavigationStack { setup.navigationTitle("tab.setup") }
-                        .tabItem { Label("tab.setup", systemImage: "checklist") }
+                    NavigationStack { apps.toolbar(.hidden, for: .navigationBar) }
+                        .tabItem { Label("tab.apps", systemImage: "shield.lefthalf.filled") }
                         .tag(1)
-                    NavigationStack { settings.navigationTitle("tab.settings") }
-                        .tabItem { Label("tab.settings", systemImage: "gearshape") }
+                    NavigationStack { practice.toolbar(.hidden, for: .navigationBar) }
+                        .tabItem { Label("tab.practice", systemImage: "wind") }
                         .tag(2)
+                    NavigationStack { more.toolbar(.hidden, for: .navigationBar) }
+                        .tabItem { Label("tab.more", systemImage: "ellipsis.circle") }
+                        .tag(3)
                 }
+                .tint(HnPalette.accent)
             }
         }
         .fullScreenCover(isPresented: $showingPause) {
-            PauseView(onClose: { showingPause = false })
+            PauseView(onClose: {
+                showingPause = false
+                refreshDerivedState()
+            })
         }
-        .sheet(isPresented: $showingLock) {
-            NavigationStack {
-                List { CommitmentSection(protection: protection, vault: vault) }
-                    .listStyle(.insetGrouped)
-                    .navigationTitle("commitment.sheet.title")
-                    .toolbar {
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("notices.close") { showingLock = false }
-                        }
-                    }
-            }
-        }
-        .sheet(isPresented: $showingSites) {
-            NavigationStack {
-                List { CustomSitesSection(protection: protection) }
-                    .listStyle(.insetGrouped)
-                    .navigationTitle("sites.title")
-                    .toolbar {
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("notices.close") { showingSites = false }
-                        }
-                    }
-            }
-        }
-        .sheet(isPresented: $showingAppLimits) {
-            NavigationStack {
-                List {
-                    AppUsageSection(protection: protection, usage: usage)
-                    GuardSection(protection: protection, usage: usage)
-                }
-                    .listStyle(.insetGrouped)
-                    .navigationTitle("apps.sheet.title")
-                    .toolbar {
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("notices.close") { showingAppLimits = false }
-                        }
-                    }
-            }
-        }
-        .sheet(item: $pauseRulePrompt) { prompt in
+        .fullScreenCover(item: $pausePrompt) { prompt in
             // The shield's pause action hands the request to the app; this is
             // the only place it becomes a session. Closing spends nothing.
             PauseRuleGrantView(usage: usage, appName: prompt.request.appName,
-                               onClose: { pauseRulePrompt = nil })
+                               onClose: {
+                                   pausePrompt = nil
+                                   refreshDerivedState()
+                               })
         }
         .onAppear {
             refreshDerivedState()
@@ -121,544 +92,77 @@ struct MobileRootView: View {
             }
         }
         .onChange(of: protection.checkedAt) { _ in refreshDerivedState() }
-        .onChange(of: showingPause) { isShowing in
-            if !isShowing { pauseCount = PauseStore.todayCount() }
+    }
+
+    @ViewBuilder private var tabContent: some View {
+        switch selectedTab {
+        case 1: apps
+        case 2: practice
+        case 3: more
+        default: today
         }
+    }
+
+    private var today: some View {
+        TodayView(protection: protection,
+                  usage: usage,
+                  streak: streak,
+                  practiceDays: practiceDays,
+                  pauseCount: pauseCount,
+                  onProtection: { selectedTab = 3 },
+                  onApps: { selectedTab = 1 },
+                  onPause: { showingPause = true },
+                  onRefresh: { Task { await protection.refresh() } })
+    }
+
+    private var apps: some View {
+        AppsView(protection: protection,
+                 usage: usage,
+                 onProtection: { selectedTab = 3 },
+                 onPause: { showingPause = true })
+    }
+
+    private var practice: some View {
+        PracticeView(streak: streak,
+                     practiceDays: practiceDays,
+                     pauseCount: pauseCount,
+                     now: protection.now,
+                     onPause: { showingPause = true })
+    }
+
+    private var more: some View {
+        MoreView(protection: protection,
+                 usage: usage,
+                 vault: vault,
+                 lockDevice: lockDevice,
+                 language: $language)
     }
 
     private func refreshDerivedState() {
         usage.refresh(trustedNow: protection.trustedNow)
         pauseCount = PauseStore.todayCount()
+        let store = PauseRuleStore.appGroup
+        practiceDays = Set(store.practiceDays())
+        streak = store.streak(now: protection.now)
     }
 
     /// Consume a handoff at most once per foreground, and only while no other
     /// prompt is up. The request is already age-bounded by the controller, so
     /// a stale one from an app opened ten minutes ago is ignored, not shown.
     private func takePauseRuleRequest() {
-        guard pauseRulePrompt == nil, !showingAppLimits, !showingPause
-        else { return }
+        guard pausePrompt == nil, !showingPause else { return }
         if let request = usage.takePauseRequest() {
-            pauseRulePrompt = PauseRulePrompt(request: request)
-        }
-    }
-
-    @ViewBuilder private var tabContent: some View {
-        switch selectedTab {
-        case 1: setup
-        case 2: settings
-        default: overview
-        }
-    }
-
-    private var pageTitle: LocalizedStringKey {
-        switch selectedTab {
-        case 1: return "tab.setup"
-        case 2: return "tab.settings"
-        default: return "app.name"
-        }
-    }
-
-    // MARK: - Overview
-
-    /// Status, then the one positive action, then the plan, lock and rules.
-    /// Everything that repeats Setup stays one tap away.
-    private var overview: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                ProtectionHero(protection: protection,
-                               onSetup: { selectedTab = 1 },
-                               onRefresh: { Task { await protection.refresh() } })
-                ProtectionWarningsCard(protection: protection, usage: usage,
-                                       onSetup: { selectedTab = 1 })
-                PauseCard(count: pauseCount) { showingPause = true }
-                ProtectionPlanCard(protection: protection, removal: removalProtection,
-                                   onSetup: { selectedTab = 1 })
-                ProtectionLockCard(protection: protection,
-                                   onOpen: { showingLock = true })
-                RulesCard(protection: protection, usage: usage,
-                          onSites: { showingSites = true },
-                          onApps: { showingAppLimits = true })
-                overviewDetailsCard
-                errorCard
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
-            .padding(.bottom, 92)
-            .hisnReadableColumn(regular: horizontalSizeClass == .regular)
-        }
-        .background(HisnSurface.grouped)
-        .refreshable { await protection.refresh() }
-        .toolbar { pauseToolbar }
-    }
-
-    private var overviewDetailsCard: some View {
-        HisnCard {
-            DisclosureGroup("overview.details") {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("overview.body")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                    Text("setup.status.scope")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                    Text("setup.status.mixedcontent")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                    HisnDivider()
-                    Label("browserfirst.quickBody", systemImage: "puzzlepiece.extension")
-                        .font(.callout)
-                    Text("browserfirst.unverified")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                    HisnDivider()
-                    LabeledContent("list.domains", value: protection.listCount.formatted())
-                    LabeledContent("list.version", value: String(protection.listVersion))
-                    if let built = protection.listBuilt {
-                        LabeledContent("list.built",
-                                       value: built.formatted(date: .abbreviated, time: .omitted))
-                        if SeedFreshness.stale(built: built, now: Date()) {
-                            Text("list.stale")
-                                .font(.footnote)
-                                .foregroundStyle(HisnPalette.warning)
-                        }
-                    }
-                    Text("list.body")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                    Button("setup.continue") { selectedTab = 1 }
-                }
-                .padding(.top, 8)
-            }
-            .font(.headline)
-        }
-    }
-
-    // MARK: - Setup
-
-    private var setup: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                SetupStatusCard(protection: protection, doneSteps: doneSetupSteps,
-                                totalSteps: SetupGuide.Step.allCases.count)
-
-                VStack(alignment: .leading, spacing: 10) {
-                    HisnSectionLabel("setup.steps.title")
-                    Text("setup.steps.subtitle")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                    ForEach(SetupGuide.Step.allCases, id: \.self) { step in
-                        NavigationLink {
-                            stepDestination(step)
-                        } label: {
-                            SetupStepCard(step: step, status: setupStatus(step))
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-
-                setupChecksCard
-                errorCard
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
-            .padding(.bottom, 92)
-            .hisnReadableColumn(regular: horizontalSizeClass == .regular)
-        }
-        .background(HisnSurface.grouped)
-        .toolbar { pauseToolbar }
-    }
-
-    private var doneSetupSteps: Int {
-        SetupGuide.Step.allCases.filter { setupStatus($0) == .done }.count
-    }
-
-    private func setupStatus(_ step: SetupGuide.Step) -> SetupGuide.Status {
-        SetupGuide.status(
-            of: step,
-            hasBlockingLayer: protection.hasBlockingConfiguration,
-            commitmentActive: protection.commitmentActive,
-            vaultHoldsPasscode: vault.facts?.holdsPasscode(at: protection.now) == true
-        )
-    }
-
-    @ViewBuilder private func stepDestination(_ step: SetupGuide.Step) -> some View {
-        switch step {
-        case .layers:
-            BlockingLayersSetupView(protection: protection)
-        case .commitment:
-            CommitmentSetupView(protection: protection, usage: usage, vault: vault)
-        case .vault:
-            VaultSetupView(protection: protection, vault: vault, lockDevice: lockDevice)
-        }
-    }
-
-    /// The evidence Setup owns: the four checks and their exact state. It comes
-    /// after the steps so the next action is never below a diagnostic list.
-    private var setupChecksCard: some View {
-        HisnCard {
-            VStack(alignment: .leading, spacing: 0) {
-                Text("setup.checks.title")
-                    .font(.headline)
-                    .accessibilityAddTraits(.isHeader)
-                    .padding(.bottom, 2)
-                checkRow("safari.title", ready: protection.safariConfigured,
-                         detail: Text("plan.safariParts \(enabledSafariParts)"))
-                HisnDivider()
-                checkRow("dns.title", ready: protection.dns == .enabled, detail: Text(dnsLabel))
-                HisnDivider()
-                checkRow("screentime.layer", ready: protection.screenTimeConfigured,
-                         detail: Text(screenTimeCheckDetail))
-                HisnDivider()
-                lockRow
-                Text("setup.checks.footnote")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 10)
-            }
-        }
-    }
-
-    private var enabledSafariParts: Int { protection.safari.filter { $0 == true }.count }
-
-    private func checkRow(_ title: LocalizedStringKey, ready: Bool, detail: Text? = nil) -> some View {
-        HisnAdaptiveRow(title: title, detail: detail) {
-            HisnStatusPill(
-                text: ready ? "plan.configured" : "plan.needsSetup",
-                systemImage: ready ? "checkmark" : "circle",
-                tint: ready ? HisnPalette.good : .secondary
-            )
-        }
-        .padding(.vertical, 11)
-    }
-
-    /// The person's lock level from the plan's ladder. Hisn cannot read the Screen Time passcode,
-    /// the deletion setting or supervision, so those show as confirmed by the person, never verified.
-    private var removalProtection: MobileProtectionPolicy.RemovalProtection {
-        MobileProtectionPolicy.removalProtection(removal: protection.removal,
-            attestation: MobileProtectionPolicy.LockAttestation(storage: lockAttestationData),
-            vault: vault.facts, now: protection.now, deviceMarker: lockDevice.marker)
-    }
-
-    private var screenTimeCheckDetail: LocalizedStringKey {
-        switch protection.screenTimeState {
-        case .unavailable: return "overview.screentimeUnavailable"
-        default: return LocalizedStringKey(protection.screenTimeState.rawValue)
-        }
-    }
-
-    private var removalCheckLevel: LocalizedStringKey {
-        switch removalProtection.level {
-        case .selfOnly: return "overview.lock.level.selfOnly"
-        case .passcodeVault: return "overview.lock.level.vault"
-        case .familyGuardian: return "overview.lock.level.guardian"
-        case .supervised: return "overview.lock.level.supervised"
-        }
-    }
-
-    @ViewBuilder private var lockRow: some View {
-        let lock = removalProtection
-        HisnAdaptiveRow(
-            title: "lock.title",
-            detail: lock.selfTested
-                ? Text(removalCheckLevel) + Text(verbatim: "\n") + Text("lock.selfTested")
-                : Text(removalCheckLevel)
-        ) {
-            switch lock.evidence {
-            case .verified?:
-                HisnStatusPill(text: "lock.evidence.verified", systemImage: "checkmark.seal",
-                               tint: HisnPalette.good)
-            case .attested?:
-                HisnStatusPill(text: "lock.evidence.attested", systemImage: "person.fill.checkmark",
-                               tint: .secondary)
-            case nil:
-                HisnStatusPill(text: "lock.evidence.none", systemImage: "lock.open", tint: .secondary)
-            }
-        }
-        .padding(.vertical, 11)
-        .accessibilityIdentifier("plan.removalProtection")
-        if let stale = lock.stale {
-            Text(LocalizedStringKey(stale.rawValue))
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private var dnsLabel: LocalizedStringKey {
-        switch protection.dns {
-        case .unknown: return "status.unknown"
-        case .absent: return "dns.absent"
-        case .saved: return "dns.saved"
-        case .enabled: return "dns.enabled"
-        case .differentConfiguration: return "dns.different"
-        case .unavailable: return "dns.unavailable"
-        }
-    }
-
-    // MARK: - Settings
-
-    private var settings: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                languageCard
-                safariExtensionCard
-                grayScreenCard
-                privacyCard
-                aboutCard
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
-            .padding(.bottom, 92)
-            .hisnReadableColumn(regular: horizontalSizeClass == .regular)
-        }
-        .background(HisnSurface.grouped)
-        .toolbar { pauseToolbar }
-        .sheet(isPresented: $showingNotices) { NoticesView() }
-    }
-
-    private var languageCard: some View {
-        HisnCard {
-            if dynamicTypeSize.isAccessibilitySize {
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack(spacing: 14) {
-                        HisnIconBadge(systemName: "globe", tint: .accentColor, size: 42)
-                        Text("language.title")
-                            .font(.headline)
-                    }
-                    languagePicker
-                }
-            } else {
-                HStack(spacing: 14) {
-                    HisnIconBadge(systemName: "globe", tint: .accentColor, size: 42)
-                    Text("language.title")
-                        .font(.headline)
-                    Spacer(minLength: 8)
-                    languagePicker
-                }
-            }
-        }
-    }
-
-    private var languagePicker: some View {
-        Picker("language.title", selection: $language) {
-            Text("language.system").tag("system")
-            Text(verbatim: "العربية").tag("ar")
-            Text(verbatim: "English").tag("en")
-        }
-        .labelsHidden()
-        .pickerStyle(.menu)
-    }
-
-    private var safariExtensionCard: some View {
-        HisnCard {
-            VStack(alignment: .leading, spacing: 12) {
-                if dynamicTypeSize.isAccessibilitySize {
-                    HisnIconBadge(systemName: "puzzlepiece.extension", tint: .accentColor, size: 42)
-                }
-                HStack(alignment: .top, spacing: 14) {
-                    if !dynamicTypeSize.isAccessibilitySize {
-                        HisnIconBadge(systemName: "puzzlepiece.extension", tint: .accentColor, size: 42)
-                    }
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("settings.safari.title")
-                            .font(.headline)
-                        Text("browserfirst.quickBody")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    Spacer(minLength: 0)
-                }
-                Button("browserfirst.openSetup") { selectedTab = 1 }
-                    .buttonStyle(.bordered)
-            }
-        }
-    }
-
-    private var grayScreenCard: some View {
-        HisnCard {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 14) {
-                    HisnIconBadge(systemName: "circle.lefthalf.filled",
-                                  tint: .secondary, size: 42)
-                    Text("gray.title")
-                        .font(.headline)
-                    Spacer(minLength: 0)
-                }
-                Text("settings.gray.summary")
-                    .font(.callout)
-                    .fixedSize(horizontal: false, vertical: true)
-                HStack(alignment: .top, spacing: 10) {
-                    Image(systemName: "1.circle.fill")
-                        .foregroundStyle(.secondary)
-                        .accessibilityHidden(true)
-                    Text("gray.steps")
-                        .font(.callout)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                DisclosureGroup("settings.gray.details") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("gray.body")
-                        Text("gray.shortcut")
-                        Text("gray.automation")
-                    }
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 6)
-                }
-                .font(.footnote.weight(.medium))
-            }
-        }
-        .accessibilityIdentifier("settings.grayScreen")
-    }
-
-    private var privacyCard: some View {
-        HisnCard {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 14) {
-                    HisnIconBadge(systemName: "hand.raised", tint: HisnPalette.good, size: 42)
-                    Text("privacy.title")
-                        .font(.headline)
-                    Spacer(minLength: 0)
-                }
-                Text("settings.privacy.summary")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                DisclosureGroup("settings.privacy.details") {
-                    Text("privacy.body")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .padding(.top, 6)
-                }
-                .font(.footnote.weight(.medium))
-                linkRow("privacy.policy", systemImage: "doc.text",
-                        destination: URL(string: "https://github.com/hamzabinjehad/AdultContentBlocker/blob/main/PRIVACY.md")!)
-                linkRow("support.page", systemImage: "questionmark.circle",
-                        destination: URL(string: "https://github.com/hamzabinjehad/AdultContentBlocker/blob/main/SUPPORT.md")!)
-                Button { showingNotices = true } label: {
-                    settingsLinkRow("notices.open", systemImage: "doc.on.doc")
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-
-    private func linkRow(_ title: LocalizedStringKey, systemImage: String, destination: URL) -> some View {
-        Link(destination: destination) {
-            settingsLinkRow(title, systemImage: systemImage)
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func settingsLinkRow(_ title: LocalizedStringKey, systemImage: String) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: systemImage)
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .frame(width: 22)
-                .accessibilityHidden(true)
-            Text(title)
-                .font(.subheadline.weight(.medium))
-            Spacer(minLength: 8)
-            Image(systemName: "chevron.forward")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.tertiary)
-                .accessibilityHidden(true)
-        }
-        .padding(.vertical, 6)
-        .contentShape(Rectangle())
-    }
-
-    private var aboutCard: some View {
-        HisnCard {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 14) {
-                    HisnIconBadge(systemName: "shield.lefthalf.filled",
-                                  tint: HisnPalette.good, size: 54)
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("app.name")
-                            .font(.title3.bold())
-                        Text("settings.about.tagline")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    Spacer(minLength: 0)
-                }
-                LabeledContent("about.version", value: appVersion)
-                DisclosureGroup("coverage.title") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("coverage.body")
-                        Text("apple.body")
-                    }
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 6)
-                }
-                .font(.footnote.weight(.medium))
-            }
-        }
-    }
-
-    private var appVersion: String {
-        let info = Bundle.main.infoDictionary
-        let version = info?["CFBundleShortVersionString"] as? String ?? "?"
-        let build = info?["CFBundleVersion"] as? String ?? "?"
-        return "\(version) (\(build))"
-    }
-
-    /// The pause is always one tap away and changes no rule, so it is available
-    /// during a commitment too.
-    @ToolbarContentBuilder
-    private var pauseToolbar: some ToolbarContent {
-        ToolbarItem(placement: .navigationBarTrailing) {
-            Button { showingPause = true } label: {
-                Image(systemName: "wind")
-            }
-            .accessibilityLabel(Text("pause.open"))
-        }
-    }
-
-    @ViewBuilder private var errorCard: some View {
-        if let error = protection.errorKey {
-            HisnCard {
-                Label(LocalizedStringKey(error), systemImage: "exclamationmark.triangle")
-                    .foregroundStyle(HisnPalette.warning)
-            }
+            pausePrompt = PauseRulePrompt(request: request)
         }
     }
 }
 
-/// Setup's order: blocking layers, then the commitment that locks them, then the passcode vault.
-/// Each raw value is the step's text key.
-enum SetupGuide {
-    enum Step: String, CaseIterable {
-        case layers = "guide.layers"
-        case commitment = "guide.commitment"
-        case vault = "guide.vault"
-    }
-    enum Status: Equatable { case done, next, later }
-
-    /// The first step not done is next. A commitment running with no layer on sends the person
-    /// back to step 1 rather than reading as progress.
-    static func status(of step: Step, hasBlockingLayer: Bool, commitmentActive: Bool,
-                       vaultHoldsPasscode: Bool) -> Status {
-        func done(_ step: Step) -> Bool {
-            switch step {
-            case .layers: return hasBlockingLayer
-            case .commitment: return commitmentActive
-            case .vault: return vaultHoldsPasscode
-            }
-        }
-        if done(step) { return .done }
-        return Step.allCases.first { !done($0) } == step ? .next : .later
-    }
+/// A sheet identity for one handoff; the request itself is not Identifiable.
+private struct PauseRulePrompt: Identifiable {
+    let id = UUID()
+    let request: PauseRule.Request
 }
 
-/// The person's own confirmation of a lock Hisn cannot read, always shown as confirmed by them,
-/// never as verified. It counts only on the install and iPhone it was given on: a backup restored
-/// onto another iPhone, or onto this one after an erase, brings it back without its device marker,
-/// so it no longer counts. The self-test is optional.
 struct LockConfirmationRows: View {
     typealias Claim = MobileProtectionPolicy.LockAttestation.Claim
     let claims: [Claim]
@@ -911,10 +415,4 @@ struct NoticesView: View {
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("notices.close") { dismiss() } } }
         }
     }
-}
-
-/// A sheet identity for one handoff; the request itself is not Identifiable.
-private struct PauseRulePrompt: Identifiable {
-    let id = UUID()
-    let request: PauseRule.Request
 }

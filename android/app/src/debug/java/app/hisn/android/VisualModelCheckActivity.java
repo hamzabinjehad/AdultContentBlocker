@@ -24,8 +24,8 @@ public final class VisualModelCheckActivity extends Activity {
         }
         classifier = new VisualClassifier(this, loaded -> {
             if (!"ready".equals(loaded)) { report(status, "FAIL: model unavailable"); return; }
-            if ("init-fallback".equals(check) && !"cpu".equals(classifier.actualBackend())) {
-                report(status, "FAIL: initialization did not recover on CPU"); return;
+            if ("init-fallback".equals(check) && "webgl".equals(classifier.actualBackend())) {
+                report(status, "FAIL: initialization did not recover on a fallback backend"); return;
             }
             if ("frame-fallback".equals(check)) { checkFrameFailure(status); return; }
             Bitmap frame = Bitmap.createBitmap(224, 224, Bitmap.Config.ARGB_8888);
@@ -49,15 +49,16 @@ public final class VisualModelCheckActivity extends Activity {
             if (!"unknown".equals(verdict)) { report(status, "FAIL: failed frame did not remain unknown"); return; }
             failed.close();
             classifier = new VisualClassifier(this, loaded -> {
-                if (!"ready".equals(loaded) || !"cpu".equals(classifier.actualBackend())) {
-                    report(status, "FAIL: future session did not recover on CPU"); return;
+                if (!"ready".equals(loaded) || "webgl".equals(classifier.actualBackend())) {
+                    report(status, "FAIL: future session did not recover on a fallback backend"); return;
                 }
                 Bitmap next = Bitmap.createBitmap(224, 224, Bitmap.Config.ARGB_8888);
                 next.eraseColor(Color.rgb(80, 120, 160));
                 classifier.inspect(next, actual -> new Handler(Looper.getMainLooper()).postDelayed(() ->
                         report(status, callbacks[0] == 1 && "allow".equals(actual)
-                                ? "PASS: frame-fallback; failed frame unknown once; fresh CPU session allowed a new benign frame"
-                                : "FAIL: stale callback or CPU classification error"), 500));
+                                ? "PASS: frame-fallback; failed frame unknown once; fresh " + classifier.actualBackend()
+                                    + " session allowed a new benign frame"
+                                : "FAIL: stale callback or fallback classification error"), 500));
                 next.recycle();
             });
         });

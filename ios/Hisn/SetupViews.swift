@@ -244,6 +244,7 @@ struct SetupStatusCard: View {
 struct BlockingLayersSetupView: View {
     @ObservedObject var protection: ProtectionController
     @State private var confirmDNS = false
+    @State private var confirmDNSOff = false
 
     var body: some View {
         List {
@@ -268,7 +269,20 @@ struct BlockingLayersSetupView: View {
             BrowserFirstSection()
             Section("dns.title") {
                 Text("dns.stepsShort")
-                Button("dns.prepare") { confirmDNS = true }.disabled(protection.busy)
+                if protection.dns == .enabled {
+                    Button("dns.turnOff", role: .destructive) { confirmDNSOff = true }
+                        .disabled(protection.busy || protection.rulesLocked)
+                    if protection.rulesLocked {
+                        Text("dns.locked")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                    Button("dns.check") { Task { await protection.checkDNSRoute() } }
+                        .disabled(protection.busy || protection.dnsRouteCheck == .running)
+                    dnsRouteResult
+                } else {
+                    Button("dns.prepare") { confirmDNS = true }.disabled(protection.busy)
+                }
                 DisclosureGroup("dns.details") {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("dns.steps")
@@ -321,6 +335,34 @@ struct BlockingLayersSetupView: View {
         } message: {
             Text("dns.consent.body")
         }
+        .confirmationDialog("dns.offConfirm.title", isPresented: $confirmDNSOff,
+                            titleVisibility: .visible) {
+            Button("dns.turnOff", role: .destructive) { Task { await protection.disableDNS() } }
+            Button("cancel", role: .cancel) { }
+        } message: {
+            Text("dns.offConfirm.body")
+        }
+    }
+
+    @ViewBuilder private var dnsRouteResult: some View {
+        switch protection.dnsRouteCheck {
+        case .running:
+            ProgressView("dns.check.running")
+        case .passed:
+            Label("dns.check.passed", systemImage: "checkmark.circle")
+                .foregroundStyle(HisnPalette.good)
+            Text("dns.check.scope")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        case .failed:
+            Label("dns.check.failed", systemImage: "exclamationmark.triangle")
+                .foregroundStyle(HisnPalette.warning)
+            Text("dns.check.scope")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        case .unchecked, .unavailable:
+            EmptyView()
+        }
     }
 }
 
@@ -332,8 +374,6 @@ struct CommitmentSetupView: View {
 
     var body: some View {
         List {
-            AppUsageSection(protection: protection, usage: usage)
-            GuardSection(protection: protection, usage: usage)
             CommitmentSection(protection: protection, vault: vault)
         }
         .listStyle(.insetGrouped)

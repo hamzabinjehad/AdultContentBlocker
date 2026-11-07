@@ -54,7 +54,7 @@ struct PrivateBrowsingSheet: View {
         }
         .padding(24)
         .frame(width: 600, height: 560)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(HnPalette.canvas)
         .confirmationDialog("Prevent private browsing?", isPresented: $confirm,
                             titleVisibility: .visible) {
             Button("Create the profile") { install() }
@@ -68,29 +68,29 @@ struct PrivateBrowsingSheet: View {
     }
 
     private var header: some View {
-        HStack(alignment: .top, spacing: 14) {
-            Image(systemName: "eye.slash.fill")
-                .font(.title2)
-                .foregroundStyle(Color.accentColor)
-                .frame(width: 42, height: 42)
-                .background(Color.accentColor.opacity(0.12), in: Circle())
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "eye.slash")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(HnPalette.accent)
+                .frame(width: 20, height: 24)
                 .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
                 Text("Private windows")
-                    .font(.title2.weight(.semibold))
+                    .font(.system(size: 22, weight: .semibold, design: .serif))
+                    .foregroundStyle(HnPalette.ink)
                     .accessibilityAddTraits(.isHeader)
-                Text("Private windows skip the browser extension. Disabling them is the one way to close that gap without turning private browsing into a monitored window.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                HnExplain {
+                    Text("Private windows skip the browser extension. Disabling them is the one way to close that gap without turning private browsing into a monitored window.")
+                }
+                Spacer(minLength: 0)
             }
             Spacer(minLength: 0)
             Button {
                 dismiss()
             } label: {
                 Image(systemName: "xmark.circle.fill")
-                    .font(.title3)
-                    .foregroundStyle(.tertiary)
+                    .font(.system(size: 17))
+                    .foregroundStyle(HnPalette.faint)
             }
             .buttonStyle(.plain)
             .help("Close")
@@ -109,23 +109,22 @@ struct PrivateBrowsingSheet: View {
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(controllable) { browser in
                         browserRow(browser)
-                        if browser.id != controllable.last?.id { Divider().padding(.leading, 32) }
+                        if browser.id != controllable.last?.id { HnHairline(inset: 32) }
                     }
                 }
-                .padding(.vertical, 4)
-                .background(Color(nsColor: .controlBackgroundColor),
+                .padding(.vertical, 2)
+                .background(HnPalette.card,
                             in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .strokeBorder(Color(nsColor: .separatorColor), lineWidth: 1)
+                        .strokeBorder(HnPalette.line, lineWidth: 1)
                         .accessibilityHidden(true)
                 }
 
                 if !openBrowsers.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
-                        Button("Prevent private browsing") { confirm = true }
-                            .buttonStyle(.borderedProminent)
-                            .controlSize(.large)
+                        HnButton(title: "Prevent private browsing", systemImage: "eye.slash",
+                                 kind: .filled) { confirm = true }
                         if managed.isManaged {
                             Text("Managed by \(managed.displayName). Private windows must stay off on this Mac.")
                                 .font(.caption)
@@ -139,8 +138,7 @@ struct PrivateBrowsingSheet: View {
                             }
                         } else {
                             HStack(spacing: 12) {
-                                Button("Not now") { dismiss() }
-                                    .controlSize(.large)
+                                HnButton(title: "Not now", kind: .outline) { dismiss() }
                                 if lock.isLocked {
                                     Text("A lock is running. This stays as it is until the lock ends.")
                                         .font(.caption)
@@ -153,8 +151,8 @@ struct PrivateBrowsingSheet: View {
                 } else {
                     Label("Private windows are covered in every browser Hisn can control.",
                           systemImage: "checkmark.shield.fill")
-                        .font(.callout.weight(.medium))
-                        .foregroundStyle(Color.green)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(HnPalette.calm)
                     if !status.disabled.isEmpty, lock.isLocked {
                         Text("A lock is running. Hisn will not offer to re-enable private windows until it ends.")
                             .font(.caption)
@@ -168,16 +166,13 @@ struct PrivateBrowsingSheet: View {
                     }
                     HStack(spacing: 12) {
                         if !status.disabled.isEmpty && !managed.isManaged {
-                            Button("Open Device Management") { openProfiles() }
-                                .controlSize(.large)
+                            HnButton(title: "Open Device Management", kind: .quiet) { openProfiles() }
                                 .disabled(lock.isLocked)
                                 .help(lock.isLocked
                                       ? String(localized: "A lock is running. Wait until it ends to change this.")
                                       : String(localized: "Remove the Hisn private-windows profile here."))
                         }
-                        Button("Done") { dismiss() }
-                            .buttonStyle(.borderedProminent)
-                            .controlSize(.large)
+                        HnButton(title: "Done", kind: .filled) { dismiss() }
                     }
                 }
             }
@@ -209,16 +204,16 @@ struct PrivateBrowsingSheet: View {
     private var approve: some View {
         VStack(alignment: .leading, spacing: 14) {
             Label("Approve the profile in System Settings", systemImage: "checkmark.seal")
-                .font(.headline)
+                .font(.system(.headline))
+                .foregroundStyle(HnPalette.ink)
             Text("System Settings opened with “Hisn private windows disabled” ready to install. Approve it under Device Management, then return here.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
+                .font(.hnCaption())
+                .foregroundStyle(HnPalette.muted)
                 .fixedSize(horizontal: false, vertical: true)
-            HStack(spacing: 12) {
-                Button("Open System Settings") { openProfiles() }
-                    .buttonStyle(.borderedProminent)
-                Button("Check again") { refresh(force: true) }
-                Button("Later") { dismiss() }
+            HStack(spacing: 10) {
+                HnButton(title: "Open System Settings", kind: .filled) { openProfiles() }
+                HnButton(title: "Check again", systemImage: "arrow.clockwise", kind: .quiet) { refresh(force: true) }
+                HnButton(title: "Later", kind: .text) { dismiss() }
             }
             if let notice {
                 Text(notice)
@@ -232,33 +227,32 @@ struct PrivateBrowsingSheet: View {
     private var done: some View {
         VStack(alignment: .leading, spacing: 14) {
             Label("Private windows are off", systemImage: "checkmark.shield.fill")
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(Color.green)
+                .font(.system(.title3).weight(.semibold))
+                .foregroundStyle(HnPalette.calm)
             Text("Hisn re-read the policy. Private windows are now disabled in \(status.disabled.map(\.name).formatted(.list(type: .and))).")
-                .font(.callout)
-                .foregroundStyle(.secondary)
+                .font(.hnCaption())
+                .foregroundStyle(HnPalette.muted)
                 .fixedSize(horizontal: false, vertical: true)
-            Button("Done") { dismiss() }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
+            HnButton(title: "Done", kind: .filled) { dismiss() }
         }
     }
 
     private func browserRow(_ browser: PrivateBrowsingBrowser) -> some View {
         HStack(spacing: 10) {
             Image(systemName: browser.family == .firefox ? "flame" : "globe")
-                .foregroundStyle(browser.isCovered ? Color.green : Color.orange)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(browser.isCovered ? HnPalette.calm : HnPalette.ember)
                 .frame(width: 22)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 1) {
-                Text(browser.name).font(.callout.weight(.medium))
+                Text(browser.name).font(.system(size: 13, weight: .medium))
                 Text(browser.stateKey)
-                    .font(.caption)
-                    .foregroundStyle(browser.isCovered ? Color.secondary : Color.orange)
+                    .font(.hnCaption())
+                    .foregroundStyle(browser.isCovered ? HnPalette.muted : HnPalette.ember)
             }
             Spacer(minLength: 8)
             Image(systemName: browser.isCovered ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
-                .foregroundStyle(browser.isCovered ? Color.green : Color.orange)
+                .foregroundStyle(browser.isCovered ? HnPalette.calm : HnPalette.ember)
                 .accessibilityHidden(true)
         }
         .padding(.horizontal, 12)
