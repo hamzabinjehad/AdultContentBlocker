@@ -1,4 +1,5 @@
 import { createVisualEngine } from './engine.bundle.js';
+import { nearMiss, centreCrop } from './region.js';
 
 // Only packaged code runs in this WebView. Captures exist in memory for one request.
 const preferences = { inspectVisual: true, personBlur: 'off' };
@@ -11,8 +12,22 @@ const engine = createVisualEngine({ baseURL: 'https://hisn.invalid/visual/', bac
 window.hisnInspect = async (id, width, height, rgba) => {
   try {
     const result = await engine.inspect(id, { id, width, height, rgba }, preferences);
-    const verdict = result?.state === 'ready' && result.adult?.inspected === true
+    let verdict = result?.state === 'ready' && result.adult?.inspected === true
       ? result.adult.block === true ? 'block' : 'allow' : 'unknown';
+    if (verdict === 'allow' && nearMiss(result.adult)) {
+      const crop = centreCrop(rgba, width, height);
+      if (crop) {
+        try {
+          const closer = await engine.inspect(id + '-c',
+            { id: id + '-c', width: crop.width, height: crop.height, rgba: crop.rgba }, preferences);
+          if (closer?.state === 'ready' && closer.adult?.inspected === true && closer.adult.block === true) {
+            verdict = 'block';
+          }
+        } catch {
+          // The first frame already allowed it; a failed closer look must not turn that into unknown.
+        }
+      }
+    }
     HisnResult.result(id, verdict);
   } catch { HisnResult.result(id, 'unknown'); }
   finally { rgba = null; }

@@ -32,11 +32,11 @@
     {
       "id": "android",
       "name": "Android",
-      "version": "1.3.0",
-      "build": 33,
-      "state": "development · 1.3.0 source, core/build/lint and emulator UI checks, signed Play/direct builds; no 1.3.0 phone run; 1.2.2 installed on the owner's phone",
+      "version": "1.3.1",
+      "build": 34,
+      "state": "development · 1.3.1 source, core/build/lint, emulator visual benchmark and UI checks, signed Play/direct builds; no 1.3.1 phone run",
       "source": "android/app/build.gradle",
-      "notes": "33 (1.3.0) adds the after-block pause. When the text or image layer detects content in an app, the guard leaves the page first (Back) and then the app (Home), and holds only that app for a chosen quiet period: 1, 5, 15, 30 or 60 minutes, default 5. The pause screen shows the remaining time and offers Rest 5, Rest 15, Rest 1 hour and Lock the screen; those actions extend the hold for that app or use Android's accessibility screen-lock action. Changing the quiet period never changes detection: a matched word or image always closes the app, and the value is stored apart from the sealed rule file because it is a comfort setting. Android cannot force-stop another app or power off the phone, so close means Back/Home, not a process kill; a browser may keep its tabs and a page Back depends on its history. 1.2.3's 2,048-label off-main scan, early stop, warm image model, capture backoff and signed artifacts are retained. New English and Arabic strings; no new permission, activity, service or stored policy field. The signed Play APK/AAB and direct APK pass check-release.py and apksigner; no Play upload and no 1.3.0 device run is claimed."
+      "notes": "34 (1.3.1) makes the visual layer faster and adds one closer look on uncertain frames. The guard's WebView now starts on the packaged WASM backend instead of trying WebGL first: on the API 36 emulator the auto ladder selected WebGL, loaded it in 12.1 s and measured 207 ms median, while WASM loaded in 2.2-3.3 s and measured 116-141 ms median on the same benign corpus. A frame whose Porn/Hentai scores are 0.45 or more (or sum 0.60 or more) but below the block threshold is cropped to its centred 68% and classified once more; the crop blocks only if the same 0.70/0.85 thresholds are met. Benign controls: 0/12 false blocks. The image model, the block thresholds, capture edge 224, the 2,048-label text scan and the after-block pause are retained. No permission, rule, stored field or string changed. No adult-positive corpus was used, so adult recall remains unmeasured; the speed numbers are an emulator and synthetic/benign result, not a phone claim. Signed Play APK/AAB and direct APK pass check-release.py and apksigner; no Play upload and no 1.3.1 device run is claimed."
     }
   ]
 }

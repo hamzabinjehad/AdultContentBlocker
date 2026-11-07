@@ -5,6 +5,49 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
+## Android 1.3.1 — 2026-11-07
+
+### Changed
+
+- **The visual guard starts on WASM instead of trying WebGL first.**
+  `VisualClassifier` requests `wasm`; the engine still falls back to WebGL and
+  then CPU if WASM is unavailable. On the API 36 emulator the `auto` ladder
+  chose WebGL (3.3 s load, 188 ms median on 12 benign views); the WASM path
+  loaded in 3.0 s and measured 123 ms median. An earlier `auto` run spent 12.1 s
+  loading WebGL.
+- **An uncertain full frame gets one closer look.** When the full-frame
+  Porn/Hentai scores are at least 0.45 (or sum 0.60) but below the block
+  threshold, the centred 68% of the frame is cropped and classified once more;
+  it blocks only if the same 0.70/0.85 thresholds are met. A failed second look
+  keeps the first `allow`. No model, block threshold, capture size or polling
+  interval changed.
+- **`region.js` and a Node test.** The near-miss and crop logic is a pure
+  module served from the packaged assets; `region.test.mjs` checks thresholds,
+  geometry, pixel offset and malformed input.
+
+### Verification
+
+- `node android/visual-eval/region.test.mjs` — **PASS**.
+- `android/test-core.sh`, strings (563/16/554), notices, `assembleDebug`,
+  `assembleDebugAndroidTest`, `lintDebug` (0 errors) and `CoreDeviceTestRunner`
+  on the API 36 emulator — **PASS**.
+- Real packaged model on 12 benign views × 3: **0 false blocks** in the WASM,
+  `auto` and 1.3.0 baseline runs. Raw reports:
+  [benchmark JSON](docs/ANDROID_VISUAL_1.3.1_2026-11-07.json).
+- Signed Play APK/AAB and direct APK pass `check-release.py` and `apksigner`.
+  Hashes and limits: [1.3.1 record](docs/ANDROID_1.3.1.md).
+
+### Limits
+
+- No adult-positive corpus or adult-accuracy claim. Benign controls stayed at
+  0 false blocks; the closer look only helps a frame already near the threshold.
+- The crop is centred and 68%; edge and very small regions may still be missed.
+  A four-tile sweep is not implemented.
+- Emulator and benign images only; no phone, battery, thermal or memory
+  measurement. WebGL may be faster on a real GPU; the fallback remains.
+- The model load is still about three seconds; the warm model and 224 px capture
+  are unchanged.
+
 ## Android 1.3.0 — 2026-11-07
 
 ### Added

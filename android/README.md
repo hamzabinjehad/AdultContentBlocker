@@ -47,6 +47,29 @@ an opt-in device-owner preview; the ordinary install remains removable, and
 actual blocked-uninstall and restriction acceptance needs a disposable
 provisioned device.
 
+## 1.3.1: a faster visual pass and a closer look
+
+The image guard now starts on the packaged **WASM** backend instead of trying
+WebGL first; the engine still falls back to WebGL and CPU if WASM is missing.
+On the API 36 emulator the `auto`/WebGL path measured 188 ms median and loaded
+in 3.3 s, while WASM measured 123 ms and loaded in 3.0 s. An earlier `auto` run
+spent 12.1 s in WebGL.
+
+When a full-frame Porn/Hentai score is at least 0.45 (or sum 0.60) but below the
+block threshold, the guard crops the centred 68% of the frame and classifies it
+once more; it blocks only if the same 0.70/0.85 thresholds are met. A failed
+second look keeps the first `allow`. The crop and near-miss logic is the pure
+`region.js` module, served from the packaged assets and covered by a Node test.
+
+The 12 benign views × 3 stayed at 0 false blocks in the WASM, `auto` and 1.3.0
+baseline runs. There is no adult-positive corpus, so adult recall is still
+unmeasured; the crop is centred and may miss edge or very small regions; a
+phone benchmark, battery and thermal measurement remain open. No model, block
+threshold, capture size, polling interval, string or permission changed.
+Core/strings/notices/build/lint, the API 36 device runner and signed artifacts
+pass. Details and raw reports:
+[the 1.3.1 record](../docs/ANDROID_1.3.1.md).
+
 ## 1.3.0: close the page, rest the app
 
 A detection now leaves the browser page first with Back, then closes the app

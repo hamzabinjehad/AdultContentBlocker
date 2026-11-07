@@ -32,7 +32,9 @@ final class VisualClassifier implements AutoCloseable {
     private final Runnable timeout = this::failed;
 
     VisualClassifier(Context context, Consumer<String> loaded) {
-        this(context, "auto", loaded);
+        // The guard's WebView is unattached and has no GPU surface. Starting on WASM avoids a
+        // failed WebGL attempt on every load; the engine still falls back to WebGL then CPU.
+        this(context, "wasm", loaded);
     }
 
     @android.annotation.SuppressLint({"SetJavaScriptEnabled", "JavascriptInterface"})
@@ -67,6 +69,7 @@ final class VisualClassifier implements AutoCloseable {
                 boolean wasm = path.matches("/visual/wasm/tfjs-backend-wasm(-simd|-threaded-simd)?\\.wasm");
                 if ("https".equals(request.getUrl().getScheme()) && "hisn.invalid".equals(request.getUrl().getHost())
                         && ("/visual/android.html".equals(path) || "/visual/android.js".equals(path)
+                        || "/visual/region.js".equals(path)
                         || "/visual/engine.bundle.js".equals(path) || wasm)) {
                     try {
                         // instantiateStreaming requires the exact WASM media type;
