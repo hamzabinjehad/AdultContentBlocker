@@ -93,6 +93,16 @@ Captures: [design/android-people-2026-11-08](../design/android-people-2026-11-08
 | `check-strings.py`, `check-notices.py` | **PASS** — 574 strings, 16 plurals, 566 references; 5 list licences |
 | `assembleDebug`, `assembleDebugAndroidTest`, `lintDebug` | **PASS**, 0 errors |
 | `check-release.py`, `apksigner` | **PASS** for both APKs; certificate `2F:BE:D6:…:70:C5` |
+| Physical SM-G990B2 face check | **PASS** — after re-binding Hisn's accessibility service following the update, a public-domain portrait opened in Chrome was covered. No adult image was used. |
+
+The update exposed a stale accessibility binding: Android still listed Hisn in
+**Enabled services** and bound the service, but the app's status read
+**Hisn accessibility is enabled but the service is disconnected**, so neither
+the adult nor the people pass sampled. Re-registering only Hisn's accessibility
+component (leaving ScreenZen, the launcher and HaramBlur untouched) restored
+**Apps On**, **Images On** and **App protection Connected**. If an update leaves
+the same stale read, toggle Hisn in Android's accessibility settings once; this
+is the same class of post-update binding problem recorded for 1.2.1.
 
 ### Signed artifacts
 
