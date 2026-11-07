@@ -154,6 +154,11 @@
     <string name="restriction_app">You chose to block this app.</string>
     <string name="restriction_schedule">This app is blocked during your schedule.</string>
     <string name="restriction_home">Back to home</string>
+    <string name="restriction_closed">Hisn closed this app for about %1$s. It will open again after that.</string>
+    <string name="restriction_rest_5">Rest 5 more minutes</string>
+    <string name="restriction_rest_15">Rest 15 more minutes</string>
+    <string name="restriction_rest_60">Rest 1 hour</string>
+    <string name="restriction_lock_screen">Lock the screen</string>
     <string name="admin_setup">Add an uninstall confirmation step</string>
     <string name="admin_title">Optional uninstall friction</string>
     <string name="admin_explanation">Android may require deactivating Hisn as a device administrator before uninstalling it. This adds a deliberate step; it does not make Hisn undeletable. You can still deactivate it in Android settings.\n\nHisn requests no device-wipe, password-reset or screen-lock powers. This does not enroll your phone as a managed device.</string>
@@ -452,6 +457,9 @@
     <string name="home_commitment_on">%1$s left</string>
     <string name="home_schedule_value">%1$s–%2$s · %3$s</string>
     <string name="settings_protection_title">Protection</string>
+    <string name="settings_rest_title">After a block</string>
+    <string name="settings_rest_summary">Keep this app closed for %1$s</string>
+    <string name="rest_minutes">%1$d min</string>
     <string name="settings_permissions">Permissions</string>
     <string name="settings_permissions_summary">App protection %1$s · Notifications %2$s</string>
     <string name="settings_guardian_summary">Pair with a guardian laptop</string>

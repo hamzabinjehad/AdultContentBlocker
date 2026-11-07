@@ -130,7 +130,8 @@ def main():
                 "Synthetic one-shot intervention did not run: " + json.dumps(forced))
         passed({"check": "synthetic intervention after actual capture and inference", "accuracy_evidence": False})
 
-        # TextGuardService holds a detected app for BLOCK_HOLD_MILLIS: reopening it while the
+        # The guard holds a detected app for its configured quiet period (one minute in the
+        # isolated fixture): reopening it while the
         # hold runs must leave the app again, not resume sampling. Ordinary capture can only
         # recover after the hold ends.
         adb("shell", "am", "start", "--user", "0", "--activity-clear-task", "-W", "-n", SCENE,

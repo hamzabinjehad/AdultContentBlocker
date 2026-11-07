@@ -32,6 +32,8 @@ public final class VisualCaptureTestActivity extends Activity {
                     throw new IllegalStateException("Test copy must have no other restrictions");
                 store.update("", "", Collections.emptySet(), Collections.singleton(getPackageName() + ".test"), false);
                 store.updateVisual(true);
+                // Keep the live driver's 62-second recovery check meaningful; the product default is 5.
+                AfterBlock.set(this, 1);
             } else if ("stop".equals(action)) {
                 VisualTestHooks.clear();
                 store.updateVisual(false);

@@ -160,6 +160,11 @@
     <string name="restriction_app">اخترت حجب هذا التطبيق.</string>
     <string name="restriction_schedule">هذا التطبيق محجوب خلال جدولك.</string>
     <string name="restriction_home">العودة للرئيسية</string>
+    <string name="restriction_closed">أغلق حصن هذا التطبيق لنحو %1$s. سيفتح مرة أخرى بعد ذلك.</string>
+    <string name="restriction_rest_5">استرح 5 دقائق إضافية</string>
+    <string name="restriction_rest_15">استرح 15 دقيقة إضافية</string>
+    <string name="restriction_rest_60">استرح ساعة إضافية</string>
+    <string name="restriction_lock_screen">اقفل الشاشة</string>
     <string name="admin_setup">إضافة خطوة تأكيد قبل الحذف</string>
     <string name="admin_title">خطوة إضافية اختيارية قبل الحذف</string>
     <string name="admin_explanation">قد يطلب أندرويد إلغاء تفعيل حصن كمسؤول جهاز قبل حذفه. يضيف هذا خطوة متعمدة ولا يجعل حصن غير قابل للحذف؛ يمكنك إلغاء التفعيل من إعدادات أندرويد.\n\nلا يطلب حصن صلاحيات مسح الجهاز أو إعادة تعيين كلمة المرور أو قفل الشاشة. لا يُسجّل هذا هاتفك كجهاز مُدار.</string>
@@ -476,6 +481,9 @@
     <string name="home_commitment_on">بقي %1$s</string>
     <string name="home_schedule_value">%1$s–%2$s · %3$s</string>
     <string name="settings_protection_title">الحماية</string>
+    <string name="settings_rest_title">بعد الحجب</string>
+    <string name="settings_rest_summary">إبقاء هذا التطبيق مغلقًا لمدة %1$s</string>
+    <string name="rest_minutes">%1$d دقيقة</string>
     <string name="settings_permissions">الصلاحيات</string>
     <string name="settings_permissions_summary">حماية التطبيقات %1$s · التنبيهات %2$s</string>
     <string name="settings_guardian_summary">اربط الهاتف بحاسوب ولي أمر</string>

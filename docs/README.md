@@ -63,6 +63,7 @@ past version; *superseded* documents point to their replacement. Start with the
 
 ## Android
 
+- [Android 1.3.0, 2026-11-07](ANDROID_1.3.0.md): After a detection, leave the browser page, close the detected app, and keep only that app closed for 1/5/15/30/60 minutes (default 5), with Rest 5/15/60 and Lock screen on the pause screen. UI- and build-verified; the real close path and a 1.3.0 phone run remain device checks.
 - [Android 1.2.3, 2026-11-07](ANDROID_1.2.3.md): The accessibility tree walk moved off the service's main thread, a selected app's own event can block a promotional label before the walk, the walk reads 2,048 nodes and stops early on a partial match, and the image layer keeps its model warm, captures at 224 px and backs off protected windows. Core, device-runner, emulator stress-case and signed-artifact checks; no phone run or accuracy claim.
 - [Google Play readiness](ANDROID_STORE.md): Play vs direct builds, listing copy, Data safety answers, permission declarations, reviewer steps and submission checklist.
 - [Android implementation status](ANDROID_IMPLEMENTATION_STATUS.md): Table of each Android protection layer, what code exists and how far it was verified, as of 0.9.0.

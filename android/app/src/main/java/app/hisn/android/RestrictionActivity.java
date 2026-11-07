@@ -88,6 +88,8 @@ public final class RestrictionActivity extends Activity {
 
         // A voluntary pause must not open with the loudest control on the screen: leaving is
         // allowed, but the breath is the point. An enforced pause keeps the way out primary.
+        addRestCard(column);
+
         Button home = Ui.button(this, voluntary ? R.string.pause_voluntary_done
                 : R.string.restriction_home,
                 voluntary ? Ui.ButtonKind.GHOST : Ui.ButtonKind.PRIMARY);
@@ -117,6 +119,47 @@ public final class RestrictionActivity extends Activity {
             getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
                     android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, this::back);
         }
+    }
+
+    /** The "rest longer / lock screen" card, only after a word or image detection. */
+    private void addRestCard(LinearLayout column) {
+        final String app = getIntent().getStringExtra(TextGuardService.EXTRA_APP);
+        final int minutes = getIntent().getIntExtra(TextGuardService.EXTRA_MINUTES, 0);
+        if (!getIntent().getBooleanExtra("canrest", false) || app == null || minutes <= 0) return;
+        LinearLayout card = Ui.card(this);
+        card.setPadding(Ui.dp(this, 22), Ui.dp(this, 18), Ui.dp(this, 22), Ui.dp(this, 18));
+        TextView closed = Ui.text(this, getString(R.string.restriction_closed,
+                getString(R.string.rest_minutes, minutes)), 15, R.color.text_secondary);
+        closed.setGravity(Gravity.CENTER);
+        card.addView(closed);
+        Button five = Ui.button(this, R.string.restriction_rest_5, Ui.ButtonKind.TONAL);
+        five.setOnClickListener(view -> rest(app, 5));
+        card.addView(five, Ui.buttonParams(this));
+        Button fifteen = Ui.button(this, R.string.restriction_rest_15, Ui.ButtonKind.TONAL);
+        fifteen.setOnClickListener(view -> rest(app, 15));
+        card.addView(fifteen, Ui.buttonParams(this));
+        Button hour = Ui.button(this, R.string.restriction_rest_60, Ui.ButtonKind.TONAL);
+        hour.setOnClickListener(view -> rest(app, 60));
+        card.addView(hour, Ui.buttonParams(this));
+        if (Build.VERSION.SDK_INT >= 28) {
+            Button lock = Ui.button(this, R.string.restriction_lock_screen, Ui.ButtonKind.GHOST);
+            lock.setOnClickListener(view -> lockScreen());
+            card.addView(lock, Ui.buttonParams(this));
+        }
+        column.addView(card, Ui.margins(this, 16, 0));
+    }
+
+    private void rest(String app, int minutes) {
+        sendBroadcast(new Intent(TextGuardService.ACTION_REST).setPackage(getPackageName())
+                .putExtra(TextGuardService.EXTRA_APP, app)
+                .putExtra(TextGuardService.EXTRA_MINUTES, minutes)
+                .putExtra(TextGuardService.EXTRA_VISUAL, getIntent().getBooleanExtra("visual", false)));
+        goHome();
+    }
+
+    private void lockScreen() {
+        sendBroadcast(new Intent(TextGuardService.ACTION_LOCK_SCREEN).setPackage(getPackageName()));
+        goHome();
     }
 
     private int reason() {

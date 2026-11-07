@@ -1,7 +1,11 @@
 package app.hisn.android;
 
 import android.accessibilityservice.AccessibilityService;
+import android.annotation.SuppressLint;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.PixelFormat;
 import android.os.Build;
 import android.os.Handler;
@@ -17,6 +21,7 @@ import android.view.accessibility.AccessibilityWindowInfo;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -27,6 +32,7 @@ import app.hisn.core.InspectionHealth;
 import app.hisn.core.InterventionRepeat;
 import app.hisn.core.LabelScan;
 import app.hisn.core.ProtectionLock;
+import app.hisn.core.RestPeriod;
 import app.hisn.core.SelfProtectionScreens;
 import app.hisn.core.SelfProtectionScreens.Guard;
 import app.hisn.core.ShortVideoSurfaces;
@@ -67,8 +73,17 @@ public final class TextGuardService extends AccessibilityService {
     private static final long SCAN_TIMEOUT_MILLIS = 20000;
     /** While the signed adult vocabulary is still loading, retry the text pass quickly. */
     private static final long ADULT_LOAD_RETRY_MILLIS = 250;
-    /** After a word or image block, reopening the same app within this period returns Home again. */
-    static final long BLOCK_HOLD_MILLIS = 60000;
+    /** The pause screen asks the service to hold the detected app longer. */
+    static final String ACTION_REST = "app.hisn.android.REST";
+    /** The pause screen asks the service for a screen lock. */
+    static final String ACTION_LOCK_SCREEN = "app.hisn.android.LOCK_SCREEN";
+    static final String EXTRA_APP = "app";
+    static final String EXTRA_MINUTES = "minutes";
+    static final String EXTRA_VISUAL = "visual";
+
+    static volatile long browserBacks;
+    static volatile long restExtensions;
+    static volatile long screenLocks;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private String pendingPackage;
     private long lastIntervention;
@@ -76,6 +91,11 @@ public final class TextGuardService extends AccessibilityService {
     private String heldPackage;
     private long heldUntil;
     private boolean heldWord, heldVisual;
+    /** The app whose page was just closed; the pause screen offers to hold it longer. */
+    private String pendingApp;
+    /** Link-opening apps, cached once per service instance: their page is closed before Home. */
+    private Set<String> browsers;
+    private BroadcastReceiver pauseActions;
     private int rootRetries;
     private Set<String> excluded;
     private VisualGuard visual;
@@ -129,7 +149,10 @@ public final class TextGuardService extends AccessibilityService {
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
                     .putExtra("word", pendingWordReason).putExtra("schedule", pendingScheduleReason)
                     .putExtra("limit", pendingLimitReason)
-                    .putExtra("visual", pendingVisualReason).putExtra("shortvideo", pendingShortVideoReason));
+                    .putExtra("visual", pendingVisualReason).putExtra("shortvideo", pendingShortVideoReason)
+                    .putExtra(EXTRA_APP, pendingApp)
+                    .putExtra(EXTRA_MINUTES, restMinutes())
+                    .putExtra("canrest", pendingWordReason || pendingVisualReason));
         } catch (RuntimeException unavailable) {
             inspection.record(InspectionHealth.Outcome.INCOMPLETE);
             inspectionOutcome = "restriction-screen-unavailable";
@@ -181,6 +204,9 @@ public final class TextGuardService extends AccessibilityService {
         try {
             // The uninstall guard needs nothing else, so it is armed before image setup.
             excluded = ChosenApps.excluded(this);
+            browsers = new HashSet<>();
+            for (ChosenApps.Entry entry : ChosenApps.browsers(this)) browsers.add(entry.packageName);
+            registerPauseActions();
             if (PolicyStore.get(this).snapshot().adultWordsEnabled) AdultPolicyAssets.ensureLoaded(this);
             textDirty = true;
             ready = true;
@@ -1084,6 +1110,78 @@ public final class TextGuardService extends AccessibilityService {
         @Override public void release(AccessibilityNodeInfo node) { node.recycle(); }
     }
 
+    private boolean browser(String app) {
+        return app != null && browsers != null && browsers.contains(app);
+    }
+
+    /** Closes the page's window: PiP is dismissed when possible, otherwise Home is pressed. */
+    private void leaveApp(String app, int window) {
+        if (destroyed) return;
+        if (dismissPictureInPicture(app, window)) inspectionOutcome += "-pip-dismissed";
+        else if (!performGlobalAction(GLOBAL_ACTION_HOME)) {
+            // For example under screen pinning. BACK at least leaves the current screen.
+            homeFailures++;
+            inspectionOutcome += "-home-failed";
+            performGlobalAction(GLOBAL_ACTION_BACK);
+        }
+    }
+
+    /** The app's remaining quiet minutes for the pause screen; the configured period otherwise. */
+    private int restMinutes() {
+        if (pendingApp != null && pendingApp.equals(heldPackage)) {
+            int left = RestPeriod.remainingMinutes(heldUntil, SystemClock.elapsedRealtime());
+            if (left > 0) return left;
+        }
+        return AfterBlock.minutes(this);
+    }
+
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
+    private void registerPauseActions() {
+        if (pauseActions != null) return;
+        pauseActions = new BroadcastReceiver() {
+            @Override public void onReceive(Context context, Intent intent) {
+                if (intent == null || intent.getAction() == null) return;
+                if (ACTION_LOCK_SCREEN.equals(intent.getAction())) {
+                    if (Build.VERSION.SDK_INT >= 28 && performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN)) screenLocks++;
+                    return;
+                }
+                if (ACTION_REST.equals(intent.getAction())) extendRest(intent);
+            }
+        };
+        IntentFilter filter = new IntentFilter(ACTION_REST);
+        filter.addAction(ACTION_LOCK_SCREEN);
+        // Same-app only: the pause screen is the sole sender.
+        if (Build.VERSION.SDK_INT >= 33) registerReceiver(pauseActions, filter, Context.RECEIVER_NOT_EXPORTED);
+        else registerReceiver(pauseActions, filter);
+    }
+
+    private void unregisterPauseActions() {
+        if (pauseActions == null) return;
+        try { unregisterReceiver(pauseActions); } catch (RuntimeException alreadyGone) { /* Nothing to do. */ }
+        pauseActions = null;
+    }
+
+    /** Holds the detected app for the chosen extra period, then returns to the launcher. */
+    private void extendRest(Intent intent) {
+        String app = intent.getStringExtra(EXTRA_APP);
+        if (app == null || app.equals(getPackageName()) || excluded == null || excluded.contains(app)) return;
+        int minutes = RestPeriod.sanitize(intent.getIntExtra(EXTRA_MINUTES, AfterBlock.minutes(this)));
+        heldPackage = app;
+        heldUntil = SystemClock.elapsedRealtime() + RestPeriod.millis(minutes);
+        heldWord = !intent.getBooleanExtra(EXTRA_VISUAL, false);
+        heldVisual = intent.getBooleanExtra(EXTRA_VISUAL, false);
+        restExtensions++;
+        handler.removeCallbacks(showRestriction);
+        pendingWordReason = false;
+        pendingScheduleReason = false;
+        pendingLimitReason = false;
+        pendingVisualReason = false;
+        pendingShortVideoReason = false;
+        pendingApp = app;
+        inspectionOutcome = "rest-extended";
+        performGlobalAction(GLOBAL_ACTION_HOME);
+    }
+
     /** Acts on the offending app: closes its window when that is picture-in-picture, else Home.
      * Not again for a while on the same window while Home has left it on screen and out of use
      * (rule and tests in core InterventionRepeat); reopening a held app always acts. */
@@ -1107,7 +1205,7 @@ public final class TextGuardService extends AccessibilityService {
             String blocked = app != null ? app : activePackage();
             if (blocked != null && excluded != null && !excluded.contains(blocked)) {
                 heldPackage = blocked;
-                heldUntil = now + BLOCK_HOLD_MILLIS;
+                heldUntil = now + RestPeriod.millis(AfterBlock.minutes(this));
                 heldWord = word;
                 heldVisual = visualReason;
             }
@@ -1118,12 +1216,18 @@ public final class TextGuardService extends AccessibilityService {
         pendingPackage = null;
         // Never debounce enforcement: reopening during the warning cooldown
         // must still leave the restricted app immediately.
-        if (dismissPictureInPicture(app, window)) inspectionOutcome += "-pip-dismissed";
-        else if (!performGlobalAction(GLOBAL_ACTION_HOME)) {
-            // For example under screen pinning. BACK at least leaves the current screen.
-            homeFailures++;
-            inspectionOutcome += "-home-failed";
+        pendingApp = app;
+        // A browser keeps its page in its own task. Leave the page first, then the window, so
+        // reopening the browser does not restore the page that was just closed. Other apps only
+        // need the window closed.
+        boolean backFirst = !held && (word || visualReason) && browser(app);
+        if (backFirst) {
+            browserBacks++;
+            inspectionOutcome += "-page-left";
             performGlobalAction(GLOBAL_ACTION_BACK);
+            handler.postDelayed(() -> leaveApp(app, window), 250);
+        } else {
+            leaveApp(app, window);
         }
         if (now - lastIntervention < 1500) { cooldownEnforcements++; return true; }
         lastIntervention = now;
@@ -1193,6 +1297,7 @@ public final class TextGuardService extends AccessibilityService {
         connected = false;
         ready = false;
         started = false;
+        unregisterPauseActions();
         handler.removeCallbacks(checkpoint);
         onInterrupt();
         return super.onUnbind(intent);
@@ -1200,6 +1305,7 @@ public final class TextGuardService extends AccessibilityService {
 
     @Override public void onDestroy() {
         destroyed = true;
+        unregisterPauseActions();
         clearScanTimeout();
         activeScan = 0;
         scanner.shutdownNow();

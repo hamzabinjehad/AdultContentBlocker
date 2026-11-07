@@ -66,6 +66,7 @@ import app.hisn.core.AppTimeLimit;
 import app.hisn.core.DailyAppSchedule;
 import app.hisn.core.GuardHealth;
 import app.hisn.core.PolicyChangeError;
+import app.hisn.core.RestPeriod;
 import app.hisn.core.ProtectionLock;
 import app.hisn.core.SeedFreshness;
 import app.hisn.core.SetupGuide;
@@ -154,6 +155,7 @@ public final class MainActivity extends Activity {
     private Switch safeSearchToggle;
     private Ui.SettingRow domainsRow;
     private Ui.SettingRow wordsRow;
+    private Ui.SettingRow settingsRestRow;
     private Ui.SettingRow blockedRow;
     private Ui.SettingRow scannedRow;
     private Ui.SettingRow browserRow;
@@ -819,6 +821,28 @@ public final class MainActivity extends Activity {
         return row;
     }
 
+    private CharSequence restSummary() {
+        return getString(R.string.settings_rest_summary,
+                getString(R.string.rest_minutes, AfterBlock.minutes(this)));
+    }
+
+    private void chooseRestPeriod() {
+        int[] choices = RestPeriod.ALLOWED_MINUTES;
+        int current = AfterBlock.minutes(this);
+        CharSequence[] labels = new CharSequence[choices.length];
+        int checked = 0;
+        for (int i = 0; i < choices.length; i++) {
+            labels[i] = getString(R.string.rest_minutes, choices[i]);
+            if (choices[i] == current) checked = i;
+        }
+        new AlertDialog.Builder(this).setTitle(R.string.settings_rest_title)
+                .setSingleChoiceItems(labels, checked, (dialog, which) -> {
+                    AfterBlock.set(this, choices[which]);
+                    if (settingsRestRow != null) settingsRestRow.setSummary(restSummary());
+                    dialog.dismiss();
+                }).show();
+    }
+
     // ------------------------------------------------------------------ settings page
 
     private void buildGuidePage(LinearLayout page) {
@@ -841,6 +865,11 @@ public final class MainActivity extends Activity {
                 getString(R.string.battery_title), getString(R.string.state_off),
                 view -> requestBatteryExemption());
         protection.addView(batteryRow.root);
+        protection.addView(Ui.divider(this));
+
+        settingsRestRow = Ui.settingRow(this, R.drawable.ic_clock,
+                getString(R.string.settings_rest_title), restSummary(), view -> chooseRestPeriod());
+        protection.addView(settingsRestRow.root);
         protection.addView(Ui.divider(this));
 
         Ui.SettingRow guardianRow = Ui.settingRow(this, R.drawable.ic_shield,

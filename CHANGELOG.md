@@ -5,6 +5,67 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
+## Android 1.3.0 — 2026-11-07
+
+### Added
+
+- **A per-app quiet period after a detection.** The app whose screen was
+  detected stays closed for **1, 5, 15, 30 or 60 minutes**, default **5**. Only
+  that app is held; another selected app is unaffected. Reopening inside the
+  period returns Home and shows the pause screen with the remaining time. The
+  period is measured by the elapsed clock and is not a background job.
+- **Settings › Protection › After a block.** The row reads *Keep this app closed
+  for 5 min* and opens the 1/5/15/30/60-minute choice. The value is stored apart
+  from the sealed rule file because it is a comfort setting: changing it never
+  lets a matched word or image pass.
+- **Rest longer and lock the screen on the pause screen.** After a word or
+  image detection it shows *Hisn closed this app for about 5 min*, **Rest 5 more
+  minutes**, **Rest 15 more minutes**, **Rest 1 hour** and **Lock the screen**.
+  A rest extends the hold for that app; the lock uses Android's accessibility
+  lock action (API 28+). Both return Home.
+- `app.hisn.core.RestPeriod` and its tests: fixed choices, invalid-value
+  fallback, milliseconds and rounded remaining minutes.
+
+### Changed
+
+- **A browser's page is left before its window is closed.** For an app that can
+  open web links, the guard performs Back and then Home, so reopening the
+  browser does not restore the page that was just detected. Other apps only
+  receive Home. This uses the accessibility actions the guard already had; it
+  does not force-stop another app.
+- The fixed one-minute hold becomes the configured quiet period. The live
+  fixtures select one minute so their 62-second recovery checks still work; the
+  product default is five. No detection rule, threshold, permission or consent
+  text changed.
+
+### Verification
+
+- `android/test-core.sh` — every core suite passes, including `RestPeriodTest`.
+- `check-strings.py` — 563 strings, 16 plurals and 554 source references,
+  English and Arabic; `check-notices.py` passes.
+- `:app:assembleDebug`, `:app:assembleDebugAndroidTest` and `:app:lintDebug`
+  (0 errors) pass; `CoreDeviceTestRunner` passes on the API 36 emulator.
+- The Settings row and picker, and the pause screen's rest/lock card, were read
+  back through the emulator accessibility tree and captured in
+  [design/android-after-block-2026-11-07](design/android-after-block-2026-11-07/README.md).
+- Signed Play APK/AAB and direct APK pass `check-release.py`; both APKs verify
+  with `apksigner` under the unchanged release certificate. Hashes and the
+  remaining limits are in the [1.3.0 record](docs/ANDROID_1.3.0.md).
+
+### Limits
+
+- Android cannot force-stop another app or power off the phone. “Close” is
+  Back/Home; the app stays in Recents and a browser may keep its tabs. Back
+  depends on the browser's history.
+- The screen lock is API 28+, turns the display off and keeps the normal unlock;
+  it is not a phone shutdown and does not change the PIN.
+- The quiet period is not sealed with the protection lock: it never changes
+  detection, but it can be shortened during a lock. The Rest action only
+  lengthens it.
+- No real detection drove the new close path: the screens were opened through
+  the debug restriction fixture, no adult content was used, and no 1.3.0 phone
+  run is claimed. The Arabic labels are parity-checked but not captured.
+
 ## Android 1.2.3 — 2026-11-07
 
 ### Changed

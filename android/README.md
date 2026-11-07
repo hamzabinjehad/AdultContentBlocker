@@ -47,6 +47,27 @@ an opt-in device-owner preview; the ordinary install remains removable, and
 actual blocked-uninstall and restriction acceptance needs a disposable
 provisioned device.
 
+## 1.3.0: close the page, rest the app
+
+A detection now leaves the browser page first with Back, then closes the app
+with Home, so reopening the browser does not restore the page that was just
+detected. Only the app whose screen was detected is held: for **1, 5, 15, 30 or
+60 minutes**, default **5**. Reopening inside the period returns Home and shows
+the pause screen with the remaining time. **Settings › Protection › After a
+block** chooses the period; the value is a comfort setting outside the sealed
+rule file, so changing it never lets a matched word or image pass.
+
+The pause screen offers **Rest 5 more minutes**, **Rest 15 more minutes**,
+**Rest 1 hour** and **Lock the screen** (API 28+). A rest extends that app's
+hold; the lock uses Android's accessibility lock action. Android cannot
+force-stop another app or power off the phone, so close means Back/Home, the app
+stays in Recents, a browser may keep its tabs and Back depends on its history.
+A real detection in a real browser is still a device check; the screens were
+verified through the debug restriction fixture. Core suites, strings, notices,
+debug/androidTest builds, lint and the API 36 device runner pass; signed
+Play/direct artifacts pass `check-release.py` and `apksigner`. Details and
+limits: [the 1.3.0 record](../docs/ANDROID_1.3.0.md).
+
 ## 1.2.3: the screen is read off the main thread
 
 The accessibility tree walk moved off the service's main thread onto one daemon
