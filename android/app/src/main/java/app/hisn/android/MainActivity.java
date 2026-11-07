@@ -150,6 +150,7 @@ public final class MainActivity extends Activity {
 
     private Switch adultToggle;
     private Switch visualToggle;
+    private Ui.SettingRow personBlurRow;
     private Switch shortVideoToggle;
     private Switch grayToggle;
     private Switch safeSearchToggle;
@@ -744,6 +745,11 @@ public final class MainActivity extends Activity {
             editVisualMode();
         });
         builtin.addView(visualToggle);
+        builtin.addView(Ui.divider(this));
+        personBlurRow = Ui.settingRow(this, R.drawable.ic_image,
+                getString(R.string.person_blur_title), getString(R.string.person_blur_summary),
+                getString(R.string.person_blur_off), view -> editPersonBlur());
+        builtin.addView(personBlurRow.root);
         builtin.addView(Ui.divider(this));
         shortVideoToggle = Ui.toggle(this, getString(R.string.toggle_short_video));
         shortVideoToggle.setOnClickListener(view -> {
@@ -1922,6 +1928,12 @@ public final class MainActivity extends Activity {
         visualToggle.setChecked(rules.visualEnabled);
         Ui.setEnabledWithAlpha(visualToggle,
                 Build.VERSION.SDK_INT >= 34 && (!rules.visualEnabled || remaining == 0));
+        if (personBlurRow != null) {
+            String people = PersonBlur.mode(this);
+            personBlurRow.setValue(getString(PersonBlur.label(people)), PersonBlur.on(people) ? Ui.ON : Ui.OFF);
+            Ui.setEnabledWithAlpha(personBlurRow.root,
+                    Build.VERSION.SDK_INT >= 34 && rules.visualEnabled && remaining == 0);
+        }
         return attention;
     }
 
@@ -2061,6 +2073,32 @@ public final class MainActivity extends Activity {
                         if (!enabled && settings.snapshot().scannedApps.isEmpty()) chooseApps(true);
                     } catch (RuntimeException refused) { showRefusal(refused); }
                 });
+    }
+
+    private void editPersonBlur() {
+        if (settings == null || refuseIfRulesLocked() || Build.VERSION.SDK_INT < 34) return;
+        if (!settings.snapshot().visualEnabled) {
+            new AlertDialog.Builder(this).setTitle(R.string.person_blur_title)
+                    .setMessage(R.string.person_blur_need_visual)
+                    .setPositiveButton(android.R.string.ok, null).show();
+            return;
+        }
+        String[] modes = {PersonBlur.OFF, PersonBlur.ALL, PersonBlur.WOMEN, PersonBlur.MEN};
+        CharSequence[] labels = new CharSequence[modes.length];
+        int checked = 0;
+        String current = PersonBlur.mode(this);
+        for (int i = 0; i < modes.length; i++) {
+            labels[i] = getString(PersonBlur.label(modes[i]));
+            if (modes[i].equals(current)) checked = i;
+        }
+        new AlertDialog.Builder(this).setTitle(R.string.person_blur_title)
+                .setSingleChoiceItems(labels, checked, (dialog, which) -> {
+                    PersonBlur.set(this, modes[which]);
+                    if (personBlurRow != null) personBlurRow.setValue(getString(PersonBlur.label(modes[which])),
+                            PersonBlur.on(modes[which]) ? Ui.ON : Ui.OFF);
+                    dialog.dismiss();
+                })
+                .setNegativeButton(android.R.string.cancel, null).show();
     }
 
     /** One short paragraph, then the full disclosure only for anyone who opens it. */

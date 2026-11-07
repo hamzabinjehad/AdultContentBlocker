@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "note": "People-cover feature on the API 36 hisn_ui emulator, synthetic/debug fixture only. The face is the pinned public-domain NASA portrait from the visual-eval benign corpus. No private image, real app, adult content, phone, battery or thermal measurement.",
+  "device": "sdk_gphone64_arm64",
+  "android_sdk": 36,
+  "package": "app.hisn.android.visualcheck",
+  "version": "1.5.0",
+  "adult_runtime": "tflite-cpu",
+  "people_runtime": "wasm",
+  "people_frame_edge": 384,
+  "face_model_smoke": {
+    "all": "PASS: wasm verdict=allow face=true",
+    "female": "PASS: wasm verdict=allow face=true",
+    "male": "PASS: wasm verdict=allow face=true (recall-biased uncertainty; not proof the astronaut is male)"
+  },
+  "live_status_all": {
+    "PEOPLE": "all",
+    "FRAME_EDGE": 384,
+    "BACKEND": "wasm",
+    "CAPTURES": 26,
+    "SAMPLES": 14,
+    "REQUESTS": 27,
+    "OVERLAYS": 1,
+    "CAPTURE_FAILURES": 0,
+    "RATE_LIMITED": 1,
+    "LAST_CAPTURE_MS": 12,
+    "LAST_INFERENCE_MS": 109,
+    "LAST_SAMPLE_MS": 145
+  },
+  "live_status_off": {
+    "PEOPLE": "off",
+    "FRAME_EDGE": 224,
+    "BACKEND": "tflite-cpu",
+    "CAPTURES": 49,
+    "SAMPLES": 38,
+    "REQUESTS": 52,
+    "CAPTURE_FAILURES": 0,
+    "RATE_LIMITED": 3,
+    "LAST_CAPTURE_MS": 32,
+    "LAST_INFERENCE_MS": 32,
+    "LAST_SAMPLE_MS": 98
+  },
+  "live_suite_with_people_off": {
+    "passed": true,
+    "checks": 10,
+    "note": "Recorded by android/test-live-visual.py; synthetic fixtures; no adult accuracy claim."
+  },
+  "limits": "Face detection only, not full-body. Women/men is a model estimate, uncertain faces are covered, and the cover is full-screen and touch-blocking. The status bar strip can remain visible. One face image is not an accuracy corpus. No phone, GPU, battery or thermal test; no comparison with HaramBlur."
+}

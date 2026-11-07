@@ -2,8 +2,12 @@ import { createVisualEngine } from './engine.bundle.js';
 import { nearMiss, centreCrop } from './region.js';
 
 // Only packaged code runs in this WebView. Captures exist in memory for one request.
-const preferences = { inspectVisual: true, personBlur: 'off' };
-const requested = new URL(location.href).searchParams.get('backend');
+const query = new URL(location.href).searchParams;
+const requested = query.get('backend');
+const person = ['all', 'female', 'male'].includes(query.get('person')) ? query.get('person') : 'off';
+const preferences = { inspectVisual: true, personBlur: person };
+// The centred near-miss second look is an adult check only; do not run the face models twice.
+const closerPreferences = { inspectVisual: true, personBlur: 'off' };
 // 'auto' walks WebGL -> WASM -> CPU. An explicit name is tried first and still
 // degrades, so an unattached WebView without a GPU finishes on WASM instead of
 // the two-second JS CPU path.
@@ -19,7 +23,7 @@ window.hisnInspect = async (id, width, height, rgba) => {
       if (crop) {
         try {
           const closer = await engine.inspect(id + '-c',
-            { id: id + '-c', width: crop.width, height: crop.height, rgba: crop.rgba }, preferences);
+            { id: id + '-c', width: crop.width, height: crop.height, rgba: crop.rgba }, closerPreferences);
           if (closer?.state === 'ready' && closer.adult?.inspected === true && closer.adult.block === true) {
             verdict = 'block';
           }
@@ -28,7 +32,8 @@ window.hisnInspect = async (id, width, height, rgba) => {
         }
       }
     }
-    HisnResult.result(id, verdict);
+    const personBlur = result?.persons?.blur === true;
+    HisnResult.result(id, JSON.stringify({ v: verdict, p: personBlur }));
   } catch { HisnResult.result(id, 'unknown'); }
   finally { rgba = null; }
 };

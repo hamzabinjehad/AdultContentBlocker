@@ -32,6 +32,18 @@ public final class GuardFixtureActivity extends Activity {
         title.setText("Hisn harmless protection test");
         layout.addView(title);
         String mode = getIntent().getStringExtra("mode");
+        if ("visual-face".equals(mode)) {
+            android.widget.ImageView photo = new android.widget.ImageView(this);
+            try (java.io.InputStream image = getAssets().open("astronaut.png")) {
+                photo.setImageBitmap(android.graphics.BitmapFactory.decodeStream(image));
+            } catch (java.io.IOException unavailable) {
+                photo.setContentDescription("Face fixture image unavailable");
+            }
+            photo.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
+            photo.setContentDescription("Pinned public-domain NASA portrait for the face-cover fixture");
+            setContentView(photo);
+            return;
+        }
         if ("visual-normal".equals(mode) || "visual-video".equals(mode) || "visual-secure".equals(mode)) {
             if ("visual-secure".equals(mode)) getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);
             final boolean moving = "visual-video".equals(mode);

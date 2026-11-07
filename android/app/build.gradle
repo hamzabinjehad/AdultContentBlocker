@@ -25,7 +25,9 @@ def copyVisual = tasks.register('copyAndroidVisual', Sync) {
         def inventory = new groovy.json.JsonSlurper().parse(new File(visualRoot, 'assets.json'))
         ['engine.bundle.js', 'engine.bundle.js.LEGAL.txt',
          'wasm/tfjs-backend-wasm.wasm', 'wasm/tfjs-backend-wasm-simd.wasm',
-         'wasm/tfjs-backend-wasm-threaded-simd.wasm'].each { name ->
+         'wasm/tfjs-backend-wasm-threaded-simd.wasm',
+         'models/blazeface.json', 'models/blazeface.bin',
+         'models/gender.json', 'models/gender.bin'].each { name ->
             def artifact = new File(visualRoot, name)
             def entry = inventory.artifacts[name]
             def actual = java.security.MessageDigest.getInstance('SHA-256').digest(artifact.bytes).encodeHex().toString()
@@ -34,7 +36,8 @@ def copyVisual = tasks.register('copyAndroidVisual', Sync) {
         }
     }
     from(new File(repoRoot, 'extension/visual')) {
-        include 'engine.bundle.js', 'engine.bundle.js.LEGAL.txt', 'assets.json', 'notices/**', 'wasm/*.wasm'
+        include 'engine.bundle.js', 'engine.bundle.js.LEGAL.txt', 'assets.json', 'notices/**',
+                'wasm/*.wasm', 'models/*.json', 'models/*.bin'
     }
     into layout.buildDirectory.dir('generated/visualAssets/visual')
 }
@@ -55,8 +58,8 @@ android {
         manifestPlaceholders = [hisnAppLabel: '@string/app_name']
         minSdk 26
         targetSdk 36
-        versionCode 37
-        versionName '1.4.1'
+        versionCode 38
+        versionName '1.5.0'
         testInstrumentationRunner 'app.hisn.android.CoreDeviceTestRunner'
         buildConfigField 'String', 'DOMAIN_SEED_SHA256', '"' + seedDigest + '"'
         buildConfigField 'int', 'DOMAIN_SEED_COUNT', seedManifest.core_domain_count.toString()

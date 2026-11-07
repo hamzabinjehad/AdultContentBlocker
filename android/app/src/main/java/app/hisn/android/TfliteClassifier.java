@@ -91,8 +91,8 @@ final class TfliteClassifier implements VisualRuntime {
         }
     }
 
-    @Override public void inspect(Bitmap frame, Consumer<String> result) {
-        if (!ready || closed) { result.accept("unknown"); return; }
+    @Override public void inspect(Bitmap frame, Consumer<VisualResult> result) {
+        if (!ready || closed) { result.accept(new VisualResult("unknown", false)); return; }
         int width = frame.getWidth(), height = frame.getHeight();
         int[] source = new int[width * height];
         frame.getPixels(source, 0, width, 0, 0, width, height);
@@ -101,7 +101,7 @@ final class TfliteClassifier implements VisualRuntime {
             try { verdict = classify(source, width, height); }
             catch (Throwable unavailable) { verdict = "unknown"; }
             final String value = verdict;
-            main.post(() -> { if (!closed) result.accept(value); });
+            main.post(() -> { if (!closed) result.accept(new VisualResult(value, false)); });
         });
     }
 

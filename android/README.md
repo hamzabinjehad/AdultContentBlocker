@@ -47,6 +47,33 @@ an opt-in device-owner preview; the ordinary install remains removable, and
 actual blocked-uninstall and restriction acceptance needs a disposable
 provisioned device.
 
+## 1.5.0: an opt-in people cover
+
+Rules › Built-in checks › **Blur people** adds Off, **All faces**, **Women
+(estimated)** and **Men (estimated)**. A matching face covers the whole selected
+window with a touch-blocking accessibility overlay. The cover is a 10 px
+abstract snapshot on an opaque scrim, not a readable face blur; it clears on a
+later clean sample, when the person leaves, on screen off, or when the layer is
+turned off. The adult classifier still runs in the same pass and still closes
+the detected app.
+
+People mode switches the guard to the packaged WebView face engine (Human
+BlazeFace plus the gender model) at 384 px; the adult-only path stays on native
+TFLite at 224 px. Women/men is a recall-biased appearance estimate, not identity;
+uncertain faces are covered, so the men setting can also hide a woman when the
+estimate is uncertain. All-faces mode avoids the estimate. The feature is
+**faces only**, not full-body, and the cover blocks app interaction until the
+person leaves.
+
+On the API 36 emulator the pinned public-domain astronaut portrait matched in all
+and female modes (male also matched under the uncertainty rule); the live
+all-faces guard reported `BACKEND wasm`, `FRAME_EDGE 384`, `OVERLAYS 1`, 0
+capture failures and 109–145 ms sample latency. The people-off regression suite
+passed all ten checks with `BACKEND tflite-cpu` and `FRAME_EDGE 224`. No phone,
+adult corpus, battery, thermal or body-only measurement is claimed, and no
+comparison with HaramBlur's accuracy is established. Signed Play/direct artifacts
+and hashes: [the 1.5.0 record](../docs/ANDROID_1.5.0.md).
+
 ## 1.4.1: sample moving screens at the platform floor
 
 The fast visual cadence was 250 ms, below Android's 333 ms per-window

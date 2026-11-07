@@ -5,6 +5,45 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
+## Android 1.5.0 — 2026-11-08
+
+### Added
+
+- **Opt-in people cover in Rules › Built-in checks › Blur people.** Off, **All
+  faces**, **Women (estimated)** and **Men (estimated)**. When on, the visual
+  guard runs the packaged WebView face engine (Human BlazeFace and the gender
+  model) at a **384 px** frame, still runs the adult classifier in the same pass,
+  and covers the whole selected window with a touch-blocking accessibility
+  overlay when a face matches. The adult classifier and its thresholds remain
+  independent and still close the detected app.
+- **A deliberately stronger response than a small face blur.** The cover is a
+  **10 px abstract snapshot** on an opaque scrim, not a readable face blur. It
+  blocks app taps, clears only on a later clean sample, when the person leaves
+  the selected app, on screen off, or when the layer is disabled. A face-runtime
+  error fails closed while a cover is already up.
+- **Women/men is a recall-biased estimate, not identity.** Uncertain faces are
+  covered, so the men setting can also hide a woman when the estimate is
+  uncertain; all-faces mode avoids the estimate entirely.
+- The face models were already in the pinned visual inventory and notices; the
+  Android build now copies `models/blazeface.*` and `models/gender.*` and serves
+  them only to the isolated `hisn.invalid` WebView. The five licence files and
+  the visual notices are unchanged.
+
+### Verification
+
+- Face-model smoke on the pinned public-domain NASA astronaut portrait:
+  `PASS: wasm verdict=allow face=true` in all and female modes; male also matched
+  under the uncertainty rule.
+- Live all-faces guard on the API 36 emulator: `PEOPLE all`, `FRAME_EDGE 384`,
+  `BACKEND wasm`, `OVERLAYS 1`, 0 capture failures, 1 floor rejection,
+  109–135 ms inference and 145–190 ms sample latency.
+- The people-off live suite passes all ten checks with `BACKEND tflite-cpu` and
+  `FRAME_EDGE 224`; core, strings (574/16/566), notices, builds, lint and signed
+  artifacts pass.
+- No phone, adult-positive corpus, battery, thermal or body-only measurement;
+  no claim of accuracy or superiority over HaramBlur. The cover blocks app
+  interaction and the status-bar strip can remain visible; both are disclosed.
+
 ## Android 1.4.1 — 2026-11-07
 
 ### Changed

@@ -9,6 +9,9 @@
         <!-- Debug-only native TFLite comparison; never packaged in release. -->
         <activity android:name="app.hisn.android.TfliteBenchmarkActivity"
             android:exported="true" android:permission="android.permission.DUMP" />
+        <!-- Debug-only face-model smoke test; never packaged in release. -->
+        <activity android:name="app.hisn.android.PeopleCheckActivity"
+            android:exported="true" android:permission="android.permission.DUMP" />
         <!-- Shell-only diagnostic entry point. Absent from release APKs. -->
         <activity android:name="app.hisn.android.GuardTestSetupActivity"
             android:exported="true" android:permission="android.permission.DUMP"
