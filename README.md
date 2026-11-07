@@ -87,6 +87,13 @@ you the lock; Hisn adds the coverage those built-in filters miss. Read
   the authority request batch; and the menu bar shows the lock's coarse time
   left. 1.1.15's Organization Mode and 1.1.14's first-run/private-window pass
   remain.
+- **Android 1.4.0 — the visual model now runs natively.** The same MobileNetV2
+  weights are converted to a pinned TFLite model and run on a native worker:
+  **38–45 ms median** inference on the API 36 emulator, against 123 ms for WASM,
+  with the WebView engine retained as fallback. Converted scores matched TFJS to
+  3.34×10⁻⁶ on 12 benign views and 0/12 were blocked; no adult corpus or phone
+  claim. The direct APK grows to ~29 MB. Record:
+  [the 1.4.0 note](docs/ANDROID_1.4.0.md).
 - **Android 1.3.2 — reuse the verdict on an unchanged frame.** A still selected
   window keeps its coarse signature and allow/block word for five seconds; the
   guard skips the 123 ms model inference when the frame has not changed. Window
@@ -203,7 +210,7 @@ English, Arabic RTL and both palettes are in the
 | Browser extension (Chromium) | Blocks listed domains and adult TLDs, checks page text in the page's language, optional local image/video checks, portable hand lists | 1.5.3 | [Using the extension](docs/EXTENSION_USAGE.md) |
 | Mac | Content-filter system extension, adult-TLD and hostname guards, browser guard, locks, authority checks, accountability partner, root guardian daemon, an on-demand breathing pause, a read-only site checker, an aggregate blocked-connection count, MDM enrollment and a profile-managed non-removable filter | 1.1.18, needs a signed build | [Mac setup](docs/SETUP.md) · [MDM](docs/MDM_DEPLOYMENT.md) |
 | iPhone & iPad | A device-wide DNS filter with the adult-TLD and hostname guards, six Safari blockers, Safari text extension, Screen Time app limits with a custom bilingual shield, a browser and VPN guard, a pause rule with a daily opens budget, protection lock for saved rules, an on-demand pause, daily quiet hours and a removal-protection Lock Center; distributed directly as a signed-on-install IPA | 1.8.0, development · needs a signed device | [iOS README](ios/README.md) · [direct install](docs/IOS_DIRECT.md) |
-| Android | DNS filtering with the adult-TLD and hostname guards, selected-app and word restrictions, per-app daily time limits, first-run welcome, voluntary pause, optional image checks, browser-coverage screen, schedules, protection lock that freezes saved rules, opt-in device-owner uninstall guard and managed lockdown, direct-build removal guard, layer watchdog and bundled-list freshness warning | 1.3.2 development · signed Play/direct builds, no phone run; 1.1.0 direct APK published, Play AAB not uploaded | [Android README](android/README.md) · [1.3.2 record](docs/ANDROID_1.3.2.md) |
+| Android | DNS filtering with the adult-TLD and hostname guards, selected-app and word restrictions, per-app daily time limits, first-run welcome, voluntary pause, optional image checks, browser-coverage screen, schedules, protection lock that freezes saved rules, opt-in device-owner uninstall guard and managed lockdown, direct-build removal guard, layer watchdog and bundled-list freshness warning | 1.4.0 development · signed Play/direct builds, no phone run; 1.1.0 direct APK published, Play AAB not uploaded | [Android README](android/README.md) · [1.4.0 record](docs/ANDROID_1.4.0.md) |
 | Network / router | Verified signed DNS rules for administrator import | Tools only | [Network tools](network/README.md) |
 
 Seed **v5** raises the bundled core from 159,768 to **239,885 domains** on every

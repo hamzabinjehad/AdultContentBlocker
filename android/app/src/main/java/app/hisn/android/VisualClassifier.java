@@ -16,7 +16,7 @@ import java.util.function.Consumer;
 import app.hisn.core.VisualExecutionPolicy;
 
 /** Network-isolated local model, one bounded frame at a time. Main-thread API. */
-final class VisualClassifier implements AutoCloseable {
+final class VisualClassifier implements VisualRuntime {
     /** A frame that has not answered in this long is treated as a failed runtime, not left pending. */
     private static final long FRAME_TIMEOUT_MILLIS = 5000;
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -93,7 +93,7 @@ final class VisualClassifier implements AutoCloseable {
         web.loadUrl("https://hisn.invalid/visual/android.html?backend=" + execution.backend());
     }
 
-    String actualBackend() { return actualBackend; }
+    @Override public String actualBackend() { return actualBackend; }
 
     private final class ResultBridge {
         private final int token;
@@ -113,7 +113,7 @@ final class VisualClassifier implements AutoCloseable {
         }
     }
 
-    void inspect(Bitmap frame, Consumer<String> result) {
+    @Override public void inspect(Bitmap frame, Consumer<String> result) {
         if (!ready || web == null || pending != null || frame.getWidth() > 384 || frame.getHeight() > 384) {
             result.accept("unknown");
             return;

@@ -60,7 +60,9 @@ final class VisualGuard implements AutoCloseable {
     private final VisualVerdictCache verdicts = new VisualVerdictCache();
     private final PowerManager power;
     private final Set<String> excluded;
-    private VisualClassifier classifier;
+    private VisualRuntime classifier;
+    /** The native runtime failed to load; use the packaged WebView engine for the rest of this instance. */
+    private boolean nativeUnavailable;
     private boolean loaded, busy, closed, listening;
     private long retryAfter, nextPoll, captureBackoffUntil;
     private int captureFailureStreak;
@@ -352,14 +354,27 @@ final class VisualGuard implements AutoCloseable {
         final int generation = ++loadGeneration;
         busy = true;
         health.report(showLoading ? State.LOADING : State.WAITING);
-        classifier = new VisualClassifier(service, verdict -> {
+        final boolean[] nativeAttempt = {!nativeUnavailable};
+        java.util.function.Consumer<String> onLoaded = verdict -> {
             if (closed || generation != loadGeneration) return;
             loaded = "ready".equals(verdict);
             busy = false;
-            if (!loaded) { fail(); return; }
+            if (!loaded) {
+                // A native model load failure must fall back to the packaged WebView engine.
+                if (nativeAttempt[0]) nativeUnavailable = true;
+                fail();
+                return;
+            }
             backend = classifier == null ? "none" : classifier.actualBackend();
             soon();
-        });
+        };
+        VisualRuntime runtime = null;
+        if (!nativeUnavailable) {
+            try { runtime = new TfliteClassifier(service, onLoaded); }
+            catch (RuntimeException | LinkageError unavailable) { nativeUnavailable = true; }
+        }
+        if (runtime == null) runtime = new VisualClassifier(service, onLoaded);
+        classifier = runtime;
     }
 
     /** A failed load or frame: free the engine, then return after a bounded backoff, not a flat 30 s. */

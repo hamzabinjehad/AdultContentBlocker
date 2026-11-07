@@ -47,6 +47,24 @@ an opt-in device-owner preview; the ordinary install remains removable, and
 actual blocked-uninstall and restriction acceptance needs a disposable
 provisioned device.
 
+## 1.4.0: native TFLite visual runtime
+
+The image model now runs natively. The same nsfwjs 4.4.0 MobileNetV2 weights
+were reconstructed, converted to a float32 TFLite model pinned by SHA-256, and
+run on one daemon worker with the same 224×224 bilinear `alignCorners`, 0..1
+normalization and 0.70/0.85 Porn/Hentai thresholds. The WebView engine remains
+the fallback if the native model cannot load.
+
+On the API 36 emulator native CPU measured **38–45 ms median** inference and
+1.6–1.9 s model load, versus 123 ms/3.0 s for WASM and 188 ms/3.3 s for WebGL.
+Converted scores matched TFJS to 3.34×10⁻⁶ on 12 benign views; 0/12 were
+blocked. No adult-positive corpus, phone, GPU, battery or thermal measurement
+is claimed. The 9.8 MB model and four-ABI libraries take the direct APK to
+~29 MB (Play AAB ~16 MB); the WebView fallback assets are retained. The
+TensorFlow Lite Apache 2.0 notice is in **Licenses and sources**. Core,
+strings/notices, builds, lint, the API 36 device runner and signed artifacts
+pass. Details: [the 1.4.0 record](../docs/ANDROID_1.4.0.md).
+
 ## 1.3.2: reuse the verdict on an unchanged frame
 
 The visual guard still captures a still selected window every one to two

@@ -98,7 +98,7 @@ def main():
         require(normal["SAMPLES"] > initial["SAMPLES"], "No actual screenshot/model sample completed: " + json.dumps(normal))
         require(normal["INTERVENTIONS"] == initial["INTERVENTIONS"], "Benign synthetic image was restricted")
         require(normal.get("FRAME_EDGE") == "224", "Capture did not use the packaged 224 px edge: " + json.dumps(normal))
-        require(normal.get("BACKEND") in ("webgl", "wasm", "cpu"),
+        require(normal.get("BACKEND") in ("webgl", "wasm", "cpu", "tflite-cpu"),
                 "Classifier backend was not reported as running: " + json.dumps(normal))
         passed({"check": "actual capture and benign model inference", "samples": normal["SAMPLES"] - initial["SAMPLES"],
                 "backend": normal.get("BACKEND"), "frame_edge": normal.get("FRAME_EDGE")})

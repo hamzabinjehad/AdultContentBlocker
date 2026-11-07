@@ -20,10 +20,11 @@ final class Notices {
     /** License texts for the bundled domain and word lists; check-notices.py keeps this complete. */
     private static final String[] LIST_FILES = {
             "licenses/StevenBlack-hosts-MIT.txt", "licenses/Sinfonietta-hostfiles-MIT.txt",
-            "licenses/GPL-3.0.txt", "licenses/LDNOOBW-CC-BY-4.0.txt"};
+            "licenses/GPL-3.0.txt", "licenses/LDNOOBW-CC-BY-4.0.txt",
+            "licenses/tensorflow-lite-Apache-2.0.txt"};
     private static final int[] LIST_TITLES = {
             R.string.notice_mit_stevenblack, R.string.notice_mit_sinfonietta,
-            R.string.notice_gpl, R.string.notice_cc_by};
+            R.string.notice_gpl, R.string.notice_cc_by, R.string.notice_tensorflow_lite};
     // Copied with the visual runtime from extension/visual by the copyAndroidVisual task.
     private static final String VISUAL_NOTICES = "visual/notices";
     private static final String VISUAL_LEGAL = "visual/engine.bundle.js.LEGAL.txt";

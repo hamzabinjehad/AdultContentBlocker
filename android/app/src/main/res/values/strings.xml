@@ -260,6 +260,7 @@
     <string name="notice_mit_stevenblack">MIT License · StevenBlack hosts</string>
     <string name="notice_mit_sinfonietta">MIT License · Sinfonietta hostfiles</string>
     <string name="notice_gpl">GNU GPL 3.0 · HaGeZi and chadmayfield lists</string>
+    <string name="notice_tensorflow_lite">TensorFlow Lite (Apache 2.0)</string>
     <string name="notice_cc_by">CC BY 4.0 · LDNOOBW word list</string>
     <string name="notice_visual_file">Image-check engine · %1$s</string>
     <string name="gray_title">Gray screen</string>

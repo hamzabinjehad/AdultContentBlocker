@@ -276,6 +276,7 @@
     <string name="notice_mit_stevenblack">رخصة MIT · قائمة StevenBlack hosts</string>
     <string name="notice_mit_sinfonietta">رخصة MIT · قائمة Sinfonietta hostfiles</string>
     <string name="notice_gpl">رخصة GNU GPL 3.0 · قائمتا HaGeZi وchadmayfield</string>
+    <string name="notice_tensorflow_lite">محرك TensorFlow Lite (Apache 2.0)</string>
     <string name="notice_cc_by">رخصة CC BY 4.0 · قائمة كلمات LDNOOBW</string>
     <string name="notice_visual_file">محرك فحص الصور · %1$s</string>
     <string name="gray_title">شاشة رمادية</string>

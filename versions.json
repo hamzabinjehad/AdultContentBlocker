@@ -32,11 +32,11 @@
     {
       "id": "android",
       "name": "Android",
-      "version": "1.3.2",
-      "build": 35,
-      "state": "development · 1.3.2 source, core/build/lint and emulator UI checks, signed Play/direct builds; no 1.3.2 phone run",
+      "version": "1.4.0",
+      "build": 36,
+      "state": "development · 1.4.0 source, core/build/lint, native visual benchmark and emulator guard backend, signed Play/direct builds; no 1.4.0 phone run",
       "source": "android/app/build.gradle",
-      "notes": "35 (1.3.2) adds a bounded last-verdict cache for unchanged visual frames. A still selected window still takes one capture, but if its coarse 16x16 signature is unchanged within 5 s the guard reuses the allow/block verdict instead of running the model again. A window change, scroll/content activity, engine reset or close clears the cache. Only a signature and an allow/block word are retained; no pixels, URL or text. The 1.3.1 WASM-first backend and centred near-miss second look are retained, as are the 1.3.0 after-block quiet period and 2,048-label off-main text scan. No permission, rule, threshold, stored field, string or capture size changed. Core tests cover the cache; no device cache-hit measurement, no adult-positive corpus and no phone run are claimed. Signed Play APK/AAB and direct APK pass check-release.py and apksigner; no Play upload."
+      "notes": "36 (1.4.0) makes a native TensorFlow Lite runtime the primary Android visual engine, with the packaged WebView engine kept as fallback. The same NSFWJS MobileNetV2 weights were reconstructed from nsfwjs 4.4.0, converted through Keras SavedModel to a float32 TFLite model (SHA-256 01215075...4d46), and verified against TFJS: scores matched to 3.34e-6 on all 12 benign views and 0/12 were blocked. The native runtime uses the same 224x224 bilinear alignCorners / 0..1 preprocessing and the same 0.70/0.85 Porn/Hentai thresholds; it runs on one daemon worker and the guard falls back to the WebView engine if the model cannot load. On the API 36 emulator, native CPU measured 38.2 ms median and 203 ms p95 over 36 calls, with 1.6 s model load; the 1.3.1 WASM engine measured 123 ms, 291 ms p95 and 3.0 s on the same benign corpus. The GPU delegate was not reliable on this emulator and is not used. The TFLite model adds about 9.8 MB and the runtime native libraries to the APK; release size is recorded in the 1.4.0 note. 1.3.2's verdict cache, 1.3.1's centred near-miss crop, 1.3.0's after-block pause and the 2,048-label text scan are retained. No detection threshold, permission, stored field or consent text changed. No adult-positive corpus, phone, GPU, battery or thermal measurement is claimed; timing is emulator and benign-corpus evidence. Signed Play APK/AAB and direct APK pass check-release.py and apksigner; no Play upload."
     }
   ]
 }

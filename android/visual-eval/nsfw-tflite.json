@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "model": "NSFWJS MobileNetV2",
+  "source": "nsfwjs@4.4.0",
+  "reconstructed_model_json_bytes": 118024,
+  "reconstructed_weights_bytes": 2619461,
+  "conversion": "tfjs_layers_model -> keras_saved_model -> TFLite float32",
+  "tensorflow": "2.16.2",
+  "tensorflowjs": "4.20.0",
+  "tflite_bytes": 10300764,
+  "tflite_sha256": "01215075f6e759bac8931310ed95665295bd662eff547f27a33982bcf2cb4d46",
+  "input": "1x224x224x3 float32, RGB 0..1, bicubic-free bilinear resize with alignCorners",
+  "output": "1x5 float32 in Drawing, Hentai, Neutral, Porn, Sexy order",
+  "score_parity_max_abs_vs_tfjs": 3.337860107421875e-06,
+  "limits": "Parity measured on 12 benign views from 4 pinned public-domain/CC0 images; no adult-positive corpus.",
+  "source_bundle_sha256": "ef2e0a63f7d2c4960b37b024b669313f65d3c45cd59e9042636c55b39de53517",
+  "weights_bin_sha256": "8e7dddbb16acacc1bf1601b1b8a761e730ff934b7f2d7771312b2f000e5f5f13",
+  "model_json_sha256": "8c64df68b7f49b5b3cee425c759d44d13447f7aa0a41b68286c08b8f2441ae6e"
+}

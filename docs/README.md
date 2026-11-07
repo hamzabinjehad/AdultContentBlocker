@@ -63,6 +63,7 @@ past version; *superseded* documents point to their replacement. Start with the
 
 ## Android
 
+- [Android 1.4.0, 2026-11-07](ANDROID_1.4.0.md): Native TFLite becomes the primary visual runtime: 38–45 ms median vs 123 ms WASM on 12 benign emulator views, scores matching TFJS to 3.34×10⁻⁶, 0/12 false blocks, WebView fallback. No adult corpus or phone claim; direct APK ~29 MB.
 - [Android 1.3.2, 2026-11-07](ANDROID_1.3.2.md): A bounded five-second last-verdict cache skips the 123 ms model inference on an unchanged visual frame; capture still runs, no pixels/URL/text are stored. Core-tested, no device cache-hit measurement.
 - [Android 1.3.1, 2026-11-07](ANDROID_1.3.1.md): The visual guard starts on WASM (188 → 123 ms median on a 12-view benign emulator corpus) and takes one centred 68% second look when full-frame scores are near the block threshold. 0/12 benign false blocks; no adult corpus, so recall remains unmeasured.
 - [Android 1.3.0, 2026-11-07](ANDROID_1.3.0.md): After a detection, leave the browser page, close the detected app, and keep only that app closed for 1/5/15/30/60 minutes (default 5), with Rest 5/15/60 and Lock screen on the pause screen. UI- and build-verified; the real close path and a 1.3.0 phone run remain device checks.

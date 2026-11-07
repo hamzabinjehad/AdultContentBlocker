@@ -5,6 +5,48 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
+## Android 1.4.0 — 2026-11-07
+
+### Changed
+
+- **Native TFLite is the primary visual runtime.** The same nsfwjs 4.4.0
+  MobileNetV2 weights were reconstructed, converted through Keras to a float32
+  TFLite model, and pinned by SHA-256 in the APK. `TfliteClassifier` preprocesses
+  224×224 bilinear with `alignCorners`, divides by 255 and applies the same
+  0.70/0.85 Porn/Hentai thresholds on one daemon worker; the WebView engine stays
+  as the fallback if the native model cannot load.
+- **Measured roughly 3× faster inference.** On the API 36 emulator the native
+  CPU path measured **38–45 ms median** and 1.6–1.9 s model load, against
+  123 ms/3.0 s for WASM and 188 ms/3.3 s for WebGL. One native run's p95 was
+  203 ms; a later run had an emulator hitch. No phone claim.
+- **Converted scores match TFJS to 3.34 × 10⁻⁶** across 12 benign views and
+  five classes; 0/12 benign views blocked. No adult-positive corpus was used.
+- The TensorFlow Lite Apache 2.0 notice is listed under **Licenses and sources**;
+  the NSFWJS weights notice is retained. The direct APK grows to ~29 MB because
+  of the 9.8 MB model and four-ABI native libraries; the Play AAB is ~16 MB.
+- 1.3.2's verdict cache, 1.3.1's centred near-miss crop, 1.3.0's after-block
+  pause and the 2,048-label text scan are retained. No threshold, capture size,
+  permission, stored field or consent text changed.
+
+### Verification
+
+- Core suite, strings (564/16/555), notices (5 license files), debug/androidTest
+  builds, lint (0 errors) and `CoreDeviceTestRunner` on API 36 — **PASS**.
+- Native benchmark, 36 calls: 0/12 benign false blocks, 38–45 ms median; the
+  live debug guard reported `BACKEND tflite-cpu`.
+- Signed Play APK/AAB and direct APK pass `check-release.py` and `apksigner`.
+  Hashes, raw reports and limits: [1.4.0 record](docs/ANDROID_1.4.0.md).
+
+### Limits
+
+- No adult-positive corpus and no adult-accuracy claim; only benign parity and
+  false-block evidence.
+- Emulator CPU only; no phone, GPU, battery, thermal or long-run measurement.
+  The GPU delegate was unreliable on the emulator and is not used.
+- The APK is ~29 MB direct (16 MB Play AAB); the WebView fallback assets are
+  retained.
+- The fallback path is code-verified, not forced on a device.
+
 ## Android 1.3.2 — 2026-11-07
 
 ### Added
