@@ -5,6 +5,40 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
+## Android 1.4.1 — 2026-11-07
+
+### Changed
+
+- **A moving screen is sampled at the platform ceiling, not half of it.** The
+  fast cadence was 250 ms, below Android's 333 ms per-window accessibility
+  screenshot floor, so a moving screen could spend every other request on
+  `ERROR_TAKE_SCREENSHOT_INTERVAL_TIME_SHORT` and then enter the unreadable
+  backoff. The fast interval is now **350 ms**, and a request rejected by the
+  floor retries at that floor without incrementing `captureFailures`, backing
+  off, or reporting the window unreadable. The debug status adds
+  `RATE_LIMITED`.
+- **Measured on the API 36 emulator live guard.** In an 8 s moving fixture the
+  native runtime produced **23 real samples instead of 11**, with **0 capture
+  failures instead of 6**; one request was rate-limited at a window edge. The
+  same run reported `BACKEND tflite-cpu`, 24–30 ms inference, 24–29 ms capture
+  and 68 ms end-to-end sample.
+- **The native model is mapped and its buffers reused.** `TfliteClassifier`
+  maps the 9.8 MB uncompressed model from the APK instead of copying it, reuses
+  its 224×224 input buffer, and zeroes the input and source pixels after each
+  frame. The 1.4.0 score parity, thresholds, WebView fallback, verdict cache,
+  centred near-miss crop, after-block pause and text scan are unchanged.
+
+### Verification
+
+- The live visual suite on the API 36 emulator passes all ten checks, including
+  `BACKEND tflite-cpu`, benign still and moving sampling, input pause, secure
+  window, synthetic intervention, hold recovery and opt-out.
+- Core suites, strings/notices and the debug/androidTest builds and lint pass.
+  Signed Play/direct artifacts and hashes are recorded in
+  [the 1.4.1 note](docs/ANDROID_1.4.1.md).
+- No phone, adult-positive corpus, GPU, battery or thermal measurement is
+  claimed. The 23-vs-11 sample result is a synthetic fixture on one emulator.
+
 ## Android 1.4.0 — 2026-11-07
 
 ### Changed

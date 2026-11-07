@@ -1,0 +1,75 @@
+{
+  "schema": 1,
+  "note": "Live debug guard on the API 36 hisn_ui emulator, synthetic fixture only. No adult-positive image, real app, phone, GPU or battery measurement. The normal and moving status snapshots are the debug controller's counters; the check list is the live driver's result.",
+  "device": "sdk_gphone64_arm64",
+  "android_sdk": 36,
+  "package": "app.hisn.android.visualcheck",
+  "version": "1.4.1",
+  "backend": "tflite-cpu",
+  "frame_edge": 224,
+  "normal_status": {
+    "CAPTURES": 13,
+    "SAMPLES": 3,
+    "REQUESTS": 14,
+    "DISCARDED": 1,
+    "CAPTURE_FAILURES": 0,
+    "CAPTURE_ERROR": 3,
+    "RATE_LIMITED": 1,
+    "REUSED": 9,
+    "LAST_CAPTURE_MS": 29,
+    "LAST_INFERENCE_MS": 0,
+    "LAST_SAMPLE_MS": 54
+  },
+  "moving_status": {
+    "CAPTURES": 35,
+    "SAMPLES": 23,
+    "REQUESTS": 36,
+    "DISCARDED": 2,
+    "CAPTURE_FAILURES": 0,
+    "CAPTURE_ERROR": 3,
+    "RATE_LIMITED": 1,
+    "REUSED": 10,
+    "LAST_CAPTURE_MS": 24,
+    "LAST_INFERENCE_MS": 24,
+    "LAST_SAMPLE_MS": 68
+  },
+  "checks": [
+    {
+      "check": "actual capture and benign model inference",
+      "samples": 3,
+      "backend": "tflite-cpu",
+      "frame_edge": "224"
+    },
+    {
+      "check": "benign moving frame sampling",
+      "samples": 20
+    },
+    {
+      "check": "focused editable field pauses capture"
+    },
+    {
+      "check": "focused password pauses capture"
+    },
+    {
+      "check": "secure window remains unreadable",
+      "android_error": 6
+    },
+    {
+      "check": "synthetic intervention after actual capture and inference",
+      "accuracy_evidence": false
+    },
+    {
+      "check": "a detected app stays held after the intervention"
+    },
+    {
+      "check": "one-shot expires and the hold ends; ordinary capture recovers"
+    },
+    {
+      "check": "leaving selected app stops capture"
+    },
+    {
+      "check": "opt-out stops capture and model"
+    }
+  ],
+  "limits": "Synthetic fixtures only; no adult-content accuracy, real-app or battery benchmark. The moving fixture ran for 8 s."
+}

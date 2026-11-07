@@ -47,6 +47,8 @@ final class VisualGuard implements AutoCloseable {
     static volatile long lastCaptureMillis, lastInferenceMillis, lastSampleMillis;
     static volatile long lastSampleAt;
     static volatile long captureFailures;
+    /** Screenshot requests Android rejected for arriving inside its 333 ms per-window floor. */
+    static volatile long rateLimited;
     static volatile long discarded;
     static volatile int lastCaptureError;
     static volatile String eligibility = "OFF";
@@ -64,7 +66,7 @@ final class VisualGuard implements AutoCloseable {
     /** The native runtime failed to load; use the packaged WebView engine for the rest of this instance. */
     private boolean nativeUnavailable;
     private boolean loaded, busy, closed, listening;
-    private long retryAfter, nextPoll, captureBackoffUntil;
+    private long retryAfter, nextPoll, captureBackoffUntil, lastCaptureRequestAt;
     private int captureFailureStreak;
     private int lastWindow = -1;
     private VisualFrameGate.Frame pendingFrame;
@@ -213,6 +215,7 @@ final class VisualGuard implements AutoCloseable {
             VisualFrameGate.Frame frame = gate.begin(target.app, target.id, now);
             pendingFrame = frame;
             pendingStarted = now;
+            lastCaptureRequestAt = now;
             handler.postDelayed(captureTimeout, CAPTURE_TIMEOUT_MILLIS);
             captureRequests++;
             service.takeScreenshotOfWindow(target.id, service.getMainExecutor(), new AccessibilityService.TakeScreenshotCallback() {
@@ -260,9 +263,22 @@ final class VisualGuard implements AutoCloseable {
                     if (!closed && pendingFrame == frame) {
                         handler.removeCallbacks(captureTimeout);
                         pendingFrame = null;
+                        busy = false;
+                        // Android's per-window screenshot floor is 333 ms. A window change can
+                        // still ask sooner than the moving cadence; that rejection is a timing
+                        // answer, not an unreadable window, so retry at the floor without the
+                        // capture-failure backoff.
+                        if (error == AccessibilityService.ERROR_TAKE_SCREENSHOT_INTERVAL_TIME_SHORT) {
+                            rateLimited++;
+                            lastCaptureError = error;
+                            health.report(State.WAITING);
+                            long wait = Math.max(VisualCadence.POLL_FLOOR_MILLIS,
+                                    lastCaptureRequestAt + VisualCadence.FAST_MILLIS - SystemClock.uptimeMillis());
+                            schedule(wait);
+                            return;
+                        }
                         captureFailures++;
                         lastCaptureError = error;
-                        busy = false;
                         // A protected or unreadable window will stay unreadable. Retry with a
                         // bounded backoff instead of asking Android for a screenshot four times
                         // a second; a window change clears it.

@@ -63,6 +63,7 @@ past version; *superseded* documents point to their replacement. Start with the
 
 ## Android
 
+- [Android 1.4.1, 2026-11-07](ANDROID_1.4.1.md): The moving-sample cadence rises from 250 ms to 350 ms, above Android's 333 ms screenshot floor, and a floor rejection retries without a capture-failure backoff. Live emulator fixture: 23 samples in 8 s vs 11, 0 capture failures vs 6, 24–30 ms native inference. No phone or adult corpus; signed artifacts recorded.
 - [Android 1.4.0, 2026-11-07](ANDROID_1.4.0.md): Native TFLite becomes the primary visual runtime: 38–45 ms median vs 123 ms WASM on 12 benign emulator views, scores matching TFJS to 3.34×10⁻⁶, 0/12 false blocks, WebView fallback. No adult corpus or phone claim; direct APK ~29 MB.
 - [Android 1.3.2, 2026-11-07](ANDROID_1.3.2.md): A bounded five-second last-verdict cache skips the 123 ms model inference on an unchanged visual frame; capture still runs, no pixels/URL/text are stored. Core-tested, no device cache-hit measurement.
 - [Android 1.3.1, 2026-11-07](ANDROID_1.3.1.md): The visual guard starts on WASM (188 → 123 ms median on a 12-view benign emulator corpus) and takes one centred 68% second look when full-frame scores are near the block threshold. 0/12 benign false blocks; no adult corpus, so recall remains unmeasured.

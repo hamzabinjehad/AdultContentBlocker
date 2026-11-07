@@ -95,6 +95,7 @@ def main():
             normal = scene("visual-normal", 20 if attempt == 0 else 10)
             if normal["SAMPLES"] > initial["SAMPLES"]:
                 break
+        print("normal status: " + json.dumps(normal), flush=True)
         require(normal["SAMPLES"] > initial["SAMPLES"], "No actual screenshot/model sample completed: " + json.dumps(normal))
         require(normal["INTERVENTIONS"] == initial["INTERVENTIONS"], "Benign synthetic image was restricted")
         require(normal.get("FRAME_EDGE") == "224", "Capture did not use the packaged 224 px edge: " + json.dumps(normal))
@@ -104,6 +105,7 @@ def main():
                 "backend": normal.get("BACKEND"), "frame_edge": normal.get("FRAME_EDGE")})
 
         moving = scene("visual-video", 8)
+        print("moving status: " + json.dumps(moving), flush=True)
         require(moving["SAMPLES"] > normal["SAMPLES"], "Moving synthetic frames were not sampled")
         require(moving["INTERVENTIONS"] == normal["INTERVENTIONS"], "Benign moving frames were restricted")
         passed({"check": "benign moving frame sampling", "samples": moving["SAMPLES"] - normal["SAMPLES"]})

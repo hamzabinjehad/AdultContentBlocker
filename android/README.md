@@ -47,6 +47,25 @@ an opt-in device-owner preview; the ordinary install remains removable, and
 actual blocked-uninstall and restriction acceptance needs a disposable
 provisioned device.
 
+## 1.4.1: sample moving screens at the platform floor
+
+The fast visual cadence was 250 ms, below Android's 333 ms per-window
+screenshot floor. A moving screen could therefore be rejected every other
+request and then enter the one-second unreadable backoff. The cadence is now
+**350 ms**, and a floor rejection is retried at the floor without counting as a
+capture failure or reporting the window unreadable. The debug status reports
+`RATE_LIMITED`.
+
+On the API 36 emulator the live guard's 8 s moving fixture produced **23 real
+samples instead of 11**, with **0 capture failures instead of 6**, at 24–30 ms
+native inference and 24–29 ms capture. The live visual suite passes all ten
+checks with `BACKEND tflite-cpu`. The model is mapped from the uncompressed
+APK and its buffers are reused and zeroed; the 1.4.0 native-first runtime,
+WebView fallback, score parity, verdict cache, near-miss crop, after-block
+pause and text scan are unchanged. No phone, adult corpus, GPU, battery or
+thermal measurement is claimed. Signed Play/direct artifacts and hashes:
+[the 1.4.1 record](../docs/ANDROID_1.4.1.md).
+
 ## 1.4.0: native TFLite visual runtime
 
 The image model now runs natively. The same nsfwjs 4.4.0 MobileNetV2 weights
