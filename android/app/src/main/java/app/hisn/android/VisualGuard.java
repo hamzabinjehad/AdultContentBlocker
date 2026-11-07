@@ -20,6 +20,7 @@ import app.hisn.core.VisualFrameGate;
 import app.hisn.core.VisualRetry;
 import app.hisn.core.VisualHealth;
 import app.hisn.core.VisualHealth.State;
+import app.hisn.core.VisualVerdictCache;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -33,6 +34,8 @@ final class VisualGuard implements AutoCloseable {
     /** Keeps the latest failure on the dashboard until a later sample succeeds. */
     static final VisualHealth health = new VisualHealth();
     static volatile long samples;
+    /** Frames served from the last-verdict cache instead of running the model again. */
+    static volatile long reused;
     static volatile long interventions;
     static volatile long captures;
     static volatile long captureRequests;
@@ -54,6 +57,7 @@ final class VisualGuard implements AutoCloseable {
     private final VisualDuty duty = new VisualDuty();
     private final VisualCadence cadence = new VisualCadence();
     private final VisualRetry retry = new VisualRetry();
+    private final VisualVerdictCache verdicts = new VisualVerdictCache();
     private final PowerManager power;
     private final Set<String> excluded;
     private VisualClassifier classifier;
@@ -91,6 +95,7 @@ final class VisualGuard implements AutoCloseable {
      * window's interval, and an in-flight frame for the old window must not decide anything. */
     void windowChanged() {
         gate.invalidate();
+        verdicts.clear();
         // A failure belongs to the old window; a new one is attempted at once.
         captureFailureStreak = 0;
         captureBackoffUntil = 0;
@@ -101,6 +106,8 @@ final class VisualGuard implements AutoCloseable {
     /** A selected window scrolled or changed: sample sooner, never sooner than the cadence allows. */
     void activity() {
         if (closed) return;
+        // Scrolling or changed content is not a still frame: do not reuse its old verdict.
+        verdicts.clear();
         cadence.activity(SystemClock.uptimeMillis());
         soon();
     }
@@ -137,6 +144,7 @@ final class VisualGuard implements AutoCloseable {
         List<Integer> ids = new ArrayList<>();
         for (GuardWindows.Window window : windows) ids.add(window.id);
         cadence.retain(ids);
+        verdicts.retain(ids);
         if (windows.isEmpty()) { eligibility = "NOT_SELECTED"; return eligible; }
         boolean typing = false;
         for (GuardWindows.Window window : windows) {
@@ -231,6 +239,11 @@ final class VisualGuard implements AutoCloseable {
                             scaled = Bitmap.createScaledBitmap(copy, Math.max(1, (int) (copy.getWidth() * scale)),
                                     Math.max(1, (int) (copy.getHeight() * scale)), true);
                             long signature = signature(scaled);
+                            String cached = verdicts.get(target.id, signature, SystemClock.uptimeMillis());
+                            if (cached != null) {
+                                cached(frame, target, signature, cached);
+                                return;
+                            }
                             lastInferenceMillis = 0;
                             pendingInferenceStart = SystemClock.uptimeMillis();
                             classifier.inspect(scaled, verdict -> decided(frame, target, signature, verdict));
@@ -280,6 +293,32 @@ final class VisualGuard implements AutoCloseable {
         return gate.accepts(frame, target.app, target.id, true, SystemClock.uptimeMillis());
     }
 
+    /** Applies the cached verdict for an unchanged window without running the model again. */
+    private void cached(VisualFrameGate.Frame frame, GuardWindows.Window target, long signature, String verdict) {
+        if (closed || pendingFrame != frame) return;
+        long now = SystemClock.uptimeMillis();
+        lastInferenceMillis = 0;
+        lastSampleMillis = pendingStarted == 0 ? 0 : now - pendingStarted;
+        lastSampleAt = now;
+        pendingStarted = 0;
+        pendingInferenceStart = 0;
+        pendingFrame = null;
+        busy = false;
+        try {
+            if (!current(frame, target)) { discarded++; health.report(State.WAITING); return; }
+            verdict = VisualTestHooks.verdict(service.getPackageName(), target.app, verdict, now);
+            if (!"block".equals(verdict) && !"allow".equals(verdict)) { fail(); return; }
+            reused++;
+            cadence.finished(target.id, signature, now);
+            health.report(State.SAMPLED);
+            if ("block".equals(verdict)) {
+                gate.invalidate();
+                if (block.run(target)) interventions++;
+            }
+        } catch (RuntimeException unavailable) { fail(); }
+        finally { sampleEnded(); }
+    }
+
     private void decided(VisualFrameGate.Frame frame, GuardWindows.Window target, long signature, String verdict) {
         if (closed || pendingFrame != frame) return;
         long now = SystemClock.uptimeMillis();
@@ -296,6 +335,7 @@ final class VisualGuard implements AutoCloseable {
             if (!"block".equals(verdict) && !"allow".equals(verdict)) { fail(); return; }
             samples++;
             retry.recovered();
+            verdicts.put(target.id, signature, verdict, now);
             cadence.finished(target.id, signature, now);
             health.report(State.SAMPLED);
             if ("block".equals(verdict)) {
@@ -338,6 +378,7 @@ final class VisualGuard implements AutoCloseable {
         pendingInferenceStart = 0;
         loadGeneration++;
         gate.invalidate();
+        verdicts.clear();
         if (classifier != null) classifier.close();
         classifier = null;
         loaded = false;

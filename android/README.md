@@ -47,6 +47,22 @@ an opt-in device-owner preview; the ordinary install remains removable, and
 actual blocked-uninstall and restriction acceptance needs a disposable
 provisioned device.
 
+## 1.3.2: reuse the verdict on an unchanged frame
+
+The visual guard still captures a still selected window every one to two
+seconds, but no longer runs the model again when the coarse 16×16 signature is
+unchanged within five seconds. A bounded `VisualVerdictCache` keeps one
+allow/block word per selected window; a window change, scroll or content
+activity, engine reset or close clears it. No pixels, URL or text are stored,
+and `samples` still counts real model samples while `REUSED` reports cache hits.
+
+On the API 36 emulator a real inference is about 123 ms median, which a cache
+hit avoids; there is no phone cache-hit or battery measurement yet, and the
+capture still happens. Core suites, strings/notices, builds, lint, the API 36
+device runner and signed artifacts pass. No model, threshold, accuracy,
+permission or stored field changed. Details:
+[the 1.3.2 record](../docs/ANDROID_1.3.2.md).
+
 ## 1.3.1: a faster visual pass and a closer look
 
 The image guard now starts on the packaged **WASM** backend instead of trying

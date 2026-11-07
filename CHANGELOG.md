@@ -5,6 +5,37 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
+## Android 1.3.2 — 2026-11-07
+
+### Added
+
+- **A bounded last-verdict cache for unchanged visual frames.**
+  `VisualVerdictCache` keeps one coarse 16×16 signature and an allow/block word
+  per selected window for five seconds. When a still window's signature is
+  unchanged, `VisualGuard` reuses the verdict instead of running the model
+  again; a window change, scroll/content activity, engine reset or close clears
+  it. No pixels, URL or text are retained, and the four-window cache evicts the
+  oldest. The debug status reports `REUSED`; `samples` still counts real model
+  samples.
+- `VisualVerdictCacheTest` covers signature, window, TTL, unknown, bound,
+  retain and clear.
+
+### Verification
+
+- Core suite, strings (563/16/554), notices, debug/androidTest builds, lint
+  (0 errors) and `CoreDeviceTestRunner` on the API 36 emulator — **PASS**.
+- Signed Play APK/AAB and direct APK pass `check-release.py` and `apksigner`.
+  Hashes and limits: [1.3.2 record](docs/ANDROID_1.3.2.md).
+
+### Limits
+
+- No device cache-hit or battery measurement; the 123 ms figure is the 1.3.1
+  inference a hit avoids. The capture still runs.
+- The exact coarse signature can reuse an allow for up to five seconds after a
+  subtle change; activity and window changes clear it.
+- No model, threshold or accuracy change. No adult-positive corpus and no phone
+  run. Native TFLite/GPU remains the larger first-inference win.
+
 ## Android 1.3.1 — 2026-11-07
 
 ### Changed
