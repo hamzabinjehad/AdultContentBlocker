@@ -36,6 +36,13 @@ final class VisualGuard implements AutoCloseable {
     static volatile long interventions;
     static volatile long captures;
     static volatile long captureRequests;
+    /** Long edge of the frame handed to the model. The model resizes its input to 224, and this
+     * keeps the encode and inference cost down. No accuracy comparison between this edge and the
+     * earlier 384 exists, so the change is about latency, not recall. */
+    static final int FRAME_EDGE = 224;
+    static volatile String backend = "none";
+    static volatile long lastCaptureMillis, lastInferenceMillis, lastSampleMillis;
+    static volatile long lastSampleAt;
     static volatile long captureFailures;
     static volatile long discarded;
     static volatile int lastCaptureError;
@@ -51,9 +58,14 @@ final class VisualGuard implements AutoCloseable {
     private final Set<String> excluded;
     private VisualClassifier classifier;
     private boolean loaded, busy, closed, listening;
-    private long retryAfter, nextPoll;
+    private long retryAfter, nextPoll, captureBackoffUntil;
+    private int captureFailureStreak;
     private int lastWindow = -1;
     private VisualFrameGate.Frame pendingFrame;
+    private long pendingStarted;
+    private long pendingInferenceStart;
+    private int loadGeneration;
+    private static final long CAPTURE_TIMEOUT_MILLIS = 5000;
     private final Runnable captureTimeout = this::fail;
     private final Runnable tick = this::poll;
     /** The screen coming on brings the next poll forward; while it is off, polls are slow and never sample. */
@@ -75,7 +87,16 @@ final class VisualGuard implements AutoCloseable {
         schedule(0);
     }
 
-    void windowChanged() { gate.invalidate(); }
+    /** A window opened, closed or came forward: its first frame must not wait for the old
+     * window's interval, and an in-flight frame for the old window must not decide anything. */
+    void windowChanged() {
+        gate.invalidate();
+        // A failure belongs to the old window; a new one is attempted at once.
+        captureFailureStreak = 0;
+        captureBackoffUntil = 0;
+        cadence.windowChanged(SystemClock.uptimeMillis());
+        soon();
+    }
 
     /** A selected window scrolled or changed: sample sooner, never sooner than the cadence allows. */
     void activity() {
@@ -158,27 +179,22 @@ final class VisualGuard implements AutoCloseable {
             if (Build.VERSION.SDK_INT < 34) { health.report(State.UNSUPPORTED); return; }
             if (busy) return;
             health.report(State.WAITING);
-            // Nothing is sampled while the screen is off; an idle model is freed after a few minutes.
+            // Nothing is sampled while the screen is off; while it is on the model stays warm.
             GuardWindows.Window target = interactive ? GuardWindows.after(eligibleWindows(), lastWindow) : null;
+            if (now < retryAfter) { health.report(State.ERROR); return; }
             switch (duty.next(interactive, target != null, classifier != null, SystemClock.elapsedRealtime())) {
                 case RELEASE: resetEngine(); gate.invalidate(); return;
+                case PRELOAD:
+                    // Warm the WebView before a selected app comes forward. If one is already on
+                    // screen, the same load ends with a sample instead of a three-second blank.
+                    startLoading(target != null);
+                    return;
                 case PAUSE: gate.invalidate(); return;
                 default: break;
             }
-            if (now < retryAfter) { health.report(State.ERROR); return; }
-            if (classifier == null) {
-                health.report(State.LOADING);
-                busy = true;
-                classifier = new VisualClassifier(service, verdict -> {
-                    if (closed) return;
-                    loaded = "ready".equals(verdict);
-                    busy = false;
-                    if (!loaded) fail();
-                    else soon();
-                });
-                return;
-            }
-            if (!loaded) return;
+            if (classifier == null) { startLoading(target != null); return; }
+            if (!loaded || target == null) { gate.invalidate(); return; }
+            if (now < captureBackoffUntil) { health.report(State.UNREADABLE); return; }
             busy = true;
             health.report(State.CHECKING);
             // Several selected windows take turns, one capture and one inference at a time.
@@ -186,7 +202,8 @@ final class VisualGuard implements AutoCloseable {
             cadence.started(now);
             VisualFrameGate.Frame frame = gate.begin(target.app, target.id, now);
             pendingFrame = frame;
-            handler.postDelayed(captureTimeout, 10000);
+            pendingStarted = now;
+            handler.postDelayed(captureTimeout, CAPTURE_TIMEOUT_MILLIS);
             captureRequests++;
             service.takeScreenshotOfWindow(target.id, service.getMainExecutor(), new AccessibilityService.TakeScreenshotCallback() {
                 @Override public void onSuccess(AccessibilityService.ScreenshotResult screenshot) {
@@ -194,6 +211,9 @@ final class VisualGuard implements AutoCloseable {
                         if (closed || pendingFrame != frame) return;
                         handler.removeCallbacks(captureTimeout);
                         captures++;
+                        captureFailureStreak = 0;
+                        captureBackoffUntil = 0;
+                        lastCaptureMillis = SystemClock.uptimeMillis() - pendingStarted;
                         if (!current(frame, target)) {
                             discarded++; pendingFrame = null; busy = false; health.report(State.WAITING);
                             sampleEnded();
@@ -207,10 +227,12 @@ final class VisualGuard implements AutoCloseable {
                                 busy = false; health.report(State.UNREADABLE); return;
                             }
                             copy = hardware.copy(Bitmap.Config.ARGB_8888, false);
-                            double scale = Math.min(1.0, 384.0 / Math.max(copy.getWidth(), copy.getHeight()));
+                            double scale = Math.min(1.0, FRAME_EDGE / (double) Math.max(copy.getWidth(), copy.getHeight()));
                             scaled = Bitmap.createScaledBitmap(copy, Math.max(1, (int) (copy.getWidth() * scale)),
                                     Math.max(1, (int) (copy.getHeight() * scale)), true);
                             long signature = signature(scaled);
+                            lastInferenceMillis = 0;
+                            pendingInferenceStart = SystemClock.uptimeMillis();
                             classifier.inspect(scaled, verdict -> decided(frame, target, signature, verdict));
                         } finally {
                             if (scaled != null && scaled != copy) scaled.recycle();
@@ -225,7 +247,13 @@ final class VisualGuard implements AutoCloseable {
                         pendingFrame = null;
                         captureFailures++;
                         lastCaptureError = error;
-                        busy = false; health.report(State.UNREADABLE);
+                        busy = false;
+                        // A protected or unreadable window will stay unreadable. Retry with a
+                        // bounded backoff instead of asking Android for a screenshot four times
+                        // a second; a window change clears it.
+                        captureFailureStreak = Math.min(captureFailureStreak + 1, 4);
+                        captureBackoffUntil = SystemClock.uptimeMillis() + Math.min(4000, 500L << captureFailureStreak);
+                        health.report(State.UNREADABLE);
                         sampleEnded();
                     }
                 }
@@ -254,15 +282,21 @@ final class VisualGuard implements AutoCloseable {
 
     private void decided(VisualFrameGate.Frame frame, GuardWindows.Window target, long signature, String verdict) {
         if (closed || pendingFrame != frame) return;
+        long now = SystemClock.uptimeMillis();
+        if (pendingInferenceStart != 0) lastInferenceMillis = now - pendingInferenceStart;
+        lastSampleMillis = pendingStarted == 0 ? lastInferenceMillis : now - pendingStarted;
+        lastSampleAt = now;
+        pendingStarted = 0;
+        pendingInferenceStart = 0;
         pendingFrame = null;
         busy = false;
         try {
             if (!current(frame, target)) { discarded++; health.report(State.WAITING); return; }
-            verdict = VisualTestHooks.verdict(service.getPackageName(), target.app, verdict, SystemClock.uptimeMillis());
+            verdict = VisualTestHooks.verdict(service.getPackageName(), target.app, verdict, now);
             if (!"block".equals(verdict) && !"allow".equals(verdict)) { fail(); return; }
             samples++;
             retry.recovered();
-            cadence.finished(target.id, signature);
+            cadence.finished(target.id, signature, now);
             health.report(State.SAMPLED);
             if ("block".equals(verdict)) {
                 gate.invalidate();
@@ -270,6 +304,22 @@ final class VisualGuard implements AutoCloseable {
             }
         } catch (RuntimeException unavailable) { fail(); }
         finally { sampleEnded(); }
+    }
+
+    /** Starts one WebView/model load. A generation token makes a reply from a runtime that was
+     * replaced (screen off, window change, failure) unable to mark this one ready. */
+    private void startLoading(boolean showLoading) {
+        final int generation = ++loadGeneration;
+        busy = true;
+        health.report(showLoading ? State.LOADING : State.WAITING);
+        classifier = new VisualClassifier(service, verdict -> {
+            if (closed || generation != loadGeneration) return;
+            loaded = "ready".equals(verdict);
+            busy = false;
+            if (!loaded) { fail(); return; }
+            backend = classifier == null ? "none" : classifier.actualBackend();
+            soon();
+        });
     }
 
     /** A failed load or frame: free the engine, then return after a bounded backoff, not a flat 30 s. */
@@ -282,11 +332,17 @@ final class VisualGuard implements AutoCloseable {
     private void resetEngine() {
         handler.removeCallbacks(captureTimeout);
         pendingFrame = null;
+        captureFailureStreak = 0;
+        captureBackoffUntil = 0;
+        pendingStarted = 0;
+        pendingInferenceStart = 0;
+        loadGeneration++;
         gate.invalidate();
         if (classifier != null) classifier.close();
         classifier = null;
         loaded = false;
         busy = false;
+        backend = "none";
     }
 
     @Override public void close() {

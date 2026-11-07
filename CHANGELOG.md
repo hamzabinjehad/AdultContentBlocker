@@ -5,6 +5,92 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
+## Android 1.2.3 — 2026-11-07
+
+### Changed
+
+- **The text guard reads the screen off its main thread.** `TextGuardService`
+  now fetches the selected windows' roots on the main thread and walks them on
+  one daemon scanner thread; Android resolves every `getChild()` across a
+  Binder, so a large feed could previously stall the service, and the app being
+  read. The verdict returns to the main thread, where Home, the restriction
+  screen and every policy write still happen. A generation token discards a
+  walk whose screen changed, and a 20-second watchdog records an incomplete
+  inspection, replaces a stuck scanner executor and retries instead of leaving
+  the layer silent.
+- **A selected app's accessibility event can block before the walk.** The
+  event's own text and source description are inspected transiently, never
+  stored. A promotion label ("Watch free porn") blocks immediately; a bare
+  explicit label ("Porn") still waits for the full pass, which knows whether
+  another line on the screen names protective context. Only the selected window
+  in use may act before the walk; a queued event from a window the person
+  already left falls back to the full pass. When the event carries no text, the
+  tree walk is the fallback.
+- **The walk reads 1,024 nodes, checks a partial match every 64 nodes and can
+  stop early.** The old 512-node budget cut off the label in use on large real
+  screens; the new budget and checkpoint stop a matching word from waiting for
+  the rest of a long feed. A selected app is still re-read at least every three
+  seconds, so text that appears without a text-bearing event is not missed. A
+  clean screen no longer re-walks on every content change: a video frame or
+  animation does not mark text dirty.
+- **The image layer keeps the model warm and stops retrying protected windows
+  four times a second.** The WebView and model stay loaded while the screen is
+  on, and a two-minute screen-off grace keeps them for an immediate screen-on.
+  A capture's long edge is 224 px instead of 384, a frame is treated as failed
+  after 5 s instead of 15 s, and a window Android refuses to capture backs off
+  1, 2 then 4 s. A window change clears that backoff and the sampling interval.
+  The debug status reports the real backend, frame edge and capture, inference
+  and sample timings.
+
+### Added
+
+- `LabelScan.Check`, `LabelScan.CHECK_INTERVAL` and the checkpoint overload;
+  `VisibleTextSample.isEmpty()`; the scanner executor and watchdog; the
+  `stress` fixture (700 labels, the word at 650) and its live case; and
+  `BACKEND`/`FRAME_EDGE`/`LAST_CAPTURE_MS`/`LAST_INFERENCE_MS`/`LAST_SAMPLE_MS`
+  in the visual test status. No permission, activity, service, string or stored
+  field was added.
+
+### Verification
+
+- `android/test-core.sh` — every core suite passes, including the new
+  `LabelScan` case for the 1,024-node budget (the old 512-node budget would cut
+  the label) and the updated `VisualDuty` screen-off grace.
+- `check-strings.py` — 555 strings, 16 plurals and 545 source references,
+  English and Arabic; `check-notices.py` passes.
+- `:app:assembleDebug`, `:app:assembleDebugAndroidTest` and `:app:lintDebug`
+  (0 errors) pass.
+- `CoreDeviceTestRunner` passes on the API 36 `hisn_ui` emulator: seed, Arabic
+  matching, local DNS block, saved rules, adult terms, visual settings, daily
+  limits, commitment, uninstall guard, layer-watch and seed-age checks. The
+  live `stress` case — 700 labels with the word at 650 — blocked on the same
+  emulator after the accessibility service was bound; the status recorded a
+  tree scan (`FAST_TEXT 0`, `SCANS 7`, `LAST_SCAN_MS 21`), so the walk read past
+  the old budget.
+- Signed Play APK/AAB and direct APK pass `check-release.py`; both APKs verify
+  with `apksigner` under the unchanged release certificate. Hashes and the
+  remaining limits are in the [1.2.3 record](docs/ANDROID_1.2.3.md).
+
+### Limits
+
+- No 1.2.3 phone run. 1.2.2 was installed on the owner's Samsung SM-G990B2;
+  this build was not.
+- No device latency, memory, thermal or battery benchmark. The gain is a
+  design consequence; the only measured image numbers remain the
+  [WASM engine note](docs/VISUAL_ENGINE_WASM_2026-11-07.md) on a Mac and in
+  Node.
+- The 224 px edge is a cost choice, not an accuracy result. No adult-positive
+  corpus was used, and adult recall remains unestablished.
+- The event fast path is unit-covered through the shared matcher, not
+  live-verified here: the manual emulator event did not reach the service as a
+  text-bearing event, so the tree scan decided. The full walk remains its
+  fallback.
+- Keeping the model warm while the screen is on trades memory and battery for a
+  faster next sample; the two-minute grace was chosen without a power
+  measurement.
+- Repeated package reinstalls and a System UI ANR made later emulator live runs
+  intermittent. The full ten-check live suite is not claimed for 1.2.3.
+
 ## Mac 1.1.18 — 2026-11-07
 
 ### Added

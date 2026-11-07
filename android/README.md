@@ -47,6 +47,38 @@ an opt-in device-owner preview; the ordinary install remains removable, and
 actual blocked-uninstall and restriction acceptance needs a disposable
 provisioned device.
 
+## 1.2.3: the screen is read off the main thread
+
+The accessibility tree walk moved off the service's main thread onto one daemon
+scanner thread, so a large feed no longer stalls the guard or the app being
+read. A selected app's own accessibility event is matched first, transiently:
+a promotional label such as **Watch free porn** blocks immediately, while a
+bare **Porn** label still waits for the full pass that can see protective
+context elsewhere; only the selected window in use may act before the walk, so
+an event from a window the person already left falls back to it. The walk now
+reads 1,024 nodes (the old budget was 512),
+checks a partial match every 64 nodes and can stop early; a static screen is
+still reread every three seconds. A generation token discards a walk whose
+screen changed, and a 20-second watchdog replaces a scanner that stops
+reporting instead of leaving the text layer silent.
+
+The image layer keeps its WebView and model warm while the screen is on, with a
+two-minute screen-off grace; captures at the model's 224 px input edge; gives a
+frame 5 s; and backs off 1 s, 2 s then 4 s on a window Android refuses to
+capture. A window change clears the backoff and the sampling interval. The
+debug status reports the selected backend, frame edge and capture, inference
+and sample timings.
+
+`sh test-core.sh` passes every core suite, including the new `LabelScan` case
+for the 1,024-node budget and the updated `VisualDuty` grace. `assembleDebug`,
+`assembleDebugAndroidTest` and `lintDebug` (0 errors) pass, and
+`CoreDeviceTestRunner` passes on the API 36 emulator. The live fixture driver's
+`stress` case — 700 labels with the word at 650 — blocked on the same emulator
+through the tree scan. No 1.2.3 phone run, device benchmark or adult-accuracy
+claim is made. The signed Play APK/AAB and direct APK pass `check-release.py`
+and `apksigner`. Details and limits:
+[the 1.2.3 record](../docs/ANDROID_1.2.3.md).
+
 ## 1.2.2 the unlisted-host guard
 
 Two on-device rails now sit in front of the seed list in the DNS policy, after

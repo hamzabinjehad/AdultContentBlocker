@@ -103,23 +103,43 @@ public final class LabelScanTest {
         VisibleTextSample partial = scan(missing);
         check(partial.isPartial() && partial.text().isEmpty(), "a child Android cannot provide rules out the parent");
 
-        // 600 empty images: the budget cuts the card's subtree short.
-        Node[] many = new Node[600];
+        // More empty images than the whole budget: the card's subtree is cut short.
+        Node[] many = new Node[LabelScan.NODE_BUDGET + 88];
         for (int i = 0; i < many.length; i++) many[i] = image(null);
         VisibleTextSample cut = scan(card("Big card", many));
         check(cut.isPartial() && cut.text().isEmpty(), "a subtree cut by the node budget never yields its parent");
         // A card inspected in full survives a budget cut in a later, wide list.
-        Node[] list = new Node[700];
+        Node[] list = new Node[LabelScan.NODE_BUDGET + 188];
         for (int i = 0; i < list.length; i++) list[i] = leaf("row " + i);
         VisibleTextSample wide = scan(card(null, card("First card", image(null)), card(null, list)));
         check(wide.isPartial() && wide.text().endsWith("\nFirst card\n"), "complete cards survive a cut elsewhere");
         // A card whose child could not be scheduled is not complete.
-        Node[] rows = new Node[700];
+        Node[] rows = new Node[LabelScan.NODE_BUDGET + 188];
         rows[0] = card("Early card", image(null));
         for (int i = 1; i < rows.length; i++) rows[i] = leaf("row " + i);
         check(!scan(card(null, rows)).text().contains("Early card"), "an unscheduled child rules out its card");
         int lines = wide.text().split("\n").length;
         check(lines < LabelScan.NODE_BUDGET, "visited nodes stay within the budget");
+
+        // A checkpoint can stop the walk once the labels read so far match, without reading the rest.
+        Node[] stopRows = new Node[400];
+        stopRows[0] = leaf("new message");
+        for (int i = 1; i < stopRows.length; i++) stopRows[i] = leaf("ordinary");
+        Tree earlyTree = new Tree();
+        VisibleTextSample early = LabelScan.sample(earlyTree, earlyTree.obtain(card(null, stopRows)),
+                LabelScan.NODE_BUDGET, (sample, visited) -> sample.text().contains("new message"));
+        check(early.text().contains("new message") && early.text().split("\n").length < stopRows.length
+                && earlyTree.held.isEmpty(), "a matching checkpoint stops the walk early and releases every node");
+
+        // A 700-label screen: the label past the old 512-node budget is read only at 1,024.
+        Node[] late = new Node[700];
+        for (int i = 0; i < late.length; i++) late[i] = i == 650 ? leaf("late word") : leaf("row " + i);
+        VisibleTextSample deepList = scan(card(null, late));
+        check(deepList.text().contains("late word"), "the 1,024-node budget reaches a label past 512");
+        Tree oldBudget = new Tree();
+        VisibleTextSample oldCut = LabelScan.sample(oldBudget, oldBudget.obtain(card(null, late)), 512);
+        check(!oldCut.text().contains("late word") && oldCut.isPartial() && oldBudget.held.isEmpty(),
+                "the old 512-node budget would have cut that label");
 
         // A shared budget (several windows): never more nodes obtained than the share, and a cut is partial.
         for (int share : new int[]{1, 2, 100, 256}) {
@@ -133,7 +153,7 @@ public final class LabelScanTest {
                 && whole.obtained == 3, "a tree within its share is complete");
         // A large active feed and a tiny picture-in-picture window: the small one is read first, so
         // the feed gets nearly the whole budget instead of half of it.
-        Node[] feed = new Node[480];
+        Node[] feed = new Node[900];
         for (int i = 0; i < feed.length; i++) feed[i] = leaf("post " + i);
         Map<Integer, Node> trees = new java.util.HashMap<>();
         trees.put(1, card(null, feed));
@@ -220,18 +240,18 @@ public final class LabelScanTest {
         return root;
     }
 
-    /** The scan before parent descriptions: childless labels only, the same 512-node budget. */
+    /** The scan before parent descriptions: childless labels only, the same node budget. */
     static VisibleTextSample leafOnly(Node root) {
         java.util.ArrayDeque<Node> queue = new java.util.ArrayDeque<>();
         queue.add(root);
         VisibleTextSample text = new VisibleTextSample(true);
         int visited = 0, scheduled = 1;
-        while (!queue.isEmpty() && visited++ < 512 && !text.isFull()) {
+        while (!queue.isEmpty() && visited++ < LabelScan.NODE_BUDGET && !text.isFull()) {
             Node node = queue.removeFirst();
             if (node.secret || !node.visible) continue;
             if (!node.children.isEmpty()) {
                 for (Node child : node.children) {
-                    if (scheduled >= 512) { text.markPartial(); break; }
+                    if (scheduled >= LabelScan.NODE_BUDGET) { text.markPartial(); break; }
                     scheduled++;
                     if (child != null) queue.addLast(child); else text.markPartial();
                 }

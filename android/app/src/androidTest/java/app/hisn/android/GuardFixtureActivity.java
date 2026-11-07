@@ -64,6 +64,18 @@ public final class GuardFixtureActivity extends Activity {
                 label.setTextSize(3);
                 layout.addView(label, new LinearLayout.LayoutParams(-1, height));
             }
+        } else if ("stress".equals(mode)) {
+            // 700 visible labels: the word sits past the old 512-node budget and is reached
+            // only by the current 1,024-node scan (or the event fast path).
+            LinearLayout column = new LinearLayout(this);
+            column.setOrientation(LinearLayout.VERTICAL);
+            for (int i = 0; i < 700; i++) {
+                TextView label = new TextView(this);
+                label.setText(i == 650 ? WORD : "ordinary");
+                label.setTextSize(2);
+                column.addView(label, new LinearLayout.LayoutParams(-1, 2));
+            }
+            layout.addView(column);
         } else {
             TextView label = new TextView(this);
             if ("long".equals(mode)) {

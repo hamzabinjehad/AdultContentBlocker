@@ -15,6 +15,7 @@ public final class VisibleTextSample {
     public void markPartial() { partial = true; }
     public boolean isPartial() { return partial; }
     public boolean isFull() { return text.length() >= LIMIT; }
+    public boolean isEmpty() { return text.length() == 0; }
     public String text() { return text.toString(); }
 
     public void append(CharSequence value) {

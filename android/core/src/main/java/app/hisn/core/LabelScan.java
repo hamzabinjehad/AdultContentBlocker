@@ -6,7 +6,7 @@ import java.util.List;
 
 /** Which on-screen labels one bounded inspection reads. Android-free so the rule is unit-tested.
  *
- * Breadth-first over at most 512 visited nodes and 512 scheduled children. Editable,
+ * Breadth-first over at most 1024 visited nodes and 1024 scheduled children. Editable,
  * password and EditText nodes are never read and their subtrees are skipped; invisible
  * nodes are skipped, and an invisible node with children is not opened. A childless node gives its text, else its content description.
  * A parent's own content description, common on card and button layouts whose children
@@ -18,7 +18,9 @@ import java.util.List;
  * beyond the nodes already visited is fetched.
  */
 public final class LabelScan {
-    public static final int NODE_BUDGET = 512;
+    /** A large real screen can carry more than 512 visible labels before the text in use appears;
+     * 1,024 covers those trees, and the accessibility service walks them off its main thread. */
+    public static final int NODE_BUDGET = 1024;
 
     /** Node access. {@link #release} is called once for every node the scan holds, root included. */
     public interface Tree<N> {
@@ -47,11 +49,26 @@ public final class LabelScan {
         Queued(N node, Parent owner) { this.node = node; this.owner = owner; }
     }
 
+    /** Called during a scan with the labels read so far; true stops the scan for an immediate
+     * decision. Only labels already appended are visible; parent descriptions come at the end. */
+    public interface Check {
+        boolean stop(VisibleTextSample sample, int visited);
+    }
+
+    /** A partial match is checked every this many visited nodes, not for every leaf: the adult
+     * policy is scanned once per checkpoint rather than once per label. */
+    public static final int CHECK_INTERVAL = 64;
+
     /** Scans from root, which the scan takes ownership of and releases. */
     public static <N> VisibleTextSample sample(Tree<N> tree, N root) { return sample(tree, root, NODE_BUDGET); }
 
     /** The same scan within a smaller share of the budget (several windows share one), at least 1. */
     public static <N> VisibleTextSample sample(Tree<N> tree, N root, int budget) {
+        return sample(tree, root, budget, null);
+    }
+
+    /** The same scan, with a checkpoint that may stop it early when the labels read so far match. */
+    public static <N> VisibleTextSample sample(Tree<N> tree, N root, int budget, Check check) {
         budget = Math.max(1, Math.min(NODE_BUDGET, budget));
         ArrayDeque<Queued<N>> queue = new ArrayDeque<>();
         queue.add(new Queued<>(root, null));
@@ -92,6 +109,8 @@ public final class LabelScan {
                         text.append(value);
                     }
                 } finally { tree.release(node); }
+                if (check != null && visited % CHECK_INTERVAL == 0 && !text.isEmpty()
+                        && check.stop(text, visited)) break;
             }
         } finally {
             if (!queue.isEmpty()) text.markPartial();

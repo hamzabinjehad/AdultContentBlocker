@@ -9,29 +9,30 @@ public final class VisualDutyTest {
     }
 
     public static void main(String[] args) {
-        long idle = VisualDuty.IDLE_RELEASE_MILLIS;
+        long grace = VisualDuty.SCREEN_OFF_GRACE_MILLIS;
         VisualDuty duty = new VisualDuty();
-        // Screen off: never sample, and free a loaded model.
+        // Screen off: never sample. A loaded model stays warm through the short grace, then frees.
         expect(VisualDuty.Action.PAUSE, duty, false, true, false, 0);
-        expect(VisualDuty.Action.RELEASE, duty, false, true, true, 1);
+        expect(VisualDuty.Action.PAUSE, duty, false, true, true, 1);
+        expect(VisualDuty.Action.PAUSE, duty, false, true, true, grace - 1);
+        expect(VisualDuty.Action.RELEASE, duty, false, true, true, grace);
         // Screen on and enabled: warm the model before any selected app comes forward.
         expect(VisualDuty.Action.PRELOAD, duty, true, false, false, 1_000);
         expect(VisualDuty.Action.PRELOAD, duty, true, true, false, 1_000);
-        // Loaded and idle: keep it warm for a while, then release it.
+        // A loaded model is kept while the screen stays on; a reload would blind the next app.
         expect(VisualDuty.Action.PAUSE, duty, true, false, true, 2_000);
-        expect(VisualDuty.Action.PAUSE, duty, true, false, true, 1_000 + idle - 1);
-        expect(VisualDuty.Action.RELEASE, duty, true, false, true, 1_000 + idle);
-        // Released: the next screen-on poll preloads again, and a selected app samples at once.
-        expect(VisualDuty.Action.PRELOAD, duty, true, false, false, 1_000 + 10 * idle);
-        expect(VisualDuty.Action.SAMPLE, duty, true, true, true, 1_000 + 10 * idle);
-        // Each sample restarts the idle period; deep sleep counts toward it.
-        expect(VisualDuty.Action.SAMPLE, duty, true, true, true, 20 * idle);
-        expect(VisualDuty.Action.PAUSE, duty, true, false, true, 21 * idle - 1);
-        expect(VisualDuty.Action.RELEASE, duty, true, false, true, 21 * idle);
-        // A loaded model that was never sampled is kept only for the same idle period.
-        VisualDuty fresh = new VisualDuty();
-        expect(VisualDuty.Action.PAUSE, fresh, true, false, true, 0);
-        expect(VisualDuty.Action.RELEASE, fresh, true, false, true, idle);
+        expect(VisualDuty.Action.PAUSE, duty, true, false, true, 10 * 60 * 60_000L);
+        // A selected app samples immediately; another selected-window poll keeps sampling.
+        expect(VisualDuty.Action.SAMPLE, duty, true, true, true, 2_000);
+        expect(VisualDuty.Action.SAMPLE, duty, true, true, true, 20 * 60 * 60_000L);
+        // Screen off after a long screen-on: release only after the grace.
+        expect(VisualDuty.Action.PAUSE, duty, false, false, true, 20 * 60 * 60_000L + 1);
+        expect(VisualDuty.Action.RELEASE, duty, false, false, true, 20 * 60 * 60_000L + grace);
+        // Returning to the screen reuses the warm model, or preloads if it was freed.
+        expect(VisualDuty.Action.PAUSE, duty, true, false, true, 20 * 60 * 60_000L + grace + 1);
+        expect(VisualDuty.Action.PRELOAD, duty, true, false, false, 20 * 60 * 60_000L + grace + 2);
+        // No power state is invented: a model that was never loaded is never "released".
+        expect(VisualDuty.Action.PAUSE, new VisualDuty(), false, true, false, 0);
         int samples = 0, preloads = 0;
         for (boolean interactive : new boolean[]{false, true})
             for (boolean selected : new boolean[]{false, true})
@@ -45,12 +46,12 @@ public final class VisualDutyTest {
                         if (!interactive || loaded) throw new AssertionError("Preloaded at the wrong time");
                         preloads++;
                     }
-                    if (action == VisualDuty.Action.RELEASE && interactive && !selected) {
-                        throw new AssertionError("Released a model that was just used");
+                    if (action == VisualDuty.Action.RELEASE) {
+                        if (interactive || !loaded) throw new AssertionError("Released a model with the screen on or none loaded");
                     }
                 }
-        if (samples != 1 || preloads != 2) throw new AssertionError("Sampling or preloading unreachable");
-        System.out.println("VisualDuty tests passed (preloaded on screen on; no sampling with the screen off; "
-                + "model released after " + idle / 60_000 + " idle minutes or when the screen goes off)");
+        if (samples != 1 || preloads != 2) throw new AssertionError("Duty states unreachable");
+        System.out.println("VisualDuty tests passed (preloaded on screen on; kept while the screen is on; "
+                + "freed after a " + grace / 60_000 + "-minute screen-off grace; no sampling with the screen off)");
     }
 }

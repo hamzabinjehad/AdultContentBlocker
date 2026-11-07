@@ -9,7 +9,7 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--adb", default="adb")
 parser.add_argument("--serial", required=True)
 parser.add_argument("--restore-only", action="store_true", help="Restore fixture-only additions after an interrupted run")
-parser.add_argument("--case", choices=("ordinary", "editable", "password", "word", "long", "wide", "app", "rapid", "heartbeat", "adult"))
+parser.add_argument("--case", choices=("ordinary", "editable", "password", "word", "long", "wide", "app", "rapid", "heartbeat", "adult", "stress"))
 args = parser.parse_args()
 
 
@@ -128,7 +128,7 @@ else:
                 fixture(case, False)
         if args.case is None or args.case == "heartbeat":
             heartbeat_test()
-        for case in ("word", "long", "wide"):
+        for case in ("word", "long", "wide", "stress"):
             if args.case is None or args.case == case:
                 fixture(case, True)
         if args.case is None or args.case == "app":

@@ -1,8 +1,9 @@
 package app.hisn.core;
 
-/** Image-check status for the dashboard. Sampling reports a state about every two seconds, and
- * transient states (waiting, loading, checking, paused for input) must not hide the latest
- * failure. Only a later inspected sample, or the layer turning off or being unsupported, clears it. */
+/** Image-check status for the dashboard. Sampling reports a state on every poll (about once a
+ * second while the screen is on, more often while content moves), and transient states (waiting,
+ * loading, checking, paused for input) must not hide the latest failure. Only a later inspected
+ * sample, or the layer turning off or being unsupported, clears it. */
 public final class VisualHealth {
     public enum State {
         OFF, UNSUPPORTED, WAITING, LOADING, CHECKING, SAMPLED, UNREADABLE, INPUT, ERROR;

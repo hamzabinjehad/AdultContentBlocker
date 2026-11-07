@@ -17,6 +17,8 @@ import app.hisn.core.VisualExecutionPolicy;
 
 /** Network-isolated local model, one bounded frame at a time. Main-thread API. */
 final class VisualClassifier implements AutoCloseable {
+    /** A frame that has not answered in this long is treated as a failed runtime, not left pending. */
+    private static final long FRAME_TIMEOUT_MILLIS = 5000;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private WebView web;
     private Consumer<String> pending;
@@ -126,7 +128,7 @@ final class VisualClassifier implements AutoCloseable {
             }
             pending = result;
             request = "frame_" + ++sequence;
-            handler.postDelayed(timeout, 15000);
+            handler.postDelayed(timeout, FRAME_TIMEOUT_MILLIS);
             // id is generated locally; Base64 contains no JavaScript delimiters.
             web.evaluateJavascript("window.hisnInspect('" + request + "'," + width + "," + height + ",'"
                     + Base64.encodeToString(rgba, Base64.NO_WRAP) + "')", null);

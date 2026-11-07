@@ -49,7 +49,12 @@ public final class VisualCaptureTestActivity extends Activity {
                     + " REQUESTS " + VisualGuard.captureRequests
                     + " ELIGIBILITY " + VisualGuard.eligibility
                     + " INTERVENTIONS " + VisualGuard.interventions + " DISCARDED " + VisualGuard.discarded
-                    + " CAPTURE_FAILURES " + VisualGuard.captureFailures + " CAPTURE_ERROR " + VisualGuard.lastCaptureError);
+                    + " CAPTURE_FAILURES " + VisualGuard.captureFailures + " CAPTURE_ERROR " + VisualGuard.lastCaptureError
+                    + " BACKEND " + VisualGuard.backend + " FRAME_EDGE " + VisualGuard.FRAME_EDGE
+                    + " LAST_CAPTURE_MS " + VisualGuard.lastCaptureMillis
+                    + " LAST_INFERENCE_MS " + VisualGuard.lastInferenceMillis
+                    + " LAST_SAMPLE_MS " + VisualGuard.lastSampleMillis
+                    + " LAST_SAMPLE_AT " + VisualGuard.lastSampleAt);
         } catch (RuntimeException failure) {
             report("FAIL " + failure.getClass().getSimpleName() + ": " + failure.getMessage());
         }
