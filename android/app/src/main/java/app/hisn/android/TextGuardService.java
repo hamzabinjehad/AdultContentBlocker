@@ -522,7 +522,7 @@ public final class TextGuardService extends AccessibilityService {
                     && AdultPolicyAssets.state == AdultPolicyAssets.State.LOADING;
             textDirty = false;
             lastTextScanAt = scanNow;
-            // One 1,024-node budget shared by every window, so split screen costs no more than one app.
+            // One 2,048-node budget shared by every window, so split screen costs no more than one app.
             // Small windows (PiP, then other inactive ones) are read first and hand what they leave
             // to the window in use (rule and tests in core GuardWindows.scanOrder).
             scanned = GuardWindows.scanOrder(scanned);

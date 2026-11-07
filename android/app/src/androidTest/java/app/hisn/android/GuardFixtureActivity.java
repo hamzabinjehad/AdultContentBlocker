@@ -66,7 +66,7 @@ public final class GuardFixtureActivity extends Activity {
             }
         } else if ("stress".equals(mode)) {
             // 700 visible labels: the word sits past the old 512-node budget and is reached
-            // only by the current 1,024-node scan (or the event fast path).
+            // by the current 2,048-node scan.
             LinearLayout column = new LinearLayout(this);
             column.setOrientation(LinearLayout.VERTICAL);
             for (int i = 0; i < 700; i++) {

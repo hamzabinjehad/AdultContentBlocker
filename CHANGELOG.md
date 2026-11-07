@@ -26,7 +26,7 @@ bump without an entry here is an unfinished release.
   in use may act before the walk; a queued event from a window the person
   already left falls back to the full pass. When the event carries no text, the
   tree walk is the fallback.
-- **The walk reads 1,024 nodes, checks a partial match every 64 nodes and can
+- **The walk reads 2,048 nodes, checks a partial match every 64 nodes and can
   stop early.** The old 512-node budget cut off the label in use on large real
   screens; the new budget and checkpoint stop a matching word from waiting for
   the rest of a long feed. A selected app is still re-read at least every three
@@ -54,8 +54,9 @@ bump without an entry here is an unfinished release.
 ### Verification
 
 - `android/test-core.sh` — every core suite passes, including the new
-  `LabelScan` case for the 1,024-node budget (the old 512-node budget would cut
-  the label) and the updated `VisualDuty` screen-off grace.
+  `LabelScan` cases for the 2,048-node budget: the old 512-node budget cuts a
+  700-label screen and the old 1,024-node budget cuts a 1,500-label screen; the
+  current budget reads both. The updated `VisualDuty` screen-off grace passes.
 - `check-strings.py` — 555 strings, 16 plurals and 545 source references,
   English and Arabic; `check-notices.py` passes.
 - `:app:assembleDebug`, `:app:assembleDebugAndroidTest` and `:app:lintDebug`
@@ -88,6 +89,9 @@ bump without an entry here is an unfinished release.
 - Keeping the model warm while the screen is on trades memory and battery for a
   faster next sample; the two-minute grace was chosen without a power
   measurement.
+- The 2,048-node budget is not device-measured. The live `stress` fixture is
+  700 labels; the 1,500-label case is unit-tested. No frame-time, memory or
+  battery number was taken for the extra Binder work.
 - Repeated package reinstalls and a System UI ANR made later emulator live runs
   intermittent. The full ten-check live suite is not claimed for 1.2.3.
 

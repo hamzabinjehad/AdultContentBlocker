@@ -56,7 +56,7 @@ a promotional label such as **Watch free porn** blocks immediately, while a
 bare **Porn** label still waits for the full pass that can see protective
 context elsewhere; only the selected window in use may act before the walk, so
 an event from a window the person already left falls back to it. The walk now
-reads 1,024 nodes (the old budget was 512),
+reads 2,048 nodes (the old budget was 512),
 checks a partial match every 64 nodes and can stop early; a static screen is
 still reread every three seconds. A generation token discards a walk whose
 screen changed, and a 20-second watchdog replaces a scanner that stops
@@ -70,7 +70,8 @@ debug status reports the selected backend, frame edge and capture, inference
 and sample timings.
 
 `sh test-core.sh` passes every core suite, including the new `LabelScan` case
-for the 1,024-node budget and the updated `VisualDuty` grace. `assembleDebug`,
+for the 2,048-node budget (a 700-label screen past 512 and a 1,500-label screen past 1,024)
+and the updated `VisualDuty` grace. `assembleDebug`,
 `assembleDebugAndroidTest` and `lintDebug` (0 errors) pass, and
 `CoreDeviceTestRunner` passes on the API 36 emulator. The live fixture driver's
 `stress` case — 700 labels with the word at 650 — blocked on the same emulator

@@ -42,11 +42,12 @@ per inference, so the guard spent most of a moving session inside one sample.
   names protective context. Only the selected window in use may act before the
   walk; an event from a window the person already left falls back to the walk.
   If the event carries no text, the tree walk is unchanged.
-- **The walk reads 1,024 nodes, checks a partial match every 64 visited nodes
+- **The walk reads 2,048 nodes, checks a partial match every 64 visited nodes
   and can stop early.** A matching label no longer waits for the rest of a long
-  feed. The shared budget across split-screen windows is unchanged, and a
-  selected app is still re-read at least every three seconds, so text that
-  appears without a text-bearing event is not missed.
+  feed. A 1,500-label regression case proves a label at position 1,400 is read
+  at 2,048 and cut by the old 1,024 budget. The shared budget across split-screen
+  windows is unchanged, and a selected app is still re-read at least every three
+  seconds, so text that appears without a text-bearing event is not missed.
 - **A clean screen no longer re-walks on every content change.** Only an event
   that names text, a window-state change or a scroll marks the screen dirty;
   video frames and animations do not. While the signed adult vocabulary is
@@ -86,7 +87,7 @@ field was added.
 | `android/app/src/main/java/app/hisn/android/TextGuardService.java` | off-main tree walk, event fast path, dirty-screen gating, generation and watchdog, adult-load retry |
 | `android/app/src/main/java/app/hisn/android/VisualGuard.java` | warm-model duty, 224 px edge, capture backoff, window-change cadence, timing diagnostics |
 | `android/app/src/main/java/app/hisn/android/VisualClassifier.java` | 5 s frame budget |
-| `android/core/src/main/java/app/hisn/core/LabelScan.java` | 1,024-node budget, checkpoint interface and early stop |
+| `android/core/src/main/java/app/hisn/core/LabelScan.java` | 2,048-node budget, checkpoint interface and early stop |
 | `android/core/src/main/java/app/hisn/core/VisibleTextSample.java` | `isEmpty()` |
 | `android/core/src/main/java/app/hisn/core/VisualDuty.java` | keep warm while the screen is on; two-minute screen-off grace |
 | `android/core/src/main/java/app/hisn/core/VisualHealth.java` | poll cadence wording |
@@ -99,7 +100,7 @@ field was added.
 
 | Check | Result |
 | --- | --- |
-| `JAVA_HOME=<JBR> sh test-core.sh` | **PASS** — every core suite, including the new `LabelScan` 1,024/512 case and the updated `VisualDuty` grace |
+| `JAVA_HOME=<JBR> sh test-core.sh` | **PASS** — every core suite, including the 700-label 2,048/512 case, the 1,500-label 2,048/1,024 case and the updated `VisualDuty` grace |
 | `python3 check-strings.py` | **PASS** — 555 strings, 16 plurals and 545 source references, English and Arabic |
 | `python3 check-notices.py` | **PASS** — list and model notices |
 | `:app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug` | **PASS** — 0 lint errors |
@@ -114,9 +115,9 @@ field was added.
 
 | File | Bytes | SHA-256 |
 | --- | --- | --- |
-| `direct/hisn-1.2.3-direct.apk` | 5,727,078 | `85b13675a296ad5facde890209536c6a2a326a1ee6bdd34557776b3a444c383c` |
-| `play/hisn-1.2.3-play.apk` | 5,726,326 | `75d7e06159d550682377fd2b25fbb38a61120f20be59b1b0489b3a59bccbfc16` |
-| `play/hisn-1.2.3-play.aab` | 5,613,829 | `884653ba7130d5b77d2ce8e55c58103e71152a0dfe0807a483bd57037d00010f` |
+| `direct/hisn-1.2.3-direct.apk` | 5,727,074 | `632c3987ab900a48464ee26b90fa89723e592e7d166697b99e5650fd1e84b5b4` |
+| `play/hisn-1.2.3-play.apk` | 5,726,282 | `141c424400ef09ae44bcc6c02a7a6d997bc3d1b9896368377881783605220322` |
+| `play/hisn-1.2.3-play.aab` | 5,613,788 | `c1232512ef684fc152fff4d23fb2f8408071390c39717b8b9574c4ab29128135` |
 
 The direct APK is the installable artifact. Never upload it to Play. The Play
 APK/AAB are signed but not uploaded, and the AAB is not an installable file.
@@ -126,6 +127,10 @@ APK/AAB are signed but not uploaded, and the AAB is not an installable file.
 - **No 1.2.3 phone run.** 1.2.2 was installed on the owner's Samsung
   SM-G990B2; this build was not. The emulator run above verifies the packaged
   seed and core checks, not the new scheduling on real hardware.
+- **The 2,048-node budget is not device-measured.** The live `stress` fixture is
+  700 labels, so it proves only the 512-node gap; the 1,500-label case is
+  unit-tested. The extra Binder work is off-main and bounded by the three-second
+  pass, but no frame-time, memory or battery number was taken for it.
 - **No device latency or power benchmark.** The gain from moving the walk and
   keeping the model warm is a design consequence. The only measured image
   numbers remain the [WASM engine note](VISUAL_ENGINE_WASM_2026-11-07.md) on a
@@ -147,7 +152,7 @@ APK/AAB are signed but not uploaded, and the AAB is not an installable file.
   fallback.
 - **The watchdog and executor replacement are code and compile evidence.** A
   stuck Binder walk was not produced on a device. The 20 s bound is longer than
-  any expected 1,024-node read; a genuinely slow device could still time out
+  any expected 2,048-node read; a genuinely slow device could still time out
   and retry.
 - **No full live suite.** The ten-check live driver was verified against 1.2.1
   on the owner's phone; 1.2.3 changes the sampling path and was not re-run on

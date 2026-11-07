@@ -90,7 +90,7 @@ you the lock; Hisn adds the coverage those built-in filters miss. Read
 - **Android 1.2.3 — the phone reads the screen off its main thread.** The
   accessibility tree walk moved to a daemon scanner thread, so a large feed no
   longer stalls the service; a selected app's own event can block a promotional
-  label before the walk, the walk reads 1,024 nodes and can stop at a partial
+  label before the walk, the walk reads 2,048 nodes and can stop at a partial
   match, and a static screen is still reread every three seconds. The image
   layer keeps its local model warm while the screen is on, captures at the
   model's 224 px input edge, gives a frame 5 s and backs off protected windows
