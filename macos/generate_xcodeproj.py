@@ -91,6 +91,7 @@ APP_SOURCES = SHARED + [
     # Private-window evidence, the narrow profile, and its consent sheet.
     "Hisn/PrivateBrowsing.swift",
     "Hisn/ManagedMode.swift",
+    "Hisn/MDMEnrollmentView.swift",
     "Hisn/PrivateBrowsingView.swift",
     "Hisn/WelcomeView.swift",
     # During a lock, closes browsers Hisn is not running inside.
@@ -407,8 +408,8 @@ def main() -> int:
     app_settings = {
         "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
         "CODE_SIGN_ENTITLEMENTS": "Hisn/Hisn.entitlements",
-        "CURRENT_PROJECT_VERSION": "29",
-        "MARKETING_VERSION": "1.1.17",
+        "CURRENT_PROJECT_VERSION": "30",
+        "MARKETING_VERSION": "1.1.18",
         "ENABLE_HARDENED_RUNTIME": "YES",
         "INFOPLIST_FILE": "Hisn/Info.plist",
         "PRODUCT_BUNDLE_IDENTIFIER": APP_BUNDLE_ID,
@@ -419,8 +420,8 @@ def main() -> int:
     }
     filter_settings = {
         "CODE_SIGN_ENTITLEMENTS": "HisnFilter/HisnFilter.entitlements",
-        "CURRENT_PROJECT_VERSION": "29",
-        "MARKETING_VERSION": "1.1.17",
+        "CURRENT_PROJECT_VERSION": "30",
+        "MARKETING_VERSION": "1.1.18",
         "ENABLE_HARDENED_RUNTIME": "YES",
         "INFOPLIST_FILE": "HisnFilter/Info.plist",
         "PRODUCT_BUNDLE_IDENTIFIER": FILTER_BUNDLE_ID,
@@ -430,8 +431,8 @@ def main() -> int:
     }
     bridge_settings = {
         "CODE_SIGN_ENTITLEMENTS": "HisnBridge/HisnBridge.entitlements",
-        "CURRENT_PROJECT_VERSION": "29",
-        "MARKETING_VERSION": "1.1.17",
+        "CURRENT_PROJECT_VERSION": "30",
+        "MARKETING_VERSION": "1.1.18",
         "ENABLE_HARDENED_RUNTIME": "YES",
         "GENERATE_INFOPLIST_FILE": "YES",
         "PRODUCT_NAME": '"$(TARGET_NAME)"',

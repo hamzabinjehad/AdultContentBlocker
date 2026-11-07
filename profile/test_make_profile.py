@@ -50,6 +50,16 @@ def build(**overrides) -> dict:
         allow_devtools=False,
         allow_incognito=False,
         removal_password="test-password",
+        browsers=None,
+        mdm=False,
+        managed=False,
+        organization_name="Your organization",
+        team_id="",
+        filter_requirement="",
+        without_managed_filter=False,
+        lock_system_extensions=False,
+        allow_erase=False,
+        no_safari_private_lock=False,
     )
     for key, value in overrides.items():
         setattr(args, key, value)
@@ -345,7 +355,8 @@ class TestIndependentLayers(unittest.TestCase):
                                   dns_addresses=["1.1.1.3", "1.0.0.3"], supervised=False,
                                   extension_id="", update_url="https://clients2.google.com/service/update2/crx",
                                   display_name="Test", lock_settings=False, allow_devtools=False,
-                                  allow_incognito=False, removal_password=None, browsers=None)
+                                  allow_incognito=False, removal_password=None, browsers=None,
+                                  mdm=False, managed=False, organization_name="Your organization")
         for key, value in overrides.items():
             setattr(args, key, value)
         return args
@@ -571,6 +582,134 @@ class TestProfileCLI(unittest.TestCase):
                 profile = plistlib.loads(out.with_name(f"test-{slug}.mobileconfig").read_bytes())
                 self.assertEqual(payload(profile, "com.apple.profileRemovalPassword")["RemovalPassword"], secret)
 
+    def test_cli_mdm_requires_a_named_organization(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaises(SystemExit) as failure:
+                self.run_main(["--mdm",
+                               "--out", str(Path(directory) / "mdm.mobileconfig")])
+            self.assertEqual(failure.exception.code, 2)
+            self.assertEqual(list(Path(directory).iterdir()), [])
+
+    def test_cli_mdm_rejects_password_flags_it_cannot_honour(self):
+        for extra in (["--print-password"], ["--removal-password", "operator-secret"]):
+            with self.assertRaises(SystemExit) as failure:
+                self.run_main(["--mdm", "--organization-name", "Example Institute",
+                               *extra])
+            self.assertEqual(failure.exception.code, 2)
+
+    def test_cli_mdm_writes_an_owner_readable_profile_with_no_secret(self):
+        with tempfile.TemporaryDirectory() as directory:
+            out = Path(directory) / "mdm.mobileconfig"
+            result, stdout, stderr = self.run_main([
+                "--mdm", "--organization-name", "Example Institute",
+                "--out", str(out),
+            ])
+            self.assertEqual(result, 0)
+            self.assertEqual(stdout, "", "MDM builds have no secret to print")
+            self.assertIn("no removal password", stderr)
+            self.assertEqual(out.stat().st_mode & 0o777, 0o600)
+            profile = plistlib.loads(out.read_bytes())
+            self.assertIsNone(payload(profile, "com.apple.profileRemovalPassword"))
+            self.assertIs(payload(profile, "app.hisn.Hisn")["HisnManaged"], True)
+            self.assertEqual(profile["PayloadOrganization"], "Example Institute")
+
+    def test_cli_mdm_with_a_team_id_writes_the_filter_layer(self):
+        with tempfile.TemporaryDirectory() as directory:
+            out = Path(directory) / "mdm.mobileconfig"
+            result, _, stderr = self.run_main([
+                "--mdm", "--organization-name", "Example Institute",
+                "--team-id", "ABCDE12345", "--out", str(out),
+            ])
+            self.assertEqual(result, 0)
+            self.assertIn("Managed filter:", stderr)
+            profile = plistlib.loads(out.read_bytes())
+            self.assertEqual(payload(profile, "com.apple.webcontent-filter")
+                             ["FilterDataProviderBundleIdentifier"],
+                             make_profile.FILTER_PROVIDER_BUNDLE_ID)
+            self.assertIsNotNone(payload(profile, "com.apple.system-extension-policy"))
+
+    def test_cli_mdm_can_keep_the_app_managed_filter(self):
+        with tempfile.TemporaryDirectory() as directory:
+            out = Path(directory) / "mdm.mobileconfig"
+            result, _, stderr = self.run_main([
+                "--mdm", "--organization-name", "Example Institute",
+                "--team-id", "ABCDE12345", "--without-managed-filter",
+                "--out", str(out),
+            ])
+            self.assertEqual(result, 0)
+            self.assertIn("no managed content filter", stderr)
+            profile = plistlib.loads(out.read_bytes())
+            self.assertIsNone(payload(profile, "com.apple.webcontent-filter"))
+
+    def test_cli_maximum_needs_mdm_and_a_team_id(self):
+        for arguments in (
+            ["--maximum"],
+            ["--maximum", "--mdm", "--organization-name", "Example Institute"],
+            ["--maximum", "--team-id", "ABCDE12345"],
+        ):
+            with self.assertRaises(SystemExit) as failure:
+                self.run_main(arguments)
+            self.assertEqual(failure.exception.code, 2, arguments)
+
+    def test_cli_maximum_sets_every_lock_without_a_weakening_flag(self):
+        with tempfile.TemporaryDirectory() as directory:
+            out = Path(directory) / "maximum.mobileconfig"
+            result, _, stderr = self.run_main([
+                "--mdm", "--organization-name", "Example Institute",
+                "--team-id", "ABCDE12345", "--maximum", "--out", str(out),
+            ])
+            self.assertEqual(result, 0)
+            profile = plistlib.loads(out.read_bytes())
+            self.assertIs(payload(profile, "com.apple.dnsSettings.managed")
+                          ["DNSSettings"]["ProhibitDisablement"], True)
+            self.assertIs(payload(profile, "com.apple.system-extension-policy")
+                          ["AllowUserOverrides"], False)
+            self.assertIs(payload(profile, "com.apple.applicationaccess")
+                          ["allowEraseContentAndSettings"], False)
+            self.assertIs(payload(profile, "com.apple.webcontent-filter")
+                          ["SafariHistoryRetentionEnabled"], True)
+            chrome = payload(profile, "com.google.Chrome")
+            self.assertEqual(chrome["DeveloperToolsAvailability"], 2)
+            self.assertEqual(chrome["IncognitoModeAvailability"], 1)
+            self.assertIn("Maximum preset", stderr)
+            self.assertIn("Layers in this build", stderr)
+
+    def test_cli_maximum_refuses_to_be_weakened(self):
+        for flag in ("--allow-devtools", "--allow-incognito", "--allow-erase",
+                     "--no-safari-private-lock", "--without-managed-filter"):
+            with self.assertRaises(SystemExit) as failure:
+                self.run_main([
+                    "--mdm", "--organization-name", "Example Institute",
+                    "--team-id", "ABCDE12345", "--maximum", flag,
+                ])
+            self.assertEqual(failure.exception.code, 2, flag)
+
+    def test_cli_rejects_team_id_without_mdm_and_bad_requirements(self):
+        for arguments in (
+            ["--team-id", "ABCDE12345"],
+            ["--mdm", "--organization-name", "Example", "--team-id", "lowercase1"],
+            ["--mdm", "--organization-name", "Example",
+             "--filter-requirement", 'anchor apple generic'],
+            ["--mdm", "--organization-name", "Example", "--team-id", "ABCDE12345",
+             "--lock-system-extensions", "--without-managed-filter"],
+        ):
+            with self.assertRaises(SystemExit) as failure:
+                self.run_main(arguments)
+            self.assertEqual(failure.exception.code, 2, arguments)
+
+    def test_cli_lock_system_extensions_reaches_the_payload(self):
+        with tempfile.TemporaryDirectory() as directory:
+            out = Path(directory) / "mdm.mobileconfig"
+            result, _, _ = self.run_main([
+                "--mdm", "--organization-name", "Example Institute",
+                "--team-id", "ABCDE12345", "--lock-system-extensions",
+                "--out", str(out),
+            ])
+            self.assertEqual(result, 0)
+            policy = payload(plistlib.loads(out.read_bytes()),
+                             "com.apple.system-extension-policy")
+            self.assertIs(policy["AllowUserOverrides"], False)
+
     def test_cli_rejects_bad_force_install_input_before_any_file_is_written(self):
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaises(SystemExit) as failure:
@@ -634,8 +773,293 @@ class TestIncognito(unittest.TestCase):
         self.assertEqual(helium["DnsOverHttpsMode"], "off")
         self.assertEqual(helium["IncognitoModeAvailability"], 1)
 
-if __name__ == "__main__":
-    unittest.main(verbosity=2)
+class TestMDMDeployment(unittest.TestCase):
+    """--mdm is a deployment mode, not a stronger profile by itself.
+
+    The MDM owns removal and can reinstall the profile, so a local removal
+    password would be one more secret to lose and no more protection. But
+    nothing here proves supervision or effective policy; those need ADE and the
+    verification steps in docs/MDM_DEPLOYMENT.md.
+    """
+
+    def test_mdm_implies_the_managed_flag(self):
+        profile = build(mdm=True, organization_name="Example Institute")
+        managed = payload(profile, "app.hisn.Hisn")
+        self.assertIsNotNone(managed)
+        self.assertIs(managed["HisnManaged"], True)
+        self.assertEqual(managed["OrganizationName"], "Example Institute")
+
+    def test_mdm_omits_the_local_password_and_keeps_removal_disallowed(self):
+        profile = build(mdm=True, organization_name="Example Institute")
+        self.assertIsNone(payload(profile, "com.apple.profileRemovalPassword"))
+        self.assertIs(profile["PayloadRemovalDisallowed"], True)
+        self.assertEqual(profile["PayloadOrganization"], "Example Institute")
+
+    def test_mdm_does_not_claim_supervision_without_the_flag(self):
+        profile = build(mdm=True, organization_name="Example Institute")
+        self.assertNotIn("ProhibitDisablement",
+                         payload(profile, "com.apple.dnsSettings.managed")["DNSSettings"])
+        supervised = build(mdm=True, organization_name="Example Institute",
+                           supervised=True)
+        self.assertIs(payload(supervised, "com.apple.dnsSettings.managed")
+                      ["DNSSettings"]["ProhibitDisablement"], True)
+
+    def test_split_mdm_layers_keep_the_managed_payload_and_embed_no_password(self):
+        args = argparse.Namespace(
+            doh="https://family.cloudflare-dns.com/dns-query",
+            dns_addresses=["1.1.1.3", "1.0.0.3"], supervised=False,
+            extension_id="", update_url="https://clients2.google.com/service/update2/crx",
+            display_name="Test", lock_settings=False, allow_devtools=False,
+            allow_incognito=False, removal_password=None, browsers=None,
+            mdm=True, managed=False, organization_name="Example Institute",
+            team_id="", filter_requirement="", without_managed_filter=False,
+            lock_system_extensions=False, allow_erase=False,
+            no_safari_private_lock=False)
+        layers = make_profile.build_layers(args)
+        network = next(layer for slug, layer, _ in layers if slug == "network")
+        browsers = next(layer for slug, layer, _ in layers if slug == "browsers")
+        self.assertIsNotNone(payload(network, "app.hisn.Hisn"))
+        self.assertIsNone(payload(browsers, "app.hisn.Hisn"))
+        for _, layer, password in layers:
+            self.assertIsNone(password)
+            self.assertIsNone(payload(layer, "com.apple.profileRemovalPassword"))
+
+
+class TestMDMFilterLayer(unittest.TestCase):
+    """The filter has to be owned by the management layer, not the app.
+
+    A profile that only sets DNS and browser policy leaves the content filter
+    as app-managed configuration: a person can switch it off where macOS
+    offers the toggle, and the extension can be removed unless a system
+    extension policy says otherwise. With a signed team ID the profile now
+    carries the `com.apple.webcontent-filter` payload and the
+    `com.apple.system-extension-policy` payload, so the filter starts without
+    the app and (on macOS 15+) is non-removable while SIP is on.
+
+    These tests are serialization tests. They do not prove the extension loads
+    or that macOS accepts the profile; a positive MDM test is still required.
+    """
+
+    TEAM = "ABCDE12345"
+
+    def mdm(self, **overrides):
+        values = {"mdm": True, "organization_name": "Example Institute",
+                  "team_id": self.TEAM}
+        values.update(overrides)
+        return build(**values)
+
+    def test_no_team_id_keeps_the_old_profile_and_says_so(self):
+        """Backward compatibility: an existing --mdm invocation still works."""
+        profile = build(mdm=True, organization_name="Example Institute")
+        self.assertIsNone(payload(profile, "com.apple.webcontent-filter"))
+        self.assertIsNone(payload(profile, "com.apple.system-extension-policy"))
+        self.assertIs(payload(profile, "app.hisn.Hisn")["HisnFilterManaged"], False)
+
+    def test_team_id_adds_the_plugin_filter(self):
+        profile = self.mdm()
+        web = payload(profile, "com.apple.webcontent-filter")
+        self.assertIsNotNone(web)
+        self.assertEqual(web["FilterType"], "Plugin")
+        self.assertEqual(web["PluginBundleID"], make_profile.FILTER_APP_BUNDLE_ID)
+        self.assertEqual(web["FilterDataProviderBundleIdentifier"],
+                         make_profile.FILTER_PROVIDER_BUNDLE_ID)
+        self.assertIn(self.TEAM, web["FilterDataProviderDesignatedRequirement"])
+        self.assertIn(make_profile.FILTER_PROVIDER_BUNDLE_ID,
+                      web["FilterDataProviderDesignatedRequirement"])
+        self.assertIs(web["FilterSockets"], True)
+        self.assertIs(web["FilterPackets"], False)
+        self.assertEqual(web["FilterGrade"], "firewall")
+        self.assertNotIn("FilterBrowsers", web,
+                         "FilterBrowsers is iOS-only; macOS uses FilterSockets")
+
+    def test_the_filter_locks_safari_private_browsing_by_default(self):
+        self.assertIs(payload(self.mdm(), "com.apple.webcontent-filter")
+                      ["SafariHistoryRetentionEnabled"], True)
+        self.assertIs(payload(self.mdm(no_safari_private_lock=True),
+                              "com.apple.webcontent-filter")
+                      ["SafariHistoryRetentionEnabled"], False)
+
+    def test_the_extension_is_allowed_and_non_removable(self):
+        policy = payload(self.mdm(), "com.apple.system-extension-policy")
+        for key in ("AllowedSystemExtensions", "NonRemovableSystemExtensions",
+                    "NonRemovableFromUISystemExtensions"):
+            self.assertEqual(policy[key], {self.TEAM: [
+                make_profile.FILTER_PROVIDER_BUNDLE_ID]}, key)
+        self.assertNotIn("AllowUserOverrides", policy,
+                         "blocking other extensions is opt-in")
+
+    def test_lock_system_extensions_blocks_user_overrides(self):
+        policy = payload(self.mdm(lock_system_extensions=True),
+                         "com.apple.system-extension-policy")
+        self.assertIs(policy["AllowUserOverrides"], False)
+
+    def test_a_team_id_without_mdm_is_rejected(self):
+        with self.assertRaises(ValueError):
+            build(team_id=self.TEAM)
+
+    def test_a_custom_requirement_must_name_the_extension_and_team(self):
+        profile = self.mdm(filter_requirement=(
+            'identifier "app.hisn.Hisn.HisnFilter" and anchor apple generic '
+            f'and certificate leaf[subject.OU] = "{self.TEAM}"'))
+        self.assertEqual(payload(profile, "com.apple.webcontent-filter")
+                         ["FilterDataProviderDesignatedRequirement"],
+                         'identifier "app.hisn.Hisn.HisnFilter" and anchor apple generic '
+                         f'and certificate leaf[subject.OU] = "{self.TEAM}"')
+        for bad in ("anchor apple generic",
+                    f'anchor apple generic and certificate leaf[subject.OU] = "{self.TEAM}"',
+                    'identifier "app.hisn.Hisn.HisnFilter" and certificate leaf[subject.OU] = "OTHER12345"'):
+            with self.assertRaises(ValueError):
+                self.mdm(filter_requirement=bad)
+
+    def test_without_managed_filter_removes_both_payloads(self):
+        profile = self.mdm(without_managed_filter=True)
+        self.assertIsNone(payload(profile, "com.apple.webcontent-filter"))
+        self.assertIsNone(payload(profile, "com.apple.system-extension-policy"))
+        marker = payload(profile, "app.hisn.Hisn")
+        self.assertIs(marker["HisnFilterManaged"], False)
+        self.assertNotIn("filter", marker["HisnProtectedLayers"])
+
+    def test_the_managed_marker_reports_the_profile_and_layers(self):
+        marker = payload(self.mdm(), "app.hisn.Hisn")
+        self.assertEqual(marker["HisnProfileVersion"], make_profile.PROFILE_VERSION)
+        self.assertIs(marker["HisnFilterManaged"], True)
+        self.assertIn("filter", marker["HisnProtectedLayers"])
+        self.assertIn("system-extension-policy", marker["HisnProtectedLayers"])
+        self.assertIn("erase-lock", marker["HisnProtectedLayers"])
+
+    def test_erase_is_blocked_only_in_an_mdm_build(self):
+        self.assertIs(payload(self.mdm(), "com.apple.applicationaccess")
+                      ["allowEraseContentAndSettings"], False)
+        self.assertNotIn("allowEraseContentAndSettings",
+                         payload(self.mdm(allow_erase=True),
+                                 "com.apple.applicationaccess"))
+        self.assertNotIn("allowEraseContentAndSettings",
+                         payload(build(), "com.apple.applicationaccess"),
+                         "a personal profile must not hide the erase button")
+
+    def test_split_layers_keep_filter_extension_and_marker_with_network(self):
+        args = argparse.Namespace(
+            doh="https://family.cloudflare-dns.com/dns-query",
+            dns_addresses=["1.1.1.3"], supervised=False, extension_id="",
+            update_url="https://clients2.google.com/service/update2/crx",
+            display_name="Test", lock_settings=False, allow_devtools=False,
+            allow_incognito=False, removal_password=None, browsers=None,
+            mdm=True, managed=False, organization_name="Example Institute",
+            team_id=self.TEAM, filter_requirement="",
+            without_managed_filter=False, lock_system_extensions=False,
+            allow_erase=False, no_safari_private_lock=False)
+        layers = make_profile.build_layers(args)
+        network = next(layer for slug, layer, _ in layers if slug == "network")
+        browsers = next(layer for slug, layer, _ in layers if slug == "browsers")
+        for ptype in ("com.apple.webcontent-filter",
+                      "com.apple.system-extension-policy", "app.hisn.Hisn"):
+            self.assertIsNotNone(payload(network, ptype), ptype)
+            self.assertIsNone(payload(browsers, ptype), ptype)
+
+
+class TestMDMVerifier(unittest.TestCase):
+    """The verifier must never turn an unreadable answer into "not managed"."""
+
+    def parser_code(self):
+        source = (Path(__file__).parents[1] / "macos/verify_mdm.sh").read_text()
+        return re.search(r"<<'STATUS'.*?\n(.*?)\nSTATUS\n", source, re.DOTALL).group(1)
+
+    def parse(self, output):
+        result = subprocess.run([sys.executable, "-", output],
+                                input=self.parser_code(), capture_output=True,
+                                text=True, check=True)
+        return result.stdout.strip()
+
+    def test_documented_enrollment_shapes(self):
+        self.assertEqual(self.parse(""), "unknown\tunknown")
+        self.assertEqual(self.parse("Enrolled via DEP: No\nMDM enrollment: No"),
+                         "no\tnone")
+        self.assertEqual(self.parse(
+            "Enrolled via DEP: Yes\nMDM enrollment: Yes (User Approved)\n"
+            "MDM server: https://mdm.example.com/path?x=1"),
+            "yes\tapproved")
+        self.assertEqual(self.parse(
+            "Enrolled via DEP: No\nMDM enrollment: Yes (User Approved)"),
+            "no\tapproved")
+        self.assertEqual(self.parse("MDM enrollment: Yes"), "unknown\tunapproved")
+
+    def test_unreadable_or_contradictory_answers_are_unknown(self):
+        # A recognizable DEP line still reports what it says; the MDM state is
+        # unknown, which is what the script's verdict keys off.
+        self.assertEqual(self.parse("Enrolled via DEP: Yes\nMDM enrollment: No"),
+                         "yes\tunknown")
+        self.assertEqual(self.parse("Enrolled via DEP: Yes\nMDM enrollment: Yes"),
+                         "yes\tunknown")
+        for output in ("MDM enrollment: perhaps",
+                       "Enrolled via DEP: Maybe\nMDM enrollment: No",
+                       "profiles: could not read enrollment"):
+            self.assertEqual(self.parse(output), "unknown\tunknown", output)
+
+    def test_verifier_shell_syntax(self):
+        subprocess.run(["bash", "-n", str(Path(__file__).parents[1] /
+                                         "macos/verify_mdm.sh")],
+                       check=True, capture_output=True, text=True)
+
+    def layer_code(self):
+        source = (Path(__file__).parents[1] / "macos/verify_mdm.sh").read_text()
+        return re.search(r"<<'LAYERS'.*?\n(.*?)\nLAYERS\n", source,
+                         re.DOTALL).group(1)
+
+    def layer_facts(self, directory):
+        result = subprocess.run(
+            [sys.executable, "-", "testuser", str(directory)],
+            input=self.layer_code(), capture_output=True, text=True, check=True)
+        return dict(line.split("=", 1) for line in result.stdout.splitlines())
+
+    def test_the_layer_reader_sees_the_managed_filter_and_policy(self):
+        """`--strict` is only as honest as this reader. A plist that is there
+        must be read, and a missing one must stay unknown rather than become a
+        reassuring false."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "app.hisn.Hisn.plist").write_bytes(plistlib.dumps({
+                "HisnManaged": True, "OrganizationName": "Example Institute",
+                "HisnProfileVersion": 2, "HisnFilterManaged": True,
+            }))
+            (root / "com.apple.applicationaccess.plist").write_bytes(plistlib.dumps({
+                "allowCloudPrivateRelay": False,
+                "allowEraseContentAndSettings": False,
+            }))
+            (root / "com.apple.dnsSettings.managed.plist").write_bytes(plistlib.dumps({
+                "DNSSettings": {"DNSProtocol": "HTTPS",
+                                "ServerURL": "https://family.cloudflare-dns.com/dns-query",
+                                "ProhibitDisablement": True},
+            }))
+            (root / "com.google.Chrome.plist").write_bytes(plistlib.dumps({
+                "DnsOverHttpsMode": "off", "IncognitoModeAvailability": 1,
+            }))
+            (root / "org.mozilla.firefox.plist").write_bytes(plistlib.dumps({
+                "EnterprisePoliciesEnabled": True,
+            }))
+            facts = self.layer_facts(root)
+            self.assertEqual(facts["managed"], "yes")
+            self.assertEqual(facts["organization"], "Example Institute")
+            self.assertEqual(facts["version"], "2")
+            self.assertEqual(facts["filter_declared"], "yes")
+            self.assertEqual(facts["dns"], "yes")
+            self.assertEqual(facts["dns_prohibit"], "yes")
+            self.assertEqual(facts["relay"], "off")
+            self.assertEqual(facts["erase"], "off")
+            self.assertEqual(facts["chrome"], "yes")
+            self.assertEqual(facts["firefox"], "yes")
+
+    def test_the_layer_reader_keeps_missing_files_unknown(self):
+        with tempfile.TemporaryDirectory() as directory:
+            facts = self.layer_facts(Path(directory))
+            for key in ("managed", "filter_declared", "dns_prohibit"):
+                self.assertEqual(facts[key], "unknown", key)
+            self.assertEqual(facts["dns"], "no",
+                             "a missing DNS payload is a definite absence")
+            self.assertEqual(facts["chrome"], "no")
+            self.assertEqual(facts["firefox"], "no")
+            self.assertEqual(facts["relay"], "unknown")
+            self.assertEqual(facts["erase"], "unknown")
+            self.assertEqual(facts["version"], "")
 
 
 class TestManagedMode(unittest.TestCase):
@@ -656,3 +1080,7 @@ class TestManagedMode(unittest.TestCase):
         profile = build(managed=True, organization_name="   ")
         self.assertEqual(payload(profile, "app.hisn.Hisn")["OrganizationName"],
                          "Your organization")
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)

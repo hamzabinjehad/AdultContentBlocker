@@ -14,11 +14,11 @@
     {
       "id": "macos",
       "name": "Mac",
-      "version": "1.1.17",
-      "build": 29,
+      "version": "1.1.18",
+      "build": 30,
       "state": "development · unsigned, needs Developer ID and notarization",
       "source": "macos/Hisn.xcodeproj/project.pbxproj",
-      "notes": "Every target must carry the same MARKETING_VERSION and CURRENT_PROJECT_VERSION. 1.1.17 adds an explicit adult-TLD rail in the filter and the site checker: a name ending in `.adult`, `.porn`, `.sex` or `.xxx` is blocked without a list entry, after the hand allowance and before the published list, so it also works when the list is missing or the terms file failed to load. The checker names this answer `adultTld` and explains it in English and Arabic. `.cam` stays reachable. 1.1.16's aggregate blocked-connection count, 1.1.15's Organization Mode and 1.1.14's first-run/private-window pass are retained. Unsigned/unnotarized."
+      "notes": "Every target must carry the same MARKETING_VERSION and CURRENT_PROJECT_VERSION. 1.1.18 combines the 1.1.17 work on this branch with the MDM layer: the adult-TLD rail and the craft/extra-sites pass are retained, MDM enrollment is read as its own fact and the Organization policy layer names DEP/MDM versus a local profile, `profile/make_profile.py --mdm --team-id` adds a `com.apple.webcontent-filter` payload (plugin type, socket filter, designated requirement) and a `com.apple.system-extension-policy` that allows the Hisn filter and makes it non-removable on macOS 15+, blocks Erase All Content and Settings, and on macOS 26+ disables Safari private browsing. `HisnProfileVersion=2` and `HisnFilterManaged` let the app leave a profile-owned filter alone, `verify_mdm.sh --strict` checks the layers, and `--maximum` is the supervised-fleet preset. 1.1.16's aggregate blocked-connection count and 1.1.15's Organization Mode are retained. Unsigned/unnotarized."
     },
     {
       "id": "ios",

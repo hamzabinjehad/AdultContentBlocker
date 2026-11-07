@@ -184,7 +184,11 @@ For managed deployment, macOS 15+ offers MDM
 system extensions while SIP is enabled. The separate
 `NonRemovableFromUISystemExtensions` policy prevents disabling or uninstalling
 through System Settings or Finder.
-Neither capability comes from a normal app installation.
+Neither capability comes from a normal app installation. Mac 1.1.18's
+`profile/make_profile.py --mdm --team-id` now emits that policy together with
+a `com.apple.webcontent-filter` payload for the signed Hisn extension; see
+[MDM deployment](MDM_DEPLOYMENT.md). It is generated and documented, not
+exercised against a real fleet here.
 [Apple SystemExtensions](https://developer.apple.com/documentation/devicemanagement/systemextensions?changes=_2_2&language=objc).
 
 Repair recovery and durable-policy acceptance before strengthening release

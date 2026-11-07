@@ -453,6 +453,22 @@
         }
       }
     },
+    "1. Get the enrollment profile from your organization.\n2. Open it, or open Device Management, and approve it in System Settings.\n3. Return here and check again." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "١. احصل على ملف التسجيل من مؤسستك.\n٢. افتحه، أو افتح إدارة الأجهزة، ثم وافق عليه في إعدادات النظام.\n٣. عُد إلى هنا وتحقق مرة أخرى."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1. Get the enrollment profile from your organization.\n2. Open it, or open Device Management, and approve it in System Settings.\n3. Return here and check again."
+          }
+        }
+      }
+    },
     "1. Send this code to your partner:" : {
       "localizations" : {
         "ar" : {
@@ -734,6 +750,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "A lock is running. Hisn will not offer to re-enable private windows until it ends."
+          }
+        }
+      }
+    },
+    "A lock is running. MDM enrollment waits until it ends." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ثمة قفل يعمل. ينتظر تسجيل MDM حتى ينتهي."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A lock is running. MDM enrollment waits until it ends."
           }
         }
       }
@@ -1170,6 +1202,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "احجب هذه دائمًا"
+          }
+        }
+      }
+    },
+    "An organization's MDM can enroll this Mac and keep the protection profile scoped. Hisn cannot enroll it for you." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يمكن لـ MDM المؤسسة تسجيل هذا الـ Mac وإبقاء ملف الحماية ضمن نطاقه. لا يستطيع حصن تسجيله نيابةً عنك."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An organization's MDM can enroll this Mac and keep the protection profile scoped. Hisn cannot enroll it for you."
           }
         }
       }
@@ -2230,6 +2278,38 @@
         }
       }
     },
+    "Choose Enrollment Profile…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختيار ملف التسجيل…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose Enrollment Profile…"
+          }
+        }
+      }
+    },
+    "Choose the enrollment profile your organization sent." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختر ملف التسجيل الذي أرسلته مؤسستك."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose the enrollment profile your organization sent."
+          }
+        }
+      }
+    },
     "Choose what your network allows, regardless of the router brand or internet provider. Hisn does not configure routers automatically yet." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2741,6 +2821,22 @@
         }
       }
     },
+    "Device management" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إدارة الأجهزة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Device management"
+          }
+        }
+      }
+    },
     "Device time could not be confirmed. Check automatic date and time. Your saved commitment deadline has not changed." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -3005,6 +3101,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Enforces %1$lld of %2$lld layers."
+          }
+        }
+      }
+    },
+    "Enrolled in MDM" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مسجّل في MDM"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enrolled in MDM"
+          }
+        }
+      }
+    },
+    "Enrollment is run by your organization's MDM server. Hisn cannot enroll this Mac or approve the profile for you." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يجري التسجيل عبر خادم MDM التابع لمؤسستك. لا يستطيع حصن تسجيل هذا الـ Mac أو الموافقة على الملف التعريفي نيابةً عنك."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enrollment is run by your organization's MDM server. Hisn cannot enroll this Mac or approve the profile for you."
+          }
+        }
+      }
+    },
+    "Enrollment unknown" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "حالة التسجيل غير معروفة"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enrollment unknown"
           }
         }
       }
@@ -3584,6 +3728,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hisn cannot confirm an extension connection from %1$@. Reinstall or enable it in %2$@’s extensions page and check its app connection, or %3$@ will close."
+          }
+        }
+      }
+    },
+    "Hisn could not read the enrollment state yet. If you just approved the profile, wait a moment and check again." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يتمكن حصن من قراءة حالة التسجيل بعد. إذا كنت قد وافقت على الملف للتو، فانتظر لحظة ثم تحقق مرة أخرى."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hisn could not read the enrollment state yet. If you just approved the profile, wait a moment and check again."
+          }
+        }
+      }
+    },
+    "Hisn could not read the enrollment state. Open Device Management to check." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّر على حصن قراءة حالة التسجيل. افتح إدارة الأجهزة للتحقق."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hisn could not read the enrollment state. Open Device Management to check."
           }
         }
       }
@@ -4818,6 +4994,38 @@
         }
       }
     },
+    "Managed by %@. Enrolled in MDM. Local removal and weakening controls are disabled." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مُدار بواسطة %1$@. مسجّل في MDM. أزرار الإزالة وتخفيف الحماية المحلية معطّلة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Managed by %@. Enrolled in MDM. Local removal and weakening controls are disabled."
+          }
+        }
+      }
+    },
+    "Managed by %@. Enrolled via DEP and MDM. Local removal and weakening controls are disabled." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مُدار بواسطة %1$@. مسجّل عبر DEP وMDM. أزرار الإزالة وتخفيف الحماية المحلية معطّلة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Managed by %@. Enrolled via DEP and MDM. Local removal and weakening controls are disabled."
+          }
+        }
+      }
+    },
     "Managed by %@. Local removal and weakening controls are disabled." : {
       "localizations" : {
         "ar" : {
@@ -4830,6 +5038,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Managed by %@. Local removal and weakening controls are disabled."
+          }
+        }
+      }
+    },
+    "Managed by %@. MDM enrollment is present but not user-approved. Local removal and weakening controls are disabled." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مُدار بواسطة %1$@. تسجيل MDM موجود لكنه غير معتمد من المستخدم. أزرار الإزالة وتخفيف الحماية المحلية معطّلة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Managed by %@. MDM enrollment is present but not user-approved. Local removal and weakening controls are disabled."
           }
         }
       }
@@ -4882,6 +5106,22 @@
         }
       }
     },
+    "Managed by %@. This Mac is not enrolled in MDM. Local removal and weakening controls are disabled." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مُدار بواسطة %1$@. هذا الـ Mac غير مسجّل في MDM. أزرار الإزالة وتخفيف الحماية المحلية معطّلة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Managed by %@. This Mac is not enrolled in MDM. Local removal and weakening controls are disabled."
+          }
+        }
+      }
+    },
     "Managed by %@. You can turn checks on and raise sensitivity; the reverse requires your administrator." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -4911,6 +5151,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Managed by %@. Your organization controls these protections."
+          }
+        }
+      }
+    },
+    "Managed by your organization, but not running. Ask your administrator to check the profile." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مُدار من مؤسستك، لكنه لا يعمل. اطلب من مسؤول النظام التحقق من ملف التعريف."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Managed by your organization, but not running. Ask your administrator to check the profile."
           }
         }
       }
@@ -5526,6 +5782,22 @@
         }
       }
     },
+    "Not enrolled" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "غير مسجّل"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not enrolled"
+          }
+        }
+      }
+    },
     "Not forced outside the extension for %@. Run this in the Hisn folder." : {
       "localizations" : {
         "ar" : {
@@ -5933,6 +6205,38 @@
         }
       }
     },
+    "Only install a profile from an organization you trust. A management profile can change settings on this Mac." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ثبّت ملفًا من مؤسسة تثق بها فقط. يمكن لملف الإدارة تغيير إعدادات هذا الـ Mac."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only install a profile from an organization you trust. A management profile can change settings on this Mac."
+          }
+        }
+      }
+    },
+    "Open" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فتح"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open"
+          }
+        }
+      }
+    },
     "Open %@" : {
       "localizations" : {
         "ar" : {
@@ -6224,6 +6528,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "اختياري"
+          }
+        }
+      }
+    },
+    "Optional. An organization's MDM enrolls the Mac and keeps the protection profile in place; Hisn cannot enroll it for you." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اختياري. يسجّل MDM المؤسسة الـ Mac ويُبقي ملف الحماية في مكانه؛ لا يستطيع حصن تسجيله نيابةً عنك."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Optional. An organization's MDM enrolls the Mac and keeps the protection profile in place; Hisn cannot enroll it for you."
           }
         }
       }
@@ -6684,6 +7004,22 @@
         }
       }
     },
+    "Profile installed locally" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الملف التعريفي مثبّت محليًا"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profile installed locally"
+          }
+        }
+      }
+    },
     "Protect browsing settings" : {
       "localizations" : {
         "ar" : {
@@ -6825,6 +7161,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تحتاج الحماية إلى اهتمام"
+          }
+        }
+      }
+    },
+    "Protection profile v%lld. The profile does not include the managed system filter." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ملف تعريف الحماية v%lld. لا يتضمن ملف التعريف مرشّح النظام المُدار."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Protection profile v%lld. The profile does not include the managed system filter."
+          }
+        }
+      }
+    },
+    "Protection profile v%lld. The system filter is managed by the profile." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ملف تعريف الحماية v%lld. مرشّح النظام مُدار بواسطة ملف التعريف."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Protection profile v%lld. The system filter is managed by the profile."
           }
         }
       }
@@ -7288,6 +7656,22 @@
         }
       }
     },
+    "Review enrollment…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مراجعة التسجيل…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Review enrollment…"
+          }
+        }
+      }
+    },
     "Review next step" : {
       "localizations" : {
         "ar" : {
@@ -7727,6 +8111,22 @@
         }
       }
     },
+    "Set up with your organization…" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الإعداد مع مؤسستك…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set up with your organization…"
+          }
+        }
+      }
+    },
     "Setting up the filter..." : {
       "localizations" : {
         "ar" : {
@@ -8083,6 +8483,22 @@
         }
       }
     },
+    "Still not enrolled. The profile may be waiting for approval in System Settings." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ما زال غير مسجّل. قد يكون الملف بانتظار الموافقة في إعدادات النظام."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Still not enrolled. The profile may be waiting for approval in System Settings."
+          }
+        }
+      }
+    },
     "Still open: %@. Ask the person who manages this Mac to install the Hisn protection profile." : {
       "localizations" : {
         "ar" : {
@@ -8166,6 +8582,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "System Settings opened with “Hisn private windows disabled” ready to install. Approve it under Device Management, then return here."
+          }
+        }
+      }
+    },
+    "System Settings opened with the profile. Review it there and approve it, then return here." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فُتحت إعدادات النظام مع الملف. راجعه هناك ووافق عليه، ثم عُد إلى هنا."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "System Settings opened with the profile. Review it there and approve it, then return here."
           }
         }
       }
@@ -8639,6 +9071,22 @@
         }
       }
     },
+    "The profile could not be opened. Open it from Finder or ask your organization for a new copy." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّر فتح الملف. افتحه من Finder أو اطلب نسخة جديدة من مؤسستك."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The profile could not be opened. Open it from Finder or ask your organization for a new copy."
+          }
+        }
+      }
+    },
     "The published list, plus anything you add." : {
       "localizations" : {
         "ar" : {
@@ -8696,6 +9144,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "مرشّح النظام يحجب النطاقات."
+          }
+        }
+      }
+    },
+    "The system filter is managed by your organization. Ask your administrator to change it." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مرشّح النظام مُدار من مؤسستك. اطلب من مسؤول النظام تغييره."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The system filter is managed by your organization. Ask your administrator to change it."
           }
         }
       }
@@ -8959,6 +9423,38 @@
         }
       }
     },
+    "This Mac is enrolled in MDM, but the Hisn organization profile is not applied. Ask your administrator to deploy it." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذا الـ Mac مسجّل في MDM، لكن ملف حصن التنظيمي غير مطبّق. اطلب من مديرك نشره."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Mac is enrolled in MDM, but the Hisn organization profile is not applied. Ask your administrator to deploy it."
+          }
+        }
+      }
+    },
+    "This Mac is enrolled in MDM." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذا الـ Mac مسجّل في MDM."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Mac is enrolled in MDM."
+          }
+        }
+      }
+    },
     "This makes the schedule weaker, so it takes effect %@." : {
       "localizations" : {
         "ar" : {
@@ -8981,6 +9477,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "This may be your router's page. Confirm the address in your router's documentation. Enter its password only in the router's own page; Hisn does not collect it."
+          }
+        }
+      }
+    },
+    "This organization profile does not report a version. Ask your administrator to redeploy the current profile." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يذكر ملف تعريف المؤسسة إصداراً. اطلب من مسؤول النظام إعادة نشر ملف التعريف الحالي."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This organization profile does not report a version. Ask your administrator to redeploy the current profile."
           }
         }
       }

@@ -3647,6 +3647,7 @@ private struct SettingsPage: View {
 
             PartnerSection(isLocked: isLocked, managed: managed)
             GrayscaleSection(isLocked: isLocked, managed: managed)
+            DeviceManagementSection()
             LanguageSection()
             DetailsSection()
         }

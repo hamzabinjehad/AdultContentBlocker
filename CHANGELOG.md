@@ -5,7 +5,7 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
-## Mac — unreleased, 2026-11-07
+## Mac 1.1.18 — 2026-11-07
 
 ### Added
 
@@ -24,6 +24,34 @@ bump without an entry here is an unfinished release.
   three-segment progress bar: how the layers work, the optional distraction
   sites, and the private-window decision. **Not now** on the private-window
   step continues to Setup instead of closing the pass.
+- **MDM enrollment is read as its own fact.** `ManagedMode` carries
+  `MDMEnrollment`, populated by `/usr/bin/profiles status -type enrollment`.
+  The probe is bounded to two seconds, cached for ten minutes, and runs only
+  after the forced `HisnManaged` flag is present, so an unmanaged Mac never
+  pays for it. The **Organization policy** layer distinguishes **DEP and MDM**,
+  **enrolled in MDM**, an **unapproved enrollment**, a **local profile** and
+  an unreadable answer; none of them becomes "not managed".
+- **The MDM profile can own the filter.** `profile/make_profile.py --mdm
+  --team-id` emits a `com.apple.webcontent-filter` plugin payload for the
+  signed Hisn extension and a `com.apple.system-extension-policy` with
+  `AllowedSystemExtensions`, `NonRemovableSystemExtensions` and
+  `NonRemovableFromUISystemExtensions`; on macOS 15+ with SIP the filter cannot
+  be disabled or uninstalled from System Settings or Finder. The same build
+  blocks Erase All Content and Settings, and on macOS 26+ sets
+  `SafariHistoryRetentionEnabled` so Safari private browsing and history
+  clearing are unavailable. `--maximum` is the supervised-fleet preset and
+  refuses every weakening flag.
+- **The app leaves a profile-owned filter alone.** The managed payload carries
+  `HisnProfileVersion=2` and `HisnFilterManaged`; the app stops replacing or
+  disabling the filter and the Setup control says the organization owns it.
+  **Settings › Device management** shows the profile version and opens a guided
+  handoff to Device Management or an organization-supplied profile; it cannot
+  enroll the Mac or accept for the person.
+- **`verify_mdm.sh` checks the layers.** It reads the managed-preferences
+  plists for the profile version, managed-filter declaration, DNS,
+  `ProhibitDisablement`, Private Relay, Erase and browser policy, then reads
+  `systemextensionsctl` for the filter extension. `--strict` requires the full
+  set and exits 1 when a layer is missing; the default exit codes stay 0/1/2.
 
 ### Changed
 
@@ -67,13 +95,16 @@ bump without an entry here is an unfinished release.
   Arabic first-run and picker captures, including selected and parent-covered
   chips.
 - The Rules page is in the full page render and the Arabic render set.
-- `python3 macos/check_localization.py --xliff …` — 815 strings, all with
+- `python3 macos/check_localization.py --xliff …` — 847 strings, all with
   Arabic.
-- Full Mac suite — 587 tests, 0 failures.
+- Full Mac suite — 601 tests, 0 failures; `profile` suite — 127 tests, 0
+  failures, including the generator and verifier parser.
 
 Records:
-[Mac extra sites and rules](docs/MACOS_EXTRA_SITES_2026-11-07.md) and the
-[Mac craft pass](docs/MACOS_CRAFT_2026-11-07.md); current captures:
+[Mac extra sites and rules](docs/MACOS_EXTRA_SITES_2026-11-07.md), the
+[Mac craft pass](docs/MACOS_CRAFT_2026-11-07.md),
+[MDM deployment](docs/MDM_DEPLOYMENT.md) and the
+[Mac 1.1.18 MDM note](docs/MACOS_1.1.18.md); current captures:
 [design/macos-craft-2026-11-07](design/macos-craft-2026-11-07/README.md).
 
 ### Limits
@@ -84,6 +115,14 @@ Records:
 - The time-budget, timed-disable, open-count and streak ideas visible in the
   ScreenZen reference were deliberately not added: they would introduce a
   weakening surface or a motivational claim the product does not make.
+- A signed Developer ID build is required for the managed filter; a wrong
+  designated requirement leaves a complete-looking profile that cannot load
+  the extension. `NonRemovableSystemExtensions` needs macOS 15+ and SIP, and
+  `SafariHistoryRetentionEnabled` needs macOS 26+; Recovery and the MDM console
+  still remove the extension. No MDM-enrolled Mac or positive deployment run
+  was available.
+- The filter is socket-level, not Apple's OS 26 URL Filter; encrypted posts and
+  videos are not classified.
 
 ## iPhone & iPad 1.8.0 — 2026-11-07
 

@@ -34,9 +34,9 @@ this pass — see "Assumption to verify first".
 | Filter health keys | app-group defaults | user | forge | the status header can be lied to by the person it reports to |
 | Extension state (`chrome.storage.local`) | browser profile directory | user | edit via devtools on the worker; `guardedUpdate` schema blocks the *message* path only | `appPresent`, `failClosed`, `lastHeartbeat` are reachable through the storage API from a devtools console |
 | Native-host manifest | user scope `~/Library/Application Support/<browser>/NativeMessagingHosts/app.hisn.bridge.json`; system scope `/Library/…` (needs `sudo`) | user / root | delete the user-scope one → extension loses the app → **fails closed** to strict after 5 min | tamper here makes things stricter |
-| Browser policy (force-install, incognito off, DoH off) | configuration profile, `PayloadScope: System` → `/Library/Managed Preferences` | root | nothing | only an admin can remove the profile, and it carries a removal password |
-| Network filter preference | `NEFilterManager` (system) | root | nothing; disabling is in System Settings and prompts for admin | the app re-asserts on launch |
-| System extension activation | `sysextd`, SIP-protected | root | nothing | `systemextensionsctl` needs admin, and full removal needs SIP off |
+| Browser policy (force-install, incognito off, DoH off) | configuration profile, `PayloadScope: System` → `/Library/Managed Preferences` | root (local profile) or the MDM | nothing | a local profile needs an admin and its removal password; an MDM-scoped profile is removed by the MDM, and a supervised Mac with profile removal disallowed does not offer local removal. The app reads the enrollment, not supervision. Mac 1.1.18 profiles also report `HisnProfileVersion` and `HisnFilterManaged`; those are declarations the app displays, not enforcement evidence |
+| Network filter preference | `NEFilterManager` (system) | root | nothing; disabling is in System Settings and prompts for admin | the app re-asserts on launch unless the organization profile owns the filter (`HisnFilterManaged`); then the app observes it and refuses to replace it, and the profile is the removal path |
+| System extension activation | `sysextd`, SIP-protected | root | nothing | `systemextensionsctl` needs admin, and full removal needs SIP off. With an MDM `NonRemovableSystemExtensions` policy (macOS 15+), the extension cannot be disabled or uninstalled while SIP is on; an admin who turns SIP off in Recovery is outside this row |
 | Bundled seed | inside the app bundle, code-signed | root (in `/Applications`) | nothing as standard user | modifying it breaks the app's signature; the filter also verifies the manifest signature |
 | Login agent (`app.hisn.agent`) | `/Library/LaunchAgents` | **root** since 2026-09-26 (was `~/Library/LaunchAgents`, the user's) | `launchctl bootout` for the current session; 1.1.5's guardian daemon puts it back | it loads in every account, so it names the protected one (`--for-user`) and Hisn quits elsewhere |
 | Guardian daemon (`app.hisn.guardian`) | `/Library/LaunchDaemons` + `/Library/Application Support/Hisn` | **root** since 1.1.5 | a standard user cannot bootout the system domain or edit the root-owned config; it re-bootstraps the login agent | an administrator can `launchctl bootout system/app.hisn.guardian` and remove the plist; the daemon logs only account/action/time and does not probe the filter |
@@ -58,9 +58,13 @@ holds against accidents and against `defaults delete` of one store; it does
 not hold against a standard user who has read this document.
 
 ### Administrator
-Everything above, plus: remove the profile (with the removal password), turn
+Everything above, plus: remove a locally installed profile (with the removal
+password), remove the Mac from the MDM scope, turn
 the filter off in System Settings, deactivate or delete the system extension,
-delete the app. `setup_guardian.sh` exists so that the daily user is not one.
+delete the app. An MDM profile that declares the managed filter and marks the
+extension non-removable (macOS 15+) removes the System Settings toggle while
+SIP is on, but not the Recovery path or the MDM console. `setup_guardian.sh`
+exists so that the daily user is not one.
 
 ### Recovery-capable user
 Everything, including turning SIP off and erasing the disk. Closed by nothing

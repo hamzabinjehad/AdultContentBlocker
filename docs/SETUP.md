@@ -211,6 +211,12 @@ macos/install.sh --profile                      # builds it and opens it
 macos/install.sh --profile -- --allow-devtools  # if you develop extensions yourself
 ```
 
+For a fleet, do not install by hand: build with `--mdm --team-id` and deploy
+the profile through the MDM ([MDM deployment](MDM_DEPLOYMENT.md)). The MDM
+build omits the local removal password because the MDM owns removal, and with
+the team ID it also owns the filter and makes the signed extension
+non-removable on macOS 15+.
+
 `--profile` first installs the **admin-owned browser link**
 (`install_native_host.sh`, asks for the password): the profile switches off
 user-level links — a user-level manifest is the user's own file and can point

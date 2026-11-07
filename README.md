@@ -71,6 +71,16 @@ you the lock; Hisn adds the coverage those built-in filters miss. Read
   when the session ends. The shield can only hand over, never grant; a damaged
   budget record closes the day. 1.6.0's browser/VPN guard and Lock Center, 1.5.0
   overview and 1.4.0 shield remain.
+- **Mac 1.1.18 — the MDM profile can own the filter, and the Mac gets its
+  craft pass.** Add `--mdm --team-id` to the profile generator and the profile
+  carries a `com.apple.webcontent-filter` plugin payload plus a
+  `com.apple.system-extension-policy` that makes the signed Hisn filter
+  non-removable on macOS 15+; an MDM build also blocks Erase All Content and
+  Settings, and macOS 26+ loses Safari private browsing. `--maximum` is the
+  supervised-fleet preset, and `verify_mdm.sh --strict` checks the layers.
+  The same release keeps the adult-TLD rail and the ink-and-paper craft pass
+  (see the Mac records below). 1.1.17's enrollment probe and guided handoff
+  remain.
 - **Mac 1.1.16** — the filter now reports an aggregate count of denied
   connections for the current local day (no host, app or address) in the menu
   bar and the Overview's layer details; a dropped XPC reply no longer abandons
@@ -158,7 +168,7 @@ English, Arabic RTL and both palettes are in the
 | Platform | What it does | State | Start here |
 | --- | --- | --- | --- |
 | Browser extension (Chromium) | Blocks listed domains and adult TLDs, checks page text in the page's language, optional local image/video checks, portable hand lists | 1.5.3 | [Using the extension](docs/EXTENSION_USAGE.md) |
-| Mac | Content-filter system extension, adult-TLD and hostname guards, browser guard, locks, authority checks, accountability partner, root guardian daemon, an on-demand breathing pause, a read-only site checker and an aggregate blocked-connection count | 1.1.17, needs a signed build | [Mac setup](docs/SETUP.md) |
+| Mac | Content-filter system extension, adult-TLD and hostname guards, browser guard, locks, authority checks, accountability partner, root guardian daemon, an on-demand breathing pause, a read-only site checker, an aggregate blocked-connection count, MDM enrollment and a profile-managed non-removable filter | 1.1.18, needs a signed build | [Mac setup](docs/SETUP.md) · [MDM](docs/MDM_DEPLOYMENT.md) |
 | iPhone & iPad | A device-wide DNS filter with the adult-TLD and hostname guards, six Safari blockers, Safari text extension, Screen Time app limits with a custom bilingual shield, a browser and VPN guard, a pause rule with a daily opens budget, protection lock for saved rules, an on-demand pause, daily quiet hours and a removal-protection Lock Center; distributed directly as a signed-on-install IPA | 1.8.0, development · needs a signed device | [iOS README](ios/README.md) · [direct install](docs/IOS_DIRECT.md) |
 | Android | DNS filtering with the adult-TLD and hostname guards, selected-app and word restrictions, per-app daily time limits, first-run welcome, voluntary pause, optional image checks, browser-coverage screen, schedules, protection lock that freezes saved rules, opt-in device-owner uninstall guard and managed lockdown, direct-build removal guard, layer watchdog and bundled-list freshness warning | 1.2.2 development; 1.1.0 direct APK published, Play AAB not uploaded | [Android README](android/README.md) · [1.2 record](docs/ANDROID_UI_2026-11-06.md) |
 | Network / router | Verified signed DNS rules for administrator import | Tools only | [Network tools](network/README.md) |

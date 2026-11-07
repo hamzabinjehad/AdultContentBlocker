@@ -61,6 +61,12 @@ final class FilterActivationTests: XCTestCase {
             delegate.request(request, didFinishWithResult: .completed)
         }
     }
+
+    func testAManagedFilterRefusalHasAnActionableMessage() {
+        let error = FilterController.FilterError.managedByOrganization
+        XCTAssertTrue(error.errorDescription?.contains("managed by your organization") == true,
+                      error.errorDescription ?? "")
+    }
 }
 
 @MainActor

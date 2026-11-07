@@ -8,6 +8,11 @@ struct FilterSetupControl: View {
     /// in one card.
     var showsBuildBlock = true
 
+    /// A profile-owned filter is enabled by the organization profile. Showing
+    /// an "Enable" button here would either fail or overwrite the management
+    /// layer's configuration, so the control says who owns it instead.
+    private var managedByProfile: Bool { ManagedMode.current().filterManaged }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             if showsBuildBlock, let block = FilterLink.shared.buildBlock {
@@ -25,19 +30,32 @@ struct FilterSetupControl: View {
                 ProgressView("Setting up the filter...").controlSize(.small)
             }
 
-            HStack(spacing: 8) {
-                HnButton(title: "Enable system filter", systemImage: "shield.lefthalf.filled",
-                         kind: .quiet) {
-                    Task { @MainActor in
-                        do { try await filter.enable() }
-                        catch { /* The controller publishes the error below. */ }
-                    }
-                }
-                .disabled(!FilterLink.shared.isConfigured || filter.isEnabling || filter.isEnabled || filter.restartRequired)
-
+            if managedByProfile {
+                Label("The system filter is managed by your organization. Ask your administrator to change it.",
+                      systemImage: "building.2")
+                    .font(.hnCaption())
+                    .foregroundStyle(HnPalette.muted)
+                    .fixedSize(horizontal: false, vertical: true)
                 if filter.needsUserApproval {
                     HnButton(title: "Open System Settings", kind: .outline) {
                         NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/System Settings.app"))
+                    }
+                }
+            } else {
+                HStack(spacing: 8) {
+                    HnButton(title: "Enable system filter", systemImage: "shield.lefthalf.filled",
+                             kind: .quiet) {
+                        Task { @MainActor in
+                            do { try await filter.enable() }
+                            catch { /* The controller publishes the error below. */ }
+                        }
+                    }
+                    .disabled(!FilterLink.shared.isConfigured || filter.isEnabling || filter.isEnabled || filter.restartRequired)
+
+                    if filter.needsUserApproval {
+                        HnButton(title: "Open System Settings", kind: .outline) {
+                            NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/System Settings.app"))
+                        }
                     }
                 }
             }

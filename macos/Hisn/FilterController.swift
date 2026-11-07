@@ -50,6 +50,7 @@ public final class FilterController: ObservableObject {
 
     public enum FilterError: LocalizedError {
         case lockedCannotDisable
+        case managedByOrganization
         case activationFailed(String)
         case configurationFailed(String)
         case activationInProgress
@@ -59,6 +60,8 @@ public final class FilterController: ObservableObject {
             switch self {
             case .lockedCannotDisable:
                 return String(localized: "The filter cannot be turned off while a lock is running.")
+            case .managedByOrganization:
+                return String(localized: "The system filter is managed by your organization. Ask your administrator to change it.")
             case let .activationFailed(d):
                 return String(localized: "The system extension could not be activated: \(d)")
             case let .configurationFailed(d):
@@ -90,6 +93,14 @@ public final class FilterController: ObservableObject {
 
     /// Ensure the filter is installed, configured and running.
     public func enable() async throws {
+        // A profile-owned filter is not the app's to create. Replacing it with
+        // a local NEFilterManager configuration would make the extension look
+        // app-managed again and could drop the profile's provider settings.
+        if ManagedMode.current().filterManaged {
+            await refresh()
+            if isEnabled { return }
+            throw FilterError.managedByOrganization
+        }
         // A second request used to replace the first request's weak delegate,
         // leaving its continuation suspended forever while approval was open.
         guard !isEnabling, !isDisabling else { throw FilterError.activationInProgress }
@@ -143,13 +154,18 @@ public final class FilterController: ObservableObject {
         return true
     }
 
-    /// Turn the filter off. Refused outright while a lock is running.
+    /// Turn the filter off. Refused outright while a lock is running, and
+    /// refused when the organization profile owns the filter. The profile is
+    /// the removal path: an administrator unscopes or replaces it.
     public func disable() async throws {
         // Not on the app's own word. Its mirrors are the user's files and their
         // clock a key in the user's defaults: with the clock forged to 2099 the
         // app decided the lock was over and switched the filter off itself —
         // and the filter's authority, which knew better, went down with it.
         guard !EffectiveLock.isLocked else { throw FilterError.lockedCannotDisable }
+        guard !ManagedMode.current().filterManaged else {
+            throw FilterError.managedByOrganization
+        }
         guard !isEnabling, !isDisabling else { throw FilterError.activationInProgress }
         configurationRevision &+= 1
         isDisabling = true
@@ -173,7 +189,15 @@ public final class FilterController: ObservableObject {
     /// unreachable provider gets its configuration reasserted without toggling
     /// it off. This is a recovery attempt, not a guarantee of continuous denial:
     /// protection status still requires the provider's own live response.
+    ///
+    /// A profile-managed filter is left alone. The app can observe it and
+    /// report it, but saving a local configuration over it would take the
+    /// filter back from the management layer that is supposed to own it.
     public func reassertIfNeeded() async {
+        guard !ManagedMode.current().filterManaged else {
+            await refresh()
+            return
+        }
         let revision = configurationRevision
         await recovery.run(eligible: {
             FilterLink.shared.isConfigured && !self.isEnabling

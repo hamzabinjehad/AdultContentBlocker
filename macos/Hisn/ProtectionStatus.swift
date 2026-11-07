@@ -277,14 +277,15 @@ public struct ProtectionStatus: Equatable {
                            state: .ok, action: nil)
         } else {
             filter = Self.filterLayer(evidence.filter, canRun: evidence.filterCanRun,
-                                      block: evidence.filterBlock)
+                                      block: evidence.filterBlock,
+                                      managedFilter: evidence.managedMode?.filterManaged == true)
         }
         let ext = Self.extensionLayer(lastSeen: evidence.extensionLastSeen, now: evidence.now)
         let hosts = evidence.hostsEntries.map(Self.hostsLayer)
         let privateLayer = evidence.privateBrowsing.flatMap(Self.privateBrowsingLayer)
         let managedLayer: Layer? = evidence.managedMode?.isManaged == true
             ? Layer(name: String(localized: "Organization policy"),
-                    detail: String(localized: "Managed by \(evidence.managedMode?.displayName ?? ManagedMode.none.displayName). Local removal and weakening controls are disabled."),
+                    detail: evidence.managedMode?.policyDetail ?? "",
                     state: .ok, action: nil)
             : nil
         let policy: Layer?
@@ -355,7 +356,8 @@ public struct ProtectionStatus: Equatable {
     }
 
     private static func filterLayer(_ f: FilterEvidence, canRun: Bool,
-                                    block: FilterBuildBlock?) -> Layer {
+                                    block: FilterBuildBlock?,
+                                    managedFilter: Bool = false) -> Layer {
         let name = String(localized: "System filter")
         if !canRun {
             // Name the cause that applies. A block with no diagnosis keeps the
@@ -375,6 +377,13 @@ public struct ProtectionStatus: Equatable {
                          detail: String(localized: "Could not read its state: \(message)"),
                          state: .problem, action: .retryFilterCheck)
         case .off:
+            if managedFilter {
+                // The app cannot start a profile-owned filter, and an Enable
+                // button would fail. Name the owner and leave the action out.
+                return Layer(name: name,
+                             detail: String(localized: "Managed by your organization, but not running. Ask your administrator to check the profile."),
+                             state: .problem, action: nil)
+            }
             return Layer(name: name, detail: String(localized: "Not running"),
                          state: .missing, action: .enableFilter)
         case .silent:
