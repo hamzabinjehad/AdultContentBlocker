@@ -7,6 +7,16 @@ listing that exists yet. The packaged zip is built by `extension/package.sh`
 the store assigns its own extension ID, which then has to be wired into the
 native-messaging installer and policy generators.
 
+**Before the next upload:** the permission table below describes the next build,
+not the 1.5.2 zip named above. The `offscreen` permission was restored after
+1.5.2 (the opt-in visual layer had been unavailable in Chromium without it), so
+the 1.5.2 artifact predates the fix and must not be uploaded. The existing
+`dist/hisn-extension-1.5.3.zip` is also a pre-fix build and fails the current
+package check (“missing bundled visual resource:
+`visual/wasm/tfjs-backend-wasm.wasm`”). Rebuild, record the new version and
+SHA-256, and run the store-package smoke test described in the extension
+improvement plan.
+
 ## Listing copy
 
 **Name:** Hisn Protection
@@ -62,11 +72,15 @@ Links: [Privacy policy](https://github.com/hamzabinjehad/AdultContentBlocker/blo
 | `alarms` | Check for a signed list generation every six hours and retry a failed install later | No background browsing collection |
 | `nativeMessaging` | Ask the Hisn Mac app for its lock state and app-owned lists over a local native host | No remote endpoint; no data leaves the machine |
 | `scripting` | Register the page-text scanner and the opt-in visual scanner on permitted pages | Does not run on browser settings pages or without site access |
+| `offscreen` | Run the opted-in local visual model in a hidden extension document, because a service worker has no DOM or canvas | Only an extension page; created only when visual checks are enabled and closed when they are disabled; no page content leaves the device |
 | `<all_urls>` host permission | Any page can contain adult text or media, and the block/SafeSearch rules must apply on any site | Reads only what a permitted page exposes to the scanner |
 
-The `offscreen` permission present in earlier development manifests was unused
-and has been removed. There is no `tabs`, `history`, `cookies`, `webRequest` or
-`management` permission.
+The `offscreen` permission is declared because the opt-in visual engine runs its
+local model in an extension offscreen document; a service worker has no DOM or
+canvas. It is created only when the person enables visual checks, and it is
+closed when they are disabled. It is not used for page scraping or remote work.
+There is no `tabs`, `history`, `cookies`, `webRequest` or `management`
+permission.
 
 ## Privacy practices tab
 
