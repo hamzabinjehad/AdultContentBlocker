@@ -95,11 +95,16 @@ hashes are in [the 1.5.4 record](../../docs/ANDROID_1.5.4.md).
 
 ## What is still wrong
 
-The installed 1.5.4 still shows the disconnected state because the accessibility
-service was already bound before the new process started; the new `onCreate`
-has not run for a fresh instance. The self-protection guard blocks the toggle.
-The safe next step is a **reboot** (accessibility services rebind at boot;
-1.5.4 then proves the live instance connected), followed by unlocking the phone.
+The installed 1.5.4 still shows the disconnected state. A reboot was performed:
+`dumpsys accessibility` then listed the Hisn service under **Bound services**,
+the app was version 42, and the boot shield finished, but the dashboard still
+reported "Hisn accessibility is enabled but not connected". A follow-up event
+restore (`if (!connected) connected = true` on every accessibility event) was
+built and installed too; the state still did not clear. The self-protection
+guard blocks the off/on toggle that the app recommends. This is now a service
+lifecycle problem, not a copy problem: the next step is a clean re-enable of the
+accessibility binding (reinstall the app or clear its accessibility state) with
+the person's consent, because a local rule and the app settings would be lost.
 
 Still open for the next pass:
 

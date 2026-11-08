@@ -47,11 +47,13 @@ changed.
   (`cmd locale set-app-locales app.hisn.android --locales en`). Before that,
   layout labels were Arabic while several Java strings were English.
 - DNS filtering stayed on and resolved `example.com` through the tunnel.
-- The accessibility service was still shown as bound while the app said
-  disconnected. The service instance predates the 1.5.4 process, so the new
-  `onCreate` has not run for a fresh instance; the direct build's self-protection
-  screen blocks turning the service off and on. A reboot is the next step to
-  exercise the fix; it has not been run.
+- A reboot was run. The service was listed under **Bound services**, the app
+  was version 42, and the boot shield finished, but the dashboard still said
+  "Hisn accessibility is enabled but not connected". A follow-up `onAccessibilityEvent`
+  restore was built and installed; it did not clear the state either. The direct
+  build's self-protection screen blocks turning the service off and on. This is
+  now a service-binding problem that needs a clean re-enable (reinstall or a
+  deliberate reset of the accessibility state), not another copy change.
 
 ### Signed artifacts
 

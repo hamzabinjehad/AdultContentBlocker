@@ -362,7 +362,10 @@ public final class TextGuardService extends AccessibilityService {
 
     @Override public void onAccessibilityEvent(AccessibilityEvent event) {
         // An event proves this instance is alive even when the bind callback was not repeated.
-        if (!started) { connected = true; startGuard(); }
+        // Restore a flag cleared by a temporary unbind as well: a live event is stronger
+        // evidence than the last lifecycle callback.
+        if (!connected) connected = true;
+        if (!started) startGuard();
         if (connected && visual == null) visual = newVisualGuard();
         // Only a window change discards an in-flight image sample. Scrolls and content changes
         // in feeds and videos are constant; the frame gate still requires the same app and
