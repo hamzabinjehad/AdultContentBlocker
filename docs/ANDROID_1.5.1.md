@@ -56,15 +56,15 @@ superior accuracy or coverage, and no HaramBlur code or assets were copied.
 | `check-strings.py`, `check-notices.py` | **PASS** — 578 strings, 16 plurals, 570 references |
 | `assembleDebug`, `assembleDebugAndroidTest`, `lintDebug` | **PASS**, 0 errors |
 | `check-release.py`, `apksigner` | **PASS** for both APKs; certificate `2F:BE:D6:…:70:C5` |
-| Physical SM-G990B2 1.5.1 install | **PASS** — version 39, data preserved, accessibility re-bound. The Incognito cover was not reached because the phone locked before the check; it remains a device check after unlock. |
+| Physical SM-G990B2 Incognito cover | **PASS** — version 39 installed, accessibility re-bound, Chrome Incognito covered with *Hisn can't check this window*. No protected pixels were inspected. |
 
 The phone update also exposed two separate settings that were off: DNS filtering
 was left on but not running, and the built-in adult-text layer was off. Both were
 enabled on the phone and are independent of this code change. They are recorded
 here because they explain why a normal adult page could have appeared open
-before the cover existed. Hisn 1.5.1 was installed and the accessibility service
-was re-bound; the phone locked before the Incognito check, so that specific
-device check is still pending.
+before the cover existed. Hisn 1.5.1 was installed and the accessibility service was re-bound. Chrome
+Incognito then showed the protected-window cover; no protected pixels were
+inspected.
 
 ### Signed artifacts
 
@@ -90,10 +90,9 @@ device check is still pending.
   MediaProjection or secure-flag removal is used. No adult-positive corpus,
   phone adult detection, battery or thermal measurement, and no comparison with
   HaramBlur's accuracy is established.
-- **One emulator protected-window test; phone Incognito still pending.** The
-  secure fixture is not a reliability study across OEMs, Chrome versions or
-  secure windows. The phone update succeeded and the service was re-bound, but
-  the phone locked before the Incognito cover check.
+- **One emulator secure fixture and one phone Incognito check.** This is not a
+  reliability study across OEMs, Chrome versions or secure windows. The phone
+  cover clears only by leaving the window, screen off or disabling the layer.
 
 ## Reproduce
 

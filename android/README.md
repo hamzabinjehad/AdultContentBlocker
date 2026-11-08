@@ -60,9 +60,9 @@ and DNS layers remain independent.
 
 On the API 36 emulator the `FLAG_SECURE` fixture reported `STATE PROTECTED`,
 `CAPTURE_ERROR 6`, `OVERLAYS 1` and zero samples from the protected window; the
-people-off suite still passes. The phone was updated to 1.5.1 and Hisn's accessibility service was re-bound.
-The Incognito cover smoke test is still a device check after unlock. No adult
-image, protected pixels, root, Xposed or secure-flag bypass is used. Details:
+people-off suite still passes. The phone was updated to 1.5.1 and Hisn's accessibility service was re-bound;
+Chrome Incognito then showed the protected-window cover. No adult image,
+protected pixels, root, Xposed or secure-flag bypass is used. Details:
 [the 1.5.1 record](../docs/ANDROID_1.5.1.md).
 
 ## 1.5.0: an opt-in people cover

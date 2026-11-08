@@ -32,6 +32,8 @@ bump without an entry here is an unfinished release.
 - This does **not** inspect protected pixels. It is a fail-closed cover for a
   window Android will not let any app capture. No root, Xposed, MediaProjection
   workaround or secure-flag bypass is added.
+- Phone Incognito cover on the SM-G990B2 after the 1.5.1 install and accessibility
+  re-bind; no protected pixels were inspected.
 - No adult-positive corpus, phone adult test, battery or thermal measurement.
 
 ## Android 1.5.0 — 2026-11-08
