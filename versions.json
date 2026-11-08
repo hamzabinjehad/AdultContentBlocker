@@ -32,11 +32,11 @@
     {
       "id": "android",
       "name": "Android",
-      "version": "1.5.3",
-      "build": 41,
-      "state": "development · 1.5.3 source, core/build/lint, go-back people response, self-healing DNS/guard, protected-window cover, live visual suites, signed Play/direct builds; no phone adult test",
+      "version": "1.5.4",
+      "build": 42,
+      "state": "development · 1.5.4 source, core/build/lint, accessibility reconnect fix; signed Play/direct artifacts; no phone adult test",
       "source": "android/app/build.gradle",
-      "notes": "41 (1.5.3) adds the people response choice. Blur people now has 'When a person is detected': Go back to the last page (default) or Cover the whole screen. On a matched face the guard hides any cover and performs one GLOBAL_ACTION_BACK, at most once per 1.2 s; a browser returns to its previous page, and a second matching page is handled on its own sample. If Back is refused, the cover is shown instead. Adult content still closes the app; protected/Incognito windows still use the 1.5.1 cover because their pixels cannot be inspected. The 1.5.2 DNS self-start and accessibility re-arm, 1.5.0 people cover, native adult TFLite path, 350 ms moving cadence, verdict cache and after-block pause are retained. No threshold, permission, stored rule or consent text changed. Verification: core/build/lint; emulator face fixture returned to the previous normal page after a matched face; no phone adult test, adult-positive corpus, battery or thermal measurement. Signed Play APK/AAB and direct APK pass check-release.py and apksigner; no Play upload."
+      "notes": "42 (1.5.4) fixes the accessibility guard showing \"Reconnect needed\" while the service was already bound. TextGuardService onCreate now marks the live instance connected and runs its idempotent setup, onUnbind returns true so a rebound instance is re-armed through onRebind, and the rearm BroadcastReceiver is unregistered in onDestroy (it previously leaked). The reconnect row and attention copy now tell the person exactly where to turn Hisn accessibility off and on instead of a dead-end instruction. No permission, threshold, stored rule or consent text changed; adult detection is unchanged."
     }
   ]
 }

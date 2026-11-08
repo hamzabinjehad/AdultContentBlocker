@@ -201,7 +201,7 @@
     <string name="text_guard_partial">Connected · partial coverage</string>
     <string name="protection_attention">Protection needs attention</string>
     <string name="text_guard_no_rules">Connected · no rules</string>
-    <string name="text_guard_reconnect">Reconnect needed</string>
+    <string name="text_guard_reconnect">Turn accessibility off and on</string>
     <string name="text_guard_permission">Permission needed</string>
     <string name="text_guard_unknown">Permission unknown</string>
     <string name="text_guard_recheck_note">Selected apps are rechecked about once per second while open. Checks stop after leaving them. Screen text stays on this device and is not saved.</string>
@@ -588,7 +588,7 @@
     <string name="attention_dns_not_running">DNS filtering was left on but is not running.</string>
     <string name="attention_private_dns">Android Private DNS can send system DNS around Hisn.</string>
     <string name="attention_guard_permission">Hisn accessibility is off, so app restrictions and checks are inactive.</string>
-    <string name="attention_guard_disconnected">Hisn accessibility is enabled but the service is disconnected.</string>
+    <string name="attention_guard_disconnected">Hisn accessibility is enabled but not connected. In Accessibility → Installed apps, turn Hisn off and on, then return.</string>
     <string name="attention_guard_unknown">Hisn could not verify its accessibility permission.</string>
     <string name="attention_scan_incomplete">The last screen scan was incomplete.</string>
     <string name="attention_policy_unavailable">Protection settings could not be read.</string>
