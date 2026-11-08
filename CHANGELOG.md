@@ -5,6 +5,35 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
+## Android 1.5.2 — 2026-11-08
+
+### Changed
+
+- **DNS filtering restarts itself after an update.** When the app returns to the
+  foreground, if DNS was left on, Android still holds the VPN approval, and the
+  foreground tunnel is not running, the app starts it without another tap. This
+  repairs the common post-update *DNS filtering was left on but is not running*
+  gap.
+- **A live accessibility service can be re-armed.** When the app reads
+  accessibility as enabled but the service as disconnected, it broadcasts an
+  explicit re-arm request; a live service reruns its idempotent setup. This
+  covers the system-bound service that did not repeat `onServiceConnected`
+  after an update. If the service is not alive at all, Android's accessibility
+  settings remain the only repair; an app cannot toggle its own accessibility
+  grant.
+- 1.5.1's protected/Incognito cover, the 1.5.0 people cover, native adult TFLite
+  path, 350 ms moving cadence, verdict cache and after-block pause are retained.
+  No block threshold, permission, stored rule or consent text changed.
+
+### Verification
+
+- Core suite, strings (578/16/570), notices, debug/androidTest builds and lint.
+- Phone update: DNS auto-start is **PASS** (the foreground service returned
+  without another tap); the guard re-arm path is compiled and the service was
+  bound, but the phone was dozing before a visual smoke test. No adult content
+  is used. The protected/Incognito cover remains the 1.5.1 behaviour.
+- No adult-positive corpus, phone adult test, battery or thermal measurement.
+
 ## Android 1.5.1 — 2026-11-08
 
 ### Changed

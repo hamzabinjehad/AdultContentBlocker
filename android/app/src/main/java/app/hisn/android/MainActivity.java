@@ -3127,9 +3127,32 @@ public final class MainActivity extends Activity {
         UninstallProtectionController.sync(this);
         try { LayerWatchdog.syncSchedule(this); }
         catch (RuntimeException unavailable) { /* The next open retries. */ }
+        ensureDnsRunning();
+        rearmGuardIfNeeded();
         refreshRuleSummaries();
         refreshBatteryState();
         handler.post(refresh);
+    }
+
+    /** After an update the saved DNS approval can survive while the foreground tunnel is gone. */
+    private void ensureDnsRunning() {
+        if (!DnsVpnService.resumeRequested(this)) return;
+        DnsVpnService.State current = DnsVpnService.state;
+        if (current == DnsVpnService.State.RUNNING || current == DnsVpnService.State.STARTING
+                || current == DnsVpnService.State.DEGRADED) return;
+        try {
+            // VpnService.prepare returns null only while Android still holds the approval.
+            if (android.net.VpnService.prepare(this) != null) return;
+            startForegroundService(new Intent(this, DnsVpnService.class));
+        } catch (RuntimeException unavailable) { /* The dashboard reports the gap. */ }
+    }
+
+    /** A system-bound service can stay alive without repeating onServiceConnected after an update. */
+    private void rearmGuardIfNeeded() {
+        if (TextGuardService.connected || !Permissions.accessibility(this)) return;
+        try {
+            sendBroadcast(new Intent(TextGuardService.ACTION_REARM).setPackage(getPackageName()));
+        } catch (RuntimeException unavailable) { /* The setup card still offers the settings page. */ }
     }
 
     @Override public void onWindowFocusChanged(boolean hasFocus) {

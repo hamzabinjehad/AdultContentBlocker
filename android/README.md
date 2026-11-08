@@ -47,6 +47,17 @@ an opt-in device-owner preview; the ordinary install remains removable, and
 actual blocked-uninstall and restriction acceptance needs a disposable
 provisioned device.
 
+## 1.5.2: make the blocking layers survive an update
+
+Two update-recovery gaps are closed. If DNS was left on, Android still holds
+the VPN approval, and the tunnel is not running, `MainActivity.onResume` starts
+it without another tap. If accessibility is enabled but the app reads the
+service disconnected, it broadcasts a re-arm request; a live service reruns its
+idempotent setup. The app cannot toggle its own accessibility grant, and if the
+service is not alive the setup card remains the repair. The protected/Incognito
+cover and all prior visual behaviour are retained. Details:
+[the 1.5.2 record](../docs/ANDROID_1.5.2.md).
+
 ## 1.5.1: cover protected and Incognito windows
 
 Chrome Incognito and every other `FLAG_SECURE` window cannot be screenshotted;

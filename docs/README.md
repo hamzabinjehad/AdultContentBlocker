@@ -63,6 +63,7 @@ past version; *superseded* documents point to their replacement. Start with the
 
 ## Android
 
+- [Android 1.5.2, 2026-11-08](ANDROID_1.5.2.md): DNS self-starts on foreground when the saved intent and VPN approval survived an update, and a live accessibility service is re-armed by broadcast. Repair-only; no privilege escalation, no Incognito deletion. Core/build/lint and phone update checks.
 - [Android 1.5.1, 2026-11-08](ANDROID_1.5.1.md): Chrome Incognito and other `FLAG_SECURE` windows cannot be screenshotted; the guard now reports `PROTECTED` and covers the selected window instead of leaving it visible. No pixel bypass; text/DNS independent. Emulator `FLAG_SECURE` fixture and a phone Incognito cover check; no phone adult test.
 - [Android 1.5.0, 2026-11-08](ANDROID_1.5.0.md): Opt-in people cover (Off/All faces/Women/Men) with the pinned BlazeFace/gender models at 384 px, a whole-window touch-blocking abstract cover, and the adult classifier still independent. One public-domain face smoke test, live cover evidence and a people-off regression; no phone or accuracy claim. Captures in `design/android-people-2026-11-08/`.
 - [Android 1.4.1, 2026-11-07](ANDROID_1.4.1.md): The moving-sample cadence rises from 250 ms to 350 ms, above Android's 333 ms screenshot floor, and a floor rejection retries without a capture-failure backoff. Live emulator fixture: 23 samples in 8 s vs 11, 0 capture failures vs 6, 24–30 ms native inference. No phone or adult corpus; signed artifacts recorded.

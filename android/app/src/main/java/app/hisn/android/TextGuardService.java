@@ -43,6 +43,8 @@ import app.hisn.core.VisibleTextSample;
  * screen content is never retained. */
 public final class TextGuardService extends AccessibilityService {
     public static volatile boolean connected;
+    /** MainActivity asks a live service instance to re-run its idempotent setup after an update. */
+    static final String ACTION_REARM = "app.hisn.android.action.REARM_GUARD";
     /** Setup ran in this service instance; reset when Android unbinds it. */
     private boolean started;
     /** Setup finished and events are handled; the boot shield waits for this. */
@@ -183,6 +185,23 @@ public final class TextGuardService extends AccessibilityService {
             }
         }
     };
+
+    private final BroadcastReceiver rearm = new BroadcastReceiver() {
+        @Override public void onReceive(Context context, Intent intent) {
+            connected = true;
+            startGuard();
+            if (visual == null) visual = newVisualGuard();
+        }
+    };
+
+    @android.annotation.SuppressLint("UnspecifiedRegisterReceiverFlag")
+    @Override public void onCreate() {
+        super.onCreate();
+        IntentFilter filter = new IntentFilter(ACTION_REARM);
+        // The flagged overload exists only on API 33+; the package-scoped intent is not exported.
+        if (Build.VERSION.SDK_INT >= 33) registerReceiver(rearm, filter, Context.RECEIVER_NOT_EXPORTED);
+        else registerReceiver(rearm, filter);
+    }
 
     @Override protected void onServiceConnected() {
         connected = true;
