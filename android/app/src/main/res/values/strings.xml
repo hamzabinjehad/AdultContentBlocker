@@ -68,6 +68,11 @@
     <string name="person_blur_women">Women (estimated)</string>
     <string name="person_blur_men">Men (estimated)</string>
     <string name="person_blur_need_visual">Turn on Images and video first.</string>
+    <string name="person_response_title">When a person is detected</string>
+    <string name="person_response_summary">Go back to the last page, or cover the whole screen. The adult check is unchanged.</string>
+    <string name="person_response_need_people">Choose All faces, Women or Men first.</string>
+    <string name="person_response_back">Go back to the last page</string>
+    <string name="person_response_cover">Cover the whole screen</string>
     <string name="person_overlay_title">Hisn hid this screen</string>
     <string name="person_overlay_body">A face matched your people setting. Press Home or switch apps to continue.</string>
     <string name="protected_overlay_title">Hisn can\'t check this window</string>

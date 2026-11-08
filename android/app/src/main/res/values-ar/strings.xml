@@ -272,6 +272,11 @@
     <string name="person_blur_women">النساء (تقديري)</string>
     <string name="person_blur_men">الرجال (تقديري)</string>
     <string name="person_blur_need_visual">شغّل فحص الصور والفيديو أولاً.</string>
+    <string name="person_response_title">عند اكتشاف شخص</string>
+    <string name="person_response_summary">العودة إلى الصفحة السابقة، أو تغطية الشاشة بالكامل. فحص المحتوى الإباحي لم يتغير.</string>
+    <string name="person_response_need_people">اختر كل الوجوه أو النساء أو الرجال أولاً.</string>
+    <string name="person_response_back">العودة إلى الصفحة السابقة</string>
+    <string name="person_response_cover">تغطية الشاشة بالكامل</string>
     <string name="person_overlay_title">أخفى حِصن هذه الشاشة</string>
     <string name="person_overlay_body">طابق وجه إعداد الأشخاص. اضغط الرئيسية أو بدّل التطبيق للمتابعة.</string>
     <string name="protected_overlay_title">لا يستطيع حِصن فحص هذه النافذة</string>

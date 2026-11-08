@@ -43,6 +43,8 @@ public final class VisualCaptureTestActivity extends Activity {
                     throw new IllegalStateException("Explicit synthetic-test confirmation required");
             } else if ("clear-force".equals(action)) VisualTestHooks.clear();
             else if ("people".equals(action)) PersonBlur.set(this, getIntent().getStringExtra("mode"));
+            else if ("people-response".equals(action))
+                PersonBlur.setResponse(this, getIntent().getStringExtra("response"));
             else if ("settings".equals(action)) {
                 startActivity(new Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS));
             } else if (!"status".equals(action)) throw new IllegalArgumentException("Unknown test action");
@@ -56,6 +58,7 @@ public final class VisualCaptureTestActivity extends Activity {
                     + " RATE_LIMITED " + VisualGuard.rateLimited
                     + " REUSED " + VisualGuard.reused
                     + " PEOPLE " + PersonBlur.mode(this) + " OVERLAYS " + VisualOverlay.shows
+                    + " PEOPLE_RESPONSE " + PersonBlur.response(this) + " PERSON_BACKS " + VisualGuard.personBacks
                     + " BACKEND " + VisualGuard.backend + " FRAME_EDGE " + VisualGuard.lastFrameEdge
                     + " LAST_CAPTURE_MS " + VisualGuard.lastCaptureMillis
                     + " LAST_INFERENCE_MS " + VisualGuard.lastInferenceMillis

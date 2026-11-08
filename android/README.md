@@ -47,6 +47,17 @@ an opt-in device-owner preview; the ordinary install remains removable, and
 actual blocked-uninstall and restriction acceptance needs a disposable
 provisioned device.
 
+## 1.5.3: go back on a matched person
+
+**Rules › Built-in checks › When a person is detected** now offers **Go back to
+the last page** (default) and **Cover the whole screen**. A matched face hides
+any cover and performs one Android Back, at most once per 1.2 s; a browser
+returns to its previous page, and a second matching page is handled on its own
+sample. If Back is refused the cover is shown. Adult content still closes the
+app; Incognito still uses the 1.5.1 protected cover. The 1.5.2 DNS/guard
+recovery and all prior visual behaviour are retained. Details:
+[the 1.5.3 record](../docs/ANDROID_1.5.3.md).
+
 ## 1.5.2: make the blocking layers survive an update
 
 Two update-recovery gaps are closed. If DNS was left on, Android still holds

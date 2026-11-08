@@ -151,6 +151,7 @@ public final class MainActivity extends Activity {
     private Switch adultToggle;
     private Switch visualToggle;
     private Ui.SettingRow personBlurRow;
+    private Ui.SettingRow personResponseRow;
     private Switch shortVideoToggle;
     private Switch grayToggle;
     private Switch safeSearchToggle;
@@ -750,6 +751,11 @@ public final class MainActivity extends Activity {
                 getString(R.string.person_blur_title), getString(R.string.person_blur_summary),
                 getString(R.string.person_blur_off), view -> editPersonBlur());
         builtin.addView(personBlurRow.root);
+        builtin.addView(Ui.divider(this));
+        personResponseRow = Ui.settingRow(this, R.drawable.ic_text,
+                getString(R.string.person_response_title), getString(R.string.person_response_summary),
+                getString(R.string.person_response_back), view -> editPersonResponse());
+        builtin.addView(personResponseRow.root);
         builtin.addView(Ui.divider(this));
         shortVideoToggle = Ui.toggle(this, getString(R.string.toggle_short_video));
         shortVideoToggle.setOnClickListener(view -> {
@@ -1935,9 +1941,15 @@ public final class MainActivity extends Activity {
                 Build.VERSION.SDK_INT >= 34 && (!rules.visualEnabled || remaining == 0));
         if (personBlurRow != null) {
             String people = PersonBlur.mode(this);
+            String response = PersonBlur.response(this);
             personBlurRow.setValue(getString(PersonBlur.label(people)), PersonBlur.on(people) ? Ui.ON : Ui.OFF);
-            Ui.setEnabledWithAlpha(personBlurRow.root,
-                    Build.VERSION.SDK_INT >= 34 && rules.visualEnabled && remaining == 0);
+            boolean enabled = Build.VERSION.SDK_INT >= 34 && rules.visualEnabled && remaining == 0;
+            Ui.setEnabledWithAlpha(personBlurRow.root, enabled);
+            if (personResponseRow != null) {
+                personResponseRow.setValue(getString(PersonBlur.responseLabel(response)),
+                        PersonBlur.on(people) ? Ui.ON : Ui.OFF);
+                Ui.setEnabledWithAlpha(personResponseRow.root, enabled && PersonBlur.on(people));
+            }
         }
         return attention;
     }
@@ -2101,6 +2113,28 @@ public final class MainActivity extends Activity {
                     PersonBlur.set(this, modes[which]);
                     if (personBlurRow != null) personBlurRow.setValue(getString(PersonBlur.label(modes[which])),
                             PersonBlur.on(modes[which]) ? Ui.ON : Ui.OFF);
+                    dialog.dismiss();
+                })
+                .setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void editPersonResponse() {
+        if (settings == null || refuseIfRulesLocked() || Build.VERSION.SDK_INT < 34) return;
+        if (!PersonBlur.on(PersonBlur.mode(this))) {
+            new AlertDialog.Builder(this).setTitle(R.string.person_response_title)
+                    .setMessage(R.string.person_response_need_people)
+                    .setPositiveButton(android.R.string.ok, null).show();
+            return;
+        }
+        String[] responses = {PersonBlur.BACK, PersonBlur.COVER};
+        CharSequence[] labels = {getString(R.string.person_response_back),
+                getString(R.string.person_response_cover)};
+        int checked = PersonBlur.COVER.equals(PersonBlur.response(this)) ? 1 : 0;
+        new AlertDialog.Builder(this).setTitle(R.string.person_response_title)
+                .setSingleChoiceItems(labels, checked, (dialog, which) -> {
+                    PersonBlur.setResponse(this, responses[which]);
+                    if (personResponseRow != null) personResponseRow.setValue(
+                            getString(PersonBlur.responseLabel(responses[which])), Ui.ON);
                     dialog.dismiss();
                 })
                 .setNegativeButton(android.R.string.cancel, null).show();

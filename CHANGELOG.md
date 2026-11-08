@@ -5,6 +5,29 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
+## Android 1.5.3 — 2026-11-08
+
+### Added
+
+- **People response choice: go back or cover.** Rules › Built-in checks ›
+  **When a person is detected** offers **Go back to the last page** (default)
+  and **Cover the whole screen**. On a matched face the guard hides any cover
+  and performs one Android Back, at most once per 1.2 s. A browser returns to
+  its previous page; if the previous page also contains a matching face it is
+  handled on its own sample. If Android refuses Back, the cover is shown.
+- Adult content still closes the app; protected/Incognito windows still use the
+  1.5.1 cover because their pixels cannot be inspected.
+- The 1.5.2 DNS self-start/accessibility re-arm, 1.5.0 people cover, native
+  adult TFLite path, 350 ms moving cadence, verdict cache and after-block pause
+  are retained.
+
+### Verification
+
+- API 36 emulator face fixture: with **Go back** selected, the face fixture
+  returned to the previous normal page after a matched face; no cover remained.
+- Core/build/lint; no adult-positive corpus, phone adult test, battery or
+  thermal measurement.
+
 ## Android 1.5.2 — 2026-11-08
 
 ### Changed

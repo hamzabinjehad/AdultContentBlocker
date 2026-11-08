@@ -37,6 +37,8 @@ final class VisualGuard implements AutoCloseable {
     /** Frames served from the last-verdict cache instead of running the model again. */
     static volatile long reused;
     static volatile long interventions;
+    /** Matched people sent back to the previous page instead of being covered. */
+    static volatile long personBacks;
     static volatile long captures;
     static volatile long captureRequests;
     /** Long edge of the frame handed to the model. The model resizes its input to 224, and this
@@ -74,7 +76,7 @@ final class VisualGuard implements AutoCloseable {
     /** The native runtime failed to load; use the packaged WebView engine for the rest of this instance. */
     private boolean nativeUnavailable;
     private boolean loaded, busy, closed, listening;
-    private long retryAfter, nextPoll, captureBackoffUntil, lastCaptureRequestAt;
+    private long retryAfter, nextPoll, captureBackoffUntil, lastCaptureRequestAt, lastPersonBackAt;
     private int captureFailureStreak;
     private int lastWindow = -1;
     private VisualFrameGate.Frame pendingFrame;
@@ -421,7 +423,21 @@ final class VisualGuard implements AutoCloseable {
                 gate.invalidate();
                 if (block.run(target)) interventions++;
             } else if (result.personBlur) {
-                overlay.show(personFrame);
+                if (PersonBlur.BACK.equals(PersonBlur.response(service))) {
+                    overlay.hide();
+                    // One Back per page transition; a second matching page is handled on its
+                    // next sample, so a slow browser is not sent back several times at once.
+                    if (now - lastPersonBackAt >= 1200) {
+                        lastPersonBackAt = now;
+                        if (service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)) {
+                            personBacks++;
+                        } else {
+                            overlay.show(personFrame);
+                        }
+                    }
+                } else {
+                    overlay.show(personFrame);
+                }
             } else {
                 overlay.hide();
             }
