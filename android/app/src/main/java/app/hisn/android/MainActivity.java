@@ -1910,6 +1910,11 @@ public final class MainActivity extends Activity {
                     attention = R.string.attention_visual;
                     break;
                 case INPUT: label = R.string.visual_input; kind = Ui.ON; break;
+                case PROTECTED:
+                    label = R.string.visual_protected;
+                    kind = Ui.ATTENTION;
+                    attention = R.string.attention_visual;
+                    break;
                 case ERROR:
                     label = R.string.visual_error;
                     kind = Ui.ATTENTION;

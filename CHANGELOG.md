@@ -5,6 +5,35 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
+## Android 1.5.1 — 2026-11-08
+
+### Changed
+
+- **Incognito and other protected windows are covered, not left visible.**
+  Android rejects screenshots of `FLAG_SECURE` windows with
+  `ERROR_TAKE_SCREENSHOT_SECURE_WINDOW` (6). That includes Chrome Incognito.
+  No accessibility or MediaProjection capture can return those pixels without
+  root or a system privilege, and HaramBlur cannot bypass it either. Hisn now
+  reports a **PROTECTED** state and covers the whole selected window with the
+  same touch-blocking overlay, showing *Hisn can't check this window* instead
+  of silently leaving the private page visible.
+- The protected cover retries at 2 s and keeps the loaded runtime; it clears on
+  leaving the window, screen off, a later inspected sample, or turning the layer
+  off. Text and DNS layers remain independent and active where the app exposes
+  them.
+- The 1.5.0 people cover, native adult TFLite path, 350 ms moving cadence,
+  verdict cache and after-block pause are unchanged.
+
+### Verification
+
+- API 36 emulator, FLAG_SECURE fixture: `STATE PROTECTED`, `CAPTURE_ERROR 6`,
+  `OVERLAYS 1`, zero samples from the protected window; the protected cover
+  rendered and the people-off suite still passes.
+- This does **not** inspect protected pixels. It is a fail-closed cover for a
+  window Android will not let any app capture. No root, Xposed, MediaProjection
+  workaround or secure-flag bypass is added.
+- No adult-positive corpus, phone adult test, battery or thermal measurement.
+
 ## Android 1.5.0 — 2026-11-08
 
 ### Added

@@ -310,6 +310,20 @@ final class VisualGuard implements AutoCloseable {
                             schedule(wait);
                             return;
                         }
+                        if (error == AccessibilityService.ERROR_TAKE_SCREENSHOT_SECURE_WINDOW) {
+                            // Incognito and other FLAG_SECURE windows cannot return pixels. Cover
+                            // the selected window instead of leaving the private content visible;
+                            // text and DNS layers remain independent. Retry slowly: the window
+                            // will stay protected until it is left or closed.
+                            captureFailures++;
+                            lastCaptureError = error;
+                            overlay.showProtected();
+                            health.report(State.PROTECTED);
+                            long wait = Math.max(VisualCadence.POLL_FLOOR_MILLIS, 2000);
+                            captureBackoffUntil = SystemClock.uptimeMillis() + wait;
+                            schedule(wait);
+                            return;
+                        }
                         captureFailures++;
                         lastCaptureError = error;
                         // A protected or unreadable window will stay unreadable. Retry with a

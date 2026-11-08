@@ -47,6 +47,24 @@ an opt-in device-owner preview; the ordinary install remains removable, and
 actual blocked-uninstall and restriction acceptance needs a disposable
 provisioned device.
 
+## 1.5.1: cover protected and Incognito windows
+
+Chrome Incognito and every other `FLAG_SECURE` window cannot be screenshotted;
+Android returns `ERROR_TAKE_SCREENSHOT_SECURE_WINDOW` (6), and MediaProjection
+sees black as well. No ordinary app, including HaramBlur, can inspect those
+pixels. Hisn previously reported the window unreadable and left the page
+visible; 1.5.1 reports a **PROTECTED** state and covers the whole selected
+window with the touch-blocking overlay, *Hisn can't check this window*. It
+retries at 2 s and clears on leaving, screen off or disabling the layer. Text
+and DNS layers remain independent.
+
+On the API 36 emulator the `FLAG_SECURE` fixture reported `STATE PROTECTED`,
+`CAPTURE_ERROR 6`, `OVERLAYS 1` and zero samples from the protected window; the
+people-off suite still passes. The phone was updated to 1.5.1 and Hisn's accessibility service was re-bound.
+The Incognito cover smoke test is still a device check after unlock. No adult
+image, protected pixels, root, Xposed or secure-flag bypass is used. Details:
+[the 1.5.1 record](../docs/ANDROID_1.5.1.md).
+
 ## 1.5.0: an opt-in people cover
 
 Rules › Built-in checks › **Blur people** adds Off, **All faces**, **Women

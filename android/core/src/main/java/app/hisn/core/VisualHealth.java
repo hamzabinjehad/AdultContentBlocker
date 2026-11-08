@@ -6,9 +6,9 @@ package app.hisn.core;
  * sample, or the layer turning off or being unsupported, clears it. */
 public final class VisualHealth {
     public enum State {
-        OFF, UNSUPPORTED, WAITING, LOADING, CHECKING, SAMPLED, UNREADABLE, INPUT, ERROR;
+        OFF, UNSUPPORTED, WAITING, LOADING, CHECKING, SAMPLED, UNREADABLE, PROTECTED, INPUT, ERROR;
 
-        public boolean failure() { return this == UNREADABLE || this == ERROR; }
+        public boolean failure() { return this == UNREADABLE || this == PROTECTED || this == ERROR; }
     }
 
     private State current = State.OFF;

@@ -28,6 +28,7 @@ final class VisualOverlay implements AutoCloseable {
     private final WindowManager windows;
     private FrameLayout root;
     private ImageView snapshotView;
+    private TextView titleView, bodyView, hintView;
     private Bitmap snapshot;
     private boolean shown;
 
@@ -38,10 +39,29 @@ final class VisualOverlay implements AutoCloseable {
 
     boolean shown() { return shown; }
 
-    /** Shows or refreshes the cover. A null frame leaves the existing snapshot in place. */
+    /** Shows or refreshes a face cover. */
     void show(Bitmap frame) {
+        show(frame, R.string.person_overlay_title, R.string.person_overlay_body,
+                R.string.person_overlay_hint);
+    }
+
+    /** A protected/private window cannot be inspected; cover it rather than expose pixels. */
+    void showProtected() {
+        if (snapshot != null && snapshotView != null) {
+            snapshotView.setImageDrawable(null);
+            snapshot.recycle();
+            snapshot = null;
+        }
+        show(null, R.string.protected_overlay_title, R.string.protected_overlay_body,
+                R.string.protected_overlay_hint);
+    }
+
+    private void show(Bitmap frame, int title, int body, int hint) {
         if (windows == null) return;
         if (root == null) build();
+        titleView.setText(title);
+        bodyView.setText(body);
+        hintView.setText(hint);
         if (frame != null) {
             Bitmap smaller = blur(frame);
             if (smaller != null) {
@@ -51,6 +71,9 @@ final class VisualOverlay implements AutoCloseable {
                 snapshotView.setVisibility(View.VISIBLE);
                 if (previous != null && previous != smaller) previous.recycle();
             }
+        } else {
+            snapshotView.setImageDrawable(null);
+            snapshotView.setVisibility(View.INVISIBLE);
         }
         if (!shown) {
             try {
@@ -125,28 +148,25 @@ final class VisualOverlay implements AutoCloseable {
         copyParams.setMargins(side, side, side, side);
         root.addView(copy, copyParams);
 
-        TextView title = new TextView(service);
-        title.setText(R.string.person_overlay_title);
-        title.setTextColor(Color.WHITE);
-        title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 23);
-        title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        title.setGravity(Gravity.CENTER);
-        copy.addView(title);
+        titleView = new TextView(service);
+        titleView.setTextColor(Color.WHITE);
+        titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 23);
+        titleView.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        titleView.setGravity(Gravity.CENTER);
+        copy.addView(titleView);
 
-        TextView body = new TextView(service);
-        body.setText(R.string.person_overlay_body);
-        body.setTextColor(0xFFE0E0E0);
-        body.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
-        body.setGravity(Gravity.CENTER);
-        body.setLineSpacing(dp(3), 1.15f);
-        copy.addView(body, margins(0, 12));
+        bodyView = new TextView(service);
+        bodyView.setTextColor(0xFFE0E0E0);
+        bodyView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
+        bodyView.setGravity(Gravity.CENTER);
+        bodyView.setLineSpacing(dp(3), 1.15f);
+        copy.addView(bodyView, margins(0, 12));
 
-        TextView hint = new TextView(service);
-        hint.setText(R.string.person_overlay_hint);
-        hint.setTextColor(0xFFBDBDBD);
-        hint.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
-        hint.setGravity(Gravity.CENTER);
-        copy.addView(hint, margins(0, 12));
+        hintView = new TextView(service);
+        hintView.setTextColor(0xFFBDBDBD);
+        hintView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        hintView.setGravity(Gravity.CENTER);
+        copy.addView(hintView, margins(0, 12));
     }
 
     private WindowManager.LayoutParams params() {

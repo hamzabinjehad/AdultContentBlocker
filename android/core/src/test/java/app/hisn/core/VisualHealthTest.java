@@ -20,6 +20,9 @@ public final class VisualHealthTest {
         health.report(VisualHealth.State.UNREADABLE);
         health.report(VisualHealth.State.WAITING);
         expect(VisualHealth.State.UNREADABLE, health, "latest failure wins");
+        health.report(VisualHealth.State.PROTECTED);
+        health.report(VisualHealth.State.WAITING);
+        expect(VisualHealth.State.PROTECTED, health, "protected window stays visible until a sample");
         health.report(VisualHealth.State.SAMPLED);
         expect(VisualHealth.State.SAMPLED, health, "a later inspected sample clears it");
         health.report(VisualHealth.State.WAITING);
@@ -31,7 +34,7 @@ public final class VisualHealthTest {
         }
         int failures = 0;
         for (VisualHealth.State state : VisualHealth.State.values()) if (state.failure()) failures++;
-        if (failures != 2) throw new AssertionError("Unexpected failure states");
+        if (failures != 3) throw new AssertionError("Unexpected failure states");
         try { health.report(null); throw new AssertionError("Missing state accepted"); }
         catch (IllegalArgumentException expected) { }
         System.out.println("VisualHealth tests passed (failures stay visible until a later sample)");

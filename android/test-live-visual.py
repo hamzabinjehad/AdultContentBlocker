@@ -51,7 +51,8 @@ def main():
         values = dict(re.findall(r"([A-Z_]+) ([A-Za-z0-9_-]+)", result.text))
         if values.get("OK") != action or values.get("NONCE") != nonce:
             raise RuntimeError("Controller did not acknowledge the requested action")
-        for key in ("CAPTURES", "REQUESTS", "SAMPLES", "INTERVENTIONS", "DISCARDED", "CAPTURE_FAILURES", "CAPTURE_ERROR"):
+        for key in ("CAPTURES", "REQUESTS", "SAMPLES", "INTERVENTIONS", "DISCARDED", "CAPTURE_FAILURES",
+                    "CAPTURE_ERROR", "OVERLAYS"):
             values[key] = int(values[key])
         return values
 
@@ -123,7 +124,12 @@ def main():
         secure = scene("visual-secure", 6)
         require(secure["CAPTURE_FAILURES"] > focused["CAPTURE_FAILURES"] and secure["SAMPLES"] == focused["SAMPLES"],
                 "Protected window was not reported unreadable: " + json.dumps(secure))
-        passed({"check": "secure window remains unreadable", "android_error": secure["CAPTURE_ERROR"]})
+        require(secure["STATE"] == "PROTECTED" and secure["CAPTURE_ERROR"] == 6,
+                "Protected window did not enter the covered state: " + json.dumps(secure))
+        require(secure["OVERLAYS"] > focused["OVERLAYS"],
+                "Protected window was not covered: " + json.dumps(secure))
+        passed({"check": "secure window is covered, not inspected",
+                "android_error": secure["CAPTURE_ERROR"], "overlays": secure["OVERLAYS"]})
 
         control("force-once", "--ez", "confirmSynthetic", "true")
         # A real benign screenshot must first reach an actual allow verdict; only then can the debug hook act.
