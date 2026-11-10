@@ -59,7 +59,16 @@ final class DNSProxyProvider: NEDNSProxyProvider, @unchecked Sendable {
     override func startProxy(options: [String: Any]?,
                              completionHandler: @escaping (Error?) -> Void) {
         do {
-            let loaded = try DNSFilterAssets.load(directory: Bundle.main.bundleURL)
+            // A verified downloaded generation wins over the bundled copy. A
+            // damaged installed generation never leaves the proxy unfiltered:
+            // it falls back to the signed bundle instead.
+            let loaded: DNSFilterAssets.Loaded
+            if let generation = ListGenerationStore.activeDirectory(),
+               let downloaded = try? DNSFilterAssets.load(directory: generation) {
+                loaded = downloaded
+            } else {
+                loaded = try DNSFilterAssets.load(directory: Bundle.main.bundleURL)
+            }
             engine = loaded.engine
             customSites = DNSFilterAssets.customSites(
                 defaults: UserDefaults(suiteName: DNSFilterAssets.group))

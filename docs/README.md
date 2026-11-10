@@ -57,6 +57,7 @@ past version; *superseded* documents point to their replacement. Start with the
 ## iPhone and iPad
 
 - [iPhone and iPad 1.8.0](IOS_1.8.0.md): A device-wide DNS filter as a Network Extension — Hisn's signed 236,586-domain core tier, the adult TLDs, the 116 hostname terms and the person's saved sites answered locally, Cloudflare Families as the validated HTTPS upstream — plus the direct IPA build and AltStore source generator. Simulator-tested only; no signed device.
+- [Signed list generations, 2026-11-10](IOS_LIST_UPDATES_2026-11-10.md): The app now downloads, verifies and stores published generations for the DNS filter in the App Group; the proxy loads the active generation and falls back to the signed bundle. Simulator-tested with a synthetic generation; no device or real download.
 - [Installing iPhone/iPad without the App Store](IOS_DIRECT.md): The direct IPA, what each sideload path can grant, which entitlements Apple still enforces, hosting and verifying a download, and what may not be claimed.
 - [Apple platform structure](APPLE_PLATFORMS.md): How macOS, iOS and iPadOS code is laid out, what each protects, and cross-platform development rules.
 - [iPhone and iPad 1.7.1](IOS_1.7.1.md): Chosen weekdays for the quiet-hours rule (a window that crosses midnight belongs to its start day), **End now** for a running pause session, the commitment deadline on Today, and an honest notification prompt for the pre-26.5 shield handoff. Simulator-tested only.

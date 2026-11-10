@@ -151,6 +151,16 @@ this pass. Record: [the craft pass](docs/ANDROID_CRAFT_2026-11-07.md); captures:
 
 #### Added
 
+- **The DNS filter can install a signed published list generation.** The app
+  fetches the manifest, signature, domains and terms over HTTPS at most once a
+  day when DNS is enabled; `ListGeneration` verifies the pinned Ed25519
+  signature, both artifact hashes, the domain index and the host-term payload
+  before anything is written. `ListGenerationStore` stages a generation in the
+  App Group, checks it through the same loader the proxy uses, then moves a
+  monotonic pointer and floor. The proxy prefers the active generation and
+  falls back to the signed bundle if it is missing or damaged. A download made
+  while the proxy runs applies when it next starts. Record:
+  [the iOS list update note](docs/IOS_LIST_UPDATES_2026-11-10.md).
 - **An allowed question cannot carry a listed alias.** The DNS filter now
   follows CNAME, DNAME and HTTPS/SVCB target names in the upstream answer and
   returns NXDOMAIN when a target is blocked, matching Android's reply guard.

@@ -73,6 +73,7 @@ final class ProtectionController: ObservableObject {
     /// Where the DNS extension reads the person's blocked sites. The Screen
     /// Time filter keeps its own copy; this one is the DNS layer's.
     private let dnsSitesShare: DNSCustomSitesPublishing
+    private let isTest: Bool
     enum DNSRouteCheck: Equatable { case unchecked, running, passed, failed, unavailable }
     /// Evidence from the last route check: the app's resolver path reached
     /// Hisn, or it did not. Never a claim about every app or every request.
@@ -95,6 +96,7 @@ final class ProtectionController: ObservableObject {
         clockMonitor = CommitmentClock(wallAnchor: sample.wall, uptimeAnchor: sample.uptime)
         if sample.wall.timeIntervalSinceReferenceDate.isFinite { now = sample.wall }
         let isTest = NSClassFromString("XCTestCase") != nil
+        self.isTest = isTest
         self.dnsSitesShare = dnsSitesShare ?? DNSCustomSitesShare.deviceLocal(isTest: isTest)
         self.commitmentStore = commitmentStore ?? (isTest ? MemoryCommitmentStore() : MobileCommitmentStore())
         // Tests never reach Apple's server, the real app group or the notification prompt.
@@ -693,6 +695,11 @@ final class ProtectionController: ObservableObject {
         publishWatch()
         updateWatchSchedule()
         await readDNSState()
+        if dns == .enabled && !isTest {
+            // At most once a day; the proxy reads the active generation when it
+            // starts. A failure keeps the previous generation.
+            Task.detached(priority: .utility) { await ListUpdater.checkIfDue() }
+        }
         var states: [Bool?] = []
         for identifier in MobileProtectionPolicy.blockerIdentifiers {
             let enabled: Bool? = await withCheckedContinuation { continuation in
