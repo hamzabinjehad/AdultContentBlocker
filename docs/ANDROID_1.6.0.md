@@ -47,7 +47,8 @@ The full 1.5.4 record, the phone evidence and the artifact hashes are in
 | --- | --- |
 | `android/test-core.sh` (JDK 25) | Pass; every core class, including the orphan guard, the seed, strings, notices and the synthetic corpus |
 | `:app:assembleDebug` | Pass |
-| Version-aware terms loader | Exercised by `CoreDeviceTestRunner` against the bundled seed; the runner needs a device and was not run in this pass |
+| Version-aware terms loader | Exercised by `CoreDeviceTestRunner` against the bundled seed |
+| Signed fixture generation | Pass on the API 36 emulator: adoption of domains + host terms + text terms, bad-signature rejection, damaged-terms rejection with the old generation retained, cleanup |
 | `:app:assembleDebugAndroidTest` | Pass |
 | `:app:lintDebug` | Pass; 0 errors |
 | `:app:assembleRelease` | Pass; unsigned because no release key was supplied in this run |
@@ -69,9 +70,9 @@ and remain a known quality gap.
 - **No phone, visual-accuracy or battery claim.** The image layer keeps its
   1.4.0 native runtime and the same thresholds; no adult-positive benchmark was
   added.
-- **The terms update has no phone run.** The download, staging, adoption and
-  fallback paths compile and the core/device loader is wired, but no signed
-  generation or phone exercised the update end to end.
+- **The terms update has no phone run.** The signed fixture generation proves
+  the install path on an emulator, but no real phone or network download has
+  exercised it.
 - **The Play/direct split still needs review before upload.** No Play AAB was
   uploaded.
 

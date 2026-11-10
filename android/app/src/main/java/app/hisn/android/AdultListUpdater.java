@@ -133,7 +133,27 @@ final class AdultListUpdater {
         }
 
         byte[] domains = fetch(BASE + "/" + SignedManifest.DOMAINS, manifest.domains().bytes);
-        if (domains.length != manifest.domains().bytes
+        byte[] terms = manifest.terms() == null ? null
+                : fetch(BASE + "/" + SignedManifest.TERMS, manifest.terms().bytes);
+        return installVerified(context, manifest, manifestBytes, signature, domains, terms);
+    }
+
+    /**
+     * Install already fetched bytes after verifying them with an explicit key.
+     * Package-visible for the device fixture; the production caller always uses
+     * the pinned key and the same installVerified path.
+     */
+    static Result installForTest(Context context, byte[] manifestBytes, String signature,
+                                 byte[] domains, byte[] terms, byte[] publicKey) throws IOException {
+        SignedManifest manifest = SignedManifest.verify(manifestBytes, signature, publicKey);
+        return installVerified(context, manifest, manifestBytes, signature, domains, terms);
+    }
+
+    private static Result installVerified(Context context, SignedManifest manifest,
+                                          byte[] manifestBytes, String signature,
+                                          byte[] domains, byte[] terms) throws IOException {
+        if (manifest.version < HostListStore.floor(context)) return fail(context, "rollback");
+        if (domains == null || domains.length != manifest.domains().bytes
                 || !HostListStore.sha256(domains).equals(manifest.domains().sha256)) {
             return fail(context, "artifact");
         }
@@ -146,12 +166,10 @@ final class AdultListUpdater {
         // policies are compiled before anything becomes visible, and either a
         // damaged terms file or a version mismatch rejects the whole update so
         // the previous coherent generation keeps enforcing.
-        byte[] terms = null;
         HostTermPolicy hostTerms = null;
         AdultTextPolicy textPolicy = null;
         if (manifest.terms() != null) {
-            terms = fetch(BASE + "/" + SignedManifest.TERMS, manifest.terms().bytes);
-            if (terms.length != manifest.terms().bytes
+            if (terms == null || terms.length != manifest.terms().bytes
                     || !HostListStore.sha256(terms).equals(manifest.terms().sha256)) {
                 return fail(context, "artifact");
             }
@@ -163,6 +181,8 @@ final class AdultListUpdater {
             } catch (Exception invalidTerms) {
                 return fail(context, "terms");
             }
+        } else {
+            terms = null;
         }
 
         File parent = new File(context.getFilesDir(), HostListStore.DIRECTORY);

@@ -277,8 +277,12 @@ claimed.
 - `:app:assembleDebug`, `:app:assembleDebugAndroidTest`, `:app:lintDebug` and
   `:app:assembleRelease` pass; the release APK is unsigned in this run.
 - `CoreDeviceTestRunner` now exercises the version-aware host and text term
-  loaders against the bundled seed before it reports protection. It needs a
-  device or emulator; this pass did not run one.
+  loaders against the bundled seed before it reports protection.
+- A signed fixture generation (separate test key, version 7, 1,100 fixture
+  domains, one host term and one text term) was installed on the API 36
+  emulator. It activated the domain list, host terms and text vocabulary;
+  a flipped signature was rejected; damaged terms left the active generation
+  in place; the fixture was removed afterwards. No phone was used.
 - The browser, Python, macOS and iOS suites are unchanged by this pass; their
   results are recorded in [release state](docs/RELEASE_STATE_2026-11-10.md).
 

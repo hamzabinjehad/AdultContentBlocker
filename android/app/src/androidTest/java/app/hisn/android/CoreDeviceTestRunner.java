@@ -13,9 +13,11 @@ import app.hisn.core.HostTermPolicy;
 import app.hisn.core.AppTimeLimit;
 import app.hisn.core.LayerWatch;
 import app.hisn.core.SeedFreshness;
+import app.hisn.core.SignedManifest;
 import app.hisn.core.WordRuleList;
 import app.hisn.core.VisibleTextSample;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -64,6 +66,7 @@ public final class CoreDeviceTestRunner extends Instrumentation {
             testLegacyEmptyCommitment();
             testDamagedSettings();
             testLayerHealthAndSeedAge();
+            testListGenerationFixture();
             VisibleTextSample sample = new VisibleTextSample();
             sample.append("blocked " + "ordinary ".repeat(1000));
             if (WordRuleList.compile("blocked").matches(sample.text()).isEmpty())
@@ -72,7 +75,7 @@ public final class CoreDeviceTestRunner extends Instrumentation {
             if (!sample.isPartial() || sample.text().length() > 32768)
                 throw new AssertionError("Inspection budget failed");
             results.putString("stream", "\nPASS: verified APK seed loaded " + seed.domainCount
-                    + " domains; Arabic matching, boundaries, local DNS block, saved rules, Unicode persistence, long-text sampling, verified adult terms, visual settings, daily time limits, commitment, policy-version and copy-recovery, damaged-settings and invalid-settings, uninstall-guard, layer-watch expectation and seed-age checks passed. No VPN was enabled; no accessibility service, admin or device-owner policy was changed.\n");
+                    + " domains; Arabic matching, boundaries, local DNS block, saved rules, Unicode persistence, long-text sampling, verified adult terms, visual settings, daily time limits, commitment, policy-version and copy-recovery, damaged-settings and invalid-settings, uninstall-guard, layer-watch expectation, seed-age checks, and signed fixture generation adoption and rollback passed. No VPN was enabled; no accessibility service, admin or device-owner policy was changed.\n");
             finish(Activity.RESULT_OK, results);
         } catch (Throwable failure) {
             StringBuilder detail = new StringBuilder();
@@ -524,5 +527,75 @@ public final class CoreDeviceTestRunner extends Instrumentation {
         }
         bytes.write(0); bytes.write(0); bytes.write(1); bytes.write(0); bytes.write(1);
         return bytes.toByteArray();
+    }
+
+    /**
+     * A signed fixture generation exercises the same verification and atomic
+     * adoption path as a downloaded list, including terms. It is deliberately
+     * last: the fixture pointer is removed and the store invalidated afterwards.
+     */
+    private void testListGenerationFixture() throws Exception {
+        android.content.Context context = getTargetContext();
+        byte[] manifest = asset("manifest.json");
+        String signature = new String(asset("manifest.json.sig"), StandardCharsets.US_ASCII).trim();
+        byte[] domains = asset("domains_core.txt");
+        byte[] terms = asset("terms.json");
+        byte[] key = hex(new String(asset("public_key.hex"), StandardCharsets.US_ASCII).trim());
+
+        AdultListUpdater.Result installed = AdultListUpdater.installForTest(
+                context, manifest, signature, domains, terms, key);
+        if (!installed.updated || installed.generation != 7) throw new AssertionError("Fixture generation not installed");
+        HostListStore.Active active = HostListStore.active(context);
+        if (active.generation != 7 || !active.policy.blocks("fixture0001.example")) {
+            throw new AssertionError("Fixture domain list not active");
+        }
+        if (active.hostTerms == null || !active.hostTerms.matches("fixturehost.example")) {
+            throw new AssertionError("Fixture host terms not active");
+        }
+        if (AdultPolicyAssets.policy() == null) throw new AssertionError("Fixture text terms not adopted");
+
+        String badSignature = (signature.charAt(0) == '0' ? '1' : '0') + signature.substring(1);
+        try {
+            AdultListUpdater.installForTest(context, manifest, badSignature, domains, terms, key);
+            throw new AssertionError("Fixture with a bad signature was accepted");
+        } catch (SignedManifest.Invalid expected) { }
+
+        byte[] badTerms = terms.clone();
+        badTerms[0] ^= 1;
+        AdultListUpdater.Result rejected = AdultListUpdater.installForTest(
+                context, manifest, signature, domains, badTerms, key);
+        if (rejected.updated || !"artifact".equals(rejected.error)) {
+            throw new AssertionError("Fixture with damaged terms was not rejected");
+        }
+        if (HostListStore.active(context).generation != 7) {
+            throw new AssertionError("A rejected update replaced the active generation");
+        }
+
+        deleteTree(new File(context.getFilesDir(), HostListStore.DIRECTORY));
+        context.deleteSharedPreferences("hisn_list_update");
+        HostListStore.invalidate();
+    }
+
+    private byte[] asset(String name) throws Exception {
+        try (InputStream input = getContext().getAssets().open("list-fixture/" + name)) {
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            byte[] buffer = new byte[8192];
+            int count;
+            while ((count = input.read(buffer)) != -1) bytes.write(buffer, 0, count);
+            return bytes.toByteArray();
+        }
+    }
+
+    private static byte[] hex(String text) {
+        byte[] out = new byte[text.length() / 2];
+        for (int i = 0; i < out.length; i++) out[i] = (byte) Integer.parseInt(text.substring(i * 2, i * 2 + 2), 16);
+        return out;
+    }
+
+    private static void deleteTree(File file) {
+        if (file == null || !file.exists()) return;
+        File[] children = file.listFiles();
+        if (children != null) for (File child : children) deleteTree(child);
+        file.delete();
     }
 }

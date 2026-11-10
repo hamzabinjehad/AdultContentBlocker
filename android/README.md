@@ -13,8 +13,8 @@ and English.
 development candidate: the 1.5.3 feature set, packages 2 and 3 (signed mobile
 list updates whose generations carry domains and terms together, policy receipts and readiness, rule import/preview, the site
 checker, person blur) and the ported 1.5.4 reconnect lifecycle. No signed
-1.6.0 artifact and no phone run exist; the post-reboot dashboard state is
-unverified. Do not install it over the owner's 1.5.4 phone until a signed
+1.6.0 artifact and no phone run exist; the core and signed fixture adoption
+pass on the API 36 emulator. The post-reboot dashboard state is unverified. Do not install it over the owner's 1.5.4 phone until a signed
 1.6.0 build passes the phone acceptance. See
 [the 1.6.0 note](../docs/ANDROID_1.6.0.md),
 [release state](../docs/RELEASE_STATE_2026-11-10.md) and
