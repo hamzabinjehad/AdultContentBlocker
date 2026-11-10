@@ -116,6 +116,7 @@ suite_browser() {
     check "browser: exact-capture cache with real SHA-256" env HISN_HARNESS_REALTIME=1 extension/test/browser/run.sh visual-cache.html || rc=1
     check "browser: real cross-origin image reload and pixel binding" env HISN_HARNESS_REALTIME=1 extension/test/browser/run.sh visual-cors.html || rc=1
     check "browser: bundled visual models on CPU" env HISN_HARNESS_REALTIME=1 extension/test/browser/run.sh visual-real-engine.html || rc=1
+    check "browser: offscreen visual status" extension/test/browser/visual_live.sh || rc=1
     check "browser: X player and visual-layer compatibility" extension/test/browser/run.sh feed-compatibility.html || rc=1
     check "browser: social-feed whole-post rule" extension/test/browser/run.sh social-media.html || rc=1
     echo "── extension: the block page, English and Arabic"

@@ -93,6 +93,7 @@ network-transition claim is made here.
   for a live engine swap. Simulator-tested with synthetic generations; no device
   or real download.
 - Fixed the extension visual layer in real Chrome: the offscreen engine now
-  accepts the service worker's undefined `sender.url`, and the model loads on
-  first media instead of worker start. The sender matrix and the live scanner
-  suite pass.
+  accepts the service worker's undefined `sender.url`, the model loads on first
+  media instead of worker start, and a real-browser harness drives
+  `getVisualStatus` through the worker and offscreen document. The sender
+  matrix, live visual status and live scanner suites pass.

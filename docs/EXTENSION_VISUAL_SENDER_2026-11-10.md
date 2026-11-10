@@ -54,11 +54,12 @@ the text and visual layers independent in cost as well as code.
 | Check | Result |
 | --- | --- |
 | `offscreen-sender.test.js` | 8/8: Chrome worker, Firefox worker, popup, content script, other extension, missing sender |
+| `visual_live.sh` | Pass in real headless Chrome: an extension page asks `getVisualStatus` through the real service worker and offscreen document; the worker keeps its production `background.js` URL |
 | `./test.sh extension` | Pass; all JavaScript suites, package check and evaluation corpus |
 | `scan-live.sh` | Pass; the policy recheck and both X/Twitter feeds pass after the eager load is removed |
 | `./test.sh extension` | Pass; all JavaScript suites, package check and evaluation corpus |
 | `./test.sh browser` | Pass; the existing real-browser harnesses |
 
-No real adult image was used; this proves message delivery, not classifier
-accuracy. A person who saved visual checks off before 1.5.3 keeps them off by
+No real adult image was used; this proves message delivery and the status
+boundary, not classifier accuracy. A person who saved visual checks off before 1.5.3 keeps them off by
 design and can turn them on in Settings.

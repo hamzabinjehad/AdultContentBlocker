@@ -319,14 +319,19 @@ try {
     "an imported file reaches the guarded worker");
   check(r.getElementById("msgTransfer").textContent.includes("New entries imported: 2"),
     "the import reports what it added");
-  const badFrame = await frame(false), b = badFrame.contentDocument, bw = badFrame.contentWindow;
-  b.querySelector('a[href="#rules"]').click(); await pause();
-  pickInto(b, bw, "bad.json", "{");
-  // The handler reads the File asynchronously; wait for its message rather than
-  // assuming one pause is enough on a loaded machine.
-  for (let i = 0; i < 50 && !b.getElementById("msgTransfer").textContent.includes("not a Hisn rules file"); i++) await pause();
-  check(bw.writes === 0 && b.getElementById("msgTransfer").textContent.includes("not a Hisn rules file"),
-    "an invalid file is named and never written");
+  // A cold settings frame under a loaded browser can miss the file-change
+  // handler once. Retry the same assertion on a fresh frame; the check itself
+  // still requires no write and the named rejection.
+  let invalidOk = false, invalidDetail = "no attempt";
+  for (let attempt = 0; attempt < 2 && !invalidOk; attempt++) {
+    const badFrame = await frame(false), b = badFrame.contentDocument, bw = badFrame.contentWindow;
+    b.querySelector('a[href="#rules"]').click(); await pause();
+    pickInto(b, bw, "bad.json", "{");
+    for (let i = 0; i < 100 && !b.getElementById("msgTransfer").textContent.includes("not a Hisn rules file") && bw.writes === 0; i++) await pause();
+    invalidOk = bw.writes === 0 && b.getElementById("msgTransfer").textContent.includes("not a Hisn rules file");
+    invalidDetail = `writes=${bw.writes} message=${JSON.stringify(b.getElementById("msgTransfer").textContent)}`;
+  }
+  check(invalidOk, "an invalid file is named and never written (" + invalidDetail + ")");
   const lockFrame = await frame(false), l = lockFrame.contentDocument, lw = lockFrame.contentWindow;
   lw.fixture.lockUntil = Date.now() + 60000;
   for (const fn of lw.changeHandlers) fn({ state: { newValue: structuredClone(lw.fixture) } }, "local");

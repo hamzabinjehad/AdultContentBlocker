@@ -261,6 +261,10 @@ this pass. Record: [the craft pass](docs/ANDROID_CRAFT_2026-11-07.md); captures:
   layer, and the unavailable-engine payload.
 - `offscreen-sender.test.js` (8 checks) covers the Chromium and Firefox worker
   sender forms, popup, content script, other extension and missing sender.
+- `visual_live.sh` drives `getVisualStatus` from an extension page through the
+  real service worker and offscreen document in headless Chrome; the worker
+  keeps its production `background.js` URL. The broker also treats a closed
+  engine port as `failed`, not an undefined success.
 - The live scanner suite (`scan-live.sh`) passes, including the trusted policy
   recheck and both X/Twitter feeds, after the eager model load was removed.
 - The real-DOM fixtures pass: `feed-compatibility.html` (a generic "sensitive

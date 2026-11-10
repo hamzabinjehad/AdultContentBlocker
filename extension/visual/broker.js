@@ -142,6 +142,9 @@ async function relay(operation, payload = {}) {
     result = ['inspect', 'prepare'].includes(operation)
       ? await bounded(Promise.race([work, cancellation]), VISUAL_RESPONSE_TIMEOUT_MS,
         () => { if (!request.cancelled) recoverStalledEngine(request); }) : await work;
+    // A closed port or a rejected sender resolves undefined, not an error. Never
+    // turn that silence into an "unknown" that the page treats as a verdict.
+    if (result == null) throw new Error('engine-unreachable');
     if (!request.cancelled && operation === 'inspect') verdictCache.put(ticket, fingerprint, result, payload.preferences);
     return request.cancelled ? cancelled() : identified(result);
   } catch (error) {
