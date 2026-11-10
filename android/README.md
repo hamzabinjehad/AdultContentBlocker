@@ -9,6 +9,14 @@ layer-health watchdog. The interface follows the system light/dark appearance,
 uses bottom navigation for Protection, Rules and Settings, and supports Arabic
 and English.
 
+**Source state, 10 November 2026.** This folder is the 1.4.0-and-later
+candidate: it still declares 1.2.3 / 32 but contains the native TFLite runtime,
+signed mobile list updates, policy receipts and readiness, rule import/preview,
+the site checker, person blur and the craft pass. It does not contain the 1.5.4
+reconnect fix, so it is not a release and must not be installed over a 1.5.4
+phone. See [release state](../docs/RELEASE_STATE_2026-11-10.md) and
+[the end-project plan](../docs/ANDROID_END_PROJECT_PLAN_2026-11-08.md).
+
 1.0.0 was the first signed direct-sideload release. 1.1.0 adds a first-run
 welcome, a voluntary pause action, and today's usage in the daily-limit editor;
 it adds no enforcement layer and relaxes no rule. The APK and certificate
