@@ -29,16 +29,25 @@ enum ListGenerationStore {
 
     /// The directory a reader should try, or nil when no generation is active.
     static func activeDirectory(root: URL? = defaultRoot()) -> URL? {
-        guard let root,
-              let text = try? String(contentsOf: root.appendingPathComponent(pointerName),
-                                     encoding: .utf8),
-              let first = text.split(whereSeparator: \.isNewline).first,
-              let version = Int(first), version >= 1 else { return nil }
+        guard let root else { return nil }
+        let version = pointerVersion(root: root)
+        guard version >= 1 else { return nil }
         let directory = generationDirectory(root, version)
         var isDirectory: ObjCBool = false
         guard FileManager.default.fileExists(atPath: directory.path, isDirectory: &isDirectory),
               isDirectory.boolValue else { return nil }
         return directory
+    }
+
+    /// The committed generation, or 0 when no pointer is present. The proxy
+    /// polls this after a directory change; it is a small file, not the list.
+    static func pointerVersion(root: URL? = defaultRoot()) -> Int {
+        guard let root,
+              let text = try? String(contentsOf: root.appendingPathComponent(pointerName),
+                                     encoding: .utf8),
+              let first = text.split(whereSeparator: \.isNewline).first,
+              let version = Int(first), version >= 1 else { return 0 }
+        return version
     }
 
     static func floor(root: URL? = defaultRoot()) -> Int {
@@ -47,7 +56,7 @@ enum ListGenerationStore {
             .flatMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) } ?? 0
         // The pointer is the commit; reading it as a floor closes the window
         // between the pointer write and the separate floor write.
-        return max(file, pointerVersion(root))
+        return max(file, pointerVersion(root: root))
     }
 
     /// Verify once more through the same loader the proxy uses, then move the
@@ -104,14 +113,6 @@ enum ListGenerationStore {
             try? fileManager.removeItem(at: staging)
             throw Failure.invalidGeneration
         }
-    }
-
-    private static func pointerVersion(_ root: URL) -> Int {
-        guard let text = try? String(contentsOf: root.appendingPathComponent(pointerName),
-                                     encoding: .utf8),
-              let first = text.split(whereSeparator: \.isNewline).first,
-              let version = Int(first) else { return 0 }
-        return version
     }
 
     private static func generationDirectory(_ root: URL, _ version: Int) -> URL {

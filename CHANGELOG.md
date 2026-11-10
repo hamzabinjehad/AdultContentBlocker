@@ -157,9 +157,10 @@ this pass. Record: [the craft pass](docs/ANDROID_CRAFT_2026-11-07.md); captures:
   signature, both artifact hashes, the domain index and the host-term payload
   before anything is written. `ListGenerationStore` stages a generation in the
   App Group, checks it through the same loader the proxy uses, then moves a
-  monotonic pointer and floor. The proxy prefers the active generation and
-  falls back to the signed bundle if it is missing or damaged. A download made
-  while the proxy runs applies when it next starts. Record:
+  monotonic pointer and floor. The proxy prefers the active generation, falls
+  back to the signed bundle if it is missing or damaged, and watches the App
+  Group pointer so a newly committed generation is swapped in without a restart.
+  Record:
   [the iOS list update note](docs/IOS_LIST_UPDATES_2026-11-10.md).
 - **An allowed question cannot carry a listed alias.** The DNS filter now
   follows CNAME, DNAME and HTTPS/SVCB target names in the upstream answer and

@@ -1,3 +1,5 @@
+import Darwin
+import Dispatch
 import Foundation
 import Network
 import NetworkExtension
@@ -45,6 +47,11 @@ actor DNSQueryGate {
 /// off instead of letting it look active while it answers everything.
 final class DNSProxyProvider: NEDNSProxyProvider, @unchecked Sendable {
     private var engine: DNSFilterEngine?
+    private let engineLock = NSLock()
+    /// The active generation, guarded by engineLock; 0 means the bundle.
+    private var generation = 0
+    private var monitor: DispatchSourceFileSystemObject?
+    private let generationQueue = DispatchQueue(label: "app.hisn.dns.generation")
     private let resolver = DoHResolver()
     private let gate = DNSQueryGate(limit: 16)
     private let lock = NSLock()
@@ -63,27 +70,79 @@ final class DNSProxyProvider: NEDNSProxyProvider, @unchecked Sendable {
             // damaged installed generation never leaves the proxy unfiltered:
             // it falls back to the signed bundle instead.
             let loaded: DNSFilterAssets.Loaded
-            if let generation = ListGenerationStore.activeDirectory(),
-               let downloaded = try? DNSFilterAssets.load(directory: generation) {
+            var activeGeneration = 0
+            if let directory = ListGenerationStore.activeDirectory(),
+               let downloaded = try? DNSFilterAssets.load(directory: directory) {
                 loaded = downloaded
+                activeGeneration = ListGenerationStore.pointerVersion()
             } else {
                 loaded = try DNSFilterAssets.load(directory: Bundle.main.bundleURL)
             }
-            engine = loaded.engine
+            setEngine(loaded.engine, generation: activeGeneration)
+            startGenerationMonitor()
             customSites = DNSFilterAssets.customSites(
                 defaults: UserDefaults(suiteName: DNSFilterAssets.group))
             customSitesReadAt = Date()
             completionHandler(nil)
         } catch {
-            engine = nil
+            setEngine(nil, generation: 0)
             completionHandler(error)
         }
     }
 
+    /// The app writes a generation into the App Group while this proxy may be
+    /// running. Watch the directory, not each query: the pointer is small, the
+    /// list is megabytes, and a query must never wait for a reload.
+    private func startGenerationMonitor() {
+        guard let root = ListGenerationStore.defaultRoot() else { return }
+        try? FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let descriptor = Darwin.open(root.path, O_EVTONLY)
+        guard descriptor >= 0 else { return }
+        let source = DispatchSource.makeFileSystemObjectSource(
+            fileDescriptor: descriptor,
+            eventMask: [.write, .rename, .delete],
+            queue: generationQueue)
+        source.setEventHandler { [weak self] in self?.reloadIfChanged() }
+        source.setCancelHandler { Darwin.close(descriptor) }
+        monitor = source
+        source.resume()
+        // A write can land between the start read and the watcher opening; one
+        // queued check closes that window without making startProxy wait.
+        generationQueue.async { [weak self] in self?.reloadIfChanged() }
+    }
+
+    private func reloadIfChanged() {
+        let version = ListGenerationStore.pointerVersion()
+        guard version >= 1 else { return }
+        engineLock.lock()
+        let current = generation
+        engineLock.unlock()
+        guard version != current,
+              let directory = ListGenerationStore.activeDirectory(),
+              let loaded = try? DNSFilterAssets.load(directory: directory) else { return }
+        setEngine(loaded.engine, generation: version)
+    }
+
+    private func setEngine(_ next: DNSFilterEngine?, generation value: Int) {
+        engineLock.lock()
+        engine = next
+        generation = value
+        engineLock.unlock()
+    }
+
+    private func currentEngine() -> DNSFilterEngine? {
+        engineLock.lock()
+        defer { engineLock.unlock() }
+        return engine
+    }
+
     override func stopProxy(with reason: NEProviderStopReason,
                             completionHandler: @escaping () -> Void) {
-        // `engine` is set once in startProxy and never changed afterwards, so a
-        // query task can read it without a lock. Stopping closes the flows.
+        monitor?.cancel()
+        monitor = nil
+        setEngine(nil, generation: 0)
+        // Stopping closes the retained flows; a query that already obtained the
+        // previous engine may finish against that immutable snapshot.
         lock.lock()
         let flows = Array(activeFlows.values)
         activeFlows.removeAll()
@@ -96,7 +155,7 @@ final class DNSProxyProvider: NEDNSProxyProvider, @unchecked Sendable {
     }
 
     override func handleNewFlow(_ flow: NEAppProxyFlow) -> Bool {
-        guard engine != nil else { return false }
+        guard currentEngine() != nil else { return false }
         if let udp = flow as? NEAppProxyUDPFlow {
             retain(flow)
             open(udp)
@@ -218,7 +277,7 @@ final class DNSProxyProvider: NEDNSProxyProvider, @unchecked Sendable {
     /// The response for one query. UDP trims to the client's advertised buffer
     /// and sets TC when a reply does not fit; TCP keeps the full body.
     private func answer(_ query: Data, truncate: Bool) async -> Data? {
-        guard let engine, let question = try? DNSMessage.parseQuery(query) else {
+        guard let engine = currentEngine(), let question = try? DNSMessage.parseQuery(query) else {
             return nil
         }
         let response: Data

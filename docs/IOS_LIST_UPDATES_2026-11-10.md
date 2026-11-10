@@ -38,7 +38,10 @@ generation and one predecessor are kept.
 
 [HisnDNSProxy/DNSProxyProvider.swift](../ios/HisnDNSProxy/DNSProxyProvider.swift)
 tries the active generation first and falls back to the signed bundle if the
-generation is missing or damaged. It never starts unfiltered.
+generation is missing or damaged. It never starts unfiltered. While it runs, a
+directory source watches the App Group pointer; when a newer generation is
+committed, the proxy loads it off the query path and swaps the immutable engine
+under a lock. Queries already in flight finish against the previous snapshot.
 
 ## Download path
 
@@ -48,15 +51,16 @@ domains and terms over HTTPS with bounded sizes, verifies them, and installs the
 generation. It stores only a coarse error type and the versions, never a queried
 name or response body. There is no analytics or server of Hisn's.
 
-The proxy reads the active generation when it starts. A download made while the
-proxy is running applies on its next start or a DNS toggle; this pass has no
-live engine swap.
+The proxy reads the active generation when it starts and watches the App Group
+pointer, so a download made while it is running is applied without a restart or
+a DNS toggle. The reload parses the list on a private queue and swaps engines;
+no query waits for it.
 
 ## Verification
 
 | Check | Result |
 | --- | --- |
-| `ListGenerationTests` | Accepts a generated signed v7 fixture; rejects a flipped signature and a changed domain artifact; store publishes a generation the proxy loader reads; v6 is refused after v7 |
+| `ListGenerationTests` | Accepts a generated signed v7 fixture; rejects a flipped signature and a changed domain artifact; store publishes a generation the proxy loader reads; v6 is refused after v7; v8 moves the pointer and floor the proxy watches |
 | `ios/test_list_generation.py` | Pinned key equals `blocklist/public_key.hex`; update URL matches Android; the store uses the DNS App Group |
 | `./test.sh ios` | Pass, 279 simulator tests and the Python suites |
 
@@ -64,8 +68,8 @@ live engine swap.
 
 - No iPhone/iPad device, real generation download or signed IPA exercised the
   path. The fixture uses a separate test key.
-- The proxy must start again before a download can filter. A future pass can
-  add a controlled reload.
+- The directory watcher is compiled and unit-tested at the store/pointer level,
+  but no device has exercised a live swap while the proxy runs.
 - The pinned key rotation still requires an app update, as on Android.
 - The app downloads about 4.6 MB once a day when DNS is enabled; offline or a
   failed verification keeps the previous generation.

@@ -89,8 +89,9 @@ network-transition claim is made here.
   terms. No phone exercised the update.
 - Added the iOS signed generation path: the app fetches and verifies a
   published generation, stores it in the App Group behind a monotonic pointer,
-  and the DNS proxy loads it with the bundle as fallback. Simulator-tested with
-  a synthetic generation; no device or real download.
+  and the DNS proxy loads it with the bundle as fallback and watches the pointer
+  for a live engine swap. Simulator-tested with synthetic generations; no device
+  or real download.
 - Fixed the extension visual layer in real Chrome: the offscreen engine now
   accepts the service worker's undefined `sender.url`, and the model loads on
   first media instead of worker start. The sender matrix and the live scanner

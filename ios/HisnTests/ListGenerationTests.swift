@@ -111,5 +111,17 @@ final class ListGenerationTests: XCTestCase {
         XCTAssertThrowsError(try ListGenerationStore.install(olderVerified, root: root)) {
             XCTAssertEqual($0 as? ListGenerationStore.Failure, .rollback)
         }
+
+        // A newer generation moves the pointer a running proxy watches.
+        let newer = try fixture(version: 8)
+        let newerVerified = try ListGeneration.verify(manifestData: newer.manifest,
+                                                      signatureHex: newer.signature,
+                                                      domains: newer.domains, terms: newer.terms,
+                                                      publicKeyHex: newer.publicKey)
+        XCTAssertEqual(try ListGenerationStore.install(newerVerified, root: root), 8)
+        XCTAssertEqual(ListGenerationStore.pointerVersion(root: root), 8)
+        XCTAssertEqual(ListGenerationStore.floor(root: root), 8)
+        XCTAssertEqual(try DNSFilterAssets.load(directory: ListGenerationStore.activeDirectory(root: root)!).metadata.version,
+                       8)
     }
 }
