@@ -151,6 +151,12 @@ this pass. Record: [the craft pass](docs/ANDROID_CRAFT_2026-11-07.md); captures:
 
 #### Added
 
+- **An allowed question cannot carry a listed alias.** The DNS filter now
+  follows CNAME, DNAME and HTTPS/SVCB target names in the upstream answer and
+  returns NXDOMAIN when a target is blocked, matching Android's reply guard.
+  A malformed reply fails closed with SERVFAIL instead of being forwarded
+  unchecked. This closes first-party CNAME cloaking for names in Hisn's list;
+  a client with a hard-coded DoH address still bypasses a DNS-only filter.
 - **Public encrypted-DNS provider names are answered locally.** The DNS filter
   now returns NXDOMAIN for the reviewed provider names Android already guards —
   Google, Cloudflare, Quad9, OpenDNS, AdGuard, NextDNS, Mullvad, Control D,

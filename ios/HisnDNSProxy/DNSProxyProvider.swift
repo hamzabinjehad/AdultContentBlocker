@@ -224,7 +224,21 @@ final class DNSProxyProvider: NEDNSProxyProvider, @unchecked Sendable {
             }) else {
                 return DNSMessage.servfail(for: question)
             }
-            response = upstream
+            // The question was allowed, but an answer can still point at a listed
+            // domain through CNAME/DNAME/SVCB. Follow those names before forwarding;
+            // a malformed reply fails closed instead of becoming an unchecked path.
+            let custom = currentCustomSites()
+            do {
+                if try DNSReplyGuard.blocks(upstream, isBlocked: {
+                    engine.blocksHost($0, customSites: custom)
+                }) {
+                    response = DNSMessage.nxdomain(for: question)
+                } else {
+                    response = upstream
+                }
+            } catch {
+                return DNSMessage.servfail(for: question)
+            }
         }
         return truncate ? DNSMessage.limited(response, for: question) : response
     }

@@ -33,6 +33,28 @@ private func domainIndex(_ domains: [String]) throws -> DomainIndex {
     try DomainIndex(fileData: Data((domains.joined(separator: "\n") + "\n").utf8))
 }
 
+private func dnsName(_ name: String) -> [UInt8] {
+    var bytes: [UInt8] = []
+    for label in name.split(separator: ".") {
+        bytes.append(UInt8(label.utf8.count))
+        bytes.append(contentsOf: label.utf8)
+    }
+    bytes.append(0)
+    return bytes
+}
+
+private func dnsAnswer(owner: [UInt8], type: UInt16, rdata: [UInt8]) -> [UInt8] {
+    owner + uint16(type) + uint16(1) + [0, 0, 0, 60] + uint16(UInt16(rdata.count)) + rdata
+}
+
+private func dnsReply(_ question: DNSQuestion, answers: [[UInt8]]) -> Data {
+    var bytes = uint16(question.id) + uint16(0x8180) + uint16(1)
+        + uint16(UInt16(answers.count)) + uint16(0) + uint16(0)
+    bytes += [UInt8](question.questionBytes)
+    for answer in answers { bytes += answer }
+    return Data(bytes)
+}
+
 final class DNSMessageTests: XCTestCase {
     func testParsesAQuestionAndTheEDNSPayloadSize() throws {
         let plain = try DNSMessage.parseQuery(makeQuery("www.Example.COM"))
@@ -241,6 +263,77 @@ final class HostTermPolicyTests: XCTestCase {
             schema: 1, version: 1,
             host_terms: [.init(t: "a", kind: "regex")],
             never_keyword: [], keyword_exempt_hosts: nil)))
+    }
+}
+
+final class DNSReplyGuardTests: XCTestCase {
+    private func question(_ name: String) throws -> DNSQuestion {
+        try DNSMessage.parseQuery(makeQuery(name))
+    }
+
+    private func blocked(_ host: String) -> Bool {
+        host == "listed.example" || host.hasSuffix(".listed.example") || host == "dns.google"
+    }
+
+    func testCnameToAListedNameIsBlockedAndASafeTargetIsNot() throws {
+        let q = try question("first-party.example")
+        let harmful = dnsReply(q, answers: [
+            dnsAnswer(owner: [0xC0, 0x0C], type: 5, rdata: dnsName("listed.example")),
+        ])
+        XCTAssertTrue(try DNSReplyGuard.blocks(harmful, isBlocked: blocked))
+        let safe = dnsReply(q, answers: [
+            dnsAnswer(owner: [0xC0, 0x0C], type: 5, rdata: dnsName("safe.example")),
+        ])
+        XCTAssertFalse(try DNSReplyGuard.blocks(safe, isBlocked: blocked))
+    }
+
+    func testCnameChainAndDnameSuffixAreFollowed() throws {
+        let q = try question("first-party.example")
+        let chain = dnsReply(q, answers: [
+            dnsAnswer(owner: [0xC0, 0x0C], type: 5, rdata: dnsName("middle.example")),
+            dnsAnswer(owner: dnsName("middle.example"), type: 5, rdata: dnsName("listed.example")),
+        ])
+        XCTAssertTrue(try DNSReplyGuard.blocks(chain, isBlocked: blocked))
+
+        let sub = try question("sub.example.com")
+        let dname = dnsReply(sub, answers: [
+            dnsAnswer(owner: dnsName("example.com"), type: 39, rdata: dnsName("listed.example")),
+        ])
+        XCTAssertTrue(try DNSReplyGuard.blocks(dname, isBlocked: blocked))
+    }
+
+    func testSvcbServiceModeEndpointIsFollowed() throws {
+        let q = try question("first-party.example")
+        var rdata: [UInt8] = [0, 1] // priority 1: ServiceMode
+        rdata += dnsName("listed.example")
+        let response = dnsReply(q, answers: [
+            dnsAnswer(owner: [0xC0, 0x0C], type: 65, rdata: rdata),
+        ])
+        XCTAssertTrue(try DNSReplyGuard.blocks(response, isBlocked: blocked))
+    }
+
+    func testAMalformedAliasFailsClosed() throws {
+        let q = try question("first-party.example")
+        // A CNAME whose rdata claims one byte but contains a full name: the
+        // parser must reject it rather than forward an unchecked chain.
+        let malformed = dnsReply(q, answers: [
+            dnsAnswer(owner: [0xC0, 0x0C], type: 5, rdata: [1, 65]),
+        ])
+        XCTAssertThrowsError(try DNSReplyGuard.blocks(malformed, isBlocked: blocked))
+    }
+
+    func testTheBlockedAliasUsesTheEngineRails() throws {
+        let engine = try DNSFilterEngine(
+            domains: domainIndex(["listed.example"]),
+            hostTerms: HostTermPolicy(tokens: ["porn"], substrings: [],
+                                      neverKeyword: [], exemptHosts: []))
+        let q = try question("first-party.example")
+        let response = dnsReply(q, answers: [
+            dnsAnswer(owner: [0xC0, 0x0C], type: 5, rdata: dnsName("dns.google")),
+        ])
+        XCTAssertTrue(try DNSReplyGuard.blocks(response, isBlocked: {
+            engine.blocksHost($0)
+        }))
     }
 }
 

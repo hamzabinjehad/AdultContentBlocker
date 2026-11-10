@@ -31,7 +31,18 @@ struct DNSFilterEngine {
     /// person's own blocked sites while the proxy runs, and the extension
     /// re-reads them on a short cache instead of restarting the tunnel.
     func decide(_ question: DNSQuestion, customSites: [String] = []) -> Decision {
-        let host = question.name
+        decision(host: question.name, customSites: customSites)
+    }
+
+    /// True when a resolved alias target is blocked. CNAME/DNAME/SVCB answers
+    /// must be checked as well as the question, or a first-party name can point
+    /// at a listed domain and carry its content through an allowed query.
+    func blocksHost(_ host: String, customSites: [String] = []) -> Bool {
+        if case .blocked = decision(host: host, customSites: customSites) { return true }
+        return false
+    }
+
+    private func decision(host: String, customSites: [String]) -> Decision {
         guard !host.isEmpty else { return .allowed }
         // The route-check alias, and any name under the reserved `.hisn.invalid`
         // domain, is answered on the device so the app can prove the path. A
