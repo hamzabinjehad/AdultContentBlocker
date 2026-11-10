@@ -479,6 +479,12 @@
 			path = KeywordLayerTests.swift;
 			sourceTree = "<group>";
 		};
+		09D27CA16F8B80B7CB3DA2D0 /* ListUpdaterTests.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = ListUpdaterTests.swift;
+			sourceTree = "<group>";
+		};
 		8C0173C1C38F1936EC103F00 /* LocalizationTests.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -767,6 +773,7 @@
 				2098ACD4010E242DD587819B,
 				5CEF7A7205FB28ED41D63CB3,
 				28A03C0E33E9129984BFCEA4,
+				09D27CA16F8B80B7CB3DA2D0,
 				8C0173C1C38F1936EC103F00,
 				7A388BAA57DF64855C0A223E,
 				72921621662D8A33587143D3,
@@ -2121,6 +2128,10 @@
 			isa = PBXBuildFile;
 			fileRef = 34758234727DE25F34B097FF;
 		};
+		53D608E7AC4AFF9F1F2C69A3 /* ListUpdaterTests.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 09D27CA16F8B80B7CB3DA2D0;
+		};
 		EBD9A7FBC79D548A74AF6516 /* MacUIRefreshTests.swift in Sources */ = {
 			isa = PBXBuildFile;
 			fileRef = D27A7FF4F10618EFED8837AA;
@@ -2158,6 +2169,7 @@
 				68520968104C0634F50C3BE1,
 				4E6C5C69E4FA72F6AF339BF8,
 				0DB6DC25129D35047897F85A,
+				53D608E7AC4AFF9F1F2C69A3,
 				EBD9A7FBC79D548A74AF6516,
 				3139C6D825483E39B3F44E88,
 			);

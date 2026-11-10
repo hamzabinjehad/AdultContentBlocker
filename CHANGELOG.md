@@ -11,6 +11,13 @@ bump without an entry here is an unfinished release.
 
 #### Changed
 
+- **A list download has a hard byte ceiling before verification.** The Mac
+  updater fetched each published artifact with an unbounded `URLSession` data
+  call, so a hostile or broken response could allocate the process away before
+  the signature check had a chance to reject it. Each artifact now has an
+  explicit limit (manifest, signature, deflated domains, terms), the
+  `Content-Length` is checked first, and the stream is collected through a
+  bounded buffer. A failed or oversized generation keeps the previous list.
 - **A missed extension heartbeat no longer closes a browser.** The guard used
   to warn for sixty seconds and then terminate a linked Chromium browser when
   its extension stopped checking in. Chrome and Chromium forks delay their

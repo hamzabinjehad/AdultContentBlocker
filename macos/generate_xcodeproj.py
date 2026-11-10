@@ -158,6 +158,7 @@ TEST_SOURCES = ["HisnTests/BlocklistStoreTests.swift",
                 "HisnTests/PrivateBrowsingTests.swift",
                 "HisnTests/ManagedModeTests.swift",
                 "HisnTests/SiteCheckerTests.swift",
+                "HisnTests/ListUpdaterTests.swift",
                 # Layout captures for the Mac UI pass (not pixel assertions).
                 "HisnTests/MacUIRefreshTests.swift",
                 "../shared/tests/MirroredRuleStoreTests.swift"]
