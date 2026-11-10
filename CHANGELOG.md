@@ -166,6 +166,15 @@ this pass. Record: [the craft pass](docs/ANDROID_CRAFT_2026-11-07.md); captures:
 
 ### iPhone & iPad
 
+#### Fixed
+
+- **The shared Safari text scorer no longer treats a name or `sksy` as enough
+  evidence alone.** `neek`/`nik`/`sksy` terms require a reviewed clear term in
+  the same zone; `aflam neek`/`film neek` are clear. The three Android miss rows
+  block and the `Neek Masri`, `Nik Cage` and `sksy download` controls stay
+  readable. The iOS Safari extension stages the same `extension/lib/score.js`;
+  `ios/test_web_extension.py` passes.
+
 #### Added
 
 - **The six Safari blockers can use the same downloaded generation.** After an
@@ -216,6 +225,14 @@ this pass. Record: [the craft pass](docs/ANDROID_CRAFT_2026-11-07.md); captures:
 
 #### Fixed
 
+- **`neek`/`nik`/`sksy` are contextual in the shared scorer again.** The three
+  reviewed rows `Watch aflam neek masri free`, `tahmil film neek arabi` and
+  `tahmil aflam neek 7elwa mojani` block, while `Watch Neek Masri live, free`,
+  `tahmil aflam Nik Cage mojani` and `sksy download free` stay readable. A
+  contextual term scores only beside a reviewed clear term in the same zone;
+  `aflam neek`/`film neek` are clear. `arabizi.test.js` covers 7 cases and
+  `score-equivalence` carries the same rule in its reference. Record:
+  [Arabizi context](docs/ARABIZI_CONTEXT_2026-11-10.md).
 - **The offscreen engine now accepts the real Chrome service-worker sender.**
   Chromium leaves `sender.url` undefined when a service worker sends a
   message, so the offscreen visual document rejected every prepare, inspect and

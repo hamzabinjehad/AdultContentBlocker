@@ -98,3 +98,7 @@ network-transition claim is made here.
   media instead of worker start, and a real-browser harness drives
   `getVisualStatus` through the worker and offscreen document. The sender
   matrix, live visual status and live scanner suites pass.
+- Aligned the shared extension/Safari text scorer with the reviewed Android
+  Arabizi context: the three `aflam`/`film` + `neek` miss rows block while the
+  `Neek Masri`, `Nik Cage` and `sksy download` controls stay readable. The
+  iOS web-extension staging tests pass against the same JS.

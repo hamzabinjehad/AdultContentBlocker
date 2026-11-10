@@ -1,7 +1,8 @@
 /** Compare the prefix matcher with the former exhaustive phrase algorithm.
  * Keep this reference independent: an optimisation must not silently change
  * weights, negatives, boundaries, overlapping matches or ignored words. */
-import { buildIndex, scorePage, threshold, withoutTerms, ZONE_WEIGHTS } from "../lib/score.js";
+import { buildIndex, scorePage, threshold, withoutTerms, ZONE_WEIGHTS,
+  isArabiziContextual, ARABIZI_CLEAR } from "../lib/score.js";
 import { normalize, tokenize, variants } from "../lib/normalize.js";
 
 let checks = 0, failures = 0;
@@ -28,7 +29,9 @@ function reference(zones, index, sensitivity) {
       }
     }
     if (zone === "body") words += tokens.length;
+    const arabiziClear = [...counts.keys()].some((term) => ARABIZI_CLEAR.has(term));
     for (const [term, raw] of counts) {
+      if (isArabiziContextual(term) && !arabiziClear) continue;
       const occurrences = Math.min(raw, 3);
       const w = index.positive.get(term) ?? index.negative.get(term) ?? 0;
       score += w * occurrences * weight;
