@@ -73,6 +73,8 @@ past version; *superseded* documents point to their replacement. Start with the
 - [Android 1.3.1](ANDROID_1.3.1.md): WASM first, a centred near-miss crop and the measured faster visual pass.
 - [Android 1.3.2](ANDROID_1.3.2.md): Reuse the verdict for an unchanged frame instead of running the model on every capture.
 - [Android 1.4.0](ANDROID_1.4.0.md): The native TFLite runtime, the same model and thresholds, the WebView fallback, the 38–45 ms emulator measurement and the 9.8 MB model cost. No adult-positive benchmark.
+- [Android 1.5.4](ANDROID_1.5.4.md): The phone pass that added the reconnect lifecycle, the Installed apps copy and the honest post-reboot result: the dashboard could still read disconnected with the service bound.
+- [Android 1.6.0, 2026-11-10](ANDROID_1.6.0.md): The first numbered build of the committed candidate: the 1.5.3 feature set, packages 2 and 3, and the 1.5.4 reconnect lifecycle. Development candidate; no signed artifact or phone run, and the post-reboot dashboard is still unverified.
 - [Android policy receipts 1.5.3 integration](ANDROID_POLICY_RECEIPTS_1.5.3_INTEGRATION.md): The read-only port map for policy versions, identities, receipts and evidence age into the 1.5.3 line.
 - [Android package 2 brief](ANDROID_SECOND_PACKAGE_2026-11-08.md): Current-policy proof, honest evidence age, recovery and lifecycle cases.
 - [Android package 3 brief](ANDROID_THIRD_PACKAGE_FUNCTIONALITY_2026-11-08.md): Signed mobile list updates, an explainable hostname decision, a site checker and portable personal rules.

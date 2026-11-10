@@ -3753,7 +3753,16 @@ public final class MainActivity extends Activity {
         refreshBatteryState();
         AdultListUpdater.schedule(this);
         refreshUpdateRow();
+        rearmGuardIfNeeded();
         handler.post(refresh);
+    }
+
+    /** A system-bound service can stay alive without repeating onServiceConnected after an update. */
+    private void rearmGuardIfNeeded() {
+        if (TextGuardService.connected || !Permissions.accessibility(this)) return;
+        try {
+            sendBroadcast(new Intent(TextGuardService.ACTION_REARM).setPackage(getPackageName()));
+        } catch (RuntimeException unavailable) { /* The setup card still offers the settings page. */ }
     }
 
     @Override public void onWindowFocusChanged(boolean hasFocus) {

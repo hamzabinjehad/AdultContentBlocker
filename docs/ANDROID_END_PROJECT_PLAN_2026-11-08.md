@@ -1,7 +1,9 @@
 # Android: from a working tree to the end project
 
 Date: 8 November 2026. Status: plan, plus artifacts. The candidate is now
-committed; see [release state](RELEASE_STATE_2026-11-10.md).
+committed and numbered **1.6.0 / 43**; the 1.5.4 reconnect lifecycle is ported.
+See [release state](RELEASE_STATE_2026-11-10.md) and
+[the 1.6.0 note](ANDROID_1.6.0.md).
 
 **Update after the first delivery pass.** The latest complete Android line is
 not this checkout. A clean sibling worktree
@@ -18,7 +20,9 @@ person-blur work that is present here but not yet on the 1.5.3 line. It should
 merge forward into a **1.6.0** release, not ship as 1.4.0. The P0 below is still
 correct for this checkout, and the 1.4.0/36 candidate artifacts in
 `dist/android-final-2026-11-08/` are a preview of that merge, not the end
-project.
+project. On 10 November the candidate was committed, the 1.5.4 reconnect
+lifecycle was ported, and the version was set to 1.6.0 / 43. The remaining P0
+work is the signed build and the phone acceptance.
 
 The broader feature list already exists in
 [the Android feature plan](ANDROID_FEATURE_IMPROVEMENT_PLAN_2026-11-08.md). Its
@@ -72,8 +76,12 @@ reviewed; the release job fails on errors, not warnings.
 
 ## P0 — One source, one version, one artifact (this week)
 
-The checkout is the real problem. It contains a **future release that is not in
-git**:
+**Status, 10 November:** steps 1–3 are done. The tree is committed, numbered
+1.6.0 / 43, and the metadata is updated. Steps 4 (signed build), 6 (artifact
+gate) and 7 (phone) remain.
+
+The checkout was the real problem. It contained a **future release that was not
+in git**:
 
 - `TfliteClassifier.java` and `assets/nsfw_mobilenet_v2.tflite` (native visual
   runtime, ~10 MB model);

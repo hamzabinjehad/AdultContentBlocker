@@ -1,4 +1,4 @@
-# Hisn Android 1.1.0: signed self-control release
+# Hisn Android 1.6.0: development candidate
 
 The Android app contains an opt-in DNS-only VPN, saved custom rules, selected-app
 accessibility restrictions, opt-in daily app schedules, opt-in daily app time
@@ -9,12 +9,15 @@ layer-health watchdog. The interface follows the system light/dark appearance,
 uses bottom navigation for Protection, Rules and Settings, and supports Arabic
 and English.
 
-**Source state, 10 November 2026.** This folder is the 1.4.0-and-later
-candidate: it still declares 1.2.3 / 32 but contains the native TFLite runtime,
-signed mobile list updates, policy receipts and readiness, rule import/preview,
-the site checker, person blur and the craft pass. It does not contain the 1.5.4
-reconnect fix, so it is not a release and must not be installed over a 1.5.4
-phone. See [release state](../docs/RELEASE_STATE_2026-11-10.md) and
+**Source state, 10 November 2026.** This folder is the **1.6.0 / 43**
+development candidate: the 1.5.3 feature set, packages 2 and 3 (signed mobile
+list updates, policy receipts and readiness, rule import/preview, the site
+checker, person blur) and the ported 1.5.4 reconnect lifecycle. No signed
+1.6.0 artifact and no phone run exist; the post-reboot dashboard state is
+unverified. Do not install it over the owner's 1.5.4 phone until a signed
+1.6.0 build passes the phone acceptance. See
+[the 1.6.0 note](../docs/ANDROID_1.6.0.md),
+[release state](../docs/RELEASE_STATE_2026-11-10.md) and
 [the end-project plan](../docs/ANDROID_END_PROJECT_PLAN_2026-11-08.md).
 
 1.0.0 was the first signed direct-sideload release. 1.1.0 adds a first-run

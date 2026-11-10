@@ -1,7 +1,11 @@
 package app.hisn.android;
 
 import android.accessibilityservice.AccessibilityService;
+import android.annotation.SuppressLint;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.PixelFormat;
 import android.os.Build;
 import android.os.Handler;
@@ -38,10 +42,14 @@ import app.hisn.core.VisibleTextSample;
  * screen content is never retained. */
 public final class TextGuardService extends AccessibilityService {
     public static volatile boolean connected;
+    /** MainActivity asks a live service instance to re-run its idempotent setup after an update. */
+    static final String ACTION_REARM = "app.hisn.android.action.REARM_GUARD";
     /** Increments for every guard instance; a receipt from an earlier one is stale. */
     public static volatile int serviceSession;
     /** Setup ran in this service instance; reset when Android unbinds it. */
     private boolean started;
+    /** The rearm receiver is registered in onCreate and must be removed in onDestroy. */
+    private boolean rearmRegistered;
     /** Setup finished and events are handled; the boot shield waits for this. */
     static volatile boolean ready;
     /** Set by an incomplete or failed inspection; cleared by a later complete one. */
@@ -190,6 +198,30 @@ public final class TextGuardService extends AccessibilityService {
         }
     };
 
+    private final BroadcastReceiver rearm = new BroadcastReceiver() {
+        @Override public void onReceive(Context context, Intent intent) {
+            connected = true;
+            startGuard();
+            if (visual == null) visual = newVisualGuard();
+        }
+    };
+
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
+    @Override public void onCreate() {
+        super.onCreate();
+        IntentFilter filter = new IntentFilter(ACTION_REARM);
+        // The flagged overload exists only on API 33+; the package-scoped intent is not exported.
+        if (Build.VERSION.SDK_INT >= 33) registerReceiver(rearm, filter, Context.RECEIVER_NOT_EXPORTED);
+        else registerReceiver(rearm, filter);
+        rearmRegistered = true;
+        // The system created this service because it is bound. Android does not
+        // always repeat onServiceConnected after an update or rebind, and waiting
+        // for a callback that never comes left `connected` false while the service
+        // was in fact running. Prove the live instance here.
+        connected = true;
+        startGuard();
+    }
+
     @Override protected void onServiceConnected() {
         connected = true;
         startGuard();
@@ -337,7 +369,10 @@ public final class TextGuardService extends AccessibilityService {
 
     @Override public void onAccessibilityEvent(AccessibilityEvent event) {
         // An event proves this instance is alive even when the bind callback was not repeated.
-        if (!started) { connected = true; startGuard(); }
+        // Restore a flag cleared by a temporary unbind as well: a live event is stronger
+        // evidence than the last lifecycle callback.
+        if (!connected) connected = true;
+        if (!started) startGuard();
         if (connected && visual == null) visual = newVisualGuard();
         // Only a window change discards an in-flight image sample. Scrolls and content changes
         // in feeds and videos are constant; the frame gate still requires the same app and
@@ -1275,7 +1310,16 @@ public final class TextGuardService extends AccessibilityService {
         started = false;
         handler.removeCallbacks(checkpoint);
         stopGuardChecks();
-        return super.onUnbind(intent);
+        // true asks Android to call onRebind when this accessibility service is
+        // bound again. Without it a rebound instance stayed alive with `connected`
+        // false until a screen event happened to arrive.
+        return true;
+    }
+
+    @Override public void onRebind(Intent intent) {
+        super.onRebind(intent);
+        connected = true;
+        startGuard();
     }
 
     @Override public void onDestroy() {
@@ -1284,6 +1328,10 @@ public final class TextGuardService extends AccessibilityService {
         activeScan = 0;
         scanner.shutdownNow();
         removeGuardOverlay();
+        if (rearmRegistered) {
+            try { unregisterReceiver(rearm); } catch (RuntimeException alreadyGone) { /* the process is ending */ }
+            rearmRegistered = false;
+        }
         connected = false;
         ready = false;
         started = false;

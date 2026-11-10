@@ -219,7 +219,7 @@
     <string name="text_guard_partial">متصلة · تغطية جزئية</string>
     <string name="protection_attention">الحماية تحتاج إلى مراجعة</string>
     <string name="text_guard_no_rules">متصلة · لا قواعد</string>
-    <string name="text_guard_reconnect">يلزم إعادة الاتصال</string>
+    <string name="text_guard_reconnect">أوقف إمكانية الوصول ثم شغّلها</string>
     <string name="text_guard_permission">يلزم الإذن</string>
     <string name="text_guard_unknown">الإذن غير معروف</string>
     <string name="text_guard_recheck_note">تُعاد مراجعة التطبيقات المختارة نحو مرة كل ثانية أثناء فتحها، ويتوقف الفحص بعد مغادرتها. تبقى نصوص الشاشة على هذا الجهاز ولا تُحفظ.</string>
@@ -696,7 +696,7 @@
     <string name="attention_dns_not_running">تُركت فلترة DNS مفعّلة لكنها لا تعمل.</string>
     <string name="attention_private_dns">قد يتجاوز DNS الخاص في أندرويد فلترة حصن.</string>
     <string name="attention_guard_permission">إمكانية الوصول لحصن متوقفة، لذا قيود التطبيقات والفحوص غير نشطة.</string>
-    <string name="attention_guard_disconnected">إمكانية الوصول مفعّلة لكن الخدمة غير متصلة.</string>
+    <string name="attention_guard_disconnected">إمكانية الوصول مفعّلة لكن الخدمة غير متصلة. في إعدادات إمكانية الوصول ← التطبيقات المثبتة، أوقف حصن ثم شغّله، ثم عد.</string>
     <string name="attention_guard_unknown">تعذّر على حصن التحقق من إذن إمكانية الوصول.</string>
     <string name="attention_scan_incomplete">كان آخر فحص للشاشة غير مكتمل.</string>
     <string name="attention_policy_unavailable">تعذّرت قراءة إعدادات الحماية.</string>

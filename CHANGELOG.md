@@ -50,7 +50,7 @@ bump without an entry here is an unfinished release.
 
 ### Android
 
-#### Added — the 1.4.0-and-later candidate, committed
+#### Added — the candidate, committed and numbered 1.6.0
 
 - **The future release is in git.** The working tree carried 45 untracked and
   42 modified Android files: the native TFLite runtime and its 9.8 MB model,
@@ -64,10 +64,11 @@ bump without an entry here is an unfinished release.
 - **The suite cannot silently skip a test class.** `android/test-core.sh` now
   runs `VisualRuntimeDeadlineTest` and fails when a `*Test.java` file is not
   reachable from the script.
-- **The declaration stays 1.2.3 / 32.** This tree is the 1.5.3 line plus
-  packages 2 and 3, without the 1.5.4 reconnect fix; 1.6.0 / 43 is the proposed
-  next number after 1.5.4. Do not build or install it as a release.
-  [Release state](docs/RELEASE_STATE_2026-11-10.md).
+- **The candidate is now 1.6.0 / 43.** It is the 1.5.3 line plus packages 2
+  and 3, with the 1.5.4 reconnect lifecycle ported. No signed 1.6.0 artifact or
+  phone run exists, and the post-reboot dashboard is still unverified. See
+  the Android 1.6.0 section below and
+  [release state](docs/RELEASE_STATE_2026-11-10.md).
 
 #### Verification — 10 November
 
@@ -226,6 +227,43 @@ this pass. Record: [the craft pass](docs/ANDROID_CRAFT_2026-11-07.md); captures:
 - `./test.sh extension` passes, including `package.sh`/`check_package.py` and
   the evaluation corpus at sensitivities 50, 80 and 100. `./test.sh browser`
   passes. No packaged zip, version bump or store upload is claimed here.
+
+## Android 1.6.0 — 2026-11-10
+
+Development candidate. No signed 1.6.0 artifact, Play upload or phone run is
+claimed.
+
+### Added
+
+- **The committed candidate has a number.** The 1.5.3 feature set, the package-2
+  readiness and receipt work, the package-3 signed list updates, hostname
+  explanation and portable rule tools, and the 1.5.4 reconnect lifecycle now
+  build as 1.6.0 / 43. Record: [the 1.6.0 note](docs/ANDROID_1.6.0.md).
+- **The guard proves the bound service instead of waiting for a callback.**
+  `TextGuardService.onCreate` marks the live instance connected and runs the
+  idempotent setup, `onUnbind` returns true, `onRebind` re-arms, a live
+  accessibility event restores `connected`, and `MainActivity` asks a live but
+  not-yet-connected service to re-arm on resume. The reconnect row and the
+  disconnected attention copy now name Accessibility → Installed apps and say
+  to return. The 1.5.4 phone record and hashes are in
+  [the 1.5.4 note](docs/ANDROID_1.5.4.md).
+
+### Verification
+
+- `android/test-core.sh` with JDK 25: every core class passes, including the
+  orphan guard, the signed seed, strings, notices and the synthetic corpus.
+- `:app:assembleDebug`, `:app:assembleDebugAndroidTest`, `:app:lintDebug` and
+  `:app:assembleRelease` pass; the release APK is unsigned in this run.
+- The browser, Python, macOS and iOS suites are unchanged by this pass; their
+  results are recorded in [release state](docs/RELEASE_STATE_2026-11-10.md).
+
+### Limits
+
+- The post-reboot dashboard is still unverified. The 1.5.4 record says it could
+  read disconnected with the service bound; this candidate adds the lifecycle
+  evidence and the foreground rearm but has no phone run.
+- No signed 1.6.0 APK or AAB, no `check-release.py` result against a 1.6.0
+  artifact, and no adult-positive visual benchmark.
 
 ## Android 1.2.3 — 2026-11-07
 
