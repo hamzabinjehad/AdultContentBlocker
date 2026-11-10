@@ -1,5 +1,8 @@
 #!/bin/sh
 set -eu
+# Resolve the script before changing directory: the orphan-test guard below must
+# be able to read this file when the suite is invoked as `sh android/test-core.sh`.
+hisn_script=$(cd "$(dirname "$0")" && pwd)/$(basename "$0")
 cd "$(dirname "$0")"
 # English and Arabic resources: same keys, plurals and placeholders; every referenced key exists.
 python3 check-strings.py
@@ -18,7 +21,7 @@ done
 # directory must be reachable from this script, whether in the loop or as a fixture test.
 for hisn_test_file in core/src/test/java/app/hisn/core/*Test.java; do
     hisn_test_name=$(basename "$hisn_test_file" .java)
-    if ! grep -q "${hisn_test_name%Test}" "$0"; then
+    if ! grep -q "${hisn_test_name%Test}" "$hisn_script"; then
         echo "test class not run by this script: $hisn_test_name" >&2
         exit 1
     fi
