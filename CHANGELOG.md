@@ -188,6 +188,17 @@ this pass. Record: [the craft pass](docs/ANDROID_CRAFT_2026-11-07.md); captures:
 
 ### Browser extension
 
+#### Fixed
+
+- **The offscreen engine now accepts the real Chrome service-worker sender.**
+  Chromium leaves `sender.url` undefined when a service worker sends a
+  message, so the offscreen visual document rejected every prepare, inspect and
+  status message from Hisn's worker: the layer could look enabled while no
+  model verdict ever arrived. The gate accepts the undefined URL as well as the
+  Firefox worker script URL, and still rejects a popup, a content script, another
+  extension id and a missing sender. `offscreen-sender.test.js` covers the
+  matrix. Record: [the sender note](docs/EXTENSION_VISUAL_SENDER_2026-11-10.md).
+
 #### Changed
 
 - **Media checks are on by default, for every site.** The bundled on-device
@@ -231,6 +242,12 @@ this pass. Record: [the craft pass](docs/ANDROID_CRAFT_2026-11-07.md); captures:
   rule is registered only while media checks are on and only in the top frame,
   and is read back in the enforcement receipt as a new layer. A moved
   post container costs the whole-post suppression, not the media hiding.
+- **The visual model loads on first media, not worker start.** With the
+  offscreen sender repaired, the eager `prepareVisualEngine` call delayed the
+  text policy path on pages with no media. The worker now registers the visual
+  scanner without preparing models; the first capture creates the offscreen
+  document and loads only the selected model, while the pre-display gate holds
+  media until its verdict.
 
 #### Verification
 
@@ -241,6 +258,10 @@ this pass. Record: [the craft pass](docs/ANDROID_CRAFT_2026-11-07.md); captures:
 - `runtime.test.js` (160 checks) covers default-on registration, the existing
   explicit-off path, the social rule appearing and disappearing with the media
   layer, and the unavailable-engine payload.
+- `offscreen-sender.test.js` (8 checks) covers the Chromium and Firefox worker
+  sender forms, popup, content script, other extension and missing sender.
+- The live scanner suite (`scan-live.sh`) passes, including the trusted policy
+  recheck and both X/Twitter feeds, after the eager model load was removed.
 - The real-DOM fixtures pass: `feed-compatibility.html` (a generic "sensitive
   material" warning post stays usable; a locally flagged video collapses its
   post; removing the marker restores it) and `social-media.html` (a flagged

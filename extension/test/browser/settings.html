@@ -330,11 +330,15 @@ try {
   const lockFrame = await frame(false), l = lockFrame.contentDocument, lw = lockFrame.contentWindow;
   lw.fixture.lockUntil = Date.now() + 60000;
   for (const fn of lw.changeHandlers) fn({ state: { newValue: structuredClone(lw.fixture) } }, "local");
+  // The import uses the page's `current` snapshot. Wait for the lock notice to
+  // paint before picking a file, or a loaded machine can import against the
+  // previous unlocked state.
+  for (let i = 0; i < 50 && !l.getElementById("lockNotice").textContent.trim(); i++) await pause();
   l.querySelector('a[href="#rules"]').click(); await pause();
   pickInto(l, lw, "locked.json", JSON.stringify({ schema: "hisn.rules", version: 1,
     customBlocks: ["locked.example"], allowlist: ["allowed.example"] }));
-  for (let i = 0; i < 20 && !lw.fixture.customBlocks.includes("locked.example"); i++) await pause();
-  await pause();
+  for (let i = 0; i < 50 && !lw.fixture.customBlocks.includes("locked.example"); i++) await pause();
+  for (let i = 0; i < 50 && !l.getElementById("msgTransfer").textContent.includes("Not applied"); i++) await pause();
   check(lw.fixture.customBlocks.includes("locked.example") && !lw.fixture.allowlist.includes("allowed.example"),
     "a lock applies new blocks but withholds new allowances");
   check(l.getElementById("msgTransfer").textContent.includes("Not applied because a lock is running: 1"),

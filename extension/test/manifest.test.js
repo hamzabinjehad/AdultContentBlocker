@@ -44,7 +44,7 @@ const sources = [
   "../content/feed.js", "../content/scan.js", "../content/short-video.js", "../content/visual.js",
   "../content/visual-effects.js",
   "../visual/broker.js", "../visual/capture.js", "../visual/decisions.js", "../visual/engine.js",
-  "../visual/offscreen.js", "../visual/queue.js", "../visual/verdict-cache.js",
+  "../visual/offscreen.js", "../visual/offscreen-sender.js", "../visual/queue.js", "../visual/verdict-cache.js",
 ];
 
 // Read every shipped source once. A missing file is a failure here because the

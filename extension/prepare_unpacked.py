@@ -33,7 +33,7 @@ SKIP_SUFFIXES = {".py", ".pyc", ".sh", ".pem", ".key", ".p12", ".pfx", ".crx", "
 REQUIRED_DYNAMIC = ("content/feed.js", "content/scan.js", "content/short-video.js", "content/social-media.css", "seed/terms.json")
 VISUAL_REQUIRED = (
     "content/visual.js", "content/visual-effects.js", "content/visual-gate.css", "visual/capture.js", "visual/broker.js", "visual/verdict-cache.js", "visual/offscreen.html",
-    "visual/offscreen.js", "visual/engine.bundle.js", "visual/engine.bundle.js.LEGAL.txt", "visual/assets.json",
+    "visual/offscreen.js", "visual/offscreen-sender.js", "visual/engine.bundle.js", "visual/engine.bundle.js.LEGAL.txt", "visual/assets.json",
     "visual/models/blazeface.json", "visual/models/gender.json",
     "visual/notices/human-models-MIT.txt", "visual/notices/face-classification-MIT.txt",
     "visual/notices/mediapipe-Apache-2.0.txt", "visual/notices/nsfwjs-LICENSE.txt",

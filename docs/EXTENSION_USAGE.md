@@ -55,6 +55,10 @@ replaced, and a flagged video is paused. The platform's own "sensitive
 content" warning is not treated as a verdict; only the local model's result
 hides media. A browser that cannot run the model shows its media rather than
 leaving a blank page, and Settings reports the check as unavailable there.
+After updating an unpacked copy, reload it from the extensions page; the switch
+keeps the saved state, so turn it on if it had been saved off. The settings
+status distinguishes a loaded model from one still waiting for the first page
+with media.
 
 The same whole-post rule runs on the other large social feeds, which have no
 per-post text adapter: Instagram, Facebook, Reddit, TikTok, Threads, Bluesky,

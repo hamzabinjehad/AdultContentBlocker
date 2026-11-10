@@ -10,7 +10,7 @@
  */
 
 import { isLocked } from "../lib/policy.js";
-import { disableVisualEngine, prepareVisualEngine } from "../visual/broker.js";
+import { disableVisualEngine } from "../visual/broker.js";
 
 export const TEXT_SCANNER = {
   id: "hisn-scan", js: ["content/feed.js", "content/scan.js"], matches: ["<all_urls>"],
@@ -98,9 +98,11 @@ export async function syncVisualScanning(state) {
     }
     return;
   }
-  // Prepare only the opted-in local models, without delaying rule application
-  // or waiting for a webpage to submit its first image. No media is captured.
-  void prepareVisualEngine(state);
+  // Do not load the model on worker start. A first page with media would pay
+  // the same cost anyway, but an eager load on every browser start delayed the
+  // text policy path and status for pages that had no media at all. The first
+  // inspect creates the offscreen document and prepares only the selected
+  // models; the pre-display gate holds media until its verdict.
   const current = existing.find((script) => script.id === id);
   if (!scannerRegistrationMatches(current, VISUAL_SCANNER)) {
     if (current) await chrome.scripting.unregisterContentScripts({ ids: [id] });
