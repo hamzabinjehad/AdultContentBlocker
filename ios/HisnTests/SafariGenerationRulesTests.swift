@@ -47,6 +47,16 @@ final class SafariGenerationRulesTests: XCTestCase {
             .write(to: generation.appendingPathComponent("dns-metadata.json"))
 
         XCTAssertNotNil(SafariGenerationRules.activeRules(part: 1, root: root))
+
+        try SafariGenerationRules.writeShards(domainsData: domains, metadata: metadata,
+                                               directory: generation)
+        XCTAssertNotNil(SafariGenerationRules.activeShard(part: 1, root: root))
+        XCTAssertNotNil(SafariGenerationRules.activeShard(part: 6, root: root))
+        try FileManager.default.removeItem(
+            at: generation.appendingPathComponent(SafariGenerationRules.shardReadyName))
+        XCTAssertNil(SafariGenerationRules.activeShard(part: 1, root: root),
+                     "a partial shard set must not be mixed with the bundle")
+
         var damaged = domains
         damaged[0] ^= 1
         try damaged.write(to: generation.appendingPathComponent("dns-domains.txt"))

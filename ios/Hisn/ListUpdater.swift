@@ -34,6 +34,16 @@ enum ListUpdater {
             let verified = try ListGeneration.verify(manifestData: manifest, signatureHex: signature,
                                                      domains: domains, terms: terms)
             let version = try ListGenerationStore.install(verified)
+            if let directory = ListGenerationStore.activeDirectory() {
+                let metadata = SafariGenerationRules.Metadata(
+                    schema: 1, version: version, count: verified.coreDomainCount,
+                    domainsSHA256: ListGeneration.sha256Hex(verified.domains),
+                    domainsBytes: verified.domains.count)
+                // Safari falls back to its signed bundle rules if this fails;
+                // the DNS generation is already committed.
+                try? SafariGenerationRules.writeShards(
+                    domainsData: verified.domains, metadata: metadata, directory: directory)
+            }
             defaults.set(version, forKey: versionKey)
             defaults.removeObject(forKey: lastErrorKey)
             return version

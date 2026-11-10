@@ -17,6 +17,7 @@ enum SafariGenerationRules {
     static let folder = "list-generations"
     static let domainsName = "dns-domains.txt"
     static let metadataName = "dns-metadata.json"
+    static let shardReadyName = "safari-rules.ready"
 
     enum Failure: Error, Equatable {
         case missing
@@ -38,6 +39,42 @@ enum SafariGenerationRules {
             case domainsBytes = "domains_bytes"
         }
     }
+
+    /// The prebuilt shard for `part` (1-based), or nil to use the bundle. The
+    /// app writes all six after installing a generation; the extension reads
+    /// one file instead of parsing and building 40,000 rules in its own memory.
+    static func activeShard(part: Int, root: URL? = defaultRoot()) -> URL? {
+        guard (1...parts).contains(part), let root else { return nil }
+        guard let text = try? String(contentsOf: root.appendingPathComponent("active"),
+                                     encoding: .utf8),
+              let first = text.split(whereSeparator: \.isNewline).first,
+              let version = Int(first), version >= 1 else { return nil }
+        let directory = root.appendingPathComponent("gen-\(version)", isDirectory: true)
+        // The marker is written only after all six shards are durable. A
+        // partial write therefore falls back as a whole instead of mixing
+        // generations between extensions.
+        guard FileManager.default.fileExists(
+            atPath: directory.appendingPathComponent(shardReadyName).path) else { return nil }
+        let file = directory.appendingPathComponent(shardName(part))
+        guard let attributes = try? FileManager.default.attributesOfItem(atPath: file.path),
+              let size = attributes[.size] as? NSNumber, size.intValue > 0 else { return nil }
+        return file
+    }
+
+    /// Build and atomically publish all six shards into the active generation
+    /// directory. The caller has already verified the signed manifest; a
+    /// failure here leaves Safari on the bundle rules without touching DNS.
+    static func writeShards(domainsData: Data, metadata: Metadata, directory: URL) throws {
+        let marker = directory.appendingPathComponent(shardReadyName)
+        try? FileManager.default.removeItem(at: marker)
+        for part in 1...parts {
+            let data = try rules(domainsData: domainsData, metadata: metadata, part: part)
+            try data.write(to: directory.appendingPathComponent(shardName(part)), options: .atomic)
+        }
+        try Data("ready\n".utf8).write(to: marker, options: .atomic)
+    }
+
+    static func shardName(_ part: Int) -> String { "safari-rules-\(part).json" }
 
     /// The JSON Safari loads for `part` (1-based), or nil to use the bundle.
     static func activeRules(part: Int, root: URL? = defaultRoot()) -> Data? {

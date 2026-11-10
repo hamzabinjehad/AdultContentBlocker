@@ -8,9 +8,9 @@ final class ContentBlockerRequestHandler: NSObject, NSExtensionRequestHandling {
         // A verified downloaded generation wins over the rules compiled into
         // this extension. A missing or damaged generation falls through to the
         // signed bundle instead of disabling Safari blocking.
-        if let dynamic = dynamicRules(), let provider = NSItemProvider(contentsOf: dynamic) {
+        if let dynamic = dynamicRules() {
             let item = NSExtensionItem()
-            item.attachments = [provider]
+            item.attachments = [dynamic]
             context.completeRequest(returningItems: [item])
             return
         }
@@ -33,22 +33,15 @@ final class ContentBlockerRequestHandler: NSObject, NSExtensionRequestHandling {
         }
     }
 
-    /// The active generation's shard for this extension, written to a fresh
-    /// temporary file because NSItemProvider reads after this method returns.
-    private func dynamicRules() -> URL? {
+    /// The prebuilt shard for this extension, if the app has published one for
+    /// the active generation.
+    private func dynamicRules() -> NSItemProvider? {
         let identifier = Bundle.main.bundleIdentifier ?? ""
         guard let suffix = identifier.split(separator: ".").last,
               suffix.hasPrefix("blocker"),
               let part = Int(suffix.dropFirst("blocker".count)),
-              let data = SafariGenerationRules.activeRules(part: part) else { return nil }
-        let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("hisn-safari-\(UUID().uuidString).json")
-        do {
-            try data.write(to: url, options: .atomic)
-            return url
-        } catch {
-            return nil
-        }
+              let shard = SafariGenerationRules.activeShard(part: part) else { return nil }
+        return NSItemProvider(contentsOf: shard)
     }
 
     private struct Metadata: Decodable { let count: Int; let sha256: String }
