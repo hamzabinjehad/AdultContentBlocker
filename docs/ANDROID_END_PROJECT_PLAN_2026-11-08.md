@@ -1,6 +1,7 @@
 # Android: from a working tree to the end project
 
-Date: 8 November 2026. Status: plan, plus artifacts.
+Date: 8 November 2026. Status: plan, plus artifacts. The candidate is now
+committed; see [release state](RELEASE_STATE_2026-11-10.md).
 
 **Update after the first delivery pass.** The latest complete Android line is
 not this checkout. A clean sibling worktree
@@ -22,7 +23,7 @@ project.
 The broader feature list already exists in
 [the Android feature plan](ANDROID_FEATURE_IMPROVEMENT_PLAN_2026-11-08.md). Its
 “starting point” has one stale claim: it says the native TFLite classes are
-absent. They are present in this checkout, untracked. This plan supersedes that
+absent. They are present in this checkout and were committed on 10 November. This plan supersedes that
 paragraph and focuses on delivery.
 
 ## What “end project” means here
@@ -61,7 +62,7 @@ Java 17 language settings; the CI runner uses JDK 17.
 | Text quality | Synthetic corpus: **68/72** expected adult blocks, **0/133** benign controls; 4 Franco-Arabic misses (listed below) |
 | Existing 1.4.0 artifact | Signed and valid, but `check-release.py` **rejects it against the current source**: artifact is 36/1.4.0-direct, source declares 32/1.2.3 |
 | Source package | Fresh extraction of `hisn-android-1.4.0-source.zip` passes `test-core.sh`, `seed bundle verified` and `assembleDebug`, producing a 1.4.0/36 APK |
-| Source state | `build.gradle` 1.2.3/32; `versions.json` 1.2.3/32; **45 untracked and 42 modified Android files**; `docs/ANDROID_1.4.0.md` untracked |
+| Source state, 8 November | `build.gradle` 1.2.3/32; `versions.json` 1.2.3/32; **45 untracked and 42 modified Android files**; `docs/ANDROID_1.4.0.md` untracked. All committed on 10 November |
 | CI | The Android job runs `test-core.sh`, `assembleDebug`, `assembleDebugAndroidTest`, `lintDebug` and `assembleRelease` on Ubuntu with JDK 17 ([ci.yml](../.github/workflows/ci.yml) (lines 127–167)); it cannot see untracked files |
 
 What was not run: any physical phone, emulator instrumentation, live DNS,
