@@ -35,7 +35,7 @@ JBR 25 and the repository's own runners.
 | `./test.sh extension` | Pass; JavaScript suites, package check and evaluation corpus |
 | `./test.sh release` | Pass; 33 tests |
 | `./test.sh macos` | Pass; 600 tests, 851 localized strings |
-| `./test.sh ios` | Pass; 281 tests in the simulator |
+| `./test.sh ios` | Pass; 282 tests in the simulator |
 | `./test.sh browser` | Pass after the settings harness waits for the painted state and the asynchronous import reply |
 | `android/test-core.sh` (JDK 25) | Pass; every core class, including the previously unrun `VisualRuntimeDeadlineTest`, the signed seed terms artifact, plus the string, notice and corpus checks |
 | `./gradlew assembleDebug assembleDebugAndroidTest lintDebug assembleRelease` at 1.6.0/43 | Pass; unsigned release APK (versionCode 43 / versionName 1.6.0) |
@@ -91,8 +91,10 @@ network-transition claim is made here.
   published generation, stores it in the App Group behind a monotonic pointer,
   and the DNS proxy loads it with the bundle as fallback and watches the pointer
   for a live engine swap. The six Safari blockers now read their shards from the
-  same generation and fall back to their signed bundle rules. Simulator-tested
-  with synthetic generations; no device or real download.
+  same generation and fall back to their signed bundle rules. The real v6
+  generation was fetched on the host and verifies as 239,885 domains and terms
+  v6 after the published comment header was excluded; simulator-tested, no
+  device or signed IPA.
 - Fixed the extension visual layer in real Chrome: the offscreen engine now
   accepts the service worker's undefined `sender.url`, the model loads on first
   media instead of worker start, and a real-browser harness drives

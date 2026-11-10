@@ -181,6 +181,14 @@ this pass. Record: [the craft pass](docs/ANDROID_CRAFT_2026-11-07.md); captures:
 
 #### Fixed
 
+- **The real published list header no longer makes every update fail.** The
+  signed `domains_core.txt` starts with two generated `#` comments; the iOS
+  verifier counted them as domains (239,887 vs the manifest's 239,885) and
+  rejected the real v6 generation. The verified bytes are now canonicalized
+  before parsing/storing (comments and blanks dropped, CRLF normalized), while
+  the signed hash still covers the original file. On the host, the real v6
+  generation now verifies as 239,885 domains and terms v6. A commented signed
+  fixture covers it. Record: [iOS list updates](docs/IOS_LIST_UPDATES_2026-11-10.md).
 - **The shared Safari text scorer no longer treats a name or `sksy` as enough
   evidence alone.** `neek`/`nik`/`sksy` terms require a reviewed clear term in
   the same zone; `aflam neek`/`film neek` are clear. The three Android miss rows

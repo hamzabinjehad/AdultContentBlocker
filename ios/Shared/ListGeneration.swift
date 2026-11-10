@@ -102,9 +102,13 @@ enum ListGeneration {
               sha256Hex(terms) == termsArtifact.sha256.lowercased() else {
             throw Failure.artifact
         }
+        // The published core file carries a generated two-line comment header.
+        // It is covered by the signed hash, but it is not a domain and must not
+        // be counted or handed to the DNS index as one.
+        let domainFile = canonicalDomains(domains)
         let index: DomainIndex
         do {
-            index = try DomainIndex(fileData: domains)
+            index = try DomainIndex(fileData: domainFile)
         } catch {
             throw Failure.domains
         }
@@ -119,7 +123,23 @@ enum ListGeneration {
               (try? HostTermPolicy(payload: payload)) != nil else { throw Failure.terms }
         return Verified(version: manifest.version, coreDomainCount: manifest.coreDomainCount,
                         termsVersion: payload.version, manifest: manifestData,
-                        signatureHex: signatureText, domains: domains, terms: terms)
+                        signatureHex: signatureText, domains: domainFile, terms: terms)
+    }
+
+    /// Strip blank lines and `#` comments, normalize CRLF, and keep one
+    /// trailing newline. The signed bytes are still what the manifest hash
+    /// covers; only the parsed/installed domain file is canonicalized.
+    static func canonicalDomains(_ data: Data) -> Data {
+        var out = Data()
+        out.reserveCapacity(data.count)
+        for raw in data.split(separator: 0x0A, omittingEmptySubsequences: false) {
+            var line = raw
+            if line.last == 0x0D { line.removeLast() }
+            if line.isEmpty || line.first == 0x23 { continue }
+            out.append(contentsOf: line)
+            out.append(0x0A)
+        }
+        return out
     }
 
     static func sha256Hex(_ data: Data) -> String {
