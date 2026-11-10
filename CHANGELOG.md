@@ -87,6 +87,16 @@ bump without an entry here is an unfinished release.
 - `./test.sh browser` passes after the settings harness waits for the painted
   state and the asynchronous import reply.
 
+#### Fixed — three Franco-Arabic corpus misses
+
+- **`aflam neek` and `film neek` are clear Arabizi evidence.** The two reviewed
+  phrases now block the three `aflam`/`film` + `neek` corpus rows while `neek`
+  alone, `neek masri`, `Neek HD`, `Watch Neek Masri live, free` and
+  `tahmil aflam Nik Cage mojani` stay allowed. The fourth row,
+  `sksy download free`, is deliberately still allowed because `sksy` is also
+  Indonesian "SKS"; the corpus is **71/72 adult, 0/133 benign**. Record:
+  [Android 1.6.0](docs/ANDROID_1.6.0.md).
+
 #### Changed — craft pass (on the 1.2.3 tree)
 
 - **The three tabs move to warm paper and ink.** A 2 dp rule, a tracked page

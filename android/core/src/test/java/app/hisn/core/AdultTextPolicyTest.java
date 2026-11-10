@@ -249,7 +249,8 @@ public final class AdultTextPolicyTest {
             check(seed.blocks(text), "actual seed recognizes promotional fixture");
         }
         for (String text : Arrays.asList(                "مشاهدة سكس", "Watch p0rn", "لتحميل اباحي", "tahmil aflam sks mojani", "Watch sharmota w kahba",
-                "moshahda sharmota neek masri")) {
+                "moshahda sharmota neek masri", "Watch aflam neek masri free",
+                "tahmil film neek arabi", "tahmil aflam neek 7elwa mojani")) {
             check(seed.blocks(text), "actual seed recognizes promotional fixture: " + text);
         }
         for (String text : Arrays.asList("Watch sex education", "شاهد التربية الجنسية", "Essex council",

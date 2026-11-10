@@ -63,7 +63,7 @@ Java 17 language settings; the CI runner uses JDK 17.
 | Release signature | `apksigner` certificate SHA-256 `2F:BE:D6:57:…:70:C5`, the release key created 3 November 2026 |
 | Core suites | `JAVA_HOME=<JDK 25> sh test-core.sh` **PASS**; strings 651 / 18 plurals / 645 references, notices pass, all Java core tests pass |
 | Lint and test APK | `:app:lintDebug :app:assembleDebugAndroidTest` **PASS**; 0 lint errors, 82 warnings, 1 hint (see the report) |
-| Text quality | Synthetic corpus: **68/72** expected adult blocks, **0/133** benign controls; 4 Franco-Arabic misses (listed below) |
+| Text quality | Synthetic corpus: **71/72** expected adult blocks, **0/133** benign controls; 3 of 4 Franco-Arabic misses closed, `sksy` remains a reviewed control (listed below) |
 | Existing 1.4.0 artifact | Signed and valid, but `check-release.py` **rejects it against the current source**: artifact is 36/1.4.0-direct, source declares 32/1.2.3 |
 | Source package | Fresh extraction of `hisn-android-1.4.0-source.zip` passes `test-core.sh`, `seed bundle verified` and `assembleDebug`, producing a 1.4.0/36 APK |
 | Source state, 8 November | `build.gradle` 1.2.3/32; `versions.json` 1.2.3/32; **45 untracked and 42 modified Android files**; `docs/ANDROID_1.4.0.md` untracked. All committed on 10 November |
@@ -150,25 +150,28 @@ to the artifacts in `dist/`.
 
 These are the gaps the evidence actually shows, not a wish list.
 
-### 1. Four Franco-Arabic misses
+### 1. Franco-Arabic misses — three closed, one deliberate control
 
-The core corpus reports 68/72 adult blocks and 0/133 benign blocks. The four
-misses are:
+The core corpus reports **71/72** adult blocks and **0/133** benign blocks. The
+three closed misses are:
 
 - `Watch aflam neek masri free`
 - `tahmil film neek arabi`
 - `tahmil aflam neek 7elwa mojani`
-- `sksy download free`
 
-`neek` is a transliteration the shared vocabulary normally carries; these rows
-combine it with `aflam`/`tahmil` and, in one case, `sksy` rather than `sks`. Add
-these as reviewed fixtures first, then decide whether the fix belongs in
-`TextFolding`, `WordMatcher`, `AdultTextPolicy` or the seed vocabulary. Keep the
-benign 0/133 gate intact; do not globally fold digits into letters.
+`AdultTextPolicy` now treats the reviewed two-word phrases `aflam neek` and
+`film neek` as clear evidence while leaving `neek` alone, `neek masri` and
+`Neek HD` contextual. The controls `Watch Neek Masri live, free` and
+`tahmil aflam Nik Cage mojani` still do not block.
 
-**Proof:** the four rows block; the existing 133 benign controls still do not;
+The fourth row, `sksy download free`, is **not** closed. It is in the reviewed
+benign set because `sksy` is also Indonesian "SKS" (university credits); a
+promotion beside it is not enough to distinguish the two uses. Blocking it
+would break the 0/133 gate.
+
+**Proof:** the three rows block; the existing 133 benign controls still do not;
 Arabic, Arabizi and mixed-script cases report misses and false blocks
-separately.
+separately. The remaining miss is named rather than hidden in the total.
 
 ### 2. The visual layer has benign evidence, not detection evidence
 

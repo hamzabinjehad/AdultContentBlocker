@@ -55,8 +55,11 @@ The full 1.5.4 record, the phone evidence and the artifact hashes are in
 | `:app:assembleRelease` | Pass; unsigned because no release key was supplied in this run |
 | Python, extension, browser, macOS and iOS suites | Unchanged by this pass; their current results are in [release state](RELEASE_STATE_2026-11-10.md) |
 
-The four Franco-Arabic corpus misses reported by the core suite are unchanged
-and remain a known quality gap.
+The core corpus now blocks **71/72** adult rows and **0/133** benign controls.
+Three of the four Franco-Arabic misses are closed by the reviewed
+`aflam neek` / `film neek` context; the fourth, `sksy download free`, stays a
+reviewed benign control because `sksy` is also Indonesian "SKS". Blocking it
+would trade a real false positive for one challenge row.
 
 ## Limits
 
