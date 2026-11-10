@@ -310,3 +310,152 @@ final class HostKeywordTests: XCTestCase {
                        "a rejected term list must not be installed")
     }
 }
+
+// MARK: - The ASCII fast path
+
+/// `handleNewFlow` asks the keyword question for every socket the machine
+/// opens, so the store answers plain ASCII hostnames from bytes instead of
+/// normalising, tokenising and allocating. That path is a re-statement of the
+/// reference algorithm, not a second policy: these tests assert it agrees with
+/// the reference wherever it answers, and that the ordinary shapes are
+/// actually answered by it. If the fast path ever declines everything, the
+/// first test still passes — which is why the second one counts coverage.
+final class KeywordFastPathTests: XCTestCase {
+
+    private func loadedStore() -> BlocklistStore {
+        let store = BlocklistStore()
+        store.setHostTerms(
+            tokens: ["sex", "sks", "anal", "ass", "tit", "cum", "kos", "jins",
+                     "nude", "escort", "adult", "boobs", "slut"],
+            substrings: ["porn", "pornhub", "xnxx", "xvideos", "hentai",
+                         "sharmota", "3ahira", "ebahia", "sksarab"],
+            neverKeyword: ["essex", "sussex", "middlesex", "scunthorpe",
+                           "analytics", "analysis", "assets", "class",
+                           "classroom", "institute", "constitution", "tasks",
+                           "risks", "kosher", "therapist", "document"],
+            exemptHosts: ["jins.com", "koss.com"])
+        return store
+    }
+
+    /// Every ordinary word shape, the innocent words, the substrings, the
+    /// elongation and trailing-digit forms, and pairings that put one or two
+    /// innocent tokens in the same name.
+    private func corpus() -> [String] {
+        let words = ["analytics", "analysis", "assets", "class", "classic",
+                     "classroom", "document", "documents", "tasks", "task",
+                     "essex", "sussex", "middlesex", "scunthorpe", "risks",
+                     "kosher", "therapist", "institute", "constitution",
+                     "porn", "pornhub", "xnxx", "xvideos", "hentai", "sex",
+                     "sexcam", "livesex", "adult", "nude", "escort", "boobs",
+                     "slut", "cum", "ass", "pass", "sharmota123", "3ahira",
+                     "booty", "pooorn", "pornnn", "xhamster", "arabsex",
+                     "bestpornsite", "onlyfans", "milf", "apple", "google",
+                     "github", "cdn", "api", "www", "mail", "static", "img",
+                     "video", "tube", "jins", "koss", "kos", "anal",
+                     "child", "school", "office", "microsoft", "cloud"]
+        let tlds = ["com", "net", "org", "co.uk", "io", "info", "xyz", "de",
+                    "gov.uk", "edu", "example"]
+        var hosts: [String] = []
+        for word in words {
+            for tld in tlds {
+                hosts.append("\(word).\(tld)")
+                hosts.append("cdn.\(word).\(tld)")
+                hosts.append("\(word)-\(tld).example")
+            }
+        }
+        // Pairs: some put two innocent words in one name, some put a term and
+        // an innocent word in one name, some put two terms in one name.
+        for (a, b) in zip(words, words.reversed()) {
+            hosts.append("\(a).\(b).com")
+            hosts.append("\(a)-\(b).net")
+            hosts.append("\(a)123.\(b).co.uk")
+            hosts.append("a.\(a).\(b).com")
+        }
+        // Exempt sites more than one subdomain down: the exemption test walks
+        // suffixes and must still reach the registered name.
+        hosts.append(contentsOf: ["a.cdn.jins.com", "shop.eu.koss.com",
+                                  "deep.a.jins.com"])
+        return hosts
+    }
+
+    func testFastPathAgreesWithTheReferenceWhereverItAnswers() {
+        let store = loadedStore()
+        let hosts = corpus()
+        var answered = 0
+        for host in hosts {
+            let paths = store.keywordPathsForTesting(host)
+            guard let fast = paths.fast else { continue }
+            answered += 1
+            XCTAssertEqual(fast, paths.reference, host)
+        }
+        // Coverage, not decoration: the ASCII path must answer the overwhelming
+        // majority of an all-ASCII corpus, or the agreement above proves little.
+        XCTAssertGreaterThan(answered, hosts.count * 9 / 10,
+                             "the ASCII path declined \(hosts.count - answered) "
+                             + "of \(hosts.count) plain ASCII hosts")
+    }
+
+    /// The shapes that must not pay for the Unicode path, and the three that
+    /// legitimately must.
+    func testFastPathAnswersTheCommonShapes() {
+        let store = loadedStore()
+        for host in ["www.google.com", "api.github.com", "cdn.jsdelivr.net",
+                     "analytics.google.com", "tasks.office.com",
+                     "assets.example.com", "essex.gov.uk", "essex-porn.com",
+                     "sharmota123.com", "pooorn.example", "child.school.com",
+                     "jins.com", "cdn.jins.com", "a.cdn.jins.com"] {
+            XCTAssertNotNil(store.keywordPathsForTesting(host).fast, host)
+        }
+        // Every level of subdomain under an exempt site stays reachable.
+        XCTAssertFalse(store.isBlocked(host: "a.cdn.jins.com"))
+        XCTAssertFalse(store.isBlocked(host: "shop.eu.koss.com"))
+        // A non-ASCII name, an IDN label, and a host with more than one
+        // distinct innocent word — whose haystack rewrite is a Set's iteration
+        // order in the reference path — must take that reference path.
+        for host in ["الاباحية.com", "xn--mgbh0fb.example",
+                     "essex.analytics.tasks.com", "jins..com"] {
+            XCTAssertNil(store.keywordPathsForTesting(host).fast, host)
+        }
+    }
+
+    /// The haystack rewrite is the one place the fast path rewrites the name
+    /// before the substring test. Removing an innocent word must not immunise
+    /// the rest of the host — the same rule the reference path follows.
+    func testInnocentWordRemovalStillLetsASubstringTermThrough() {
+        let store = loadedStore()
+        XCTAssertTrue(store.isBlocked(host: "essex-porn.com"))
+        XCTAssertTrue(store.isBlocked(host: "assets-pornhub.com"))
+        XCTAssertTrue(store.isBlocked(host: "analytics.xnxx.net"))
+        XCTAssertFalse(store.isBlocked(host: "analytics.google.com"))
+        XCTAssertFalse(store.isBlocked(host: "tasks.office.com"))
+    }
+
+    /// The two paths that deliberately decline the ASCII matcher must still
+    /// work through the Unicode one — especially Arabic, which is the reason
+    /// the keyword layer exists on this platform.
+    func testArabicHostnamesStillMatchOnTheUnicodePath() {
+        let store = BlocklistStore()
+        store.setHostTerms(tokens: ["نيك"], substrings: ["اباحيه"],
+                           neverKeyword: [], exemptHosts: [])
+        XCTAssertTrue(store.isBlocked(host: "اباحية.example"))
+        XCTAssertTrue(store.isBlocked(host: "xn--mgbacft8o.example"),
+                      "the IDN spelling of the same name lost its match")
+        XCTAssertTrue(store.isBlocked(host: "نیك.example"))
+        XCTAssertFalse(store.isBlocked(host: "مثال.example"))
+        XCTAssertNil(store.keywordPathsForTesting("اباحية.example").fast)
+        XCTAssertNil(store.keywordPathsForTesting("xn--mgbacft8o.example").fast)
+    }
+
+    /// The fast path reads the canonical host, and canonicalisation happens
+    /// once at the flow entry point. Uppercase, a trailing dot and an IDNA
+    /// separator must reach the same verdict as the plain spelling.
+    func testFastPathSeesTheSameHostAfterCanonicalisation() {
+        let store = loadedStore()
+        for spelling in ["essex-porn.com", "ESSEX-PORN.COM", "essex-porn.com.",
+                         "ESSEx-porn.com ", "essex\u{3002}porn.com"] {
+            let paths = store.keywordPathsForTesting(spelling)
+            XCTAssertEqual(paths.fast, paths.reference, spelling.debugDescription)
+            XCTAssertEqual(paths.fast, true, spelling.debugDescription)
+        }
+    }
+}

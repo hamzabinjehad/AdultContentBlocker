@@ -21,13 +21,14 @@ enum HnPalette {
     static let raised = dynamic(light: 0xF6F3EC, dark: 0x302C26)
     static let ink = dynamic(light: 0x1D1B18, dark: 0xF2EEE6)
     static let muted = dynamic(light: 0x6E675D, dark: 0xA9A296)
-    static let faint = dynamic(light: 0x958C7F, dark: 0x7E786D)
+    static let faint = dynamic(light: 0x766D61, dark: 0xA29A8D)
     static let line = dynamic(light: 0x000000, dark: 0xFFFFFF, lightAlpha: 0.10, darkAlpha: 0.11)
     static let lineStrong = dynamic(light: 0x000000, dark: 0xFFFFFF, lightAlpha: 0.17, darkAlpha: 0.19)
 
     /// The app's one accent: a deep ink blue, fixed so selection, sliders and
     /// the primary action agree even when the system accent is graphite.
     static let accent = dynamic(light: 0x2A4C8A, dark: 0x93AEFF)
+    static let onAccent = dynamic(light: 0xFFFFFF, dark: 0x15223E)
     static let accentText = dynamic(light: 0x234174, dark: 0xA9C0FF)
     static let accentSoft = dynamic(light: 0x2A4C8A, dark: 0x93AEFF, lightAlpha: 0.10, darkAlpha: 0.16)
 
@@ -66,8 +67,8 @@ extension Font {
     static func hnHeadline() -> Font { .system(size: 13, weight: .semibold) }
     static func hnBody() -> Font { .system(size: 13) }
     static func hnCallout() -> Font { .system(size: 13, weight: .medium) }
-    static func hnCaption() -> Font { .system(size: 11) }
-    static func hnSection() -> Font { .system(size: 10.5, weight: .semibold) }
+    static func hnCaption() -> Font { .system(size: 12) }
+    static func hnSection() -> Font { .system(size: 11, weight: .semibold) }
     static func hnNumber(_ size: CGFloat) -> Font {
         .system(size: size, weight: .semibold).monospacedDigit()
     }
@@ -215,6 +216,7 @@ struct HnSectionLabel: View {
 /// The top of a page: a tracked page name, one serif statement, one short
 /// caption. The statement is the only display type in the window.
 struct HnPageHeader: View {
+    @Environment(\.layoutDirection) private var direction
     let eyebrow: LocalizedStringKey
     let title: Text
     let caption: Text?
@@ -242,7 +244,7 @@ struct HnPageHeader: View {
                 Text(eyebrow)
                     .font(.hnSection())
                     .textCase(.uppercase)
-                    .tracking(0.8)
+                    .tracking(direction == .rightToLeft ? 0 : 0.8)
                     .foregroundStyle(HnPalette.muted)
             }
             title
@@ -486,13 +488,16 @@ struct HnButton: View {
                         .font(.system(size: compact ? 10 : 11, weight: .semibold))
                 }
                 label
-                    .font(.system(size: compact ? 11 : 12.5, weight: .semibold))
-                    .lineLimit(1)
+                    .font(.system(size: compact ? 12 : 13, weight: .semibold))
+                    .lineLimit(fullWidth ? 2 : 1)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .foregroundStyle(foreground)
             .frame(maxWidth: fullWidth ? .infinity : nil)
             .padding(.horizontal, compact ? 9 : 12)
-            .frame(minHeight: compact ? 24 : 28)
+            .padding(.vertical, fullWidth ? 6 : 0)
+            .frame(minHeight: compact ? 28 : 32)
             .background(background)
             .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
             .overlay {
@@ -505,12 +510,13 @@ struct HnButton: View {
         }
         .buttonStyle(.plain)
         .disabled(loading)
+        .help(label)
         .onHover { hovered = $0 }
     }
 
     private var foreground: Color {
         switch kind {
-        case .filled: return isEnabled ? .white : HnPalette.muted
+        case .filled: return isEnabled ? HnPalette.onAccent : HnPalette.muted
         case .quiet, .outline: return isEnabled ? HnPalette.ink : HnPalette.faint
         case .text: return isEnabled ? HnPalette.accentText : HnPalette.faint
         }
@@ -523,7 +529,7 @@ struct HnButton: View {
         case .quiet:
             isEnabled ? (hovered ? HnPalette.line : HnPalette.soft) : HnPalette.soft.opacity(0.5)
         case .outline, .text:
-            Color.clear
+            hovered && isEnabled ? HnPalette.soft : Color.clear
         }
     }
 }
@@ -842,7 +848,7 @@ struct HnField: ViewModifier {
             .font(monospaced ? .system(size: 12, design: .monospaced) : .hnBody())
             .foregroundStyle(HnPalette.ink)
             .padding(.horizontal, 8)
-            .frame(height: 28)
+            .frame(minHeight: 32)
             .background(HnPalette.raised,
                         in: RoundedRectangle(cornerRadius: 5, style: .continuous))
             .overlay {

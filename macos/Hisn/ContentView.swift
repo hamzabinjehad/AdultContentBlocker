@@ -18,6 +18,7 @@ struct ContentView: View {
     @ObservedObject private var navigation = AppNavigation.shared
     @State private var activeSheet: ActiveSheet?
     @AppStorage("hisn.welcome.completed") private var welcomeCompleted = false
+    @Environment(\.layoutDirection) private var layoutDirection
 
     private enum ActiveSheet: String, Identifiable {
         case siteCheck, privateBrowsing, welcome
@@ -95,10 +96,10 @@ struct ContentView: View {
                     ForEach(SidebarGroup.allCases, id: \.self) { group in
                         VStack(alignment: .leading, spacing: 2) {
                             Text(group.title)
-                                .font(.system(size: 9.5, weight: .semibold))
+                                .font(.system(size: 10.5, weight: .semibold))
                                 .textCase(.uppercase)
-                                .tracking(0.9)
-                                .foregroundStyle(HnPalette.faint)
+                                .tracking(layoutDirection == .rightToLeft ? 0 : 0.7)
+                                .foregroundStyle(HnPalette.muted)
                                 .padding(.horizontal, 10)
                                 .padding(.bottom, 2)
                             ForEach(group.pages) { page in
@@ -119,7 +120,6 @@ struct ContentView: View {
                     .padding(.horizontal, 8)
                     .padding(.bottom, 10)
             }
-            .background(HnPalette.sidebar)
             .navigationSplitViewColumnWidth(min: 212, ideal: 232, max: 268)
         } detail: {
             HnCanvas {
@@ -281,12 +281,12 @@ private struct SidebarRow: View {
         Button(action: action) {
             HStack(spacing: 9) {
                 Image(systemName: page.systemImage)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(selected ? HnPalette.accentText : HnPalette.muted)
                     .frame(width: 16)
                     .accessibilityHidden(true)
                 Text(page.title)
-                    .font(.system(size: 12.5, weight: selected ? .semibold : .regular))
+                    .font(.system(size: 13, weight: selected ? .semibold : .regular))
                     .foregroundStyle(HnPalette.ink)
                     .lineLimit(1)
                 Spacer(minLength: 4)
@@ -298,7 +298,7 @@ private struct SidebarRow: View {
                 }
             }
             .padding(.horizontal, 10)
-            .frame(height: 29)
+            .frame(minHeight: 36)
             .background {
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .fill(selected ? HnPalette.accentSoft
@@ -414,30 +414,35 @@ private struct OverviewLayerRow: View {
     let layer: ProtectionStatus.Layer
 
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Circle()
-                .fill(layer.tint)
-                .frame(width: 6, height: 6)
-                .padding(.top, 6)
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: layer.symbolName)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(layer.tint)
+                .frame(width: 32, height: 32)
+                .background(layer.tint.opacity(0.10),
+                            in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                 .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 5) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(layer.name)
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(HnPalette.ink)
                     Spacer(minLength: 8)
                     Text(layer.stateLabel)
-                        .font(.system(size: 10.5, weight: .semibold))
+                        .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(layer.tint)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(layer.tint.opacity(0.08), in: Capsule())
+                        .fixedSize()
                 }
                 Text(layer.detail)
                     .font(.hnCaption())
                     .foregroundStyle(HnPalette.muted)
-                    .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(.vertical, 9)
+        .padding(.vertical, 14)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text(layer.name) + Text(verbatim: ": ") + Text(layer.stateLabel))
         .accessibilityHint(Text(layer.detail))
@@ -682,9 +687,19 @@ private struct OverviewPage: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            HnPageHeader(eyebrow: "Protection",
-                         verbatim: protection.plainHeadline,
-                         caption: protection.plainSummary)
+            HStack(alignment: .center, spacing: 18) {
+                Image(systemName: protection.level.symbolName)
+                    .font(.system(size: 30, weight: .regular))
+                    .foregroundStyle(protection.level.tint)
+                    .frame(width: 66, height: 66)
+                    .background(protection.level.tint.opacity(0.10),
+                                in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .accessibilityHidden(true)
+                HnPageHeader(eyebrow: "Protection",
+                             verbatim: protection.plainHeadline,
+                             caption: protection.plainSummary)
+            }
+            .padding(.bottom, 6)
 
             if let managed = protection.managed, managed.isManaged {
                 ManagedBanner(managed: managed)
@@ -694,6 +709,14 @@ private struct OverviewPage: View {
                          verbatim: String(localized: "\(alert.name) is about to close.") + " "
                              + BrowserGuard.message(name: alert.name, reason: alert.reason),
                          systemImage: "exclamationmark.shield.fill", level: .caution)
+            }
+            // A lost heartbeat is a gap to show, not a countdown. Saying so
+            // next to the closing warnings keeps the difference visible.
+            ForEach(guardian.awaitingExtension) { connection in
+                HnNotice(title: nil,
+                         verbatim: BrowserGuard.attentionMessage(name: connection.name),
+                         systemImage: "antenna.radiowaves.left.and.right.slash",
+                         level: .caution)
             }
 
             // Warnings stay one line and sit under the state they qualify.
@@ -750,17 +773,25 @@ private struct OverviewPage: View {
     private var layersSheet: some View {
         HnCard(padding: 0) {
             VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    HnSectionLabel(title: "Layers",
-                                   trailing: Text(verbatim: "\(protection.layers.filter(\.ok).count) of \(protection.layers.count) ready"))
+                HStack(spacing: 12) {
+                    HnRing(done: protection.layers.filter(\.ok).count,
+                           total: protection.layers.count, size: 42,
+                           tint: protection.level.tint)
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 4) {
+                        HnSectionLabel(title: "Layers")
+                        (Text("Ready") + Text(verbatim: " · \(protection.layers.filter(\.ok).count)/\(protection.layers.count)"))
+                            .font(.hnCaption())
+                            .foregroundStyle(HnPalette.muted)
+                    }
                     HnExplain {
                         Text(protection.summary)
                         Text("Readiness is not proof that every route is blocked. Router protection is checked separately.")
                     }
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, 15)
-                .padding(.bottom, 8)
+                .padding(.top, 18)
+                .padding(.bottom, 14)
 
                 ForEach(Array(protection.layers.enumerated()), id: \.element.id) { index, layer in
                     OverviewLayerRow(layer: layer)
@@ -791,40 +822,40 @@ private struct OverviewPage: View {
         .accessibilityLabel("Protection: \(protection.headline). \(protection.summary)")
     }
 
-    /// The right rail is deliberately not a card. It is the page's decision,
-    /// its numbers and its two quiet tools, separated by hairlines.
+    /// A distinct next-action card leads the rail; passive counts and tools
+    /// remain quiet groups below it.
     private var rail: some View {
         VStack(alignment: .leading, spacing: 20) {
-            VStack(alignment: .leading, spacing: 8) {
-                HnSectionLabel(title: "Next step")
-                Text(verbatim: railHeadline)
-                    .font(.hnDisplaySmall())
-                    .foregroundStyle(HnPalette.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text(verbatim: railCaption)
-                    .font(.hnCaption())
-                    .foregroundStyle(HnPalette.muted)
-                    .fixedSize(horizontal: false, vertical: true)
+            HnCard(padding: 18) {
+                VStack(alignment: .leading, spacing: 10) {
+                    HnSectionLabel(title: "Next step")
+                    Text(verbatim: railHeadline)
+                        .font(.hnDisplaySmall())
+                        .foregroundStyle(HnPalette.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text(verbatim: railCaption)
+                        .font(.hnCaption())
+                        .foregroundStyle(HnPalette.muted)
+                        .fixedSize(horizontal: false, vertical: true)
 
-                if privateGap {
-                    HnButton(title: "Prevent private browsing…", systemImage: "eye.slash",
-                             fullWidth: true) {
-                        AppNavigation.shared.privateBrowsingRequested = true
-                    }
-                    if !lock.isLocked {
-                        HnButton(title: "Review setup", kind: .quiet, fullWidth: true) {
-                            goTo(.setup)
+                    if privateGap {
+                        HnButton(title: "Prevent private browsing…", systemImage: "eye.slash",
+                                 fullWidth: true) {
+                            AppNavigation.shared.privateBrowsingRequested = true
                         }
-                    }
-                } else {
-                    HnButton(title: primaryActionTitle, systemImage: primaryActionIcon,
-                             fullWidth: true, loading: primaryActionDisabled) {
-                        goTo(primaryActionPage)
+                        if !lock.isLocked {
+                            HnButton(title: "Review setup", kind: .quiet, fullWidth: true) {
+                                goTo(.setup)
+                            }
+                        }
+                    } else {
+                        HnButton(title: primaryActionTitle, systemImage: primaryActionIcon,
+                                 fullWidth: true, loading: primaryActionDisabled) {
+                            goTo(primaryActionPage)
+                        }
                     }
                 }
             }
-
-            HnHairline()
 
             VStack(alignment: .leading, spacing: 12) {
                 HnSectionLabel(title: "Today")
@@ -1032,6 +1063,7 @@ private struct SiteCheckSheet: View {
                     TextField("Enter a website or paste a link", text: $query)
                         .hnField()
                         .focused($fieldFocused)
+                        .disabled(checking)
                         .onSubmit(run)
                         .accessibilityIdentifier("siteCheck.field")
                     HnButton(title: checking ? "Checking…" : "Check",
@@ -1040,6 +1072,18 @@ private struct SiteCheckSheet: View {
                     }
                     .disabled(normalized == nil || checking)
                     .accessibilityIdentifier("siteCheck.check")
+                }
+                if !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                   normalized == nil {
+                    Label("That is not a domain.", systemImage: "exclamationmark.circle")
+                        .font(.hnCaption())
+                        .foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else if result == nil && !checking {
+                    Text("A domain or a full link both work. Subdomains are covered by a parent domain.")
+                        .font(.hnCaption())
+                        .foregroundStyle(HnPalette.muted)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
 
@@ -1079,7 +1123,10 @@ private struct SiteCheckSheet: View {
             fieldFocused = true
             SiteCheckService.prewarm()
         }
-        .onChange(of: query) { _ in notice = nil }
+        .onChange(of: query) { _ in
+            result = nil
+            notice = nil
+        }
     }
 
     private var canAdd: Bool {
@@ -3188,10 +3235,12 @@ struct BrowsersSection: View {
     var body: some View {
         PageSection(title: "Browser protection",
                 subtitle: """
-                    While browser protection is active, losing the extension \
-                    connection starts a visible one-minute recovery countdown. \
-                    Restore protection or the browser closes. Safari and other \
-                    unsupported browsers also close.
+                    While browser protection is active, a linked browser whose \
+                    extension stops answering stays open and is shown as waiting. \
+                    It closes only when a standard profile confirms the extension \
+                    was removed or disabled, after a visible five-minute \
+                    countdown. Safari and other unsupported browsers close after \
+                    one minute.
                     """,
                 systemImage: "safari") {
             HnCard {
@@ -3201,7 +3250,7 @@ struct BrowsersSection: View {
                             .font(.system(.callout).weight(.medium))
                             .foregroundStyle(HnPalette.calm)
                         HnExplain {
-                            Text("There is no off switch and no lock needed: if the extension stops answering, the browser shows a countdown and then closes.")
+                            Text("There is no off switch and no lock needed: a missed heartbeat never closes a browser by itself. If a standard profile confirms the extension was disabled or removed, the browser shows a five-minute countdown and then closes.")
                             Text("browser.live.cadence")
                             Text("""
                                 Hisn stays in the background when its window closes; the separately \
@@ -3334,7 +3383,7 @@ struct BrowsersSection: View {
             }
             if let verdict = connection.verdict {
                 switch verdict {
-                case .ok: EmptyView()
+                case .ok, .attention: EmptyView()
                 case let .warn(_, closeAt):
                     let seconds = max(0, Int(ceil(closeAt.timeIntervalSince(connection.checkedAt))))
                     Text("browser.live.countdown \(seconds)")
@@ -3391,8 +3440,9 @@ struct BrowsersSection: View {
             return String(localized: "Link router only — left open because it hands links to a browser and does not render pages.")
         case .needsExtension:
             return String(localized: """
-                Closed while browser guarding is active if its extension stops \
-                checking in or is confirmed missing or disabled in a standard profile.
+                Kept open when its extension misses a heartbeat; closed only \
+                when a standard profile confirms the extension was removed or \
+                disabled.
                 """)
         case .uncovered:
             return String(localized: "No Hisn protection inside — closed while browser guarding is active.")
