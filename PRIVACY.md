@@ -35,7 +35,8 @@ The following are processed locally and are not saved or sent:
 
 - visible text read by the Android accessibility service or the Safari text
   extension, in the apps and pages you choose;
-- transient screenshots and video frames sampled by the opt-in visual checks;
+- transient screenshots and video frames sampled by the on-device media checks
+  (on by default in the Chromium extension, and switchable off);
 - image and video classification results;
 - host and flow decisions made by the Mac content filter;
 - DNS answers handled by the Android DNS service;

@@ -5,6 +5,314 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
+## Unreleased
+
+### Mac
+
+#### Changed
+
+- **A missed extension heartbeat no longer closes a browser.** The guard used
+  to warn for sixty seconds and then terminate a linked Chromium browser when
+  its extension stopped checking in. Chrome and Chromium forks delay their
+  service-worker alarms, sleep and restart workers, so that countdown could
+  close a browser whose extension was installed and working the whole time.
+  A missing heartbeat is now shown as attention — the browser stays open and
+  the Browsers screen says it is waiting. The guard closes a linked browser
+  only when two separated readings of a standard profile confirm the extension
+  was removed or disabled, and then only after a visible five-minute countdown.
+  The delayed force-close path rechecks the same confirmed profile evidence, so
+  a missing heartbeat alone cannot reach a termination request. Unsupported
+  browsers keep their one-minute rule, and a browser relaunched without repair
+  gets the full five minutes again. `BrowserGuardPolicy.warnSilent` is replaced
+  by `warnProfileLoss`, and `Verdict` gains `attention`.
+- **A new flow costs about 45× less filter CPU, and the bundled seed stops
+  reserving memory it cannot use.** `handleNewFlow` is on the connection path
+  for every socket the Mac opens, and it was normalising, tokenising and
+  allocating on each check. Measured on an M3 with
+  `script/bench_macos_blocklist.sh`: an ordinary allowed flow fell from ~76 µs
+  to ~1 µs, a mixed browser workload from ~48 µs to ~1 µs, blocked flows from
+  ~19 µs to ~0.7 µs, strict mode from ~12 µs to ~0.7 µs, and the ASCII keyword
+  path from ~70 µs to ~1.2 µs. On the bundled 236,586-domain seed, first-launch
+  resident memory fell from ~78 MB to ~17 MB because `load` sized its hash set
+  from the manifest's full-list count. Canonicalisation now happens once and
+  returns the input untouched when it is already lowercase ASCII; the parent
+  walk hashes UTF-8 in place; hand-list walks are skipped when both lists are
+  empty; an allocation-free ASCII keyword path reproduces the `never_keyword`
+  haystack rewrite and declines to the Unicode path where it cannot be exact;
+  the adult-TLD rail and the generated search/viewer policy read bytes; the
+  blocked-flow tally caches its day boundary instead of deriving a calendar date
+  per block; and the list parser uses `memchr` and the installed artifact's own
+  count. No verdict rule changed, and no per-host verdict cache was added — an
+  in-memory hostname map is the browsing history this product promises not to
+  keep. `./test.sh macos` covers the two keyword paths with a differential test
+  over ~2,400 hosts. Record:
+  [the filter performance note](docs/MACOS_FILTER_PERFORMANCE_2026-11-09.md).
+
+### Android
+
+#### Added — the 1.4.0-and-later candidate, committed
+
+- **The future release is in git.** The working tree carried 45 untracked and
+  42 modified Android files: the native TFLite runtime and its 9.8 MB model,
+  signed mobile list updates, policy receipts and readiness, rule
+  import/preview, the hostname decision and site checker, person blur, the
+  social-app shortcut and the 1.2.3 responsiveness and craft work. They are
+  committed as one candidate; a fresh clone no longer builds a different app.
+  Records: [1.4.0](docs/ANDROID_1.4.0.md),
+  [policy receipts](docs/ANDROID_POLICY_RECEIPTS_1.5.3_INTEGRATION.md),
+  [end-project plan](docs/ANDROID_END_PROJECT_PLAN_2026-11-08.md).
+- **The suite cannot silently skip a test class.** `android/test-core.sh` now
+  runs `VisualRuntimeDeadlineTest` and fails when a `*Test.java` file is not
+  reachable from the script.
+- **The declaration stays 1.2.3 / 32.** This tree is the 1.5.3 line plus
+  packages 2 and 3, without the 1.5.4 reconnect fix; 1.6.0 / 43 is the proposed
+  next number after 1.5.4. Do not build or install it as a release.
+  [Release state](docs/RELEASE_STATE_2026-11-10.md).
+
+#### Verification — 10 November
+
+- `android/test-core.sh` passes every core class under JDK 25, including the
+  previously unrun `VisualRuntimeDeadlineTest`, plus the seed, string, notice
+  and synthetic-corpus checks.
+- `./gradlew assembleDebug assembleDebugAndroidTest lintDebug assembleRelease`
+  passes; the release APK is unsigned in this run.
+- `./test.sh browser` passes after the settings harness waits for the painted
+  state and the asynchronous import reply.
+
+#### Changed — craft pass (on the 1.2.3 tree)
+
+- **The three tabs move to warm paper and ink.** A 2 dp rule, a tracked page
+  line, a 33 sp serif verdict and one state sentence replace the rounded hero
+  and its centred ring. The three layers become one white coverage ledger with
+  a state dot per column instead of three tinted tiles. The next step is a
+  labelled section with one filled button; when DNS is that step, the section
+  hides and the DNS card owns the only fill. Settings row icons are secondary
+  ink, cards are hairline sheets without elevation, and section labels are
+  tracked small caps. Arabic drops tracking.
+- **Rules opens with twelve named site chips.** YouTube, Reddit, X, Instagram,
+  Facebook, TikTok, Twitch, Netflix, Hacker News, Amazon, Pinterest and LinkedIn
+  add or remove their own domain through the existing `PolicyStore.update`
+  path. A chip is not a category, a protection lock freezes it, and a site
+  covered by a wider rule stays selected and explains the wider rule instead of
+  silently removing it. The only new core code is the pure `DistractionSites`
+  state/add/remove helper and its test.
+- **The block page leads with a breath.** **A BLOCK** / **A PAUSE**, a serif
+  **One breath first** or **Take a pause**, the reason in one sentence, a fine
+  breath ring, and the exit visible immediately. The reminder, **What do you
+  need?**, the four choices and the day's count are revealed only after the
+  third breath; **Breathe again** stays quiet. No unlock, open budget,
+  countdown to a bypass or exercise challenge is added.
+- **The first run and the direct-build shield use the same surface.** The
+  welcome pages replace the filled icon tile with a hairline seal and a serif
+  statement; the shield page is left-aligned with the same rule, eyebrow, serif
+  title and a soft countdown panel. The 8-second hold and the 60-second
+  self-close are unchanged.
+
+No enforcement layer, permission, consent sentence, lock rule, seed, list,
+stored field or version changed. The signed 1.2.3 Play/direct artifacts predate
+this pass. Record: [the craft pass](docs/ANDROID_CRAFT_2026-11-07.md); captures:
+[design/android-craft-2026-11-07](design/android-craft-2026-11-07/README.md).
+
+#### Verification
+
+- `android/test-core.sh` — every core suite passes, including the new
+  `DistractionSites` cases; `check-strings.py` reports 564 strings, 16 plurals
+  and 553 source references in English and Arabic; `check-notices.py` passes.
+- `:app:assembleDebug` and `:app:lintDebug` pass.
+- The debug build was installed on the API 36 `hisn_ui2` emulator and inspected
+  in English light, English dark and Arabic RTL. The three tabs, chip selection
+  and removal, a voluntary pause, the debug block screen and the shield screen
+  were captured. 20 images are in the capture folder.
+- No signed APK, physical phone, Play upload or device acceptance is claimed.
+  No user study, TalkBack audit, large-font, tablet or landscape pass was run.
+  The 1.2.3 signed artifacts must be rebuilt under a new version before release.
+
+#### Added
+
+- **A Social apps shortcut in the app chooser.** Android inspects whole app
+  windows, not posts: one positive adult-media frame leaves the app, which is
+  stronger than hiding a single post and is the only response a native social
+  feed can support without a localised adult region. To make that existing
+  guard reachable on social media, the chooser now has a **Social apps** action
+  that ticks the installed X, Instagram, Facebook, Reddit, TikTok, Threads,
+  Bluesky, LinkedIn, Pinterest, Tumblr and Snapchat packages. It edits only the
+  ordinary chosen-apps list — no new layer, no stored category, and nothing is
+  selected automatically — and it respects the existing list limit.
+  `core/SocialApps.java` holds the named list and the `installed`/`select`
+  helpers; `core/SocialAppsTest.java` pins installed-only selection, stable
+  order, idempotence, the limit and the package-name contract.
+- Verification: `android/test-core.sh` passes with `SocialApps` in its suite
+  loop, `check-strings.py` passes with the new English and Arabic strings, and
+  `./gradlew :app:compileDebugJavaWithJavac` builds the picker change. No
+  emulator capture, physical-phone or Arabic-OEM acceptance is claimed here.
+
+### iPhone & iPad
+
+#### Added
+
+- **The Safari scanner hides a whole social post.** `content/social-media.css`
+  now ships in the Hisn Text web extension as a second, host-scoped
+  `content_scripts` entry — Instagram, Facebook, Reddit, TikTok, Threads,
+  Bluesky, LinkedIn, Pinterest, Tumblr and Snapchat — with no page script and
+  no notice inserted into the page. When Hisn Text's visual checks are on, a
+  locally flagged image or video removes the post container around it; X keeps
+  the per-post explanation from `content/feed.js`. The stylesheet is staged by
+  `prepare_web_extension.py` and pinned by the Python manifest test and the
+  Swift scanner-package test. Visual checks remain opt-in on this extension, so
+  the rule stays dormant until the person turns them on.
+
+### Browser extension
+
+#### Changed
+
+- **Media checks are on by default, for every site.** The bundled on-device
+  classifier used to wait for an explicit opt-in, so an X/Twitter post whose
+  adult content was a picture or a video with no caption passed the text-only
+  feed adapter untouched. `DEFAULT_STATE.inspectVisual` is now `true`; the
+  **Adult-media checks** switch in Settings still turns it off, and an existing
+  saved `false` keeps it off. Person blur remains a separate, off-by-default
+  viewing preference.
+- **A hidden frame now hides the post around it.** `content/feed.js` treats a
+  `data-hisn-visual="adult-hidden"` image or video inside a rendered post as the
+  post's own verdict: the article collapses to the same short explanation and
+  its media is paused, even when the words are clean and even after the text
+  verdict already arrived. The explanation says media, not words. The marker is
+  written only by the local model — the platform's generic "sensitive content"
+  notice is still deliberately not a verdict (`docs/VISUAL_PROTECTION_PLAN.md`).
+  The `data-hisn-visual` attribute joins the feed observer's filter, and a
+  recycled post whose new media is not flagged is released. The media verdict is
+  local evidence, not part of the text signature, so it never resends unchanged
+  post text to the worker.
+- **A runtime that cannot host the engine shows media instead of blanking it.**
+  `getVisualSettings` now carries `available`, `visual/broker.js` exposes
+  `visualSupported()`, and `content/visual.js` keeps the pre-display gate open
+  and releases an already hidden record when the answer is "cannot run here".
+  Transient inference failures still fail closed. Making the layer default-on
+  would otherwise turn a browser without the engine into a web with no images
+  and no explanation (the failure `docs/EXTENSION_IMPROVEMENT_PLAN_2026-11-08.md`
+  records for the 1.2.1 permission regression). For the same reason, Settings
+  permits turning media checks off when the engine is unavailable, not only on.
+- **The same rule now covers the other large social feeds.** The X adapter was
+  the only per-post integration, so an adult image or video with no caption
+  stayed readable on Instagram, Facebook, Reddit, TikTok, Threads, Bluesky,
+  LinkedIn, Pinterest, Tumblr and Snapchat; only the media itself was hidden.
+  `content/social-media.css` is a registered extension stylesheet with one
+  `:has()` rule per platform for the post container around a
+  `data-hisn-visual="adult-hidden"` image or video, so the whole post disappears
+  and returns by itself when a newer verdict clears the marker. A registered
+  extension stylesheet is used rather than a page script so a strict page CSP
+  (Reddit, Instagram) cannot suppress it; no page script runs, nothing is
+  inserted, and the platform's own NSFW/sensitive flag is still never read. The
+  rule is registered only while media checks are on and only in the top frame,
+  and is read back in the enforcement receipt as a new layer. A moved
+  post container costs the whole-post suppression, not the media hiding.
+
+#### Verification
+
+- `extension/content/feed.js` and `content/visual.js` parse and the packaged
+  stylesheet is delivered; the JavaScript suite passes, including `feed.test.js`
+  (100 checks, six new media-verdict cases), `social-media.test.js` (37 checks)
+  and `visual-scanner.test.js` (716 checks, five new availability cases).
+- `runtime.test.js` (160 checks) covers default-on registration, the existing
+  explicit-off path, the social rule appearing and disappearing with the media
+  layer, and the unavailable-engine payload.
+- The real-DOM fixtures pass: `feed-compatibility.html` (a generic "sensitive
+  material" warning post stays usable; a locally flagged video collapses its
+  post; removing the marker restores it) and `social-media.html` (a flagged
+  image or video removes the Instagram-style article, Facebook role-article,
+  Reddit, Bluesky and Pinterest containers, a clean post and loose media stay
+  visible, a person-blur marker hides nothing, and a newer
+  clean verdict restores the post with no scanner code running).
+- `./test.sh extension` passes, including `package.sh`/`check_package.py` and
+  the evaluation corpus at sensitivities 50, 80 and 100. `./test.sh browser`
+  passes. No packaged zip, version bump or store upload is claimed here.
+
+## Android 1.2.3 — 2026-11-07
+
+### Changed
+
+- **The text guard reads the screen off its main thread.** `TextGuardService`
+  now fetches the selected windows' roots on the main thread and walks them on
+  one daemon scanner thread; Android resolves every `getChild()` across a
+  Binder, so a large feed could previously stall the service, and the app being
+  read. The verdict returns to the main thread, where Home, the restriction
+  screen and every policy write still happen. A generation token discards a
+  walk whose screen changed, and a 20-second watchdog records an incomplete
+  inspection, replaces a stuck scanner executor and retries instead of leaving
+  the layer silent.
+- **A selected app's accessibility event can block before the walk.** The
+  event's own text and source description are inspected transiently, never
+  stored. A promotion label ("Watch free porn") blocks immediately; a bare
+  explicit label ("Porn") still waits for the full pass, which knows whether
+  another line on the screen names protective context. Only the selected window
+  in use may act before the walk; a queued event from a window the person
+  already left falls back to the full pass. When the event carries no text, the
+  tree walk is the fallback.
+- **The walk reads 1,024 nodes, checks a partial match every 64 nodes and can
+  stop early.** The old 512-node budget cut off the label in use on large real
+  screens; the new budget and checkpoint stop a matching word from waiting for
+  the rest of a long feed. A selected app is still re-read at least every three
+  seconds, so text that appears without a text-bearing event is not missed. A
+  clean screen no longer re-walks on every content change: a video frame or
+  animation does not mark text dirty.
+- **The image layer keeps the model warm and stops retrying protected windows
+  four times a second.** The WebView and model stay loaded while the screen is
+  on, and a two-minute screen-off grace keeps them for an immediate screen-on.
+  A capture's long edge is 224 px instead of 384, a frame is treated as failed
+  after 5 s instead of 15 s, and a window Android refuses to capture backs off
+  1, 2 then 4 s. A window change clears that backoff and the sampling interval.
+  The debug status reports the real backend, frame edge and capture, inference
+  and sample timings.
+
+### Added
+
+- `LabelScan.Check`, `LabelScan.CHECK_INTERVAL` and the checkpoint overload;
+  `VisibleTextSample.isEmpty()`; the scanner executor and watchdog; the
+  `stress` fixture (700 labels, the word at 650) and its live case; and
+  `BACKEND`/`FRAME_EDGE`/`LAST_CAPTURE_MS`/`LAST_INFERENCE_MS`/`LAST_SAMPLE_MS`
+  in the visual test status. No permission, activity, service, string or stored
+  field was added.
+
+### Verification
+
+- `android/test-core.sh` — every core suite passes, including the new
+  `LabelScan` case for the 1,024-node budget (the old 512-node budget would cut
+  the label) and the updated `VisualDuty` screen-off grace.
+- `check-strings.py` — 555 strings, 16 plurals and 545 source references,
+  English and Arabic; `check-notices.py` passes.
+- `:app:assembleDebug`, `:app:assembleDebugAndroidTest` and `:app:lintDebug`
+  (0 errors) pass.
+- `CoreDeviceTestRunner` passes on the API 36 `hisn_ui` emulator: seed, Arabic
+  matching, local DNS block, saved rules, adult terms, visual settings, daily
+  limits, commitment, uninstall guard, layer-watch and seed-age checks. The
+  live `stress` case — 700 labels with the word at 650 — blocked on the same
+  emulator after the accessibility service was bound; the status recorded a
+  tree scan (`FAST_TEXT 0`, `SCANS 7`, `LAST_SCAN_MS 21`), so the walk read past
+  the old budget.
+- Signed Play APK/AAB and direct APK pass `check-release.py`; both APKs verify
+  with `apksigner` under the unchanged release certificate. Hashes and the
+  remaining limits are in the [1.2.3 record](docs/ANDROID_1.2.3.md).
+
+### Limits
+
+- No 1.2.3 phone run. 1.2.2 was installed on the owner's Samsung SM-G990B2;
+  this build was not.
+- No device latency, memory, thermal or battery benchmark. The gain is a
+  design consequence; the only measured image numbers remain the
+  [WASM engine note](docs/VISUAL_ENGINE_WASM_2026-11-07.md) on a Mac and in
+  Node.
+- The 224 px edge is a cost choice, not an accuracy result. No adult-positive
+  corpus was used, and adult recall remains unestablished.
+- The event fast path is unit-covered through the shared matcher, not
+  live-verified here: the manual emulator event did not reach the service as a
+  text-bearing event, so the tree scan decided. The full walk remains its
+  fallback.
+- Keeping the model warm while the screen is on trades memory and battery for a
+  faster next sample; the two-minute grace was chosen without a power
+  measurement.
+- Repeated package reinstalls and a System UI ANR made later emulator live runs
+  intermittent. The full ten-check live suite is not claimed for 1.2.3.
+
 ## Mac 1.1.18 — 2026-11-07
 
 ### Added

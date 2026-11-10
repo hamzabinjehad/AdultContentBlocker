@@ -13,6 +13,7 @@ past version; *superseded* documents point to their replacement. Start with the
 - [1.0 readiness](1.0_READINESS.md): One finish line across the four platforms: versions, local evidence, artifacts, unproven claims and the owner/device actions that remain.
 - [Publish readiness, 2026-11-02](PUBLISH_READINESS_2026-11-02.md): The full verification run, reproducible and unsigned artifacts, what is genuinely publishable in the repository, and the owner actions still required.
 - [Versions and release state](VERSIONS.md): The pinned version/build of every platform, generated and checked from the manifests.
+- [Release state, 2026-11-10](RELEASE_STATE_2026-11-10.md): What the checkout declares versus what it contains, what was verified, and the four open release-number decisions. Read this before building or installing anything from this tree.
 - [Direct iPhone/iPad install](IOS_DIRECT.md): The IPA built outside the App Store, the install paths and the entitlements Apple still enforces.
 - [The unlisted-host guard, 2026-11-06](BLOCKING_GUARD_2026-11-06.md): The adult-TLD rail on the extension, Mac, iPhone/iPad and Android, the hostname-keyword layer Android now shares with the Mac and Chrome, the cross-language fixtures, and the limits that remain. Code and local tests; no signed artifact or device run.
 - [Content coverage by surface](COVERAGE.md): The core, full and keyword tiers, what each client actually carries, and what the table does not claim.
@@ -32,6 +33,10 @@ past version; *superseded* documents point to their replacement. Start with the
 
 ## Mac
 
+- [Mac 1.1.12 — browser protection has no off switch](MACOS_1.1.12.md): The release that removed the browser-protection off switch and recorded the remaining limits. Development candidate; unsigned and unnotarized.
+- [Mac 1.1.13 — one action for private windows](MACOS_1.1.13.md): The release that made private-window protection one action. Development candidate; unsigned and unnotarized.
+- [Mac UI/UX, 2026-11-06](MACOS_UI_2026-11-06.md): The window-and-sheet pass around one visual system and one order of information; presentation only, no policy change.
+- [Mac filter performance, 2026-11-09](MACOS_FILTER_PERFORMANCE_2026-11-09.md): Why the socket filter's per-flow verdict got ~45× cheaper and the bundled seed stopped reserving 60 MB it cannot use; the measured before/after, the ASCII keyword fast path, the two paths that deliberately stay slow, and the verdict cache that was rejected because it would be a browsing history.
 - [Mac craft pass, 2026-11-07](MACOS_CRAFT_2026-11-07.md): The ink-and-paper surface: warm neutral canvas, deep ink-blue accent, one serif statement per page, a two-column Overview, a compact lock composer, grouped settings, icon-only help, and a pause with circular breath progress. Design captures in `design/macos-craft-2026-11-07/`. No policy changes.
 - [Mac extra sites and rules, 2026-11-07](MACOS_EXTRA_SITES_2026-11-07.md): Optional distraction-site chips in first run and Blocking Rules, a three-step first run, and the two site editors folded into one segmented card with a card-level site checker. Presentation and convenience only; no new weakening surface. Captures in `design/macos-extra-sites-2026-11-07/`.
 - [Mac UI pass, 2026-11-07](MACOS_UI_2026-11-07.md): Native Mac surfaces and a system-blue accent replace the borrowed warm-paper/indigo palette; page, section and control explanations move behind an Explain popover. Design captures in `design/macos-ui-2026-11-07/`. No policy changes.
@@ -63,6 +68,15 @@ past version; *superseded* documents point to their replacement. Start with the
 
 ## Android
 
+- [Android 1.2.3, 2026-11-07](ANDROID_1.2.3.md): The accessibility tree walk moved off the service's main thread, a selected app's own event can block a promotional label before the walk, the walk reads 1,024 nodes and stops early on a partial match, and the image layer keeps its model warm, captures at 224 px and backs off protected windows. Core, device-runner, emulator stress-case and signed-artifact checks; no phone run or accuracy claim.
+- [Android 1.3.0](ANDROID_1.3.0.md): A block closes the page and rests the app instead of returning the person to the same page.
+- [Android 1.3.1](ANDROID_1.3.1.md): WASM first, a centred near-miss crop and the measured faster visual pass.
+- [Android 1.3.2](ANDROID_1.3.2.md): Reuse the verdict for an unchanged frame instead of running the model on every capture.
+- [Android 1.4.0](ANDROID_1.4.0.md): The native TFLite runtime, the same model and thresholds, the WebView fallback, the 38–45 ms emulator measurement and the 9.8 MB model cost. No adult-positive benchmark.
+- [Android policy receipts 1.5.3 integration](ANDROID_POLICY_RECEIPTS_1.5.3_INTEGRATION.md): The read-only port map for policy versions, identities, receipts and evidence age into the 1.5.3 line.
+- [Android package 2 brief](ANDROID_SECOND_PACKAGE_2026-11-08.md): Current-policy proof, honest evidence age, recovery and lifecycle cases.
+- [Android package 3 brief](ANDROID_THIRD_PACKAGE_FUNCTIONALITY_2026-11-08.md): Signed mobile list updates, an explainable hostname decision, a site checker and portable personal rules.
+- [Android craft pass, 2026-11-07](ANDROID_CRAFT_2026-11-07.md): Warm paper and ink on Android, a serif verdict with a three-column coverage ledger, one next action, twelve named site chips that write the ordinary block list, a block screen that leads with a breath and reveals its reflection after the third breath, and a quieter first run and shield. Presentation and one convenience layer; no enforcement, permission, version or signed-artifact change. Captures in [design/android-craft-2026-11-07](../design/android-craft-2026-11-07/README.md).
 - [Google Play readiness](ANDROID_STORE.md): Play vs direct builds, listing copy, Data safety answers, permission declarations, reviewer steps and submission checklist.
 - [Android implementation status](ANDROID_IMPLEMENTATION_STATUS.md): Table of each Android protection layer, what code exists and how far it was verified, as of 0.9.0.
 - [Android live protection test](ANDROID_LIVE_TEST_2026-10-30.md): Emulator-only 2026-10-30 evidence for text and whole-app blocking, the DNS local-block/route checks and a verified one-day device-owner uninstall lock. Records the test-only fixture limitation and why the physical Samsung was not touched.
@@ -72,6 +86,10 @@ past version; *superseded* documents point to their replacement. Start with the
 - [Android UI pass, 2026-11-06](ANDROID_UI_2026-11-06.md): One line per rule with the answer at the end of the row, quiet section labels instead of icon-tiled headers, a page-aware app bar, a hero tinted by its verdict, a DNS card that states the consequence, and a readable frozen state. Presentation only; captures in [design/android-ui-2026-11-06](../design/android-ui-2026-11-06/README.md).
 - [Android UI/UX refresh, 2026-11-05](ANDROID_UX_2026-11-05.md): The ScreenZen-informed first-run permission checklist, protection-rules list, Settings list and short consent sheets. The direct-build uninstall guard becomes a one-tap opt-in; Play builds still cannot block uninstall. Design record, no release claim.
 - [Android encrypted-DNS resolver blocking, 2026-11-05](ANDROID_ENCRYPTED_DNS_RESOLVERS_2026-11-05.md): Host routes for 18 IPv4 and 12 IPv6 dedicated public DoH/DoT resolver addresses, dropped in the DNS tunnel, with device evidence, tests and the limits kept.
+- [Android 0.5.4 — text checks and privacy](ANDROID_0.5.4_TEXT_PRIVACY.md): The 0.5.4 text-inspection and privacy package, built and tested before integration.
+- [Android 0.5.5 — other windows, feeds and video cadence](ANDROID_0.5.5_WINDOWS.md): Window, feed and video sampling work on the 0.5.4 tree.
+- [Android 0.5.5 — single explicit words](ANDROID_0.5.5_WORDS.md): The single-word matching package on the 0.5.4 tree.
+- [Android feature improvement plan, 2026-11-08](ANDROID_FEATURE_IMPROVEMENT_PLAN_2026-11-08.md): The feature backlog behind the 1.4.0-and-later candidate, with the native-ML starting facts superseded by the end-project plan.
 - [Android tamper resistance scope](ANDROID_TAMPER_RESISTANCE.md): What Android personal mode can and cannot do to resist removal, Play policy limits, and managed-device mode including the 0.8.0 lockdown restrictions and layer watchdog.
 
 ## Network and routers
@@ -105,8 +123,11 @@ past version; *superseded* documents point to their replacement. Start with the
 - [Road to 1.0](ROAD_TO_1.0.md): The integrated finish plan: current verified state, the per-platform removal-lock ladder, content-coverage gates, milestones, backlog and owner actions. Start here when deciding what to build next.
 - [Guardian mode plan](GUARDIAN_MODE_PLAN.md): The post-1.0 managed-device route: device owner and supervision levels, the guardian console and phone-laptop pairing, what each platform can actually enforce, the coverage matrix and the phased build.
 - [Android 1.0 plan](ANDROID_1.0_PLAN.md): Fixed Android 1.0 finish line: what is in and out of scope, current state, milestones M1-M5, signing steps.
+- [Android end-project plan, 2026-11-08](ANDROID_END_PROJECT_PLAN_2026-11-08.md): The installable end project is the clean **Android 1.5.3/41** line; signed direct, Play and debug artifacts plus a verified source package are in `dist/android-1.5.3-end/`. This plan covers the separate `mdm-finish` package candidate (readiness dashboard, signed mobile updates, rule import/preview, person blur), which still declares 1.2.3 and should merge forward as 1.6.0. Its 45 untracked files were committed on 10 November; see [release state](RELEASE_STATE_2026-11-10.md). It also records the four Franco-Arabic text misses and the missing adult-positive visual benchmark.
+- [Comprehensive improvement plan, 2026-11-08](COMPREHENSIVE_IMPROVEMENT_PLAN_2026-11-08.md): Repository-wide backlog across protection layers, mobile updates, performance, usability, commitments and release engineering, with evidence labels and ordered gates.
 - [End-goal plan](END_GOAL_PLAN.md): Ties all plans to one testable goal: no adult content and no removal before a chosen date, with measurable gates.
 - [Improvement roadmap](HISN_IMPROVEMENT_ROADMAP.md): Ordered next work on word blocking, evasion matching, context scoring and cross-platform verification, plus what each pass delivered.
+- [Browser extension improvement plan, 2026-11-08](EXTENSION_IMPROVEMENT_PLAN_2026-11-08.md): The extension-only next order of work: a live-confirmed `offscreen` permission regression that left the opt-in visual layer unavailable, store publication, measured page-text cost, private-window honesty, a real labelled benchmark and the specific UI/accessibility fixes. The P0 permission fix and its manifest contract test are implemented; the rest is proposed.
 - [Publishing plan](PUBLISHING_PLAN.md): Release tracks, ship-blockers and beta and launch gates for taking the repository to a public release.
 - [REA-informed extension and Mac plan](REA_FUNCTIONALITY_PLAN.md): Prioritized extension and Mac backlog from REA study of Hisn, HaramBlur and SelfControl; partly done in 1.1.3.
 - [Tamper resistance next steps](TAMPER_RESISTANCE_NEXT.md): Recent anti-removal recovery work on browser, Mac and mobile, and the priority order for further hardening.
