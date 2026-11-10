@@ -20,14 +20,20 @@ individual posts.
 - Scoring is local and heuristic, using the shared normalizer and signed seed
   vocabulary. There is no server-side browsing or content upload.
 
-## Optional local visual checking
+## Local visual checking
 
-The extension now bundles an experimental, opt-in local image/video classifier.
-Enable **Content options → Local visual checks · beta** to check readable images
-and sampled video frames independently from the text scorer. The matching adult
-media is hidden and a flagged video paused, without treating its entire service
-as adult-only. Normal videos remain available; inaccessible media is not silently
-hidden or called safe.
+The extension bundles an experimental on-device image/video classifier. It is on
+by default and can be switched off under **Content options → Local visual
+checks · beta**. It checks readable images and sampled video frames
+independently from the text scorer. The matching adult media is hidden and a
+flagged video paused, without treating its entire service as adult-only. Normal
+videos remain available; inaccessible media is not silently hidden or called
+safe. On a browser that cannot host the engine the layer stays open instead of
+blanking media forever. A generic platform "sensitive content" notice is still
+not a verdict. On X/Twitter a flagged post is replaced with an explanation; on
+Instagram, Facebook, Reddit, TikTok, Threads, Bluesky, LinkedIn, Pinterest,
+Tumblr and Snapchat the post containing the flagged media is removed silently,
+because no text adapter owns those feeds.
 
 **Person blur** is a separate viewing preference, off by default. It blurs the
 whole image/video when a visible face matches the selected all/female/male
@@ -67,8 +73,8 @@ Do not block the service's domain if its website should remain available.
 Mac app rules deny new connections only when the signed system filter is
 actually running. They do not prevent the app opening, clear cached/offline
 content, or revisit established flows. The development app's ad-hoc signature
-is not proof of an eligible, active system filter. Browser guarding and its
-recovery countdown are separate from text classification.
+is not proof of an eligible, active system filter. Browser guarding, its waiting state on a missed heartbeat and its
+five-minute profile-loss countdown are separate from text classification.
 
 During an app-managed commitment, Chromium's selected visual preferences can
 be strengthened but not weakened through the extension settings. They remain
@@ -127,7 +133,7 @@ Use synthetic fixtures, not live adult content or user browsing history:
    six domain blockers still work independently.
 6. Test intentional domain/strict rules and commitment app-selection restrictions
    separately. Preserve essential communication and recovery access.
-7. With visual opt-in, run the actual packaged engine on benign image/video
+7. With visual checks on, run the actual packaged engine on benign image/video
    fixtures and verify normal video stays usable. Exercise route/source/seek
    changes, tab closure, cancellation, loading failure and inaccessible pixels.
    Separately verify positive face-blurring behavior; mocked scores cannot prove

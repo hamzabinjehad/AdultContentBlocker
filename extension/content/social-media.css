@@ -1,0 +1,48 @@
+/* Whole-post suppression on the social feeds the text adapter does not own.
+ *
+ * The visual layer writes data-hisn-visual="adult-hidden" on a media element
+ * only after the on-device model returned an adult verdict. These rules remove
+ * the post container around that media. When a newer verdict clears the marker
+ * (or media checks are switched off) the selector stops matching and the post
+ * returns by itself — no script, observer or stored state is involved.
+ *
+ * Registered by worker/scanners.js only while media checks are on, and only for
+ * the platforms whose match patterns sit beside this file. Chrome injects it as
+ * an extension stylesheet, so a strict page CSP cannot suppress it. The same
+ * selector list is served to every registered host; a container a site does not
+ * use simply never matches.
+ *
+ * Not a verdict, never read: a platform's own "sensitive content" or NSFW flag.
+ * A moved post container costs only this tidy-up; the flagged media itself is
+ * still hidden by content/visual.js.
+ *
+ * :has() needs Chrome 105+/Safari 15.4+; this extension requires Chrome 137.
+ */
+
+/* Instagram, TikTok, Threads, LinkedIn, Tumblr and Snapchat render each post
+   (or its article wrapper) as <article>. */
+article:has(img[data-hisn-visual="adult-hidden"], video[data-hisn-visual="adult-hidden"]),
+
+/* Facebook marks posts and comments as role=article. */
+div[role="article"]:has(img[data-hisn-visual="adult-hidden"], video[data-hisn-visual="adult-hidden"]),
+
+/* Reddit: current post element, the 2023 test id, and old Reddit. */
+shreddit-post:has(img[data-hisn-visual="adult-hidden"], video[data-hisn-visual="adult-hidden"]),
+div[data-testid="post-container"]:has(img[data-hisn-visual="adult-hidden"], video[data-hisn-visual="adult-hidden"]),
+div.thing:has(img[data-hisn-visual="adult-hidden"], video[data-hisn-visual="adult-hidden"]),
+
+/* TikTok's feed item wrapper, beside the article rule above. */
+div[data-e2e="recommend-list-item-container"]:has(img[data-hisn-visual="adult-hidden"], video[data-hisn-visual="adult-hidden"]),
+
+/* Bluesky feed items. */
+div[data-testid^="feedItem-"]:has(img[data-hisn-visual="adult-hidden"], video[data-hisn-visual="adult-hidden"]),
+
+/* LinkedIn update card, beside the article rule above. */
+div.feed-shared-update-v2:has(img[data-hisn-visual="adult-hidden"], video[data-hisn-visual="adult-hidden"]),
+
+/* Pinterest pin and generic grid item. */
+div[data-testid="pin"]:has(img[data-hisn-visual="adult-hidden"], video[data-hisn-visual="adult-hidden"]),
+div[role="listitem"]:has(img[data-hisn-visual="adult-hidden"], video[data-hisn-visual="adult-hidden"])
+{
+  display: none !important;
+}

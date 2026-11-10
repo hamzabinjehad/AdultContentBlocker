@@ -12,6 +12,11 @@
   // active preparation slots. Weak keys do not retain old gallery/feed nodes.
   const retained = new WeakMap();
   let prefs = { inspectVisual: false, personBlur: 'off' }, busy = false, stopped = false, policyRevision = 0, admissionCursor = 0;
+  // True only when the worker says this browser cannot host the local engine
+  // at all. Such a browser will never produce a ready verdict, so the
+  // pre-display gate must open instead of leaving every image hidden forever.
+  // Transient inference failures keep the fail-closed gate.
+  let engineUnavailable = false;
   let pumpTimer;
   let viewportTimer;
   let freshStreak = 0;
@@ -29,10 +34,10 @@
     // Yield to the browser, but do not add a one-second wait per ready image.
     pumpTimer = setTimeout(() => { pumpTimer = undefined; void pass(); }, 0);
   }
-  const active = () => prefs.inspectVisual || prefs.personBlur !== 'off';
+  const active = () => !engineUnavailable && (prefs.inspectVisual || prefs.personBlur !== 'off');
   const personApplies = node => prefs.personBlur !== 'off' && (prefs.personMedia === 'both'
     || prefs.personMedia === (node.tagName === 'VIDEO' ? 'videos' : 'images'));
-  const applies = node => prefs.inspectVisual || personApplies(node);
+  const applies = node => !engineUnavailable && (prefs.inspectVisual || personApplies(node));
   const presentation = () => JSON.stringify([prefs.personRegion,prefs.personEffect,prefs.personMedia]);
   function applyGate() {
     const root=document.documentElement;
@@ -138,6 +143,14 @@
   function release(record) {
     cancel(record); restore(record); restoreImageMode(record); suspend(record);
     retained.delete(record.node);
+  }
+  function releaseAll() {
+    for (const record of [...media.values()]) release(record);
+    for (const node of document.querySelectorAll('img,video')) {
+      const record = retained.get(node);
+      if (record) release(record);
+    }
+    media.clear();
   }
   function detach(record) {
     cancel(record); suspend(record);
@@ -395,16 +408,22 @@
     // Missing/error replies are not confirmation that protection is disabled.
     if (typeof next?.inspectVisual !== 'boolean' || !['off','all','female','male'].includes(next?.personBlur)) return;
     preferencesReady = true;
+    // Only a reply that carries the field may change availability: a local
+    // storage change republishes the saved preferences without it.
+    const availabilityChanged = typeof next?.available === 'boolean'
+      && (next.available === false) !== engineUnavailable;
+    if (typeof next?.available === 'boolean') engineUnavailable = next.available === false;
     const normalized = { inspectVisual: next?.inspectVisual === true,
       personBlur: ['all', 'female', 'male'].includes(next?.personBlur) ? next.personBlur : 'off',
       personRegion:['full','faces'].includes(next?.personRegion)?next.personRegion:'full',
       personEffect:['solid','blur'].includes(next?.personEffect)?next.personEffect:'solid',
       personMedia:['images','videos'].includes(next?.personMedia)?next.personMedia:'both'};
-    if (JSON.stringify(normalized) === JSON.stringify(prefs)) {applyGate();return;}
-    prefs = normalized;
-    policyRevision++;
+    const preferencesChanged = JSON.stringify(normalized) !== JSON.stringify(prefs);
+    if (preferencesChanged) { prefs = normalized; policyRevision++; }
     applyGate();
-    discover();
+    // An engine that can never answer has no pending verdict to wait for.
+    if (availabilityChanged && engineUnavailable) { releaseAll(); return; }
+    if (availabilityChanged || preferencesChanged) discover();
   }
   async function refreshPreferences() {
     if (stopped || preferencesReady || preferenceRequest) return;

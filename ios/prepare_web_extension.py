@@ -32,6 +32,7 @@ RESOURCES = {
     "content/visual.js": "extension/content/visual.js",
     "content/visual-effects.js": "extension/content/visual-effects.js",
     "content/visual-gate.css": "extension/content/visual-gate.css",
+    "content/social-media.css": "extension/content/social-media.css",
     "visual/capture.js": "extension/visual/capture.js",
     "visual/broker.js": "extension/visual/broker.js",
     "visual/verdict-cache.js": "extension/visual/verdict-cache.js",

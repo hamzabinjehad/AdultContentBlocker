@@ -137,7 +137,6 @@ export const SHORT_VIDEO_SCRIPT = {
   id: "hisn-short-video", js: ["content/short-video.js"],
   matches: ["*://*.youtube.com/*", "*://*.instagram.com/*", "*://*.facebook.com/*", "*://*.snapchat.com/*"],
 };
-
 export function shortVideoRegistrationMatches(current) {
   if (!current || current.id !== SHORT_VIDEO_SCRIPT.id) return false;
   // Chrome reads `matches` back sorted, so compare as sets of patterns.
@@ -164,5 +163,60 @@ export async function syncShortVideo(state) {
   let tabs = [];
   try { tabs = await chrome.tabs.query({ url: matches }); } catch { return; }
   await Promise.all(tabs.map((tab) => chrome.scripting.executeScript({ target: { tabId: tab.id }, files: js })
+    .catch(() => { /* a closed or unpermitted tab */ })));
+}
+
+/** Whole-post suppression on social feeds without a text adapter.
+ *
+ * `content/social-media.css` keys only on the `data-hisn-visual="adult-hidden"`
+ * marker the local model writes, so this registration is pointless without
+ * `inspectVisual`; person blur is a separate preference and never classifies
+ * adult content. Top frame only: these feeds render their posts there. A
+ * registered stylesheet is used rather than a page script so a strict page CSP
+ * cannot suppress the rule, and nothing runs inside the page.
+ *
+ * The selectors in that file are pinned against this platform list by
+ * `social-media.test.js`; `runtime.test.js` pins the registration. */
+export const SOCIAL_MEDIA_SCRIPT = {
+  id: "hisn-social-media", css: ["content/social-media.css"],
+  matches: [
+    "*://*.instagram.com/*", "*://*.facebook.com/*", "*://*.reddit.com/*",
+    "*://*.tiktok.com/*", "*://*.threads.net/*", "*://*.threads.com/*",
+    "*://bsky.app/*", "*://*.linkedin.com/*", "*://*.pinterest.com/*",
+    "*://*.tumblr.com/*", "*://*.snapchat.com/*",
+  ],
+};
+
+export function socialMediaRegistrationMatches(current) {
+  if (!current || current.id !== SOCIAL_MEDIA_SCRIPT.id) return false;
+  const sorted = (list) => JSON.stringify([...(list || [])].sort());
+  // A stylesheet only: no page script runs for this rule.
+  if ((current.js || []).length || sorted(current.css) !== sorted(SOCIAL_MEDIA_SCRIPT.css)
+      || sorted(current.matches) !== sorted(SOCIAL_MEDIA_SCRIPT.matches)) return false;
+  return current.runAt === "document_start" && current.allFrames !== true
+    && current.persistAcrossSessions === true
+    && !(current.excludeMatches || []).length
+    && !(current.includeGlobs || []).length && !(current.excludeGlobs || []).length;
+}
+
+export async function syncSocialMedia(state) {
+  const { id, css, matches } = SOCIAL_MEDIA_SCRIPT;
+  const existing = (await chrome.scripting.getRegisteredContentScripts({ ids: [id] }).catch(() => []))
+    .find((script) => script.id === id);
+  if (state.inspectVisual !== true) {
+    if (existing) await chrome.scripting.unregisterContentScripts({ ids: [id] });
+    return;
+  }
+  if (socialMediaRegistrationMatches(existing)) return;
+  if (existing) await chrome.scripting.unregisterContentScripts({ ids: [id] });
+  await chrome.scripting.registerContentScripts([{
+    id, css, matches, runAt: "document_start", allFrames: false, persistAcrossSessions: true,
+  }]);
+  // Open feeds loaded before the registration would keep showing posts whose
+  // media was already judged. insertCSS reaches them without running any page
+  // script, and re-inserting a stylesheet is harmless.
+  let tabs = [];
+  try { tabs = await chrome.tabs.query({ url: matches }); } catch { return; }
+  await Promise.all(tabs.map((tab) => chrome.scripting.insertCSS({ target: { tabId: tab.id }, files: css })
     .catch(() => { /* a closed or unpermitted tab */ })));
 }

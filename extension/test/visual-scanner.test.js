@@ -25,7 +25,11 @@ function harness() {
   globalThis.location = { href: 'https://fixture.example/' };
   globalThis.innerHeight = globalThis.innerWidth = 800;
   globalThis.crypto = { randomUUID: () => String(++id) };
-  globalThis.document = { hidden: false, documentElement: {}, querySelectorAll: () => nodes.filter(item => item.isConnected),
+  const rootAttributes = new Map();
+  globalThis.document = { hidden: false, documentElement: {
+      setAttribute(name, value) { rootAttributes.set(name, value); },
+      getAttribute(name) { return rootAttributes.get(name) ?? null; } },
+    querySelectorAll: () => nodes.filter(item => item.isConnected),
     addEventListener: (event, fn) => documentEvents.set(event, fn) };
   globalThis.addEventListener = (event, fn) => documentEvents.set(event, fn);
   globalThis.MutationObserver = class { constructor(fn) { discover = fn; } observe() {} disconnect() {} };
@@ -41,7 +45,8 @@ function harness() {
   } }, storage: { onChanged: { addListener: fn => { change = fn; } } } };
   delete globalThis.__hisnVisualScanner;
   load('../content/visual.js');
-  return { node, events, documentEvents, inspect, values, nodes, discover: mutations => discover(mutations),
+  return { node, events, documentEvents, inspect, values, nodes, document: globalThis.document,
+    discover: mutations => discover(mutations),
     addNode() {
       const properties = new Map(), listeners = new Map();
       const added = { ...node, dataset: {}, attributes: new Map(), attributeWrites: 0, currentSrc: `https://fixture.example/${nodes.length}.webm`,
@@ -652,6 +657,29 @@ for (const key of [undefined, null, 'not-a-digest', 'a'.repeat(65), 'A'.repeat(6
   for(let i=1;i<=5;i++){await h.tick();await h.resolve(i);}
   check(h.inspect.slice(1,6).some(job=>job.message.mediaKind==='video'),
     'continuous first-image work reserves a monitoring slot for an already-playing video within four new checks');
+  h.stop();
+}
+{
+  const h = harness(); await flush();
+  check(h.document.documentElement.getAttribute('data-hisn-visual-gate') === 'on',
+    'a runtime that can host the engine keeps the pre-display gate on');
+  h.set({ inspectVisual: true, personBlur: 'off', available: false });
+  await flush();
+  check(h.document.documentElement.getAttribute('data-hisn-visual-gate') === 'off',
+    'an unavailable engine opens the gate instead of blanking every image forever');
+  await h.tick();
+  check(h.inspect.length === 0 && !h.values.has('visibility'),
+    'an unavailable engine captures nothing and hides nothing');
+  h.stop();
+}
+{
+  // A block already applied must be released if the runtime turns out to be
+  // unable to answer; the gate opening must also undo our own hide.
+  const h = harness(); await flush(); await h.tick(); await h.resolve(0, true);
+  check(h.values.get('visibility')?.[0] === 'hidden', 'an adult verdict hides its media before availability changes');
+  h.set({ available: false });
+  check(!h.values.has('visibility') && h.events.size === 0,
+    'losing engine availability releases an already hidden record and its listeners');
   h.stop();
 }
 print(`  ${checks}/${checks} visual scanner lifecycle checks passed`);

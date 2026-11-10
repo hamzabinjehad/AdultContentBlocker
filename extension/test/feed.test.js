@@ -50,8 +50,10 @@ function item(body = "Gardening notes", alt = []) {
   article.captions = alt.map((text) => Object.assign(element({ alt: text }), { parentElement: article }));
   article.link = element({ href: "/person/status/1" });
   article.media = { paused: false, pauses: 0, pause() { this.paused = true; this.pauses++; }, closest() { return article; } };
+  article.mediaVerdict = null;
   article.querySelectorAll = (selector) => selector === "video, audio" ? [article.media] : article.captions;
-  article.querySelector = () => article.link;
+  article.querySelector = (selector) => selector === F.MEDIA_BLOCK_SELECTOR ? article.mediaVerdict
+    : selector.includes("/status/") ? article.link : null;
   return article;
 }
 function harness(items, verdict = (zones) => ({ block: zones.body.includes("fixtureadult") || zones.alt.includes("fixtureadult"), enabled: true })) {
@@ -414,6 +416,30 @@ await (async () => {
   for (let i = 0; i < 20; i++) { h.doc.items.push(item(i === 10 ? "fixtureadult" : `safe ${i}`)); h.mutate(); await h.clock.advance(100); }
   check(h.messages.length === 20 && hidden(h.doc.items[10]) && !hidden(h.doc.items[19]),
     "continuous infinite-scroll additions individually checked without debounce starvation");
+})();
+
+await (async () => {
+  // ── a locally confirmed adult image collapses its whole post ─────────────
+  const clean = item("Gardening notes"), adult = item("Gardening notes");
+  const h = harness([clean, adult]); h.scanner.start(); await flush();
+  check(!hidden(clean) && !hidden(adult),
+    "a reading-only post stays visible after its words are judged clean");
+  const requests = h.messages.length;
+  adult.mediaVerdict = element({ "data-hisn-visual": "adult-hidden" });
+  h.mutate(); await flush();
+  check(hidden(adult) && !hidden(clean),
+    "an adult-hidden image collapses a post whose text is clean");
+  check(h.messages.length === requests,
+    "a media verdict does not resend unchanged post text to the worker");
+  check(adult.previousSibling?.textContent.includes("media"),
+    "the explanation names media, not words");
+  check(adult.media.paused && adult.inert === true && adult.getAttribute("aria-hidden") === "true",
+    "a media-blocked post is collapsed, paused and removed from keyboard order");
+  adult.mediaVerdict = null;
+  h.mutate(); await flush();
+  check(!hidden(adult) && adult.previousSibling === null,
+    "a recycled post whose media is no longer flagged is released");
+  h.scanner.stop();
 })();
 
 print(`${checks - failures}/${checks} granular feed scanner checks passed`);

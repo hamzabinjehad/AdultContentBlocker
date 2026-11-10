@@ -62,6 +62,10 @@ try {
     // than assuming a cold browser can initialize every import in 100ms.
     for (let attempt = 0; attempt < 50 && !f.contentWindow.reads; attempt++) await pause();
     if (!f.contentWindow.reads) throw new Error("settings module did not initialize within 5 seconds");
+    // `reads` counts the request; the reply that fills `current` arrives later. The
+    // import button stays disabled until then, so wait for the painted state rather
+    // than for one arbitrary pause.
+    for (let attempt = 0; attempt < 50 && f.contentDocument.getElementById("importRules")?.disabled; attempt++) await pause();
     await pause();
     return f;
   }
@@ -318,7 +322,9 @@ try {
   const badFrame = await frame(false), b = badFrame.contentDocument, bw = badFrame.contentWindow;
   b.querySelector('a[href="#rules"]').click(); await pause();
   pickInto(b, bw, "bad.json", "{");
-  await pause();
+  // The handler reads the File asynchronously; wait for its message rather than
+  // assuming one pause is enough on a loaded machine.
+  for (let i = 0; i < 50 && !b.getElementById("msgTransfer").textContent.includes("not a Hisn rules file"); i++) await pause();
   check(bw.writes === 0 && b.getElementById("msgTransfer").textContent.includes("not a Hisn rules file"),
     "an invalid file is named and never written");
   const lockFrame = await frame(false), l = lockFrame.contentDocument, lw = lockFrame.contentWindow;

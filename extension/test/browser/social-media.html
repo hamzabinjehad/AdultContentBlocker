@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Social feed whole-post fixture</title>
+<link rel="stylesheet" href="../../content/social-media.css">
+<style>body{font:16px system-ui;max-width:650px;margin:24px auto}article,div[role="article"],shreddit-post,div[data-testid="feedItem-by-fixture"]{display:block;padding:12px;border:1px solid #bbb;margin:12px 0}img,video{width:120px;height:80px}pre{white-space:pre-wrap}</style>
+<h1>Local social-feed fixture</h1>
+<article id="flagged"><a href="/post/1">Local fixture</a>
+  <div>An ordinary caption with no explicit words at all.</div>
+  <img id="adult" alt="Local fixture" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='80'%3E%3Crect width='120' height='80' fill='%23333'/%3E%3C/svg%3E">
+</article>
+<article id="clean"><a href="/post/2">Local fixture</a>
+  <img id="checked" alt="A garden" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='80'%3E%3Crect width='120' height='80' fill='green'/%3E%3C/svg%3E">
+</article>
+<article id="video-post"><a href="/post/3">Local fixture</a>
+  <video id="adult-video" muted></video>
+</article>
+<div role="article" id="facebook-post"><a href="/post/4">Local fixture</a>
+  <img id="facebook-image" alt="Local fixture" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='80'%3E%3Crect width='120' height='80' fill='%23555'/%3E%3C/svg%3E">
+</div>
+<shreddit-post id="reddit-post"><a href="/post/5">Local fixture</a>
+  <img id="reddit-image" alt="Local fixture" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='80'%3E%3Crect width='120' height='80' fill='%23777'/%3E%3C/svg%3E">
+</shreddit-post>
+<div data-testid="feedItem-by-fixture" id="bluesky-post"><a href="/post/6">Local fixture</a>
+  <img id="bluesky-image" alt="Local fixture" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='80'%3E%3Crect width='120' height='80' fill='%23999'/%3E%3C/svg%3E">
+</div>
+<div role="listitem" id="pinterest-pin"><a href="/post/7">Local fixture</a>
+  <img id="pin-image" alt="Local fixture" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='80'%3E%3Crect width='120' height='80' fill='%23bbb'/%3E%3C/svg%3E">
+</div>
+<div id="loose"><img id="loose-image" alt="Local fixture" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='80'%3E%3Crect width='120' height='80' fill='%23666'/%3E%3C/svg%3E"></div>
+<pre id="summary" data-result="pending">Running local checks…</pre>
+<script>
+(async () => {
+  const checks = [];
+  const check = (ok, label) => { checks.push({ ok, label }); if (!ok) throw Error(label); };
+  const shown = (node) => getComputedStyle(node).display !== 'none';
+  const mark = (node, state) => node.setAttribute('data-hisn-visual', state);
+  try {
+    const ids = ['flagged', 'clean', 'video-post', 'facebook-post', 'reddit-post',
+                 'bluesky-post', 'pinterest-pin', 'loose'];
+    check(ids.every((id) => shown(document.getElementById(id))),
+      'every ordinary post is shown before any verdict arrives');
+    check(typeof globalThis.HisnSocialMedia === 'undefined'
+      && !document.querySelector('script[src*="social-media"]'),
+      'the rule is a stylesheet: no page script is loaded or run');
+
+    mark(document.getElementById('adult'), 'adult-hidden');
+    check(!shown(document.getElementById('flagged')),
+      'a locally classified adult image removes its whole article post');
+    check(shown(document.getElementById('clean')) && shown(document.getElementById('loose')),
+      'a clean post and media outside a post container stay visible');
+    mark(document.getElementById('adult'), 'checked');
+    check(shown(document.getElementById('flagged')),
+      'a newer clean verdict restores the post with no scanner code running');
+
+    mark(document.getElementById('adult-video'), 'adult-hidden');
+    check(!shown(document.getElementById('video-post')),
+      'a locally classified adult video removes its whole article post');
+    document.getElementById('adult-video').removeAttribute('data-hisn-visual');
+    check(shown(document.getElementById('video-post')), 'removing the marker restores a video post');
+
+    mark(document.getElementById('facebook-image'), 'adult-hidden');
+    check(!shown(document.getElementById('facebook-post')),
+      'Facebook role-article posts are removed');
+    mark(document.getElementById('reddit-image'), 'adult-hidden');
+    check(!shown(document.getElementById('reddit-post')), 'Reddit shreddit-post is removed');
+    mark(document.getElementById('bluesky-image'), 'adult-hidden');
+    check(!shown(document.getElementById('bluesky-post')), 'Bluesky feed items are removed');
+    mark(document.getElementById('pin-image'), 'adult-hidden');
+    check(!shown(document.getElementById('pinterest-pin')), 'Pinterest list items are removed');
+
+    document.getElementById('checked').dataset.hisnVisual = 'person-hidden';
+    check(shown(document.getElementById('clean')),
+      'a person-blur marker is not an adult verdict and hides no post');
+    window.socialMediaResult = { ok: true, checks };
+  } catch (error) {
+    window.socialMediaResult = { ok: false, checks, error: String(error.stack || error) };
+  } finally {
+    const summary = document.querySelector('#summary');
+    summary.dataset.result = window.socialMediaResult.ok ? 'pass' : 'fail';
+    summary.textContent = checks.map(({ ok, label }) => `${ok ? 'ok' : 'FAIL'} ${label}`).join('\n')
+      + (window.socialMediaResult.error ? `\nFAIL ${window.socialMediaResult.error}` : '');
+    document.title = `${window.socialMediaResult.ok ? 'PASS' : 'FAIL'} social feed fixture`;
+  }
+})();
+</script>
+</html>

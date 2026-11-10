@@ -16,8 +16,9 @@ import {
 } from "../lib/policy.js";
 import { RULE_DOWNLOADED_KEYWORDS_BASE } from "../lib/generation.js";
 import { WORKER_SESSION, desiredPolicyKey, setState } from "./state.js";
-import { scannerRegistrationMatches, shortVideoRegistrationMatches, syncShortVideo, syncTextScanning,
-         syncVisualScanning, SHORT_VIDEO_SCRIPT, TEXT_SCANNER, VISUAL_SCANNER } from "./scanners.js";
+import { scannerRegistrationMatches, shortVideoRegistrationMatches, socialMediaRegistrationMatches,
+         syncShortVideo, syncSocialMedia, syncTextScanning,
+         syncVisualScanning, SHORT_VIDEO_SCRIPT, SOCIAL_MEDIA_SCRIPT, TEXT_SCANNER, VISUAL_SCANNER } from "./scanners.js";
 import { enforceOpenTabs } from "./tabs.js";
 
 const RULESET_BLOCKLIST = "blocklist";
@@ -90,8 +91,11 @@ export async function applyRules(state) {
     await syncVisualScanning(state);
     phase = "short-video-script";
     await syncShortVideo(state);
+    phase = "social-media-script";
+    await syncSocialMedia(state);
     phase = "scanner-readback";
-    const scripts = await chrome.scripting.getRegisteredContentScripts({ ids: ["hisn-scan", "hisn-visual", SHORT_VIDEO_SCRIPT.id] });
+    const scripts = await chrome.scripting.getRegisteredContentScripts({
+      ids: ["hisn-scan", "hisn-visual", SHORT_VIDEO_SCRIPT.id, SOCIAL_MEDIA_SCRIPT.id] });
     for (const [layer, expected, wanted] of [
       ["text", TEXT_SCANNER, state.inspectText || state.failClosed || isLocked(state)],
       ["visual", VISUAL_SCANNER, state.inspectVisual === true || (state.personBlur && state.personBlur !== "off")],
@@ -109,6 +113,15 @@ export async function applyRules(state) {
       phase = "short-video-registration-readback";
       throw new Error("short-video registration readback mismatch");
     }
+    // The whole-post rule only reads the visual marker, so it follows that
+    // layer rather than any word setting.
+    const socialMedia = state.inspectVisual === true;
+    const socialMediaScript = scripts.find(script => script.id === SOCIAL_MEDIA_SCRIPT.id);
+    if (socialMedia ? !socialMediaRegistrationMatches(socialMediaScript) : !!socialMediaScript) {
+      phase = "social-media-registration-readback";
+      throw new Error("social-media registration readback mismatch");
+    }
+    receipt.layers.socialMedia = socialMedia ? "applied" : "off";
     // Only replace owned policy ids. Downloaded rules retain their separate
     // band, so lock/settings changes cannot wipe the signed blocklist.
     phase = "dynamic-rules";

@@ -27,6 +27,10 @@ function cancelRequests(predicate = () => true) {
 const disabled = () => ({ state: 'disabled', available: supported(), supportedPersonModes: ['off', 'all', 'female', 'male'] });
 function api() { return globalThis.browser ?? globalThis.chrome; }
 function supported() { return typeof document !== 'undefined' || !!api()?.offscreen?.createDocument; }
+/** Whether this runtime can host the local engine at all. A content script uses
+ *  it to keep the pre-display gate OFF instead of blanking media forever on a
+ *  browser that will never produce a verdict. Exposed without touching models. */
+export function visualSupported() { return supported(); }
 async function engine() {
   if (!localEngine) localEngine = import('./engine.bundle.js').then(module => module.createVisualEngine({ baseURL: api().runtime.getURL('visual/') }));
   return localEngine;

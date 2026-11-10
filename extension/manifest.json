@@ -18,7 +18,8 @@
     "storage",
     "alarms",
     "nativeMessaging",
-    "scripting"
+    "scripting",
+    "offscreen"
   ],
   "host_permissions": [
     "<all_urls>"

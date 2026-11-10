@@ -8,10 +8,16 @@
  *
  * Pending articles are withheld immediately on discovery or text changes, but
  * MutationObserver runs after DOM insertion: this is not an image classifier
- * or a promise of zero exposure. Media without useful text may be missed.
+ * or a promise of zero exposure. Media without useful text is covered by the
+ * independent local visual layer: when it marks one of this article's images or
+ * videos `adult-hidden`, the whole post is withheld too, so a caption-less post
+ * cannot remain readable around a blocked picture. A media verdict never comes
+ * from the platform's own "sensitive content" notice.
  */
 (() => {
   const ITEM_SELECTOR = 'article[data-testid="tweet"]';
+  // Written only by the local visual layer after the on-device model ran.
+  const MEDIA_BLOCK_SELECTOR = '[data-hisn-visual="adult-hidden"]';
   const SUPPORTED_HOSTS = new Set(["x.com", "www.x.com", "mobile.x.com",
     "twitter.com", "www.twitter.com", "mobile.twitter.com"]);
   const MAX_ITEM_TEXT = 20_000;
@@ -30,7 +36,7 @@
   const CONTROL_SELECTOR = `${CONTROL_LABEL_SELECTOR}, [data-testid="videoPlayer"]`;
   const BODY_IGNORED_SELECTOR = `${CONTROL_SELECTOR}, script, style, template, noscript`;
   const OBSERVER_OPTIONS = { childList: true, subtree: true, characterData: true,
-    attributes: true, attributeFilter: ["alt", "aria-label", "hidden", "style", "class", "data-testid", "href", "inert"] };
+    attributes: true, attributeFilter: ["alt", "aria-label", "hidden", "style", "class", "data-testid", "href", "inert", "data-hisn-visual"] };
 
   function isSupportedLocation(loc) {
     return ["https:", "http:"].includes(loc?.protocol)
@@ -157,11 +163,15 @@
     let lastHref = loc.href;
     const stats = { requests: 0, failures: 0, stale: 0, verdicts: 0 };
     const arabic = () => String(doc.documentElement?.lang || win.navigator?.language || "").startsWith("ar");
-    const noticeText = (status) => arabic()
-      ? (status === "blocked" ? "أخفى حصن هذا المنشور بسبب إشارات نصية لمحتوى غير مناسب."
+    const noticeText = (status, media) => arabic()
+      ? (status === "blocked"
+        ? (media ? "أخفى حصن هذا المنشور لأن وسائطه تبدو غير مناسبة."
+          : "أخفى حصن هذا المنشور بسبب إشارات نصية لمحتوى غير مناسب.")
         : status === "unavailable" ? "المنشور مخفي مؤقتاً حتى يعاود فحص حصن الاتصال."
         : "يفحص حصن نص هذا المنشور…")
-      : (status === "blocked" ? "Hisn hid this post because its text suggests adult content."
+      : (status === "blocked"
+        ? (media ? "Hisn hid this post because its media suggests adult content."
+          : "Hisn hid this post because its text suggests adult content.")
         : status === "unavailable" ? "Post hidden while Hisn reconnects to text checking."
         : "Hisn is checking this post’s text…");
 
@@ -170,7 +180,7 @@
         try { if (media.paused !== true) media.pause(); } catch { /* an uninitialised media element */ }
       }
     }
-    function setNotice(record, status) {
+    function setNotice(record, status, media = false) {
       if (!record.notice) {
         const notice = doc.createElement("div");
         notice.setAttribute("data-hisn-feed-notice", "");
@@ -178,12 +188,12 @@
         notice.style.cssText = "font:14px/1.5 system-ui;padding:12px 16px;color:CanvasText;background:Canvas;border:1px solid GrayText;";
         record.notice = notice;
       }
-      const text = noticeText(status);
+      const text = noticeText(status, media);
       if (record.notice.textContent !== text) record.notice.textContent = text;
       // A virtualised feed can move the article without moving its sibling.
       if (record.item.previousSibling !== record.notice) record.item.before(record.notice);
     }
-    function withhold(record, status = "pending") {
+    function withhold(record, status = "pending", media = false) {
       const item = record.item;
       if (!record.original) {
         record.original = {
@@ -210,7 +220,7 @@
           if (item.style.getPropertyValue(property) !== value || item.style.getPropertyPriority(property) !== "important") item.style.setProperty(property, value, "important");
         }
       }
-      setNotice(record, status);
+      setNotice(record, status, media);
     }
     function release(record) {
       const item = record.item, original = record.original;
@@ -239,10 +249,22 @@
       // Never autoplay media after checking: permission to display is not a
       // request to resume audio/video the user did not start.
     }
+    function mediaIsAdult(item) {
+      // The marker is written only by the independent local visual layer after
+      // the on-device model ran. X's own "potentially sensitive content" notice
+      // is deliberately not a verdict; it can describe non-adult material.
+      try {
+        const marked = item.querySelector?.(MEDIA_BLOCK_SELECTOR);
+        return marked?.getAttribute?.("data-hisn-visual") === "adult-hidden";
+      } catch { return false; }
+    }
     function snapshot(item) {
       const zones = collectItemZones(item, win);
       const statusLink = item.querySelector('a[href*="/status/"]');
-      return { zones, signature: signature(zones, statusLink?.getAttribute("href") || "") };
+      // The media verdict is local evidence, not part of the text signature: a
+      // later frame recheck must not resend unchanged post text to the worker.
+      return { zones, mediaAdult: mediaIsAdult(item),
+        signature: signature(zones, statusLink?.getAttribute("href") || "") };
     }
     function retainSignature(record) {
       cached.delete(record); cached.set(record, true);
@@ -277,14 +299,19 @@
         try { current = snapshot(item); } catch { continue; }
         let record = records.get(item);
         if (!record) {
-          record = { item, token: 0, inFlight: false, original: null, notice: null };
+          record = { item, token: 0, inFlight: false, original: null, notice: null, mediaAdult: false };
           records.set(item, record);
         }
+        record.mediaAdult = current.mediaAdult;
         if (record.signature !== current.signature || record.revision !== revision) {
           record.signature = current.signature; record.zones = current.zones; record.revision = revision;
           record.token++; record.status = "pending"; record.attempts = 0; record.notBefore = 0;
         }
-        if (record.status !== "clean") withhold(record, record.status);
+        // A local media verdict is authoritative for this article even when its
+        // words are clean, and it can arrive long after the text answer did.
+        if (record.mediaAdult) withhold(record, "blocked", true);
+        else if (record.status !== "clean") withhold(record, record.status);
+        else release(record);
         retainSignature(record);
       }
       pump(); scheduleDrain();
@@ -329,7 +356,7 @@
       record.attempts++;
       record.status = record.attempts >= RETRY_LIMIT ? "unavailable" : "pending";
       record.notBefore = now() + (record.attempts >= RETRY_LIMIT ? RECONNECT_MS : 500 * 2 ** (record.attempts - 1));
-      withhold(record, record.status);
+      withhold(record, record.mediaAdult ? "blocked" : record.status, record.mediaAdult);
     }
     async function judge(record) {
       record.inFlight = true; active++;
@@ -361,8 +388,13 @@
       }
       stats.verdicts++; record.attempts = 0; record.notBefore = 0;
       record.status = verdict.enabled && verdict.block ? "blocked" : "clean";
+      record.mediaAdult = current.mediaAdult;
       record.zones = null;
-      if (record.status === "blocked") withhold(record, "blocked"); else release(record);
+      // Either verdict collapses the post; the notice names the layer that
+      // actually decided it so a text-clean, media-blocked post is not told its
+      // words were the problem.
+      if (record.status === "blocked" || record.mediaAdult) withhold(record, "blocked", record.mediaAdult);
+      else release(record);
       pump(); scheduleDrain();
     }
     function pump() {
@@ -376,7 +408,7 @@
     function recheck() { revision++; refresh(Array.from(doc.querySelectorAll(ITEM_SELECTOR))); }
     function onPlay(event) {
       const item = event.target?.closest?.(ITEM_SELECTOR), record = records.get(item);
-      if (record && record.status !== "clean") pauseMedia(item);
+      if (record && (record.status !== "clean" || record.mediaAdult)) pauseMedia(item);
     }
     function stop() {
       stopped = true; stopObserving?.();
@@ -400,7 +432,7 @@
     return { start, refresh, recheck, stop,
       get stats() { return { ...stats, cachedItems: cached.size, queuedText: queuedTextCount() }; } };
   }
-  globalThis.HisnFeed = { ITEM_SELECTOR, MAX_ITEM_TEXT, MAX_LANGUAGE_SAMPLE, MAX_CAPTION_NODES, MAX_PARALLEL, MAX_SCAN_ITEMS,
+  globalThis.HisnFeed = { ITEM_SELECTOR, MEDIA_BLOCK_SELECTOR, MAX_ITEM_TEXT, MAX_LANGUAGE_SAMPLE, MAX_CAPTION_NODES, MAX_PARALLEL, MAX_SCAN_ITEMS,
     MAX_QUEUED_TEXT, MAX_CACHED_ITEMS, BATCH_MS, RETRY_LIMIT,
     REPLY_TIMEOUT_MS, RECONNECT_MS, POLL_MS, OBSERVER_OPTIONS,
     isSupportedLocation, boundedText, signature, collectItemZones, createScanner };
