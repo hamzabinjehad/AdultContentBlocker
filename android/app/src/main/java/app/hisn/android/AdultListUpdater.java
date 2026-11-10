@@ -200,6 +200,9 @@ final class AdultListUpdater {
             if (!staging.renameTo(target)) throw new IOException("Cannot activate list");
             // The pointer is the commit point. Until it moves, the old generation is
             // still the one every reader resolves.
+            // The pointer is the commit. HostListStore.floor also reads the
+            // pointer generation, so a crash before the separate floor write
+            // still cannot make this device accept an older generation.
             HostListStore.writePointer(context, manifest.version, HostListStore.sha256(manifestBytes));
             HostListStore.writeFloor(context, manifest.version);
             // Publish the index built off-thread; the next DNS query must not re-parse 4 MB.

@@ -18,7 +18,8 @@ through one `HostListStore.adopt` call. The text and DNS layers therefore read
 the same vocabulary version, and a damaged or mismatched terms file rejects
 the update instead of leaving one layer on the old list. A damaged installed
 terms file still falls back to the APK terms while the signed domain list
-enforces.
+enforces. The rollback floor also reads the committed pointer, so a crash
+between the pointer and floor writes cannot let an older generation in.
 
 The 1.5.4 lifecycle is ported rather than merged as a whole branch. The
 service now proves the bound instance in `onCreate`, re-arms in `onRebind`,

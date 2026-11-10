@@ -116,8 +116,12 @@ final class HostListStore {
     }
 
     static int floor(Context context) {
+        // The pointer is the commit point; the separate floor file is only a
+        // backup for a pointer damaged after an update. Reading both closes the
+        // window between the two writes without allowing a rollback.
         int stored = readInt(floorFile(context));
-        return Math.max(stored, BuildConfig.DOMAIN_SEED_VERSION);
+        int pointer = pointerGeneration(context);
+        return Math.max(Math.max(stored, pointer), BuildConfig.DOMAIN_SEED_VERSION);
     }
 
     static void writeFloor(Context context, int generation) {
