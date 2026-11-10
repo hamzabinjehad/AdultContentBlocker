@@ -4,7 +4,7 @@
 > manifests. Do not edit by hand: change `versions.json` and the platform
 > manifest together, then run `python3 script/versions.py`.
 
-Pinned on `release/1.0`, updated 2026-11-07. A platform
+Pinned on `release/1.0`, updated 2026-11-10. A platform
 version means what that platform's own manifest says; it is not a claim that a
 signed artifact has shipped. The state column is the honest release state.
 
