@@ -12,6 +12,8 @@ struct DNSFilterEngine {
         case adultTld
         case hostTerm
         case customSite
+        /// A public encrypted-DNS provider name; answered locally so it cannot become the route around Hisn.
+        case encryptedDns
     }
 
     enum Decision: Equatable {
@@ -37,6 +39,10 @@ struct DNSFilterEngine {
         if host == "hisn.invalid" || host.hasSuffix(".hisn.invalid") {
             return .selfCheck
         }
+        // Before the person's own allowlist, as Android applies it: a saved
+        // allowance must not turn a public DoH endpoint into the route around
+        // the DNS layer because a bypass is not a content preference.
+        if EncryptedDNSProviders.blocks(host) { return .blocked(.encryptedDns) }
         if CustomSitePolicy.covers(customSites, host) { return .blocked(.customSite) }
         if domains.blocks(host: host) { return .blocked(.list) }
         if AdultTldGuard.matches(host: host) { return .blocked(.adultTld) }

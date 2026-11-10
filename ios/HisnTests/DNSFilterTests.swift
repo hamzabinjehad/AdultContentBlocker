@@ -270,6 +270,29 @@ final class DNSFilterEngineTests: XCTestCase {
         XCTAssertEqual(engine.decide(try question("new.adult.example.net")), .allowed)
     }
 
+    func testEncryptedDnsProviderNamesAreBlockedBeforeACustomAllowance() throws {
+        let engine = try engine()
+        // Every listed provider, including a subdomain and the Firefox canary,
+        // is answered locally instead of being allowed to resolve.
+        for host in ["use-application-dns.net", "dns.google", "dns64.dns.google",
+                     "mozilla.cloudflare-dns.com", "family.cloudflare-dns.com",
+                     "dns.nextdns.io", "abc123.dns.nextdns.io", "doh.mullvad.net",
+                     "_dns.resolver.arpa"] {
+            XCTAssertEqual(engine.decide(try question(host)), .blocked(.encryptedDns), host)
+        }
+        XCTAssertGreaterThanOrEqual(EncryptedDNSProviders.count, 35)
+        // A saved allowance is not a content preference for a bypass route.
+        XCTAssertEqual(engine.decide(try question("dns.google"), customSites: ["dns.google"]),
+                       .blocked(.encryptedDns))
+        // Parent sites, look-alike names and ordinary domains keep the normal rails.
+        for host in ["google.com", "www.google.com", "cloudflare.com", "notcloudflare-dns.com",
+                     "dns.google.example", "application-dns.net", "example.com"] {
+            XCTAssertEqual(engine.decide(try question(host)), .allowed, host)
+        }
+        XCTAssertEqual(engine.decide(try question("self-check.hisn.invalid")), .selfCheck)
+        XCTAssertEqual(engine.decide(try question("adult.example")), .blocked(.list))
+    }
+
     func testTheRouteCheckNameIsAnsweredLocally() throws {
         let engine = try engine()
         XCTAssertEqual(engine.decide(try question(DNSMessage.selfCheckName)), .selfCheck)

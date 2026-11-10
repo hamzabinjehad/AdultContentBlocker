@@ -151,6 +151,14 @@ this pass. Record: [the craft pass](docs/ANDROID_CRAFT_2026-11-07.md); captures:
 
 #### Added
 
+- **Public encrypted-DNS provider names are answered locally.** The DNS filter
+  now returns NXDOMAIN for the reviewed provider names Android already guards —
+  Google, Cloudflare, Quad9, OpenDNS, AdGuard, NextDNS, Mullvad, Control D,
+  CleanBrowsing, the Firefox canary and `resolver.arpa` — before the person's
+  own allowance, so a saved site cannot turn a DoH endpoint into the route
+  around Hisn. The Swift list is checked against the Android list by a new
+  Python parity test. Clients with a hard-coded bootstrap address or an
+  IP-literal endpoint still bypass a DNS-only filter; that limit is unchanged.
 - **The Safari scanner hides a whole social post.** `content/social-media.css`
   now ships in the Hisn Text web extension as a second, host-scoped
   `content_scripts` entry — Instagram, Facebook, Reddit, TikTok, Threads,
