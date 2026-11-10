@@ -38,7 +38,8 @@ JBR 25 and the repository's own runners.
 | `./test.sh ios` | Pass; 271 tests in the simulator |
 | `./test.sh browser` | Pass after the settings harness waits for the painted state and the asynchronous import reply |
 | `android/test-core.sh` (JDK 25) | Pass; every core class, including the previously unrun `VisualRuntimeDeadlineTest`, plus the seed and corpus checks |
-| `./gradlew assembleDebug assembleDebugAndroidTest lintDebug assembleRelease` at 1.6.0/43 | Pass; unsigned release APK |
+| `./gradlew assembleDebug assembleDebugAndroidTest lintDebug assembleRelease` at 1.6.0/43 | Pass; unsigned release APK (versionCode 43 / versionName 1.6.0) |
+| Clean extraction of HEAD | `sh android/test-core.sh`, `./test.sh python seed` and `:app:assembleDebug` pass with no untracked file |
 
 Not verified: a physical Android phone, an entitled iPhone/iPad, a signed or
 notarized Mac build, an installed Mac filter, a Play upload, a Chrome Web Store
