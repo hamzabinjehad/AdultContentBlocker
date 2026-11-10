@@ -87,6 +87,19 @@ bump without an entry here is an unfinished release.
 - `./test.sh browser` passes after the settings harness waits for the painted
   state and the asynchronous import reply.
 
+#### Added — IPv6 UDP DNS through the tunnel
+
+- **The DNS-only VPN now carries IPv6 UDP queries as well as IPv4.** The tunnel
+  advertises `fd00:111::2` as an IPv6 DNS server and routes it; `Ipv6DnsPacket`
+  validates the IPv6 header, UDP destination, mandatory checksum and MTU, and
+  builds the reply with the addresses swapped. Previously the VPN advertised an
+  IPv6 tunnel address but no IPv6 DNS server, so an IPv6-preferring resolver
+  could bypass Hisn's DNS answer. IPv6 TCP fallback and extension headers remain
+  unsupported and are counted as unsupported, not answered.
+- **IPv6 packet regression tests.** `Ipv6DnsPacketTest` covers extraction, reply
+  addresses, checksum, non-UDP/extension-header rejection, wrong port, corrupt
+  checksum and 20,000 malformed inputs.
+
 #### Fixed — three Franco-Arabic corpus misses
 
 - **`aflam neek` and `film neek` are clear Arabizi evidence.** The two reviewed

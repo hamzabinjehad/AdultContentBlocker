@@ -22,7 +22,8 @@ public enum DnsPacketKind {
                 || packet.length < 20 || packet.length > 1500) return MALFORMED;
         int version = (packet[0] & 255) >>> 4;
         if (version == 6) {
-            // IPv6 has no header checksum. Even a valid IPv6 header is unsupported here.
+            // IPv6 has no header checksum. The UDP tunnel parses IPv6 separately; this classifier
+            // still reports unsupported IPv6 TCP and extension-header forms.
             return packet.length >= 40 && u16(packet, 4) == packet.length - 40
                     ? OTHER_UNSUPPORTED : MALFORMED;
         }

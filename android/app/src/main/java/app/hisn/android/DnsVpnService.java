@@ -38,6 +38,8 @@ import app.hisn.core.HostTermPolicy;
 import app.hisn.core.EncryptedDnsProviders;
 import app.hisn.core.EncryptedDnsResolvers;
 import app.hisn.core.Ipv4DnsPacket;
+import app.hisn.core.Ipv6DnsPacket;
+import app.hisn.core.UdpDnsPacket;
 import app.hisn.core.Ipv4TcpPacket;
 import app.hisn.core.PolicyReceipt;
 import app.hisn.core.TlsDnsTransport;
@@ -112,6 +114,8 @@ public final class DnsVpnService extends VpnService {
     static final String SAFE_SEARCH = "safe_search";
     private static final String RESUME = "resume_after_boot";
     private static final byte[] SERVER = {10, 111, 0, 2};
+    private static final byte[] SERVER6 = {(byte) 0xfd, 0, 0x01, 0x11, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0x02};
     private static final Object CHECK_LOCK = new Object();
     private static DnsVpnService activeService;
     public static volatile ConnectionCheck connectionCheck = idleCheck();
@@ -463,6 +467,7 @@ public final class DnsVpnService extends VpnService {
                 Builder builder = new Builder().setSession(getString(R.string.dns_notification_title))
                         .setMtu(1500).addAddress("10.111.0.1", 32).addAddress("fd00:111::1", 128)
                         .addDnsServer("10.111.0.2").addRoute("10.111.0.2", 32)
+                        .addDnsServer("fd00:111::2").addRoute("fd00:111::2", 128)
                         .allowFamily(OsConstants.AF_INET6);
                 // Apps that hard-code a public encrypted-DNS resolver never ask Hisn's
                 // server. Route those fixed addresses here and drop them in the reader.
@@ -551,7 +556,9 @@ public final class DnsVpnService extends VpnService {
                             ignoredPackets.incrementAndGet();
                             continue;
                         }
-                        Ipv4DnsPacket packet = Ipv4DnsPacket.parse(raw, SERVER);
+                        UdpDnsPacket packet = (raw[0] & 0xf0) == 0x60
+                                ? Ipv6DnsPacket.parse(raw, SERVER6)
+                                : Ipv4DnsPacket.parse(raw, SERVER);
                         if (packet == null) {
                             Ipv4TcpPacket tcpPacket = Ipv4TcpPacket.parse(raw, SERVER);
                             if (tcpPacket != null) {
@@ -887,21 +894,21 @@ public final class DnsVpnService extends VpnService {
             }
         }
 
-        void handle(Ipv4DnsPacket packet, DnsExchange exchange, DnsPolicy policy, OutputStream output) {
+        void handle(UdpDnsPacket packet, DnsExchange exchange, DnsPolicy policy, OutputStream output) {
             final long requestEpoch;
             synchronized (CHECK_LOCK) {
                 if (closed || session != this || activeService != DnsVpnService.this) return;
                 requestEpoch = networkEpoch;
             }
             try {
-                DnsExchange.Resolution resolution = exchange.resolveDetailed(packet.dns);
+                DnsExchange.Resolution resolution = exchange.resolveDetailed(packet.getDns());
                 synchronized (CHECK_LOCK) {
                     if (requestEpoch != networkEpoch) throw new IOException("DNS connection invalidated");
                 }
                 byte[] payload = resolution.answer;
-                boolean truncated = payload.length > policy.udpResponseLimit(packet.dns);
+                boolean truncated = payload.length > policy.udpResponseLimit(packet.getDns());
                 if (truncated) {
-                    payload = policy.truncatedResponse(packet.dns);
+                    payload = policy.truncatedResponse(packet.getDns());
                 }
                 byte[] response = packet.response(payload);
                 synchronized (outputLock) {
@@ -936,8 +943,8 @@ public final class DnsVpnService extends VpnService {
                             : "IO";
         }
 
-        private void sendUdpFailure(Ipv4DnsPacket packet, DnsPolicy policy, OutputStream output) {
-            byte[] error = policy.failureResponse(packet.dns);
+        private void sendUdpFailure(UdpDnsPacket packet, DnsPolicy policy, OutputStream output) {
+            byte[] error = policy.failureResponse(packet.getDns());
             if (error == null) return;
             try {
                 synchronized (outputLock) {

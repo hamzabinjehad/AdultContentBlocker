@@ -74,6 +74,10 @@ would trade a real false positive for one challenge row.
 - **No phone, visual-accuracy or battery claim.** The image layer keeps its
   1.4.0 native runtime and the same thresholds; no adult-positive benchmark was
   added.
+- **IPv6 DNS is UDP-only and unverified on a phone.** The tunnel advertises
+  `fd00:111::2`, routes it and carries IPv6 UDP queries; IPv6 TCP fallback and
+  IPv6 extension headers are still unsupported. No IPv4/IPv6 network transition
+  has run on a phone.
 - **The terms update has no phone run.** The signed fixture generation proves
   the install path on an emulator, but no real phone or network download has
   exercised it.
