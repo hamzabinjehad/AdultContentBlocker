@@ -6,8 +6,8 @@ limits, built-in adult-text checks and sampled image/video checks, an in-app
 protection lock, an optional legacy-admin confirmation step, an opt-in
 device-owner uninstall guard with an optional managed lockdown, and a background
 layer-health watchdog. The interface follows the system light/dark appearance,
-uses bottom navigation for Protection, Rules and Guide, and supports Arabic and
-English.
+uses bottom navigation for Protection, Rules and Settings, and supports Arabic
+and English.
 
 1.0.0 was the first signed direct-sideload release. 1.1.0 adds a first-run
 welcome, a voluntary pause action, and today's usage in the daily-limit editor;
@@ -47,7 +47,75 @@ an opt-in device-owner preview; the ordinary install remains removable, and
 actual blocked-uninstall and restriction acceptance needs a disposable
 provisioned device.
 
+## 1.2.3: the screen is read off the main thread
+
+The accessibility tree walk moved off the service's main thread onto one daemon
+scanner thread, so a large feed no longer stalls the guard or the app being
+read. A selected app's own accessibility event is matched first, transiently:
+a promotional label such as **Watch free porn** blocks immediately, while a
+bare **Porn** label still waits for the full pass that can see protective
+context elsewhere; only the selected window in use may act before the walk, so
+an event from a window the person already left falls back to it. The walk now
+reads 1,024 nodes (the old budget was 512),
+checks a partial match every 64 nodes and can stop early; a static screen is
+still reread every three seconds. A generation token discards a walk whose
+screen changed, and a 20-second watchdog replaces a scanner that stops
+reporting instead of leaving the text layer silent.
+
+The image layer keeps its WebView and model warm while the screen is on, with a
+two-minute screen-off grace; captures at the model's 224 px input edge; gives a
+frame 5 s; and backs off 1 s, 2 s then 4 s on a window Android refuses to
+capture. A window change clears the backoff and the sampling interval. The
+debug status reports the selected backend, frame edge and capture, inference
+and sample timings.
+
+`sh test-core.sh` passes every core suite, including the new `LabelScan` case
+for the 1,024-node budget and the updated `VisualDuty` grace. `assembleDebug`,
+`assembleDebugAndroidTest` and `lintDebug` (0 errors) pass, and
+`CoreDeviceTestRunner` passes on the API 36 emulator. The live fixture driver's
+`stress` case — 700 labels with the word at 650 — blocked on the same emulator
+through the tree scan. No 1.2.3 phone run, device benchmark or adult-accuracy
+claim is made. The signed Play APK/AAB and direct APK pass `check-release.py`
+and `apksigner`. Details and limits:
+[the 1.2.3 record](../docs/ANDROID_1.2.3.md).
+
+## Social apps shortcut (2026-11-10)
+
+The app chooser has a **Social apps** action that ticks the installed X,
+Instagram, Facebook, Reddit, TikTok (both package names), Threads, Bluesky,
+LinkedIn, Pinterest, Tumblr and Snapchat packages. It edits only the ordinary
+chosen-apps list, so it turns on whichever response the person already chose
+for those apps — the whole-app block, or text and visual inspection — and it
+respects the list limit. `core/SocialApps.java` holds the named list;
+`SocialAppsTest` pins installed-only selection, stable order, idempotence, the
+limit and the package-name contract.
+
+Android's inspection unit is the app window, not a post. `VisualGuard` samples
+one frame and a positive adult verdict leaves the app. That is deliberately
+stronger than hiding a single post, and it is what a native feed can support
+without a localised adult region. A post-level response on Android would need
+region localisation and would be a weaker action, so it is not implemented;
+the shortcut is how the existing whole-app guard reaches social media.
+
+## Craft pass (2026-11-07, on the 1.2.3 tree)
+
+The three tabs now use the Mac's warm-paper and ink language: a 2 dp rule, a
+tracked page line, one serif verdict, and a white coverage ledger with a state
+dot per layer. The Protection page has one next action, and when DNS is that
+action the DNS card owns the only filled button. Rules opens with twelve named
+site chips that write the ordinary blocked-domain list, so a chip is not a
+category and a protection lock freezes it like any other rule. The block page
+focuses on a breath first, keeps the way out visible, and reveals the reminder
+and four needs only after the third breath. The welcome seal, the settings
+icons and the direct-build shield page follow the same surface.
+
+No enforcement path, permission, consent text, stored field or version changed.
+The signed 1.2.3 artifacts predate the pass. Record:
+[the craft pass](../docs/ANDROID_CRAFT_2026-11-07.md); captures:
+[design/android-craft-2026-11-07](../design/android-craft-2026-11-07/README.md).
+
 ## 1.2.2 the unlisted-host guard
+
 
 Two on-device rails now sit in front of the seed list in the DNS policy, after
 the person's saved domain allowance:

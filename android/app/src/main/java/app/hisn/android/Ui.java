@@ -1,11 +1,8 @@
 package app.hisn.android;
 
 import android.content.Context;
-import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
 import android.graphics.Typeface;
-import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.text.SpannableString;
@@ -62,6 +59,11 @@ final class Ui {
         return Typeface.create("sans-serif-medium", Typeface.NORMAL);
     }
 
+    /** One editorial statement per page; Android's serif face is Noto Serif (and a Naskh face in Arabic). */
+    static Typeface display() {
+        return Typeface.create("serif", Typeface.NORMAL);
+    }
+
     // ---------------------------------------------------------------- surfaces
 
     static LinearLayout card(Context context) {
@@ -71,7 +73,8 @@ final class Ui {
         // Rows and switches carry their own vertical padding, so the card only adds a little:
         // the list stays dense without the rows colliding with the rounded edge.
         card.setPadding(dp(context, 18), dp(context, 8), dp(context, 18), dp(context, 8));
-        card.setElevation(dp(context, 1));
+        // Paper and a hairline, not a floating tile: the Mac surface uses the same rule.
+        card.setElevation(0);
         return card;
     }
 
@@ -98,26 +101,46 @@ final class Ui {
     static TextView sectionLabel(Context context, CharSequence text) {
         TextView label = new TextView(context);
         label.setText(text);
-        label.setTextSize(12.5f);
-        label.setTextColor(color(context, R.color.text_secondary));
+        label.setTextSize(11);
+        label.setTextColor(color(context, R.color.text_tertiary));
         label.setTypeface(medium());
-        label.setLetterSpacing(0.06f);
+        label.setAllCaps(true);
+        if (!isRtl(context)) label.setLetterSpacing(0.12f);
         label.setIncludeFontPadding(false);
-        label.setPadding(dp(context, 2), dp(context, 18), dp(context, 2), dp(context, 8));
+        label.setPadding(dp(context, 2), dp(context, 22), dp(context, 2), dp(context, 8));
         heading(label);
         return label;
     }
 
-    /** Page heading (larger than a card's section header). */
-    static TextView pageTitle(Context context, CharSequence text) {
+    /** A small tracked line above a page statement; it names the page without a second heading. */
+    static TextView eyebrow(Context context, CharSequence text) {
         TextView view = new TextView(context);
         view.setText(text);
-        view.setTextSize(30);
-        view.setTextColor(color(context, R.color.text_primary));
+        view.setTextSize(11);
+        view.setTextColor(color(context, R.color.accent));
         view.setTypeface(medium());
-        view.setLineSpacing(dp(context, 2), 1f);
+        view.setAllCaps(true);
+        if (!isRtl(context)) view.setLetterSpacing(0.12f);
+        view.setIncludeFontPadding(false);
+        return view;
+    }
+
+    /** The one serif statement a page leads with. */
+    static TextView display(Context context, CharSequence text, float sizeSp) {
+        TextView view = new TextView(context);
+        view.setText(text);
+        view.setTextSize(sizeSp);
+        view.setTextColor(color(context, R.color.text_primary));
+        view.setTypeface(display());
+        view.setIncludeFontPadding(false);
+        view.setLineSpacing(dp(context, 2), 1.04f);
         heading(view);
         return view;
+    }
+
+    /** Page heading for the one older screen that still needs a plain title. */
+    static TextView pageTitle(Context context, CharSequence text) {
+        return display(context, text, 32);
     }
 
     // ---------------------------------------------------------------- text
@@ -209,105 +232,73 @@ final class Ui {
         final LinearLayout root;
         final TextView name;
         final TextView value;
+        final TextView detail;
+        private final View dot;
 
-        LayerTile(LinearLayout root, TextView name, TextView value) {
+        LayerTile(LinearLayout root, TextView name, TextView value, TextView detail, View dot) {
             this.root = root;
             this.name = name;
             this.value = value;
+            this.detail = detail;
+            this.dot = dot;
         }
 
         void setState(CharSequence state, int stateKind) {
-            Context context = root.getContext();
-            int color = stateColor(context, stateKind);
+            int color = stateColor(root.getContext(), stateKind);
             value.setText(state);
             value.setTextColor(color);
-            GradientDrawable background = new GradientDrawable();
-            background.setColor(withAlpha(color, 0.12f));
-            background.setCornerRadius(dp(context, 16));
-            root.setBackground(background);
-            root.setContentDescription(name.getText() + ": " + state);
+            dot.getBackground().setTint(color);
+            describe(state);
+        }
+
+        /** "Checked 2 minutes ago" under the state; null hides the line. */
+        void setDetail(CharSequence text) {
+            boolean shown = text != null && text.length() > 0;
+            detail.setText(shown ? text : "");
+            detail.setVisibility(shown ? View.VISIBLE : View.GONE);
+            describe(value.getText());
+        }
+
+        private void describe(CharSequence state) {
+            CharSequence extra = detail.getVisibility() == View.VISIBLE ? detail.getText() : "";
+            root.setContentDescription(extra.length() == 0
+                    ? name.getText() + ": " + state
+                    : name.getText() + ": " + state + ". " + extra);
         }
     }
 
+    /**
+     * One column of the coverage ledger: a label, a state dot and the state word. It has no card of
+     * its own, so three layers read as one table rather than three coloured chips.
+     */
     static LayerTile layerTile(Context context, CharSequence label, CharSequence state, int stateKind) {
         LinearLayout tile = new LinearLayout(context);
         tile.setOrientation(LinearLayout.VERTICAL);
-        tile.setPadding(dp(context, 12), dp(context, 11), dp(context, 10), dp(context, 11));
+        tile.setPadding(0, 0, 0, 0);
         LinearLayout nameRow = new LinearLayout(context);
         nameRow.setOrientation(LinearLayout.HORIZONTAL);
         nameRow.setGravity(Gravity.CENTER_VERTICAL);
-        nameRow.addView(dot(context, color(context, R.color.text_tertiary), 6));
-        TextView name = text(context, label, 11, R.color.text_secondary);
+        View dot = dot(context, color(context, R.color.accent), 6);
+        nameRow.addView(dot);
+        TextView name = text(context, label, 11, R.color.text_tertiary);
         name.setTypeface(medium());
+        if (!isRtl(context)) name.setLetterSpacing(0.04f);
         LinearLayout.LayoutParams nameParams = new LinearLayout.LayoutParams(0,
                 LinearLayout.LayoutParams.WRAP_CONTENT, 1);
         nameParams.setMarginStart(dp(context, 6));
         nameRow.addView(name, nameParams);
-        TextView value = text(context, state, 15, R.color.text_primary);
+        TextView value = text(context, state, 17, R.color.text_primary);
         value.setTypeface(medium());
-        value.setPadding(0, dp(context, 4), 0, 0);
+        value.setPadding(0, dp(context, 6), 0, 0);
+        TextView detail = text(context, "", 11, R.color.text_tertiary);
+        detail.setPadding(0, dp(context, 2), 0, 0);
+        detail.setVisibility(View.GONE);
         tile.addView(nameRow);
         tile.addView(value);
-        LayerTile layer = new LayerTile(tile, name, value);
+        tile.addView(detail);
+        LayerTile layer = new LayerTile(tile, name, value, detail, dot);
         layer.setState(state, stateKind);
         return layer;
-    }
-
-    /**
-     * The answer to "am I protected?" as one calm shape: concentric rings tinted by state with the
-     * shield at the centre. Drawn rather than asset-based so it follows light, dark and large text.
-     */
-    static final class ShieldView extends View {
-        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        private final Drawable icon;
-        private int kind = OFF;
-        private int stateTint;
-
-        ShieldView(Context context) {
-            super(context);
-            icon = context.getDrawable(R.drawable.ic_shield);
-            stateTint = color(context, R.color.accent);
-            setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        }
-
-        void setState(int stateKind) {
-            if (kind == stateKind) return;
-            // Off still uses the brand accent: the shield is the product mark, while the
-            // tile words and the headline carry the literal state.
-            int next = stateKind == OFF ? color(getContext(), R.color.accent)
-                    : stateColor(getContext(), stateKind);
-            kind = stateKind;
-            stateTint = next;
-            invalidate();
-            if (android.animation.ValueAnimator.areAnimatorsEnabled() && isAttachedToWindow()) {
-                setScaleX(0.94f);
-                setScaleY(0.94f);
-                animate().scaleX(1f).scaleY(1f).setDuration(260).start();
-            }
-        }
-
-        @Override protected void onDraw(Canvas canvas) {
-            super.onDraw(canvas);
-            float cx = getWidth() / 2f, cy = getHeight() / 2f;
-            float outer = Math.min(getWidth(), getHeight()) / 2f - dp(getContext(), 1);
-
-            paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(dp(getContext(), 1));
-            paint.setColor(withAlpha(stateTint, 0.14f));
-            canvas.drawCircle(cx, cy, outer, paint);
-            paint.setColor(withAlpha(stateTint, 0.26f));
-            canvas.drawCircle(cx, cy, outer - dp(getContext(), 9), paint);
-
-            paint.setStyle(Paint.Style.FILL);
-            paint.setColor(withAlpha(stateTint, 0.10f));
-            canvas.drawCircle(cx, cy, outer - dp(getContext(), 18), paint);
-
-            int iconSize = dp(getContext(), 40);
-            icon.setBounds((int) (cx - iconSize / 2f), (int) (cy - iconSize / 2f),
-                    (int) (cx + iconSize / 2f), (int) (cy + iconSize / 2f));
-            icon.setTint(stateTint);
-            icon.draw(canvas);
-        }
     }
 
     // ---------------------------------------------------------------- buttons
@@ -328,6 +319,7 @@ final class Ui {
         button.setAllCaps(false);
         button.setTextSize(15);
         button.setTypeface(medium());
+        if (!isRtl(context)) button.setLetterSpacing(0.01f);
         button.setMinHeight(dp(context, 52));
         button.setMinimumHeight(dp(context, 52));
         button.setMinWidth(0);
@@ -397,6 +389,7 @@ final class Ui {
         /** Keeps the row's spoken label in step with its visible summary. */
         void setSummary(CharSequence text) {
             setTextIfChanged(summary, text);
+            summary.setVisibility(text == null || text.length() == 0 ? View.GONE : View.VISIBLE);
             describe();
         }
 
@@ -435,9 +428,9 @@ final class Ui {
     }
 
     /**
-     * One list row: a line icon, a title, an optional one-line summary and an optional trailing
-     * answer. The icon is drawn at row height rather than inside a filled tile, which keeps the
-     * text column wide and the list calm.
+     * One list row: a quiet icon well, a title, an optional summary and an optional trailing
+     * answer. Empty summaries take no space. Trailing answers wrap within a bounded width so
+     * longer Arabic labels and larger fonts still leave room for the title.
      */
     static SettingRow settingRow(Context context, int iconRes, CharSequence title, CharSequence summary,
             CharSequence value, View.OnClickListener click) {
@@ -445,11 +438,11 @@ final class Ui {
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setBackgroundResource(R.drawable.bg_row);
-        row.setPadding(dp(context, 8), dp(context, 12), dp(context, 8), dp(context, 12));
-        row.setMinimumHeight(dp(context, 54));
+        row.setPadding(dp(context, 2), dp(context, 14), dp(context, 2), dp(context, 14));
+        row.setMinimumHeight(dp(context, 60));
         row.setClickable(true);
         row.setFocusable(true);
-        row.addView(icon(context, iconRes, R.color.accent, 22));
+        row.addView(iconInTile(context, iconRes, R.color.accent, 34, 19));
         LinearLayout column = new LinearLayout(context);
         column.setOrientation(LinearLayout.VERTICAL);
         TextView name = strong(context, title);
@@ -468,7 +461,8 @@ final class Ui {
             trailing = text(context, value, 13.5f, R.color.text_secondary);
             trailing.setTypeface(medium());
             trailing.setGravity(Gravity.END);
-            trailing.setMaxLines(1);
+            trailing.setMaxWidth(dp(context, 108));
+            trailing.setMaxLines(2);
             trailing.setEllipsize(android.text.TextUtils.TruncateAt.END);
             LinearLayout.LayoutParams valueParams = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -529,6 +523,47 @@ final class Ui {
         StatusPill holder = new StatusPill(pill, label, dot);
         holder.setState(text, stateKind);
         return holder;
+    }
+
+    /** A short noun that is tapped on or off; used for named site presets and reflection choices. */
+    static final class Chip {
+        final TextView root;
+
+        Chip(TextView root) {
+            this.root = root;
+        }
+
+        void setSelected(boolean on) {
+            root.setBackgroundResource(on ? R.drawable.bg_chip_selected : R.drawable.bg_chip);
+            root.setTextColor(color(root.getContext(), on ? R.color.on_accent : R.color.text_primary));
+            root.setSelected(on);
+        }
+
+        void setEnabled(boolean enabled) {
+            root.setEnabled(enabled);
+            root.setClickable(enabled);
+            root.setFocusable(enabled);
+            // A frozen chip must stay readable; 0.58 loses the contrast of the selected fill.
+            root.setAlpha(enabled ? 1f : 0.72f);
+        }
+    }
+
+    static Chip chip(Context context, CharSequence label) {
+        TextView view = new TextView(context);
+        view.setText(label);
+        view.setTextSize(13.5f);
+        view.setTypeface(medium());
+        view.setGravity(Gravity.CENTER);
+        view.setMinHeight(dp(context, 48));
+        view.setPadding(dp(context, 16), dp(context, 10), dp(context, 16), dp(context, 10));
+        view.setClickable(true);
+        view.setFocusable(true);
+        view.setBackgroundResource(R.drawable.bg_chip);
+        view.setTextColor(color(context, R.color.text_primary));
+        view.setIncludeFontPadding(false);
+        Chip chip = new Chip(view);
+        chip.setSelected(false);
+        return chip;
     }
 
     /** A switch with its explanation as a second, smaller line in the same accessible label. */
@@ -696,16 +731,26 @@ final class Ui {
         return nightMode(context) == android.content.res.Configuration.UI_MODE_NIGHT_YES;
     }
 
+    /** Tracking breaks Arabic joins, so letter-spaced labels are Latin-only. */
+    static boolean isRtl(Context context) {
+        return context.getResources().getConfiguration().getLayoutDirection()
+                == View.LAYOUT_DIRECTION_RTL;
+    }
+
     /** Colour for the clock/battery area: dark icons on the light theme, light icons on the dark. */
     static void applySystemBarIcons(android.view.Window window, Context context) {
         boolean lightBars = !isNight(context);
         if (Build.VERSION.SDK_INT >= 30) {
-            android.view.WindowInsetsController controller = window.getInsetsController();
-            if (controller != null) {
-                int mask = android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
-                        | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;
-                controller.setSystemBarsAppearance(lightBars ? mask : 0, mask);
-            }
+            // Apply after decor attachment; the framework can replace the initial appearance
+            // while attaching an edge-to-edge window, leaving white icons on the light canvas.
+            window.getDecorView().post(() -> {
+                android.view.WindowInsetsController controller = window.getInsetsController();
+                if (controller != null) {
+                    int mask = android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                            | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;
+                    controller.setSystemBarsAppearance(lightBars ? mask : 0, mask);
+                }
+            });
         } else {
             int flags = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
             flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;

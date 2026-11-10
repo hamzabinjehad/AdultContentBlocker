@@ -15,12 +15,49 @@ public final class InspectionHealth {
     }
 
     private boolean incomplete;
+    private long completedAt = -1;
+    private PolicyReceipt receipt;
 
     public synchronized void record(Outcome outcome) {
+        record(outcome, -1);
+    }
+
+    /**
+     * Record a scan result and, when the caller has a monotonic clock, when the last
+     * complete scan finished. A later incomplete scan keeps that receipt; it is still
+     * true that the layer completed one, while {@link #incomplete()} carries the failure.
+     */
+    public synchronized void record(Outcome outcome, long nowMillis) {
         if (outcome == null) throw new IllegalArgumentException("Missing inspection outcome");
-        if (outcome == Outcome.COMPLETE) incomplete = false;
-        else if (outcome == Outcome.INCOMPLETE) incomplete = true;
+        if (outcome == Outcome.COMPLETE) {
+            incomplete = false;
+            if (nowMillis >= 0) completedAt = nowMillis;
+        } else if (outcome == Outcome.INCOMPLETE) {
+            incomplete = true;
+        }
+    }
+
+    /**
+     * Record a completed inspection under the policy, session and window it actually checked.
+     * A failed outcome keeps the last passed receipt but is visible through {@link #incomplete()}.
+     */
+    public synchronized void record(Outcome outcome, PolicyReceipt receipt) {
+        if (outcome == null) throw new IllegalArgumentException("Missing inspection outcome");
+        if (outcome == Outcome.COMPLETE) {
+            incomplete = false;
+            if (receipt != null) this.receipt = receipt;
+        } else if (outcome == Outcome.INCOMPLETE) {
+            incomplete = true;
+        }
     }
 
     public synchronized boolean incomplete() { return incomplete; }
+
+    /** The last completed inspection's receipt, or null when none has completed in this service. */
+    public synchronized PolicyReceipt receipt() { return receipt; }
+
+    /** When the last complete inspection finished, or -1 when none has in this service. */
+    public synchronized long completedAt() {
+        return receipt != null ? receipt.completedAt : completedAt;
+    }
 }

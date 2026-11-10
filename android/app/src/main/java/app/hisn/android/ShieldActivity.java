@@ -14,7 +14,6 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.WindowInsets;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
@@ -78,30 +77,33 @@ public final class ShieldActivity extends Activity {
         scroll.setBackgroundColor(Ui.color(this, R.color.background));
         LinearLayout column = new LinearLayout(this);
         column.setOrientation(LinearLayout.VERTICAL);
-        column.setGravity(Gravity.CENTER_HORIZONTAL);
+        column.setGravity(Gravity.START);
         column.setPadding(side, top, side, bottom);
         scroll.addView(column, new ScrollView.LayoutParams(
                 ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT));
 
-        ImageView mark = Ui.iconInTile(this, R.drawable.ic_shield, R.color.accent, 68, 40);
-        LinearLayout.LayoutParams markParams = (LinearLayout.LayoutParams) mark.getLayoutParams();
-        markParams.gravity = Gravity.CENTER_HORIZONTAL;
-        column.addView(mark);
+        View rule = new View(this);
+        rule.setBackgroundColor(Ui.color(this, R.color.accent));
+        column.addView(rule, new LinearLayout.LayoutParams(Ui.dp(this, 44), Ui.dp(this, 2)));
 
-        TextView title = Ui.text(this, getString(R.string.shield_title), 25, R.color.text_primary);
-        title.setTypeface(Ui.medium());
-        title.setGravity(Gravity.CENTER);
-        title.setPadding(0, Ui.dp(this, 18), 0, 0);
-        Ui.heading(title);
+        TextView eyebrow = Ui.eyebrow(this, getString(R.string.app_name));
+        LinearLayout.LayoutParams eyebrowParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        eyebrowParams.topMargin = Ui.dp(this, 14);
+        column.addView(eyebrow, eyebrowParams);
+
+        TextView title = Ui.display(this, getString(R.string.shield_title), 31);
+        title.setGravity(Gravity.START);
+        title.setPadding(0, Ui.dp(this, 8), 0, 0);
         column.addView(title);
 
-        TextView body = Ui.text(this, getString(bodyFor(guard)), 16, R.color.text_secondary);
-        body.setGravity(Gravity.CENTER);
+        TextView body = Ui.text(this, getString(bodyFor(guard)), 15, R.color.text_secondary);
+        body.setGravity(Gravity.START);
+        body.setLineSpacing(Ui.dp(this, 4), 1.18f);
         body.setPadding(0, Ui.dp(this, 10), 0, 0);
         column.addView(body);
 
-        LinearLayout card = Ui.card(this);
-        card.setGravity(Gravity.CENTER_HORIZONTAL);
+        LinearLayout card = Ui.softPanel(this);
         card.setPadding(Ui.dp(this, 20), Ui.dp(this, 18), Ui.dp(this, 20), Ui.dp(this, 20));
         column.addView(card, Ui.margins(this, 22, 0));
 

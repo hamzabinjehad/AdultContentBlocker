@@ -43,6 +43,8 @@ public final class CoreDeviceTestRunner extends Instrumentation {
             testAdultPolicy();
             testAdultCommitment();
             testVisualCommitment();
+            testPolicyRevision();
+            testCommitmentMutations();
             testTimeLimits();
             testUninstallGuard();
             testLegacyEmptyCommitment();
@@ -56,7 +58,7 @@ public final class CoreDeviceTestRunner extends Instrumentation {
             if (!sample.isPartial() || sample.text().length() > 32768)
                 throw new AssertionError("Inspection budget failed");
             results.putString("stream", "\nPASS: verified APK seed loaded " + seed.domainCount
-                    + " domains; Arabic matching, boundaries, local DNS block, saved rules, Unicode persistence, long-text sampling, verified adult terms, visual settings, daily time limits, commitment, damaged-settings and invalid-settings, uninstall-guard, layer-watch expectation and seed-age checks passed. No VPN was enabled; no accessibility service, admin or device-owner policy was changed.\n");
+                    + " domains; Arabic matching, boundaries, local DNS block, saved rules, Unicode persistence, long-text sampling, verified adult terms, visual settings, daily time limits, commitment, policy-version and copy-recovery, damaged-settings and invalid-settings, uninstall-guard, layer-watch expectation and seed-age checks passed. No VPN was enabled; no accessibility service, admin or device-owner policy was changed.\n");
             finish(Activity.RESULT_OK, results);
         } catch (Throwable failure) {
             StringBuilder detail = new StringBuilder();
@@ -91,6 +93,79 @@ public final class CoreDeviceTestRunner extends Instrumentation {
             if (!restored.visualEnabled || !restored.scannedApps.equals(apps))
                 throw new AssertionError("Rejected update damaged visual rules");
         } finally { forget(context, name); }
+    }
+
+    /** A policy version advances only for an effective change, survives reload/copy recovery,
+     *  and is not moved by an identical save or by starting a commitment. */
+    private void testPolicyRevision() {
+        String name = "hisn_revision_test_" + java.util.UUID.randomUUID();
+        android.content.Context context = getTargetContext();
+        try {
+            PolicyStore store = new PolicyStore(context, name);
+            if (store.policyRevision() != 0) throw new AssertionError("Fresh policy has a version");
+            store.update("first.example", "", Collections.emptySet(), Collections.emptySet());
+            long first = store.policyRevision();
+            if (first != 1) throw new AssertionError("First change did not create version 1");
+            store.update("first.example", "", Collections.emptySet(), Collections.emptySet());
+            if (store.policyRevision() != first) throw new AssertionError("Identical save advanced the version");
+            store.update("second.example", "", Collections.emptySet(), Collections.emptySet());
+            long second = store.policyRevision();
+            if (second != first + 1) throw new AssertionError("Changed list did not advance the version");
+            store.startCommitment(1);
+            if (store.policyRevision() != second) throw new AssertionError("Commitment start advanced the version");
+            store.updateUninstallLock(true);
+            if (store.policyRevision() != second)
+                throw new AssertionError("Removal choice changed the layer policy version");
+            PolicyStore reloaded = new PolicyStore(context, name);
+            if (reloaded.policyRevision() != second || !reloaded.uninstallLock())
+                throw new AssertionError("Version did not survive reload");
+            // Lose the main file; the intact copy must carry the same version and rules.
+            context.getSharedPreferences(name, android.content.Context.MODE_PRIVATE).edit().clear().commit();
+            PolicyStore recovered = new PolicyStore(context, name);
+            if (recovered.policyRevision() != second
+                    || !recovered.snapshot().domains.blockedRules().contains("second.example"))
+                throw new AssertionError("Copy recovery lost the policy version");
+        } finally { forget(context, name); }
+    }
+
+    /** Every saved-rule editor is refused at the store boundary during a commitment,
+     *  and a refused edit leaves both the rules and the policy version intact. */
+    private void testCommitmentMutations() {
+        String name = "hisn_mutation_test_" + java.util.UUID.randomUUID();
+        android.content.Context context = getTargetContext();
+        try {
+            PolicyStore store = new PolicyStore(context, name);
+            java.util.Set<String> blocked = java.util.Collections.singleton("com.example.blocked");
+            java.util.Set<String> scanned = java.util.Collections.singleton("com.example.scanned");
+            store.update("blocked.example", "word", blocked, scanned, true);
+            store.updateVisual(true);
+            store.updateShortVideo(true);
+            store.updateSchedule(new app.hisn.core.DailyAppSchedule(true, 0, 1380,
+                    java.util.Collections.emptySet(), true));
+            store.updateTimeLimits(new AppTimeLimit(java.util.Collections.singletonMap(
+                    "com.example.scanned", 30)));
+            store.startCommitment(1);
+            final long version = store.policyRevision();
+            refused(() -> store.update("", "", java.util.Collections.emptySet(),
+                    java.util.Collections.emptySet(), false), "domain/word/app removal");
+            refused(() -> store.updateVisual(false), "visual switch off");
+            refused(() -> store.updateShortVideo(false), "short-video switch off");
+            refused(() -> store.updateSchedule(app.hisn.core.DailyAppSchedule.disabled()), "schedule off");
+            refused(() -> store.updateTimeLimits(AppTimeLimit.none()), "time limits cleared");
+            refused(() -> store.updateFromGuardian("", "", java.util.Collections.emptySet(),
+                    java.util.Collections.emptySet()), "guardian weakening");
+            if (store.policyRevision() != version) throw new AssertionError("Refused edit moved the policy version");
+            PolicyStore.Snapshot reloaded = new PolicyStore(context, name).snapshot();
+            if (!reloaded.adultWordsEnabled || !reloaded.visualEnabled || !reloaded.shortVideoEnabled
+                    || !reloaded.schedule.enabled || !reloaded.timeLimits.configured()
+                    || !reloaded.blockedApps.equals(blocked) || !reloaded.scannedApps.equals(scanned))
+                throw new AssertionError("Refused edits damaged the saved rules");
+        } finally { forget(context, name); }
+    }
+
+    private static void refused(Runnable action, String step) {
+        try { action.run(); throw new AssertionError("Commitment allowed " + step); }
+        catch (IllegalStateException expected) { }
     }
 
     /** Daily time limits survive a sealed-store reload, keep working across other

@@ -50,6 +50,7 @@ public final class SavedSettingsTest {
         SavedSettings rules = SavedSettings.rules(intact.rules);
         check(rules.domains.equals("blocked.example") && rules.words.equals("word") && rules.adultWords && !rules.visual
                 && rules.apps.equals(set("com.example.one")) && rules.scans.equals(set("com.example.scan")), "Rules read back");
+        check(rules.revision == 0, "Legacy settings read as version zero");
         check(rules.managedLockdown, "Managed lockdown read back");
         check(!rules.managedStrict, "Strict lockdown defaulted on");
         check(!rules.suspendBlocked, "Blocked-app suspension defaulted on");
@@ -86,6 +87,19 @@ public final class SavedSettingsTest {
         check(SavedSettings.rules(allowValues).schedule.allApps
                 && SavedSettings.rules(allowValues).schedule.apps.equals(set("com.example.keep")),
                 "Allowlist schedule read back");
+        Map<String, Object> versioned = new HashMap<>(good);
+        SavedSettings.withRevision(versioned, 3);
+        check(SavedSettings.rules(versioned).revision == 3, "Committed revision read back");
+        check(SettingsIntegrity.intact(versioned), "Revision is covered by the seal");
+        Map<String, Object> movedVersion = new HashMap<>(versioned);
+        movedVersion.put(SavedSettings.REVISION, 4L);
+        check(!SettingsIntegrity.intact(movedVersion), "Changed revision breaks the seal");
+        Map<String, Object> textRevision = new HashMap<>(good);
+        textRevision.put(SavedSettings.REVISION, "3");
+        textRevision.put(SettingsIntegrity.SEAL, SettingsIntegrity.seal(textRevision));
+        refused(textRevision, none, "Revision saved as text");
+        try { SavedSettings.withRevision(new HashMap<>(good), -1); throw new AssertionError("Negative revision accepted"); }
+        catch (IllegalArgumentException expected) { }
         check(intact.clock.remainingAtCheckpoint == 3600000 && intact.clock.elapsedAtCheckpoint == 40000
                 && intact.clock.bootAtCheckpoint == BOOT && !intact.unknown && !intact.restored, "Commitment read back");
         SavedSettings.Load flagged = load(saved(1000, true, true, "com.example.one"), none, true);

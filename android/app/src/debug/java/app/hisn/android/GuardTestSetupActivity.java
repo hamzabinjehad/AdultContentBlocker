@@ -23,6 +23,8 @@ public final class GuardTestSetupActivity extends Activity {
                         + " SCANS " + TextGuardService.inspectedScreens + " WORD_INTERVENTIONS " + TextGuardService.wordInterventions
                         + " COOLDOWN_ENFORCEMENTS " + TextGuardService.cooldownEnforcements
                         + " PERIODIC_INSPECTIONS " + TextGuardService.periodicInspections
+                        + " LAST_SCAN_MS " + TextGuardService.lastInspectionMillis
+                        + " FAST_TEXT " + TextGuardService.fastTextInterventions
                         + " SCHEDULE_INTERVENTIONS " + TextGuardService.scheduleInterventions
                         + " SCHEDULE_ENABLED " + schedule.enabled + " SCHEDULE_START " + schedule.startMinute
                         + " SCHEDULE_END " + schedule.endMinute + " SCHEDULE_APP_COUNT " + schedule.apps.size()

@@ -97,7 +97,11 @@ def main():
                 break
         require(normal["SAMPLES"] > initial["SAMPLES"], "No actual screenshot/model sample completed: " + json.dumps(normal))
         require(normal["INTERVENTIONS"] == initial["INTERVENTIONS"], "Benign synthetic image was restricted")
-        passed({"check": "actual capture and benign model inference", "samples": normal["SAMPLES"] - initial["SAMPLES"]})
+        require(normal.get("FRAME_EDGE") == "224", "Capture did not use the packaged 224 px edge: " + json.dumps(normal))
+        require(normal.get("BACKEND") in ("webgl", "wasm", "cpu"),
+                "Classifier backend was not reported as running: " + json.dumps(normal))
+        passed({"check": "actual capture and benign model inference", "samples": normal["SAMPLES"] - initial["SAMPLES"],
+                "backend": normal.get("BACKEND"), "frame_edge": normal.get("FRAME_EDGE")})
 
         moving = scene("visual-video", 8)
         require(moving["SAMPLES"] > normal["SAMPLES"], "Moving synthetic frames were not sampled")
@@ -145,9 +149,13 @@ def main():
         passed({"check": "one-shot expires and the hold ends; ordinary capture recovers"})
 
         adb("shell", "input", "keyevent", "3")
-        time.sleep(6)
+        # One request may have started while the fixture was still visible; wait for it to finish
+        # before taking the baseline, then require no new request in the following seconds.
+        time.sleep(2)
+        settled = control("status")
+        time.sleep(4)
         left = control("status")
-        require(left["REQUESTS"] == resumed["REQUESTS"], "Capture continued outside selected fixture")
+        require(left["REQUESTS"] == settled["REQUESTS"], "Capture continued outside selected fixture")
         passed({"check": "leaving selected app stops capture"})
 
         control("stop")
