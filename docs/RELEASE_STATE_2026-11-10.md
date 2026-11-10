@@ -12,7 +12,7 @@ page explains the gap between that declaration and the code.
 | --- | --- | --- | --- |
 | Browser extension | 1.5.3 | Media checks on by default, whole-post hiding on X and the main social feeds, the offscreen sender fix, lazy model start, and a new `offscreen` permission | Version bump for the new permission, packaged zip, store review, real-media accuracy check |
 | Mac | 1.1.18 / 30 | Allocation-free filter path, a missed heartbeat no longer closes a browser, bounded list downloads | Signed, notarized build; installed-filter acceptance |
-| iPhone & iPad | 1.8.0 / 14 | Safari social stylesheet in the text extension; encrypted-DNS provider names, CNAME/DNAME/SVCB alias checks and signed list generations in the DNS filter | Signed device; DNS extension and install acceptance |
+| iPhone & iPad | 1.8.0 / 14 | Safari social stylesheet in the text extension; encrypted-DNS provider names, CNAME/DNAME/SVCB alias checks and signed list generations in the DNS filter and six Safari blockers | Signed device; DNS extension and install acceptance |
 | Android | 1.6.0 / 43 | The 1.5.3 feature set, packages 2 and 3, native TFLite, signed list updates whose generations carry domains and terms together, receipts and readiness, rule tools, person blur, and the ported 1.5.4 reconnect lifecycle | Phone run; signed 1.6.0 artifact; the post-reboot dashboard state is unverified |
 
 The Android tree is now **1.6.0 / 43**, a development candidate: the 1.5.3
@@ -35,7 +35,7 @@ JBR 25 and the repository's own runners.
 | `./test.sh extension` | Pass; JavaScript suites, package check and evaluation corpus |
 | `./test.sh release` | Pass; 33 tests |
 | `./test.sh macos` | Pass; 600 tests, 851 localized strings |
-| `./test.sh ios` | Pass; 279 tests in the simulator |
+| `./test.sh ios` | Pass; 281 tests in the simulator |
 | `./test.sh browser` | Pass after the settings harness waits for the painted state and the asynchronous import reply |
 | `android/test-core.sh` (JDK 25) | Pass; every core class, including the previously unrun `VisualRuntimeDeadlineTest`, the signed seed terms artifact, plus the string, notice and corpus checks |
 | `./gradlew assembleDebug assembleDebugAndroidTest lintDebug assembleRelease` at 1.6.0/43 | Pass; unsigned release APK (versionCode 43 / versionName 1.6.0) |
@@ -90,8 +90,9 @@ network-transition claim is made here.
 - Added the iOS signed generation path: the app fetches and verifies a
   published generation, stores it in the App Group behind a monotonic pointer,
   and the DNS proxy loads it with the bundle as fallback and watches the pointer
-  for a live engine swap. Simulator-tested with synthetic generations; no device
-  or real download.
+  for a live engine swap. The six Safari blockers now read their shards from the
+  same generation and fall back to their signed bundle rules. Simulator-tested
+  with synthetic generations; no device or real download.
 - Fixed the extension visual layer in real Chrome: the offscreen engine now
   accepts the service worker's undefined `sender.url`, the model loads on first
   media instead of worker start, and a real-browser harness drives

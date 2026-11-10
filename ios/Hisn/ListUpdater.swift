@@ -15,12 +15,16 @@ enum ListUpdater {
     private static let versionKey = "hisn.list.version"
     private static let lastErrorKey = "hisn.list.error"
 
-    static func checkIfDue() async {
+    /// Returns the generation version when a new one was installed, nil when
+    /// nothing changed or the check failed. The app uses that to reload the
+    /// Safari blockers against the same generation.
+    @discardableResult
+    static func checkIfDue() async -> Int? {
         let defaults = UserDefaults.standard
         let now = Date().timeIntervalSince1970
-        if now - defaults.double(forKey: lastCheckKey) < interval { return }
+        if now - defaults.double(forKey: lastCheckKey) < interval { return nil }
         defaults.set(now, forKey: lastCheckKey)
-        guard ListGenerationStore.defaultRoot() != nil else { return }
+        guard ListGenerationStore.defaultRoot() != nil else { return nil }
         do {
             let manifest = try await fetch("manifest.json", limit: ListGeneration.maximumManifestBytes)
             let signature = String(data: try await fetch("manifest.json.sig", limit: 512),
@@ -32,10 +36,12 @@ enum ListUpdater {
             let version = try ListGenerationStore.install(verified)
             defaults.set(version, forKey: versionKey)
             defaults.removeObject(forKey: lastErrorKey)
+            return version
         } catch {
             // Keep the previous generation and report only a coarse reason; no
             // queried name, response body or browsing material is stored.
             defaults.set(String(describing: type(of: error)), forKey: lastErrorKey)
+            return nil
         }
     }
 

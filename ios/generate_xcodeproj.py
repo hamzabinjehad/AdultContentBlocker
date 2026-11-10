@@ -54,6 +54,7 @@ def main(safari_only: bool = False, domain_only: bool = False,
               "Shared/PauseRule.swift", "Shared/DNSMessage.swift", "Shared/DomainIndex.swift",
               "Shared/HostTermPolicy.swift", "Shared/EncryptedDNSProviders.swift", "Shared/DNSReplyGuard.swift",
               "Shared/ListGeneration.swift", "Shared/ListGenerationStore.swift",
+              "Shared/SafariGenerationRules.swift",
               "Shared/DNSFilterEngine.swift", "Shared/DNSUpstream.swift",
               "../shared/apple/TextNormalizer.swift", "../shared/apple/Punycode.swift",
               "../shared/apple/AdultTldGuard.swift",
@@ -68,6 +69,7 @@ def main(safari_only: bool = False, domain_only: bool = False,
                 "HisnTests/QuietHoursTests.swift", "HisnTests/DNSFilterTests.swift",
                 "HisnTests/ShieldTextPolicyTests.swift", "HisnTests/UIRenderTests.swift",
                 "HisnTests/ListGenerationTests.swift",
+                "HisnTests/SafariGenerationRulesTests.swift",
                 "../shared/tests/MirroredRuleStoreTests.swift"],
         monitor: ["HisnActivityMonitor/ActivityMonitor.swift", "Shared/AppUsageConfiguration.swift",
                   "Shared/PauseRule.swift",
@@ -91,7 +93,9 @@ def main(safari_only: bool = False, domain_only: bool = False,
                 "../shared/apple/AdultTldGuard.swift",
                 "../shared/apple/CustomSitePolicy.swift", "../shared/apple/MirroredRuleStore.swift",
                 "../shared/apple/ReadinessHistory.swift"],
-        **{name: ["HisnBlocker/ContentBlockerRequestHandler.swift"] for name in blockers},
+        **{name: ["HisnBlocker/ContentBlockerRequestHandler.swift",
+                  "Shared/SafariGenerationRules.swift", "../shared/apple/AdultTldGuard.swift"]
+           for name in blockers},
     }
     # The Safari-only candidate has no Family Controls entitlement, so it does
     # not build or embed Hisn's shield extensions.
@@ -265,6 +269,8 @@ def main(safari_only: bool = False, domain_only: bool = False,
         else:
             extra.update({"APPLICATION_EXTENSION_API_ONLY": "YES", "SKIP_INSTALL": "YES"})
             extra["HISN_PART"] = str(blockers.index(name) + 1)
+            if name in blockers and not safari_only:
+                extra["CODE_SIGN_ENTITLEMENTS"] = "HisnBlocker/HisnBlocker.entitlements"
         p.add(oid("ios-target", name), "PBXNativeTarget", {
             "name": q(name), "productName": q(name), "productReference": products[name],
             "productType": q("com.apple.product-type.application" if name == app else

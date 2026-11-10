@@ -158,6 +158,13 @@ this pass. Record: [the craft pass](docs/ANDROID_CRAFT_2026-11-07.md); captures:
 
 #### Added
 
+- **The six Safari blockers can use the same downloaded generation.** Each
+  blocker reads its 1-based shard from the App Group, verifies the metadata's
+  domain count, size and SHA-256, builds at most 40,000 rules, and gives the
+  sponsored adult TLDs to the last shard. A missing or damaged generation falls
+  back to the signed `rules.json` in its bundle. The app reloads all six after
+  an install. The blocker targets gain the Hisn App Group entitlement, so a
+  signed direct build needs that group in each extension's provisioning profile.
 - **The DNS filter can install a signed published list generation.** The app
   fetches the manifest, signature, domains and terms over HTTPS at most once a
   day when DNS is enabled; `ListGeneration` verifies the pinned Ed25519

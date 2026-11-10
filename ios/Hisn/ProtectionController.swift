@@ -695,11 +695,6 @@ final class ProtectionController: ObservableObject {
         publishWatch()
         updateWatchSchedule()
         await readDNSState()
-        if dns == .enabled && !isTest {
-            // At most once a day; the proxy reads the active generation when it
-            // starts. A failure keeps the previous generation.
-            Task.detached(priority: .utility) { await ListUpdater.checkIfDue() }
-        }
         var states: [Bool?] = []
         for identifier in MobileProtectionPolicy.blockerIdentifiers {
             let enabled: Bool? = await withCheckedContinuation { continuation in
@@ -710,6 +705,13 @@ final class ProtectionController: ObservableObject {
             states.append(enabled)
         }
         safari = states
+        if !isTest && (dns == .enabled || safari.contains(true)) {
+            // At most once a day. A new generation is reloaded into all six
+            // Safari blockers, not only the DNS proxy.
+            Task {
+                if await ListUpdater.checkIfDue() != nil { await reloadSafari() }
+            }
+        }
         rememberConfiguredLayers()
         checkedAt = Date()
     }

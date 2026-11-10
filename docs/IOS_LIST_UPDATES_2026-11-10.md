@@ -43,6 +43,22 @@ directory source watches the App Group pointer; when a newer generation is
 committed, the proxy loads it off the query path and swaps the immutable engine
 under a lock. Queries already in flight finish against the previous snapshot.
 
+## Safari blockers
+
+The six Safari content blockers read the same active generation. Each blocker
+identifies its 1-based shard from its bundle identifier
+(`app.hisn.mobile.blockerN`), verifies the App Group metadata's domain count,
+size and SHA-256, builds at most 40,000 rules from its slice, and gives the four
+sponsored adult TLDs to the last shard. A missing, damaged or mismatched
+generation falls back to the `rules.json` compiled into its bundle, so Safari
+blocking never disappears because an update failed. After the app installs a
+generation it reloads all six blockers.
+
+The blocker targets now carry the Hisn App Group entitlement. A signed direct
+build needs that group in the provisioning profile for each of the six blocker
+bundle identifiers; an unprovisioned profile will fail at install even though
+the simulator build compiles.
+
 ## Download path
 
 [ListUpdater.swift](../ios/Hisn/ListUpdater.swift) runs when the app refreshes
@@ -62,7 +78,8 @@ no query waits for it.
 | --- | --- |
 | `ListGenerationTests` | Accepts a generated signed v7 fixture; rejects a flipped signature and a changed domain artifact; store publishes a generation the proxy loader reads; v6 is refused after v7; v8 moves the pointer and floor the proxy watches |
 | `ios/test_list_generation.py` | Pinned key equals `blocklist/public_key.hex`; update URL matches Android; the store uses the DNS App Group |
-| `./test.sh ios` | Pass, 279 simulator tests and the Python suites |
+| `SafariGenerationRulesTests` | Pass; shard split, four guard rules on the last shard, metadata hash check and bundle fallback |
+| `./test.sh ios` | Pass, simulator tests and the Python suites |
 
 ## Limits
 
@@ -70,6 +87,9 @@ no query waits for it.
   path. The fixture uses a separate test key.
 - The directory watcher is compiled and unit-tested at the store/pointer level,
   but no device has exercised a live swap while the proxy runs.
+- No Safari blocker has loaded a downloaded generation on a device. The shard
+  builder and metadata check are unit-tested; the blocker timing and memory on
+  real Safari are not measured.
 - The pinned key rotation still requires an app update, as on Android.
 - The app downloads about 4.6 MB once a day when DNS is enabled; offline or a
   failed verification keeps the previous generation.
