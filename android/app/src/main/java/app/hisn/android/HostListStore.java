@@ -13,8 +13,10 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 
+import app.hisn.core.AdultTextPolicy;
 import app.hisn.core.DomainPolicy;
 import app.hisn.core.DomainSeed;
+import app.hisn.core.HostTermPolicy;
 import app.hisn.core.SignedManifest;
 
 /**
@@ -35,21 +37,27 @@ final class HostListStore {
     static final String DOMAINS = "domains_core.txt";
     private static final long MAX_MANIFEST = SignedManifest.MAX_MANIFEST_BYTES;
     private static final long MAX_DOMAINS = SignedManifest.MAX_ARTIFACT_BYTES;
+    private static final long MAX_TERMS = SignedManifest.MAX_ARTIFACT_BYTES;
     private static volatile Active cached;
 
     enum Source { INSTALLED, BUNDLED, DEGRADED }
 
     static final class Active {
         final DomainPolicy policy;
+        final HostTermPolicy hostTerms;
+        final AdultTextPolicy textPolicy;
         final int generation;
         final Source source;
         final String error;
 
-        Active(DomainPolicy policy, int generation, Source source, String error) {
+        Active(DomainPolicy policy, int generation, Source source, String error,
+               HostTermPolicy hostTerms, AdultTextPolicy textPolicy) {
             this.policy = policy;
             this.generation = generation;
             this.source = source;
             this.error = error;
+            this.hostTerms = hostTerms;
+            this.textPolicy = textPolicy;
         }
 
         boolean available() { return policy != null; }
@@ -68,19 +76,24 @@ final class HostListStore {
         if (bundled != null) {
             String fallback = installed != null ? "installed-older"
                     : pointer(context).isFile() ? "installed-damaged" : null;
-            cached = new Active(bundled.policy, bundled.generation, Source.BUNDLED, fallback);
+            cached = new Active(bundled.policy, bundled.generation, Source.BUNDLED, fallback,
+                    bundled.hostTerms, bundled.textPolicy);
             return cached;
         }
         String reason = installed == null ? "no-list" : installed.error;
-        cached = new Active(null, bundledVersion, Source.DEGRADED, reason);
+        cached = new Active(null, bundledVersion, Source.DEGRADED, reason, null, null);
         return cached;
     }
 
     static synchronized void invalidate() { cached = null; }
 
     /** Publish an already validated generation after the updater's atomic pointer move. */
-    static synchronized void adopt(int generation, DomainPolicy policy) {
-        cached = new Active(policy, generation, Source.INSTALLED, null);
+    static synchronized void adopt(int generation, DomainPolicy policy,
+                                   HostTermPolicy hostTerms, AdultTextPolicy textPolicy) {
+        // One publication point: the DNS store and the text vocabulary move
+        // together under the same lock order (HostListStore -> AdultPolicyAssets).
+        if (textPolicy != null) AdultPolicyAssets.adopt(textPolicy);
+        cached = new Active(policy, generation, Source.INSTALLED, null, hostTerms, textPolicy);
     }
 
     /** The generation a receipt should name without paying to re-index the list. */
@@ -184,7 +197,7 @@ final class HostListStore {
             active = loadGeneration(context, generation);
             if (active != null) {
                 return new Active(active.policy, active.generation, Source.INSTALLED,
-                        "previous-generation");
+                        "previous-generation", active.hostTerms, active.textPolicy);
             }
         }
         return null;
@@ -219,7 +232,29 @@ final class HostListStore {
                     || !sha256(domains).equals(manifest.domains().sha256)) return null;
             DomainSeed seed = DomainSeed.load(new ByteArrayInputStream(domains),
                     manifest.domains().sha256, manifest.coreDomainCount);
-            return new Active(seed.policy, generation, Source.INSTALLED, null);
+            HostTermPolicy hostTerms = null;
+            AdultTextPolicy textPolicy = null;
+            if (manifest.terms() != null) {
+                try {
+                    byte[] terms = read(new File(dir, SignedManifest.TERMS), MAX_TERMS);
+                    if (terms.length == manifest.terms().bytes
+                            && sha256(terms).equals(manifest.terms().sha256)) {
+                        hostTerms = AdultPolicyAssets.loadHostPolicy(
+                                new ByteArrayInputStream(terms), manifest.terms().sha256,
+                                manifest.version);
+                        textPolicy = AdultPolicyAssets.load(
+                                new ByteArrayInputStream(terms), manifest.terms().sha256,
+                                manifest.version);
+                    }
+                } catch (Exception damagedTerms) {
+                    // The signed domain list still enforces; the DNS and text
+                    // layers fall back to the APK terms rather than running an
+                    // unverified or partial vocabulary.
+                    hostTerms = null;
+                    textPolicy = null;
+                }
+            }
+            return new Active(seed.policy, generation, Source.INSTALLED, null, hostTerms, textPolicy);
         } catch (RuntimeException | IOException invalid) {
             return null;
         }
@@ -229,7 +264,18 @@ final class HostListStore {
         try (InputStream input = context.getAssets().open("domains_core.txt")) {
             DomainSeed seed = DomainSeed.load(input, BuildConfig.DOMAIN_SEED_SHA256,
                     BuildConfig.DOMAIN_SEED_COUNT);
-            return new Active(seed.policy, BuildConfig.DOMAIN_SEED_VERSION, Source.BUNDLED, null);
+            HostTermPolicy hostTerms = null;
+            AdultTextPolicy textPolicy = null;
+            try (InputStream terms = context.getAssets().open("terms.json")) {
+                hostTerms = AdultPolicyAssets.loadHostPolicy(terms,
+                        BuildConfig.TERMS_SEED_SHA256, BuildConfig.DOMAIN_SEED_VERSION);
+            } catch (Exception unavailable) { /* The domain list still enforces. */ }
+            try (InputStream terms = context.getAssets().open("terms.json")) {
+                textPolicy = AdultPolicyAssets.load(terms,
+                        BuildConfig.TERMS_SEED_SHA256, BuildConfig.DOMAIN_SEED_VERSION);
+            } catch (Exception unavailable) { /* The text layer reports its own state. */ }
+            return new Active(seed.policy, BuildConfig.DOMAIN_SEED_VERSION, Source.BUNDLED, null,
+                    hostTerms, textPolicy);
         } catch (IOException | RuntimeException unavailable) {
             return null;
         }

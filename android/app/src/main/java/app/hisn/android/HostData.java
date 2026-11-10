@@ -12,7 +12,8 @@ final class HostData {
 
     static HostDecision.Policy policy(Context context) {
         HostListStore.Active list = HostListStore.active(context);
-        HostTermPolicy hostTerms = terms(context);
+        HostTermPolicy hostTerms = list.hostTerms;
+        if (hostTerms == null) hostTerms = terms(context);
         return new HostDecision.Policy(PolicyStore.get(context).snapshot().domains,
                 list.policy, list.available(), list.generation, hostTerms);
     }

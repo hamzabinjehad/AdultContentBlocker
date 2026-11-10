@@ -77,8 +77,9 @@ reviewed; the release job fails on errors, not warnings.
 ## P0 — One source, one version, one artifact (this week)
 
 **Status, 10 November:** steps 1–3 are done. The tree is committed, numbered
-1.6.0 / 43, and the metadata is updated. Steps 4 (signed build), 6 (artifact
-gate) and 7 (phone) remain.
+1.6.0 / 43, and the metadata is updated. The list updater now carries terms with
+domains, as 3A.2 requires. Steps 4 (signed build), 6 (artifact gate) and 7
+(phone) remain.
 
 The checkout was the real problem. It contained a **future release that was not
 in git**:

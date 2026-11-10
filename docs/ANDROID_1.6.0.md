@@ -11,6 +11,15 @@ go-back response), the package-2 readiness and receipt work, the package-3
 signed list updates, hostname explanation and portable rule tools, and the
 1.5.4 reconnect lifecycle.
 
+A downloaded list generation now carries its terms with its domains:
+`AdultListUpdater` verifies `terms.json` against the same signed manifest,
+compiles the hostname and text policies before staging, and publishes both
+through one `HostListStore.adopt` call. The text and DNS layers therefore read
+the same vocabulary version, and a damaged or mismatched terms file rejects
+the update instead of leaving one layer on the old list. A damaged installed
+terms file still falls back to the APK terms while the signed domain list
+enforces.
+
 The 1.5.4 lifecycle is ported rather than merged as a whole branch. The
 service now proves the bound instance in `onCreate`, re-arms in `onRebind`,
 returns `true` from `onUnbind`, restores `connected` on a live accessibility
@@ -38,6 +47,7 @@ The full 1.5.4 record, the phone evidence and the artifact hashes are in
 | --- | --- |
 | `android/test-core.sh` (JDK 25) | Pass; every core class, including the orphan guard, the seed, strings, notices and the synthetic corpus |
 | `:app:assembleDebug` | Pass |
+| Version-aware terms loader | Exercised by `CoreDeviceTestRunner` against the bundled seed; the runner needs a device and was not run in this pass |
 | `:app:assembleDebugAndroidTest` | Pass |
 | `:app:lintDebug` | Pass; 0 errors |
 | `:app:assembleRelease` | Pass; unsigned because no release key was supplied in this run |
@@ -59,6 +69,9 @@ and remain a known quality gap.
 - **No phone, visual-accuracy or battery claim.** The image layer keeps its
   1.4.0 native runtime and the same thresholds; no adult-positive benchmark was
   added.
+- **The terms update has no phone run.** The download, staging, adoption and
+  fallback paths compile and the core/device loader is wired, but no signed
+  generation or phone exercised the update end to end.
 - **The Play/direct split still needs review before upload.** No Play AAB was
   uploaded.
 

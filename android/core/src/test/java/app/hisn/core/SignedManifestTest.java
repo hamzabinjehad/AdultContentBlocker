@@ -30,6 +30,10 @@ public final class SignedManifestTest {
         if (signed.domains().bytes != Files.size(Path.of("..", "seed", "domains_core.txt"))) {
             throw new AssertionError("domain artifact size");
         }
+        if (signed.terms() == null
+                || signed.terms().bytes != Files.size(Path.of("..", "seed", "terms.json"))) {
+            throw new AssertionError("terms artifact missing from the signed seed manifest");
+        }
         byte[] tampered = bytes.clone();
         tampered[tampered.length / 2] ^= 1;
         try { SignedManifest.verify(tampered, sig, hex(PINNED)); throw new AssertionError("tampered manifest accepted"); }

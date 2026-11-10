@@ -11,7 +11,7 @@ and English.
 
 **Source state, 10 November 2026.** This folder is the **1.6.0 / 43**
 development candidate: the 1.5.3 feature set, packages 2 and 3 (signed mobile
-list updates, policy receipts and readiness, rule import/preview, the site
+list updates whose generations carry domains and terms together, policy receipts and readiness, rule import/preview, the site
 checker, person blur) and the ported 1.5.4 reconnect lifecycle. No signed
 1.6.0 artifact and no phone run exist; the post-reboot dashboard state is
 unverified. Do not install it over the owner's 1.5.4 phone until a signed

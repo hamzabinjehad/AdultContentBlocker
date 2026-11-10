@@ -19,7 +19,9 @@ import java.security.MessageDigest;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import app.hisn.core.AdultTextPolicy;
 import app.hisn.core.DomainSeed;
+import app.hisn.core.HostTermPolicy;
 import app.hisn.core.SignedManifest;
 
 /**
@@ -140,6 +142,29 @@ final class AdultListUpdater {
                 manifest.domains().sha256, manifest.coreDomainCount);
         if (seed.domainCount < SignedManifest.MIN_DOMAINS) return fail(context, "coverage");
 
+        // Terms travel with the domain list as one signed generation. Both
+        // policies are compiled before anything becomes visible, and either a
+        // damaged terms file or a version mismatch rejects the whole update so
+        // the previous coherent generation keeps enforcing.
+        byte[] terms = null;
+        HostTermPolicy hostTerms = null;
+        AdultTextPolicy textPolicy = null;
+        if (manifest.terms() != null) {
+            terms = fetch(BASE + "/" + SignedManifest.TERMS, manifest.terms().bytes);
+            if (terms.length != manifest.terms().bytes
+                    || !HostListStore.sha256(terms).equals(manifest.terms().sha256)) {
+                return fail(context, "artifact");
+            }
+            try {
+                hostTerms = AdultPolicyAssets.loadHostPolicy(new ByteArrayInputStream(terms),
+                        manifest.terms().sha256, manifest.version);
+                textPolicy = AdultPolicyAssets.load(new ByteArrayInputStream(terms),
+                        manifest.terms().sha256, manifest.version);
+            } catch (Exception invalidTerms) {
+                return fail(context, "terms");
+            }
+        }
+
         File parent = new File(context.getFilesDir(), HostListStore.DIRECTORY);
         if (!parent.exists() && !parent.mkdirs()) throw new IOException("Cannot create list directory");
         File staging = new File(parent, "staging-" + manifest.version);
@@ -149,6 +174,7 @@ final class AdultListUpdater {
             write(new File(staging, HostListStore.MANIFEST), manifestBytes);
             write(new File(staging, HostListStore.SIGNATURE), signature.trim().getBytes(StandardCharsets.US_ASCII));
             write(new File(staging, HostListStore.DOMAINS), domains);
+            if (terms != null) write(new File(staging, SignedManifest.TERMS), terms);
             File target = HostListStore.directory(context, manifest.version);
             delete(target);
             if (!staging.renameTo(target)) throw new IOException("Cannot activate list");
@@ -157,7 +183,7 @@ final class AdultListUpdater {
             HostListStore.writePointer(context, manifest.version, HostListStore.sha256(manifestBytes));
             HostListStore.writeFloor(context, manifest.version);
             // Publish the index built off-thread; the next DNS query must not re-parse 4 MB.
-            HostListStore.adopt(manifest.version, seed.policy);
+            HostListStore.adopt(manifest.version, seed.policy, hostTerms, textPolicy);
             context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
                     .putInt(GENERATION, manifest.version).putString(LAST_ERROR, "")
                     .putLong(VERIFIED_AT, System.currentTimeMillis()).apply();

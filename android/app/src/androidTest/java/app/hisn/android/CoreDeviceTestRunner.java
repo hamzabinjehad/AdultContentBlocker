@@ -4,10 +4,12 @@ import android.app.Activity;
 import android.app.Instrumentation;
 import android.os.Bundle;
 
+import app.hisn.core.AdultTextPolicy;
 import app.hisn.core.DnsExchange;
 import app.hisn.core.DnsPolicy;
 import app.hisn.core.DomainPolicy;
 import app.hisn.core.DomainSeed;
+import app.hisn.core.HostTermPolicy;
 import app.hisn.core.AppTimeLimit;
 import app.hisn.core.LayerWatch;
 import app.hisn.core.SeedFreshness;
@@ -33,6 +35,18 @@ public final class CoreDeviceTestRunner extends Instrumentation {
                 seed = DomainSeed.load(input, BuildConfig.DOMAIN_SEED_SHA256, BuildConfig.DOMAIN_SEED_COUNT);
             }
             if (seed.domainCount < 50000 || seed.policy.blocks("example.com")) throw new AssertionError("Seed check failed");
+            // The version-aware loader is what a downloaded generation uses; the
+            // bundled seed must pass the same path before a device relies on it.
+            try (InputStream terms = getTargetContext().getAssets().open("terms.json")) {
+                HostTermPolicy host = AdultPolicyAssets.loadHostPolicy(terms,
+                        BuildConfig.TERMS_SEED_SHA256, BuildConfig.DOMAIN_SEED_VERSION);
+                if (!host.matches("sex.example")) throw new AssertionError("Host terms check failed");
+            }
+            try (InputStream terms = getTargetContext().getAssets().open("terms.json")) {
+                AdultTextPolicy text = AdultPolicyAssets.load(terms,
+                        BuildConfig.TERMS_SEED_SHA256, BuildConfig.DOMAIN_SEED_VERSION);
+                if (!text.blocksPromotion("watch free porn")) throw new AssertionError("Text terms check failed");
+            }
             if (WordRuleList.compile("example\nإباحِيّ").matches("إباحي").isEmpty()) throw new AssertionError("Arabic rule check failed");
             if (!WordRuleList.compile("sex").matches("Essex").isEmpty()) throw new AssertionError("Word boundary check failed");
             DnsPolicy policy = new DnsPolicy(new DomainPolicy(Collections.singleton("blocked.example"), Collections.emptyList()));

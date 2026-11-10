@@ -253,6 +253,14 @@ claimed.
   readiness and receipt work, the package-3 signed list updates, hostname
   explanation and portable rule tools, and the 1.5.4 reconnect lifecycle now
   build as 1.6.0 / 43. Record: [the 1.6.0 note](docs/ANDROID_1.6.0.md).
+- **A list generation now carries its vocabulary, not only its domains.**
+  `AdultListUpdater` fetches and verifies `terms.json` with the domain artifact,
+  compiles the hostname and text policies before anything becomes visible, and
+  publishes both through `HostListStore.adopt` so the DNS and text layers move
+  to the same generation. A damaged terms file rejects the update; a damaged
+  installed terms file falls back to the APK terms while the signed domain list
+  keeps enforcing. `AdultPolicyAssets` can now load a generation's version of
+  the terms instead of accepting only the bundled seed version.
 - **The guard proves the bound service instead of waiting for a callback.**
   `TextGuardService.onCreate` marks the live instance connected and runs the
   idempotent setup, `onUnbind` returns true, `onRebind` re-arms, a live
@@ -268,6 +276,9 @@ claimed.
   orphan guard, the signed seed, strings, notices and the synthetic corpus.
 - `:app:assembleDebug`, `:app:assembleDebugAndroidTest`, `:app:lintDebug` and
   `:app:assembleRelease` pass; the release APK is unsigned in this run.
+- `CoreDeviceTestRunner` now exercises the version-aware host and text term
+  loaders against the bundled seed before it reports protection. It needs a
+  device or emulator; this pass did not run one.
 - The browser, Python, macOS and iOS suites are unchanged by this pass; their
   results are recorded in [release state](docs/RELEASE_STATE_2026-11-10.md).
 

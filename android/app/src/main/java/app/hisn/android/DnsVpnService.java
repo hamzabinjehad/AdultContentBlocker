@@ -445,17 +445,20 @@ public final class DnsVpnService extends VpnService {
                 if (!list.available()) throw new IOException("Domain list unavailable");
                 if (closed) return;
                 domains = list.policy.blockedRules().size();
-                // The hostname layer is read from the same APK-pinned signed
-                // terms asset as the text layer, synchronously, before the
-                // tunnel exists. A failure leaves the domain list enforcing
-                // and the keyword layer off; it never loads unverified bytes.
-                HostTermPolicy hostTerms;
-                try {
-                    hostTerms = AdultPolicyAssets.loadHostPolicy(DnsVpnService.this);
-                } catch (Exception unavailable) {
-                    hostTerms = null;
+                // The hostname layer comes from the active generation's signed
+                // terms when it has them, otherwise the APK-pinned asset. It is
+                // read synchronously before the tunnel exists; a failure leaves
+                // the domain list enforcing and the keyword layer off, never an
+                // unverified vocabulary.
+                HostTermPolicy hostTerms = list.hostTerms;
+                if (hostTerms == null) {
+                    try {
+                        hostTerms = AdultPolicyAssets.loadHostPolicy(DnsVpnService.this);
+                    } catch (Exception unavailable) {
+                        hostTerms = null;
+                    }
                 }
-                final HostTermPolicy hostGuard = hostTerms;
+                final HostTermPolicy fallbackHostTerms = hostTerms;
                 readPrivateDns();
                 Builder builder = new Builder().setSession(getString(R.string.dns_notification_title))
                         .setMtu(1500).addAddress("10.111.0.1", 32).addAddress("fd00:111::1", 128)
@@ -481,8 +484,13 @@ public final class DnsVpnService extends VpnService {
                     // One composed order, shared with the read-only site check:
                     // personal block, adult TLD, hostname term, then published list.
                     HostListStore.Active active = HostListStore.active(DnsVpnService.this);
+                    // A running tunnel re-reads the active generation for every
+                    // decision, so a newly adopted terms file reaches DNS without
+                    // a service restart. The captured value is only the fallback
+                    // when the active generation has no usable terms.
+                    HostTermPolicy terms = active.hostTerms != null ? active.hostTerms : fallbackHostTerms;
                     HostDecision.Policy current = new HostDecision.Policy(settings.snapshot().domains,
-                            active.policy, active.available(), active.generation, hostGuard);
+                            active.policy, active.available(), active.generation, terms);
                     return current.evaluate(hostname).enforcement();
                 };
                 DnsPolicy.Rules rules = hostname -> EncryptedDnsProviders.blocks(hostname, privateDnsName)
