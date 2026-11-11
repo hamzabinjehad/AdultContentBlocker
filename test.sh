@@ -147,6 +147,8 @@ suite_macos() {
       if [ "${pipeline_status[0]}" -ne 0 ]; then exit "${pipeline_status[0]}"; fi
       if [ "${pipeline_status[1]}" -ne 0 ]; then exit "${pipeline_status[1]}"; fi
       grep -q "\*\* TEST SUCCEEDED \*\*" "$SCRATCH/xcodebuild-test.log" )
+    echo "── macos: Safari extension target and staged scanner"
+    python3 macos/test_safari_extension.py
     echo "── macos: every string has Arabic"
     # The export reads what the compiled code uses, not the catalog, so a new
     # string without a translation fails here rather than appearing in

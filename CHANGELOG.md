@@ -11,6 +11,12 @@ bump without an entry here is an unfinished release.
 
 #### Added
 
+- **A macOS Safari Web Extension target.** `HisnSafariExtension` is embedded in
+  `Hisn.app/Contents/PlugIns` and stages the shared page-text/visual scanner
+  after the signed seed terms and visual assets verify. It builds and is
+  statically tested; it has no native messaging or BrowserGuard support yet, so
+  Safari is still closed by the guard during an active lock. Record:
+  [the Safari target note](docs/MACOS_SAFARI_EXTENSION_2026-11-11.md).
 - **The Mac app runs on macOS 12 (Monterey).** The deployment target moved
   from 13 to 12; the app, the filter extension and the bridge all build with
   `minos 12.0`. Nothing that protects the Mac needed a newer OS — the content

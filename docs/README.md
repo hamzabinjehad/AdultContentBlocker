@@ -48,6 +48,7 @@ past version; *superseded* documents point to their replacement. Start with the
 
 - [Connecting the extension to the app](EXTENSION_BRIDGE.md): native messaging, the two extension IDs, a read-only connection check, and the managed-policy path that makes removal policy-blocked.
 - [Arabizi context in the shared scorer, 2026-11-10](ARABIZI_CONTEXT_2026-11-10.md): the shared extension/Safari scorer now demotes `neek`/`nik`/`sksy` terms unless a reviewed clear term is in the same zone; three Android miss rows block, and the `Neek Masri`/`Nik Cage`/`sksy download` controls stay readable.
+- [macOS Safari Web Extension, 2026-11-11](MACOS_SAFARI_EXTENSION_2026-11-11.md): the first embedded Safari page-text/visual target; no native lock bridge or BrowserGuard support yet.
 - [The offscreen sender fix, 2026-11-10](EXTENSION_VISUAL_SENDER_2026-11-10.md): Chromium leaves `sender.url` undefined for service-worker senders, so the offscreen visual engine rejected every prepare, inspect and status message from Hisn’s worker. The gate now accepts the worker in both Chromium and Firefox forms; the regression test covers popup, content script, other extension and missing sender.
 - [Browser management and guard limits](CHROME_ENFORCEMENT.md): What the Mac browser guard and consented managed browser policies add, supported browsers, and remaining removal limits.
 - [The browser blocking pipeline](BLOCKING_PIPELINE.md): Code map of every browser layer, which generated ruleset owns it, and the invariants a change must keep.

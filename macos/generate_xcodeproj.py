@@ -32,6 +32,7 @@ SWIFT_VERSION = "5.0"
 APP = "Hisn"
 FILTER = "HisnFilter"
 BRIDGE = "HisnBridge"
+SAFARI = "HisnSafariExtension"
 TESTS = "HisnTests"
 
 APP_BUNDLE_ID = "app.hisn.Hisn"
@@ -39,6 +40,7 @@ APP_BUNDLE_ID = "app.hisn.Hisn"
 # match `FilterController.extensionIdentifier` exactly — a mismatch fails at
 # activation time with an error that does not name the cause.
 FILTER_BUNDLE_ID = "app.hisn.Hisn.HisnFilter"
+SAFARI_BUNDLE_ID = "app.hisn.Hisn.HisnSafari"
 TESTS_BUNDLE_ID = "app.hisn.HisnTests"
 
 # Sources shared between targets. The app owns them; the other two compile the
@@ -137,6 +139,9 @@ FILTER_SOURCES = SHARED + ["HisnFilter/FilterDataProvider.swift",
                            "HisnFilter/main.swift"]
 # The bridge records which browser's extension checked in, for the guard.
 BRIDGE_SOURCES = SHARED + ["HisnBridge/main.swift", "Hisn/ExtensionPresence.swift"]
+# Safari Web Extension target: the handler is native; the scanner itself is
+# staged from the shared extension by a build phase.
+SAFARI_SOURCES = ["HisnSafariExtension/SafariWebExtensionHandler.swift"]
 TEST_SOURCES = ["HisnTests/BlocklistStoreTests.swift",
                 "HisnTests/KeywordLayerTests.swift",
                 "HisnTests/SelfReleaseTests.swift",
@@ -192,12 +197,13 @@ TEST_RESOURCES = ["../blocklist/terms/normalize_cases.json",
                   # cross-checked from the test bundle for the same reason.
                   "install_native_host.sh"]
 
-ALL_FILES = sorted(set(APP_SOURCES + FILTER_SOURCES + BRIDGE_SOURCES + TEST_SOURCES) | {
+ALL_FILES = sorted(set(APP_SOURCES + FILTER_SOURCES + BRIDGE_SOURCES + SAFARI_SOURCES + TEST_SOURCES) | {
     "Hisn/Info.plist", "Hisn/Hisn.entitlements",
     "Hisn/Hisn.DeveloperID.entitlements",
     "HisnFilter/Info.plist", "HisnFilter/HisnFilter.entitlements",
     "HisnFilter/HisnFilter.DeveloperID.entitlements",
     "HisnBridge/HisnBridge.entitlements",
+    "HisnSafariExtension/Info.plist", "HisnSafariExtension/HisnSafariExtension.entitlements",
 } | set(APP_RESOURCES)) + FILTER_RESOURCES + TEST_RESOURCES
 
 
@@ -305,6 +311,7 @@ def main() -> int:
         FILTER: (oid("product", FILTER), f"{FILTER}.systemextension",
                  '"wrapper.system-extension"'),
         BRIDGE: (oid("product", BRIDGE), BRIDGE, '"compiled.mach-o.executable"'),
+        SAFARI: (oid("product", SAFARI), f"{SAFARI}.appex", "wrapper.cfbundle"),
         TESTS: (oid("product", TESTS), f"{TESTS}.xctest", "wrapper.cfbundle"),
     }
     for name, (ref, filename, kind) in products.items():
@@ -328,7 +335,7 @@ def main() -> int:
         return p.add(ident, "PBXGroup", body, name or path or "")
 
     dir_groups = []
-    for folder in (APP, FILTER, BRIDGE, TESTS):
+    for folder in (APP, FILTER, BRIDGE, SAFARI, TESTS):
         members = [file_refs[f] for f in ALL_FILES if f.startswith(folder + "/")]
         dir_groups.append(group(oid("group", folder), members, None, folder))
     dir_groups.append(group(oid("group", "shared-apple"),
@@ -446,6 +453,18 @@ def main() -> int:
         "PRODUCT_NAME": '"$(TARGET_NAME)"',
         "SKIP_INSTALL": "YES",
     }
+    safari_settings = {
+        "APPLICATION_EXTENSION_API_ONLY": "YES",
+        "CODE_SIGN_ENTITLEMENTS": "HisnSafariExtension/HisnSafariExtension.entitlements",
+        "CURRENT_PROJECT_VERSION": "30",
+        "MARKETING_VERSION": "1.1.18",
+        "ENABLE_HARDENED_RUNTIME": "YES",
+        "INFOPLIST_FILE": "HisnSafariExtension/Info.plist",
+        "PRODUCT_BUNDLE_IDENTIFIER": SAFARI_BUNDLE_ID,
+        "PRODUCT_NAME": '"$(TARGET_NAME)"',
+        "SKIP_INSTALL": "YES",
+        "SWIFT_EMIT_LOC_STRINGS": "NO",
+    }
     test_settings = {
         "BUNDLE_LOADER": '"$(TEST_HOST)"',
         "GENERATE_INFOPLIST_FILE": "YES",
@@ -546,6 +565,24 @@ def main() -> int:
                   [phase_resources(FILTER, FILTER_RESOURCES)], [])
     native_target(BRIDGE, "com.apple.product-type.tool",
                   BRIDGE_SOURCES, bridge_settings, [], [])
+
+    # The Safari target's resources are not Xcode file references: the shared
+    # scanner is staged only after the signed seed terms and visual assets have
+    # been verified, exactly as the iOS web extension does.
+    safari_script = ('set -eu\nPYTHON="${HISN_PYTHON:-python3}"\n'
+                     '"$PYTHON" "$SRCROOT/../ios/prepare_web_extension.py" '
+                     '--output "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH"\n')
+    safari_phase = p.add(oid("phase-safari-resources", SAFARI), "PBXShellScriptBuildPhase", {
+        "name": q("Verify signed terms and stage shared Safari scanner"),
+        "buildActionMask": "2147483647",
+        "files": "()", "inputPaths": "()", "outputPaths": "()",
+        "alwaysOutOfDate": "1", "shellPath": "/bin/sh",
+        "shellScript": q(safari_script).replace("\n", "\\n"),
+        "runOnlyForDeploymentPostprocessing": "0",
+    }, "Stage Safari scanner")
+    native_target(SAFARI, "com.apple.product-type.app-extension",
+                  SAFARI_SOURCES, safari_settings, [safari_phase], [])
+
     # A system extension lives in Contents/Library/SystemExtensions inside the
     # app that installs it; the bridge is an executable the browser launches, so
     # it goes next to the app binary in Contents/MacOS.
@@ -559,9 +596,13 @@ def main() -> int:
     embed_sysext = phase_copy("Embed System Extensions",
                               "Contents/Library/SystemExtensions", 1, [FILTER])
     embed_bridge = phase_copy("Embed Bridge", "Contents/MacOS", 1, [BRIDGE])
+    embed_safari = phase_copy("Embed Safari Extension",
+                              "Contents/PlugIns", 1, [SAFARI])
+
     native_target(APP, "com.apple.product-type.application", APP_SOURCES,
-                  app_settings, [phase_resources(APP, APP_RESOURCES), embed_sysext, embed_bridge],
-                  [dependency(APP, FILTER), dependency(APP, BRIDGE)])
+                  app_settings,
+                  [phase_resources(APP, APP_RESOURCES), embed_sysext, embed_bridge, embed_safari],
+                  [dependency(APP, FILTER), dependency(APP, BRIDGE), dependency(APP, SAFARI)])
     # The tests get the seed too, so they can assert that the artifacts actually
     # committed to this repo verify against the key actually shipped in the app.
     native_target(TESTS, "com.apple.product-type.bundle.unit-test", TEST_SOURCES,
@@ -569,7 +610,7 @@ def main() -> int:
                   [phase_resources(TESTS, FILTER_RESOURCES + TEST_RESOURCES)],
                   [dependency(TESTS, APP)])
 
-    target_ids = [oid("target", n) for n in (APP, FILTER, BRIDGE, TESTS)]
+    target_ids = [oid("target", n) for n in (APP, FILTER, BRIDGE, SAFARI, TESTS)]
     p.add(project_id, "PBXProject", {
         "attributes": "{\n\t\t\t\tBuildIndependentTargetsInParallel = 1;\n"
                       "\t\t\t\tLastSwiftUpdateCheck = 1600;\n"
@@ -599,7 +640,7 @@ def main() -> int:
 
     print(f"wrote {PROJECT.relative_to(ROOT.parent)}")
     print(f"  targets: {APP} (app), {FILTER} (system extension), "
-          f"{BRIDGE} (tool), {TESTS} (unit tests)")
+          f"{BRIDGE} (tool), {SAFARI} (Safari web extension), {TESTS} (unit tests)")
     return 0
 
 

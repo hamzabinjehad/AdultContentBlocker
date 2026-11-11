@@ -449,6 +449,24 @@
 			path = main.swift;
 			sourceTree = "<group>";
 		};
+		3932A948FF869CD5BB63789F /* HisnSafariExtension.entitlements */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = text.plist.entitlements;
+			path = HisnSafariExtension.entitlements;
+			sourceTree = "<group>";
+		};
+		C8E726D0F4F8A430116C3C1B /* Info.plist */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = text.plist.xml;
+			path = Info.plist;
+			sourceTree = "<group>";
+		};
+		7B870B87F9D705EC349A3959 /* SafariWebExtensionHandler.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = SafariWebExtensionHandler.swift;
+			sourceTree = "<group>";
+		};
 		89BDAC009D56611F485D64DB /* AuditRegressionTests.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -698,6 +716,13 @@
 			path = HisnBridge;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
+		89C8E7DE44D4DE1BF8424249 /* HisnSafariExtension.appex */ = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.cfbundle;
+			includeInIndex = 0;
+			path = HisnSafariExtension.appex;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
 		2F2920DDE73E55C7EC03FFD3 /* HisnTests.xctest */ = {
 			isa = PBXFileReference;
 			explicitFileType = wrapper.cfbundle;
@@ -787,6 +812,16 @@
 				C3C58103FBA89CB0F57E6381,
 			);
 			path = HisnBridge;
+			sourceTree = "<group>";
+		};
+		3E255FB56424F71EF82109FC /* HisnSafariExtension */ = {
+			isa = PBXGroup;
+			children = (
+				3932A948FF869CD5BB63789F,
+				C8E726D0F4F8A430116C3C1B,
+				7B870B87F9D705EC349A3959,
+			);
+			path = HisnSafariExtension;
 			sourceTree = "<group>";
 		};
 		17AF22E3634A3628D8708404 /* HisnTests */ = {
@@ -895,6 +930,7 @@
 				5BA8BA274EB5BFB1180F80B1,
 				9C9FFA6603EF912D8A28480B,
 				91B7F1CE86382AA4D7074255,
+				89C8E7DE44D4DE1BF8424249,
 				2F2920DDE73E55C7EC03FFD3,
 			);
 			name = Products;
@@ -906,6 +942,7 @@
 				E5B5BA2D0DC56930613A8351,
 				952370683EBE372EA84D0EBC,
 				CFCAD78C75934B02F892B6CA,
+				3E255FB56424F71EF82109FC,
 				17AF22E3634A3628D8708404,
 				CF6B3F23FBD4DF90032D28E3,
 				4AE5F9167CD9118FCD9F6644,
@@ -1481,6 +1518,165 @@
 			productReference = 91B7F1CE86382AA4D7074255;
 			productType = "com.apple.product-type.tool";
 		};
+		3883BBFD1C990D2AADBBB979 /* Stage Safari scanner */ = {
+			isa = PBXShellScriptBuildPhase;
+			name = "Verify signed terms and stage shared Safari scanner";
+			buildActionMask = 2147483647;
+			files = ();
+			inputPaths = ();
+			outputPaths = ();
+			alwaysOutOfDate = 1;
+			shellPath = /bin/sh;
+			shellScript = "set -eu\nPYTHON=\"${HISN_PYTHON:-python3}\"\n\"$PYTHON\" \"$SRCROOT/../ios/prepare_web_extension.py\" --output \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH\"\n";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F50177F7D98858A9D0C1F350 /* SafariWebExtensionHandler.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 7B870B87F9D705EC349A3959;
+		};
+		9175BC89B68EB471C965BD5B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F50177F7D98858A9D0C1F350,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EF8F9DDB028BFDD43261290C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F36AD3BBFC43AF9B5B3BA2CA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = HisnSafariExtension/HisnSafariExtension.entitlements;
+				CURRENT_PROJECT_VERSION = 30;
+				MARKETING_VERSION = 1.1.18;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = HisnSafariExtension/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = app.hisn.Hisn.HisnSafari;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		051478019A71F992F6550982 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = HisnSafariExtension/HisnSafariExtension.entitlements;
+				CURRENT_PROJECT_VERSION = 30;
+				MARKETING_VERSION = 1.1.18;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = HisnSafariExtension/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = app.hisn.Hisn.HisnSafari;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+		51C4E9E4AA7FA42ED8694223 /* DeveloperID */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = HisnSafariExtension/HisnSafariExtension.entitlements;
+				CURRENT_PROJECT_VERSION = 30;
+				MARKETING_VERSION = 1.1.18;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = HisnSafariExtension/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = app.hisn.Hisn.HisnSafari;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = DeveloperID;
+		};
+		2271F7240BA42F54AEC1D0E1 /* Build configuration list for HisnSafariExtension */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F36AD3BBFC43AF9B5B3BA2CA,
+				051478019A71F992F6550982,
+				51C4E9E4AA7FA42ED8694223,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3376B7E3F5CEC149EF3BD3E2 /* HisnSafariExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2271F7240BA42F54AEC1D0E1;
+			buildPhases = (
+				9175BC89B68EB471C965BD5B,
+				EF8F9DDB028BFDD43261290C,
+				3883BBFD1C990D2AADBBB979,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HisnSafariExtension;
+			productName = HisnSafariExtension;
+			productReference = 89C8E7DE44D4DE1BF8424249;
+			productType = "com.apple.product-type.app-extension";
+		};
 		E0899B67D06D52F76B7620C2 /* HisnFilter.systemextension in Embed System Extensions */ = {
 			isa = PBXBuildFile;
 			fileRef = 9C9FFA6603EF912D8A28480B;
@@ -1511,6 +1707,22 @@
 				0EF8053566C4215658167630,
 			);
 			name = "Embed Bridge";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E2584AF3596ED1142007044A /* HisnSafariExtension.appex in Embed Safari Extension */ = {
+			isa = PBXBuildFile;
+			fileRef = 89C8E7DE44D4DE1BF8424249;
+			settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); };
+		};
+		44D38C0A0092AF7919D61859 /* Embed Safari Extension */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "Contents/PlugIns";
+			dstSubfolderSpec = 1;
+			files = (
+				E2584AF3596ED1142007044A,
+			);
+			name = "Embed Safari Extension";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		BDF8914226C025CC49ED6309 /* Localizable.xcstrings in Resources */ = {
@@ -1583,6 +1795,18 @@
 			isa = PBXTargetDependency;
 			target = 85E375A773CC2286FFC7A2E0;
 			targetProxy = 05FF8658807A19E31FC115CC;
+		};
+		14FCEFCA3CE7F3213821BF05 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 85D368FE68C556A9B7942C75;
+			proxyType = 1;
+			remoteGlobalIDString = 3376B7E3F5CEC149EF3BD3E2;
+			remoteInfo = HisnSafariExtension;
+		};
+		42D1259D2C551E97EA8A7AD7 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3376B7E3F5CEC149EF3BD3E2;
+			targetProxy = 14FCEFCA3CE7F3213821BF05;
 		};
 		B5CDF5FE56AB22C285DCE9AF /* AdultTldGuard.swift in Sources */ = {
 			isa = PBXBuildFile;
@@ -2000,12 +2224,14 @@
 				7E4B2B42202196B8DEDF4BBA,
 				0C0FD9E698FB375310304AE7,
 				C78F4DDFC37208B7186FF56D,
+				44D38C0A0092AF7919D61859,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				4D3C8E960720F808B094000F,
 				DA4B9EB09FB2AF0F02FDC0B8,
+				42D1259D2C551E97EA8A7AD7,
 			);
 			name = Hisn;
 			productName = Hisn;
@@ -2384,6 +2610,7 @@
 				6F9279DAC3DCCAF5F23A04C6,
 				5AA25C4F72E5F502DB22DE8F,
 				85E375A773CC2286FFC7A2E0,
+				3376B7E3F5CEC149EF3BD3E2,
 				CCEFF62698B14A0B5AE19BC1,
 			);
 		};

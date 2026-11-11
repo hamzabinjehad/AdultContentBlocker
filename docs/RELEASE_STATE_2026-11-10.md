@@ -11,7 +11,7 @@ page explains the gap between that declaration and the code.
 | Surface | Declared | In this tree | Release blocker |
 | --- | --- | --- | --- |
 | Browser extension | 1.5.3 | Media checks on by default, whole-post hiding on X and the main social feeds, the offscreen sender fix, lazy model start, and a new `offscreen` permission | Version bump for the new permission, packaged zip, store review, real-media accuracy check |
-| Mac | 1.1.18 / 30 | Allocation-free filter path, a missed heartbeat no longer closes a browser, bounded list downloads | Signed, notarized build; installed-filter acceptance |
+| Mac | 1.1.18 / 30 | Allocation-free filter path, a missed heartbeat no longer closes a browser, bounded list downloads, embedded Safari Web Extension target (no native bridge yet) | Signed, notarized build; installed-filter and Safari-load acceptance |
 | iPhone & iPad | 1.8.0 / 14 | Safari social stylesheet in the text extension; encrypted-DNS provider names, CNAME/DNAME/SVCB alias checks and signed list generations in the DNS filter and six Safari blockers | Signed device; DNS extension and install acceptance |
 | Android | 1.6.0 / 43 | The 1.5.3 feature set, packages 2 and 3, native TFLite, signed list updates whose generations carry domains and terms together, receipts and readiness, rule tools, person blur, and the ported 1.5.4 reconnect lifecycle | Phone run; signed 1.6.0 artifact; the post-reboot dashboard state is unverified |
 
@@ -95,6 +95,9 @@ network-transition claim is made here.
   generation was fetched on the host and verifies as 239,885 domains and terms
   v6 after the published comment header was excluded; simulator-tested, no
   device or signed IPA.
+- Added the first macOS Safari Web Extension target; it builds, embeds and
+  stages the shared scanner, but does not yet bridge the lock or satisfy
+  BrowserGuard. Record: [Safari target](docs/MACOS_SAFARI_EXTENSION_2026-11-11.md).
 - Fixed the extension visual layer in real Chrome: the offscreen engine now
   accepts the service worker's undefined `sender.url`, the model loads on first
   media instead of worker start, and a real-browser harness drives
