@@ -122,6 +122,7 @@ fun NativeShell(host: NativeShellHost?) {
     var editor by remember { mutableStateOf<ShellRulesEditor?>(null) }
     var appPicker by remember { mutableStateOf<ShellAppPicker?>(null) }
     var lockDialog by remember { mutableStateOf<ShellLockState?>(null) }
+    var limitsDialog by remember { mutableStateOf<ShellLimitsEditor?>(null) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
@@ -172,7 +173,7 @@ fun NativeShell(host: NativeShellHost?) {
         ?: settings?.labels
         ?: fallbackLabels()
 
-    SecureEditorWindow(editor != null || appPicker != null)
+    SecureEditorWindow(editor != null || appPicker != null || limitsDialog != null)
 
     fun lockedMessage() {
         scope.launch { snackbar.showSnackbar(labels.locked) }
@@ -215,6 +216,12 @@ fun NativeShell(host: NativeShellHost?) {
         val next = host?.lockState() ?: return
         haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
         lockDialog = next
+    }
+
+    fun editLimits() {
+        val next = host?.limitsEditor() ?: return
+        haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+        limitsDialog = next
     }
 
     val vpnLauncher = rememberLauncherForActivityResult(
@@ -394,6 +401,7 @@ fun NativeShell(host: NativeShellHost?) {
                         onEditRules = ::editRules,
                         onEditApps = ::editApps,
                         onEditLock = ::editLock,
+                        onEditLimits = ::editLimits,
                         onStartDns = ::requestDnsSetup,
                         modifier = Modifier.weight(1f)
                     )
@@ -495,6 +503,25 @@ fun NativeShell(host: NativeShellHost?) {
             }
         )
     }
+
+    limitsDialog?.let { current ->
+        LimitsDialog(
+            editor = current,
+            onSave = { limits ->
+                host?.saveLimits(limits)
+                    ?: ShellActionResult(labels.unsupported, ok = false, refresh = false)
+            },
+            onOpenUsageAccess = { host?.openUsageAccess() == true },
+            onDismiss = { limitsDialog = null },
+            onResult = { result ->
+                if (result.ok) {
+                    limitsDialog = null
+                    scope.launch { refresh() }
+                }
+                scope.launch { snackbar.showSnackbar(result.message) }
+            }
+        )
+    }
 }
 
 @Composable
@@ -526,6 +553,7 @@ private fun ShellContent(
     onEditRules: (String) -> Unit,
     onEditApps: (String) -> Unit,
     onEditLock: () -> Unit,
+    onEditLimits: () -> Unit,
     onStartDns: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -561,7 +589,8 @@ private fun ShellContent(
                     onLayer = onLayer,
                     onEditRules = onEditRules,
                     onEditApps = onEditApps,
-                    onEditLock = onEditLock
+                    onEditLock = onEditLock,
+                    onEditLimits = onEditLimits
                 )
                 index == 2 && settings != null -> SettingsShellScreen(
                     state = settings,
