@@ -36,7 +36,9 @@ data class ShellLabels(
     val layers: String,
     val locked: String,
     val unsupported: String,
-    val dnsStart: String
+    val dnsStart: String,
+    val settingsControls: String,
+    val settingsAndroid: String
 )
 
 data class ShellProtection(
@@ -79,9 +81,25 @@ data class ShellSetting(
     val detail: String
 )
 
+data class ShellToggle(
+    val key: String,
+    val label: String,
+    val detail: String,
+    val on: Boolean,
+    val enabled: Boolean
+)
+
+data class ShellAction(
+    val key: String,
+    val label: String,
+    val detail: String
+)
+
 data class ShellSettings(
     val sections: List<ShellSetting>,
-    val labels: ShellLabels
+    val labels: ShellLabels,
+    val toggles: List<ShellToggle> = emptyList(),
+    val actions: List<ShellAction> = emptyList()
 )
 
 /** A host message after an action. `refresh` asks the shell to poll immediately. */
@@ -278,6 +296,12 @@ interface NativeShellHost {
 
     /** Saves only installed rows; saved packages that are uninstalled are preserved. */
     fun saveAppPicker(kind: String, selected: Set<String>): ShellActionResult
+
+    /** Saves a real settings switch such as SafeSearch. */
+    fun setToggle(key: String, enabled: Boolean): ShellActionResult
+
+    /** Opens an Android settings surface; returns false when it cannot be opened. */
+    fun runSettingAction(key: String): Boolean
 
     /** The real DNS disclosure; the shell shows it before requesting VPN approval. */
     fun dnsConsent(): ShellConsent

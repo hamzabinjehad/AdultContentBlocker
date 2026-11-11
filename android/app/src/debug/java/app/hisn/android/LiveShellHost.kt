@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import java.util.LinkedHashMap
@@ -25,9 +26,11 @@ import app.hisn.android.nativeshell.ShellRules
 import app.hisn.android.nativeshell.ShellRulesEditor
 import app.hisn.android.nativeshell.ShellRulesPreview
 import app.hisn.android.nativeshell.ShellScheduleDay
+import app.hisn.android.nativeshell.ShellAction
 import app.hisn.android.nativeshell.ShellScheduleEditor
 import app.hisn.android.nativeshell.ShellSetting
 import app.hisn.android.nativeshell.ShellSettings
+import app.hisn.android.nativeshell.ShellToggle
 import app.hisn.core.AppTimeLimit
 import app.hisn.core.DailyAppSchedule
 import app.hisn.core.PolicyChangeError
@@ -64,7 +67,9 @@ class LiveShellHost(private val context: Context) : NativeShellHost {
         layers = string(R.string.native_layers),
         locked = string(R.string.rules_locked),
         unsupported = string(R.string.native_unsupported),
-        dnsStart = string(R.string.dns_start)
+        dnsStart = string(R.string.dns_start),
+        settingsControls = string(R.string.native_settings_controls),
+        settingsAndroid = string(R.string.native_settings_android)
     )
 
     private fun store(): PolicyStore? = runCatching { PolicyStore.get(context) }.getOrNull()
@@ -552,7 +557,43 @@ class LiveShellHost(private val context: Context) : NativeShellHost {
         val onOff = { enabled: Boolean ->
             if (enabled) string(R.string.native_permission_on) else string(R.string.native_permission_off)
         }
+        val settings = store()
+        val locked = (settings?.remainingMillis() ?: 0L) > 0
         return ShellSettings(
+            toggles = listOf(
+                ShellToggle(
+                    key = "safeSearch",
+                    label = string(R.string.dns_safe_search_switch),
+                    detail = string(R.string.dns_safe_search_hint),
+                    on = settings?.safeSearchEnabled() == true,
+                    enabled = !locked
+                )
+            ),
+            actions = listOf(
+                ShellAction(
+                    key = "vpnSettings",
+                    label = string(R.string.dns_settings),
+                    detail = ""
+                ),
+                ShellAction(
+                    key = "usageAccess",
+                    label = string(R.string.native_permission_usage),
+                    detail = string(
+                        if (usage) R.string.time_limits_access_granted
+                        else R.string.time_limits_access_needed
+                    )
+                ),
+                ShellAction(
+                    key = "accessibility",
+                    label = string(R.string.native_permission_accessibility),
+                    detail = onOff(accessibility)
+                ),
+                ShellAction(
+                    key = "notifications",
+                    label = string(R.string.native_permission_notifications),
+                    detail = onOff(notifications)
+                )
+            ),
             sections = listOf(
                 ShellSetting(
                     label = string(R.string.native_permission_section),
@@ -577,6 +618,48 @@ class LiveShellHost(private val context: Context) : NativeShellHost {
             ),
             labels = labels
         )
+    }
+
+    override fun setToggle(key: String, enabled: Boolean): ShellActionResult {
+        if (key != "safeSearch") {
+            return ShellActionResult(string(R.string.native_unsupported), ok = false, refresh = false)
+        }
+        val settings = store()
+            ?: return ShellActionResult(string(R.string.policy_unavailable), ok = false, refresh = false)
+        return try {
+            settings.updateSafeSearch(enabled)
+            ShellActionResult(string(R.string.rules_saved), ok = true, refresh = true)
+        } catch (refused: RuntimeException) {
+            ShellActionResult(refusalText(refused), ok = false, refresh = true)
+        }
+    }
+
+    override fun runSettingAction(key: String): Boolean = try {
+        val intent = when (key) {
+            "vpnSettings" -> null
+            "usageAccess" -> Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+            "accessibility" -> Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+            "notifications" -> {
+                if (Build.VERSION.SDK_INT >= 26) {
+                    Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                        .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                } else {
+                    Intent(
+                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        Uri.parse("package:" + context.packageName)
+                    )
+                }
+            }
+            else -> return false
+        }
+        if (intent == null) {
+            Compat.openVpnSettings(context)
+        } else {
+            context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        }
+        true
+    } catch (unavailable: RuntimeException) {
+        false
     }
 
     override fun runCheck(): ShellActionResult {

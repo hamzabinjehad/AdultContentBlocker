@@ -229,9 +229,43 @@ fun RulesShellScreen(
 @Composable
 fun SettingsShellScreen(
     state: ShellSettings,
-    onOpenClassic: () -> Unit
+    onOpenClassic: () -> Unit,
+    onToggle: (String, Boolean) -> Unit,
+    onAction: (String) -> Unit
 ) {
     ShellScreen {
+        if (state.toggles.isNotEmpty()) {
+            item { SectionLabel(state.labels.settingsControls) }
+            item {
+                HisnCard {
+                    state.toggles.forEachIndexed { index, toggle ->
+                        SettingToggleRow(toggle) { wanted -> onToggle(toggle.key, wanted) }
+                        if (index < state.toggles.lastIndex) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(start = 16.dp, end = 16.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        if (state.actions.isNotEmpty()) {
+            item { SectionLabel(state.labels.settingsAndroid) }
+            item {
+                HisnCard {
+                    state.actions.forEachIndexed { index, action ->
+                        SettingActionRow(action) { onAction(action.key) }
+                        if (index < state.actions.lastIndex) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(start = 16.dp, end = 16.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                            )
+                        }
+                    }
+                }
+            }
+        }
         state.sections.forEach { section ->
             item { SectionLabel(section.label) }
             item {
@@ -579,6 +613,60 @@ private fun LayerCard(layers: List<ShellLayer>, onOpenClassic: () -> Unit) {
                 HorizontalDivider(
                     modifier = Modifier.padding(start = 52.dp, end = 16.dp),
                     color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingToggleRow(toggle: ShellToggle, onChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .toggleable(
+                value = toggle.on,
+                enabled = toggle.enabled,
+                role = Role.Switch,
+                onValueChange = onChange
+            )
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(toggle.label, style = MaterialTheme.typography.titleMedium)
+            if (toggle.detail.isNotEmpty()) {
+                Text(
+                    toggle.detail,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        Switch(
+            checked = toggle.on,
+            onCheckedChange = null,
+            enabled = toggle.enabled
+        )
+    }
+}
+
+@Composable
+private fun SettingActionRow(action: ShellAction, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(action.label, style = MaterialTheme.typography.titleMedium)
+            if (action.detail.isNotEmpty()) {
+                Text(
+                    action.detail,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
