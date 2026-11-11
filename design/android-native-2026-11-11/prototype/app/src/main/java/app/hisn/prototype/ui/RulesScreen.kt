@@ -134,7 +134,7 @@ fun RulesScreen(
                         } else {
                             state.gray.set(false)
                             if (!ScreenGray.set(context, false)) {
-                                toast(context, "Gray was turned on outside Hisn")
+                                toast(context, "Turn grayscale off in Accessibility › Color correction")
                             }
                             grayOnScreen = ScreenGray.isGray(context)
                         }

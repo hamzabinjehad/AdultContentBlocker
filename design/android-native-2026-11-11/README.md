@@ -103,12 +103,13 @@ and the About screen says so.
 
 | Protected | Needs attention |
 | --- | --- |
-| ![Protected](01-protection-light.png) | ![Attention](02-protection-attention.png) |
+| ![Protected](17-protection-four-layers.png) | ![Attention](02-protection-attention.png) |
 
 The hero answers three questions in order: *am I protected, which layer is the gap,
-and what do I do next*. The coverage row is a compact ledger (`Network / Apps /
-Images`) with a word, not colour alone. The attention list below the hero is the only
-place that repeats the gap, and each row is an action.
+and what do I do next*. The coverage ledger (`Network / Apps / Adult tags / Images`)
+gives each layer a word, not colour alone; three layers sit on one row and four wrap to
+2 × 2. The attention list below the hero is the only place that repeats the gap, and each
+row is an action.
 
 ### Rules
 
