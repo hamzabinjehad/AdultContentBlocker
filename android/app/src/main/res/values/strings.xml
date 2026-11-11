@@ -785,4 +785,6 @@
     <string name="native_unsupported">This layer needs Android 14 or later.</string>
     <string name="native_choose_apps">Enabled. Choose apps to inspect in classic Hisn.</string>
     <string name="native_lock_started">Protection lock started.</string>
+    <string name="native_settings_controls">Protection settings</string>
+    <string name="native_settings_android">Android settings</string>
 </resources>

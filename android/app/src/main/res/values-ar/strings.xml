@@ -857,4 +857,6 @@
     <string name="native_unsupported">تحتاج هذه الطبقة إلى أندرويد 14 أو أحدث.</string>
     <string name="native_choose_apps">مفعّلة. اختر التطبيقات لفحصها في حصن الكلاسيكي.</string>
     <string name="native_lock_started">بدأ قفل الحماية.</string>
+    <string name="native_settings_controls">إعدادات الحماية</string>
+    <string name="native_settings_android">إعدادات Android</string>
 </resources>

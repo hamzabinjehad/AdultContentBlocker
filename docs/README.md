@@ -105,7 +105,7 @@ past version; *superseded* documents point to their replacement. Start with the
 - [Android feature improvement plan, 2026-11-08](ANDROID_FEATURE_IMPROVEMENT_PLAN_2026-11-08.md): The feature backlog behind the 1.4.0-and-later candidate, with the native-ML starting facts superseded by the end-project plan.
 - [Android tamper resistance scope](ANDROID_TAMPER_RESISTANCE.md): What Android personal mode can and cannot do to resist removal, Play policy limits, and managed-device mode including the 0.8.0 lockdown restrictions and layer watchdog.
 
-- [Native Android shell, Phase 4e, 2026-11-11](ANDROID_NATIVE_SHELL_2026-11-11.md): The Compose shell reads and writes the installed policy — layers, domain/word rules, blocked/inspected apps, the real app schedule and per-app daily limits, DNS setup and the protection lock; debug-only, with the classic launcher still the default.
+- [Native Android shell, Phase 4f, 2026-11-11](ANDROID_NATIVE_SHELL_2026-11-11.md): The Compose shell reads and writes the installed policy — layers, domain/word rules, apps, schedule, daily limits, DNS setup, the protection lock and SafeSearch — with native Android-settings shortcuts; debug-only, with the classic launcher still the default.
 
 ## Network and routers
 

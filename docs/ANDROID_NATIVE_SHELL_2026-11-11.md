@@ -1,41 +1,38 @@
-# Android: the native shell, Phase 4e
+# Android: the native shell, Phase 4f
 
-**Status: development, debug-only, 11 November 2026.** The native shell can now edit the real
-**daily app schedule**: enabled state, days, one time window, block/keep mode and the app
-selection. Uninstall protection, Welcome, Shield and the remaining surfaces are still classic;
-the classic launcher remains the default and nothing here is in a release APK.
+**Status: development, debug-only, 11 November 2026.** The native Settings screen is no longer a
+read-only summary: it can change the real **SafeSearch** policy and open the relevant Android
+settings surfaces. Uninstall protection, Welcome, Shield and the remaining surfaces are still
+classic; the classic launcher remains the default and nothing here is in a release APK.
 
 ## What landed
 
-- **Native schedule editor.** The Rules row opens a native sheet with the existing
-  `DailyAppSchedule`: enable switch, start/end time buttons, Monday-first day chips, the
-  block-only / block-everything-except mode, and a private app picker.
-- **Native time entry.** Start and end use a Material 3 `TimeInput` dialog; the 22:00–07:00
-  overnight default and arbitrary windows are preserved, and equal endpoints are refused by the
-  core model/save path.
-- **Real policy write.** Save calls `PolicyStore.updateSchedule(new DailyAppSchedule(...))`, so
-  validation, the protection lock and the second store check stay in one place. The app picker
-  preserves saved packages that are temporarily uninstalled; labels switch between *Apps to
-  block* and *Apps to keep available* with the mode.
-- **Exact refusals.** Equal times, zero days, enabling with no apps, and store refusals use the
-  existing schedule strings instead of a generic error.
-- **Lock-aware and private.** The schedule is read-only during a protection lock and the sheet is
-  `FLAG_SECURE`; it is deliberately absent from screenshots.
-- **The summary is live.** Rules changes the App schedule row from **Off** to **On** from the
-  saved `DailyAppSchedule`; the remaining app rules, limits and lock stay independent.
+- **SafeSearch is real.** The switch calls `PolicyStore.updateSafeSearch`, so the saved DNS
+  preference, the protection lock and the store's refusal are exactly the classic ones. It shows
+  the real `safeSearchEnabled()` value and is disabled during a protection lock; the host still
+  enforces the refusal.
+- **Native Android settings shortcuts.** VPN settings, Usage access, Accessibility and app
+  Notification settings open their Android pages directly instead of sending the owner to the
+  classic dashboard. Usage/Accessibility/Notifications show their live permission status.
+- **The Settings page is a real screen.** Protection controls, Android settings and the
+  pre-existing permission/language/version sections share the same Material 3 surface and the
+  same 2-second live refresh while resumed.
+- **Snapshot feedback.** The switch refreshes from `PolicyStore` after save; Android settings
+  return to a refreshed permission summary.
 
 ## What the shell shows
 
-![Rules with schedule on](../design/android-native-2026-11-11/43-native-schedule-on.png)
+![Native Settings with SafeSearch](../design/android-native-2026-11-11/44-native-settings.png)
 
-The capture is a real API 23 state: a schedule enabled with **Browser** on **22:00–07:00**, all
-days, in blocklist mode, beside the native daily limits and lock rows. The editor itself is
-private (`FLAG_SECURE`), so the saved row is the evidence.
+The capture is a real API 23 state: SafeSearch on, Usage access not granted, Accessibility off,
+with the native settings shortcuts below.
 
 ## What it does not do yet
 
-- **No native uninstall-protection, export/import or guardian editors.**
+- **No native uninstall-protection editor.** Its direct-build/device-owner controls and the
+  provisioning command still open classic Hisn.
 - **No native Welcome, Shield/Restriction/pause or AfterBlock surfaces.**
+- **No native export/import or guardian editor.**
 - **No Arabic layout, TalkBack, screenshot-test or 2.0× font pass yet.** The host already
   returns Arabic strings.
 - **DNS stop** still does not exist in the app.
@@ -61,19 +58,20 @@ A plain `assembleDebug` leaves the shell disabled; `assembleRelease` does not li
 
 ## Verification, 11 November
 
-- API 23 emulator: opened **App schedule**, kept the 22:00–07:00 window, selected **Browser**,
-  enabled the schedule, saved, and verified the Rules row **On**. Opened the start time and saw
-  the native `TimeInput` dialog. `pm clear` reset the emulator data afterwards.
+- API 23 emulator: opened **Settings**, toggled **SafeSearch** on and saw the saved switch
+  (checked state from the real policy); tapped **Usage access** and confirmed Android opened
+  `com.android.settings/UsageAccessSettingsActivity`, then returned to the shell. `pm clear`
+  reset the emulator data afterwards.
 - `./gradlew --no-daemon assembleDebug assembleDebugAndroidTest lintDebug assembleRelease` pass.
 - `./gradlew :app:assembleDebug -PhisnNativeShell=true` passes.
 - `android/test-core.sh`, `python3 check-strings.py` and `python3 script/test_docs.py` pass.
 - Release APK still has zero `nativeshell`/Compose references.
-- Earlier phases re-checked across the stack: layer switches, domain/app editors, DNS start,
-  daily limits and the protection lock.
+- Earlier phases re-checked across the stack: layers, apps, schedule, limits, DNS, lock and the
+  classic fallback.
 
 ## Next phases
 
-1. **Phase 4f — uninstall protection.** Native switch/status over `UninstallProtectionController`,
-  with the direct/dev-owner limits kept explicit.
+1. **Phase 4g — uninstall protection.** A native status/provisioning surface first, then the
+   direct-build/device-owner controls with their real constraints.
 2. **Phase 5 — remaining surfaces.** Welcome, Shield/Restriction/pause, export/import, Arabic,
    TalkBack and screenshot tests; then flip the launcher and remove the classic dashboard.

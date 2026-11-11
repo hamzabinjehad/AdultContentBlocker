@@ -100,7 +100,9 @@ private fun fallbackLabels() = ShellLabels(
     layers = "Protection layers",
     locked = "Rules are locked until the protection lock ends.",
     unsupported = "This layer needs Android 14 or later.",
-    dnsStart = "Set up DNS filtering"
+    dnsStart = "Set up DNS filtering",
+    settingsControls = "Protection settings",
+    settingsAndroid = "Android settings"
 )
 
 /**
@@ -231,6 +233,21 @@ fun NativeShell(host: NativeShellHost?) {
         val next = host?.scheduleEditor() ?: return
         haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
         scheduleDialog = next
+    }
+
+    fun setToggle(key: String, enabled: Boolean) {
+        scope.launch {
+            val result = host?.setToggle(key, enabled)
+                ?: return@launch
+            snackbar.showSnackbar(result.message)
+            if (result.ok) refresh()
+        }
+    }
+
+    fun runSettingAction(key: String) {
+        if (host?.runSettingAction(key) != true) {
+            scope.launch { snackbar.showSnackbar(labels.unsupported) }
+        }
     }
 
     val vpnLauncher = rememberLauncherForActivityResult(
@@ -413,6 +430,8 @@ fun NativeShell(host: NativeShellHost?) {
                         onEditLimits = ::editLimits,
                         onEditSchedule = ::editSchedule,
                         onStartDns = ::requestDnsSetup,
+                        onToggle = ::setToggle,
+                        onAction = ::runSettingAction,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -584,6 +603,8 @@ private fun ShellContent(
     onEditLimits: () -> Unit,
     onEditSchedule: () -> Unit,
     onStartDns: () -> Unit,
+    onToggle: (String, Boolean) -> Unit,
+    onAction: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val layoutDirection = LocalLayoutDirection.current
@@ -624,7 +645,9 @@ private fun ShellContent(
                 )
                 index == 2 && settings != null -> SettingsShellScreen(
                     state = settings,
-                    onOpenClassic = onOpenClassic
+                    onOpenClassic = onOpenClassic,
+                    onToggle = onToggle,
+                    onAction = onAction
                 )
                 else -> LoadingShellScreen()
             }
