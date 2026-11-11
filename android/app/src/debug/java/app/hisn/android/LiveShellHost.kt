@@ -1,5 +1,7 @@
 package app.hisn.android
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -31,11 +33,13 @@ import app.hisn.android.nativeshell.ShellScheduleEditor
 import app.hisn.android.nativeshell.ShellSetting
 import app.hisn.android.nativeshell.ShellSettings
 import app.hisn.android.nativeshell.ShellToggle
+import app.hisn.android.nativeshell.ShellUninstall
 import app.hisn.core.AppTimeLimit
 import app.hisn.core.DailyAppSchedule
 import app.hisn.core.PolicyChangeError
 import app.hisn.core.ProtectionLock
 import app.hisn.core.RulePreview
+import app.hisn.core.UninstallProtection
 import java.util.Locale
 
 /**
@@ -592,6 +596,11 @@ class LiveShellHost(private val context: Context) : NativeShellHost {
                     key = "notifications",
                     label = string(R.string.native_permission_notifications),
                     detail = onOff(notifications)
+                ),
+                ShellAction(
+                    key = "uninstall",
+                    label = string(R.string.section_uninstall),
+                    detail = uninstallSummary()
                 )
             ),
             sections = listOf(
@@ -618,6 +627,117 @@ class LiveShellHost(private val context: Context) : NativeShellHost {
             ),
             labels = labels
         )
+    }
+
+    private fun uninstallSummary(): String {
+        val status = runCatching { UninstallProtectionController.read(context) }.getOrNull()
+            ?: return string(R.string.state_attention)
+        return when {
+            status.uninstallBlocked -> string(R.string.state_on)
+            status.deviceOwner || BuildConfig.SELF_PROTECTION -> string(R.string.state_attention)
+            else -> string(R.string.state_off)
+        }
+    }
+
+    private fun uninstallStatusText(status: UninstallProtectionController.Status): String {
+        val settings = store()
+        val screenGuard = BuildConfig.SELF_PROTECTION && !status.deviceOwner
+        if (screenGuard) {
+            val committed = ProtectionLock.locked(status.remainingMillis)
+            val connected = TextGuardService.connected
+            if (settings == null) return string(R.string.policy_unavailable)
+            if (committed && !connected) {
+                return string(R.string.self_protection_state_lock_inactive)
+            }
+            if (committed) {
+                return string(
+                    if (settings.installLock()) R.string.self_protection_state_lock_on_installs
+                    else R.string.self_protection_state_lock_on,
+                    Durations.remaining(context, status.remainingMillis)
+                )
+            }
+            if (!status.keepInstalled) {
+                return string(
+                    if (settings.installLock()) R.string.self_protection_state_installs_only
+                    else R.string.self_protection_state_off
+                )
+            }
+            if (connected) {
+                return string(
+                    if (settings.installLock()) R.string.self_protection_state_on_installs
+                    else R.string.self_protection_state_on
+                )
+            }
+            return string(R.string.self_protection_state_inactive)
+        }
+        return when (status.state()) {
+            UninstallProtection.State.ADMIN_ONLY -> string(R.string.uninstall_state_admin)
+            UninstallProtection.State.READY -> string(R.string.uninstall_state_ready)
+            UninstallProtection.State.PROTECTED -> if (status.remainingMillis > 0) {
+                string(
+                    R.string.uninstall_state_protected_commitment,
+                    Durations.remaining(context, status.remainingMillis)
+                )
+            } else {
+                string(R.string.uninstall_state_protected)
+            }
+            UninstallProtection.State.OUT_OF_SYNC -> string(R.string.uninstall_state_sync)
+            else -> string(
+                if (status.error != null) R.string.uninstall_state_error
+                else R.string.uninstall_state_unavailable
+            )
+        }
+    }
+
+    override fun uninstallState(): ShellUninstall {
+        val status = runCatching { UninstallProtectionController.read(context) }.getOrNull()
+        val managed = status != null &&
+            (status.deviceOwner || (BuildConfig.SELF_PROTECTION && !status.deviceOwner))
+        val body = when {
+            status == null -> string(R.string.policy_unavailable)
+            status.deviceOwner -> string(R.string.uninstall_dialog_body_owner)
+            BuildConfig.SELF_PROTECTION -> string(R.string.self_protection_dialog_body)
+            else -> string(R.string.uninstall_dialog_body_unmanaged)
+        }
+        val command = if (!managed) {
+            runCatching { UninstallProtectionController.provisioningCommand(context) }
+                .getOrDefault("")
+        } else {
+            ""
+        }
+        return ShellUninstall(
+            title = string(R.string.uninstall_title),
+            body = body,
+            status = status?.let { uninstallStatusText(it) }
+                ?: string(R.string.uninstall_state_error),
+            commandLabel = string(R.string.uninstall_command_label),
+            command = command,
+            copyLabel = string(R.string.uninstall_copy_command),
+            copyMessage = string(R.string.uninstall_copied),
+            adminLabel = string(R.string.admin_setup),
+            managed = managed,
+            managedNote = string(R.string.native_uninstall_managed_classic)
+        )
+    }
+
+    override fun copyUninstallCommand(): Boolean = try {
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+            ?: return false
+        val command = UninstallProtectionController.provisioningCommand(context)
+        clipboard.setPrimaryClip(ClipData.newPlainText("Hisn device-owner setup", command))
+        true
+    } catch (unavailable: RuntimeException) {
+        false
+    }
+
+    override fun openAdminSetup(): Boolean = try {
+        context.startActivity(
+            UninstallProtectionController.adminIntent(context)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+        true
+    } catch (unavailable: RuntimeException) {
+        false
     }
 
     override fun setToggle(key: String, enabled: Boolean): ShellActionResult {
