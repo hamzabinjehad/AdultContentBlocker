@@ -92,7 +92,7 @@ filter and the bridge) and `macos/Hisn/CompatibilityUI.swift` (app only).
 | --- | --- | --- |
 | Every target builds for 12 | `xcodebuild -scheme Hisn -configuration Debug build -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO` | Build succeeded |
 | Release optimisations build for 12 | the same with `-configuration Release` | Build succeeded |
-| Tests build and run | `./test.sh macos` | 624 tests, 0 failures; 851 strings all with Arabic |
+| Tests build and run | `./test.sh macos` | 624 tests, 0 failures; the Arabic export check, run on its own, reads 851 strings, all with Arabic |
 | Binaries target 12 | `otool -l` on the app, the filter and the bridge | `minos 12.0` on all three |
 | The fallback layouts draw | `MacUIRefreshTests.testLegacyPagesRenderForVisualReview` renders every page with `HnCompat.forceLegacy = true` into `/tmp/hisn-mac-ui/legacy-*.png` | Every page renders; the words editor's cleared background is `#302C26` on both paths |
 | The toolbar survives the split | `MacUIRefreshTests.testTheToolbarButtonsSurviveTheMacOS12Split` | Two custom buttons on both paths; only the toggle and separator differ |
