@@ -748,4 +748,37 @@
     <string name="social_apps_none">No installed social apps to add.</string>
     <string name="commitment_locked_note">Saved rules are read-only until the period ends. Hisn offers no early release inside the app.</string>
     <string name="uninstall_setup_note">Managed mode is provisioned outside Hisn on an account-free device.</string>
+
+    <!-- Native shell (debug Phase 2): strings the Compose shell reads through its host. -->
+    <string name="native_protected_title">Protected</string>
+    <string name="native_protected_body">All four layers are running. Your rules stay on this phone.</string>
+    <string name="native_run_check">Run a protection check</string>
+    <string name="native_check_started">Route check started.</string>
+    <string name="native_check_unavailable">DNS filtering is not running, so the route check cannot start.</string>
+    <string name="native_live_title">Live · read-only preview</string>
+    <string name="native_live_body">This screen reads your real saved rules and service state. Changes still open the classic Hisn screen until the native editors are finished.</string>
+    <string name="native_open_classic">Open classic Hisn</string>
+    <string name="native_state_unavailable">Protection settings could not be read.</string>
+    <string name="native_layer_dns_on">On · %1$d domains loaded</string>
+    <string name="native_layer_dns_off">Off · No DNS session</string>
+    <string name="native_layer_words_on">On · %1$d word rules</string>
+    <string name="native_layer_words_off">Off · Adult text is not matched</string>
+    <string name="native_layer_apps_on">On · %1$d apps blocked</string>
+    <string name="native_layer_apps_off">Off · No app rules</string>
+    <string name="native_layer_images_on">On · On-device, Android 14+</string>
+    <string name="native_layer_images_off">Off · Images are not sampled</string>
+    <string name="native_no_apps">No apps chosen yet</string>
+    <string name="native_rules_note">Editing uses the classic Hisn screen for now. The native editors arrive in the next phase.</string>
+    <string name="native_settings_language">Language</string>
+    <string name="native_settings_version">Version %1$s</string>
+    <string name="native_permission_on">On</string>
+    <string name="native_permission_off">Off</string>
+    <string name="native_permission_accessibility">Accessibility</string>
+    <string name="native_permission_notifications">Notifications</string>
+    <string name="native_permission_vpn">VPN</string>
+    <string name="native_permission_usage">Usage access</string>
+    <string name="native_permission_section">Permissions</string>
+    <string name="native_about_section">About</string>
+    <string name="native_attention">What needs attention</string>
+    <string name="native_layers">Protection layers</string>
 </resources>

@@ -1,0 +1,594 @@
+package app.hisn.android.nativeshell
+
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.automirrored.outlined.List
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Warning
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+
+// Phase 2 surfaces. Every value comes from NativeShellHost; no number or protection claim is
+// fabricated here. Editing stays in the classic screen until the native editors land.
+
+@Composable
+fun LiveBanner(labels: ShellLabels) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        shape = MaterialTheme.shapes.large,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, top = 8.dp)
+    ) {
+        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Outlined.Info,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text(labels.live, style = MaterialTheme.typography.titleSmall)
+                Text(
+                    labels.liveBody,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ProtectionShellScreen(
+    state: ShellProtection,
+    onCheck: () -> Unit,
+    onOpenClassic: () -> Unit
+) {
+    ShellScreen {
+        item { LiveHero(state, onCheck, onOpenClassic) }
+        if (state.issues.isNotEmpty()) {
+            item { SectionLabel(state.labels.attention) }
+            item { IssueCard(state.issues, state.labels.openClassic, onOpenClassic) }
+        }
+        item { SectionLabel(state.labels.layers) }
+        item { LayerCard(state.layers, onOpenClassic) }
+    }
+}
+
+@Composable
+fun RulesShellScreen(
+    state: ShellRules,
+    onOpenClassic: () -> Unit
+) {
+    ShellScreen {
+        item { SectionLabel(state.builtInTitle) }
+        item {
+            HisnCard {
+                state.builtIn.forEachIndexed { index, rule ->
+                    RuleSwitchRow(rule, onOpenClassic)
+                    if (index < state.builtIn.lastIndex) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(start = 16.dp, end = 16.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                        )
+                    }
+                }
+            }
+        }
+        item { SectionLabel(state.customTitle) }
+        item {
+            HisnCard {
+                state.custom.forEachIndexed { index, rule ->
+                    RuleValueRow(rule, onOpenClassic)
+                    if (index < state.custom.lastIndex) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(start = 16.dp, end = 16.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                        )
+                    }
+                }
+            }
+        }
+        item {
+            Text(
+                state.note,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 4.dp)
+            )
+        }
+        item {
+            Button(onClick = onOpenClassic, modifier = Modifier.fillMaxWidth()) {
+                Text(state.labels.openClassic)
+            }
+        }
+    }
+}
+
+@Composable
+fun SettingsShellScreen(
+    state: ShellSettings,
+    onOpenClassic: () -> Unit
+) {
+    ShellScreen {
+        state.sections.forEach { section ->
+            item { SectionLabel(section.label) }
+            item {
+                HisnCard {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        if (section.value.isNotEmpty()) {
+                            Text(section.value, style = MaterialTheme.typography.titleMedium)
+                        }
+                        if (section.detail.isNotEmpty()) {
+                            Text(
+                                section.detail,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        item {
+            Button(onClick = onOpenClassic, modifier = Modifier.fillMaxWidth()) {
+                Text(state.labels.openClassic)
+            }
+        }
+        item {
+            Text(
+                state.labels.liveBody,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 4.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun UnavailableShellScreen(
+    labels: ShellLabels,
+    onOpenClassic: () -> Unit
+) {
+    Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(
+                Icons.Outlined.Warning,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error
+            )
+            Text(labels.live, style = MaterialTheme.typography.titleLarge)
+            Text(
+                labels.liveBody,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Button(onClick = onOpenClassic) { Text(labels.openClassic) }
+        }
+    }
+}
+
+@Composable
+fun LoadingShellScreen() {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator()
+    }
+}
+
+@Composable
+private fun LiveHero(
+    state: ShellProtection,
+    onCheck: () -> Unit,
+    onOpenClassic: () -> Unit
+) {
+    val status = LocalHisnStatusColors.current
+    val protected = state.status == "protected"
+    val accentTarget = if (protected) status.success else status.warning
+    val containerTarget = if (protected) status.successContainer else status.warningContainer
+    val onTarget = if (protected) status.onSuccessContainer else status.onWarningContainer
+    val accent by animateColorAsState(accentTarget, tween(320, easing = FastOutSlowInEasing), label = "hero accent")
+    val container by animateColorAsState(containerTarget, tween(320, easing = FastOutSlowInEasing), label = "hero container")
+    val onContainer by animateColorAsState(onTarget, tween(320, easing = FastOutSlowInEasing), label = "hero text")
+    val coverage = if (state.layers.isEmpty()) {
+        0f
+    } else {
+        state.layers.count { it.on }.toFloat() / state.layers.size.toFloat()
+    }
+    val animatedCoverage by animateFloatAsState(
+        targetValue = coverage,
+        animationSpec = spring(dampingRatio = 0.9f, stiffness = 700f),
+        label = "coverage"
+    )
+
+    Surface(
+        color = container,
+        contentColor = onContainer,
+        shape = MaterialTheme.shapes.extraLarge,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(Modifier.padding(20.dp)) {
+            Row(verticalAlignment = Alignment.Top) {
+                StatusSeal(animatedCoverage, accent, protected)
+                Spacer(Modifier.width(14.dp))
+                Column(Modifier.weight(1f)) {
+                    AnimatedContent(
+                        targetState = state.title,
+                        transitionSpec = {
+                            (fadeIn(tween(200)) +
+                                slideInVertically(tween(240, easing = FastOutSlowInEasing)) { it / 6 }) togetherWith
+                                (fadeOut(tween(110)) +
+                                    slideOutVertically(tween(140, easing = FastOutSlowInEasing)) { -it / 8 })
+                        },
+                        label = "hero title"
+                    ) { title ->
+                        Text(
+                            title,
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = onContainer
+                        )
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    AnimatedContent(
+                        targetState = state.body,
+                        transitionSpec = { fadeIn(tween(240, delayMillis = 60)) togetherWith fadeOut(tween(100)) },
+                        label = "hero body"
+                    ) { body ->
+                        Text(
+                            body,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = onContainer.copy(alpha = 0.8f)
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(18.dp))
+            CoverageLedger(state.layers, accent)
+            Spacer(Modifier.height(16.dp))
+
+            if (state.canCheck) {
+                Button(onClick = onCheck, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Outlined.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(state.labels.runCheck)
+                }
+                TextButton(onClick = onOpenClassic, modifier = Modifier.fillMaxWidth()) {
+                    Text(state.labels.openClassic)
+                }
+            } else {
+                Button(onClick = onOpenClassic, modifier = Modifier.fillMaxWidth()) {
+                    Text(state.labels.openClassic)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatusSeal(coverage: Float, accent: Color, protected: Boolean) {
+    Box(Modifier.size(64.dp), contentAlignment = Alignment.Center) {
+        Canvas(Modifier.fillMaxSize()) {
+            val stroke = 3.dp.toPx()
+            val radius = size.minDimension / 2f - stroke
+            val topLeft = Offset(size.width / 2f - radius, size.height / 2f - radius)
+            val arcSize = Size(radius * 2f, radius * 2f)
+            drawCircle(color = accent.copy(alpha = 0.14f), radius = radius)
+            drawCircle(
+                color = accent.copy(alpha = 0.18f),
+                radius = radius,
+                style = Stroke(width = stroke)
+            )
+            drawArc(
+                color = accent,
+                startAngle = -90f,
+                sweepAngle = 360f * coverage,
+                useCenter = false,
+                topLeft = topLeft,
+                size = arcSize,
+                style = Stroke(width = stroke, cap = StrokeCap.Round)
+            )
+        }
+        Surface(
+            shape = CircleShape,
+            color = accent.copy(alpha = 0.16f),
+            contentColor = accent,
+            modifier = Modifier.size(44.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = if (protected) Icons.Outlined.Check else Icons.Outlined.Warning,
+                    contentDescription = null,
+                    modifier = Modifier.size(26.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CoverageLedger(layers: List<ShellLayer>, accent: Color) {
+    Surface(
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha = 0.72f),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column {
+            layers.chunked(2).forEachIndexed { rowIndex, row ->
+                if (rowIndex > 0) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 12.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    )
+                }
+                Row(Modifier.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    row.forEachIndexed { index, layer ->
+                        if (index > 0) {
+                            Box(
+                                Modifier
+                                    .width(1.dp)
+                                    .height(34.dp)
+                                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                            )
+                        }
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    Modifier
+                                        .size(8.dp)
+                                        .background(
+                                            if (layer.on) accent else MaterialTheme.colorScheme.outline,
+                                            CircleShape
+                                        )
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    layer.label,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 2,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                layer.state,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = if (layer.on) {
+                                    MaterialTheme.colorScheme.onSurface
+                                } else {
+                                    MaterialTheme.colorScheme.error
+                                }
+                            )
+                        }
+                    }
+                    if (row.size == 1) Spacer(Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun IssueCard(
+    issues: List<ShellIssue>,
+    openClassicLabel: String,
+    onOpenClassic: () -> Unit
+) {
+    val status = LocalHisnStatusColors.current
+    Surface(
+        color = status.warningContainer,
+        contentColor = status.onWarningContainer,
+        shape = MaterialTheme.shapes.large,
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenClassic)
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            issues.forEach { issue ->
+                Row(verticalAlignment = Alignment.Top) {
+                    Icon(Icons.Outlined.Warning, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(10.dp))
+                    Text(issue.message, style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+            Text(
+                openClassicLabel,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+}
+
+@Composable
+private fun LayerCard(layers: List<ShellLayer>, onOpenClassic: () -> Unit) {
+    HisnCard {
+        layers.forEachIndexed { index, layer ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onOpenClassic)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    iconFor(layer.key),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.width(16.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(layer.label, style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        layer.detail,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Text(
+                    layer.state,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (layer.on) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    }
+                )
+            }
+            if (index < layers.lastIndex) {
+                HorizontalDivider(
+                    modifier = Modifier.padding(start = 52.dp, end = 16.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RuleSwitchRow(rule: ShellRule, onOpenClassic: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onOpenClassic)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(rule.label, style = MaterialTheme.typography.titleMedium)
+            Text(
+                rule.detail,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Text(
+            rule.state,
+            style = MaterialTheme.typography.labelLarge,
+            color = if (rule.on) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.error
+            }
+        )
+    }
+}
+
+@Composable
+private fun RuleValueRow(rule: ShellRule, onOpenClassic: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onOpenClassic)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(rule.label, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+        Text(
+            rule.detail,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun HisnCard(content: @Composable ColumnScope.() -> Unit) {
+    Surface(
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(content = content)
+    }
+}
+
+@Composable
+private fun ShellScreen(content: LazyListScope.() -> Unit) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        content = content
+    )
+}
+
+@Composable
+private fun SectionLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 4.dp, top = 8.dp)
+    )
+}
+
+private fun iconFor(key: String): ImageVector = when (key) {
+    "network" -> Icons.Outlined.Lock
+    "apps" -> Icons.AutoMirrored.Outlined.List
+    "words" -> Icons.Outlined.Search
+    else -> Icons.Outlined.Info
+}
