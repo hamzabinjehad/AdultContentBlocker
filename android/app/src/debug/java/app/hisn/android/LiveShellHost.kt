@@ -2,9 +2,13 @@ package app.hisn.android
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.os.Build
 import app.hisn.android.nativeshell.NativeShellHost
 import app.hisn.android.nativeshell.ShellActionResult
+import app.hisn.android.nativeshell.ShellApp
+import app.hisn.android.nativeshell.ShellAppPicker
 import app.hisn.android.nativeshell.ShellConsent
 import app.hisn.android.nativeshell.ShellIssue
 import app.hisn.android.nativeshell.ShellLabels
@@ -272,9 +276,16 @@ class LiveShellHost(private val context: Context) : NativeShellHost {
                 on = false
             ),
             ShellRule(
-                key = "apps",
-                label = string(R.string.section_apps),
+                key = "blockedApps",
+                label = string(R.string.choose_blocked_apps),
                 detail = plurals(R.plurals.blocked_apps_count, snap.blockedApps.size),
+                state = "",
+                on = false
+            ),
+            ShellRule(
+                key = "scannedApps",
+                label = string(R.string.choose_scanned_apps),
+                detail = plurals(R.plurals.inspected_apps_count, snap.scannedApps.size),
                 state = "",
                 on = false
             ),
@@ -552,6 +563,91 @@ class LiveShellHost(private val context: Context) : NativeShellHost {
             },
             refresh = started
         )
+    }
+
+    override fun appPicker(kind: String): ShellAppPicker {
+        val scan = kind == "scanned"
+        val snap = store()?.snapshot()
+        val settings = store()
+        val selected = when {
+            snap == null -> emptySet()
+            scan -> snap.scannedApps
+            else -> snap.blockedApps
+        }
+        val density = context.resources.displayMetrics.density
+        val iconSize = (36 * density).toInt().coerceAtLeast(1)
+        val apps = runCatching { ChosenApps.list(context) }.getOrDefault(emptyList())
+            .map { entry ->
+                ShellApp(
+                    packageName = entry.packageName,
+                    label = entry.label,
+                    icon = appIcon(entry.packageName, iconSize)
+                )
+            }
+        return ShellAppPicker(
+            kind = kind,
+            title = string(if (scan) R.string.choose_scanned_apps else R.string.choose_blocked_apps),
+            note = string(R.string.app_picker_private),
+            searchHint = string(R.string.app_search_hint),
+            emptyLabel = string(R.string.app_search_empty),
+            saveLabel = string(R.string.save_rules),
+            cancelLabel = string(android.R.string.cancel),
+            lockedNote = string(R.string.rules_locked),
+            locked = (settings?.remainingMillis() ?: 0L) > 0,
+            max = PolicyStore.MAX_APPS,
+            selected = selected,
+            apps = apps
+        )
+    }
+
+    private fun appIcon(packageName: String, size: Int): Bitmap? = runCatching {
+        val drawable = context.packageManager.getApplicationIcon(packageName)
+        val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        drawable.setBounds(0, 0, size, size)
+        drawable.draw(canvas)
+        bitmap
+    }.getOrNull()
+
+    override fun saveAppPicker(kind: String, selected: Set<String>): ShellActionResult {
+        val scan = kind == "scanned"
+        val settings = store()
+            ?: return ShellActionResult(string(R.string.policy_unavailable), ok = false, refresh = false)
+        if (settings.remainingMillis() > 0) {
+            return ShellActionResult(string(R.string.rules_locked), ok = false, refresh = false)
+        }
+        val snap = settings.snapshot()
+        val installed = runCatching { ChosenApps.list(context) }
+            .getOrDefault(emptyList())
+            .map { it.packageName }
+            .toSet()
+        // The classic picker keeps saved packages that are temporarily uninstalled; only the
+        // installed rows can be changed here, so carry the rest forward.
+        val previous = if (scan) snap.scannedApps else snap.blockedApps
+        val preserved = previous.filter { it !in installed }
+        val next = selected + preserved
+        if (next.size > PolicyStore.MAX_APPS) {
+            return ShellActionResult(
+                context.resources.getQuantityString(
+                    R.plurals.rules_too_many_apps,
+                    PolicyStore.MAX_APPS,
+                    PolicyStore.MAX_APPS
+                ),
+                ok = false,
+                refresh = false
+            )
+        }
+        return try {
+            settings.update(
+                settings.domainText(),
+                settings.wordText(),
+                if (scan) snap.blockedApps else next,
+                if (scan) next else snap.scannedApps
+            )
+            ShellActionResult(string(R.string.rules_saved), ok = true, refresh = true)
+        } catch (refused: RuntimeException) {
+            ShellActionResult(refusalText(refused), ok = false, refresh = true)
+        }
     }
 
     override fun dnsConsent(): ShellConsent = ShellConsent(

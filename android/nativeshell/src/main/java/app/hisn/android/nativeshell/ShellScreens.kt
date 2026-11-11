@@ -12,7 +12,9 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,9 +31,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -44,6 +48,7 @@ import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -53,6 +58,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -63,8 +69,13 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -126,7 +137,8 @@ fun RulesShellScreen(
     state: ShellRules,
     onOpenClassic: () -> Unit,
     onLayer: (String, Boolean) -> Unit,
-    onEditRules: (String) -> Unit
+    onEditRules: (String) -> Unit,
+    onEditApps: (String) -> Unit
 ) {
     ShellScreen {
         if (state.locked) {
@@ -167,6 +179,8 @@ fun RulesShellScreen(
                     RuleValueRow(rule) {
                         when (rule.key) {
                             "domains", "words" -> onEditRules(rule.key)
+                            "blockedApps" -> onEditApps("blocked")
+                            "scannedApps" -> onEditApps("scanned")
                             else -> onOpenClassic()
                         }
                     }
@@ -629,6 +643,174 @@ private fun SectionLabel(text: String) {
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(start = 4.dp, top = 8.dp)
+    )
+}
+
+@Composable
+fun AppPickerDialog(
+    picker: ShellAppPicker,
+    onSave: (Set<String>) -> ShellActionResult,
+    onDismiss: () -> Unit,
+    onResult: (ShellActionResult) -> Unit
+) {
+    var query by remember(picker) { mutableStateOf("") }
+    var selected by remember(picker) { mutableStateOf(picker.selected) }
+    var error by remember(picker) { mutableStateOf<String?>(null) }
+    val focusManager = LocalFocusManager.current
+    val listFocus = remember { FocusRequester() }
+    // The dialog window focuses the first text field on some Android versions. Move focus to the
+    // list so the keyboard stays down until the search field is tapped.
+    LaunchedEffect(picker) {
+        focusManager.clearFocus(force = true)
+        listFocus.requestFocus()
+    }
+    val visible = remember(picker.apps, query) {
+        val needle = query.trim().lowercase()
+        if (needle.isEmpty()) {
+            picker.apps
+        } else {
+            picker.apps.filter {
+                it.label.lowercase().contains(needle) ||
+                    it.packageName.lowercase().contains(needle)
+            }
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(picker.title) },
+        text = {
+            Column(
+                Modifier.heightIn(max = 480.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    picker.note,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    label = { Text(picker.searchHint) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text(
+                    "${selected.size} / ${picker.max}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(300.dp)
+                        .focusRequester(listFocus)
+                        .focusable()
+                ) {
+                    LazyColumn(Modifier.fillMaxSize()) {
+                        items(visible, key = { it.packageName }) { app ->
+                            val checked = selected.contains(app.packageName)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .toggleable(
+                                        value = checked,
+                                        enabled = !picker.locked,
+                                        role = Role.Checkbox,
+                                        onValueChange = { wanted ->
+                                            selected = if (wanted) {
+                                                selected + app.packageName
+                                            } else {
+                                                selected - app.packageName
+                                            }
+                                            error = null
+                                        }
+                                    )
+                                    .padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = checked,
+                                    onCheckedChange = null,
+                                    enabled = !picker.locked
+                                )
+                                Spacer(Modifier.width(10.dp))
+                                if (app.icon != null) {
+                                    Image(
+                                        bitmap = app.icon.asImageBitmap(),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(36.dp)
+                                    )
+                                } else {
+                                    Spacer(Modifier.size(36.dp))
+                                }
+                                Spacer(Modifier.width(10.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        app.label,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        app.packageName,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                        }
+                        if (visible.isEmpty()) {
+                            item {
+                                Text(
+                                    picker.emptyLabel,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(16.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+                if (picker.locked) {
+                    Text(
+                        picker.lockedNote,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+                if (error != null) {
+                    Text(
+                        error!!,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = !picker.locked,
+                onClick = {
+                    val result = onSave(selected)
+                    if (result.ok) {
+                        onResult(result)
+                    } else {
+                        error = result.message
+                    }
+                }
+            ) {
+                Text(picker.saveLabel)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(picker.cancelLabel)
+            }
+        }
     )
 }
 
