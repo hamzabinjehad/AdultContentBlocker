@@ -123,6 +123,7 @@ fun NativeShell(host: NativeShellHost?) {
     var appPicker by remember { mutableStateOf<ShellAppPicker?>(null) }
     var lockDialog by remember { mutableStateOf<ShellLockState?>(null) }
     var limitsDialog by remember { mutableStateOf<ShellLimitsEditor?>(null) }
+    var scheduleDialog by remember { mutableStateOf<ShellScheduleEditor?>(null) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
@@ -173,7 +174,9 @@ fun NativeShell(host: NativeShellHost?) {
         ?: settings?.labels
         ?: fallbackLabels()
 
-    SecureEditorWindow(editor != null || appPicker != null || limitsDialog != null)
+    SecureEditorWindow(
+        editor != null || appPicker != null || limitsDialog != null || scheduleDialog != null
+    )
 
     fun lockedMessage() {
         scope.launch { snackbar.showSnackbar(labels.locked) }
@@ -222,6 +225,12 @@ fun NativeShell(host: NativeShellHost?) {
         val next = host?.limitsEditor() ?: return
         haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
         limitsDialog = next
+    }
+
+    fun editSchedule() {
+        val next = host?.scheduleEditor() ?: return
+        haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+        scheduleDialog = next
     }
 
     val vpnLauncher = rememberLauncherForActivityResult(
@@ -402,6 +411,7 @@ fun NativeShell(host: NativeShellHost?) {
                         onEditApps = ::editApps,
                         onEditLock = ::editLock,
                         onEditLimits = ::editLimits,
+                        onEditSchedule = ::editSchedule,
                         onStartDns = ::requestDnsSetup,
                         modifier = Modifier.weight(1f)
                     )
@@ -522,6 +532,24 @@ fun NativeShell(host: NativeShellHost?) {
             }
         )
     }
+
+    scheduleDialog?.let { current ->
+        ScheduleDialog(
+            editor = current,
+            onSave = { enabled, start, end, days, allApps, apps ->
+                host?.saveSchedule(enabled, start, end, days, allApps, apps)
+                    ?: ShellActionResult(labels.unsupported, ok = false, refresh = false)
+            },
+            onDismiss = { scheduleDialog = null },
+            onResult = { result ->
+                if (result.ok) {
+                    scheduleDialog = null
+                    scope.launch { refresh() }
+                }
+                scope.launch { snackbar.showSnackbar(result.message) }
+            }
+        )
+    }
 }
 
 @Composable
@@ -554,6 +582,7 @@ private fun ShellContent(
     onEditApps: (String) -> Unit,
     onEditLock: () -> Unit,
     onEditLimits: () -> Unit,
+    onEditSchedule: () -> Unit,
     onStartDns: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -590,7 +619,8 @@ private fun ShellContent(
                     onEditRules = onEditRules,
                     onEditApps = onEditApps,
                     onEditLock = onEditLock,
-                    onEditLimits = onEditLimits
+                    onEditLimits = onEditLimits,
+                    onEditSchedule = onEditSchedule
                 )
                 index == 2 && settings != null -> SettingsShellScreen(
                     state = settings,
