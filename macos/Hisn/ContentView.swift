@@ -89,7 +89,8 @@ struct ContentView: View {
     }
 
     var body: some View {
-        NavigationSplitView {
+        // A sidebar split that also builds for macOS 12: see `HnMainSplit`.
+        HnMainSplit {
             VStack(spacing: 0) {
                 brandHeader
                 VStack(alignment: .leading, spacing: 18) {
@@ -97,8 +98,8 @@ struct ContentView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(group.title)
                                 .font(.system(size: 10.5, weight: .semibold))
-                                .textCase(.uppercase)
                                 .tracking(layoutDirection == .rightToLeft ? 0 : 0.7)
+                                .textCase(.uppercase)
                                 .foregroundStyle(HnPalette.muted)
                                 .padding(.horizontal, 10)
                                 .padding(.bottom, 2)
@@ -120,7 +121,6 @@ struct ContentView: View {
                     .padding(.horizontal, 8)
                     .padding(.bottom, 10)
             }
-            .navigationSplitViewColumnWidth(min: 212, ideal: 232, max: 268)
         } detail: {
             HnCanvas {
                 ScrollView {
@@ -147,7 +147,7 @@ struct ContentView: View {
                     .padding(.bottom, 40)
                 }
                 .id(page ?? .overview)
-                .scrollContentBackground(.hidden)
+                .hnHiddenScrollContentBackground()
                 .background(HnPalette.canvas)
                 .safeAreaInset(edge: .bottom, spacing: 0) {
                     if page == .lock && !lock.isLocked {
@@ -179,6 +179,9 @@ struct ContentView: View {
         }
         .tint(HnPalette.accent)
         .frame(minWidth: 760, minHeight: 560)
+        // The window SwiftUI made for this view: first-launch size, and a
+        // close button that hides instead of destroying it.
+        .background(HnWindowReader { MainWindow.adopt($0) }.allowsHitTesting(false))
         .sheet(item: $activeSheet) { sheet in
             switch sheet {
             case .siteCheck:
@@ -2837,7 +2840,7 @@ struct SiteListsSection: View {
                     TextEditor(text: activeText)
                         .font(.system(.callout, design: .monospaced))
                         .foregroundStyle(HnPalette.ink)
-                        .scrollContentBackground(.hidden)
+                        .hnHiddenScrollContentBackground()
                         .padding(8)
                         .background(HnPalette.raised,
                                     in: RoundedRectangle(cornerRadius: 9, style: .continuous))
@@ -2997,7 +3000,7 @@ struct UserBlocksSection: View {
                         }
                         TextEditor(text: $wordsText)
                             .font(.system(size: 12, design: .monospaced))
-                            .scrollContentBackground(.hidden)
+                            .hnHiddenScrollContentBackground()
                             .accessibilityLabel("Words")
                     }
                     .frame(height: 84)
@@ -3810,7 +3813,11 @@ private struct DetailsSection: View {
         HnGroup(title: "Details") {
             HnGroupRow {
                 VStack(alignment: .leading, spacing: 10) {
-                    Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 6) {
+                    // Rows, not `Grid`: Grid and GridRow are macOS 13. The
+                    // label column is fixed rather than measured, so the
+                    // values line up and a longer Arabic label wraps inside
+                    // the column instead of moving them.
+                    VStack(alignment: .leading, spacing: 6) {
                         row("Block list version",
                             value: defaults.map { "\($0.integer(forKey: "listVersion"))" } ?? "—")
                         row("Domains in the filter",
@@ -3861,8 +3868,10 @@ private struct DetailsSection: View {
     }
 
     private func row(_ label: LocalizedStringKey, value: String) -> some View {
-        GridRow {
-            Text(label).foregroundStyle(.secondary)
+        HStack(alignment: .firstTextBaseline, spacing: 16) {
+            Text(label)
+                .foregroundStyle(.secondary)
+                .frame(width: 200, alignment: .leading)
             Text(verbatim: value).monospacedDigit().textSelection(.enabled)
         }
         .accessibilityElement(children: .combine)

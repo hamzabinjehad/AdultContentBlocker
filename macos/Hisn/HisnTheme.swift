@@ -198,8 +198,8 @@ struct HnSectionLabel: View {
             }
             Text(title)
                 .font(.hnSection())
-                .textCase(.uppercase)
                 .tracking(direction == .rightToLeft ? 0 : 0.8)
+                .textCase(.uppercase)
                 .foregroundStyle(HnPalette.muted)
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 8)
@@ -243,8 +243,8 @@ struct HnPageHeader: View {
                     .accessibilityHidden(true)
                 Text(eyebrow)
                     .font(.hnSection())
-                    .textCase(.uppercase)
                     .tracking(direction == .rightToLeft ? 0 : 0.8)
+                    .textCase(.uppercase)
                     .foregroundStyle(HnPalette.muted)
             }
             title
@@ -286,13 +286,59 @@ struct HnTwoColumn<Main: View, Rail: View>: View {
     }
 
     var body: some View {
-        HnTwoColumnLayout(breakpoint: breakpoint, spacing: spacing, railWidth: railWidth) {
-            main
-            rail
+        if #available(macOS 13.0, *), !HnCompat.forceLegacy {
+            HnTwoColumnLayout(breakpoint: breakpoint, spacing: spacing, railWidth: railWidth) {
+                main
+                rail
+            }
+        } else {
+            HnTwoColumnFallback(breakpoint: breakpoint, spacing: spacing, railWidth: railWidth,
+                                main: main, rail: rail)
         }
     }
 }
 
+/// The macOS 12 spelling of `HnTwoColumn`: the same breakpoint and columns,
+/// chosen from the width the view is actually given rather than from a
+/// proposal.
+///
+/// The width arrives one turn after the first frame, so the very first frame
+/// is drawn as one column and reflows if the window is wide. Reading it before
+/// layout would mean `GeometryReader` owning the height, which is the wrong
+/// trade inside a scrolling page.
+private struct HnTwoColumnFallback<Main: View, Rail: View>: View {
+    let breakpoint: CGFloat
+    let spacing: CGFloat
+    let railWidth: CGFloat
+    let main: Main
+    let rail: Rail
+
+    @State private var width: CGFloat = 0
+
+    var body: some View {
+        Group {
+            if width >= breakpoint {
+                HStack(alignment: .top, spacing: spacing) {
+                    main.frame(width: max(0, width - railWidth - spacing), alignment: .leading)
+                    rail.frame(width: railWidth, alignment: .leading)
+                }
+            } else {
+                VStack(alignment: .leading, spacing: spacing) {
+                    main
+                    rail.frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(GeometryReader { proxy in
+            Color.clear
+                .onAppear { width = proxy.size.width }
+                .onChange(of: proxy.size.width) { width = $0 }
+        })
+    }
+}
+
+@available(macOS 13.0, *)
 private struct HnTwoColumnLayout: Layout {
     var breakpoint: CGFloat
     var spacing: CGFloat

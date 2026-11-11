@@ -254,7 +254,7 @@ final class FilterDataProvider: NEFilterDataProvider {
     }
 
     private static let identifierCache =
-        OSAllocatedUnfairLock(initialState: [Data: String]())
+        HnLock(initialState: [Data: String]())
 
     /// Pull a hostname out of a flow.
     ///

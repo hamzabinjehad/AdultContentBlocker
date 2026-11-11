@@ -5,10 +5,12 @@ import Foundation
 /// list generation, to the provider.
 ///
 /// A connection from anything not signed by this team is refused before a
-/// single message is read — `setCodeSigningRequirement` makes the system
-/// check the peer's signature on every message, not just at connect. An
-/// unsigned filter (which cannot run as a system extension anyway) accepts
-/// nothing: without a team to compare against, there is no one to trust.
+/// single message is read. On macOS 13 and newer `setCodeSigningRequirement`
+/// makes the system check the peer's signature on every message, not just at
+/// connect; on macOS 12 the peer is checked once, by PID, when the connection
+/// is offered (see `FilterXPC.process(pid:satisfies:)`). An unsigned filter
+/// (which cannot run as a system extension anyway) accepts nothing: without a
+/// team to compare against, there is no one to trust.
 final class FilterXPCService: NSObject, NSXPCListenerDelegate, HisnFilterXPC {
 
     private let policy: PolicyService
@@ -50,7 +52,13 @@ final class FilterXPCService: NSObject, NSXPCListenerDelegate, HisnFilterXPC {
         if #available(macOS 13.0, *) {
             connection.setCodeSigningRequirement(requirement)
         } else {
-            return false
+            // macOS 12: pin the peer once, by PID, to the same team
+            // requirement — see `FilterXPC.process(pid:satisfies:)`.
+            let pid = connection.processIdentifier
+            guard FilterXPC.process(pid: pid, satisfies: requirement) else {
+                NSLog("[Hisn] refusing XPC connection from pid %d: not signed by this team", pid)
+                return false
+            }
         }
         connection.exportedInterface = FilterXPC.interface()
         connection.exportedObject = self

@@ -33,6 +33,7 @@ past version; *superseded* documents point to their replacement. Start with the
 
 ## Mac
 
+- [The Mac app on macOS 12](MACOS_12_SUPPORT.md): The deployment target moved from 13 to 12 — the lock, the XPC peer check, the menu bar item, the window lifetime, the split, the grid and the measured layouts each got their macOS 12 spelling; what still differs there, and what was not run on a 12 machine.
 - [Mac 1.1.12 — browser protection has no off switch](MACOS_1.1.12.md): The release that removed the browser-protection off switch and recorded the remaining limits. Development candidate; unsigned and unnotarized.
 - [Mac 1.1.13 — one action for private windows](MACOS_1.1.13.md): The release that made private-window protection one action. Development candidate; unsigned and unnotarized.
 - [Mac UI/UX, 2026-11-06](MACOS_UI_2026-11-06.md): The window-and-sheet pass around one visual system and one order of information; presentation only, no policy change.

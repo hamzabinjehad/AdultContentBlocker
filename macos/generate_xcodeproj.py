@@ -26,7 +26,7 @@ from pathlib import Path
 ROOT = Path(__file__).parent
 PROJECT = ROOT / "Hisn.xcodeproj"
 
-DEPLOYMENT_TARGET = "13.0"
+DEPLOYMENT_TARGET = "12.0"
 SWIFT_VERSION = "5.0"
 
 APP = "Hisn"
@@ -60,7 +60,9 @@ SHARED = ["../shared/apple/AdultTldGuard.swift", "Hisn/BlocklistStore.swift", "H
           "Hisn/UserBlocks.swift",
           # The filter's root-owned authority, and the XPC channel the app
           # and the bridge reach it through.
-          "Hisn/PolicyAuthority.swift", "Hisn/FilterXPC.swift"]
+          "Hisn/PolicyAuthority.swift", "Hisn/FilterXPC.swift",
+          # The lock and availability shims all three targets build against.
+          "Hisn/Compatibility.swift"]
 
 APP_SOURCES = SHARED + [
     "../shared/apple/MirroredRuleStore.swift",
@@ -82,6 +84,8 @@ APP_SOURCES = SHARED + [
     "Hisn/NetworkDNSProbe.swift",
     "Hisn/NetworkDNSProbeView.swift",
     "Hisn/HisnApp.swift",
+    # The macOS 12 spellings of macOS 13 SwiftUI controls.
+    "Hisn/CompatibilityUI.swift",
     "Hisn/ListUpdater.swift",
     # Read-only "would this be blocked?" explanation for the address checker.
     "Hisn/SiteChecker.swift",
@@ -142,6 +146,9 @@ TEST_SOURCES = ["HisnTests/BlocklistStoreTests.swift",
                 "HisnTests/TestNamespace.swift",
                 "HisnTests/BrowserGuardTests.swift",
                 "HisnTests/PolicyAuthorityTests.swift",
+                "HisnTests/CompatibilityTests.swift",
+                # The menu bar menu's rows, now that it is not a SwiftUI view.
+                "HisnTests/StatusMenuTests.swift",
                 "HisnTests/PartnerTests.swift",
                 "HisnTests/AuditRegressionTests.swift",
                 "HisnTests/LocalizationTests.swift",
@@ -539,7 +546,6 @@ def main() -> int:
                   [phase_resources(FILTER, FILTER_RESOURCES)], [])
     native_target(BRIDGE, "com.apple.product-type.tool",
                   BRIDGE_SOURCES, bridge_settings, [], [])
-
     # A system extension lives in Contents/Library/SystemExtensions inside the
     # app that installs it; the bridge is an executable the browser launches, so
     # it goes next to the app binary in Contents/MacOS.
@@ -553,7 +559,6 @@ def main() -> int:
     embed_sysext = phase_copy("Embed System Extensions",
                               "Contents/Library/SystemExtensions", 1, [FILTER])
     embed_bridge = phase_copy("Embed Bridge", "Contents/MacOS", 1, [BRIDGE])
-
     native_target(APP, "com.apple.product-type.application", APP_SOURCES,
                   app_settings, [phase_resources(APP, APP_RESOURCES), embed_sysext, embed_bridge],
                   [dependency(APP, FILTER), dependency(APP, BRIDGE)])

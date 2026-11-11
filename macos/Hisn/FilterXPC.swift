@@ -119,6 +119,33 @@ public enum FilterXPC {
     public static func interface() -> NSXPCInterface {
         NSXPCInterface(with: HisnFilterXPC.self)
     }
+
+    /// Whether the process with `pid` is signed by this team — the admission
+    /// check the listener uses on macOS 12, where `setCodeSigningRequirement`
+    /// does not exist.
+    ///
+    /// macOS 13 pins the whole connection to the requirement and the system
+    /// re-checks every message. macOS 12's `NSXPCConnection` exposes no audit
+    /// token and no code signature, only the peer's PID, so the peer is checked
+    /// once when the connection is offered. Everything after that travels over
+    /// the connection the system bound to that peer. The residual gap is a PID
+    /// reused between the kernel creating the connection and this call, which
+    /// needs a cooperating process in this same user's session — worth naming,
+    /// and not the same thing as an unchecked connection.
+    ///
+    /// Every team-signed process is trusted by the existing requirement: this
+    /// check is exactly as strict as the one the newer API is given.
+    static func process(pid: pid_t, satisfies requirement: String) -> Bool {
+        guard pid > 0 else { return false }
+        let attributes = [kSecGuestAttributePid as String: NSNumber(value: pid)] as CFDictionary
+        var code: SecCode?
+        guard SecCodeCopyGuestWithAttributes(nil, attributes, [], &code) == errSecSuccess,
+              let code else { return false }
+        var parsed: SecRequirement?
+        guard SecRequirementCreateWithString(requirement as CFString, [], &parsed) == errSecSuccess,
+              let parsed else { return false }
+        return SecCodeCheckValidity(code, [], parsed) == errSecSuccess
+    }
 }
 
 /// Why a build cannot reach a system filter, when the build itself is the
@@ -209,7 +236,7 @@ public final class FilterLink: @unchecked Sendable {
     private func call(timeout: TimeInterval,
                       _ body: (HisnFilterXPC, @escaping (Data?) -> Void) -> Void) -> Data? {
         let done = DispatchSemaphore(value: 0)
-        let box = OSAllocatedUnfairLock<Data?>(initialState: nil)
+        let box = HnLock<Data?>(initialState: nil)
         let finish: (Data?) -> Void = { data in
             box.withLock { if $0 == nil { $0 = data } }
             done.signal()

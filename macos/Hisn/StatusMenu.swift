@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 
 /// Which page the main window shows, shared so the menu bar can open the
@@ -29,32 +30,121 @@ final class AppNavigation: ObservableObject {
     }
 }
 
-/// The main window, as distinct from the guard's countdown panel and the
-/// menu bar item's own window — neither of which may be closed or brought
-/// forward as if it were the app.
+/// The main window, as distinct from the guard's countdown panel and the menu
+/// bar item's own menu — neither of which may be closed or brought forward as
+/// if it were the app.
+///
+/// The window is opened once and hidden, never closed. macOS 13's SwiftUI has
+/// `openWindow` to bring back a window that was closed; macOS 12 has no such
+/// call, and `WindowGroup` does not promise to remake a destroyed window. So
+/// the close button hides the window instead (see `MainWindowCloseProxy`), the
+/// window outlives every close, and every "open" path is the same
+/// `makeKeyAndOrderFront` on either macOS version.
 enum MainWindow {
-    static let id = "main"
+    /// Whether the first launch has already been given the design's window
+    /// size. Set once, so a frame the person resized is never overridden.
+    static let framedDefaultsKey = "hisn.window.framed"
+
+    private static weak var adoptedWindow: NSWindow?
+    /// `NSWindow.delegate` is weak; without this the proxy would be released
+    /// immediately and the close button would go back to destroying the window.
+    private static var closeProxy: MainWindowCloseProxy?
 
     static var all: [NSWindow] {
         NSApp.windows.filter { !($0 is NSPanel) && $0.canBecomeMain }
     }
 
+    /// Take over the window SwiftUI created: give the first launch the room
+    /// the design asks for (`.defaultSize` is macOS 13), and make closing hide
+    /// rather than destroy it.
+    @MainActor
+    static func adopt(_ window: NSWindow) {
+        // The layout tests host `ContentView` in throwaway windows at chosen
+        // sizes; adopting one would resize it and install a close button
+        // policy the test is not asking about.
+        guard !AppDelegate.isHostingTests else { return }
+        guard adoptedWindow !== window else { return }
+        adoptedWindow = window
+
+        let defaults = UserDefaults.standard
+        if !defaults.bool(forKey: framedDefaultsKey) {
+            defaults.set(true, forKey: framedDefaultsKey)
+            if window.frame.width < 900 || window.frame.height < 640 {
+                window.setContentSize(NSSize(width: 980, height: 700))
+                window.center()
+            }
+        }
+
+        if !(window.delegate is MainWindowCloseProxy) {
+            let proxy = MainWindowCloseProxy(forwarding: window.delegate)
+            closeProxy = proxy
+            window.delegate = proxy
+        }
+
+        // Started by the login agent, the window group still makes a window;
+        // it must not appear in front of anyone. Hiding here as well as in
+        // `applicationDidFinishLaunching` covers a window made after that
+        // call returned.
+        if hidesOnAdoption {
+            window.orderOut(nil)
+        }
+    }
+
+    /// The login agent's `--background` launch.
+    private static var hidesOnAdoption: Bool {
+        CommandLine.arguments.contains("--background")
+    }
+
     @MainActor static func hide() {
         // Keep the browser guard's warning panel visible above other apps.
         // Hiding the entire application would hide that countdown too.
-        all.forEach { $0.close() }
+        all.forEach { $0.orderOut(nil) }
     }
 
-    /// Bring the existing window forward, or open one: a second window over
-    /// the same state would only confuse.
-    @MainActor static func show(_ page: ContentView.Page, open: OpenWindowAction) {
+    /// Bring the existing window forward. It is hidden, not gone, so there is
+    /// no window to create — on any supported macOS.
+    @MainActor static func show(_ page: ContentView.Page, retrying: Bool = true) {
         AppNavigation.shared.open(page)
-        if let window = all.first {
-            window.makeKeyAndOrderFront(nil)
-        } else {
-            open(id: id)
-        }
         NSApp.activate(ignoringOtherApps: true)
+        if let window = adoptedWindow ?? all.first {
+            if window.isMiniaturized { window.deminiaturize(nil) }
+            window.makeKeyAndOrderFront(nil)
+        } else if retrying {
+            // A login-agent launch reaches the menu bar before the window
+            // group has made its window. Ask again on the next turn instead of
+            // dropping the request.
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 200_000_000)
+                show(page, retrying: false)
+            }
+        }
+    }
+}
+
+/// The window's delegate, with `windowShouldClose` answered by hiding and a
+/// passthrough for everything SwiftUI used to receive. Only that one question
+/// changes; size restoration, key-window handling and the rest still reach
+/// SwiftUI's own delegate.
+final class MainWindowCloseProxy: NSObject, NSWindowDelegate {
+    private weak var forwarded: NSWindowDelegate?
+
+    init(forwarding forwarded: NSWindowDelegate?) {
+        self.forwarded = forwarded
+    }
+
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        sender.orderOut(nil)
+        return false
+    }
+
+    override func responds(to aSelector: Selector!) -> Bool {
+        if super.responds(to: aSelector) { return true }
+        return forwarded?.responds(to: aSelector) ?? false
+    }
+
+    override func forwardingTarget(for aSelector: Selector!) -> Any? {
+        if let forwarded, forwarded.responds(to: aSelector) { return forwarded }
+        return super.forwardingTarget(for: aSelector)
     }
 }
 
@@ -160,9 +250,10 @@ final class MenuBarIcon: ObservableObject {
         return formatter.string(from: DateComponents(minute: minutes))
     }
 
-    /// A single template image lets MenuBarExtra tint the mark and badge
-    /// together. Both states have the same size, so nearby items stay put.
-    /// Cache them rather than redrawing on every lock-status poll.
+    /// A single template image lets the status item tint the mark and badge
+    /// together in either menu bar appearance. Both states have the same size,
+    /// so nearby items stay put. Cache them rather than redrawing on every
+    /// lock-status poll.
     private static func makeImage(locked: Bool) -> NSImage {
         guard let mark = NSImage(named: "HisnMenuBar") else {
             assertionFailure("Missing HisnMenuBar image asset")
@@ -207,107 +298,321 @@ final class MenuBarIcon: ObservableObject {
     }
 }
 
-/// The menu: the two answers the Overview gives — is it protecting, is it
-/// locked — and the three ways in. Hiding the interface keeps protection on.
-struct StatusMenu: View {
-    @ObservedObject private var lock = LockManager.shared
-    @ObservedObject private var filter = FilterController.shared
-    @ObservedObject private var grayscale = ScreenGrayscale.shared
-    @Environment(\.openWindow) private var openWindow
+// MARK: - The menu, as data
 
-    private var managed: ManagedMode { ManagedMode.current() }
+/// One row of the menu bar menu. The content is built as values so it can be
+/// asserted without opening a menu, and rendered into `NSMenu` — the same
+/// native menu `MenuBarExtra` showed on macOS 13, now on every supported
+/// macOS.
+enum StatusMenuEntry: Equatable {
+    /// A fact, not a command: disabled when rendered.
+    case info(String)
+    case separator
+    case action(StatusMenuAction, title: String, symbol: String?)
+    case toggle(title: String, symbol: String?, on: Bool, enabled: Bool)
+    /// The "Lock now" submenu: one command per length.
+    case lockLengths(title: String, symbol: String?, lengths: [TimeInterval])
+}
 
-    var body: some View {
+enum StatusMenuAction: Equatable {
+    case openOverview
+    case openLockPage
+    case openSetup
+    case hide
+    case startLock(TimeInterval)
+    case pause
+    case blockSite
+    case checkSite
+    case toggleGrayscale
+}
+
+/// The menu's facts, gathered once. Separating them from the rows lets the
+/// order and presence of the rows be tested — a menu whose lock commands
+/// quietly disappear during a lock is a real failure — without a running
+/// filter, a lock store or a particular language.
+struct StatusMenuState: Equatable {
+    enum Lock: Equatable {
+        case unlocked
+        case locked(remaining: String)
+    }
+
+    struct Grayscale: Equatable {
+        var isOn: Bool
+        /// False while a lock or a managed install forbids turning gray off.
+        var canChange: Bool
+    }
+
+    var protectionHeadline: String
+    var managedName: String?
+    var lock: Lock
+    var nextLockStart: Date?
+    var pausesToday: Int?
+    var blockedToday: Int?
+    var lockLengths: [TimeInterval]
+    var grayscale: Grayscale?
+
+    var isLocked: Bool {
+        if case .locked = lock { return true }
+        return false
+    }
+}
+
+enum StatusMenuModel {
+    /// Read the live state. Everything the menu shows is a fact the menu is
+    /// rebuilt from as it opens, not a subscription.
+    @MainActor
+    static func liveState(lock: LockManager,
+                          filter: FilterController,
+                          grayscale: ScreenGrayscale,
+                          authority: PolicyStatus? = nil,
+                          today: Date = Date()) -> StatusMenuState {
+        let status = authority ?? FilterSync.shared.status
         let protection = ProtectionStatus(ProtectionEvidence.live(
-            filter: filter.availability, authority: FilterSync.shared.status))
-        Text(protection.headline)
-        if managed.isManaged {
-            Text(String(localized: "Managed by \(managed.displayName)"))
-                .foregroundStyle(.secondary)
-        }
-        if lock.isLocked {
-            Text(String(localized: "Locked · \(lock.remainingDescription) left"))
-        } else {
-            Text("No active lock")
-            if let next = ScheduleStore.current().nextWindow(after: lock.now) {
-                Text(String(localized: "Daily lock at \(next.start.formatted(date: .omitted, time: .shortened))"))
-            }
-        }
-        if let tally = PauseStore.load(),
-           tally.day == PauseTally.dayKey(for: Date()) {
-            Text("Pauses today: \(tally.count)")
+            filter: filter.availability, authority: status))
+        let managed = ManagedMode.current()
+        let lockState: StatusMenuState.Lock = lock.isLocked
+            ? .locked(remaining: lock.remainingDescription)
+            : .unlocked
+        let pauses = PauseStore.load().flatMap {
+            $0.day == PauseTally.dayKey(for: today) ? $0.count : nil
         }
         // A count from the filter process itself, not from the app: the same
         // XPC evidence the status uses. The filter records no host, app or
         // address — only this number — so showing it on a shared screen is
         // safe. Zero is left out: an empty day is not a fact worth a row.
-        if let health = FilterSync.shared.status?.health,
-           health.blockedToday > 0,
-           health.blockedDay == BlockedFlowTally.dayKey(for: Date()) {
-            Text("Blocked connections today: \(health.blockedToday)")
+        let blocked: Int? = {
+            guard let health = status?.health,
+                  health.blockedToday > 0,
+                  health.blockedDay == BlockedFlowTally.dayKey(for: today)
+            else { return nil }
+            return health.blockedToday
+        }()
+        let grayscaleState: StatusMenuState.Grayscale? = ScreenGrayscale.isAvailable
+            ? .init(isOn: grayscale.isOn,
+                    canChange: !(grayscale.isOn && (lock.isLocked || managed.isManaged)))
+            : nil
+        return StatusMenuState(
+            protectionHeadline: protection.headline,
+            managedName: managed.isManaged ? managed.displayName : nil,
+            lock: lockState,
+            nextLockStart: lock.isLocked ? nil : ScheduleStore.current().nextWindow(after: lock.now)?.start,
+            pausesToday: pauses,
+            blockedToday: blocked,
+            lockLengths: QuickLock.lengths,
+            grayscale: grayscaleState)
+    }
+
+    /// Everything the menu shows, in order, from the state it shows it for.
+    static func entries(for state: StatusMenuState) -> [StatusMenuEntry] {
+        var entries: [StatusMenuEntry] = [.info(state.protectionHeadline)]
+
+        if let managed = state.managedName {
+            entries.append(.info(String(localized: "Managed by \(managed)")))
         }
-        Divider()
-        Button {
-            MainWindow.show(.overview, open: openWindow)
+        switch state.lock {
+        case let .locked(remaining):
+            entries.append(.info(String(localized: "Locked · \(remaining) left")))
+        case .unlocked:
+            entries.append(.info(String(localized: "No active lock")))
+            if let start = state.nextLockStart {
+                let time = start.formatted(date: .omitted, time: .shortened)
+                entries.append(.info(String(localized: "Daily lock at \(time)")))
+            }
+        }
+        if let count = state.pausesToday {
+            entries.append(.info(String(localized: "Pauses today: \(count)")))
+        }
+        if let count = state.blockedToday {
+            entries.append(.info(String(localized: "Blocked connections today: \(count)")))
+        }
+
+        entries.append(.separator)
+        entries.append(.action(.openOverview, title: String(localized: "Open Hisn"),
+                               symbol: "macwindow"))
+        if !state.isLocked {
+            // The moment a lock matters most is the moment it is hardest to
+            // go and set one up: one click from the menu bar, then a
+            // confirmation that names the end.
+            entries.append(.lockLengths(title: String(localized: "Lock now"),
+                                        symbol: "lock.fill", lengths: state.lockLengths))
+            entries.append(.action(.openLockPage, title: String(localized: "Start a lock…"),
+                                   symbol: "clock"))
+        }
+        entries.append(.action(.pause, title: String(localized: "Take a pause…"), symbol: "wind"))
+        entries.append(.action(.blockSite, title: String(localized: "Block a site…"),
+                               symbol: "hand.raised"))
+        entries.append(.action(.checkSite, title: String(localized: "Check a website…"),
+                               symbol: "magnifyingglass"))
+        if let grayscale = state.grayscale {
+            // A checkmark item. During a lock it can be ticked, not cleared.
+            entries.append(.toggle(title: String(localized: "Gray screen"), symbol: nil,
+                                   on: grayscale.isOn, enabled: grayscale.canChange))
+        }
+        entries.append(.action(.openSetup, title: String(localized: "Setup"),
+                               symbol: "checklist"))
+        entries.append(.separator)
+        entries.append(.action(.hide, title: String(localized: "Hide Hisn"),
+                               symbol: "eye.slash"))
+        return entries
+    }
+}
+
+/// The menu bar item itself.
+///
+/// A `MenuBarExtra` scene is macOS 13; before that a status item is the same
+/// thing by hand, and it is what Hisn uses on every version so the menu and
+/// the countdown behave the same everywhere. The label follows `MenuBarIcon`,
+/// which publishes at most once a minute while a lock runs; the menu is rebuilt
+/// as it opens, because its facts (lock, pauses, filter status) are live.
+@MainActor
+final class StatusItemController: NSObject, NSMenuDelegate {
+    static let shared = StatusItemController()
+
+    /// The installed item, readable by the tests that prove one is created;
+    /// nothing else reads it.
+    private(set) var statusItem: NSStatusItem?
+    private var menu: NSMenu?
+    private var iconObservation: AnyCancellable?
+    private var started = false
+
+    func start() {
+        guard !started else { return }
+        started = true
+
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        item.button?.imagePosition = .imageLeading
+        let menu = NSMenu()
+        // The rows decide their own enabled state; responder-chain
+        // validation would enable the disabled fact rows.
+        menu.autoenablesItems = false
+        menu.delegate = self
+        item.menu = menu
+        statusItem = item
+        self.menu = menu
+
+        // `objectWillChange` fires before the change lands; read the new value
+        // on the next turn, which is also when the status item redraws.
+        iconObservation = MenuBarIcon.shared.objectWillChange.sink { [weak self] _ in
+            Task { @MainActor in self?.refreshIcon() }
+        }
+        refreshIcon()
+    }
+
+    /// Take the item out of the menu bar and stop following the icon. The app
+    /// never calls this; the tests use it so a test run leaves at most one
+    /// item behind while it runs.
+    func stop() {
+        guard started else { return }
+        started = false
+        iconObservation?.cancel()
+        iconObservation = nil
+        if let statusItem { NSStatusBar.system.removeStatusItem(statusItem) }
+        statusItem = nil
+        menu = nil
+    }
+
+    private func refreshIcon() {
+        guard let button = statusItem?.button else { return }
+        let icon = MenuBarIcon.shared
+        button.image = icon.image
+        button.title = icon.remainingText ?? String(localized: "Hisn")
+    }
+
+    // MARK: NSMenuDelegate
+
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        menu.removeAllItems()
+        for entry in StatusMenuModel.entries(for: StatusMenuModel.liveState(
+            lock: .shared, filter: .shared, grayscale: .shared)) {
+            menu.addItem(item(for: entry))
+        }
+    }
+
+    func item(for entry: StatusMenuEntry) -> NSMenuItem {
+        switch entry {
+        case let .info(text):
+            let item = NSMenuItem(title: text, action: nil, keyEquivalent: "")
+            item.isEnabled = false
+            return item
+
+        case .separator:
+            return .separator()
+
+        case let .action(action, title, symbol):
+            let item = command(title: title, symbol: symbol, action: action)
+            return item
+
+        case let .toggle(title, symbol, on, enabled):
+            let item = command(title: title, symbol: symbol, action: .toggleGrayscale)
+            item.state = on ? .on : .off
+            item.isEnabled = enabled
+            return item
+
+        case let .lockLengths(title, symbol, lengths):
+            let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+            item.image = Self.image(symbol)
+            let submenu = NSMenu()
+            submenu.autoenablesItems = false
+            for seconds in lengths {
+                let length = command(title: LockManager.describe(seconds), symbol: nil,
+                                     action: .startLock(seconds))
+                submenu.addItem(length)
+            }
+            item.submenu = submenu
+            return item
+        }
+    }
+
+    private func command(title: String, symbol: String?, action: StatusMenuAction) -> NSMenuItem {
+        let item = NSMenuItem(title: title, action: #selector(performMenuAction(_:)), keyEquivalent: "")
+        item.target = self
+        item.representedObject = StatusMenuActionBox(action)
+        item.image = Self.image(symbol)
+        return item
+    }
+
+    @objc private func performMenuAction(_ sender: NSMenuItem) {
+        guard let box = sender.representedObject as? StatusMenuActionBox else { return }
+        switch box.action {
+        case .openOverview:
+            MainWindow.show(.overview)
             // The agent launches with no window. This is the first moment the
             // person asks to see the app, so it is the right moment for the
             // short first-run explanation if it has not been shown yet.
             if !UserDefaults.standard.bool(forKey: "hisn.welcome.completed") {
                 AppNavigation.shared.welcomeRequested = true
             }
-        } label: {
-            Label("Open Hisn", systemImage: "macwindow")
-        }
-        if !lock.isLocked {
-            // The moment a lock matters most is the moment it is hardest to
-            // go and set one up: one click from the menu bar, then a
-            // confirmation that names the end.
-            Menu {
-                ForEach(QuickLock.lengths, id: \.self) { seconds in
-                    Button(LockManager.describe(seconds)) { QuickLock.confirmAndStart(seconds) }
-                }
-            } label: {
-                Label("Lock now", systemImage: "lock.fill")
-            }
-            Button {
-                MainWindow.show(.lock, open: openWindow)
-            } label: {
-                Label("Start a lock…", systemImage: "clock")
-            }
-        }
-        Button {
-            PauseWindowController.shared.show()
-        } label: {
-            Label("Take a pause…", systemImage: "wind")
-        }
-        Button {
-            QuickBlock.promptAndAdd()
-        } label: {
-            Label("Block a site…", systemImage: "hand.raised")
-        }
-        Button {
-            AppNavigation.shared.siteCheckRequested = true
-            MainWindow.show(.overview, open: openWindow)
-        } label: {
-            Label("Check a website…", systemImage: "magnifyingglass")
-        }
-        if ScreenGrayscale.isAvailable {
-            // A checkmark item. During a lock it can be ticked, not cleared.
-            Toggle("Gray screen", isOn: Binding(
-                get: { grayscale.isOn },
-                set: { grayscale.set($0) }))
-                .disabled(grayscale.isOn && (lock.isLocked || ManagedMode.current().isManaged))
-        }
-        Button {
-            MainWindow.show(.setup, open: openWindow)
-        } label: {
-            Label("Setup", systemImage: "checklist")
-        }
-        Divider()
-        Button {
+        case .openLockPage:
+            MainWindow.show(.lock)
+        case .openSetup:
+            MainWindow.show(.setup)
+        case .hide:
             MainWindow.hide()
-        } label: {
-            Label("Hide Hisn", systemImage: "eye.slash")
+        case let .startLock(seconds):
+            QuickLock.confirmAndStart(seconds)
+        case .pause:
+            PauseWindowController.shared.show()
+        case .blockSite:
+            QuickBlock.promptAndAdd()
+        case .checkSite:
+            AppNavigation.shared.siteCheckRequested = true
+            MainWindow.show(.overview)
+        case .toggleGrayscale:
+            _ = ScreenGrayscale.shared.set(!ScreenGrayscale.shared.isOn)
         }
+    }
+
+    private static func image(_ symbol: String?) -> NSImage? {
+        symbol.flatMap { NSImage(systemSymbolName: $0, accessibilityDescription: nil) }
+    }
+}
+
+/// `NSMenuItem.representedObject` needs an object; the menu commands are a
+/// Swift enum.
+private final class StatusMenuActionBox: NSObject {
+    let action: StatusMenuAction
+
+    init(_ action: StatusMenuAction) {
+        self.action = action
     }
 }

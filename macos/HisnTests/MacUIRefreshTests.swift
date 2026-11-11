@@ -68,6 +68,78 @@ final class MacUIRefreshTests: XCTestCase {
         }
     }
 
+    /// The macOS 12 fallbacks — the hand-built split, the row stack instead of
+    /// `Grid`, the measured chip flow, the cleared text backgrounds — rendered
+    /// on a newer Mac by forcing the legacy branch. Same review artifact as the
+    /// pages above: a fallback that only has to compile is a fallback nobody
+    /// has looked at.
+    func testLegacyPagesRenderForVisualReview() async throws {
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let original = AppNavigation.shared.page
+        HnCompat.forceLegacy = true
+        defer {
+            HnCompat.forceLegacy = false
+            AppNavigation.shared.page = original
+        }
+
+        let host = NSHostingView(rootView: ContentView()
+            .environment(\.locale, Locale(identifier: "en"))
+            .environment(\.layoutDirection, .leftToRight)
+            .frame(width: size.width, height: size.height))
+        let window = NSWindow(
+            contentRect: NSRect(origin: .zero, size: size),
+            styleMask: [.titled, .closable, .resizable, .fullSizeContentView],
+            backing: .buffered, defer: false)
+        window.title = "Hisn"
+        window.isReleasedWhenClosed = false
+        window.contentView = host
+        defer { window.close() }
+        window.orderFront(nil)
+        try await Task.sleep(nanoseconds: 400_000_000)
+
+        for page in ContentView.Page.allCases {
+            AppNavigation.shared.page = page
+            try await Task.sleep(nanoseconds: 400_000_000)
+            host.layoutSubtreeIfNeeded()
+            let data = try png(of: host)
+            XCTAssertGreaterThan(data.count, 2000)
+            try data.write(to: directory.appendingPathComponent("legacy-\(page.rawValue)-view.png"))
+        }
+    }
+
+    /// SwiftUI installs the window toolbar from the view tree, so the macOS 12
+    /// `HSplitView` path must keep the search and lock buttons that the
+    /// macOS 13 `NavigationSplitView` path shows in the title bar. Only the
+    /// sidebar toggle and its separator are allowed to differ — they are the
+    /// `NavigationSplitView` chrome, and an `HSplitView` cannot collapse.
+    func testTheToolbarButtonsSurviveTheMacOS12Split() async throws {
+        func toolbarButtons(legacy: Bool) async throws -> [String] {
+            HnCompat.forceLegacy = legacy
+            defer { HnCompat.forceLegacy = false }
+            let host = NSHostingView(rootView: ContentView()
+                .environment(\.locale, Locale(identifier: "en"))
+                .frame(width: 900, height: 700))
+            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 900, height: 700),
+                                  styleMask: [.titled, .closable, .resizable],
+                                  backing: .buffered, defer: false)
+            window.isReleasedWhenClosed = false
+            window.contentView = host
+            defer { window.close() }
+            window.orderFront(nil)
+            try await Task.sleep(nanoseconds: 400_000_000)
+            // The app's own buttons are the items with generated identifiers;
+            // the rest are AppKit's and SwiftUI's title-bar chrome.
+            return (window.toolbar?.items ?? [])
+                .map(\.itemIdentifier.rawValue)
+                .filter { !$0.hasPrefix("NSToolbar") && !$0.hasPrefix("com.apple.") }
+        }
+
+        let modern = try await toolbarButtons(legacy: false)
+        let legacy = try await toolbarButtons(legacy: true)
+        XCTAssertEqual(modern.count, 2, "expected search and lock buttons on the current path")
+        XCTAssertEqual(legacy.count, modern.count, "the macOS 12 split lost toolbar buttons")
+    }
+
     func testOverviewRendersAtTheMinimumWidth() async throws {
         let original = AppNavigation.shared.page
         defer { AppNavigation.shared.page = original }

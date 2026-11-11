@@ -14,6 +14,16 @@ you the lock; Hisn adds the coverage those built-in filters miss. Read
 
 ## Latest
 
+- **Mac — the app now runs on macOS 12 (Monterey).** The deployment target
+  moved from 13 to 12: the content filter, the Mach-service XPC channel and the
+  lock stores never needed 13, only the SwiftUI shell did. The menu bar item is
+  an `NSStatusItem` whose rows are built from state, the sidebar is an
+  `HSplitView`, the main window is hidden rather than closed because macOS 12
+  cannot reopen a `WindowGroup` window, and `Grid`, the `Layout` protocol and
+  `OSAllocatedUnfairLock` each have a macOS 12 spelling. macOS 13 and newer keep
+  their current look and API paths. Builds and tests run at the 12 target; the
+  app has not been launched on a booted macOS 12 machine. Record:
+  [the macOS 12 note](docs/MACOS_12_SUPPORT.md).
 - **Android 1.6.0 — the committed candidate, with the reconnect lifecycle.**
   The 1.5.3 feature set, signed list updates, readiness receipts, rule tools and
   the 1.5.4 lifecycle now build as **1.6.0 / 43**. `onCreate` proves the bound
@@ -199,7 +209,7 @@ in English, Arabic RTL and both palettes are in the
 | Platform | What it does | State | Start here |
 | --- | --- | --- | --- |
 | Browser extension (Chromium) | Blocks listed domains and adult TLDs, checks page text in the page's language, on-device image/video checks on by default, hides the whole post on X and the main social feeds when its media is flagged, portable hand lists | 1.5.3 | [Using the extension](docs/EXTENSION_USAGE.md) |
-| Mac | Content-filter system extension, adult-TLD and hostname guards, browser guard, locks, authority checks, accountability partner, root guardian daemon, an on-demand breathing pause, a read-only site checker, an aggregate blocked-connection count, MDM enrollment and a profile-managed non-removable filter | 1.1.18, needs a signed build | [Mac setup](docs/SETUP.md) · [MDM](docs/MDM_DEPLOYMENT.md) |
+| Mac | Content-filter system extension, adult-TLD and hostname guards, browser guard, locks, authority checks, accountability partner, root guardian daemon, an on-demand breathing pause, a read-only site checker, an aggregate blocked-connection count, MDM enrollment and a profile-managed non-removable filter | 1.1.18, needs a signed build · runs on macOS 12 or later | [Mac setup](docs/SETUP.md) · [MDM](docs/MDM_DEPLOYMENT.md) |
 | iPhone & iPad | A device-wide DNS filter with the adult-TLD and hostname guards, six Safari blockers, Safari text extension, Screen Time app limits with a custom bilingual shield, a browser and VPN guard, a pause rule with a daily opens budget, protection lock for saved rules, an on-demand pause, daily quiet hours and a removal-protection Lock Center; distributed directly as a signed-on-install IPA | 1.8.0, development · needs a signed device | [iOS README](ios/README.md) · [direct install](docs/IOS_DIRECT.md) |
 | Android | DNS filtering with the adult-TLD and hostname guards, selected-app and word restrictions, per-app daily time limits, first-run welcome, voluntary pause, optional image checks, browser-coverage screen, schedules, protection lock that freezes saved rules, opt-in device-owner uninstall guard and managed lockdown, direct-build removal guard, layer watchdog, bundled-list freshness warning, signed list updates, readiness receipts and portable rule tools | 1.6.0 development candidate · core and build tests, no signed 1.6.0 APK or phone run; 1.5.4 on the owner's phone; post-reboot dashboard unverified | [Android README](android/README.md) · [1.6.0 record](docs/ANDROID_1.6.0.md) |
 | Network / router | Verified signed DNS rules for administrator import | Tools only | [Network tools](network/README.md) |

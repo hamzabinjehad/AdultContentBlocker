@@ -9,6 +9,27 @@ bump without an entry here is an unfinished release.
 
 ### Mac
 
+#### Added
+
+- **The Mac app runs on macOS 12 (Monterey).** The deployment target moved
+  from 13 to 12; the app, the filter extension and the bridge all build with
+  `minos 12.0`. Nothing that protects the Mac needed a newer OS — the content
+  filter, the Mach-service XPC channel and the lock stores already ran on
+  macOS 10.15. What held the app at 13 was its SwiftUI shell, and each of its
+  newer constructs now has its macOS 12 equivalent: `HnLock` stands in for
+  `OSAllocatedUnfairLock`, the filter validates the connecting peer's signature
+  by PID where `setCodeSigningRequirement` does not exist, the menu bar is an
+  `NSStatusItem` whose rows come from a state → rows function like the old
+  `MenuBarExtra` content, the main window is hidden rather than closed because
+  macOS 12 cannot reopen a `WindowGroup` window, and `HSplitView`, an aligned
+  row stack and measured layouts replace `NavigationSplitView`, `Grid` and the
+  `Layout` protocol. The app's look on macOS 13 and newer is unchanged. On
+  macOS 12 the sidebar cannot be collapsed, and a wide page's first frame may
+  draw as one column before it reflows. The XPC admission check on 12 is
+  per-connection rather than per-message. Not verified on a booted macOS 12
+  machine, and no signed build was installed there. Record:
+  [the macOS 12 note](docs/MACOS_12_SUPPORT.md).
+
 #### Changed
 
 - **A list download has a hard byte ceiling before verification.** The Mac

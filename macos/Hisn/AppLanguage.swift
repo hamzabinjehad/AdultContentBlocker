@@ -64,6 +64,17 @@ enum AppLanguage: String, CaseIterable, Identifiable {
         }
     }
 
+    /// The region from a locale identifier such as `en_US` or `ar_SA`.
+    ///
+    /// `Locale.region` is macOS 13 and this app builds for 12; the identifier
+    /// carries the same region on every version, with any theme/calendar
+    /// keywords after an `@`.
+    static func regionCode(from identifier: String) -> String? {
+        guard let region = identifier.split(separator: "_").dropFirst().first else { return nil }
+        let code = region.prefix { $0 != "@" }
+        return code.isEmpty ? nil : String(code)
+    }
+
     /// Tell the browser extension which language the app shows, through the
     /// shared defaults the bridge reads: its pages set to Automatic follow
     /// it, so an app switched to Arabic brings the extension along.
@@ -83,7 +94,7 @@ enum AppLanguage: String, CaseIterable, Identifiable {
             d.removeObject(forKey: localeKey)
         case .arabic:
             d.set(["ar"], forKey: languagesKey)
-            let region = Locale.current.region?.identifier ?? "US"
+            let region = Self.regionCode(from: Locale.current.identifier) ?? "US"
             d.set("ar_\(region)@numbers=latn", forKey: localeKey)
         }
         for key in directionKeys {
