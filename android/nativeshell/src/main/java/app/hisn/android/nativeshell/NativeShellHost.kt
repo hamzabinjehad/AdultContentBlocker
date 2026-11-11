@@ -33,7 +33,8 @@ data class ShellLabels(
     val attention: String,
     val layers: String,
     val locked: String,
-    val unsupported: String
+    val unsupported: String,
+    val dnsStart: String
 )
 
 data class ShellProtection(
@@ -135,6 +136,15 @@ interface NativeShellHost {
 
     /** Saves the canonical accepted set through PolicyStore. */
     fun saveRules(kind: String, text: String): ShellActionResult
+
+    /** The real DNS disclosure; the shell shows it before requesting VPN approval. */
+    fun dnsConsent(): ShellConsent
+
+    /** The system VPN consent intent, or null when Android already holds the approval. */
+    fun vpnConsentIntent(): android.content.Intent?
+
+    /** Starts the existing DNS foreground service after consent. */
+    fun startDns(): ShellActionResult
 
     /** Opens the classic Hisn activity for the changes the shell does not own yet. */
     fun openClassic()

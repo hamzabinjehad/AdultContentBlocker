@@ -1,64 +1,58 @@
-# Android: the native shell, Phase 3
+# Android: the native shell, Phase 4
 
-**Status: development, debug-only, 11 November 2026.** The native shell now writes policy for
-the layers and rule lists it owns. It is still a second debug launcher: the classic Hisn
-launcher remains the default, and DNS start, apps, schedule, limits, the protection lock,
-Welcome and Shield still live in the classic screen. Nothing in the native shell is in a
+**Status: development, debug-only, 11 November 2026.** The native shell can now set up the real
+DNS layer: disclosure, notification permission, Android's VPN approval, the existing foreground
+service and the live status refresh. The classic launcher remains the default; app selection,
+schedule, limits, the protection lock, Welcome and Shield are still classic. Nothing here is in a
 release APK.
 
-Phase 2 moved the shell into the real `app.hisn.android` package and made it read
-`PolicyStore`, `DnsVpnService`, `Permissions` and the saved rules. Phase 3 adds the first
-native writes, behind the same consent sheets and lock checks as the classic editors.
+Phase 2 made the shell read real state. Phase 3 added native layer switches and the domain/word
+editor. Phase 4a closes the first **service** action, using the same consent text and the same
+`DnsVpnService` the classic screen starts.
 
 ## What landed
 
-- **Native layer switches.** Adult text, images/video and short videos now open the same
-  consent text as the classic layer sheets and save through `PolicyStore.update`,
-  `updateVisual` and `updateShortVideo`. Images stays visibly unsupported below Android 14.
-- **Native domain and word editors.** The real saved text opens in a native editor; the same
-  `RulePreview` canonicalisation reports *N valid · N duplicates · N rejected*; Save writes the
-  accepted set through `PolicyStore.update` and keeps every other layer untouched. The exact
-  refusal (`rules_editor_private`, `rules_locked`, `rules_invalid`, `rules_save_failed`) is
-  shown instead of a generic failure.
-- **The protection lock is respected twice.** The editor is read-only and the layer rows show
-  the lock notice when `remainingMillis() > 0`; `PolicyStore.save` is the second, authoritative
-  check, so a stale UI cannot write through.
-- **The editor is private.** The shell adds `FLAG_SECURE` only while the rules editor is open,
-  matching the classic dialog. The editor is deliberately absent from screenshots and the
-  recent-apps preview; the Rules capture below shows the saved result instead.
-- **The consent survives in the banner.** "Live · native editors" now says which surfaces edit
-  here and which still open classic Hisn; the old "read-only preview" promise is gone.
+- **Native DNS setup.** When DNS is off, the Protection hero's primary action is **Set up DNS
+  filtering**. It opens the real disclosure; accepting requests the Android 13+ notification
+  permission, then launches `VpnService.prepare`, and starts the existing
+  `DnsVpnService` after approval. The shell polls and turns the hero into *Partly protected* /
+  *On* when the tunnel reports running.
+- **Nothing is reimplemented in the shell.** The host uses the app's `DnsVpnService`,
+  `Compat.startForegroundService` and the same consent strings. Cancel and denial leave the app
+  unchanged; a stale UI cannot start the tunnel without Android's approval.
+- **Correct app identity.** The application label stays **Hisn** (the VPN consent dialog reads
+  it); the classic launcher is labelled **Hisn (classic)** and the native launcher **Hisn
+  Native**. A release build keeps the ordinary single **Hisn** launcher.
+- **The banner is current.** It says layers, domain/word rules and DNS setup are native; apps,
+  schedule, limits and the lock still open classic Hisn.
 
 ## What the shell shows
 
-| Rules after a native save | Native layer consent |
+| Native DNS disclosure | DNS running, partly protected |
 | --- | --- |
-| ![Rules, one saved domain](../design/android-native-2026-11-11/35-native-rules.png) | ![Adult-text consent](../design/android-native-2026-11-11/36-native-layer-consent.png) |
+| ![DNS consent](../design/android-native-2026-11-11/37-native-dns-consent.png) | ![DNS on](../design/android-native-2026-11-11/38-native-protection-dns-on.png) |
 
-The first capture is a real API 23 emulator state: one domain saved by the native editor,
-adult text off again after a native disable, images unsupported on API 23, apps/schedule/
-limit/lock still owned by classic. The consent sheet is the same short paragraph plus full
-disclosure the classic layer buttons show.
+The second capture is the result of the real flow on the API 23 emulator: the system VPN dialog
+was approved, `DnsVpnService` started, and the hero's coverage row moved to **DNS filtering On**
+with the other three layers still off. The key icon in the status bar is Android's VPN indicator.
 
 ## What it does not do yet
 
-- **No DNS start/stop.** The tunnel needs `VpnService.prepare`, the notification permission and
-  the existing consent flow; the shell still opens classic for that, and the app has no DNS stop
-  API.
-- **No native app picker.** After enabling adult text or images with no inspected apps, the
-  shell says to choose apps in classic; `AppPicker` is still an `AlertDialog` over the classic
-  Activity.
+- **No DNS stop.** The app has no in-app DNS stop API; Android's VPN settings / revoke is still
+  the way out, and the shell says nothing else.
+- **No native app picker.** Adult text and image checks still ask the owner to choose apps in
+  classic after enabling.
 - **No schedule, daily limit, protection lock, uninstall protection, export/import or guardian
   editors.**
-- **No Welcome, Shield, Restriction/pause or AfterBlock surfaces.**
+- **No Welcome, Shield/Restriction/pause or AfterBlock surfaces.**
 - **No Arabic layout, TalkBack, screenshot-test or 2.0× font pass yet.** The host already
-  returns Arabic strings, and the consent/editor labels come from `values-ar`.
-- **The classic launcher remains the default.**
+  returns Arabic strings.
+- **The classic launcher remains the default; the classic UI is not deleted.**
 
 ## Build and run
 
-`-PhisnNativeShell=true` keeps the real application id so the shell can use the installed
-policy. Use an emulator/test device, not the owner's release-signed install.
+`-PhisnNativeShell=true` uses the real application id so the shell sees the installed policy.
+Use an emulator/test device, not the owner's release-signed install.
 
 ```sh
 cd android
@@ -70,25 +64,27 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am start -n app.hisn.android/app.hisn.android.nativeshell.ShellActivity
 ```
 
-Both launchers appear in this variant: **Hisn (classic)** and **Hisn Native**. A plain
-`assembleDebug` leaves the shell disabled; `assembleRelease` does not link `:nativeshell` at all.
+A plain `assembleDebug` leaves the shell disabled and the ordinary Hisn launcher; a release build
+does not link `:nativeshell` at all.
 
 ## Verification, 11 November
 
-- API 23 emulator (`hisn_api23`, minSdk 23): enabled adult text through the native consent,
-  verified **On**, disabled it again and verified **Off**; opened the domain editor, saved a
-  real rule and verified **1 domain saved**; tapped Images and verified the Android 14+
-  message; opened classic from the native action and returned.
-- `./gradlew :app:assembleDebug -PhisnNativeShell=true`, `:app:assembleDebug`,
-  `assembleDebugAndroidTest`, `lintDebug` and `assembleRelease` pass.
-- `android/test-core.sh` and `python3 check-strings.py` pass; the release APK has no
-  `nativeshell` or Compose references.
+- API 23 emulator: tapped **Set up DNS filtering**, read the disclosure, accepted Android's VPN
+  dialog, observed `DnsVpnService` start and the hero change to **Partly protected / DNS On**;
+  the primary action then became **Run a protection check**. Also re-checked the Phase 3 adult
+  toggle, saved domain, Android 14+ image message and open-classic/back flow.
+- `./gradlew --no-daemon assembleDebug assembleDebugAndroidTest lintDebug assembleRelease` pass.
+- `./gradlew :app:assembleDebug -PhisnNativeShell=true` passes.
+- `android/test-core.sh`, `python3 check-strings.py` and `python3 script/test_docs.py` pass.
+- Release APK still has zero `nativeshell`/Compose references.
+- Manifest check: application label **Hisn**, MainActivity **Hisn (classic)** only in the native
+  debug variant, ShellActivity **Hisn Native**.
 
 ## Next phases
 
-1. **Phase 4a — remaining policy editors.** Native app picker, schedule, time limits,
-   protection lock; DNS start with the VPN and notification consent.
-2. **Phase 4b — the rest.** Welcome, Shield/Restriction/pause, export/import, Arabic layout,
-   TalkBack and screenshot tests.
-3. **Parity switch.** Flip the default launcher, keep the classic activity as fallback, then
-   remove the classic dashboard from release.
+1. **Phase 4b — app picker.** A real Compose picker over `PackageManager`, writing
+   `blockedApps`/`scannedApps` through `PolicyStore`, with the same exclusions and validation.
+2. **Phase 4c — schedule, time limits, protection lock.** Native editors for all three, including
+   the lock's read-only consequences.
+3. **Phase 5 — remaining surfaces.** Welcome, Shield/Restriction/pause, export/import, Arabic,
+   TalkBack and screenshot tests; then flip the launcher and delete the classic dashboard.

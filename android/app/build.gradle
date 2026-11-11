@@ -61,7 +61,7 @@ android {
         applicationId 'app.hisn.android'
         // The native shell entry point is declared in the debug manifest but stays disabled unless
         // -PhisnNativeShell=true, so a plain debug build keeps exactly the existing launcher.
-        manifestPlaceholders = [hisnAppLabel: '@string/app_name', nativeShellEnabled: 'false']
+        manifestPlaceholders = [hisnAppLabel: '@string/app_name', classicLabel: '@string/app_name', nativeShellEnabled: 'false']
         minSdk 23
         targetSdk 36
         versionCode 43
@@ -102,6 +102,7 @@ android {
             if (providers.gradleProperty('hisnIsolatedVisualCheck').orNull == 'true') {
                 applicationIdSuffix '.visualcheck'
                 manifestPlaceholders.hisnAppLabel = 'Hisn Visual Test'
+                manifestPlaceholders.classicLabel = 'Hisn Visual Test'
             }
             // Phase 2 of the native UI port: a Compose shell in the same package, so it can read
             // the real PolicyStore and service state. Both launchers are present until the native
@@ -109,7 +110,9 @@ android {
             // This debug build replaces the installed app of the same signature, so it is for the
             // emulator/test device, not the owner's release install.
             if (providers.gradleProperty('hisnNativeShell').orNull == 'true') {
-                manifestPlaceholders.hisnAppLabel = 'Hisn (classic)'
+                // The application label stays Hisn (the VPN consent dialog reads it); only the
+                // classic launcher gets the disambiguating label next to Hisn Native.
+                manifestPlaceholders.classicLabel = 'Hisn (classic)'
                 manifestPlaceholders.nativeShellEnabled = 'true'
             }
         }

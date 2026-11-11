@@ -48,7 +48,8 @@ class LiveShellHost(private val context: Context) : NativeShellHost {
         attention = string(R.string.native_attention),
         layers = string(R.string.native_layers),
         locked = string(R.string.rules_locked),
-        unsupported = string(R.string.native_unsupported)
+        unsupported = string(R.string.native_unsupported),
+        dnsStart = string(R.string.dns_start)
     )
 
     private fun store(): PolicyStore? = runCatching { PolicyStore.get(context) }.getOrNull()
@@ -551,6 +552,28 @@ class LiveShellHost(private val context: Context) : NativeShellHost {
             },
             refresh = started
         )
+    }
+
+    override fun dnsConsent(): ShellConsent = ShellConsent(
+        title = string(R.string.dns_consent_title),
+        body = string(R.string.dns_consent_short) + "\n\n" + string(R.string.dns_consent_body),
+        acceptLabel = string(R.string.dns_continue),
+        cancelLabel = string(android.R.string.cancel)
+    )
+
+    override fun vpnConsentIntent(): Intent? = try {
+        android.net.VpnService.prepare(context)
+    } catch (unavailable: RuntimeException) {
+        null
+    }
+
+    override fun startDns(): ShellActionResult {
+        return try {
+            Compat.startForegroundService(context, Intent(context, DnsVpnService::class.java))
+            ShellActionResult(string(R.string.dns_starting), ok = true, refresh = true)
+        } catch (unavailable: RuntimeException) {
+            ShellActionResult(string(R.string.attention_dns_error), ok = false, refresh = true)
+        }
     }
 
     override fun openClassic() {
