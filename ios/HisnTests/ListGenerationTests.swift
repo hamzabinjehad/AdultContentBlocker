@@ -65,6 +65,17 @@ final class ListGenerationTests: XCTestCase {
         XCTAssertEqual(String(decoding: verified.domains, as: UTF8.self)
             .split(separator: "\n").count, 1_100)
         XCTAssertFalse(String(decoding: verified.domains, as: UTF8.self).contains("#"))
+
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("hisn-list-header-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        XCTAssertEqual(try ListGenerationStore.install(verified, root: root), 7)
+        XCTAssertEqual(ListGenerationStore.pointerVersion(root: root), 7)
+        let directory = try XCTUnwrap(ListGenerationStore.activeDirectory(root: root))
+        let loaded = try DNSFilterAssets.load(directory: directory)
+        XCTAssertEqual(loaded.metadata.version, 7)
+        XCTAssertEqual(loaded.metadata.count, 1_100)
+        XCTAssertTrue(loaded.termsLoaded)
     }
 
     func testVerifiesASignedGenerationAndRejectsTampering() throws {

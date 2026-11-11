@@ -97,14 +97,17 @@ no query waits for it.
 | --- | --- |
 | `ListGenerationTests` | Accepts a generated signed v7 fixture and a fixture with the published comment header; rejects a flipped signature and a changed domain artifact; store publishes a generation the proxy loader reads; v6 is refused after v7; v8 moves the pointer and floor the proxy watches |
 | Real published generation | Host-verified with the iOS verifier: v6, 239,885 core domains, terms v6, pinned Ed25519 key; the artifact hashes/sizes match the published manifest |
+| Real v6 store/proxy path | Host harness installed the generation through `ListGenerationStore.install`: active `gen-6`, `DNSFilterAssets.load` reported 239,885 domains and terms v6, and the Safari shard writer produced `safari-rules-1.json` |
 | `ios/test_list_generation.py` | Pinned key equals `blocklist/public_key.hex`; update URL matches Android; the store uses the DNS App Group |
 | `SafariGenerationRulesTests` | Pass; shard split, four guard rules on the last shard, metadata hash check, prebuilt shards and marker-gated bundle fallback |
 | `./test.sh ios` | Pass, simulator tests and the Python suites |
 
 ## Limits
 
-- The real v6 generation was fetched on the host and verified with the iOS
-  verifier; no iPhone/iPad, signed IPA or Network Extension fetched it. The fixture uses a separate test key.
+- The real v6 generation was fetched on the host and passed the iOS verifier,
+  store, DNS loader and Safari shard builder; no iPhone/iPad, signed IPA or
+  Network Extension fetched it. The host harness is not a substitute for a
+  device run. The fixture uses a separate test key.
 - The directory watcher is compiled and unit-tested at the store/pointer level,
   but no device has exercised a live swap while the proxy runs.
 - No Safari blocker has loaded a downloaded generation on a device. The
