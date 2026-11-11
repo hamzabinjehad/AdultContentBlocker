@@ -38,7 +38,9 @@ data class ShellLabels(
     val unsupported: String,
     val dnsStart: String,
     val settingsControls: String,
-    val settingsAndroid: String
+    val settingsAndroid: String,
+    val exportRules: String,
+    val importRules: String
 )
 
 data class ShellProtection(
@@ -79,6 +81,14 @@ data class ShellSetting(
     val label: String,
     val value: String,
     val detail: String
+)
+
+data class ShellImportPreview(
+    val title: String,
+    val body: String,
+    val applyLabel: String,
+    val cancelLabel: String,
+    val error: Boolean
 )
 
 data class ShellUninstall(
@@ -309,6 +319,18 @@ interface NativeShellHost {
 
     /** Saves only installed rows; saved packages that are uninstalled are preserved. */
     fun saveAppPicker(kind: String, selected: Set<String>): ShellActionResult
+
+    /** Writes the canonical RuleDocument to a user-chosen URI. */
+    fun exportRules(uri: android.net.Uri): ShellActionResult
+
+    /** Reads and validates a rules document; the parsed result stays pending for apply. */
+    fun previewImport(uri: android.net.Uri): ShellImportPreview
+
+    /** Applies the pending add-only merge and clears it. */
+    fun applyPendingImport(): ShellActionResult
+
+    /** Drops a previewed import. */
+    fun discardPendingImport()
 
     /** The real platform uninstall-protection status and provisioning command. */
     fun uninstallState(): ShellUninstall

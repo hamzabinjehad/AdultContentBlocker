@@ -7,6 +7,8 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.net.Uri
+import java.io.IOException
+import java.nio.charset.StandardCharsets
 import android.os.Build
 import android.provider.Settings
 import java.util.LinkedHashMap
@@ -16,6 +18,7 @@ import app.hisn.android.nativeshell.ShellApp
 import app.hisn.android.nativeshell.ShellAppPicker
 import app.hisn.android.nativeshell.ShellConsent
 import app.hisn.android.nativeshell.ShellIssue
+import app.hisn.android.nativeshell.ShellImportPreview
 import app.hisn.android.nativeshell.ShellLabels
 import app.hisn.android.nativeshell.ShellLayer
 import app.hisn.android.nativeshell.ShellLimitChoice
@@ -38,6 +41,7 @@ import app.hisn.core.AppTimeLimit
 import app.hisn.core.DailyAppSchedule
 import app.hisn.core.PolicyChangeError
 import app.hisn.core.ProtectionLock
+import app.hisn.core.RuleDocument
 import app.hisn.core.RulePreview
 import app.hisn.core.UninstallProtection
 import java.util.Locale
@@ -51,6 +55,8 @@ import java.util.Locale
  * lock allows it. The classic editors still own every surface not ported here.
  */
 class LiveShellHost(private val context: Context) : NativeShellHost {
+
+    private var pendingImport: RuleDocument.Result? = null
 
     private fun string(id: Int): String = context.getString(id)
     private fun string(id: Int, vararg args: Any): String = context.getString(id, *args)
@@ -73,7 +79,9 @@ class LiveShellHost(private val context: Context) : NativeShellHost {
         unsupported = string(R.string.native_unsupported),
         dnsStart = string(R.string.dns_start),
         settingsControls = string(R.string.native_settings_controls),
-        settingsAndroid = string(R.string.native_settings_android)
+        settingsAndroid = string(R.string.native_settings_android),
+        exportRules = string(R.string.rules_export),
+        importRules = string(R.string.rules_import)
     )
 
     private fun store(): PolicyStore? = runCatching { PolicyStore.get(context) }.getOrNull()
@@ -687,6 +695,114 @@ class LiveShellHost(private val context: Context) : NativeShellHost {
                 else R.string.uninstall_state_unavailable
             )
         }
+    }
+
+    override fun exportRules(uri: Uri): ShellActionResult {
+        val settings = store()
+            ?: return ShellActionResult(string(R.string.policy_unavailable), ok = false, refresh = false)
+        return try {
+            val text = RuleDocument.export(settings.domainText(), settings.wordText())
+            val out = context.contentResolver.openOutputStream(uri, "wt")
+                ?: return ShellActionResult(
+                    string(R.string.rules_export_failed),
+                    ok = false,
+                    refresh = false
+                )
+            out.use { it.write(text.toByteArray(StandardCharsets.UTF_8)) }
+            ShellActionResult(string(R.string.rules_exported), ok = true, refresh = false)
+        } catch (failed: RuntimeException) {
+            ShellActionResult(string(R.string.rules_export_failed), ok = false, refresh = false)
+        } catch (failed: IOException) {
+            ShellActionResult(string(R.string.rules_export_failed), ok = false, refresh = false)
+        }
+    }
+
+    override fun previewImport(uri: Uri): ShellImportPreview {
+        val settings = store()
+        if (settings == null) {
+            return ShellImportPreview(
+                title = string(R.string.rules_import_title),
+                body = string(R.string.policy_unavailable),
+                applyLabel = "",
+                cancelLabel = string(android.R.string.cancel),
+                error = true
+            )
+        }
+        if (settings.remainingMillis() > 0) {
+            return ShellImportPreview(
+                title = string(R.string.rules_import_title),
+                body = string(R.string.rules_locked),
+                applyLabel = "",
+                cancelLabel = string(android.R.string.cancel),
+                error = true
+            )
+        }
+        return try {
+            val bytes = context.contentResolver.openInputStream(uri)?.use { input ->
+                HostListStore.read(input, RuleDocument.MAX_BYTES + 1L)
+            } ?: throw IOException("no stream")
+            val imported = RuleDocument.parse(bytes)
+            pendingImport = imported
+            var body = string(
+                R.string.rules_import_body,
+                imported.blocks.size,
+                imported.words.size
+            )
+            val skipped = imported.skippedHosts + imported.skippedWords
+            if (skipped > 0) body += "\n" + string(R.string.rules_import_skipped, skipped)
+            if (imported.unsupported.isNotEmpty()) {
+                body += "\n" + string(
+                    R.string.rules_import_unsupported,
+                    imported.unsupported.joinToString(", ")
+                )
+            }
+            ShellImportPreview(
+                title = string(R.string.rules_import_title),
+                body = body,
+                applyLabel = string(R.string.rules_import_apply),
+                cancelLabel = string(android.R.string.cancel),
+                error = false
+            )
+        } catch (tooLarge: IOException) {
+            pendingImport = null
+            ShellImportPreview(
+                title = string(R.string.rules_import_title),
+                body = string(R.string.rules_import_oversized),
+                applyLabel = "",
+                cancelLabel = string(android.R.string.cancel),
+                error = true
+            )
+        } catch (invalid: RuntimeException) {
+            pendingImport = null
+            ShellImportPreview(
+                title = string(R.string.rules_import_title),
+                body = string(R.string.rules_import_failed),
+                applyLabel = "",
+                cancelLabel = string(android.R.string.cancel),
+                error = true
+            )
+        }
+    }
+
+    override fun applyPendingImport(): ShellActionResult {
+        val imported = pendingImport
+            ?: return ShellActionResult(string(R.string.rules_import_failed), ok = false, refresh = false)
+        val settings = store()
+            ?: return ShellActionResult(string(R.string.policy_unavailable), ok = false, refresh = false)
+        return try {
+            val current = settings.snapshot()
+            val domains = RuleDocument.merge(settings.domainText(), imported.blocks)
+            val words = RuleDocument.merge(settings.wordText(), imported.words)
+            settings.update(domains, words, current.blockedApps, current.scannedApps)
+            pendingImport = null
+            ShellActionResult(string(R.string.rules_imported), ok = true, refresh = true)
+        } catch (refused: RuntimeException) {
+            ShellActionResult(refusalText(refused), ok = false, refresh = true)
+        }
+    }
+
+    override fun discardPendingImport() {
+        pendingImport = null
     }
 
     override fun uninstallState(): ShellUninstall {

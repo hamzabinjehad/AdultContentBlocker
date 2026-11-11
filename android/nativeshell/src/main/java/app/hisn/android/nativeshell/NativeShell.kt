@@ -102,7 +102,9 @@ private fun fallbackLabels() = ShellLabels(
     unsupported = "This layer needs Android 14 or later.",
     dnsStart = "Set up DNS filtering",
     settingsControls = "Protection settings",
-    settingsAndroid = "Android settings"
+    settingsAndroid = "Android settings",
+    exportRules = "Export",
+    importRules = "Import"
 )
 
 /**
@@ -127,6 +129,7 @@ fun NativeShell(host: NativeShellHost?) {
     var limitsDialog by remember { mutableStateOf<ShellLimitsEditor?>(null) }
     var scheduleDialog by remember { mutableStateOf<ShellScheduleEditor?>(null) }
     var uninstallSheet by remember { mutableStateOf<ShellUninstall?>(null) }
+    var importPreview by remember { mutableStateOf<ShellImportPreview?>(null) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
@@ -296,6 +299,33 @@ fun NativeShell(host: NativeShellHost?) {
         // the classic confirmation requests after starting it.
     }
 
+    val exportRulesLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                val result = host?.exportRules(uri)
+                    ?: ShellActionResult(labels.unsupported, ok = false, refresh = false)
+                snackbar.showSnackbar(result.message)
+            }
+        }
+    }
+
+    val importRulesLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            val preview = host?.previewImport(uri)
+            if (preview == null) {
+                scope.launch { snackbar.showSnackbar(labels.unsupported) }
+            } else if (preview.error) {
+                scope.launch { snackbar.showSnackbar(preview.body) }
+            } else {
+                importPreview = preview
+            }
+        }
+    }
+
     fun beginDnsSetup() {
         val current = activity
         if (Build.VERSION.SDK_INT >= 33 && current != null &&
@@ -434,6 +464,10 @@ fun NativeShell(host: NativeShellHost?) {
                         onEditLock = ::editLock,
                         onEditLimits = ::editLimits,
                         onEditSchedule = ::editSchedule,
+                        onExportRules = { exportRulesLauncher.launch("hisn-rules.json") },
+                        onImportRules = {
+                            importRulesLauncher.launch(arrayOf("application/json", "text/plain"))
+                        },
                         onStartDns = ::requestDnsSetup,
                         onToggle = ::setToggle,
                         onAction = ::runSettingAction,
@@ -597,6 +631,25 @@ fun NativeShell(host: NativeShellHost?) {
             onDismiss = { uninstallSheet = null }
         )
     }
+
+    importPreview?.let { current ->
+        ImportPreviewDialog(
+            preview = current,
+            onApply = {
+                scope.launch {
+                    val result = host?.applyPendingImport()
+                        ?: ShellActionResult(labels.unsupported, ok = false, refresh = false)
+                    importPreview = null
+                    snackbar.showSnackbar(result.message)
+                    if (result.ok) refresh()
+                }
+            },
+            onDismiss = {
+                host?.discardPendingImport()
+                importPreview = null
+            }
+        )
+    }
 }
 
 @Composable
@@ -630,6 +683,8 @@ private fun ShellContent(
     onEditLock: () -> Unit,
     onEditLimits: () -> Unit,
     onEditSchedule: () -> Unit,
+    onExportRules: () -> Unit,
+    onImportRules: () -> Unit,
     onStartDns: () -> Unit,
     onToggle: (String, Boolean) -> Unit,
     onAction: (String) -> Unit,
@@ -669,7 +724,9 @@ private fun ShellContent(
                     onEditApps = onEditApps,
                     onEditLock = onEditLock,
                     onEditLimits = onEditLimits,
-                    onEditSchedule = onEditSchedule
+                    onEditSchedule = onEditSchedule,
+                    onExportRules = onExportRules,
+                    onImportRules = onImportRules
                 )
                 index == 2 && settings != null -> SettingsShellScreen(
                     state = settings,
