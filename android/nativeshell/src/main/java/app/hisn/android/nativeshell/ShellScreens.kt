@@ -154,7 +154,9 @@ fun RulesShellScreen(
     onEditApps: (String) -> Unit,
     onEditLock: () -> Unit,
     onEditLimits: () -> Unit,
-    onEditSchedule: () -> Unit
+    onEditSchedule: () -> Unit,
+    onExportRules: () -> Unit,
+    onImportRules: () -> Unit
 ) {
     ShellScreen {
         if (state.locked) {
@@ -219,6 +221,19 @@ fun RulesShellScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 4.dp)
             )
+        }
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                TextButton(onClick = onExportRules, modifier = Modifier.weight(1f)) {
+                    Text(state.labels.exportRules)
+                }
+                TextButton(onClick = onImportRules, modifier = Modifier.weight(1f)) {
+                    Text(state.labels.importRules)
+                }
+            }
         }
         item {
             Button(onClick = onOpenClassic, modifier = Modifier.fillMaxWidth()) {
@@ -785,6 +800,36 @@ private fun TimeChoiceDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text(stringResource(android.R.string.cancel))
+            }
+        }
+    )
+}
+
+@Composable
+fun ImportPreviewDialog(
+    preview: ShellImportPreview,
+    onApply: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(preview.title) },
+        text = {
+            Text(
+                preview.body,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        },
+        confirmButton = {
+            if (!preview.error) {
+                TextButton(onClick = onApply) {
+                    Text(preview.applyLabel)
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(preview.cancelLabel)
             }
         }
     )
