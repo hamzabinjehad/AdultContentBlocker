@@ -755,8 +755,8 @@
     <string name="native_run_check">Run a protection check</string>
     <string name="native_check_started">Route check started.</string>
     <string name="native_check_unavailable">DNS filtering is not running, so the route check cannot start.</string>
-    <string name="native_live_title">Live · read-only preview</string>
-    <string name="native_live_body">This screen reads your real saved rules and service state. Changes still open the classic Hisn screen until the native editors are finished.</string>
+    <string name="native_live_title">Live · native editors</string>
+    <string name="native_live_body">Real saved rules and service state. Layer switches and domain/word rules edit here; the remaining editors open classic Hisn.</string>
     <string name="native_open_classic">Open classic Hisn</string>
     <string name="native_state_unavailable">Protection settings could not be read.</string>
     <string name="native_layer_dns_on">On · %1$d domains loaded</string>
@@ -768,7 +768,7 @@
     <string name="native_layer_images_on">On · On-device, Android 14+</string>
     <string name="native_layer_images_off">Off · Images are not sampled</string>
     <string name="native_no_apps">No apps chosen yet</string>
-    <string name="native_rules_note">Editing uses the classic Hisn screen for now. The native editors arrive in the next phase.</string>
+    <string name="native_rules_note">Apps, schedule, limits and the protection lock still open classic Hisn.</string>
     <string name="native_settings_language">Language</string>
     <string name="native_settings_version">Version %1$s</string>
     <string name="native_permission_on">On</string>
@@ -781,4 +781,7 @@
     <string name="native_about_section">About</string>
     <string name="native_attention">What needs attention</string>
     <string name="native_layers">Protection layers</string>
+    <string name="native_consent_continue">Continue</string>
+    <string name="native_unsupported">This layer needs Android 14 or later.</string>
+    <string name="native_choose_apps">Enabled. Choose apps to inspect in classic Hisn.</string>
 </resources>

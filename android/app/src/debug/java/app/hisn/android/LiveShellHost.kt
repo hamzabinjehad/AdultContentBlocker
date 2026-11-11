@@ -5,23 +5,28 @@ import android.content.Intent
 import android.os.Build
 import app.hisn.android.nativeshell.NativeShellHost
 import app.hisn.android.nativeshell.ShellActionResult
+import app.hisn.android.nativeshell.ShellConsent
 import app.hisn.android.nativeshell.ShellIssue
 import app.hisn.android.nativeshell.ShellLabels
 import app.hisn.android.nativeshell.ShellLayer
 import app.hisn.android.nativeshell.ShellProtection
 import app.hisn.android.nativeshell.ShellRule
 import app.hisn.android.nativeshell.ShellRules
+import app.hisn.android.nativeshell.ShellRulesEditor
+import app.hisn.android.nativeshell.ShellRulesPreview
 import app.hisn.android.nativeshell.ShellSetting
 import app.hisn.android.nativeshell.ShellSettings
+import app.hisn.core.PolicyChangeError
+import app.hisn.core.RulePreview
 import java.util.Locale
 
 /**
  * The debug-only bridge between the Compose shell and the real Hisn state.
  *
  * It lives in `app.hisn.android` so it can read package-private production helpers
- * ([Permissions], `DnsVpnService.resumeRequested`) without widening their API. It never writes a
- * rule and never starts or stops a layer yet: the Phase 2 shell is a real read-only dashboard,
- * and changes still open [MainActivity] so the audited editors keep owning policy writes.
+ * ([Permissions], `DnsVpnService.resumeRequested`) without widening their API. Phase 3 writes
+ * only through [PolicyStore], only after the shell's consent sheet, and only when the protection
+ * lock allows it. The classic editors still own every surface not ported here.
  */
 class LiveShellHost(private val context: Context) : NativeShellHost {
 
@@ -41,7 +46,9 @@ class LiveShellHost(private val context: Context) : NativeShellHost {
         live = string(R.string.native_live_title),
         liveBody = string(R.string.native_live_body),
         attention = string(R.string.native_attention),
-        layers = string(R.string.native_layers)
+        layers = string(R.string.native_layers),
+        locked = string(R.string.rules_locked),
+        unsupported = string(R.string.native_unsupported)
     )
 
     private fun store(): PolicyStore? = runCatching { PolicyStore.get(context) }.getOrNull()
@@ -199,8 +206,9 @@ class LiveShellHost(private val context: Context) : NativeShellHost {
 
     override fun rules(): ShellRules {
         val labels = labels()
-        val snap = store()?.snapshot()
         val settings = store()
+        val snap = settings?.snapshot()
+        val locked = (settings?.remainingMillis() ?: 0L) > 0
         if (snap == null) {
             return ShellRules(
                 builtInTitle = string(R.string.section_builtin),
@@ -208,12 +216,13 @@ class LiveShellHost(private val context: Context) : NativeShellHost {
                 note = string(R.string.native_rules_note),
                 builtIn = emptyList(),
                 custom = emptyList(),
+                locked = false,
                 labels = labels
             )
         }
-        val lockMs = settings?.remainingMillis() ?: 0L
         val builtIn = listOf(
             ShellRule(
+                key = "adult",
                 label = string(R.string.toggle_adult),
                 detail = if (snap.adultWordsEnabled) {
                     string(R.string.native_layer_words_on, snap.words.configuredRules().size)
@@ -224,6 +233,7 @@ class LiveShellHost(private val context: Context) : NativeShellHost {
                 on = snap.adultWordsEnabled
             ),
             ShellRule(
+                key = "images",
                 label = string(R.string.toggle_visual),
                 detail = if (snap.visualEnabled) {
                     string(R.string.native_layer_images_on)
@@ -234,6 +244,7 @@ class LiveShellHost(private val context: Context) : NativeShellHost {
                 on = snap.visualEnabled
             ),
             ShellRule(
+                key = "shortVideo",
                 label = string(R.string.toggle_short_video),
                 detail = if (snap.shortVideoEnabled) {
                     string(R.string.state_on)
@@ -246,24 +257,28 @@ class LiveShellHost(private val context: Context) : NativeShellHost {
         )
         val custom = listOf(
             ShellRule(
+                key = "domains",
                 label = string(R.string.edit_domains),
                 detail = plurals(R.plurals.saved_domains, snap.domains.blockedRules().size),
                 state = "",
                 on = false
             ),
             ShellRule(
+                key = "words",
                 label = string(R.string.edit_words),
                 detail = plurals(R.plurals.saved_words, snap.words.configuredRules().size),
                 state = "",
                 on = false
             ),
             ShellRule(
+                key = "apps",
                 label = string(R.string.section_apps),
                 detail = plurals(R.plurals.blocked_apps_count, snap.blockedApps.size),
                 state = "",
                 on = false
             ),
             ShellRule(
+                key = "schedule",
                 label = string(R.string.section_schedule),
                 detail = if (snap.schedule.isConfigured()) {
                     string(R.string.state_on)
@@ -274,6 +289,7 @@ class LiveShellHost(private val context: Context) : NativeShellHost {
                 on = false
             ),
             ShellRule(
+                key = "limit",
                 label = string(R.string.section_time_limits),
                 detail = if (snap.timeLimits.configured()) {
                     string(R.string.state_on)
@@ -284,8 +300,9 @@ class LiveShellHost(private val context: Context) : NativeShellHost {
                 on = false
             ),
             ShellRule(
+                key = "lock",
                 label = string(R.string.section_commitment),
-                detail = if (lockMs > 0) {
+                detail = if (locked) {
                     string(R.string.state_on)
                 } else {
                     string(R.string.state_off)
@@ -300,9 +317,188 @@ class LiveShellHost(private val context: Context) : NativeShellHost {
             note = string(R.string.native_rules_note),
             builtIn = builtIn,
             custom = custom,
+            locked = locked,
             labels = labels
         )
     }
+
+    override fun layerConsent(key: String): ShellConsent? {
+        val snap = store()?.snapshot() ?: return null
+        return when (key) {
+            "adult" -> ShellConsent(
+                title = string(
+                    if (snap.adultWordsEnabled) R.string.adult_mode_disable
+                    else R.string.adult_mode_enable
+                ),
+                body = string(R.string.adult_mode_short) + "\n\n" +
+                    string(R.string.adult_mode_disclosure),
+                acceptLabel = string(R.string.native_consent_continue),
+                cancelLabel = string(android.R.string.cancel)
+            )
+            "images" -> {
+                if (Build.VERSION.SDK_INT < 34) return null
+                ShellConsent(
+                    title = string(
+                        if (snap.visualEnabled) R.string.visual_disable
+                        else R.string.visual_enable
+                    ),
+                    body = string(R.string.visual_short) + "\n\n" +
+                        string(R.string.visual_disclosure),
+                    acceptLabel = string(R.string.native_consent_continue),
+                    cancelLabel = string(android.R.string.cancel)
+                )
+            }
+            "shortVideo" -> ShellConsent(
+                title = string(
+                    if (snap.shortVideoEnabled) R.string.short_video_disable
+                    else R.string.short_video_enable
+                ),
+                body = string(R.string.short_video_short) + "\n\n" +
+                    string(R.string.short_video_disclosure),
+                acceptLabel = string(R.string.native_consent_continue),
+                cancelLabel = string(android.R.string.cancel)
+            )
+            else -> null
+        }
+    }
+
+    override fun setLayer(key: String, enabled: Boolean): ShellActionResult {
+        val settings = store()
+            ?: return ShellActionResult(string(R.string.policy_unavailable), ok = false, refresh = false)
+        if (settings.remainingMillis() > 0) {
+            return ShellActionResult(string(R.string.rules_locked), ok = false, refresh = false)
+        }
+        if (key == "images" && Build.VERSION.SDK_INT < 34) {
+            return ShellActionResult(string(R.string.native_unsupported), ok = false, refresh = false)
+        }
+        val snap = settings.snapshot()
+        return try {
+            when (key) {
+                "adult" -> {
+                    settings.update(
+                        settings.domainText(),
+                        settings.wordText(),
+                        snap.blockedApps,
+                        snap.scannedApps,
+                        enabled
+                    )
+                    if (enabled && snap.scannedApps.isEmpty()) {
+                        ShellActionResult(string(R.string.native_choose_apps))
+                    } else {
+                        ShellActionResult(string(if (enabled) R.string.state_on else R.string.state_off))
+                    }
+                }
+                "images" -> {
+                    settings.updateVisual(enabled)
+                    if (enabled && snap.scannedApps.isEmpty()) {
+                        ShellActionResult(string(R.string.native_choose_apps))
+                    } else {
+                        ShellActionResult(string(if (enabled) R.string.state_on else R.string.state_off))
+                    }
+                }
+                "shortVideo" -> {
+                    settings.updateShortVideo(enabled)
+                    ShellActionResult(string(if (enabled) R.string.state_on else R.string.state_off))
+                }
+                else -> ShellActionResult(string(R.string.native_unsupported), ok = false, refresh = false)
+            }
+        } catch (refused: RuntimeException) {
+            ShellActionResult(refusalText(refused), ok = false, refresh = true)
+        }
+    }
+
+    override fun rulesEditor(kind: String): ShellRulesEditor {
+        val settings = store()
+        val domain = kind == "domains"
+        val locked = (settings?.remainingMillis() ?: 0L) > 0
+        return ShellRulesEditor(
+            kind = kind,
+            title = string(if (domain) R.string.edit_domains else R.string.edit_words),
+            text = when {
+                settings == null -> ""
+                domain -> settings.domainText()
+                else -> settings.wordText()
+            },
+            hint = string(if (domain) R.string.domain_hint else R.string.rule_hint),
+            note = string(R.string.rules_editor_private),
+            saveLabel = string(R.string.save_rules),
+            cancelLabel = string(android.R.string.cancel),
+            lockedNote = string(R.string.rules_locked),
+            locked = locked
+        )
+    }
+
+    override fun previewRules(kind: String, text: String): ShellRulesPreview {
+        val previewKind = if (kind == "domains") RulePreview.Kind.DOMAIN else RulePreview.Kind.WORD
+        return try {
+            val report = RulePreview.of(text, previewKind, 1000)
+            val rejected = report.entries
+                .filter { it.status == RulePreview.Status.INVALID }
+                .take(3)
+                .joinToString("\n") { string(R.string.rule_preview_rejected, it.raw, it.reason) }
+            ShellRulesPreview(
+                summary = string(
+                    R.string.rule_preview_counts,
+                    report.accepted.size,
+                    report.duplicates,
+                    report.rejected
+                ),
+                error = rejected.ifEmpty { null }
+            )
+        } catch (invalid: IllegalArgumentException) {
+            ShellRulesPreview(summary = "", error = string(R.string.rules_invalid))
+        }
+    }
+
+    override fun saveRules(kind: String, text: String): ShellActionResult {
+        val settings = store()
+            ?: return ShellActionResult(string(R.string.policy_unavailable), ok = false, refresh = false)
+        if (settings.remainingMillis() > 0) {
+            return ShellActionResult(string(R.string.rules_locked), ok = false, refresh = false)
+        }
+        val previewKind = if (kind == "domains") RulePreview.Kind.DOMAIN else RulePreview.Kind.WORD
+        val report = try {
+            RulePreview.of(text, previewKind, 1000)
+        } catch (invalid: IllegalArgumentException) {
+            return ShellActionResult(string(R.string.rules_invalid), ok = false, refresh = false)
+        }
+        if (report.accepted.isEmpty() && text.isNotBlank() && report.rejected > 0) {
+            return ShellActionResult(string(R.string.rules_invalid), ok = false, refresh = false)
+        }
+        val snap = settings.snapshot()
+        return try {
+            if (kind == "domains") {
+                settings.update(report.acceptedText(), settings.wordText(), snap.blockedApps, snap.scannedApps)
+            } else {
+                settings.update(settings.domainText(), report.acceptedText(), snap.blockedApps, snap.scannedApps)
+            }
+            ShellActionResult(
+                message = string(
+                    R.string.rule_preview_saved,
+                    report.accepted.size,
+                    report.duplicates + report.rejected
+                ),
+                ok = true,
+                refresh = true
+            )
+        } catch (refused: RuntimeException) {
+            ShellActionResult(refusalText(refused), ok = false, refresh = true)
+        }
+    }
+
+    private fun refusalText(refused: RuntimeException): String =
+        when (PolicyChangeError.of(refused)) {
+            PolicyChangeError.TOO_MANY_APPS -> context.resources.getQuantityString(
+                R.plurals.rules_too_many_apps,
+                PolicyStore.MAX_APPS,
+                PolicyStore.MAX_APPS
+            )
+            PolicyChangeError.INVALID -> string(R.string.rules_invalid)
+            PolicyChangeError.COMMITMENT -> string(R.string.rules_locked)
+            PolicyChangeError.NEEDS_RULES -> string(R.string.commitment_needs_rules)
+            PolicyChangeError.SAVE_FAILED -> string(R.string.rules_save_failed)
+            else -> string(R.string.policy_unavailable)
+        }
 
     override fun settings(): ShellSettings {
         val labels = labels()

@@ -24,10 +24,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,16 +42,21 @@ import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Warning
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -115,14 +123,33 @@ fun ProtectionShellScreen(
 @Composable
 fun RulesShellScreen(
     state: ShellRules,
-    onOpenClassic: () -> Unit
+    onOpenClassic: () -> Unit,
+    onLayer: (String, Boolean) -> Unit,
+    onEditRules: (String) -> Unit
 ) {
     ShellScreen {
+        if (state.locked) {
+            item {
+                val status = LocalHisnStatusColors.current
+                Surface(
+                    color = status.warningContainer,
+                    contentColor = status.onWarningContainer,
+                    shape = MaterialTheme.shapes.large,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        state.labels.locked,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            }
+        }
         item { SectionLabel(state.builtInTitle) }
         item {
             HisnCard {
                 state.builtIn.forEachIndexed { index, rule ->
-                    RuleSwitchRow(rule, onOpenClassic)
+                    RuleSwitchRow(rule) { onLayer(rule.key, !rule.on) }
                     if (index < state.builtIn.lastIndex) {
                         HorizontalDivider(
                             modifier = Modifier.padding(start = 16.dp, end = 16.dp),
@@ -136,7 +163,12 @@ fun RulesShellScreen(
         item {
             HisnCard {
                 state.custom.forEachIndexed { index, rule ->
-                    RuleValueRow(rule, onOpenClassic)
+                    RuleValueRow(rule) {
+                        when (rule.key) {
+                            "domains", "words" -> onEditRules(rule.key)
+                            else -> onOpenClassic()
+                        }
+                    }
                     if (index < state.custom.lastIndex) {
                         HorizontalDivider(
                             modifier = Modifier.padding(start = 16.dp, end = 16.dp),
@@ -509,11 +541,11 @@ private fun LayerCard(layers: List<ShellLayer>, onOpenClassic: () -> Unit) {
 }
 
 @Composable
-private fun RuleSwitchRow(rule: ShellRule, onOpenClassic: () -> Unit) {
+private fun RuleSwitchRow(rule: ShellRule, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onOpenClassic)
+            .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -538,11 +570,11 @@ private fun RuleSwitchRow(rule: ShellRule, onOpenClassic: () -> Unit) {
 }
 
 @Composable
-private fun RuleValueRow(rule: ShellRule, onOpenClassic: () -> Unit) {
+private fun RuleValueRow(rule: ShellRule, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onOpenClassic)
+            .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -583,6 +615,93 @@ private fun SectionLabel(text: String) {
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(start = 4.dp, top = 8.dp)
+    )
+}
+
+@Composable
+fun RulesEditorDialog(
+    editor: ShellRulesEditor,
+    onPreview: (String) -> ShellRulesPreview,
+    onSave: (String) -> ShellActionResult,
+    onDismiss: () -> Unit,
+    onResult: (ShellActionResult) -> Unit
+) {
+    var text by remember(editor) { mutableStateOf(editor.text) }
+    var error by remember(editor) { mutableStateOf<String?>(null) }
+    val preview = remember(text) { onPreview(text) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(editor.title) },
+        text = {
+            Column(
+                Modifier
+                    .heightIn(max = 420.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    editor.note,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = {
+                        text = it
+                        error = null
+                    },
+                    label = { Text(editor.hint) },
+                    minLines = 6,
+                    maxLines = 10,
+                    isError = error != null || preview.error != null,
+                    enabled = !editor.locked,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (preview.summary.isNotEmpty()) {
+                    Text(
+                        preview.summary,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                val shownError = error ?: preview.error
+                if (shownError != null) {
+                    Text(
+                        shownError,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+                if (editor.locked) {
+                    Text(
+                        editor.lockedNote,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = !editor.locked,
+                onClick = {
+                    val result = onSave(text)
+                    if (result.ok) {
+                        onResult(result)
+                    } else {
+                        error = result.message
+                    }
+                }
+            ) {
+                Text(editor.saveLabel)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(editor.cancelLabel)
+            }
+        }
     )
 }
 

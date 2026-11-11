@@ -827,8 +827,8 @@
     <string name="native_run_check">تشغيل فحص الحماية</string>
     <string name="native_check_started">بدأ فحص المسار.</string>
     <string name="native_check_unavailable">فلترة DNS غير قيد التشغيل، لذا لا يمكن بدء فحص المسار.</string>
-    <string name="native_live_title">مباشر · معاينة للقراءة فقط</string>
-    <string name="native_live_body">تقرأ هذه الشاشة قواعدك المحفوظة وحالة الخدمات الحقيقية. تفتح التغييرات شاشة حصن الكلاسيكية حتى تكتمل المحررات الأصلية.</string>
+    <string name="native_live_title">مباشر · محررات أصلية</string>
+    <string name="native_live_body">قواعد محفوظة وحالة خدمات حقيقية. تُعدَّل مفاتيح الطبقات وقواعد النطاقات والكلمات هنا؛ وتفتح المحررات المتبقية حصن الكلاسيكي.</string>
     <string name="native_open_classic">فتح حصن الكلاسيكي</string>
     <string name="native_state_unavailable">تعذّرت قراءة إعدادات الحماية.</string>
     <string name="native_layer_dns_on">مفعّلة · %1$d نطاقًا محمّلًا</string>
@@ -840,7 +840,7 @@
     <string name="native_layer_images_on">مفعّلة · على الجهاز، أندرويد 14+</string>
     <string name="native_layer_images_off">متوقفة · لا تُؤخذ عينات من الصور</string>
     <string name="native_no_apps">لا تطبيقات مختارة بعد</string>
-    <string name="native_rules_note">لا يزال التعديل يستخدم شاشة حصن الكلاسيكية. تصل المحررات الأصلية في المرحلة التالية.</string>
+    <string name="native_rules_note">التطبيقات والجدول والحدود وقفل الحماية ما زالت تفتح حصن الكلاسيكي.</string>
     <string name="native_settings_language">اللغة</string>
     <string name="native_settings_version">الإصدار %1$s</string>
     <string name="native_permission_on">مفعّل</string>
@@ -853,4 +853,7 @@
     <string name="native_about_section">حول</string>
     <string name="native_attention">ما يحتاج إلى مراجعة</string>
     <string name="native_layers">طبقات الحماية</string>
+    <string name="native_consent_continue">متابعة</string>
+    <string name="native_unsupported">تحتاج هذه الطبقة إلى أندرويد 14 أو أحدث.</string>
+    <string name="native_choose_apps">مفعّلة. اختر التطبيقات لفحصها في حصن الكلاسيكي.</string>
 </resources>
