@@ -13,6 +13,8 @@ import app.hisn.android.nativeshell.ShellConsent
 import app.hisn.android.nativeshell.ShellIssue
 import app.hisn.android.nativeshell.ShellLabels
 import app.hisn.android.nativeshell.ShellLayer
+import app.hisn.android.nativeshell.ShellLockOption
+import app.hisn.android.nativeshell.ShellLockState
 import app.hisn.android.nativeshell.ShellProtection
 import app.hisn.android.nativeshell.ShellRule
 import app.hisn.android.nativeshell.ShellRules
@@ -21,6 +23,7 @@ import app.hisn.android.nativeshell.ShellRulesPreview
 import app.hisn.android.nativeshell.ShellSetting
 import app.hisn.android.nativeshell.ShellSettings
 import app.hisn.core.PolicyChangeError
+import app.hisn.core.ProtectionLock
 import app.hisn.core.RulePreview
 import java.util.Locale
 
@@ -315,7 +318,10 @@ class LiveShellHost(private val context: Context) : NativeShellHost {
                 key = "lock",
                 label = string(R.string.section_commitment),
                 detail = if (locked) {
-                    string(R.string.state_on)
+                    string(
+                        R.string.commitment_remaining,
+                        Durations.remaining(context, settings?.remainingMillis() ?: 0L)
+                    )
                 } else {
                     string(R.string.state_off)
                 },
@@ -563,6 +569,60 @@ class LiveShellHost(private val context: Context) : NativeShellHost {
             },
             refresh = started
         )
+    }
+
+    override fun lockState(): ShellLockState {
+        val settings = store()
+        val snap = settings?.snapshot()
+        val remaining = settings?.remainingMillis() ?: 0L
+        return ShellLockState(
+            active = remaining > 0,
+            remaining = if (remaining > 0) {
+                string(R.string.commitment_remaining, Durations.remaining(context, remaining))
+            } else {
+                ""
+            },
+            title = string(R.string.commitment_setup),
+            choosePeriod = string(R.string.commitment_choose_period),
+            disclosure = string(R.string.commitment_disclosure),
+            startLabel = string(R.string.commitment_start),
+            cancelLabel = string(android.R.string.cancel),
+            needsRules = string(R.string.commitment_needs_rules),
+            lockedNote = string(R.string.commitment_locked_note),
+            canStart = snap?.hasConfiguredRestrictions() == true,
+            options = listOf(1, 7, 30, 90).map { days ->
+                ShellLockOption(
+                    days = days,
+                    label = context.resources.getQuantityString(R.plurals.days, days, days)
+                )
+            }
+        )
+    }
+
+    override fun startLock(days: Int): ShellActionResult {
+        val settings = store()
+            ?: return ShellActionResult(string(R.string.policy_unavailable), ok = false, refresh = false)
+        if (settings.snapshot().hasConfiguredRestrictions().not()) {
+            return ShellActionResult(string(R.string.commitment_needs_rules), ok = false, refresh = false)
+        }
+        return try {
+            settings.startCommitment(days)
+            runCatching { UninstallProtectionController.sync(context) }
+            runCatching {
+                BootShieldService.mirror(
+                    context,
+                    ProtectionLock.bootShieldArmed(
+                        BuildConfig.SELF_PROTECTION,
+                        settings.uninstallLock(),
+                        settings.remainingMillis()
+                    )
+                )
+            }
+            runCatching { LayerWatchdog.syncSchedule(context) }
+            ShellActionResult(string(R.string.native_lock_started), ok = true, refresh = true)
+        } catch (refused: RuntimeException) {
+            ShellActionResult(refusalText(refused), ok = false, refresh = true)
+        }
     }
 
     override fun appPicker(kind: String): ShellAppPicker {

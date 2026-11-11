@@ -122,6 +122,25 @@ data class ShellApp(
     val icon: Bitmap?
 )
 
+data class ShellLockOption(
+    val days: Int,
+    val label: String
+)
+
+data class ShellLockState(
+    val active: Boolean,
+    val remaining: String,
+    val title: String,
+    val choosePeriod: String,
+    val disclosure: String,
+    val startLabel: String,
+    val cancelLabel: String,
+    val needsRules: String,
+    val lockedNote: String,
+    val canStart: Boolean,
+    val options: List<ShellLockOption>
+)
+
 data class ShellAppPicker(
     val kind: String,
     val title: String,
@@ -159,6 +178,12 @@ interface NativeShellHost {
 
     /** Saves the canonical accepted set through PolicyStore. */
     fun saveRules(kind: String, text: String): ShellActionResult
+
+    /** The real protection-lock state and disclosure. */
+    fun lockState(): ShellLockState
+
+    /** Starts or extends the lock; the PolicyStore decides whether the period is allowed. */
+    fun startLock(days: Int): ShellActionResult
 
     /** Installed apps and the saved selection for a blocked or inspected-app picker. */
     fun appPicker(kind: String): ShellAppPicker
