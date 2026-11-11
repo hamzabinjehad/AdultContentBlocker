@@ -828,7 +828,7 @@
     <string name="native_check_started">بدأ فحص المسار.</string>
     <string name="native_check_unavailable">فلترة DNS غير قيد التشغيل، لذا لا يمكن بدء فحص المسار.</string>
     <string name="native_live_title">مباشر · محررات أصلية</string>
-    <string name="native_live_body">قواعد محفوظة وحالة خدمات حقيقية. الطبقات وقواعد النطاقات والكلمات وإعداد DNS أصلية؛ وتفتح التطبيقات والجدول والحدود والقفل حصن الكلاسيكي.</string>
+    <string name="native_live_body">قواعد محفوظة وحالة خدمات حقيقية. الطبقات وقواعد النطاقات والكلمات والتطبيقات وإعداد DNS أصلية؛ وتفتح الجدول والحدود والقفل حصن الكلاسيكي.</string>
     <string name="native_open_classic">فتح حصن الكلاسيكي</string>
     <string name="native_state_unavailable">تعذّرت قراءة إعدادات الحماية.</string>
     <string name="native_layer_dns_on">مفعّلة · %1$d نطاقًا محمّلًا</string>
@@ -840,7 +840,7 @@
     <string name="native_layer_images_on">مفعّلة · على الجهاز، أندرويد 14+</string>
     <string name="native_layer_images_off">متوقفة · لا تُؤخذ عينات من الصور</string>
     <string name="native_no_apps">لا تطبيقات مختارة بعد</string>
-    <string name="native_rules_note">التطبيقات والجدول والحدود وقفل الحماية ما زالت تفتح حصن الكلاسيكي.</string>
+    <string name="native_rules_note">الجدول والحدود وقفل الحماية ما زالت تفتح حصن الكلاسيكي.</string>
     <string name="native_settings_language">اللغة</string>
     <string name="native_settings_version">الإصدار %1$s</string>
     <string name="native_permission_on">مفعّل</string>

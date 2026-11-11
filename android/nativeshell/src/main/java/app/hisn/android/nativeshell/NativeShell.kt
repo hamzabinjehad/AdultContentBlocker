@@ -120,6 +120,7 @@ fun NativeShell(host: NativeShellHost?) {
     var settings by remember { mutableStateOf<ShellSettings?>(null) }
     var consentRequest by remember { mutableStateOf<PendingConsent?>(null) }
     var editor by remember { mutableStateOf<ShellRulesEditor?>(null) }
+    var appPicker by remember { mutableStateOf<ShellAppPicker?>(null) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
@@ -170,7 +171,7 @@ fun NativeShell(host: NativeShellHost?) {
         ?: settings?.labels
         ?: fallbackLabels()
 
-    SecureEditorWindow(editor != null)
+    SecureEditorWindow(editor != null || appPicker != null)
 
     fun lockedMessage() {
         scope.launch { snackbar.showSnackbar(labels.locked) }
@@ -201,6 +202,12 @@ fun NativeShell(host: NativeShellHost?) {
         val next = host?.rulesEditor(kind) ?: return
         haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
         editor = next
+    }
+
+    fun editApps(kind: String) {
+        val next = host?.appPicker(kind) ?: return
+        haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+        appPicker = next
     }
 
     val vpnLauncher = rememberLauncherForActivityResult(
@@ -371,6 +378,7 @@ fun NativeShell(host: NativeShellHost?) {
                         onOpenClassic = ::openClassic,
                         onLayer = ::requestLayer,
                         onEditRules = ::editRules,
+                        onEditApps = ::editApps,
                         onStartDns = ::requestDnsSetup,
                         modifier = Modifier.weight(1f)
                     )
@@ -427,6 +435,24 @@ fun NativeShell(host: NativeShellHost?) {
             }
         )
     }
+
+    appPicker?.let { current ->
+        AppPickerDialog(
+            picker = current,
+            onSave = { selected ->
+                host?.saveAppPicker(current.kind, selected)
+                    ?: ShellActionResult(labels.unsupported, ok = false, refresh = false)
+            },
+            onDismiss = { appPicker = null },
+            onResult = { result ->
+                if (result.ok) {
+                    appPicker = null
+                    scope.launch { refresh() }
+                }
+                scope.launch { snackbar.showSnackbar(result.message) }
+            }
+        )
+    }
 }
 
 @Composable
@@ -456,6 +482,7 @@ private fun ShellContent(
     onOpenClassic: () -> Unit,
     onLayer: (String, Boolean) -> Unit,
     onEditRules: (String) -> Unit,
+    onEditApps: (String) -> Unit,
     onStartDns: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -489,7 +516,8 @@ private fun ShellContent(
                     state = rules,
                     onOpenClassic = onOpenClassic,
                     onLayer = onLayer,
-                    onEditRules = onEditRules
+                    onEditRules = onEditRules,
+                    onEditApps = onEditApps
                 )
                 index == 2 && settings != null -> SettingsShellScreen(
                     state = settings,

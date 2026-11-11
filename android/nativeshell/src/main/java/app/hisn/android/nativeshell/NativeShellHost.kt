@@ -1,5 +1,7 @@
 package app.hisn.android.nativeshell
 
+import android.graphics.Bitmap
+
 /**
  * The contract between the Compose shell and the real Hisn app.
  *
@@ -114,6 +116,27 @@ data class ShellRulesPreview(
     val error: String? = null
 )
 
+data class ShellApp(
+    val packageName: String,
+    val label: String,
+    val icon: Bitmap?
+)
+
+data class ShellAppPicker(
+    val kind: String,
+    val title: String,
+    val note: String,
+    val searchHint: String,
+    val emptyLabel: String,
+    val saveLabel: String,
+    val cancelLabel: String,
+    val lockedNote: String,
+    val locked: Boolean,
+    val max: Int,
+    val selected: Set<String>,
+    val apps: List<ShellApp>
+)
+
 interface NativeShellHost {
     fun protection(): ShellProtection
     fun rules(): ShellRules
@@ -136,6 +159,12 @@ interface NativeShellHost {
 
     /** Saves the canonical accepted set through PolicyStore. */
     fun saveRules(kind: String, text: String): ShellActionResult
+
+    /** Installed apps and the saved selection for a blocked or inspected-app picker. */
+    fun appPicker(kind: String): ShellAppPicker
+
+    /** Saves only installed rows; saved packages that are uninstalled are preserved. */
+    fun saveAppPicker(kind: String, selected: Set<String>): ShellActionResult
 
     /** The real DNS disclosure; the shell shows it before requesting VPN approval. */
     fun dnsConsent(): ShellConsent
