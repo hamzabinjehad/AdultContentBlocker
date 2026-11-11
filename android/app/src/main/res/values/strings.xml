@@ -787,4 +787,5 @@
     <string name="native_lock_started">Protection lock started.</string>
     <string name="native_settings_controls">Protection settings</string>
     <string name="native_settings_android">Android settings</string>
+    <string name="native_uninstall_managed_classic">Managed uninstall switches still open classic Hisn.</string>
 </resources>

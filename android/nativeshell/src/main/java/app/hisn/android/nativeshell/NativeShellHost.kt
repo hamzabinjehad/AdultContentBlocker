@@ -81,6 +81,19 @@ data class ShellSetting(
     val detail: String
 )
 
+data class ShellUninstall(
+    val title: String,
+    val body: String,
+    val status: String,
+    val commandLabel: String,
+    val command: String,
+    val copyLabel: String,
+    val copyMessage: String,
+    val adminLabel: String,
+    val managed: Boolean,
+    val managedNote: String
+)
+
 data class ShellToggle(
     val key: String,
     val label: String,
@@ -296,6 +309,15 @@ interface NativeShellHost {
 
     /** Saves only installed rows; saved packages that are uninstalled are preserved. */
     fun saveAppPicker(kind: String, selected: Set<String>): ShellActionResult
+
+    /** The real platform uninstall-protection status and provisioning command. */
+    fun uninstallState(): ShellUninstall
+
+    /** Copies the device-owner provisioning command; false when it could not be copied. */
+    fun copyUninstallCommand(): Boolean
+
+    /** Opens Android's device-admin setup screen. */
+    fun openAdminSetup(): Boolean
 
     /** Saves a real settings switch such as SafeSearch. */
     fun setToggle(key: String, enabled: Boolean): ShellActionResult

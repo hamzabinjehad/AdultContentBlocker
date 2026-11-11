@@ -126,6 +126,7 @@ fun NativeShell(host: NativeShellHost?) {
     var lockDialog by remember { mutableStateOf<ShellLockState?>(null) }
     var limitsDialog by remember { mutableStateOf<ShellLimitsEditor?>(null) }
     var scheduleDialog by remember { mutableStateOf<ShellScheduleEditor?>(null) }
+    var uninstallSheet by remember { mutableStateOf<ShellUninstall?>(null) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
@@ -245,6 +246,10 @@ fun NativeShell(host: NativeShellHost?) {
     }
 
     fun runSettingAction(key: String) {
+        if (key == "uninstall") {
+            uninstallSheet = host?.uninstallState()
+            return
+        }
         if (host?.runSettingAction(key) != true) {
             scope.launch { snackbar.showSnackbar(labels.unsupported) }
         }
@@ -567,6 +572,29 @@ fun NativeShell(host: NativeShellHost?) {
                 }
                 scope.launch { snackbar.showSnackbar(result.message) }
             }
+        )
+    }
+
+    uninstallSheet?.let { current ->
+        UninstallDialog(
+            state = current,
+            onCopy = {
+                if (host?.copyUninstallCommand() == true) {
+                    scope.launch { snackbar.showSnackbar(current.copyMessage) }
+                } else {
+                    scope.launch { snackbar.showSnackbar(labels.unsupported) }
+                }
+            },
+            onAdmin = {
+                if (host?.openAdminSetup() != true) {
+                    scope.launch { snackbar.showSnackbar(labels.unsupported) }
+                }
+            },
+            onOpenClassic = {
+                uninstallSheet = null
+                openClassic()
+            },
+            onDismiss = { uninstallSheet = null }
         )
     }
 }

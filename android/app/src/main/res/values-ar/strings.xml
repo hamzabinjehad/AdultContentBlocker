@@ -859,4 +859,5 @@
     <string name="native_lock_started">بدأ قفل الحماية.</string>
     <string name="native_settings_controls">إعدادات الحماية</string>
     <string name="native_settings_android">إعدادات Android</string>
+    <string name="native_uninstall_managed_classic">مفاتيح منع الإزالة المُدارة ما زالت تفتح حصن الكلاسيكي.</string>
 </resources>
