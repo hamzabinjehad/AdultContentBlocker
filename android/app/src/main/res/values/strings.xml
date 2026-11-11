@@ -756,7 +756,7 @@
     <string name="native_check_started">Route check started.</string>
     <string name="native_check_unavailable">DNS filtering is not running, so the route check cannot start.</string>
     <string name="native_live_title">Live · native editors</string>
-    <string name="native_live_body">Real saved rules and service state. Layer switches and domain/word rules edit here; the remaining editors open classic Hisn.</string>
+    <string name="native_live_body">Real saved rules and service state. Layers, domain/word rules and DNS setup are native; apps, schedule, limits and the lock open classic Hisn.</string>
     <string name="native_open_classic">Open classic Hisn</string>
     <string name="native_state_unavailable">Protection settings could not be read.</string>
     <string name="native_layer_dns_on">On · %1$d domains loaded</string>

@@ -1,7 +1,13 @@
 package app.hisn.android.nativeshell
 
-import androidx.activity.compose.LocalActivity
+import android.Manifest
+import android.app.Activity
+import android.content.pm.PackageManager
+import android.os.Build
 import android.view.WindowManager
+import androidx.activity.compose.LocalActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -60,6 +66,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
@@ -67,10 +74,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-private data class LayerConsentRequest(
-    val key: String,
-    val enabled: Boolean,
-    val consent: ShellConsent
+private data class PendingConsent(
+    val consent: ShellConsent,
+    val onAccept: () -> Unit
 )
 
 private enum class Destination(val icon: ImageVector) {
@@ -93,7 +99,8 @@ private fun fallbackLabels() = ShellLabels(
     attention = "What needs attention",
     layers = "Protection layers",
     locked = "Rules are locked until the protection lock ends.",
-    unsupported = "This layer needs Android 14 or later."
+    unsupported = "This layer needs Android 14 or later.",
+    dnsStart = "Set up DNS filtering"
 )
 
 /**
@@ -111,12 +118,13 @@ fun NativeShell(host: NativeShellHost?) {
     var protection by remember { mutableStateOf<ShellProtection?>(null) }
     var rules by remember { mutableStateOf<ShellRules?>(null) }
     var settings by remember { mutableStateOf<ShellSettings?>(null) }
-    var consentRequest by remember { mutableStateOf<LayerConsentRequest?>(null) }
+    var consentRequest by remember { mutableStateOf<PendingConsent?>(null) }
     var editor by remember { mutableStateOf<ShellRulesEditor?>(null) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
-    val lifecycleOwner: LifecycleOwner? = LocalActivity.current as? LifecycleOwner
+    val activity = LocalActivity.current
+    val lifecycleOwner: LifecycleOwner? = activity as? LifecycleOwner
     var resumed by remember {
         mutableStateOf(
             lifecycleOwner?.lifecycle?.currentState?.isAtLeast(Lifecycle.State.RESUMED) == true
@@ -179,13 +187,74 @@ fun NativeShell(host: NativeShellHost?) {
             return
         }
         haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-        consentRequest = LayerConsentRequest(key, enabled, consent)
+        consentRequest = PendingConsent(consent) {
+            scope.launch {
+                val result = host?.setLayer(key, enabled)
+                    ?: ShellActionResult(labels.unsupported, ok = false, refresh = false)
+                snackbar.showSnackbar(result.message)
+                if (result.ok) refresh()
+            }
+        }
     }
 
     fun editRules(kind: String) {
         val next = host?.rulesEditor(kind) ?: return
         haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
         editor = next
+    }
+
+    val vpnLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            scope.launch {
+                val started = host?.startDns()
+                    ?: ShellActionResult(labels.unsupported, ok = false, refresh = false)
+                refresh()
+                snackbar.showSnackbar(started.message)
+            }
+        }
+    }
+
+    fun launchVpnConsent() {
+        val intent = host?.vpnConsentIntent()
+        if (intent != null) {
+            vpnLauncher.launch(intent)
+        } else {
+            scope.launch {
+                val started = host?.startDns()
+                    ?: ShellActionResult(labels.unsupported, ok = false, refresh = false)
+                refresh()
+                snackbar.showSnackbar(started.message)
+            }
+        }
+    }
+
+    val notificationLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {
+        // The classic flow proceeds whether or not the notification permission is granted.
+        launchVpnConsent()
+    }
+
+    fun beginDnsSetup() {
+        val current = activity
+        if (Build.VERSION.SDK_INT >= 33 && current != null &&
+            ContextCompat.checkSelfPermission(
+                current,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            launchVpnConsent()
+        }
+    }
+
+    fun requestDnsSetup() {
+        val consent = host?.dnsConsent() ?: return
+        haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+        consentRequest = PendingConsent(consent) { beginDnsSetup() }
     }
 
     fun openClassic() {
@@ -302,6 +371,7 @@ fun NativeShell(host: NativeShellHost?) {
                         onOpenClassic = ::openClassic,
                         onLayer = ::requestLayer,
                         onEditRules = ::editRules,
+                        onStartDns = ::requestDnsSetup,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -326,12 +396,7 @@ fun NativeShell(host: NativeShellHost?) {
                 TextButton(onClick = {
                     val pending = request
                     consentRequest = null
-                    scope.launch {
-                        val result = host?.setLayer(pending.key, pending.enabled)
-                            ?: ShellActionResult(labels.unsupported, ok = false, refresh = false)
-                        snackbar.showSnackbar(result.message)
-                        if (result.ok) refresh()
-                    }
+                    pending.onAccept()
                 }) {
                     Text(request.consent.acceptLabel)
                 }
@@ -391,6 +456,7 @@ private fun ShellContent(
     onOpenClassic: () -> Unit,
     onLayer: (String, Boolean) -> Unit,
     onEditRules: (String) -> Unit,
+    onStartDns: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val layoutDirection = LocalLayoutDirection.current
@@ -416,7 +482,8 @@ private fun ShellContent(
                 index == 0 && protection != null -> ProtectionShellScreen(
                     state = protection,
                     onCheck = onCheck,
-                    onOpenClassic = onOpenClassic
+                    onOpenClassic = onOpenClassic,
+                    onStartDns = onStartDns
                 )
                 index == 1 && rules != null -> RulesShellScreen(
                     state = rules,

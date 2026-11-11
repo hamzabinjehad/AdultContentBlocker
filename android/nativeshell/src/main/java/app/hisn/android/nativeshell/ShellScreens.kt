@@ -107,10 +107,11 @@ fun LiveBanner(labels: ShellLabels) {
 fun ProtectionShellScreen(
     state: ShellProtection,
     onCheck: () -> Unit,
-    onOpenClassic: () -> Unit
+    onOpenClassic: () -> Unit,
+    onStartDns: () -> Unit
 ) {
     ShellScreen {
-        item { LiveHero(state, onCheck, onOpenClassic) }
+        item { LiveHero(state, onCheck, onOpenClassic, onStartDns) }
         if (state.issues.isNotEmpty()) {
             item { SectionLabel(state.labels.attention) }
             item { IssueCard(state.issues, state.labels.openClassic, onOpenClassic) }
@@ -273,7 +274,8 @@ fun LoadingShellScreen() {
 private fun LiveHero(
     state: ShellProtection,
     onCheck: () -> Unit,
-    onOpenClassic: () -> Unit
+    onOpenClassic: () -> Unit,
+    onStartDns: () -> Unit
 ) {
     val status = LocalHisnStatusColors.current
     val protected = state.status == "protected"
@@ -340,18 +342,30 @@ private fun LiveHero(
             CoverageLedger(state.layers, accent)
             Spacer(Modifier.height(16.dp))
 
-            if (state.canCheck) {
-                Button(onClick = onCheck, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.Outlined.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text(state.labels.runCheck)
+            val dnsOn = state.layers.firstOrNull { it.key == "network" }?.on == true
+            when {
+                state.canCheck -> {
+                    Button(onClick = onCheck, modifier = Modifier.fillMaxWidth()) {
+                        Icon(Icons.Outlined.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(state.labels.runCheck)
+                    }
+                    TextButton(onClick = onOpenClassic, modifier = Modifier.fillMaxWidth()) {
+                        Text(state.labels.openClassic)
+                    }
                 }
-                TextButton(onClick = onOpenClassic, modifier = Modifier.fillMaxWidth()) {
-                    Text(state.labels.openClassic)
+                !dnsOn -> {
+                    Button(onClick = onStartDns, modifier = Modifier.fillMaxWidth()) {
+                        Text(state.labels.dnsStart)
+                    }
+                    TextButton(onClick = onOpenClassic, modifier = Modifier.fillMaxWidth()) {
+                        Text(state.labels.openClassic)
+                    }
                 }
-            } else {
-                Button(onClick = onOpenClassic, modifier = Modifier.fillMaxWidth()) {
-                    Text(state.labels.openClassic)
+                else -> {
+                    Button(onClick = onOpenClassic, modifier = Modifier.fillMaxWidth()) {
+                        Text(state.labels.openClassic)
+                    }
                 }
             }
         }
