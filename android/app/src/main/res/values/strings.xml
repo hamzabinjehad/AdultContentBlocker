@@ -756,7 +756,7 @@
     <string name="native_check_started">Route check started.</string>
     <string name="native_check_unavailable">DNS filtering is not running, so the route check cannot start.</string>
     <string name="native_live_title">Live · native editors</string>
-    <string name="native_live_body">Real saved rules and service state. Layers, domain/word/app rules, daily limits, the protection lock and DNS setup are native; the app schedule opens classic Hisn.</string>
+    <string name="native_live_body">Real saved rules. Layers, app rules, schedule, limits, lock and DNS are native; the rest opens classic Hisn.</string>
     <string name="native_open_classic">Open classic Hisn</string>
     <string name="native_state_unavailable">Protection settings could not be read.</string>
     <string name="native_layer_dns_on">On · %1$d domains loaded</string>
@@ -768,7 +768,7 @@
     <string name="native_layer_images_on">On · On-device, Android 14+</string>
     <string name="native_layer_images_off">Off · Images are not sampled</string>
     <string name="native_no_apps">No apps chosen yet</string>
-    <string name="native_rules_note">The app schedule still opens classic Hisn.</string>
+    <string name="native_rules_note">Uninstall protection, Welcome and Shield still open classic Hisn.</string>
     <string name="native_settings_language">Language</string>
     <string name="native_settings_version">Version %1$s</string>
     <string name="native_permission_on">On</string>

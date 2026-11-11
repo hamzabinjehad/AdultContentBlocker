@@ -24,9 +24,12 @@ import app.hisn.android.nativeshell.ShellRule
 import app.hisn.android.nativeshell.ShellRules
 import app.hisn.android.nativeshell.ShellRulesEditor
 import app.hisn.android.nativeshell.ShellRulesPreview
+import app.hisn.android.nativeshell.ShellScheduleDay
+import app.hisn.android.nativeshell.ShellScheduleEditor
 import app.hisn.android.nativeshell.ShellSetting
 import app.hisn.android.nativeshell.ShellSettings
 import app.hisn.core.AppTimeLimit
+import app.hisn.core.DailyAppSchedule
 import app.hisn.core.PolicyChangeError
 import app.hisn.core.ProtectionLock
 import app.hisn.core.RulePreview
@@ -596,6 +599,115 @@ class LiveShellHost(private val context: Context) : NativeShellHost {
         string(R.string.time_limits_hours, minutes / 60)
     } else {
         string(R.string.time_limits_minutes, minutes)
+    }
+
+    override fun scheduleEditor(): ShellScheduleEditor {
+        val schedule = store()?.snapshot()?.schedule ?: DailyAppSchedule.disabled()
+        val density = context.resources.displayMetrics.density
+        val iconSize = (36 * density).toInt().coerceAtLeast(1)
+        val apps = runCatching { ChosenApps.list(context) }.getOrDefault(emptyList())
+            .map { entry ->
+                ShellApp(
+                    packageName = entry.packageName,
+                    label = entry.label,
+                    icon = appIcon(entry.packageName, iconSize)
+                )
+            }
+        val weekdays = java.text.DateFormatSymbols().shortWeekdays
+        val dayBits = listOf(
+            1 to java.util.Calendar.MONDAY,
+            2 to java.util.Calendar.TUESDAY,
+            4 to java.util.Calendar.WEDNESDAY,
+            8 to java.util.Calendar.THURSDAY,
+            16 to java.util.Calendar.FRIDAY,
+            32 to java.util.Calendar.SATURDAY,
+            64 to java.util.Calendar.SUNDAY
+        )
+        return ShellScheduleEditor(
+            enabled = schedule.enabled,
+            startMinute = schedule.startMinute,
+            endMinute = schedule.endMinute,
+            days = schedule.days,
+            allApps = schedule.allApps,
+            selected = schedule.apps,
+            apps = apps,
+            title = string(R.string.schedule_edit),
+            help = string(R.string.schedule_help),
+            enableLabel = string(R.string.schedule_enable),
+            startTemplate = string(R.string.schedule_start, "__TIME__"),
+            endTemplate = string(R.string.schedule_end, "__TIME__"),
+            daysTitle = string(R.string.schedule_days_title),
+            daysHelp = string(R.string.schedule_days_help),
+            modeAllLabel = string(R.string.schedule_mode_all),
+            modeListLabel = string(R.string.schedule_mode_list),
+            modeListHelp = string(R.string.schedule_list_help),
+            modeAllHelp = string(R.string.schedule_all_apps_help),
+            chooseAppsLabel = string(R.string.schedule_choose_apps),
+            keepAppsLabel = string(R.string.schedule_keep_apps),
+            useAppsLabel = string(R.string.schedule_use_apps),
+            searchHint = string(R.string.app_search_hint),
+            emptyLabel = string(R.string.app_search_empty),
+            privateNote = string(R.string.app_picker_private),
+            max = PolicyStore.MAX_APPS,
+            saveLabel = string(R.string.schedule_save),
+            cancelLabel = string(android.R.string.cancel),
+            lockedNote = string(R.string.rules_locked),
+            locked = (store()?.remainingMillis() ?: 0L) > 0,
+            invalidTime = string(R.string.schedule_invalid_time),
+            chooseAppsError = string(R.string.schedule_choose_apps_error),
+            keepAppsError = string(R.string.schedule_keep_apps_error),
+            daysError = string(R.string.schedule_days_error),
+            invalid = string(R.string.schedule_invalid),
+            dayLabels = dayBits.map { (bit, day) ->
+                ShellScheduleDay(bit, weekdays.getOrElse(day) { "" })
+            }
+        )
+    }
+
+    override fun saveSchedule(
+        enabled: Boolean,
+        startMinute: Int,
+        endMinute: Int,
+        days: Int,
+        allApps: Boolean,
+        apps: Set<String>
+    ): ShellActionResult {
+        val settings = store()
+            ?: return ShellActionResult(string(R.string.policy_unavailable), ok = false, refresh = false)
+        if (settings.remainingMillis() > 0) {
+            return ShellActionResult(string(R.string.rules_locked), ok = false, refresh = false)
+        }
+        if (startMinute == endMinute) {
+            return ShellActionResult(string(R.string.schedule_invalid_time), ok = false, refresh = false)
+        }
+        if (days < 1 || days > DailyAppSchedule.ALL_DAYS) {
+            return ShellActionResult(string(R.string.schedule_days_error), ok = false, refresh = false)
+        }
+        val snap = settings.snapshot()
+        val installed = runCatching { ChosenApps.list(context) }
+            .getOrDefault(emptyList())
+            .map { it.packageName }
+            .toSet()
+        val previous = snap.schedule.apps
+        val next = LinkedHashSet(apps)
+        for (app in previous) {
+            if (app !in installed && app !in next) next.add(app)
+        }
+        if (enabled && next.isEmpty()) {
+            return ShellActionResult(
+                string(if (allApps) R.string.schedule_keep_apps_error else R.string.schedule_choose_apps_error),
+                ok = false,
+                refresh = false
+            )
+        }
+        return try {
+            settings.updateSchedule(
+                DailyAppSchedule(enabled, startMinute, endMinute, next, allApps, days)
+            )
+            ShellActionResult(string(R.string.rules_saved), ok = true, refresh = true)
+        } catch (refused: RuntimeException) {
+            ShellActionResult(string(R.string.schedule_invalid), ok = false, refresh = true)
+        }
     }
 
     override fun limitsEditor(): ShellLimitsEditor {

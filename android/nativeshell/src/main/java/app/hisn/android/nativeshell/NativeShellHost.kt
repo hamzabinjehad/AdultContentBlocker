@@ -116,6 +116,49 @@ data class ShellRulesPreview(
     val error: String? = null
 )
 
+data class ShellScheduleDay(
+    val bit: Int,
+    val label: String
+)
+
+data class ShellScheduleEditor(
+    val enabled: Boolean,
+    val startMinute: Int,
+    val endMinute: Int,
+    val days: Int,
+    val allApps: Boolean,
+    val selected: Set<String>,
+    val apps: List<ShellApp>,
+    val title: String,
+    val help: String,
+    val enableLabel: String,
+    val startTemplate: String,
+    val endTemplate: String,
+    val daysTitle: String,
+    val daysHelp: String,
+    val modeAllLabel: String,
+    val modeListLabel: String,
+    val modeListHelp: String,
+    val modeAllHelp: String,
+    val chooseAppsLabel: String,
+    val keepAppsLabel: String,
+    val useAppsLabel: String,
+    val searchHint: String,
+    val emptyLabel: String,
+    val privateNote: String,
+    val max: Int,
+    val saveLabel: String,
+    val cancelLabel: String,
+    val lockedNote: String,
+    val locked: Boolean,
+    val invalidTime: String,
+    val chooseAppsError: String,
+    val keepAppsError: String,
+    val daysError: String,
+    val invalid: String,
+    val dayLabels: List<ShellScheduleDay>
+)
+
 data class ShellLimitChoice(
     val minutes: Int,
     val label: String
@@ -201,6 +244,19 @@ interface NativeShellHost {
 
     /** Saves the canonical accepted set through PolicyStore. */
     fun saveRules(kind: String, text: String): ShellActionResult
+
+    /** The real daily schedule, installed apps and the day/time/mode labels. */
+    fun scheduleEditor(): ShellScheduleEditor
+
+    /** Saves the enabled window, day mask, mode and installed-app selection. */
+    fun saveSchedule(
+        enabled: Boolean,
+        startMinute: Int,
+        endMinute: Int,
+        days: Int,
+        allApps: Boolean,
+        apps: Set<String>
+    ): ShellActionResult
 
     /** The real daily-limit selection, Usage access status and per-app choices. */
     fun limitsEditor(): ShellLimitsEditor

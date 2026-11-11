@@ -13,6 +13,8 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import android.text.format.DateFormat
+import java.util.Locale
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.clickable
@@ -51,15 +53,19 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimeInput
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -77,7 +83,9 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -143,7 +151,8 @@ fun RulesShellScreen(
     onEditRules: (String) -> Unit,
     onEditApps: (String) -> Unit,
     onEditLock: () -> Unit,
-    onEditLimits: () -> Unit
+    onEditLimits: () -> Unit,
+    onEditSchedule: () -> Unit
 ) {
     ShellScreen {
         if (state.locked) {
@@ -188,6 +197,7 @@ fun RulesShellScreen(
                             "scannedApps" -> onEditApps("scanned")
                             "lock" -> onEditLock()
                             "limit" -> onEditLimits()
+                            "schedule" -> onEditSchedule()
                             else -> onOpenClassic()
                         }
                     }
@@ -650,6 +660,237 @@ private fun SectionLabel(text: String) {
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(start = 4.dp, top = 8.dp)
+    )
+}
+
+private fun formatTemplate(template: String, minutes: Int): String {
+    val hour = (minutes / 60).coerceIn(0, 23)
+    val minute = (minutes % 60).coerceIn(0, 59)
+    return template.replace("__TIME__", String.format(Locale.getDefault(), "%02d:%02d", hour, minute))
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TimeChoiceDialog(
+    title: String,
+    initialMinutes: Int,
+    onPicked: (Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val state = rememberTimePickerState(
+        initialHour = (initialMinutes / 60).coerceIn(0, 23),
+        initialMinute = (initialMinutes % 60).coerceIn(0, 59),
+        is24Hour = DateFormat.is24HourFormat(context)
+    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = { TimeInput(state) },
+        confirmButton = {
+            TextButton(onClick = { onPicked(state.hour * 60 + state.minute) }) {
+                Text(stringResource(android.R.string.ok))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(android.R.string.cancel))
+            }
+        }
+    )
+}
+
+@Composable
+fun ScheduleDialog(
+    editor: ShellScheduleEditor,
+    onSave: (Boolean, Int, Int, Int, Boolean, Set<String>) -> ShellActionResult,
+    onDismiss: () -> Unit,
+    onResult: (ShellActionResult) -> Unit
+) {
+    var enabled by remember(editor) { mutableStateOf(editor.enabled) }
+    var start by remember(editor) { mutableStateOf(editor.startMinute) }
+    var end by remember(editor) { mutableStateOf(editor.endMinute) }
+    var days by remember(editor) { mutableStateOf(editor.days) }
+    var allApps by remember(editor) { mutableStateOf(editor.allApps) }
+    var selected by remember(editor) { mutableStateOf(editor.selected) }
+    var pickingApps by remember(editor) { mutableStateOf(false) }
+    var timeTarget by remember(editor) { mutableStateOf(0) }
+    var error by remember(editor) { mutableStateOf<String?>(null) }
+
+    if (pickingApps) {
+        val picker = ShellAppPicker(
+            kind = "schedule",
+            title = if (allApps) editor.keepAppsLabel else editor.chooseAppsLabel,
+            note = editor.privateNote,
+            searchHint = editor.searchHint,
+            emptyLabel = editor.emptyLabel,
+            saveLabel = editor.useAppsLabel,
+            cancelLabel = editor.cancelLabel,
+            lockedNote = editor.lockedNote,
+            locked = editor.locked,
+            max = editor.max,
+            selected = selected,
+            apps = editor.apps
+        )
+        AppPickerDialog(
+            picker = picker,
+            onSave = { picked ->
+                selected = picked
+                pickingApps = false
+                error = null
+                ShellActionResult("", ok = true, refresh = false)
+            },
+            onDismiss = { pickingApps = false },
+            onResult = { }
+        )
+        return
+    }
+
+    if (timeTarget != 0) {
+        val template = if (timeTarget == 1) editor.startTemplate else editor.endTemplate
+        TimeChoiceDialog(
+            title = template.replace("__TIME__", "").trim().trimEnd(':').trim(),
+            initialMinutes = if (timeTarget == 1) start else end,
+            onPicked = { minutes ->
+                if (timeTarget == 1) start = minutes else end = minutes
+                timeTarget = 0
+            },
+            onDismiss = { timeTarget = 0 }
+        )
+        return
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(editor.title) },
+        text = {
+            Column(
+                Modifier
+                    .heightIn(max = 500.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    editor.help,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Switch(
+                        checked = enabled,
+                        onCheckedChange = {
+                            enabled = it
+                            error = null
+                        },
+                        enabled = !editor.locked
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(editor.enableLabel, style = MaterialTheme.typography.titleSmall)
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(
+                        onClick = { timeTarget = 1 },
+                        enabled = !editor.locked,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(formatTemplate(editor.startTemplate, start))
+                    }
+                    TextButton(
+                        onClick = { timeTarget = 2 },
+                        enabled = !editor.locked,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(formatTemplate(editor.endTemplate, end))
+                    }
+                }
+                Text(editor.daysTitle, style = MaterialTheme.typography.titleSmall)
+                editor.dayLabels.chunked(4).forEach { row ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        row.forEach { day ->
+                            val on = days and day.bit != 0
+                            FilterChip(
+                                selected = on,
+                                onClick = {
+                                    days = if (on) days and day.bit.inv() else days or day.bit
+                                    error = null
+                                },
+                                enabled = !editor.locked,
+                                label = { Text(day.label) }
+                            )
+                        }
+                    }
+                }
+                Text(
+                    editor.daysHelp,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Switch(
+                        checked = allApps,
+                        onCheckedChange = {
+                            allApps = it
+                            error = null
+                        },
+                        enabled = !editor.locked
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        if (allApps) editor.modeAllLabel else editor.modeListLabel,
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                }
+                Text(
+                    if (allApps) editor.modeAllHelp else editor.modeListHelp,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                TextButton(
+                    onClick = { pickingApps = true },
+                    enabled = !editor.locked,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        (if (allApps) editor.keepAppsLabel else editor.chooseAppsLabel) +
+                            " · " + selected.size
+                    )
+                }
+                if (editor.locked) {
+                    Text(
+                        editor.lockedNote,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+                if (error != null) {
+                    Text(
+                        error!!,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = !editor.locked,
+                onClick = {
+                    val result = onSave(enabled, start, end, days, allApps, selected)
+                    if (result.ok) {
+                        onResult(result)
+                    } else {
+                        error = result.message
+                    }
+                }
+            ) {
+                Text(editor.saveLabel)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(editor.cancelLabel)
+            }
+        }
     )
 }
 
