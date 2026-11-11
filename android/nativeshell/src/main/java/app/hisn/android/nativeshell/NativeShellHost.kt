@@ -116,6 +116,29 @@ data class ShellRulesPreview(
     val error: String? = null
 )
 
+data class ShellLimitChoice(
+    val minutes: Int,
+    val label: String
+)
+
+data class ShellLimitsEditor(
+    val title: String,
+    val help: String,
+    val searchHint: String,
+    val accessTitle: String,
+    val accessDetail: String,
+    val accessUnavailable: String,
+    val saveLabel: String,
+    val cancelLabel: String,
+    val lockedNote: String,
+    val locked: Boolean,
+    val max: Int,
+    val defaultMinutes: Int,
+    val choices: List<ShellLimitChoice>,
+    val selected: Map<String, Int>,
+    val apps: List<ShellApp>
+)
+
 data class ShellApp(
     val packageName: String,
     val label: String,
@@ -178,6 +201,15 @@ interface NativeShellHost {
 
     /** Saves the canonical accepted set through PolicyStore. */
     fun saveRules(kind: String, text: String): ShellActionResult
+
+    /** The real daily-limit selection, Usage access status and per-app choices. */
+    fun limitsEditor(): ShellLimitsEditor
+
+    /** Saves only installed rows; saved limits for uninstalled apps are preserved. */
+    fun saveLimits(limits: Map<String, Int>): ShellActionResult
+
+    /** Opens Android's Usage access screen; false when it cannot be opened. */
+    fun openUsageAccess(): Boolean
 
     /** The real protection-lock state and disclosure. */
     fun lockState(): ShellLockState

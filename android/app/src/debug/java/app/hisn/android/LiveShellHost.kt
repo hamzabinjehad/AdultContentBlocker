@@ -5,6 +5,8 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Build
+import android.provider.Settings
+import java.util.LinkedHashMap
 import app.hisn.android.nativeshell.NativeShellHost
 import app.hisn.android.nativeshell.ShellActionResult
 import app.hisn.android.nativeshell.ShellApp
@@ -13,6 +15,8 @@ import app.hisn.android.nativeshell.ShellConsent
 import app.hisn.android.nativeshell.ShellIssue
 import app.hisn.android.nativeshell.ShellLabels
 import app.hisn.android.nativeshell.ShellLayer
+import app.hisn.android.nativeshell.ShellLimitChoice
+import app.hisn.android.nativeshell.ShellLimitsEditor
 import app.hisn.android.nativeshell.ShellLockOption
 import app.hisn.android.nativeshell.ShellLockState
 import app.hisn.android.nativeshell.ShellProtection
@@ -22,6 +26,7 @@ import app.hisn.android.nativeshell.ShellRulesEditor
 import app.hisn.android.nativeshell.ShellRulesPreview
 import app.hisn.android.nativeshell.ShellSetting
 import app.hisn.android.nativeshell.ShellSettings
+import app.hisn.core.AppTimeLimit
 import app.hisn.core.PolicyChangeError
 import app.hisn.core.ProtectionLock
 import app.hisn.core.RulePreview
@@ -306,10 +311,26 @@ class LiveShellHost(private val context: Context) : NativeShellHost {
             ShellRule(
                 key = "limit",
                 label = string(R.string.section_time_limits),
-                detail = if (snap.timeLimits.configured()) {
-                    string(R.string.state_on)
-                } else {
-                    string(R.string.state_off)
+                detail = when {
+                    !snap.timeLimits.configured() -> string(R.string.state_off)
+                    snap.timeLimits.size() == 1 -> {
+                        val app = snap.timeLimits.apps().first()
+                        val minutes = snap.timeLimits.minutesFor(app) ?: 0
+                        string(
+                            R.string.time_limits_summary_limit,
+                            context.resources.getQuantityString(
+                                R.plurals.time_limits_summary,
+                                1,
+                                1
+                            ),
+                            timeLimitText(minutes)
+                        )
+                    }
+                    else -> context.resources.getQuantityString(
+                        R.plurals.time_limits_summary,
+                        snap.timeLimits.size(),
+                        snap.timeLimits.size()
+                    )
                 },
                 state = "",
                 on = false
@@ -569,6 +590,104 @@ class LiveShellHost(private val context: Context) : NativeShellHost {
             },
             refresh = started
         )
+    }
+
+    private fun timeLimitText(minutes: Int): String = if (minutes >= 60 && minutes % 60 == 0) {
+        string(R.string.time_limits_hours, minutes / 60)
+    } else {
+        string(R.string.time_limits_minutes, minutes)
+    }
+
+    override fun limitsEditor(): ShellLimitsEditor {
+        val snap = store()?.snapshot()
+        val selected = LinkedHashMap<String, Int>()
+        snap?.timeLimits?.let { limits ->
+            for (app in limits.apps()) {
+                selected[app] = limits.minutesFor(app) ?: 15
+            }
+        }
+        val density = context.resources.displayMetrics.density
+        val iconSize = (36 * density).toInt().coerceAtLeast(1)
+        val apps = runCatching { ChosenApps.list(context) }.getOrDefault(emptyList())
+            .map { entry ->
+                ShellApp(
+                    packageName = entry.packageName,
+                    label = entry.label,
+                    icon = appIcon(entry.packageName, iconSize)
+                )
+            }
+        val access = Permissions.usage(context)
+        return ShellLimitsEditor(
+            title = string(R.string.time_limits_choose_apps),
+            help = string(R.string.time_limits_help),
+            searchHint = string(R.string.app_search_hint),
+            accessTitle = string(R.string.time_limits_access_title),
+            accessDetail = string(
+                if (access) R.string.time_limits_access_granted
+                else R.string.time_limits_access_needed
+            ),
+            accessUnavailable = string(R.string.time_limits_access_unavailable),
+            saveLabel = string(R.string.time_limits_save),
+            cancelLabel = string(android.R.string.cancel),
+            lockedNote = string(R.string.rules_locked),
+            locked = (store()?.remainingMillis() ?: 0L) > 0,
+            max = AppTimeLimit.MAX_APPS,
+            defaultMinutes = 15,
+            choices = listOf(5, 15, 30, 60, 120, 240, 480, 1440).map { minutes ->
+                ShellLimitChoice(minutes, timeLimitText(minutes))
+            },
+            selected = selected,
+            apps = apps
+        )
+    }
+
+    override fun saveLimits(limits: Map<String, Int>): ShellActionResult {
+        val settings = store()
+            ?: return ShellActionResult(string(R.string.policy_unavailable), ok = false, refresh = false)
+        if (settings.remainingMillis() > 0) {
+            return ShellActionResult(string(R.string.rules_locked), ok = false, refresh = false)
+        }
+        val snap = settings.snapshot()
+        val installed = runCatching { ChosenApps.list(context) }
+            .getOrDefault(emptyList())
+            .map { it.packageName }
+            .toSet()
+        val previous = LinkedHashMap<String, Int>()
+        for (app in snap.timeLimits.apps()) {
+            previous[app] = snap.timeLimits.minutesFor(app) ?: 15
+        }
+        val next = LinkedHashMap(limits)
+        for ((app, minutes) in previous) {
+            if (app !in installed && app !in next) next[app] = minutes
+        }
+        if (next.size > AppTimeLimit.MAX_APPS) {
+            return ShellActionResult(string(R.string.time_limits_invalid), ok = false, refresh = false)
+        }
+        return try {
+            settings.updateTimeLimits(AppTimeLimit(next))
+            val message = if (Permissions.usage(context)) {
+                string(R.string.rules_saved)
+            } else {
+                string(R.string.time_limits_saved_access_needed)
+            }
+            ShellActionResult(message, ok = true, refresh = true)
+        } catch (refused: RuntimeException) {
+            ShellActionResult(
+                string(R.string.time_limits_invalid),
+                ok = false,
+                refresh = true
+            )
+        }
+    }
+
+    override fun openUsageAccess(): Boolean = try {
+        context.startActivity(
+            Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+        true
+    } catch (unavailable: RuntimeException) {
+        false
     }
 
     override fun lockState(): ShellLockState {

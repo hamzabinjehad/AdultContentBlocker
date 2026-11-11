@@ -49,6 +49,8 @@ import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -140,7 +142,8 @@ fun RulesShellScreen(
     onLayer: (String, Boolean) -> Unit,
     onEditRules: (String) -> Unit,
     onEditApps: (String) -> Unit,
-    onEditLock: () -> Unit
+    onEditLock: () -> Unit,
+    onEditLimits: () -> Unit
 ) {
     ShellScreen {
         if (state.locked) {
@@ -184,6 +187,7 @@ fun RulesShellScreen(
                             "blockedApps" -> onEditApps("blocked")
                             "scannedApps" -> onEditApps("scanned")
                             "lock" -> onEditLock()
+                            "limit" -> onEditLimits()
                             else -> onOpenClassic()
                         }
                     }
@@ -646,6 +650,231 @@ private fun SectionLabel(text: String) {
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(start = 4.dp, top = 8.dp)
+    )
+}
+
+@Composable
+fun LimitsDialog(
+    editor: ShellLimitsEditor,
+    onSave: (Map<String, Int>) -> ShellActionResult,
+    onOpenUsageAccess: () -> Boolean,
+    onDismiss: () -> Unit,
+    onResult: (ShellActionResult) -> Unit
+) {
+    var query by remember(editor) { mutableStateOf("") }
+    var selected by remember(editor) { mutableStateOf(editor.selected) }
+    var expandedMenu by remember(editor) { mutableStateOf<String?>(null) }
+    var error by remember(editor) { mutableStateOf<String?>(null) }
+    val focusManager = LocalFocusManager.current
+    val listFocus = remember { FocusRequester() }
+    LaunchedEffect(editor) {
+        focusManager.clearFocus(force = true)
+        listFocus.requestFocus()
+    }
+    val visible = remember(editor.apps, query) {
+        val needle = query.trim().lowercase()
+        if (needle.isEmpty()) {
+            editor.apps
+        } else {
+            editor.apps.filter {
+                it.label.lowercase().contains(needle) ||
+                    it.packageName.lowercase().contains(needle)
+            }
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(editor.title) },
+        text = {
+            Column(
+                Modifier.heightIn(max = 500.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    editor.help,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 96.dp)
+                        .verticalScroll(rememberScrollState())
+                )
+                TextButton(
+                    onClick = {
+                        if (!onOpenUsageAccess()) {
+                            error = editor.accessUnavailable
+                        }
+                    },
+                    contentPadding = PaddingValues(0.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(Modifier.fillMaxWidth()) {
+                        Text(
+                            editor.accessTitle,
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                        Text(
+                            editor.accessDetail,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    label = { Text(editor.searchHint) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text(
+                    "${selected.size} / ${editor.max}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(280.dp)
+                        .focusRequester(listFocus)
+                        .focusable()
+                ) {
+                    LazyColumn(Modifier.fillMaxSize()) {
+                        items(visible, key = { it.packageName }) { app ->
+                            val checked = selected.containsKey(app.packageName)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .toggleable(
+                                        value = checked,
+                                        enabled = !editor.locked,
+                                        role = Role.Checkbox,
+                                        onValueChange = { wanted ->
+                                            selected = if (wanted) {
+                                                selected + (app.packageName to editor.defaultMinutes)
+                                            } else {
+                                                selected - app.packageName
+                                            }
+                                            if (!wanted && expandedMenu == app.packageName) {
+                                                expandedMenu = null
+                                            }
+                                            error = null
+                                        }
+                                    )
+                                    .padding(vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = checked,
+                                    onCheckedChange = null,
+                                    enabled = !editor.locked
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                if (app.icon != null) {
+                                    Image(
+                                        bitmap = app.icon.asImageBitmap(),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(32.dp)
+                                    )
+                                } else {
+                                    Spacer(Modifier.size(32.dp))
+                                }
+                                Spacer(Modifier.width(8.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        app.label,
+                                        style = MaterialTheme.typography.titleSmall,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        app.packageName,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                                if (checked) {
+                                    val minutes = selected[app.packageName] ?: editor.defaultMinutes
+                                    val label = editor.choices
+                                        .firstOrNull { it.minutes == minutes }?.label
+                                        ?: "$minutes min"
+                                    Box {
+                                        TextButton(
+                                            onClick = { expandedMenu = app.packageName }
+                                        ) {
+                                            Text(label)
+                                        }
+                                        DropdownMenu(
+                                            expanded = expandedMenu == app.packageName,
+                                            onDismissRequest = { expandedMenu = null }
+                                        ) {
+                                            editor.choices.forEach { choice ->
+                                                DropdownMenuItem(
+                                                    text = { Text(choice.label) },
+                                                    onClick = {
+                                                        selected = selected +
+                                                            (app.packageName to choice.minutes)
+                                                        expandedMenu = null
+                                                        error = null
+                                                    }
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if (visible.isEmpty()) {
+                            item {
+                                Text(
+                                    "No matching apps",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(16.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+                if (editor.locked) {
+                    Text(
+                        editor.lockedNote,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+                if (error != null) {
+                    Text(
+                        error!!,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = !editor.locked,
+                onClick = {
+                    val result = onSave(selected)
+                    if (result.ok) {
+                        onResult(result)
+                    } else {
+                        error = result.message
+                    }
+                }
+            ) {
+                Text(editor.saveLabel)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(editor.cancelLabel)
+            }
+        }
     )
 }
 
