@@ -20,6 +20,9 @@ public final class VisualHealthTest {
         health.report(VisualHealth.State.UNREADABLE);
         health.report(VisualHealth.State.WAITING);
         expect(VisualHealth.State.UNREADABLE, health, "latest failure wins");
+        health.report(VisualHealth.State.PROTECTED);
+        health.report(VisualHealth.State.WAITING);
+        expect(VisualHealth.State.PROTECTED, health, "protected window stays visible until a sample");
         health.report(VisualHealth.State.SAMPLED);
         expect(VisualHealth.State.SAMPLED, health, "a later inspected sample clears it");
         if (health.sampledAt() != -1) throw new AssertionError("untimed sample is not evidence");

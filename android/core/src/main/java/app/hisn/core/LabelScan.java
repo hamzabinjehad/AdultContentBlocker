@@ -6,7 +6,7 @@ import java.util.List;
 
 /** Which on-screen labels one bounded inspection reads. Android-free so the rule is unit-tested.
  *
- * Breadth-first over at most 1024 visited nodes and 1024 scheduled children. Editable,
+ * Breadth-first over at most 2048 visited nodes and 2048 scheduled children. Editable,
  * password and EditText nodes are never read and their subtrees are skipped; invisible
  * nodes are skipped, and an invisible node with children is not opened. A childless node gives its text, else its content description.
  * A parent's own text (or content description when it has no text), common on card and button
@@ -18,9 +18,10 @@ import java.util.List;
  * beyond the nodes already visited is fetched.
  */
 public final class LabelScan {
-    /** A large real screen can carry more than 512 visible labels before the text in use appears;
-     * 1,024 covers those trees, and the accessibility service walks them off its main thread. */
-    public static final int NODE_BUDGET = 1024;
+    /** A large real screen can carry more than 1,024 visible labels before the text in use
+     * appears; 2,048 covers those trees, and the accessibility service walks them off its main
+     * thread so the extra Binder reads do not stall the app being read. */
+    public static final int NODE_BUDGET = 2048;
 
     /** Node access. {@link #release} is called once for every node the scan holds, root included. */
     public interface Tree<N> {

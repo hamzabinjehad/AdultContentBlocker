@@ -17,8 +17,11 @@ import java.util.Map;
  * inference at a time and the frame gate are the caller's, unchanged.
  */
 public final class VisualCadence {
-    /** The shortest distance between two samples while a surface is moving. */
-    public static final long FAST_MILLIS = 250, BASE_MILLIS = 1000, STILL_STEP_MILLIS = 500,
+    /** The shortest distance between two samples while a surface is moving. Android refuses an
+     * accessibility screenshot sooner than 333 ms after the previous request for the same window
+     * ({@code ERROR_TAKE_SCREENSHOT_INTERVAL_TIME_SHORT}); 350 ms keeps a moving screen just above
+     * that platform floor instead of spending every other request on a rejected capture. */
+    public static final long FAST_MILLIS = 350, BASE_MILLIS = 1000, STILL_STEP_MILLIS = 500,
             STILL_MAX_MILLIS = 2000, OFF_MILLIS = 10000, ACTIVE_FOR_MILLIS = 1500,
             MIN_WAIT_MILLIS = 50, POLL_FLOOR_MILLIS = 100;
     private static final int STILL_MAX = (int) ((STILL_MAX_MILLIS - BASE_MILLIS) / STILL_STEP_MILLIS);

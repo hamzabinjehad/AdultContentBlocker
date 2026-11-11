@@ -67,6 +67,170 @@ an opt-in device-owner preview; the ordinary install remains removable, and
 actual blocked-uninstall and restriction acceptance needs a disposable
 provisioned device.
 
+## 1.5.3: go back on a matched person
+
+**Rules › Built-in checks › When a person is detected** now offers **Go back to
+the last page** (default) and **Cover the whole screen**. A matched face hides
+any cover and performs one Android Back, at most once per 1.2 s; a browser
+returns to its previous page, and a second matching page is handled on its own
+sample. If Back is refused the cover is shown. Adult content still closes the
+app; Incognito still uses the 1.5.1 protected cover. The 1.5.2 DNS/guard
+recovery and all prior visual behaviour are retained. Details:
+[the 1.5.3 record](../docs/ANDROID_1.5.3.md).
+
+## 1.5.2: make the blocking layers survive an update
+
+Two update-recovery gaps are closed. If DNS was left on, Android still holds
+the VPN approval, and the tunnel is not running, `MainActivity.onResume` starts
+it without another tap. If accessibility is enabled but the app reads the
+service disconnected, it broadcasts a re-arm request; a live service reruns its
+idempotent setup. The app cannot toggle its own accessibility grant, and if the
+service is not alive the setup card remains the repair. The protected/Incognito
+cover and all prior visual behaviour are retained. Details:
+[the 1.5.2 record](../docs/ANDROID_1.5.2.md).
+
+## 1.5.1: cover protected and Incognito windows
+
+Chrome Incognito and every other `FLAG_SECURE` window cannot be screenshotted;
+Android returns `ERROR_TAKE_SCREENSHOT_SECURE_WINDOW` (6), and MediaProjection
+sees black as well. No ordinary app, including HaramBlur, can inspect those
+pixels. Hisn previously reported the window unreadable and left the page
+visible; 1.5.1 reports a **PROTECTED** state and covers the whole selected
+window with the touch-blocking overlay, *Hisn can't check this window*. It
+retries at 2 s and clears on leaving, screen off or disabling the layer. Text
+and DNS layers remain independent.
+
+On the API 36 emulator the `FLAG_SECURE` fixture reported `STATE PROTECTED`,
+`CAPTURE_ERROR 6`, `OVERLAYS 1` and zero samples from the protected window; the
+people-off suite still passes. The phone was updated to 1.5.1 and Hisn's accessibility service was re-bound;
+Chrome Incognito then showed the protected-window cover. No adult image,
+protected pixels, root, Xposed or secure-flag bypass is used. Details:
+[the 1.5.1 record](../docs/ANDROID_1.5.1.md).
+
+## 1.5.0: an opt-in people cover
+
+Rules › Built-in checks › **Blur people** adds Off, **All faces**, **Women
+(estimated)** and **Men (estimated)**. A matching face covers the whole selected
+window with a touch-blocking accessibility overlay. The cover is a 10 px
+abstract snapshot on an opaque scrim, not a readable face blur; it clears on a
+later clean sample, when the person leaves, on screen off, or when the layer is
+turned off. The adult classifier still runs in the same pass and still closes
+the detected app.
+
+People mode switches the guard to the packaged WebView face engine (Human
+BlazeFace plus the gender model) at 384 px; the adult-only path stays on native
+TFLite at 224 px. Women/men is a recall-biased appearance estimate, not identity;
+uncertain faces are covered, so the men setting can also hide a woman when the
+estimate is uncertain. All-faces mode avoids the estimate. The feature is
+**faces only**, not full-body, and the cover blocks app interaction until the
+person leaves.
+
+On the API 36 emulator the pinned public-domain astronaut portrait matched in all
+and female modes (male also matched under the uncertainty rule); the live
+all-faces guard reported `BACKEND wasm`, `FRAME_EDGE 384`, `OVERLAYS 1`, 0
+capture failures and 109–145 ms sample latency. The people-off regression suite
+passed all ten checks with `BACKEND tflite-cpu` and `FRAME_EDGE 224`. No phone,
+adult corpus, battery, thermal or body-only measurement is claimed, and no
+comparison with HaramBlur's accuracy is established. Signed Play/direct artifacts
+and hashes: [the 1.5.0 record](../docs/ANDROID_1.5.0.md).
+
+## 1.4.1: sample moving screens at the platform floor
+
+The fast visual cadence was 250 ms, below Android's 333 ms per-window
+screenshot floor. A moving screen could therefore be rejected every other
+request and then enter the one-second unreadable backoff. The cadence is now
+**350 ms**, and a floor rejection is retried at the floor without counting as a
+capture failure or reporting the window unreadable. The debug status reports
+`RATE_LIMITED`.
+
+On the API 36 emulator the live guard's 8 s moving fixture produced **23 real
+samples instead of 11**, with **0 capture failures instead of 6**, at 24–30 ms
+native inference and 24–29 ms capture. The live visual suite passes all ten
+checks with `BACKEND tflite-cpu`. The model is mapped from the uncompressed
+APK and its buffers are reused and zeroed; the 1.4.0 native-first runtime,
+WebView fallback, score parity, verdict cache, near-miss crop, after-block
+pause and text scan are unchanged. No phone, adult corpus, GPU, battery or
+thermal measurement is claimed. Signed Play/direct artifacts and hashes:
+[the 1.4.1 record](../docs/ANDROID_1.4.1.md).
+
+## 1.4.0: native TFLite visual runtime
+
+The image model now runs natively. The same nsfwjs 4.4.0 MobileNetV2 weights
+were reconstructed, converted to a float32 TFLite model pinned by SHA-256, and
+run on one daemon worker with the same 224×224 bilinear `alignCorners`, 0..1
+normalization and 0.70/0.85 Porn/Hentai thresholds. The WebView engine remains
+the fallback if the native model cannot load.
+
+On the API 36 emulator native CPU measured **38–45 ms median** inference and
+1.6–1.9 s model load, versus 123 ms/3.0 s for WASM and 188 ms/3.3 s for WebGL.
+Converted scores matched TFJS to 3.34×10⁻⁶ on 12 benign views; 0/12 were
+blocked. No adult-positive corpus, phone, GPU, battery or thermal measurement
+is claimed. The 9.8 MB model and four-ABI libraries take the direct APK to
+~29 MB (Play AAB ~16 MB); the WebView fallback assets are retained. The
+TensorFlow Lite Apache 2.0 notice is in **Licenses and sources**. Core,
+strings/notices, builds, lint, the API 36 device runner and signed artifacts
+pass. Details: [the 1.4.0 record](../docs/ANDROID_1.4.0.md).
+
+## 1.3.2: reuse the verdict on an unchanged frame
+
+The visual guard still captures a still selected window every one to two
+seconds, but no longer runs the model again when the coarse 16×16 signature is
+unchanged within five seconds. A bounded `VisualVerdictCache` keeps one
+allow/block word per selected window; a window change, scroll or content
+activity, engine reset or close clears it. No pixels, URL or text are stored,
+and `samples` still counts real model samples while `REUSED` reports cache hits.
+
+On the API 36 emulator a real inference is about 123 ms median, which a cache
+hit avoids; there is no phone cache-hit or battery measurement yet, and the
+capture still happens. Core suites, strings/notices, builds, lint, the API 36
+device runner and signed artifacts pass. No model, threshold, accuracy,
+permission or stored field changed. Details:
+[the 1.3.2 record](../docs/ANDROID_1.3.2.md).
+
+## 1.3.1: a faster visual pass and a closer look
+
+The image guard now starts on the packaged **WASM** backend instead of trying
+WebGL first; the engine still falls back to WebGL and CPU if WASM is missing.
+On the API 36 emulator the `auto`/WebGL path measured 188 ms median and loaded
+in 3.3 s, while WASM measured 123 ms and loaded in 3.0 s. An earlier `auto` run
+spent 12.1 s in WebGL.
+
+When a full-frame Porn/Hentai score is at least 0.45 (or sum 0.60) but below the
+block threshold, the guard crops the centred 68% of the frame and classifies it
+once more; it blocks only if the same 0.70/0.85 thresholds are met. A failed
+second look keeps the first `allow`. The crop and near-miss logic is the pure
+`region.js` module, served from the packaged assets and covered by a Node test.
+
+The 12 benign views × 3 stayed at 0 false blocks in the WASM, `auto` and 1.3.0
+baseline runs. There is no adult-positive corpus, so adult recall is still
+unmeasured; the crop is centred and may miss edge or very small regions; a
+phone benchmark, battery and thermal measurement remain open. No model, block
+threshold, capture size, polling interval, string or permission changed.
+Core/strings/notices/build/lint, the API 36 device runner and signed artifacts
+pass. Details and raw reports:
+[the 1.3.1 record](../docs/ANDROID_1.3.1.md).
+
+## 1.3.0: close the page, rest the app
+
+A detection now leaves the browser page first with Back, then closes the app
+with Home, so reopening the browser does not restore the page that was just
+detected. Only the app whose screen was detected is held: for **1, 5, 15, 30 or
+60 minutes**, default **5**. Reopening inside the period returns Home and shows
+the pause screen with the remaining time. **Settings › Protection › After a
+block** chooses the period; the value is a comfort setting outside the sealed
+rule file, so changing it never lets a matched word or image pass.
+
+The pause screen offers **Rest 5 more minutes**, **Rest 15 more minutes**,
+**Rest 1 hour** and **Lock the screen** (API 28+). A rest extends that app's
+hold; the lock uses Android's accessibility lock action. Android cannot
+force-stop another app or power off the phone, so close means Back/Home, the app
+stays in Recents, a browser may keep its tabs and Back depends on its history.
+A real detection in a real browser is still a device check; the screens were
+verified through the debug restriction fixture. Core suites, strings, notices,
+debug/androidTest builds, lint and the API 36 device runner pass; signed
+Play/direct artifacts pass `check-release.py` and `apksigner`. Details and
+limits: [the 1.3.0 record](../docs/ANDROID_1.3.0.md).
+
 ## 1.2.3: the screen is read off the main thread
 
 The accessibility tree walk moved off the service's main thread onto one daemon
@@ -76,7 +240,7 @@ a promotional label such as **Watch free porn** blocks immediately, while a
 bare **Porn** label still waits for the full pass that can see protective
 context elsewhere; only the selected window in use may act before the walk, so
 an event from a window the person already left falls back to it. The walk now
-reads 1,024 nodes (the old budget was 512),
+reads 2,048 nodes (the old budget was 512),
 checks a partial match every 64 nodes and can stop early; a static screen is
 still reread every three seconds. A generation token discards a walk whose
 screen changed, and a 20-second watchdog replaces a scanner that stops
@@ -90,7 +254,8 @@ debug status reports the selected backend, frame edge and capture, inference
 and sample timings.
 
 `sh test-core.sh` passes every core suite, including the new `LabelScan` case
-for the 1,024-node budget and the updated `VisualDuty` grace. `assembleDebug`,
+for the 2,048-node budget (a 700-label screen past 512 and a 1,500-label screen past 1,024)
+and the updated `VisualDuty` grace. `assembleDebug`,
 `assembleDebugAndroidTest` and `lintDebug` (0 errors) pass, and
 `CoreDeviceTestRunner` passes on the API 36 emulator. The live fixture driver's
 `stress` case — 700 labels with the word at 650 — blocked on the same emulator

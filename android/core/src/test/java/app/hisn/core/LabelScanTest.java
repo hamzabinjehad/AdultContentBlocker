@@ -150,15 +150,26 @@ public final class LabelScanTest {
         check(early.text().contains("new message") && early.text().split("\n").length < stopRows.length
                 && earlyTree.held.isEmpty(), "a matching checkpoint stops the walk early and releases every node");
 
-        // A 700-label screen: the label past the old 512-node budget is read only at 1,024.
+        // A 700-label screen: the label past the old 512-node budget is read at the current size.
         Node[] late = new Node[700];
         for (int i = 0; i < late.length; i++) late[i] = i == 650 ? leaf("late word") : leaf("row " + i);
         VisibleTextSample deepList = scan(card(null, late));
-        check(deepList.text().contains("late word"), "the 1,024-node budget reaches a label past 512");
+        check(deepList.text().contains("late word"), "the current budget reaches a label past 512");
         Tree oldBudget = new Tree();
         VisibleTextSample oldCut = LabelScan.sample(oldBudget, oldBudget.obtain(card(null, late)), 512);
         check(!oldCut.text().contains("late word") && oldCut.isPartial() && oldBudget.held.isEmpty(),
                 "the old 512-node budget would have cut that label");
+
+        // A 1,500-label screen: the label past the old 1,024-node budget is reached only at the
+        // current 2,048, and the old budget is proved to cut it.
+        Node[] longer = new Node[1500];
+        for (int i = 0; i < longer.length; i++) longer[i] = i == 1400 ? leaf("deep word") : leaf("row " + i);
+        VisibleTextSample longerList = scan(card(null, longer));
+        check(longerList.text().contains("deep word"), "the current budget reaches a label past 1,024");
+        Tree oldLongBudget = new Tree();
+        VisibleTextSample oldLong = LabelScan.sample(oldLongBudget, oldLongBudget.obtain(card(null, longer)), 1024);
+        check(!oldLong.text().contains("deep word") && oldLong.isPartial() && oldLongBudget.held.isEmpty(),
+                "the old 1,024-node budget would have cut that label");
 
         // A shared budget (several windows): never more nodes obtained than the share, and a cut is partial.
         for (int share : new int[]{1, 2, 100, 256}) {
@@ -172,7 +183,7 @@ public final class LabelScanTest {
                 && whole.obtained == 3, "a tree within its share is complete");
         // A large active feed and a tiny picture-in-picture window: the small one is read first, so
         // the feed gets nearly the whole budget instead of half of it.
-        Node[] feed = new Node[900];
+        Node[] feed = new Node[1500];
         for (int i = 0; i < feed.length; i++) feed[i] = leaf("post " + i);
         Map<Integer, Node> trees = new java.util.HashMap<>();
         trees.put(1, card(null, feed));
@@ -199,7 +210,7 @@ public final class LabelScanTest {
 
         // Deep nesting is bounded by visited nodes, not recursion.
         Node deep = image(null);
-        for (int i = 0; i < 2000; i++) deep = card(i == 1999 ? "Top" : null, deep);
+        for (int i = 0; i < 3000; i++) deep = card(i == 2999 ? "Top" : null, deep);
         VisibleTextSample bounded = scan(deep);
         check(bounded.isPartial() && bounded.text().isEmpty(), "deep trees stop at the budget without reading the top");
 

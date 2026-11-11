@@ -114,10 +114,75 @@ you the lock; Hisn adds the coverage those built-in filters miss. Read
   the authority request batch; and the menu bar shows the lock's coarse time
   left. 1.1.15's Organization Mode and 1.1.14's first-run/private-window pass
   remain.
+- **Android 1.5.3 — a matched person can go back.** Rules › Built-in checks
+  now has **When a person is detected: Go back to the last page** (default) or
+  **Cover the whole screen**. Back returns a browser to its previous page, at
+  most once per 1.2 s; adult content still closes the app and Incognito still
+  uses the protected cover. Record:
+  [the 1.5.3 note](docs/ANDROID_1.5.3.md).
+- **Android 1.5.2 — the layers recover after an update.** If DNS was left on
+  and Android still holds the VPN approval, it restarts on app foreground; a
+  live accessibility service is re-armed by broadcast when the app reads it
+  disconnected. This fixes the post-update "DNS left on but not running" gap.
+  It does not toggle accessibility or remove Chrome's Incognito menu. Record:
+  [the 1.5.2 note](docs/ANDROID_1.5.2.md).
+- **Android 1.5.1 — protected and Incognito windows are covered.** Android
+  refuses screenshots of `FLAG_SECURE` windows, including Chrome Incognito, so
+  no ordinary app can inspect those pixels; HaramBlur cannot bypass it either.
+  Hisn now reports **PROTECTED** and covers the selected window with *Hisn can't
+  check this window* instead of leaving the private page visible. Text and DNS
+  layers stay independent. Record:
+  [the 1.5.1 note](docs/ANDROID_1.5.1.md).
+- **Android 1.5.0 — an opt-in people cover.** Rules › Built-in checks ›
+  **Blur people** offers Off, All faces, Women (estimated) and Men (estimated).
+  A matching face covers the whole selected window with a touch-blocking,
+  abstract 10 px snapshot on an opaque scrim; the adult classifier still runs
+  and still closes the app. Face mode uses the pinned BlazeFace/gender models at
+  384 px; the adult-only path remains native TFLite at 224 px. Women/men is an
+  estimate, uncertain faces are covered, and the smoke test is one public-domain
+  portrait, not an accuracy claim. Record:
+  [the 1.5.0 note](docs/ANDROID_1.5.0.md).
+- **Android 1.4.1 — a moving screen is sampled at the platform limit.** The
+  fast visual cadence was 250 ms, below Android's 333 ms screenshot floor, so
+  every other request could be rejected and then back off. It is now 350 ms;
+  a floor rejection retries at the floor without a capture-failure backoff. The
+  live emulator fixture produced **23 samples in 8 s instead of 11**, with
+  **0 capture failures instead of 6**, at 24–30 ms native inference. Record:
+  [the 1.4.1 note](docs/ANDROID_1.4.1.md).
+- **Android 1.4.0 — the visual model now runs natively.** The same MobileNetV2
+  weights are converted to a pinned TFLite model and run on a native worker:
+  **38–45 ms median** inference on the API 36 emulator, against 123 ms for WASM,
+  with the WebView engine retained as fallback. Converted scores matched TFJS to
+  3.34×10⁻⁶ on 12 benign views and 0/12 were blocked; no adult corpus or phone
+  claim. The direct APK grows to ~29 MB. Record:
+  [the 1.4.0 note](docs/ANDROID_1.4.0.md).
+- **Android 1.3.2 — reuse the verdict on an unchanged frame.** A still selected
+  window keeps its coarse signature and allow/block word for five seconds; the
+  guard skips the 123 ms model inference when the frame has not changed. Window
+  changes, scrolls and engine resets clear it; the capture still runs and no
+  pixels, URL or text are stored. Core-tested; no device cache-hit measurement.
+  Record: [the 1.3.2 note](docs/ANDROID_1.3.2.md).
+- **Android 1.3.1 — a faster visual check with a closer look.** The image
+  guard now starts on the packaged WASM engine instead of trying WebGL first;
+  on the API 36 emulator that cut the median full-roundtrip from 188 ms to
+  123 ms on a 12-view benign corpus. A frame whose Porn/Hentai scores are near
+  the block threshold is cropped to its centred 68% and classified once more,
+  with the same 0.70/0.85 block thresholds; 0/12 benign views were blocked.
+  No adult-positive corpus or phone claim; details:
+  [the 1.3.1 note](docs/ANDROID_1.3.1.md).
+- **Android 1.3.0 — after a block, close the page and rest the app.** A
+  detection now leaves the browser page first (Back), closes the app (Home) and
+  keeps **only that app** closed for a chosen quiet period: 1, 5, 15, 30 or 60
+  minutes, default 5. The pause screen shows the remaining time and offers
+  **Rest 5/15/60 minutes** and **Lock the screen**. The setting is separate from
+  the sealed rules because it never changes what is detected. Android cannot
+  force-stop another app or power off the phone, so close means Back/Home and
+  the screen lock is a display lock, not a shutdown. Record:
+  [the 1.3.0 note](docs/ANDROID_1.3.0.md).
 - **Android 1.2.3 — the phone reads the screen off its main thread.** The
   accessibility tree walk moved to a daemon scanner thread, so a large feed no
   longer stalls the service; a selected app's own event can block a promotional
-  label before the walk, the walk reads 1,024 nodes and can stop at a partial
+  label before the walk, the walk reads 2,048 nodes and can stop at a partial
   match, and a static screen is still reread every three seconds. The image
   layer keeps its local model warm while the screen is on, captures at the
   model's 224 px input edge, gives a frame 5 s and backs off protected windows

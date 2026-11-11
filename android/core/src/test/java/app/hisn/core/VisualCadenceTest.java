@@ -17,11 +17,11 @@ public final class VisualCadenceTest {
         expect(VisualCadence.OFF_MILLIS, cadence.interval(false, 0), "screen off");
         expect(VisualCadence.OFF_MILLIS, cadence.earliest(false, 0), "screen off never brought forward");
 
-        // Scrolling: every 250 ms, never sooner after the last sample started.
+        // Scrolling: every 350 ms, never sooner after the last sample started.
         cadence.started(10_000);
         cadence.activity(10_100);
         expect(VisualCadence.FAST_MILLIS, cadence.interval(true, 10_200), "scrolling");
-        expect(150, cadence.earliest(true, 10_100), "an event waits for the fast interval after the last start");
+        expect(250, cadence.earliest(true, 10_100), "an event waits for the fast interval after the last start");
         expect(VisualCadence.MIN_WAIT_MILLIS, cadence.earliest(true, 10_950), "short waits are bounded below");
         expect(VisualCadence.FAST_MILLIS, cadence.interval(true, 10_100 + VisualCadence.ACTIVE_FOR_MILLIS),
                 "events count for a while");
@@ -37,7 +37,7 @@ public final class VisualCadenceTest {
         switched.windowChanged(10_100);
         expect(VisualCadence.MIN_WAIT_MILLIS, switched.earliest(true, 10_100), "the new window is sampled at once");
         switched.polled(10_100);
-        expect(150, switched.earliest(true, 10_100), "the fast interval resumes after the new window");
+        expect(250, switched.earliest(true, 10_100), "the fast interval resumes after the new window");
         switched.windowChanged(10_150);
         expect(50, switched.earliest(true, 10_150), "and bounds event storms");
 
@@ -152,7 +152,7 @@ public final class VisualCadenceTest {
                         "never sooner than the poll floor after the last poll, sampled or not");
             }
         }
-        System.out.println("VisualCadence tests passed (250 ms while moving, 1 s by default, up to "
+        System.out.println("VisualCadence tests passed (350 ms while moving, 1 s by default, up to "
                 + VisualCadence.STILL_MAX_MILLIS / 1000 + " s on a still screen, " + VisualCadence.OFF_MILLIS / 1000
                 + " s with the screen off; 2,000 random sequences)");
     }

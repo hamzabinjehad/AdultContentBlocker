@@ -3768,8 +3768,22 @@ public final class MainActivity extends Activity {
         refreshBatteryState();
         AdultListUpdater.schedule(this);
         refreshUpdateRow();
+        ensureDnsRunning();
         rearmGuardIfNeeded();
         handler.post(refresh);
+    }
+
+    /** After an update the saved DNS approval can survive while the foreground tunnel is gone. */
+    private void ensureDnsRunning() {
+        if (!DnsVpnService.resumeRequested(this)) return;
+        DnsVpnService.State current = DnsVpnService.state;
+        if (current == DnsVpnService.State.RUNNING || current == DnsVpnService.State.STARTING
+                || current == DnsVpnService.State.DEGRADED) return;
+        try {
+            // VpnService.prepare returns null only while Android still holds the approval.
+            if (android.net.VpnService.prepare(this) != null) return;
+            startForegroundService(new Intent(this, DnsVpnService.class));
+        } catch (RuntimeException unavailable) { /* The dashboard reports the gap. */ }
     }
 
     /** A system-bound service can stay alive without repeating onServiceConnected after an update. */

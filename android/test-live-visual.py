@@ -51,7 +51,8 @@ def main():
         values = dict(re.findall(r"([A-Z_]+) ([A-Za-z0-9_-]+)", result.text))
         if values.get("OK") != action or values.get("NONCE") != nonce:
             raise RuntimeError("Controller did not acknowledge the requested action")
-        for key in ("CAPTURES", "REQUESTS", "SAMPLES", "INTERVENTIONS", "DISCARDED", "CAPTURE_FAILURES", "CAPTURE_ERROR"):
+        for key in ("CAPTURES", "REQUESTS", "SAMPLES", "INTERVENTIONS", "DISCARDED", "CAPTURE_FAILURES",
+                    "CAPTURE_ERROR", "OVERLAYS"):
             values[key] = int(values[key])
         return values
 
@@ -95,15 +96,17 @@ def main():
             normal = scene("visual-normal", 20 if attempt == 0 else 10)
             if normal["SAMPLES"] > initial["SAMPLES"]:
                 break
+        print("normal status: " + json.dumps(normal), flush=True)
         require(normal["SAMPLES"] > initial["SAMPLES"], "No actual screenshot/model sample completed: " + json.dumps(normal))
         require(normal["INTERVENTIONS"] == initial["INTERVENTIONS"], "Benign synthetic image was restricted")
         require(normal.get("FRAME_EDGE") == "224", "Capture did not use the packaged 224 px edge: " + json.dumps(normal))
-        require(normal.get("BACKEND") in ("webgl", "wasm", "cpu"),
+        require(normal.get("BACKEND") in ("webgl", "wasm", "cpu", "tflite-cpu"),
                 "Classifier backend was not reported as running: " + json.dumps(normal))
         passed({"check": "actual capture and benign model inference", "samples": normal["SAMPLES"] - initial["SAMPLES"],
                 "backend": normal.get("BACKEND"), "frame_edge": normal.get("FRAME_EDGE")})
 
         moving = scene("visual-video", 8)
+        print("moving status: " + json.dumps(moving), flush=True)
         require(moving["SAMPLES"] > normal["SAMPLES"], "Moving synthetic frames were not sampled")
         require(moving["INTERVENTIONS"] == normal["INTERVENTIONS"], "Benign moving frames were restricted")
         passed({"check": "benign moving frame sampling", "samples": moving["SAMPLES"] - normal["SAMPLES"]})
@@ -121,7 +124,12 @@ def main():
         secure = scene("visual-secure", 6)
         require(secure["CAPTURE_FAILURES"] > focused["CAPTURE_FAILURES"] and secure["SAMPLES"] == focused["SAMPLES"],
                 "Protected window was not reported unreadable: " + json.dumps(secure))
-        passed({"check": "secure window remains unreadable", "android_error": secure["CAPTURE_ERROR"]})
+        require(secure["STATE"] == "PROTECTED" and secure["CAPTURE_ERROR"] == 6,
+                "Protected window did not enter the covered state: " + json.dumps(secure))
+        require(secure["OVERLAYS"] > focused["OVERLAYS"],
+                "Protected window was not covered: " + json.dumps(secure))
+        passed({"check": "secure window is covered, not inspected",
+                "android_error": secure["CAPTURE_ERROR"], "overlays": secure["OVERLAYS"]})
 
         control("force-once", "--ez", "confirmSynthetic", "true")
         # A real benign screenshot must first reach an actual allow verdict; only then can the debug hook act.
@@ -130,7 +138,8 @@ def main():
                 "Synthetic one-shot intervention did not run: " + json.dumps(forced))
         passed({"check": "synthetic intervention after actual capture and inference", "accuracy_evidence": False})
 
-        # TextGuardService holds a detected app for BLOCK_HOLD_MILLIS: reopening it while the
+        # The guard holds a detected app for its configured quiet period (one minute in the
+        # isolated fixture): reopening it while the
         # hold runs must leave the app again, not resume sampling. Ordinary capture can only
         # recover after the hold ends.
         adb("shell", "am", "start", "--user", "0", "--activity-clear-task", "-W", "-n", SCENE,
