@@ -6,8 +6,9 @@ the reliable reset is a factory reset. Never provision a daily phone.
 
 ## 1. Prepare
 
-- Android 8.0+ (API 26+); Android 10+ for strict mode and Private DNS;
-  Android 14+ for default-app restrictions.
+- Android 6.0+ (API 23+); Android 7.0+ for always-on DNS and package
+  suspension; Android 10+ for strict mode and Private DNS; Android 14+ for
+  default-app restrictions and image checks.
 - USB debugging on, cable connected, RSA prompt accepted.
 - No accounts, no secondary users, setup wizard finished.
 - Back up anything you care about; the test ends with a factory reset.

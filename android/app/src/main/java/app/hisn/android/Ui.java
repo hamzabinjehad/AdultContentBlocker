@@ -637,7 +637,7 @@ final class Ui {
             expanded = expand;
             body.setVisibility(expand ? View.VISIBLE : View.GONE);
             chevron.animate().rotation(expand ? 180f : 0f).setDuration(
-                    android.animation.ValueAnimator.areAnimatorsEnabled() ? 180 : 0).start();
+                    Compat.animationsEnabled(root.getContext()) ? 180 : 0).start();
             updateDescription();
         }
 
@@ -700,7 +700,7 @@ final class Ui {
         edit.setImeOptions(android.view.inputmethod.EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING);
         edit.setSingleLine(!multiline);
         edit.setSaveEnabled(false);
-        edit.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO);
+        Compat.disableAutofill(edit);
         if (multiline) {
             edit.setMinLines(3);
             edit.setGravity(Gravity.TOP | Gravity.START);
@@ -752,13 +752,17 @@ final class Ui {
                 }
             });
         } else {
+            // The light status-bar flag exists on Android 6; the light navigation-bar flag did not
+            // arrive until Android 8. Below that the navigation bar stays dark so its white icons
+            // remain visible instead of disappearing on the paper background.
             int flags = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
-            flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+            if (Build.VERSION.SDK_INT >= 26) flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
             window.getDecorView().setSystemUiVisibility(lightBars ? flags : 0);
             // Before Android 11 the window is not edge to edge, so give both bars the page colour
             // instead of leaving a transparent strip over the framework's default black.
             window.setStatusBarColor(color(context, R.color.background));
-            window.setNavigationBarColor(color(context, R.color.surface));
+            window.setNavigationBarColor(color(context, Build.VERSION.SDK_INT >= 26
+                    ? R.color.surface : R.color.ic_launcher_background));
         }
         if (Build.VERSION.SDK_INT >= 30) {
             window.setStatusBarColor(Color.TRANSPARENT);

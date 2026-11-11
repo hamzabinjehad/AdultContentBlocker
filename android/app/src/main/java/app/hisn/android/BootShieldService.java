@@ -1,7 +1,6 @@
 package app.hisn.android;
 
 import android.app.Notification;
-import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.KeyguardManager;
 import android.app.Service;
@@ -61,7 +60,7 @@ public final class BootShieldService extends Service {
     }
 
     private static SharedPreferences bootPrefs(Context context) {
-        return context.createDeviceProtectedStorageContext().getSharedPreferences("boot_shield", MODE_PRIVATE);
+        return Compat.deviceProtected(context).getSharedPreferences("boot_shield", MODE_PRIVATE);
     }
 
     /** Called from the boot receivers; a no-op unless the shield can and should run. */
@@ -69,15 +68,15 @@ public final class BootShieldService extends Service {
         if (!BuildConfig.SELF_PROTECTION || !Settings.canDrawOverlays(context)) return;
         try {
             if (!bootPrefs(context).getBoolean("armed", false)) return;
-            context.startForegroundService(new Intent(context, BootShieldService.class));
+            Compat.startForegroundService(context, new Intent(context, BootShieldService.class));
         } catch (RuntimeException unavailable) { /* The accessibility guard still starts on its own. */ }
     }
 
     @Override public int onStartCommand(Intent intent, int flags, int startId) {
-        NotificationManager notifications = getSystemService(NotificationManager.class);
-        notifications.createNotificationChannel(new NotificationChannel(CHANNEL,
-                getString(R.string.boot_shield_title), NotificationManager.IMPORTANCE_LOW));
-        Notification notification = new Notification.Builder(this, CHANNEL)
+        Compat.createChannel(this, CHANNEL, R.string.boot_shield_title,
+                NotificationManager.IMPORTANCE_LOW);
+        Notification notification = Compat.builder(this, CHANNEL,
+                NotificationManager.IMPORTANCE_LOW)
                 .setSmallIcon(R.drawable.ic_shield).setColor(getColor(R.color.accent))
                 .setContentTitle(getString(R.string.boot_shield_title))
                 .setContentText(getString(R.string.boot_shield_body))
@@ -153,7 +152,7 @@ public final class BootShieldService extends Service {
 
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT,
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                Compat.overlayType(),
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
                         | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
                 PixelFormat.OPAQUE);

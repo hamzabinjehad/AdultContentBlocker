@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.LongSupplier;
-import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
@@ -48,12 +47,23 @@ public final class TlsDnsTransport implements DnsExchange.Transport, AutoCloseab
 
     /** 1.1.1.3, then 1.0.0.3 if it cannot be reached, both on port 853 as {@link #FAMILY_NAME}. */
     public static TlsDnsTransport cloudflareFamily(int timeout, SocketProtector protector) {
+        return cloudflareFamily(timeout, protector,
+                (SSLSocketFactory) SSLSocketFactory.getDefault());
+    }
+
+    /**
+     * The same endpoints with a caller-supplied socket factory. The app uses this to add its
+     * bundled old-Android trust anchor without changing the resolver identity or protocol.
+     */
+    public static TlsDnsTransport cloudflareFamily(int timeout, SocketProtector protector,
+                                                   SSLSocketFactory factory) {
+        if (factory == null) throw new IllegalArgumentException("Missing TLS socket factory");
         InetSocketAddress[] family = new InetSocketAddress[FAMILY_ADDRESSES.length];
         try {
             for (int i = 0; i < family.length; i++)
                 family[i] = new InetSocketAddress(InetAddress.getByAddress(FAMILY_ADDRESSES[i]), 853);
         } catch (UnknownHostException impossible) { throw new IllegalStateException(impossible); }
-        return new TlsDnsTransport(Arrays.asList(family), FAMILY_NAME, timeout, protector);
+        return new TlsDnsTransport(Arrays.asList(family), FAMILY_NAME, timeout, protector, factory, TlsDnsTransport::now);
     }
 
     public TlsDnsTransport(InetSocketAddress resolver, String serverName, int timeout, SocketProtector protector) {
@@ -188,9 +198,6 @@ public final class TlsDnsTransport implements DnsExchange.Transport, AutoCloseab
             raw.setSoTimeout(timeout);
             SSLSocket secure = (SSLSocket) factory.createSocket(raw, serverName, resolvers[resolver].getPort(), true);
             secure.setSoTimeout(timeout);
-            SSLParameters parameters = secure.getSSLParameters();
-            parameters.setEndpointIdentificationAlgorithm("HTTPS");
-            secure.setSSLParameters(parameters);
             java.util.List<String> protocols = new java.util.ArrayList<>();
             for (String protocol : secure.getSupportedProtocols()) {
                 if (protocol.equals("TLSv1.2") || protocol.equals("TLSv1.3")) protocols.add(protocol);
@@ -199,6 +206,11 @@ public final class TlsDnsTransport implements DnsExchange.Transport, AutoCloseab
             secure.setEnabledProtocols(protocols.toArray(new String[0]));
             // The same identity is required at every address, so a failed handshake may try the next one.
             try { secure.startHandshake(); } catch (IOException handshake) { throw new NoSession(handshake); }
+            // SSLSocket does not check the certificate name before Android 7, so verify it here on
+            // every release. A mismatch is treated like a failed handshake: the next address must
+            // prove the same pinned identity, and no address that fails it ever receives a query.
+            try { TlsHostname.verify(serverName, secure.getSession()); }
+            catch (IOException mismatch) { throw new NoSession(mismatch); }
             requireGeneration(expectedGeneration);
             return new Connection(raw, secure, resolver, expectedGeneration);
         } catch (IOException | RuntimeException failure) {

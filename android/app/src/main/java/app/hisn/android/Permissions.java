@@ -87,7 +87,7 @@ final class Permissions {
                     android.Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) return false;
             NotificationManager manager = context.getSystemService(NotificationManager.class);
-            return manager != null && manager.areNotificationsEnabled();
+            return manager != null && Compat.notificationsEnabled(manager);
         } catch (RuntimeException unavailable) {
             return false;
         }

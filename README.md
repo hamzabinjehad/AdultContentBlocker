@@ -32,6 +32,15 @@ you the lock; Hisn adds the coverage those built-in filters miss. Read
   reconnect copy names Accessibility → Installed apps. Development candidate:
   no signed artifact, no phone run, and the post-reboot dashboard remains
   unverified. Record: [the 1.6.0 note](docs/ANDROID_1.6.0.md).
+- **Android 6.0 support — the candidate runs on API 23 and later.** Java 8+
+  APIs are desugared, one `Compat` surface covers Android 6/7, the DoT resolver
+  verifies the certificate name on every release and carries a pinned SSL.com
+  root because Android 6's 2015 trust store predates it, and the 236,000-domain
+  seed gets the larger app heap. The API 23 emulator passed the app, word
+  fixture, DNS route check (UDP and reused TCP), core device tests and the
+  direct build's boot shield; API 36 stayed green. Image checks remain Android
+  14+. Record:
+  [the Android 6.0 note](docs/ANDROID_OLDER_VERSIONS_2026-11-11.md).
 - **iPhone & iPad 1.8.0 — a device-wide DNS filter, and a direct build.** The
   new `HisnDNSProxy` Network Extension answers Hisn's signed list (236,586
   domains), the four adult TLDs, the 116 hostname terms and the person's saved
@@ -211,7 +220,7 @@ in English, Arabic RTL and both palettes are in the
 | Browser extension (Chromium) | Blocks listed domains and adult TLDs, checks page text in the page's language, on-device image/video checks on by default, hides the whole post on X and the main social feeds when its media is flagged, portable hand lists | 1.5.3 | [Using the extension](docs/EXTENSION_USAGE.md) |
 | Mac | Content-filter system extension, adult-TLD and hostname guards, browser guard, locks, authority checks, accountability partner, root guardian daemon, an on-demand breathing pause, a read-only site checker, an aggregate blocked-connection count, MDM enrollment and a profile-managed non-removable filter | 1.1.18, needs a signed build · runs on macOS 12 or later | [Mac setup](docs/SETUP.md) · [MDM](docs/MDM_DEPLOYMENT.md) |
 | iPhone & iPad | A device-wide DNS filter with the adult-TLD and hostname guards, six Safari blockers, Safari text extension, Screen Time app limits with a custom bilingual shield, a browser and VPN guard, a pause rule with a daily opens budget, protection lock for saved rules, an on-demand pause, daily quiet hours and a removal-protection Lock Center; distributed directly as a signed-on-install IPA | 1.8.0, development · needs a signed device | [iOS README](ios/README.md) · [direct install](docs/IOS_DIRECT.md) |
-| Android | DNS filtering with the adult-TLD and hostname guards, selected-app and word restrictions, per-app daily time limits, first-run welcome, voluntary pause, optional image checks, browser-coverage screen, schedules, protection lock that freezes saved rules, opt-in device-owner uninstall guard and managed lockdown, direct-build removal guard, layer watchdog, bundled-list freshness warning, signed list updates, readiness receipts and portable rule tools | 1.6.0 development candidate · core and build tests, no signed 1.6.0 APK or phone run; 1.5.4 on the owner's phone; post-reboot dashboard unverified | [Android README](android/README.md) · [1.6.0 record](docs/ANDROID_1.6.0.md) |
+| Android | DNS filtering with the adult-TLD and hostname guards, selected-app and word restrictions, per-app daily time limits, first-run welcome, voluntary pause, optional image checks, browser-coverage screen, schedules, protection lock that freezes saved rules, opt-in device-owner uninstall guard and managed lockdown, direct-build removal guard, layer watchdog, bundled-list freshness warning, signed list updates, readiness receipts and portable rule tools | 1.6.0 development candidate · runs on Android 6.0+ (API 23); core and build tests, no signed 1.6.0 APK or phone run; 1.5.4 on the owner's phone; post-reboot dashboard unverified | [Android README](android/README.md) · [1.6.0 record](docs/ANDROID_1.6.0.md) |
 | Network / router | Verified signed DNS rules for administrator import | Tools only | [Network tools](network/README.md) |
 
 Seed **v5** raises the bundled core from 159,768 to **236,586 domains** on every

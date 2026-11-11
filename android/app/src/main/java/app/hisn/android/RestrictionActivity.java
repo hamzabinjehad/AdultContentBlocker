@@ -1,6 +1,5 @@
 package app.hisn.android;
 
-import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
@@ -182,7 +181,7 @@ public final class RestrictionActivity extends Activity {
         circle = new View(this);
         circle.setBackground(ring);
         circle.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-        float rest = ValueAnimator.areAnimatorsEnabled() ? 0.55f : 0.8f;
+        float rest = Compat.animationsEnabled(this) ? 0.55f : 0.8f;
         circle.setScaleX(rest);
         circle.setScaleY(rest);
         FrameLayout.LayoutParams circleParams = new FrameLayout.LayoutParams(
@@ -325,7 +324,7 @@ public final class RestrictionActivity extends Activity {
         breathLabel.setText(inhale ? R.string.pause_breathe_in : R.string.pause_breathe_out);
         breathStep.setText(getString(R.string.pause_breath_step, cycle + 1, BREATH_CYCLES));
         updateDots(cycle);
-        if (ValueAnimator.areAnimatorsEnabled()) {
+        if (Compat.animationsEnabled(this)) {
             float scale = inhale ? 1f : 0.55f;
             circle.animate().scaleX(scale).scaleY(scale).setDuration(duration)
                     .setInterpolator(new AccelerateDecelerateInterpolator()).start();
@@ -345,7 +344,7 @@ public final class RestrictionActivity extends Activity {
                 reflectionPanel.setVisibility(View.VISIBLE);
                 reflectionPanel.setAlpha(0f);
                 reflectionPanel.setTranslationY(Ui.dp(this, 10));
-                if (ValueAnimator.areAnimatorsEnabled()) {
+                if (Compat.animationsEnabled(this)) {
                     reflectionPanel.animate().alpha(1f).translationY(0f)
                             .setDuration(320).start();
                 } else {

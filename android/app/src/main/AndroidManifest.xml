@@ -26,8 +26,12 @@
         <intent><action android:name="android.intent.action.VIEW" /><category android:name="android.intent.category.BROWSABLE" /><data android:scheme="https" /></intent>
         <intent><action android:name="android.intent.action.VIEW" /><category android:name="android.intent.category.BROWSABLE" /><data android:scheme="http" /></intent>
     </queries>
+    <!-- The signature-verified seed holds more than 236,000 domains. Android 6 device
+         heaps are often 48-192 MB, so the list does not fit the default growth limit;
+         largeHeap uses the platform's larger per-app cap on those releases. -->
     <application
         android:allowBackup="false"
+        android:largeHeap="true"
         android:enableOnBackInvokedCallback="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -65,7 +69,11 @@
             <meta-data android:name="android.accessibilityservice" android:resource="@xml/text_guard_service" />
         </service>
         <receiver android:name=".BootShieldReceiver" android:exported="false" android:directBootAware="true">
-            <intent-filter><action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" /></intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+                <!-- Android 6 has no direct boot; the receiver ignores this after Android 7. -->
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
         </receiver>
         <service android:name=".BootShieldService" android:exported="false" android:directBootAware="true"
             android:foregroundServiceType="specialUse">

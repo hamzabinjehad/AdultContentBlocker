@@ -60,7 +60,7 @@ android {
     defaultConfig {
         applicationId 'app.hisn.android'
         manifestPlaceholders = [hisnAppLabel: '@string/app_name']
-        minSdk 26
+        minSdk 23
         targetSdk 36
         versionCode 43
         versionName '1.6.0'
@@ -108,12 +108,15 @@ android {
         noCompress 'tflite'
     }
     compileOptions {
+        coreLibraryDesugaringEnabled true
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
 }
 
 dependencies {
+    // java.time and other Java 8+ library APIs on devices below API 26.
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
     // Native adult inference; the WebView engine remains the fallback and the people path.
     implementation 'org.tensorflow:tensorflow-lite:2.16.1'
 }

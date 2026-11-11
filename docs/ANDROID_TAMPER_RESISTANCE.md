@@ -321,7 +321,7 @@ The default is a dry run: it reads the phone, prints what it found and the
 exact commands, and changes nothing. `--apply` runs those commands after a
 typed `PROVISION` confirmation (`--yes` skips the prompt). It refuses a phone
 with any account, a secondary user or profile, another device owner, an
-unfinished setup wizard, or Android below Hisn's minSdk 26. It does not wipe
+unfinished setup wizard, or Android below Hisn's minSdk 23. It does not wipe
 the phone, remove an account, uninstall an app or change an ordinary setting;
 the only administrative change is the device-owner appointment. It reads the
 appointment back afterwards and returns a failure for a missing or different

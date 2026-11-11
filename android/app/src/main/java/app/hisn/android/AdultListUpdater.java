@@ -81,7 +81,7 @@ final class AdultListUpdater {
         JobScheduler scheduler = context.getSystemService(JobScheduler.class);
         if (scheduler == null) return;
         try {
-            if (scheduler.getPendingJob(JOB_ID) != null) return;
+            if (Compat.hasPendingJob(scheduler, JOB_ID)) return;
             scheduler.schedule(new JobInfo.Builder(JOB_ID,
                     new ComponentName(context, HostListUpdateJobService.class))
                     .setPeriodic(24 * 60 * 60 * 1000L)
@@ -239,7 +239,7 @@ final class AdultListUpdater {
             connection.setRequestProperty("Cache-Control", "no-store");
             int status = connection.getResponseCode();
             if (status < 200 || status >= 300) throw new IOException("HTTP " + status);
-            long declared = connection.getContentLengthLong();
+            long declared = Compat.contentLength(connection);
             if (declared > limit) throw new IOException("Too large");
             try (InputStream input = connection.getInputStream()) {
                 return HostListStore.read(input, limit);

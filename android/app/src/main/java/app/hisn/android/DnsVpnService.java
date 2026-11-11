@@ -1,7 +1,6 @@
 package app.hisn.android;
 
 import android.app.Notification;
-import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -170,11 +169,12 @@ public final class DnsVpnService extends VpnService {
     /** A visible notice that filtering is off, so a vanished VPN key icon is not the only signal. */
     static void notifyStopped(Context context, int body) {
         NotificationManager notifications = context.getSystemService(NotificationManager.class);
-        notifications.createNotificationChannel(new NotificationChannel(ALERT_CHANNEL,
-                context.getString(R.string.dns_alert_channel), NotificationManager.IMPORTANCE_DEFAULT));
+        Compat.createChannel(context, ALERT_CHANNEL, R.string.dns_alert_channel,
+                NotificationManager.IMPORTANCE_DEFAULT);
         PendingIntent open = PendingIntent.getActivity(context, 0, new Intent(context, MainActivity.class),
                 PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
-        notifications.notify(ALERT_ID, new Notification.Builder(context, ALERT_CHANNEL)
+        notifications.notify(ALERT_ID, Compat.builder(context, ALERT_CHANNEL,
+                NotificationManager.IMPORTANCE_DEFAULT)
                 .setSmallIcon(R.drawable.ic_shield).setColor(context.getColor(R.color.accent))
                 .setContentTitle(context.getString(R.string.dns_stopped_title))
                 .setContentText(context.getString(body))
@@ -309,8 +309,8 @@ public final class DnsVpnService extends VpnService {
         serviceSession++;
         try {
             // Same channel id as before, so existing installs get the corrected name.
-            getSystemService(NotificationManager.class).createNotificationChannel(
-                    new NotificationChannel(CHANNEL, getString(R.string.dns_channel), NotificationManager.IMPORTANCE_LOW));
+            Compat.createChannel(this, CHANNEL, R.string.dns_channel,
+                    NotificationManager.IMPORTANCE_LOW);
             startForeground(STATUS_ID, statusNotification(DnsNotice.STARTING));
             setResumeRequested(this, true);
             // The owner has now left DNS on; keep the background loss check scheduled.
@@ -366,7 +366,7 @@ public final class DnsVpnService extends VpnService {
         }
         PendingIntent open = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class),
                 PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
-        return new Notification.Builder(this, CHANNEL)
+        return Compat.builder(this, CHANNEL, NotificationManager.IMPORTANCE_LOW)
                 .setSmallIcon(R.drawable.ic_shield).setColor(getColor(R.color.accent))
                 .setContentTitle(getString(R.string.dns_notification_title))
                 .setContentText(getString(text))
@@ -383,7 +383,7 @@ public final class DnsVpnService extends VpnService {
     @Override public void onDestroy() {
         closeSession();
         if (state != State.ERROR) state = State.OFF;
-        stopForeground(STOP_FOREGROUND_REMOVE);
+        Compat.stopForeground(this);
         // DNS may have been stopped or revoked; cancel the check when nothing else is armed.
         try { LayerWatchdog.syncSchedule(this); }
         catch (RuntimeException ignored) { /* A stale periodic check is harmless. */ }
@@ -518,7 +518,12 @@ public final class DnsVpnService extends VpnService {
                         ? SafeSearch.target(hostname) : null);
                 // Cloudflare for Families at 1.1.1.3, or 1.0.0.3 with the same TLS identity when 1.1.1.3
                 // cannot be reached or times out. Never plaintext, never an unfiltered resolver.
-                transport = TlsDnsTransport.cloudflareFamily(2000, DnsVpnService.this::protect);
+                // Android 6 needs the bundled SSL.com anchor for the resolver's chain; newer
+                // releases already trust it, and a missing anchor falls back to the platform store.
+                javax.net.ssl.SSLSocketFactory resolverTls = ResolverTls.factory(DnsVpnService.this);
+                transport = resolverTls == null
+                        ? TlsDnsTransport.cloudflareFamily(2000, DnsVpnService.this::protect)
+                        : TlsDnsTransport.cloudflareFamily(2000, DnsVpnService.this::protect, resolverTls);
                 DnsExchange exchange = new DnsExchange(policy, transport);
                 DnsExchange tcpExchange = new DnsExchange(tcpPolicy, transport);
                 try (InputStream input = new ParcelFileDescriptor.AutoCloseInputStream(ParcelFileDescriptor.dup(established.getFileDescriptor()));
@@ -787,14 +792,20 @@ public final class DnsVpnService extends VpnService {
                     NetworkRequest request = new NetworkRequest.Builder()
                             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
                             .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN).build();
-                    // Callbacks close sockets, so they run on their own thread, never the main one.
-                    monitorThread = new HandlerThread("hisn-dns-network");
-                    monitorThread.start();
-                    Handler handler = new Handler(monitorThread.getLooper());
-                    // Android 12+ reports the best non-VPN network, the one protected sockets use; before
-                    // that every Internet network is reported and UnderlyingNetwork ranks them.
-                    if (Build.VERSION.SDK_INT >= 31) connectivity.registerBestMatchingNetworkCallback(request, callback, handler);
-                    else connectivity.registerNetworkCallback(request, callback, handler);
+                    // Callbacks close sockets, so they must not run on the main thread. Android 8
+                    // added the handler overload; on Android 6 and 7 the callback runs on
+                    // ConnectivityThread, which is also a background thread.
+                    if (Build.VERSION.SDK_INT >= 26) {
+                        monitorThread = new HandlerThread("hisn-dns-network");
+                        monitorThread.start();
+                        Handler handler = new Handler(monitorThread.getLooper());
+                        // Android 12+ reports the best non-VPN network, the one protected sockets use;
+                        // before that every Internet network is reported and UnderlyingNetwork ranks them.
+                        if (Build.VERSION.SDK_INT >= 31) connectivity.registerBestMatchingNetworkCallback(request, callback, handler);
+                        else connectivity.registerNetworkCallback(request, callback, handler);
+                    } else {
+                        connectivity.registerNetworkCallback(request, callback);
+                    }
                     synchronized (CHECK_LOCK) {
                         if (!closed && session == this && activeService == DnsVpnService.this) networkMonitoring = true;
                     }

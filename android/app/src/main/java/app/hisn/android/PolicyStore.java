@@ -3,7 +3,6 @@ package app.hisn.android;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.SystemClock;
-import android.provider.Settings;
 
 import app.hisn.core.CommitmentClock;
 import app.hisn.core.DailyAppSchedule;
@@ -182,7 +181,7 @@ public final class PolicyStore {
         // The copy's file in Android's preferences folder exists even when it reads as empty. If this
         // path ever differed, only two files damaged at once would go undetected, as before seals;
         // the check after the first save below logs that.
-        copyFile = new File(new File(context.getDataDir(), "shared_prefs"), name + COPY_SUFFIX + ".xml");
+        copyFile = new File(new File(Compat.dataDir(context), "shared_prefs"), name + COPY_SUFFIX + ".xml");
         try {
             int boot = boot();
             // Reading waits for the load, which also restores the backup of an interrupted write.
@@ -584,8 +583,6 @@ public final class PolicyStore {
     public String wordText() { return String.join("\n", snapshot.words.configuredRules()); }
 
     private int boot() {
-        int value = Settings.Global.getInt(context.getContentResolver(), Settings.Global.BOOT_COUNT, -1);
-        if (value < 0) throw new IllegalStateException("Boot counter unavailable");
-        return value;
+        return Compat.bootCount(context);
     }
 }

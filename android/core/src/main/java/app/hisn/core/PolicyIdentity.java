@@ -16,12 +16,14 @@ public final class PolicyIdentity {
     private static final long OFFSET = 0xcbf29ce484222325L;
     private static final long PRIME = 0x100000001b3L;
 
-    /** One layer identity: the saved version plus a component describing that layer's inputs. */
+    /**
+     * One layer identity: the saved version plus a component describing that layer's inputs.
+     * The high bit is cleared so every identity is non-negative; -1 stays reserved for "not
+     * known", and the rest of the app may safely use {@code identity >= 0} as its readable check.
+     */
     public static long of(long revision, long component) {
         if (revision < 0) throw new IllegalArgumentException("Invalid policy revision");
-        long hash = combine(revision, component);
-        // -1 is reserved for "not known"; a hash that lands there is moved, not accepted.
-        return hash == UNKNOWN ? UNKNOWN - 1 : hash;
+        return combine(revision, component) & Long.MAX_VALUE;
     }
 
     /** Combine two components in a fixed order; the result is not a reserved unknown. */

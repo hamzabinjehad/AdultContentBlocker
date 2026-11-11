@@ -19,6 +19,16 @@ public final class PolicyIdentityTest {
         long combined = PolicyIdentity.combine(1, 2);
         if (combined != PolicyIdentity.combine(1, 2)) throw new AssertionError("combine is not stable");
         if (combined == PolicyIdentity.combine(2, 1)) throw new AssertionError("combine ignores order");
+        // Consumers use -1 as unknown and identity >= 0 as readable. Every produced identity
+        // must honour that, including revisions/components whose FNV result has the high bit set.
+        for (long revision = 0; revision < 128; revision++) {
+            for (long component = -64; component < 128; component++) {
+                long identity = PolicyIdentity.of(revision, component);
+                if (identity < 0 || identity == PolicyIdentity.UNKNOWN) {
+                    throw new AssertionError("non-readable identity produced");
+                }
+            }
+        }
         try { PolicyIdentity.of(-1, 0); throw new AssertionError("negative revision accepted"); }
         catch (IllegalArgumentException expected) { }
         try { PolicyIdentity.component(null); throw new AssertionError("missing text accepted"); }

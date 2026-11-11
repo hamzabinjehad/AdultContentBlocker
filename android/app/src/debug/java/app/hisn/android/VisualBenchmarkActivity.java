@@ -16,7 +16,6 @@ import android.widget.TextView;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.io.File;
-import java.nio.file.Files;
 import java.security.MessageDigest;
 
 /** Local, supplied files only. No capture, synthetic verdicts, VPN, or policy changes. */
@@ -47,7 +46,7 @@ public final class VisualBenchmarkActivity extends Activity {
             if (!"auto".equals(backend) && !"cpu".equals(backend) && !"wasm".equals(backend)
                     && !"webgl".equals(backend)) throw new IllegalArgumentException("Unsupported backend");
             directory = new File(getFilesDir(), "visual_benchmark");
-            byte[] manifestBytes = Files.readAllBytes(new File(directory, "manifest.json").toPath());
+            byte[] manifestBytes = readAllBytes(new File(directory, "manifest.json"), 131072);
             if (manifestBytes.length > 131072) throw new IllegalArgumentException("Manifest too large");
             JSONObject manifest = new JSONObject(new String(manifestBytes, java.nio.charset.StandardCharsets.UTF_8));
             if (manifest.getInt("schema") != 1) throw new IllegalArgumentException("Unknown schema");
@@ -78,8 +77,7 @@ public final class VisualBenchmarkActivity extends Activity {
                     .put("requested_backend", backend)
                     .put("engine_sha256", actualEngine)
                     .put("device", android.os.Build.MODEL).put("android_sdk", android.os.Build.VERSION.SDK_INT)
-                    .put("webview_version", android.webkit.WebView.getCurrentWebViewPackage() == null ? JSONObject.NULL
-                            : android.webkit.WebView.getCurrentWebViewPackage().versionName)
+                    .put("webview_version", webViewVersion() == null ? JSONObject.NULL : webViewVersion())
                     .put("interval_ms", interval).put("repeats", repeats).put("case_count", cases.length())
                     .put("before", resources()).put("state", "loading");
             save();
@@ -102,7 +100,7 @@ public final class VisualBenchmarkActivity extends Activity {
         JSONObject item = cases.getJSONObject(index % cases.length());
         File image = new File(directory, item.getString("id") + ".png");
         if (image.length() < 1 || image.length() > 2097152) throw new IllegalArgumentException("Image size rejected");
-        byte[] raw = Files.readAllBytes(image.toPath());
+        byte[] raw = readAllBytes(image, 2097152);
         if (!hex(raw).equals(item.getString("sha256"))) throw new IllegalArgumentException("Image digest mismatch");
         BitmapFactory.Options bounds = new BitmapFactory.Options();
         bounds.inJustDecodeBounds = true;
@@ -163,9 +161,36 @@ public final class VisualBenchmarkActivity extends Activity {
 
     private void save() throws Exception {
         File temporary = new File(getFilesDir(), "visual_benchmark_result.tmp");
-        Files.write(temporary.toPath(), report.toString(2).getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        java.nio.file.Files.move(temporary.toPath(), new File(getFilesDir(), "visual_benchmark_result.json").toPath(),
-                java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        writeAllBytes(temporary, report.toString(2).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        if (!temporary.renameTo(new File(getFilesDir(), "visual_benchmark_result.json")))
+            throw new java.io.IOException("Could not replace the benchmark report");
+    }
+
+    private static byte[] readAllBytes(File file, int limit) throws java.io.IOException {
+        if (file.length() < 0 || file.length() > limit) throw new java.io.IOException("File size rejected");
+        byte[] data = new byte[(int) file.length()];
+        try (java.io.InputStream input = new java.io.FileInputStream(file)) {
+            int read = 0;
+            while (read < data.length) {
+                int count = input.read(data, read, data.length - read);
+                if (count < 0) throw new java.io.IOException("Unexpected end of file");
+                read += count;
+            }
+        }
+        return data;
+    }
+
+    private static void writeAllBytes(File file, byte[] bytes) throws java.io.IOException {
+        try (java.io.FileOutputStream output = new java.io.FileOutputStream(file)) {
+            output.write(bytes);
+            output.getFD().sync();
+        }
+    }
+
+    private static String webViewVersion() {
+        if (android.os.Build.VERSION.SDK_INT < 26) return null;
+        android.content.pm.PackageInfo webView = android.webkit.WebView.getCurrentWebViewPackage();
+        return webView == null ? null : webView.versionName;
     }
 
     private static String hex(byte[] bytes) throws Exception {

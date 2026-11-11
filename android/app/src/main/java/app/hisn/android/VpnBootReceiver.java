@@ -31,7 +31,7 @@ public final class VpnBootReceiver extends BroadcastReceiver {
                 catch (RuntimeException ignored) { /* The next app open retries. */ }
                 return;
             }
-            context.startForegroundService(new Intent(context, DnsVpnService.class));
+            Compat.startForegroundService(context, new Intent(context, DnsVpnService.class));
         } catch (RuntimeException unavailable) {
             try { DnsVpnService.notifyStopped(context, R.string.dns_not_resumed_body); }
             catch (RuntimeException ignored) { /* Hisn shows OFF when opened. */ }

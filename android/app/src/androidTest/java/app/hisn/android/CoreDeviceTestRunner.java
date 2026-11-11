@@ -346,8 +346,7 @@ public final class CoreDeviceTestRunner extends Instrumentation {
         String name = "hisn_legacy_test_" + android.os.SystemClock.elapsedRealtime();
         android.content.SharedPreferences prefs = getTargetContext().getSharedPreferences(name, android.content.Context.MODE_PRIVATE);
         try {
-            int boot = android.provider.Settings.Global.getInt(getTargetContext().getContentResolver(),
-                    android.provider.Settings.Global.BOOT_COUNT, -1);
+            int boot = Compat.bootCount(getTargetContext());
             if (boot < 0 || !prefs.edit().putLong("remaining", 3600000)
                     .putLong("elapsed", android.os.SystemClock.elapsedRealtime()).putInt("boot", boot).commit())
                 throw new AssertionError("Legacy fixture setup failed");
@@ -496,8 +495,8 @@ public final class CoreDeviceTestRunner extends Instrumentation {
 
     // Deleting is the only public way to drop the cached file; then an unparseable file takes its place.
     private static void corrupt(android.content.Context context, String name) throws java.io.IOException {
-        context.deleteSharedPreferences(name);
-        java.io.File file = new java.io.File(new java.io.File(context.getDataDir(), "shared_prefs"), name + ".xml");
+        Compat.deleteSharedPreferences(context, name);
+        java.io.File file = new java.io.File(new java.io.File(Compat.dataDir(context), "shared_prefs"), name + ".xml");
         try (java.io.FileOutputStream output = new java.io.FileOutputStream(file)) {
             output.write("<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n<map>\n<long name=".getBytes(StandardCharsets.UTF_8));
         }
@@ -506,8 +505,8 @@ public final class CoreDeviceTestRunner extends Instrumentation {
     // Instrumentation runs under the target UID. Tests use only generated names, never the real
     // hisn_policy preferences or the owner's commitment, and delete both files afterwards.
     private static void forget(android.content.Context context, String name) {
-        context.deleteSharedPreferences(name);
-        context.deleteSharedPreferences(name + PolicyStore.COPY_SUFFIX);
+        Compat.deleteSharedPreferences(context, name);
+        Compat.deleteSharedPreferences(context, name + PolicyStore.COPY_SUFFIX);
     }
 
     private static void expectRejectedRules(PolicyStore store, String domains, String words) {
@@ -572,7 +571,7 @@ public final class CoreDeviceTestRunner extends Instrumentation {
         }
 
         deleteTree(new File(context.getFilesDir(), HostListStore.DIRECTORY));
-        context.deleteSharedPreferences("hisn_list_update");
+        Compat.deleteSharedPreferences(context, "hisn_list_update");
         HostListStore.invalidate();
     }
 

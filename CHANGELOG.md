@@ -84,6 +84,59 @@ bump without an entry here is an unfinished release.
 
 ### Android
 
+#### Changed — Android 6.0 (API 23) support
+
+- **The app now installs and runs on Android 6.0 (API 23) and later.** The
+  previous floor was Android 8.0 (API 26). API 23 is the oldest release whose
+  Keystore `KeyGenParameterSpec`, `getColor`, `canDrawOverlays`,
+  `getSystemService(Class)` and battery-optimization checks match the existing
+  guardian and permission design; Android 5.x would need a different key store
+  and is not claimed. Java 8+ library APIs are covered by core-library
+  desugaring, and the adaptive launcher icon moved to `-v26` with legacy PNGs
+  for 6.0/6.1.
+- **One compatibility surface replaces scattered version checks.** `Compat`
+  handles notification channels and legacy priorities, foreground-service start
+  and stop, pending jobs, the data directory, preference deletion, download
+  lengths, locales, animator scale, autofill, picture-in-picture windows, the
+  overlay type, device-protected storage, and the notification and VPN settings
+  screens. Android 7-only always-on VPN and package suspension are gated; the
+  suspension switch is hidden on 6.0 with an explanation.
+- **DNS-over-TLS proves the resolver name on every release.** `SSLSocket` did not
+  compare the certificate name before Android 7.0. A new `TlsHostname` check
+  applies RFC 6125 rules after the handshake on old and current Android, and
+  `TlsTrust` adds one bundled public root (SSL.com, 2016; DER SHA-256
+  `3417bb06…bc65`) because Android 6's 2015 system store does not contain it.
+  The extra anchor is scoped to the resolver socket and fails closed if its pin
+  is missing; a certificate for another host is still rejected.
+- **The bundled seed fits an old device's heap.** The 236,000-domain list
+  exhausted the API 23 image's 48 MB growth limit in the DNS reader. The
+  manifest now uses `largeHeap`; the list is unchanged. The boot shield also has
+  an Android 6 path: it starts from `BOOT_COMPLETED`, reads ordinary storage,
+  and uses the pre-Android 8 system-alert overlay type.
+- **Policy identities are always readable.** `PolicyIdentity.of` returned the
+  raw 64-bit FNV hash, which could have the high bit set, while the receipt and
+  readiness code use `-1` as unknown and `>= 0` as readable. A negative identity
+  crashed the DNS route check and made a passed route render as "not checked".
+  The producer now clears the high bit; the receipt still rejects negative
+  values. A sweep covers 128 revisions × 192 components.
+- **Legacy icon and navigation-bar polish.** The launcher has square and round
+  PNG fallbacks below Android 8, and the navigation bar stays dark below Android
+  8 because the light navigation-bar flag did not exist yet.
+
+Verification: `android/test-core.sh` passes with new `TlsHostnameTest`,
+`TlsTrustTest`, the corrected `PolicyReceiptTest` and the identity sweep; `assembleDebug`,
+`assembleDebugAndroidTest`, `lintDebug` (0 errors) and `assembleRelease` pass,
+and `check-release.py` accepts the unsigned 1.6.0 / 43 Play APK. On the API 23
+`google_apis` arm64 emulator the app rendered the welcome and three tabs, read
+and wrote settings, blocked the word fixture (`SCANS 1`, `RestrictionActivity`),
+passed the DNS route check over UDP and reused TCP
+(`DNS_CHECK PASSED`, `DNS_LOCAL_BLOCK true`, `DNS_TCP_CHECK true`, 0 DNS errors),
+passed `CoreDeviceTestRunner`, and showed the direct build's boot shield after a
+reboot with the VPN running again. API 36 repeated the device tests, route
+check and UI. No physical Android 6/7 phone, Doze soak or low-RAM measurement is
+claimed; image checks remain Android 14+. Record:
+[the Android 6.0 note](docs/ANDROID_OLDER_VERSIONS_2026-11-11.md).
+
 #### Added — the candidate, committed and numbered 1.6.0
 
 - **The future release is in git.** The working tree carried 45 untracked and

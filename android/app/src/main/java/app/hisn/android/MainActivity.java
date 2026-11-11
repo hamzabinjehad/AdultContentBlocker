@@ -392,6 +392,13 @@ public final class MainActivity extends Activity {
     }
 
     private void syncShortcuts() {
+        // ShortcutManager arrived in Android 7.1; 6.x simply has no long-press shortcuts.
+        if (Build.VERSION.SDK_INT < 25) return;
+        syncShortcutsApi25();
+    }
+
+    @SuppressLint("NewApi") // Only called from syncShortcuts after its Android 7.1 check.
+    private void syncShortcutsApi25() {
         try {
             ShortcutManager manager = getSystemService(ShortcutManager.class);
             if (manager == null) return;
@@ -406,6 +413,7 @@ public final class MainActivity extends Activity {
         }
     }
 
+    @SuppressLint("NewApi") // Only reached from syncShortcutsApi25.
     private ShortcutInfo shortcut(String id, int shortLabel, int longLabel, int icon, int page) {
         return new ShortcutInfo.Builder(this, id)
                 .setShortLabel(getString(shortLabel))
@@ -443,7 +451,7 @@ public final class MainActivity extends Activity {
             navLabels[i].setTextColor(Ui.color(this, visible ? R.color.accent : R.color.text_tertiary));
             navLabels[i].setTypeface(visible ? Ui.medium() : Typeface.create("sans-serif", Typeface.NORMAL));
         }
-        if (animate && changes && android.animation.ValueAnimator.areAnimatorsEnabled()) {
+        if (animate && changes && Compat.animationsEnabled(this)) {
             View page = pages[selectedPage];
             page.setAlpha(0f);
             page.animate().alpha(1f).setDuration(140).start();
@@ -679,10 +687,7 @@ public final class MainActivity extends Activity {
         notifSettings.setVisibility(View.GONE);
         advanced.addView(notifSettings, Ui.buttonParams(this));
         notifSettings.setOnClickListener(view -> {
-            try {
-                startActivity(new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                        .putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName()));
-            } catch (RuntimeException unavailable) {
+            if (!Compat.openNotificationSettings(this)) {
                 Toast.makeText(this, R.string.open_notification_settings, Toast.LENGTH_SHORT).show();
             }
         });
@@ -1043,8 +1048,12 @@ public final class MainActivity extends Activity {
         form.addView(Ui.divider(this));
         addPermissionRow(form, R.drawable.ic_alert, R.string.perm_notify_title,
                 () -> Permissions.notifications(this),
-                view -> openSettings(new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                        .putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName())));
+                view -> {
+                    if (!Compat.openNotificationSettings(this)) {
+                        Toast.makeText(this, R.string.open_notification_settings,
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
         form.addView(Ui.divider(this));
         addPermissionRow(form, R.drawable.ic_pulse, R.string.perm_battery_title,
                 () -> Permissions.battery(this), view -> requestBatteryExemption());
@@ -2857,7 +2866,7 @@ public final class MainActivity extends Activity {
     /** Pick the weekdays a schedule starts on; a zero-day rule is not allowed. */
     private void chooseScheduleDays(int[] days, Ui.SettingRow row) {
         DayOfWeek[] week = DayOfWeek.values();
-        Locale locale = getResources().getConfiguration().getLocales().get(0);
+        Locale locale = Compat.locale(getResources().getConfiguration());
         LinearLayout form = new LinearLayout(this);
         form.setOrientation(LinearLayout.VERTICAL);
         form.setPadding(Ui.dp(this, 20), Ui.dp(this, 8), Ui.dp(this, 20), 0);
@@ -3269,7 +3278,7 @@ public final class MainActivity extends Activity {
             }
         }
         if (remaining <= 0) {
-            startActivity(new Intent(Settings.ACTION_VPN_SETTINGS));
+            Compat.openVpnSettings(this);
             return;
         }
         new AlertDialog.Builder(this).setTitle(R.string.vpn_settings_reminder_title)
@@ -3278,7 +3287,7 @@ public final class MainActivity extends Activity {
                         Durations.remaining(this, remaining)))
                 .setNegativeButton(android.R.string.cancel, null)
                 .setPositiveButton(R.string.vpn_settings_continue, (dialog, which) ->
-                        startActivity(new Intent(Settings.ACTION_VPN_SETTINGS))).show();
+                        Compat.openVpnSettings(this)).show();
     }
 
     private UninstallProtectionController.Status refreshUninstallState() {
@@ -3437,11 +3446,17 @@ public final class MainActivity extends Activity {
                 strictSwitch.setEnabled(!(settings.managedStrict() && commitment));
                 form.addView(strictSwitch, Ui.margins(this, 12, 0));
             }
-            suspendSwitch = Ui.toggle(this, getString(R.string.managed_suspend_switch),
-                    getString(R.string.managed_suspend_hint));
-            suspendSwitch.setChecked(settings.suspendBlocked());
-            suspendSwitch.setEnabled(!(settings.suspendBlocked() && commitment));
-            form.addView(suspendSwitch, Ui.margins(this, 8, 0));
+            if (Build.VERSION.SDK_INT >= 24) {
+                suspendSwitch = Ui.toggle(this, getString(R.string.managed_suspend_switch),
+                        getString(R.string.managed_suspend_hint));
+                suspendSwitch.setChecked(settings.suspendBlocked());
+                suspendSwitch.setEnabled(!(settings.suspendBlocked() && commitment));
+                form.addView(suspendSwitch, Ui.margins(this, 8, 0));
+            } else {
+                // Package suspension arrived with Android 7.0; do not offer a switch that cannot act.
+                form.addView(Ui.caption(this, getString(R.string.managed_api_7_hint)),
+                        Ui.margins(this, 8, 0));
+            }
         }
         if (!status.deviceOwner && !screenGuard) {
             form.addView(Ui.caption(this, getString(R.string.uninstall_command_label)),
@@ -3657,7 +3672,7 @@ public final class MainActivity extends Activity {
 
     private void startDnsService() {
         try {
-            startForegroundService(new Intent(this, DnsVpnService.class));
+            Compat.startForegroundService(this, new Intent(this, DnsVpnService.class));
         } catch (RuntimeException unavailable) {
             DnsVpnService.state = DnsVpnService.State.ERROR;
         }
@@ -3691,7 +3706,7 @@ public final class MainActivity extends Activity {
                 android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
             return false;
         NotificationManager manager = getSystemService(NotificationManager.class);
-        return manager != null && manager.areNotificationsEnabled();
+        return manager != null && Compat.notificationsEnabled(manager);
     }
 
     /** The same two sources as Permissions.accessibility: the manager cache, then Android's own value. */

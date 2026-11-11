@@ -39,7 +39,9 @@ public final class PolicyReceiptTest {
         if (receipt(7, 2, 11, PolicyReceipt.Kind.APP_DECISION, PolicyReceipt.Result.PASSED, NOW - MAX - 1)
                 .usable(7, 2, 11, NOW, MAX)) throw new AssertionError("stale receipt certified");
 
-        try { receipt(-1, 0, 0, PolicyReceipt.Kind.TEXT_SCAN, PolicyReceipt.Result.PASSED, 0); throw new AssertionError("negative identity"); }
+        try { receipt(PolicyIdentity.UNKNOWN, 0, 0, PolicyReceipt.Kind.TEXT_SCAN, PolicyReceipt.Result.PASSED, 0); throw new AssertionError("unknown identity"); }
+        catch (IllegalArgumentException expected) { }
+        try { receipt(-2, 0, 0, PolicyReceipt.Kind.TEXT_SCAN, PolicyReceipt.Result.PASSED, 0); throw new AssertionError("negative identity accepted"); }
         catch (IllegalArgumentException expected) { }
         try { receipt(1, -1, 0, PolicyReceipt.Kind.TEXT_SCAN, PolicyReceipt.Result.PASSED, 0); throw new AssertionError("negative session"); }
         catch (IllegalArgumentException expected) { }

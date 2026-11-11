@@ -33,6 +33,8 @@ public final class PolicyReceipt {
 
     public PolicyReceipt(long identity, int session, long generation, Kind kind, Result result,
             long completedAt) {
+        // PolicyIdentity clears the sign bit; a negative value is the reserved unknown sentinel
+        // or an invalid identity, never a valid receipt.
         if (identity < 0) throw new IllegalArgumentException("Invalid policy identity");
         if (session < 0) throw new IllegalArgumentException("Invalid service session");
         if (generation < 0) throw new IllegalArgumentException("Invalid generation");

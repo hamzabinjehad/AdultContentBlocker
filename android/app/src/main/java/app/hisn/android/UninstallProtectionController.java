@@ -191,14 +191,19 @@ final class UninstallProtectionController {
                     error = error == null ? "restrictions" : error;
                 }
             }
-            try {
-                alwaysCurrent = manager.getAlwaysOnVpnPackage(CommitmentAdminReceiver.component(context));
-            } catch (RuntimeException unavailable) {
-                error = error == null ? "always-on-readback" : error;
+            if (Build.VERSION.SDK_INT >= 24) {
+                try {
+                    alwaysCurrent = manager.getAlwaysOnVpnPackage(CommitmentAdminReceiver.component(context));
+                } catch (RuntimeException unavailable) {
+                    error = error == null ? "always-on-readback" : error;
+                }
             }
         }
-        boolean alwaysDesired = AlwaysOnVpn.shouldApply(owner, lockdown, keep, remaining, dnsOn,
-                vpnPrepared);
+        // Always-on VPN and package suspension are Android 7.0 APIs. On Android 6 the
+        // device-owner lockdown still holds the user restrictions and the uninstall block.
+        boolean android7 = Build.VERSION.SDK_INT >= 24;
+        boolean alwaysDesired = android7 && AlwaysOnVpn.shouldApply(owner, lockdown, keep,
+                remaining, dnsOn, vpnPrepared);
         boolean alwaysActive = AlwaysOnVpn.isOurs(alwaysCurrent, context.getPackageName());
         boolean alwaysMatch = AlwaysOnVpn.matches(alwaysDesired, alwaysCurrent,
                 context.getPackageName());
@@ -214,8 +219,8 @@ final class UninstallProtectionController {
         } catch (RuntimeException unavailable) {
             error = error == null ? "packages" : error;
         }
-        Set<String> desiredSuspended = BlockedAppSuspension.desired(owner, lockdown, suspend, keep,
-                remaining, blockedApps, installed);
+        Set<String> desiredSuspended = android7 ? BlockedAppSuspension.desired(owner, lockdown,
+                suspend, keep, remaining, blockedApps, installed) : Collections.emptySet();
         boolean suspensionMatch = BlockedAppSuspension.matches(desiredSuspended, suspended);
         return new Status(owner, admin, blocked, keep, lockdown, strict, suspend, remaining, held,
                 alwaysDesired, alwaysActive, alwaysMatch, suspended, desiredSuspended,
@@ -263,7 +268,7 @@ final class UninstallProtectionController {
                 failure = failure == null ? "apply" : failure;
             }
         }
-        if (status.alwaysOnDesired != status.alwaysOnActive) {
+        if (Build.VERSION.SDK_INT >= 24 && status.alwaysOnDesired != status.alwaysOnActive) {
             try {
                 manager.setAlwaysOnVpnPackage(admin, status.alwaysOnDesired
                         ? context.getPackageName() : null, false);
@@ -297,7 +302,8 @@ final class UninstallProtectionController {
 
     private static String setSuspension(DevicePolicyManager manager, ComponentName admin,
                                         Set<String> packages, boolean suspended) {
-        if (packages.isEmpty()) return null;
+        // setPackagesSuspended arrived in Android 7.0; earlier locks stay at the restrictions.
+        if (packages.isEmpty() || Build.VERSION.SDK_INT < 24) return null;
         try {
             String[] failed = manager.setPackagesSuspended(admin,
                     packages.toArray(new String[0]), suspended);
@@ -362,7 +368,7 @@ final class UninstallProtectionController {
             String failure = clearRestrictions(manager, CommitmentAdminReceiver.component(context),
                     status.restrictions);
             if (failure != null) return failure;
-            if (status.alwaysOnActive) {
+            if (Build.VERSION.SDK_INT >= 24 && status.alwaysOnActive) {
                 manager.setAlwaysOnVpnPackage(CommitmentAdminReceiver.component(context), null, false);
             }
             String suspension = setSuspension(manager, CommitmentAdminReceiver.component(context),

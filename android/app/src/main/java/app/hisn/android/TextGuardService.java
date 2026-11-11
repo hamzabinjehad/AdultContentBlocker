@@ -330,7 +330,7 @@ public final class TextGuardService extends AccessibilityService {
             AccessibilityNodeInfo root = application ? window.getRoot() : null;
             try {
                 all.add(new GuardWindows.Window(window.getId(), packageOf(root), application, window.isActive(),
-                        window.isFocused(), window.isInPictureInPictureMode()));
+                        window.isFocused(), Compat.inPictureInPicture(window)));
             } finally { if (root != null) root.recycle(); }
         }
         if (all.isEmpty()) {
@@ -1245,7 +1245,7 @@ public final class TextGuardService extends AccessibilityService {
         try {
             for (AccessibilityWindowInfo window : getWindows()) {
                 if (window.getId() != id) continue;
-                if (!window.isInPictureInPictureMode()) return false;
+                if (!Compat.inPictureInPicture(window)) return false;
                 AccessibilityNodeInfo root = window.getRoot();
                 if (root == null) return false;
                 try {

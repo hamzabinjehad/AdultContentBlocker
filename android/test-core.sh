@@ -69,6 +69,28 @@ PY
 "${hisn_java_bin}keytool" -genkeypair -alias hisn-test -keyalg EC -groupname secp256r1 -dname CN=localhost \
     -ext SAN=dns:localhost -validity 2 -storetype PKCS12 -keystore "$hisn_test_output/tls.p12" \
     -storepass hisn-test-only -noprompt > "$hisn_test_output/keytool.log" 2>&1
+"${hisn_java_bin}keytool" -exportcert -rfc -alias hisn-test -keystore "$hisn_test_output/tls.p12" \
+    -storepass hisn-test-only > "$hisn_test_output/tls-localhost.pem" 2>> "$hisn_test_output/keytool.log"
+"${hisn_java_bin}keytool" -genkeypair -alias hisn-wild -keyalg EC -groupname secp256r1 -dname CN=wild.example \
+    -ext SAN=dns:*.wild.example -validity 2 -storetype PKCS12 -keystore "$hisn_test_output/tls-wild.p12" \
+    -storepass hisn-test-only -noprompt >> "$hisn_test_output/keytool.log" 2>&1
+"${hisn_java_bin}keytool" -exportcert -rfc -alias hisn-wild -keystore "$hisn_test_output/tls-wild.p12" \
+    -storepass hisn-test-only > "$hisn_test_output/tls-wild.pem" 2>> "$hisn_test_output/keytool.log"
+"${hisn_java_bin}keytool" -genkeypair -alias hisn-cn -keyalg EC -groupname secp256r1 -dname CN=legacy.example \
+    -validity 2 -storetype PKCS12 -keystore "$hisn_test_output/tls-cn.p12" \
+    -storepass hisn-test-only -noprompt >> "$hisn_test_output/keytool.log" 2>&1
+"${hisn_java_bin}keytool" -exportcert -rfc -alias hisn-cn -keystore "$hisn_test_output/tls-cn.p12" \
+    -storepass hisn-test-only > "$hisn_test_output/tls-cn.pem" 2>> "$hisn_test_output/keytool.log"
+"${hisn_java_bin}keytool" -genkeypair -alias hisn-ip -keyalg EC -groupname secp256r1 -dname CN=legacy.example \
+    -ext SAN=ip:127.0.0.1 -validity 2 -storetype PKCS12 -keystore "$hisn_test_output/tls-ip.p12" \
+    -storepass hisn-test-only -noprompt >> "$hisn_test_output/keytool.log" 2>&1
+"${hisn_java_bin}keytool" -exportcert -rfc -alias hisn-ip -keystore "$hisn_test_output/tls-ip.p12" \
+    -storepass hisn-test-only > "$hisn_test_output/tls-ip.pem" 2>> "$hisn_test_output/keytool.log"
+"${hisn_java_bin}java" -cp "$hisn_test_output" app.hisn.core.TlsHostnameTest \
+    "$hisn_test_output/tls-localhost.pem" "$hisn_test_output/tls-wild.pem" \
+    "$hisn_test_output/tls-cn.pem" "$hisn_test_output/tls-ip.pem"
+"${hisn_java_bin}java" -cp "$hisn_test_output" app.hisn.core.TlsTrustTest \
+    app/src/main/assets/trust/ssl-com-root-ecc.crt "$hisn_test_output/tls-cn.pem"
 "${hisn_java_bin}java" -cp "$hisn_test_output" app.hisn.core.TlsDnsTransportTest "$hisn_test_output/tls.p12"
 hisn_seed_digest=$(python3 -c 'import json; print(json.load(open("../seed/manifest.json"))["artifacts"]["domains_core.txt"]["sha256"])')
 hisn_seed_count=$(python3 -c 'import json; print(json.load(open("../seed/manifest.json"))["core_domain_count"])')

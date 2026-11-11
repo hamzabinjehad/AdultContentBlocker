@@ -96,7 +96,7 @@ public final class GuardTestSetupActivity extends Activity {
             if ("network-start".equals(mode)) {
                 if (android.net.VpnService.prepare(this) != null)
                     throw new IllegalStateException("Android VPN approval required");
-                startForegroundService(new android.content.Intent(this, DnsVpnService.class));
+                Compat.startForegroundService(this, new android.content.Intent(this, DnsVpnService.class));
                 report("PASS network-start");
                 return;
             }

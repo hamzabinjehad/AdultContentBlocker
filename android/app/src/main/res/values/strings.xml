@@ -373,6 +373,7 @@
     <string name="managed_strict_switch">Strict: also block unknown-source installs on Android 10+</string>
     <string name="managed_strict_hint">Strict also closes the sideload path on Android 10+. It blocks a manual Hisn update until managed lockdown is turned off when no commitment runs. It does not block USB debugging, so ADB verification and recovery still work. It applies only while managed lockdown is on.</string>
     <string name="managed_suspend_switch">Also suspend blocked apps in Android</string>
+    <string name="managed_api_7_hint">This needs Android 7.0 or later.</string>
     <string name="managed_suspend_hint">Suspended apps disappear from the launcher and cannot be opened; their data is kept. This applies only while managed lockdown holds. Unblocking an app or releasing managed mode resumes it.</string>
     <string name="managed_lockdown_suspend_on">Managed lockdown · ON. The basic restrictions are held, and blocked apps are suspended in Android.</string>
     <string name="managed_lockdown_strict_on">Managed lockdown · ON (strict). The basic restrictions are held, plus unknown-source installs on Android 10+.</string>

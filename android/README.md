@@ -9,6 +9,15 @@ layer-health watchdog. The interface follows the system light/dark appearance,
 uses bottom navigation for Protection, Rules and Settings, and supports Arabic
 and English.
 
+**Platform support.** The app installs and runs on **Android 6.0 (API 23) and
+later**. The image layer remains Android 14+ by design; managed always-on DNS
+and app suspension need Android 7.0+; notification channels and long-press
+shortcuts appear on the releases that introduced them. Android 6 gets the
+DNS, text and app layers with a bundled resolver trust anchor and a larger heap
+for the 236,000-domain seed. The behavior table, the security decisions and the
+API 23 evidence are in
+[the Android 6.0 support note](../docs/ANDROID_OLDER_VERSIONS_2026-11-11.md).
+
 **Source state, 10 November 2026.** This folder is the **1.6.0 / 43**
 development candidate: the 1.5.3 feature set, packages 2 and 3 (signed mobile
 list updates whose generations carry domains and terms together, policy receipts and readiness, rule import/preview, the site
@@ -1085,14 +1094,26 @@ the managed-uninstall state/commitment matrix.
 DNS-probe tests use loopback responders for route-check response validation,
 timeouts, cancellation and no public query after a failed local check.
 TLS tests generate a disposable localhost certificate, verify hostname and
-trust failures, and test encrypted exchanges and connection reuse. Commitment
-tests cover expiry, clock rollback, boot changes and checkpoints. The standard
-suite uses loopback only. `ResolverProbe --public-example-only` is a separate,
+trust failures, and test encrypted exchanges and connection reuse.
+`TlsHostnameTest` pins SAN, wildcard, CN-fallback and IP-only SAN rules;
+`TlsTrustTest` pins the bundled SSL.com root by DER SHA-256 and rejects an
+unrelated certificate. Commitment tests cover expiry, clock rollback, boot
+changes and checkpoints. The standard suite uses loopback only. `ResolverProbe --public-example-only` is a separate,
 explicit optional diagnostic which contacts Cloudflare for `example.com` only.
 
+The API 23 `google_apis` arm64 image ran the debug APK through the welcome and
+three tabs, a blocked word fixture, the DNS route check over UDP and reused TCP,
+the core device tests, and the direct build's post-reboot boot shield; API 36
+repeated the device tests and route check. Details and limits:
+[the Android 6.0 note](../docs/ANDROID_OLDER_VERSIONS_2026-11-11.md).
+
 The debug APK is `app/build/outputs/apk/debug/app-debug.apk`. The app supports
-Android 8.0+. A debug build is signed with a development key, not a production
-release certificate.
+Android 6.0 (API 23) and later. A debug build is signed with a development key,
+not a production release certificate. On Android 6 the result is the DNS, text
+and app layers only; image checks are not available, and managed always-on DNS
+and package suspension are Android 7.0 features. The direct build's boot shield
+starts from `BOOT_COMPLETED` rather than before the first unlock, because direct
+boot arrived in Android 7.0.
 
 The optional test APK uses a custom instrumentation runner. After installing
 the app and test APK, run:

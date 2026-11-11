@@ -2,6 +2,9 @@
 
 Development candidate in the repository, 10 November 2026, version **1.6.0**,
 versionCode **43**. No signed artifact, Play upload or phone run is claimed.
+The build floor is **Android 6.0 (API 23)**; image checks remain Android 14+.
+Old-release behavior and the API 23 evidence are in
+[the Android 6.0 note](ANDROID_OLDER_VERSIONS_2026-11-11.md).
 
 ## What is in it
 

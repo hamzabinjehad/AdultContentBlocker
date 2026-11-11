@@ -370,8 +370,9 @@ public final class WelcomeActivity extends Activity {
                     REQUEST_NOTIFICATIONS);
             return;
         }
-        openSettings(new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                .putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName()), 0);
+        if (!Compat.openNotificationSettings(this)) {
+            Toast.makeText(this, R.string.perm_settings_unavailable, Toast.LENGTH_LONG).show();
+        }
     }
 
     private void requestBattery() {
@@ -408,7 +409,7 @@ public final class WelcomeActivity extends Activity {
     }
 
     private void startDnsService() {
-        try { startForegroundService(new Intent(this, DnsVpnService.class)); }
+        try { Compat.startForegroundService(this, new Intent(this, DnsVpnService.class)); }
         catch (RuntimeException unavailable) {
             Toast.makeText(this, R.string.perm_dns_failed, Toast.LENGTH_LONG).show();
         }

@@ -1,7 +1,6 @@
 package app.hisn.android;
 
 import android.app.Notification;
-import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.job.JobInfo;
@@ -77,7 +76,7 @@ final class LayerWatchdog {
         if (scheduler == null) return;
         try {
             boolean expected = !expected(context).isEmpty();
-            boolean scheduled = scheduler.getPendingJob(JOB_ID) != null;
+            boolean scheduled = Compat.hasPendingJob(scheduler, JOB_ID);
             if (!expected) {
                 if (scheduled) scheduler.cancel(JOB_ID);
                 // A notice from before the last layer was turned off must not linger.
@@ -131,11 +130,12 @@ final class LayerWatchdog {
         NotificationManager notifications = context.getSystemService(NotificationManager.class);
         if (notifications == null) return false;
         try {
-            notifications.createNotificationChannel(new NotificationChannel(CHANNEL,
-                    context.getString(R.string.layer_health_channel), NotificationManager.IMPORTANCE_DEFAULT));
+            Compat.createChannel(context, CHANNEL, R.string.layer_health_channel,
+                    NotificationManager.IMPORTANCE_DEFAULT);
             PendingIntent open = PendingIntent.getActivity(context, 0,
                     new Intent(context, MainActivity.class), PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
-            notifications.notify(NOTIFICATION_ID, new Notification.Builder(context, CHANNEL)
+            notifications.notify(NOTIFICATION_ID, Compat.builder(context, CHANNEL,
+                    NotificationManager.IMPORTANCE_DEFAULT)
                     .setSmallIcon(R.drawable.ic_shield).setColor(context.getColor(R.color.accent))
                     .setContentTitle(context.getString(R.string.layer_health_title))
                     .setContentText(context.getString(body))
