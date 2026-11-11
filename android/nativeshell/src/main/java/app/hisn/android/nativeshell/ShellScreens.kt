@@ -49,6 +49,7 @@ import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -138,7 +139,8 @@ fun RulesShellScreen(
     onOpenClassic: () -> Unit,
     onLayer: (String, Boolean) -> Unit,
     onEditRules: (String) -> Unit,
-    onEditApps: (String) -> Unit
+    onEditApps: (String) -> Unit,
+    onEditLock: () -> Unit
 ) {
     ShellScreen {
         if (state.locked) {
@@ -181,6 +183,7 @@ fun RulesShellScreen(
                             "domains", "words" -> onEditRules(rule.key)
                             "blockedApps" -> onEditApps("blocked")
                             "scannedApps" -> onEditApps("scanned")
+                            "lock" -> onEditLock()
                             else -> onOpenClassic()
                         }
                     }
@@ -643,6 +646,96 @@ private fun SectionLabel(text: String) {
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(start = 4.dp, top = 8.dp)
+    )
+}
+
+@Composable
+fun LockDialog(
+    state: ShellLockState,
+    onStart: (Int) -> ShellActionResult,
+    onDismiss: () -> Unit,
+    onResult: (ShellActionResult) -> Unit
+) {
+    var days by remember(state) { mutableStateOf(state.options.firstOrNull()?.days ?: 1) }
+    var error by remember(state) { mutableStateOf<String?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(state.title) },
+        text = {
+            Column(
+                Modifier
+                    .heightIn(max = 480.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                if (state.active && state.remaining.isNotEmpty()) {
+                    Text(
+                        state.remaining,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        state.lockedNote,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Text(
+                    state.choosePeriod,
+                    style = MaterialTheme.typography.titleSmall
+                )
+                state.options.chunked(2).forEach { row ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        row.forEach { option ->
+                            FilterChip(
+                                selected = days == option.days,
+                                onClick = { days = option.days },
+                                label = { Text(option.label) }
+                            )
+                        }
+                    }
+                }
+                Text(
+                    state.disclosure,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (!state.canStart) {
+                    Text(
+                        state.needsRules,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+                if (error != null) {
+                    Text(
+                        error!!,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = state.canStart,
+                onClick = {
+                    val result = onStart(days)
+                    if (result.ok) {
+                        onResult(result)
+                    } else {
+                        error = result.message
+                    }
+                }
+            ) {
+                Text(state.startLabel)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(state.cancelLabel)
+            }
+        }
     )
 }
 

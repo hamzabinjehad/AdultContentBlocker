@@ -121,6 +121,7 @@ fun NativeShell(host: NativeShellHost?) {
     var consentRequest by remember { mutableStateOf<PendingConsent?>(null) }
     var editor by remember { mutableStateOf<ShellRulesEditor?>(null) }
     var appPicker by remember { mutableStateOf<ShellAppPicker?>(null) }
+    var lockDialog by remember { mutableStateOf<ShellLockState?>(null) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
@@ -210,6 +211,12 @@ fun NativeShell(host: NativeShellHost?) {
         appPicker = next
     }
 
+    fun editLock() {
+        val next = host?.lockState() ?: return
+        haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+        lockDialog = next
+    }
+
     val vpnLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -242,6 +249,13 @@ fun NativeShell(host: NativeShellHost?) {
     ) {
         // The classic flow proceeds whether or not the notification permission is granted.
         launchVpnConsent()
+    }
+
+    val lockNotificationLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {
+        // The lock is already saved; this only asks for the same notification permission
+        // the classic confirmation requests after starting it.
     }
 
     fun beginDnsSetup() {
@@ -379,6 +393,7 @@ fun NativeShell(host: NativeShellHost?) {
                         onLayer = ::requestLayer,
                         onEditRules = ::editRules,
                         onEditApps = ::editApps,
+                        onEditLock = ::editLock,
                         onStartDns = ::requestDnsSetup,
                         modifier = Modifier.weight(1f)
                     )
@@ -453,6 +468,33 @@ fun NativeShell(host: NativeShellHost?) {
             }
         )
     }
+
+    lockDialog?.let { current ->
+        LockDialog(
+            state = current,
+            onStart = { days ->
+                host?.startLock(days)
+                    ?: ShellActionResult(labels.unsupported, ok = false, refresh = false)
+            },
+            onDismiss = { lockDialog = null },
+            onResult = { result ->
+                if (result.ok) {
+                    lockDialog = null
+                    scope.launch { refresh() }
+                    val current = activity
+                    if (Build.VERSION.SDK_INT >= 33 && current != null &&
+                        ContextCompat.checkSelfPermission(
+                            current,
+                            Manifest.permission.POST_NOTIFICATIONS
+                        ) != PackageManager.PERMISSION_GRANTED
+                    ) {
+                        lockNotificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                }
+                scope.launch { snackbar.showSnackbar(result.message) }
+            }
+        )
+    }
 }
 
 @Composable
@@ -483,6 +525,7 @@ private fun ShellContent(
     onLayer: (String, Boolean) -> Unit,
     onEditRules: (String) -> Unit,
     onEditApps: (String) -> Unit,
+    onEditLock: () -> Unit,
     onStartDns: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -517,7 +560,8 @@ private fun ShellContent(
                     onOpenClassic = onOpenClassic,
                     onLayer = onLayer,
                     onEditRules = onEditRules,
-                    onEditApps = onEditApps
+                    onEditApps = onEditApps,
+                    onEditLock = onEditLock
                 )
                 index == 2 && settings != null -> SettingsShellScreen(
                     state = settings,
