@@ -1,0 +1,317 @@
+package app.hisn.android.nativeshell
+
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.automirrored.outlined.List
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+
+private enum class Destination(val icon: ImageVector) {
+    Protection(Icons.Outlined.Lock),
+    Rules(Icons.AutoMirrored.Outlined.List),
+    Settings(Icons.Outlined.Settings)
+}
+
+/** Labels used before the host answers, or when it is not installed at all. */
+private fun fallbackLabels() = ShellLabels(
+    appName = "Hisn",
+    tagline = "Adult content blocker",
+    protection = "Protection",
+    rules = "Rules",
+    settings = "Settings",
+    runCheck = "Run a protection check",
+    openClassic = "Open classic Hisn",
+    live = "Live · read-only preview",
+    liveBody = "Real saved rules and service state. Changes open the classic Hisn screen.",
+    attention = "What needs attention",
+    layers = "Protection layers"
+)
+
+/**
+ * Phase 2 shell: real state, read-only policy.
+ *
+ * The host polls the same two-second cadence as the classic dashboard and returns fully localized
+ * strings. The shell never writes a rule; every editor still belongs to the audited classic screen
+ * until the next phase. If the app did not install a host, the shell says so instead of showing
+ * plausible sample data.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun NativeShell(host: NativeShellHost?) {
+    var selected by rememberSaveable { mutableIntStateOf(0) }
+    var protection by remember { mutableStateOf<ShellProtection?>(null) }
+    var rules by remember { mutableStateOf<ShellRules?>(null) }
+    var settings by remember { mutableStateOf<ShellSettings?>(null) }
+    val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val haptics = LocalHapticFeedback.current
+    val lifecycleOwner = LocalContext.current as? LifecycleOwner
+    var resumed by remember {
+        mutableStateOf(
+            lifecycleOwner?.lifecycle?.currentState?.isAtLeast(Lifecycle.State.RESUMED) == true
+        )
+    }
+
+    // Match the classic dashboard: poll only while the shell is resumed. Returning from a classic
+    // editor triggers ON_RESUME and an immediate refresh.
+    DisposableEffect(lifecycleOwner) {
+        if (lifecycleOwner == null) {
+            resumed = true
+            onDispose { }
+        } else {
+            val observer = LifecycleEventObserver { _, event ->
+                when (event) {
+                    Lifecycle.Event.ON_RESUME -> resumed = true
+                    Lifecycle.Event.ON_PAUSE, Lifecycle.Event.ON_STOP -> resumed = false
+                    else -> Unit
+                }
+            }
+            lifecycleOwner.lifecycle.addObserver(observer)
+            onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+        }
+    }
+
+    suspend fun refresh() {
+        if (host == null) return
+        protection = runCatching { host.protection() }.getOrNull()
+        rules = runCatching { host.rules() }.getOrNull()
+        settings = runCatching { host.settings() }.getOrNull()
+    }
+
+    LaunchedEffect(host, resumed) {
+        if (host == null || !resumed) return@LaunchedEffect
+        while (isActive) {
+            refresh()
+            delay(2_000)
+        }
+    }
+
+    val labels = protection?.labels
+        ?: rules?.labels
+        ?: settings?.labels
+        ?: fallbackLabels()
+
+    fun openClassic() {
+        haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+        host?.openClassic()
+    }
+
+    fun runCheck() {
+        haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+        scope.launch {
+            val result = host?.runCheck()
+            snackbar.showSnackbar(result?.message ?: labels.liveBody)
+            if (result?.refresh == true) refresh()
+        }
+    }
+
+    BoxWithConstraints {
+        val wide = maxWidth >= 600.dp
+        Scaffold(
+            snackbarHost = { SnackbarHost(snackbar) },
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Column {
+                            Text(labels.appName, style = MaterialTheme.typography.titleLarge)
+                            Text(
+                                labels.tagline,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = ::openClassic) {
+                            Icon(
+                                Icons.Outlined.Info,
+                                contentDescription = labels.openClassic
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background
+                    )
+                )
+            },
+            bottomBar = {
+                if (!wide) {
+                    NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
+                        Destination.entries.forEachIndexed { index, destination ->
+                            NavigationBarItem(
+                                selected = selected == index,
+                                onClick = {
+                                    haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                    selected = index
+                                },
+                                icon = { Icon(destination.icon, contentDescription = null) },
+                                label = {
+                                    Text(
+                                        when (index) {
+                                            0 -> labels.protection
+                                            1 -> labels.rules
+                                            else -> labels.settings
+                                        }
+                                    )
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        ) { insets ->
+            Row(Modifier.fillMaxSize().padding(insets)) {
+                if (wide) {
+                    NavigationRail(
+                        modifier = Modifier.fillMaxHeight(),
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    ) {
+                        Destination.entries.forEachIndexed { index, destination ->
+                            NavigationRailItem(
+                                selected = selected == index,
+                                onClick = {
+                                    haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                    selected = index
+                                },
+                                icon = { Icon(destination.icon, contentDescription = null) },
+                                label = {
+                                    Text(
+                                        when (index) {
+                                            0 -> labels.protection
+                                            1 -> labels.rules
+                                            else -> labels.settings
+                                        }
+                                    )
+                                }
+                            )
+                        }
+                    }
+                }
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .widthIn(max = 840.dp)
+                ) {
+                    LiveBanner(labels = labels)
+                    ShellContent(
+                        selected = selected,
+                        host = host,
+                        protection = protection,
+                        rules = rules,
+                        settings = settings,
+                        labels = labels,
+                        onCheck = ::runCheck,
+                        onOpenClassic = ::openClassic,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ShellContent(
+    selected: Int,
+    host: NativeShellHost?,
+    protection: ShellProtection?,
+    rules: ShellRules?,
+    settings: ShellSettings?,
+    labels: ShellLabels,
+    onCheck: () -> Unit,
+    onOpenClassic: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val layoutDirection = LocalLayoutDirection.current
+    Box(modifier = modifier, contentAlignment = Alignment.TopCenter) {
+        AnimatedContent(
+            targetState = selected,
+            transitionSpec = {
+                val forward = targetState > initialState
+                val mirror = if (layoutDirection == LayoutDirection.Rtl) -1 else 1
+                val direction = (if (forward) 1 else -1) * mirror
+                (
+                    slideInHorizontally(animationSpec = tween(300)) { width -> direction * width / 6 } +
+                        fadeIn(animationSpec = tween(180))
+                    ) togetherWith (
+                    slideOutHorizontally(animationSpec = tween(300)) { width -> -direction * width / 6 } +
+                        fadeOut(animationSpec = tween(180))
+                    )
+            },
+            label = "shell-tab"
+        ) { index ->
+            when {
+                host == null -> UnavailableShellScreen(labels = labels, onOpenClassic = onOpenClassic)
+                index == 0 && protection != null -> ProtectionShellScreen(
+                    state = protection,
+                    onCheck = onCheck,
+                    onOpenClassic = onOpenClassic
+                )
+                index == 1 && rules != null -> RulesShellScreen(
+                    state = rules,
+                    onOpenClassic = onOpenClassic
+                )
+                index == 2 && settings != null -> SettingsShellScreen(
+                    state = settings,
+                    onOpenClassic = onOpenClassic
+                )
+                else -> LoadingShellScreen()
+            }
+        }
+    }
+}

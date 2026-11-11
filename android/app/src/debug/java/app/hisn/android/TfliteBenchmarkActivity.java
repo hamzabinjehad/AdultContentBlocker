@@ -13,7 +13,11 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.File;
-import java.nio.file.Files;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 
 /** Debug-only native TFLite benchmark on supplied, labelled files. No capture or policy change. */
@@ -40,8 +44,8 @@ public final class TfliteBenchmarkActivity extends Activity {
             if (!"app.hisn.android.visualcheck".equals(getPackageName()))
                 throw new IllegalStateException("Isolated benchmark package required");
             directory = new File(getFilesDir(), "visual_benchmark");
-            JSONObject manifest = new JSONObject(new String(Files.readAllBytes(
-                    new File(directory, "manifest.json").toPath()), java.nio.charset.StandardCharsets.UTF_8));
+            JSONObject manifest = new JSONObject(new String(
+                    readFile(new File(directory, "manifest.json"), 1048576), StandardCharsets.UTF_8));
             if (manifest.getInt("schema") != 1) throw new IllegalArgumentException("Unknown schema");
             cases = manifest.getJSONArray("cases");
             repeats = manifest.getInt("repeats");
@@ -84,7 +88,7 @@ public final class TfliteBenchmarkActivity extends Activity {
         JSONObject item = cases.getJSONObject(index % cases.length());
         File image = new File(directory, item.getString("id") + ".png");
         if (image.length() < 1 || image.length() > 2097152) throw new IllegalArgumentException("Image size rejected");
-        byte[] raw = Files.readAllBytes(image.toPath());
+        byte[] raw = readFile(image, 2097152);
         if (!hex(raw).equals(item.getString("sha256"))) throw new IllegalArgumentException("Image digest mismatch");
         BitmapFactory.Options bounds = new BitmapFactory.Options();
         bounds.inJustDecodeBounds = true;
@@ -130,10 +134,36 @@ public final class TfliteBenchmarkActivity extends Activity {
     }
 
     private void save() throws Exception {
+        byte[] bytes = report.toString(2).getBytes(StandardCharsets.UTF_8);
         File temporary = new File(getFilesDir(), "tflite_benchmark_result.tmp");
-        Files.write(temporary.toPath(), report.toString(2).getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        Files.move(temporary.toPath(), new File(getFilesDir(), "tflite_benchmark_result.json").toPath(),
-                java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        try (FileOutputStream output = new FileOutputStream(temporary)) {
+            output.write(bytes);
+            output.getFD().sync();
+        }
+        if (!temporary.renameTo(new File(getFilesDir(), "tflite_benchmark_result.json"))) {
+            // A target that cannot be replaced by rename still receives the report.
+            try (FileOutputStream output = new FileOutputStream(
+                    new File(getFilesDir(), "tflite_benchmark_result.json"))) {
+                output.write(bytes);
+            }
+            if (!temporary.delete()) temporary.deleteOnExit();
+        }
+    }
+
+    /** Bounded read that works on Android 6, where java.nio.file.Files is not available. */
+    private static byte[] readFile(File file, int limit) throws IOException {
+        long length = file.length();
+        if (length < 1 || length > limit) throw new IOException("File size rejected");
+        byte[] bytes = new byte[(int) length];
+        try (InputStream input = new FileInputStream(file)) {
+            int offset = 0;
+            while (offset < bytes.length) {
+                int read = input.read(bytes, offset, bytes.length - offset);
+                if (read < 0) throw new IOException("Unexpected end of file");
+                offset += read;
+            }
+        }
+        return bytes;
     }
 
     private static String hex(byte[] bytes) throws Exception {

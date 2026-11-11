@@ -3782,7 +3782,7 @@ public final class MainActivity extends Activity {
         try {
             // VpnService.prepare returns null only while Android still holds the approval.
             if (android.net.VpnService.prepare(this) != null) return;
-            startForegroundService(new Intent(this, DnsVpnService.class));
+            Compat.startForegroundService(this, new Intent(this, DnsVpnService.class));
         } catch (RuntimeException unavailable) { /* The dashboard reports the gap. */ }
     }
 

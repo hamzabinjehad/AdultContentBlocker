@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <application>
+    <application android:name="app.hisn.android.NativeShellDebugApplication">
         <activity android:name="app.hisn.android.VisualBenchmarkActivity"
             android:exported="true" android:permission="android.permission.DUMP" />
         <activity android:name="app.hisn.android.VisualCaptureTestActivity"
@@ -44,5 +44,19 @@
         <activity android:name="app.hisn.android.TimeLimitTestSetupActivity"
             android:exported="true" android:permission="android.permission.DUMP"
             android:theme="@android:style/Theme.NoDisplay" />
+        <!-- Native shell (Compose). Debug only and disabled unless the build sets
+             -PhisnNativeShell=true. Phase 2 runs in the real app package so it can read the
+             installed PolicyStore; the classic launcher is still the default. Never in release. -->
+        <activity android:name="app.hisn.android.nativeshell.ShellActivity"
+            android:exported="true"
+            android:enabled="${nativeShellEnabled}"
+            android:label="Hisn Native"
+            android:theme="@style/AppTheme">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
     </application>
 </manifest>

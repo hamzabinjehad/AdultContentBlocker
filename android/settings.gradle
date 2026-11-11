@@ -7,3 +7,4 @@ dependencyResolutionManagement {
 }
 rootProject.name = 'HisnAndroid'
 include ':app'
+include ':nativeshell'

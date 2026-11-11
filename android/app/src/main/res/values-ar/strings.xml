@@ -820,4 +820,37 @@
     <string name="social_apps_none">لا توجد تطبيقات تواصل مثبّتة لإضافتها.</string>
     <string name="commitment_locked_note">القواعد المحفوظة للقراءة فقط حتى انتهاء الفترة. لا يوفّر حصن خروجًا مبكرًا داخل التطبيق.</string>
     <string name="uninstall_setup_note">يُهيَّأ الوضع المُدار خارج حصن على جهاز بلا حسابات.</string>
+
+    <!-- Native shell (debug Phase 2): Arabic copy for the Compose host strings. -->
+    <string name="native_protected_title">محمي</string>
+    <string name="native_protected_body">جميع الطبقات الأربع تعمل. تبقى قواعدك على هذا الهاتف.</string>
+    <string name="native_run_check">تشغيل فحص الحماية</string>
+    <string name="native_check_started">بدأ فحص المسار.</string>
+    <string name="native_check_unavailable">فلترة DNS غير قيد التشغيل، لذا لا يمكن بدء فحص المسار.</string>
+    <string name="native_live_title">مباشر · معاينة للقراءة فقط</string>
+    <string name="native_live_body">تقرأ هذه الشاشة قواعدك المحفوظة وحالة الخدمات الحقيقية. تفتح التغييرات شاشة حصن الكلاسيكية حتى تكتمل المحررات الأصلية.</string>
+    <string name="native_open_classic">فتح حصن الكلاسيكي</string>
+    <string name="native_state_unavailable">تعذّرت قراءة إعدادات الحماية.</string>
+    <string name="native_layer_dns_on">مفعّلة · %1$d نطاقًا محمّلًا</string>
+    <string name="native_layer_dns_off">متوقفة · لا جلسة DNS</string>
+    <string name="native_layer_words_on">مفعّلة · %1$d قاعدة كلمات</string>
+    <string name="native_layer_words_off">متوقفة · لا تُطابق الكلمات الإباحية</string>
+    <string name="native_layer_apps_on">مفعّلة · %1$d تطبيقات محظورة</string>
+    <string name="native_layer_apps_off">متوقفة · لا قواعد تطبيقات</string>
+    <string name="native_layer_images_on">مفعّلة · على الجهاز، أندرويد 14+</string>
+    <string name="native_layer_images_off">متوقفة · لا تُؤخذ عينات من الصور</string>
+    <string name="native_no_apps">لا تطبيقات مختارة بعد</string>
+    <string name="native_rules_note">لا يزال التعديل يستخدم شاشة حصن الكلاسيكية. تصل المحررات الأصلية في المرحلة التالية.</string>
+    <string name="native_settings_language">اللغة</string>
+    <string name="native_settings_version">الإصدار %1$s</string>
+    <string name="native_permission_on">مفعّل</string>
+    <string name="native_permission_off">متوقف</string>
+    <string name="native_permission_accessibility">إمكانية الوصول</string>
+    <string name="native_permission_notifications">الإشعارات</string>
+    <string name="native_permission_vpn">شبكة VPN</string>
+    <string name="native_permission_usage">الوصول إلى الاستخدام</string>
+    <string name="native_permission_section">الأذونات</string>
+    <string name="native_about_section">حول</string>
+    <string name="native_attention">ما يحتاج إلى مراجعة</string>
+    <string name="native_layers">طبقات الحماية</string>
 </resources>
