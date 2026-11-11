@@ -90,9 +90,8 @@ public final class WelcomeActivity extends Activity {
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.HORIZONTAL);
         header.setGravity(Gravity.CENTER_VERTICAL);
-        TextView brand = Ui.strong(this, getString(R.string.app_name));
-        brand.setTextColor(Ui.color(this, R.color.accent));
-        brand.setTextSize(18);
+        TextView brand = Ui.display(this, getString(R.string.app_name), 22);
+        brand.setTextColor(Ui.color(this, R.color.text_primary));
         LinearLayout.LayoutParams brandParams = new LinearLayout.LayoutParams(0,
                 LinearLayout.LayoutParams.WRAP_CONTENT, 1);
         header.addView(brand, brandParams);
@@ -223,26 +222,23 @@ public final class WelcomeActivity extends Activity {
     // ------------------------------------------------------------------ intro
 
     private void renderIntro() {
-        ImageView icon = Ui.iconInTile(this, INTRO_ICONS[page], R.color.accent, 124, 70);
+        ImageView icon = Ui.iconInTile(this, INTRO_ICONS[page], R.color.accent, 64, 30);
         icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
         LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(
-                Ui.dp(this, 164), Ui.dp(this, 164));
+                Ui.dp(this, 64), Ui.dp(this, 64));
         iconParams.gravity = Gravity.CENTER_HORIZONTAL;
         content.addView(icon, iconParams);
 
-        TextView title = Ui.text(this, getString(INTRO_TITLES[page]), 30, R.color.text_primary);
-        title.setTypeface(Ui.medium());
+        TextView title = Ui.display(this, getString(INTRO_TITLES[page]), 32);
         title.setGravity(Gravity.CENTER);
-        title.setLineSpacing(Ui.dp(this, 2), 1.05f);
-        Ui.heading(title);
         LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        titleParams.topMargin = Ui.dp(this, 28);
+        titleParams.topMargin = Ui.dp(this, 26);
         content.addView(title, titleParams);
 
-        TextView body = Ui.text(this, getString(INTRO_BODIES[page]), 16, R.color.text_secondary);
+        TextView body = Ui.text(this, getString(INTRO_BODIES[page]), 15.5f, R.color.text_secondary);
         body.setGravity(Gravity.CENTER);
-        body.setLineSpacing(Ui.dp(this, 4), 1.18f);
+        body.setLineSpacing(Ui.dp(this, 4), 1.2f);
         LinearLayout.LayoutParams bodyParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         bodyParams.topMargin = Ui.dp(this, 14);
@@ -253,10 +249,8 @@ public final class WelcomeActivity extends Activity {
 
     private void renderPermissions() {
         content.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
-        TextView title = Ui.text(this, getString(R.string.welcome_perm_title), 28, R.color.text_primary);
-        title.setTypeface(Ui.medium());
+        TextView title = Ui.display(this, getString(R.string.welcome_perm_title), 30);
         title.setGravity(Gravity.START);
-        Ui.heading(title);
         content.addView(title, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
@@ -439,17 +433,15 @@ public final class WelcomeActivity extends Activity {
 
     private void renderLock() {
         content.setGravity(Gravity.CENTER_HORIZONTAL | Gravity.CENTER_VERTICAL);
-        ImageView icon = Ui.iconInTile(this, R.drawable.ic_lock, R.color.accent, 116, 66);
+        ImageView icon = Ui.iconInTile(this, R.drawable.ic_lock, R.color.accent, 72, 34);
         icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
         LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(
-                Ui.dp(this, 140), Ui.dp(this, 140));
+                Ui.dp(this, 72), Ui.dp(this, 72));
         iconParams.gravity = Gravity.CENTER_HORIZONTAL;
         content.addView(icon, iconParams);
 
-        TextView title = Ui.text(this, getString(R.string.welcome_lock_title), 28, R.color.text_primary);
-        title.setTypeface(Ui.medium());
+        TextView title = Ui.display(this, getString(R.string.welcome_lock_title), 30);
         title.setGravity(Gravity.CENTER);
-        Ui.heading(title);
         LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         titleParams.topMargin = Ui.dp(this, 24);
@@ -468,7 +460,7 @@ public final class WelcomeActivity extends Activity {
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.HORIZONTAL);
         header.setGravity(Gravity.CENTER_VERTICAL);
-        header.addView(Ui.iconInTile(this, R.drawable.ic_lock, R.color.accent, 44, 24));
+        header.addView(Ui.iconInTile(this, R.drawable.ic_lock, R.color.accent, 40, 21));
         TextView cardTitle = Ui.strong(this, getString(R.string.welcome_lock_card_title));
         cardTitle.setTextSize(18);
         LinearLayout.LayoutParams cardTitleParams = new LinearLayout.LayoutParams(0,

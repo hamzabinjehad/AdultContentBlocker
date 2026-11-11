@@ -17,10 +17,12 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.ParcelFileDescriptor;
 import android.os.Parcel;
+import android.os.SystemClock;
 import android.system.Os;
 import android.system.OsConstants;
 import android.system.StructPollfd;
 
+import app.hisn.core.DnsCheck;
 import app.hisn.core.DnsExchange;
 import app.hisn.core.DnsHealth;
 import app.hisn.core.DnsNotice;
@@ -30,14 +32,16 @@ import app.hisn.core.DnsPolicy;
 import app.hisn.core.SafeSearch;
 import app.hisn.core.DnsTunnelProbe;
 import app.hisn.core.DnsTcpServer;
-import app.hisn.core.DomainSeed;
-import app.hisn.core.AdultTldPolicy;
 import app.hisn.core.DomainPolicy;
+import app.hisn.core.HostDecision;
 import app.hisn.core.HostTermPolicy;
 import app.hisn.core.EncryptedDnsProviders;
 import app.hisn.core.EncryptedDnsResolvers;
 import app.hisn.core.Ipv4DnsPacket;
+import app.hisn.core.Ipv6DnsPacket;
+import app.hisn.core.UdpDnsPacket;
 import app.hisn.core.Ipv4TcpPacket;
+import app.hisn.core.PolicyReceipt;
 import app.hisn.core.TlsDnsTransport;
 import app.hisn.core.UnderlyingNetwork;
 
@@ -55,7 +59,11 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-/** Experimental DNS-only VPN. It intentionally does not advertise always-on support. */
+/**
+ * Experimental DNS-only VPN. The tunnel carries DNS queries only; declaring always-on support
+ * keeps that filter connected across reboots without routing ordinary traffic, and managed
+ * lockdown never enables VPN lockdown. A full-tunnel service would be a separate project.
+ */
 public final class DnsVpnService extends VpnService {
     public enum State { OFF, STARTING, RUNNING, DEGRADED, ERROR }
     public enum CheckState { IDLE, CHECKING, PASSED, FAILED, STALE }
@@ -66,19 +74,36 @@ public final class DnsVpnService extends VpnService {
         public final long elapsedMillis;
         public final DnsTunnelProbe.Failure failure;
         public final boolean tcpPassed;
+        /** When this result was published, or 0 for a check that has not completed. */
+        public final long checkedAt;
+        /** The completed check's policy/session/network receipt; null when it certified nothing. */
+        public final PolicyReceipt receipt;
 
         private ConnectionCheck(CheckState state, boolean localBlockPassed, long elapsedMillis,
                 DnsTunnelProbe.Failure failure) {
-            this(state, localBlockPassed, elapsedMillis, failure, false);
+            this(state, localBlockPassed, elapsedMillis, failure, false, 0, null);
         }
 
         private ConnectionCheck(CheckState state, boolean localBlockPassed, long elapsedMillis,
                 DnsTunnelProbe.Failure failure, boolean tcpPassed) {
+            this(state, localBlockPassed, elapsedMillis, failure, tcpPassed, 0, null);
+        }
+
+        private ConnectionCheck(CheckState state, boolean localBlockPassed, long elapsedMillis,
+                DnsTunnelProbe.Failure failure, boolean tcpPassed, long checkedAt) {
+            this(state, localBlockPassed, elapsedMillis, failure, tcpPassed, checkedAt, null);
+        }
+
+        private ConnectionCheck(CheckState state, boolean localBlockPassed, long elapsedMillis,
+                DnsTunnelProbe.Failure failure, boolean tcpPassed, long checkedAt,
+                PolicyReceipt receipt) {
             this.state = state;
             this.localBlockPassed = localBlockPassed;
             this.elapsedMillis = elapsedMillis;
             this.failure = failure;
             this.tcpPassed = tcpPassed;
+            this.checkedAt = checkedAt;
+            this.receipt = receipt;
         }
     }
     private static final String CHANNEL = "dns_filter";
@@ -89,10 +114,14 @@ public final class DnsVpnService extends VpnService {
     static final String SAFE_SEARCH = "safe_search";
     private static final String RESUME = "resume_after_boot";
     private static final byte[] SERVER = {10, 111, 0, 2};
+    private static final byte[] SERVER6 = {(byte) 0xfd, 0, 0x01, 0x11, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0x02};
     private static final Object CHECK_LOCK = new Object();
     private static DnsVpnService activeService;
     public static volatile ConnectionCheck connectionCheck = idleCheck();
     public static volatile State state = State.OFF;
+    /** Increments when a new tunnel session starts; a receipt from an earlier one is stale. */
+    public static volatile int serviceSession;
     public static volatile int domains;
     public static final AtomicLong blocked = new AtomicLong();
     public static final AtomicLong forwarded = new AtomicLong();
@@ -208,6 +237,8 @@ public final class DnsVpnService extends VpnService {
                 long tcpCheckBefore = current.selfCheckTcpSeen.get();
                 long networkBefore = current.networkEpoch;
                 long failuresBefore = current.failureEpoch;
+                long policyBefore = PolicyEvidence.dns(PolicyStore.get(service), HostListStore.generation(service));
+                int sessionBefore = serviceSession;
                 current.checkProbe = probe;
                 connectionCheck = new ConnectionCheck(CheckState.CHECKING, false, 0, DnsTunnelProbe.Failure.NONE);
                 current.checkWorker.execute(() -> {
@@ -234,13 +265,31 @@ public final class DnsVpnService extends VpnService {
                             boolean tcpObserved = current.selfCheckTcpSeen.get() > tcpCheckBefore;
                             boolean observedHere = current.selfCheckSeen.get() > selfCheckBefore && tcpObserved;
                             boolean unchanged = current.networkEpoch == networkBefore && current.failureEpoch == failuresBefore;
-                            CheckState checked = result.passed && observedHere
-                                    ? (unchanged ? CheckState.PASSED : CheckState.STALE) : CheckState.FAILED;
+                            // A policy or service-session change while the probe ran means this
+                            // result belongs to an older policy; it must not certify the new one.
+                            boolean policyCurrent;
+                            try {
+                                policyCurrent = PolicyEvidence.dns(PolicyStore.get(service), HostListStore.generation(service)) == policyBefore;
+                            } catch (RuntimeException unreadable) {
+                                policyCurrent = false;
+                            }
+                            DnsCheck.Outcome outcome = DnsCheck.outcome(result.passed, observedHere,
+                                    unchanged, policyCurrent, serviceSession == sessionBefore);
+                            CheckState checked = outcome == DnsCheck.Outcome.PASSED ? CheckState.PASSED
+                                    : outcome == DnsCheck.Outcome.STALE ? CheckState.STALE
+                                    : CheckState.FAILED;
+                            long completedAt = SystemClock.elapsedRealtime();
+                            PolicyReceipt receipt = checked == CheckState.PASSED
+                                    ? new PolicyReceipt(policyBefore, sessionBefore, networkBefore,
+                                            PolicyReceipt.Kind.ROUTE_CHECK, PolicyReceipt.Result.PASSED,
+                                            completedAt)
+                                    : null;
                             connectionCheck = new ConnectionCheck(checked,
                                     result.localBlockPassed && observedHere, result.elapsedMillis,
                                     result.failure != DnsTunnelProbe.Failure.NONE ? result.failure
                                             : observedHere ? result.failure : DnsTunnelProbe.Failure.BLOCK_CHECK,
-                                    result.tcpPassed && tcpObserved);
+                                    result.tcpPassed && tcpObserved,
+                                    checked == CheckState.PASSED ? completedAt : 0, receipt);
                         }
                     }
                 });
@@ -257,6 +306,7 @@ public final class DnsVpnService extends VpnService {
 
     @Override public int onStartCommand(Intent intent, int flags, int startId) {
         if (session != null) return START_NOT_STICKY;
+        serviceSession++;
         try {
             // Same channel id as before, so existing installs get the corrected name.
             getSystemService(NotificationManager.class).createNotificationChannel(
@@ -395,28 +445,29 @@ public final class DnsVpnService extends VpnService {
 
         void run() {
             try {
-                final DomainSeed seed;
-                try (InputStream input = getAssets().open("domains_core.txt")) {
-                    seed = DomainSeed.load(input, BuildConfig.DOMAIN_SEED_SHA256, BuildConfig.DOMAIN_SEED_COUNT);
-                }
+                HostListStore.Active list = HostListStore.active(DnsVpnService.this);
+                if (!list.available()) throw new IOException("Domain list unavailable");
                 if (closed) return;
-                domains = seed.domainCount;
-                // The hostname layer is read from the same APK-pinned signed
-                // terms asset as the text layer, synchronously, before the
-                // tunnel exists. A failure leaves the domain list enforcing
-                // and the keyword layer off; it never loads unverified bytes.
-                HostTermPolicy hostTerms;
-                try {
-                    hostTerms = AdultPolicyAssets.loadHostPolicy(DnsVpnService.this);
-                } catch (Exception unavailable) {
-                    hostTerms = null;
+                domains = list.policy.blockedRules().size();
+                // The hostname layer comes from the active generation's signed
+                // terms when it has them, otherwise the APK-pinned asset. It is
+                // read synchronously before the tunnel exists; a failure leaves
+                // the domain list enforcing and the keyword layer off, never an
+                // unverified vocabulary.
+                HostTermPolicy hostTerms = list.hostTerms;
+                if (hostTerms == null) {
+                    try {
+                        hostTerms = AdultPolicyAssets.loadHostPolicy(DnsVpnService.this);
+                    } catch (Exception unavailable) {
+                        hostTerms = null;
+                    }
                 }
-                final HostTermPolicy hostGuard = hostTerms;
-                final AdultTldPolicy adultTlds = new AdultTldPolicy();
+                final HostTermPolicy fallbackHostTerms = hostTerms;
                 readPrivateDns();
                 Builder builder = new Builder().setSession(getString(R.string.dns_notification_title))
                         .setMtu(1500).addAddress("10.111.0.1", 32).addAddress("fd00:111::1", 128)
                         .addDnsServer("10.111.0.2").addRoute("10.111.0.2", 32)
+                        .addDnsServer("fd00:111::2").addRoute("fd00:111::2", 128)
                         .allowFamily(OsConstants.AF_INET6);
                 // Apps that hard-code a public encrypted-DNS resolver never ask Hisn's
                 // server. Route those fixed addresses here and drop them in the reader.
@@ -435,13 +486,17 @@ public final class DnsVpnService extends VpnService {
                 catch (RuntimeException ignored) { /* The status screen reports any gap. */ }
                 PolicyStore settings = PolicyStore.get(DnsVpnService.this);
                 DnsPolicy.Rules savedRules = hostname -> {
-                    DomainPolicy.Decision custom = settings.snapshot().domains.evaluate(hostname);
-                    if (custom != DomainPolicy.Decision.ALLOW) return custom;
-                    // A hand allowance still outranks both rails, exactly as it
-                    // outranks the seed: the escape hatch for a false positive.
-                    if (adultTlds.matches(hostname)) return DomainPolicy.Decision.BLOCK;
-                    if (hostGuard != null && hostGuard.matches(hostname)) return DomainPolicy.Decision.BLOCK;
-                    return seed.policy.evaluate(hostname);
+                    // One composed order, shared with the read-only site check:
+                    // personal block, adult TLD, hostname term, then published list.
+                    HostListStore.Active active = HostListStore.active(DnsVpnService.this);
+                    // A running tunnel re-reads the active generation for every
+                    // decision, so a newly adopted terms file reaches DNS without
+                    // a service restart. The captured value is only the fallback
+                    // when the active generation has no usable terms.
+                    HostTermPolicy terms = active.hostTerms != null ? active.hostTerms : fallbackHostTerms;
+                    HostDecision.Policy current = new HostDecision.Policy(settings.snapshot().domains,
+                            active.policy, active.available(), active.generation, terms);
+                    return current.evaluate(hostname).enforcement();
                 };
                 DnsPolicy.Rules rules = hostname -> EncryptedDnsProviders.blocks(hostname, privateDnsName)
                         ? DomainPolicy.Decision.BLOCK : browserTest.evaluate(hostname, savedRules);
@@ -501,7 +556,9 @@ public final class DnsVpnService extends VpnService {
                             ignoredPackets.incrementAndGet();
                             continue;
                         }
-                        Ipv4DnsPacket packet = Ipv4DnsPacket.parse(raw, SERVER);
+                        UdpDnsPacket packet = (raw[0] & 0xf0) == 0x60
+                                ? Ipv6DnsPacket.parse(raw, SERVER6)
+                                : Ipv4DnsPacket.parse(raw, SERVER);
                         if (packet == null) {
                             Ipv4TcpPacket tcpPacket = Ipv4TcpPacket.parse(raw, SERVER);
                             if (tcpPacket != null) {
@@ -837,21 +894,21 @@ public final class DnsVpnService extends VpnService {
             }
         }
 
-        void handle(Ipv4DnsPacket packet, DnsExchange exchange, DnsPolicy policy, OutputStream output) {
+        void handle(UdpDnsPacket packet, DnsExchange exchange, DnsPolicy policy, OutputStream output) {
             final long requestEpoch;
             synchronized (CHECK_LOCK) {
                 if (closed || session != this || activeService != DnsVpnService.this) return;
                 requestEpoch = networkEpoch;
             }
             try {
-                DnsExchange.Resolution resolution = exchange.resolveDetailed(packet.dns);
+                DnsExchange.Resolution resolution = exchange.resolveDetailed(packet.getDns());
                 synchronized (CHECK_LOCK) {
                     if (requestEpoch != networkEpoch) throw new IOException("DNS connection invalidated");
                 }
                 byte[] payload = resolution.answer;
-                boolean truncated = payload.length > policy.udpResponseLimit(packet.dns);
+                boolean truncated = payload.length > policy.udpResponseLimit(packet.getDns());
                 if (truncated) {
-                    payload = policy.truncatedResponse(packet.dns);
+                    payload = policy.truncatedResponse(packet.getDns());
                 }
                 byte[] response = packet.response(payload);
                 synchronized (outputLock) {
@@ -886,8 +943,8 @@ public final class DnsVpnService extends VpnService {
                             : "IO";
         }
 
-        private void sendUdpFailure(Ipv4DnsPacket packet, DnsPolicy policy, OutputStream output) {
-            byte[] error = policy.failureResponse(packet.dns);
+        private void sendUdpFailure(UdpDnsPacket packet, DnsPolicy policy, OutputStream output) {
+            byte[] error = policy.failureResponse(packet.getDns());
             if (error == null) return;
             try {
                 synchronized (outputLock) {

@@ -462,7 +462,7 @@ public final class PolicyService: @unchecked Sendable {
     private let store: PolicyStore
     private let clock: () -> Date
     private let health: () -> FilterHealth
-    private let lock = OSAllocatedUnfairLock()
+    private let lock = HnLock()
     private var record: PolicyRecord
     private var checkIns: [String: Date] = [:]
     /// Retain evidence well beyond the guard's current heartbeat window.

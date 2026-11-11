@@ -1,10 +1,14 @@
 import { createVisualEngine } from './engine.bundle.js';
+import { fromBackgroundWorker } from './offscreen-sender.js';
 const instance = createVisualEngine({ baseURL: chrome.runtime.getURL('visual/') });
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
   if (message?.target !== 'hisn-visual-engine') return false;
   // A webpage content script cannot directly choose model preferences or
   // cancel another frame's work. Only the extension worker owns this channel.
-  if (sender.id !== chrome.runtime.id || sender.tab || sender.url !== chrome.runtime.getURL('background.js')) return false;
+  // Chromium sends no sender.url for a service worker; Firefox sends its script
+  // URL. Both are the worker, and the helper pins both forms.
+  if (!fromBackgroundWorker(sender, chrome.runtime.id,
+                            chrome.runtime.getURL('background.js'))) return false;
   (async () => {
     if (message.operation === 'inspect') return instance.inspect(message.key, message.capture, message.preferences);
     if (message.operation === 'prepare') {

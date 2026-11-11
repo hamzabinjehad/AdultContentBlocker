@@ -5,6 +5,423 @@ Newest first. Versions are per platform; the pinned set is checked in
 Per-release evidence lives in `docs/` and is linked from each entry. A version
 bump without an entry here is an unfinished release.
 
+## Unreleased
+
+### Mac
+
+#### Added
+
+- **A macOS Safari Web Extension target.** `HisnSafariExtension` is embedded in
+  `Hisn.app/Contents/PlugIns` and stages the shared page-text/visual scanner
+  after the signed seed terms and visual assets verify. It builds and is
+  statically tested; it has no native messaging or BrowserGuard support yet, so
+  Safari is still closed by the guard during an active lock. Record:
+  [the Safari target note](docs/MACOS_SAFARI_EXTENSION_2026-11-11.md).
+- **The Mac app runs on macOS 12 (Monterey).** The deployment target moved
+  from 13 to 12; the app, the filter extension and the bridge all build with
+  `minos 12.0`. Nothing that protects the Mac needed a newer OS — the content
+  filter, the Mach-service XPC channel and the lock stores already ran on
+  macOS 10.15. What held the app at 13 was its SwiftUI shell, and each of its
+  newer constructs now has its macOS 12 equivalent: `HnLock` stands in for
+  `OSAllocatedUnfairLock`, the filter validates the connecting peer's signature
+  by PID where `setCodeSigningRequirement` does not exist, the menu bar is an
+  `NSStatusItem` whose rows come from a state → rows function like the old
+  `MenuBarExtra` content, the main window is hidden rather than closed because
+  macOS 12 cannot reopen a `WindowGroup` window, and `HSplitView`, an aligned
+  row stack and measured layouts replace `NavigationSplitView`, `Grid` and the
+  `Layout` protocol. The app's look on macOS 13 and newer is unchanged. On
+  macOS 12 the sidebar cannot be collapsed, and a wide page's first frame may
+  draw as one column before it reflows. The XPC admission check on 12 is
+  per-connection rather than per-message. Not verified on a booted macOS 12
+  machine, and no signed build was installed there. Record:
+  [the macOS 12 note](docs/MACOS_12_SUPPORT.md).
+
+#### Changed
+
+- **A list download has a hard byte ceiling before verification.** The Mac
+  updater fetched each published artifact with an unbounded `URLSession` data
+  call, so a hostile or broken response could allocate the process away before
+  the signature check had a chance to reject it. Each artifact now has an
+  explicit limit (manifest, signature, deflated domains, terms), the
+  `Content-Length` is checked first, and the stream is collected through a
+  bounded buffer. A failed or oversized generation keeps the previous list.
+- **A missed extension heartbeat no longer closes a browser.** The guard used
+  to warn for sixty seconds and then terminate a linked Chromium browser when
+  its extension stopped checking in. Chrome and Chromium forks delay their
+  service-worker alarms, sleep and restart workers, so that countdown could
+  close a browser whose extension was installed and working the whole time.
+  A missing heartbeat is now shown as attention — the browser stays open and
+  the Browsers screen says it is waiting. The guard closes a linked browser
+  only when two separated readings of a standard profile confirm the extension
+  was removed or disabled, and then only after a visible five-minute countdown.
+  The delayed force-close path rechecks the same confirmed profile evidence, so
+  a missing heartbeat alone cannot reach a termination request. Unsupported
+  browsers keep their one-minute rule, and a browser relaunched without repair
+  gets the full five minutes again. `BrowserGuardPolicy.warnSilent` is replaced
+  by `warnProfileLoss`, and `Verdict` gains `attention`.
+- **A new flow costs about 45× less filter CPU, and the bundled seed stops
+  reserving memory it cannot use.** `handleNewFlow` is on the connection path
+  for every socket the Mac opens, and it was normalising, tokenising and
+  allocating on each check. Measured on an M3 with
+  `script/bench_macos_blocklist.sh`: an ordinary allowed flow fell from ~76 µs
+  to ~1 µs, a mixed browser workload from ~48 µs to ~1 µs, blocked flows from
+  ~19 µs to ~0.7 µs, strict mode from ~12 µs to ~0.7 µs, and the ASCII keyword
+  path from ~70 µs to ~1.2 µs. On the bundled 236,586-domain seed, first-launch
+  resident memory fell from ~78 MB to ~17 MB because `load` sized its hash set
+  from the manifest's full-list count. Canonicalisation now happens once and
+  returns the input untouched when it is already lowercase ASCII; the parent
+  walk hashes UTF-8 in place; hand-list walks are skipped when both lists are
+  empty; an allocation-free ASCII keyword path reproduces the `never_keyword`
+  haystack rewrite and declines to the Unicode path where it cannot be exact;
+  the adult-TLD rail and the generated search/viewer policy read bytes; the
+  blocked-flow tally caches its day boundary instead of deriving a calendar date
+  per block; and the list parser uses `memchr` and the installed artifact's own
+  count. No verdict rule changed, and no per-host verdict cache was added — an
+  in-memory hostname map is the browsing history this product promises not to
+  keep. `./test.sh macos` covers the two keyword paths with a differential test
+  over ~2,400 hosts. Record:
+  [the filter performance note](docs/MACOS_FILTER_PERFORMANCE_2026-11-09.md).
+
+### Android
+
+#### Added — the candidate, committed and numbered 1.6.0
+
+- **The future release is in git.** The working tree carried 45 untracked and
+  42 modified Android files: the native TFLite runtime and its 9.8 MB model,
+  signed mobile list updates, policy receipts and readiness, rule
+  import/preview, the hostname decision and site checker, person blur, the
+  social-app shortcut and the 1.2.3 responsiveness and craft work. They are
+  committed as one candidate; a fresh clone no longer builds a different app.
+  Records: [1.4.0](docs/ANDROID_1.4.0.md),
+  [policy receipts](docs/ANDROID_POLICY_RECEIPTS_1.5.3_INTEGRATION.md),
+  [end-project plan](docs/ANDROID_END_PROJECT_PLAN_2026-11-08.md).
+- **The suite cannot silently skip a test class.** `android/test-core.sh` now
+  runs `VisualRuntimeDeadlineTest` and fails when a `*Test.java` file is not
+  reachable from the script.
+- **The candidate is now 1.6.0 / 43.** It is the 1.5.3 line plus packages 2
+  and 3, with the 1.5.4 reconnect lifecycle ported. No signed 1.6.0 artifact or
+  phone run exists, and the post-reboot dashboard is still unverified. See
+  the Android 1.6.0 section below and
+  [release state](docs/RELEASE_STATE_2026-11-10.md).
+
+#### Verification — 10 November
+
+- `android/test-core.sh` passes every core class under JDK 25, including the
+  previously unrun `VisualRuntimeDeadlineTest`, plus the seed, string, notice
+  and synthetic-corpus checks.
+- `./gradlew assembleDebug assembleDebugAndroidTest lintDebug assembleRelease`
+  passes; the release APK is unsigned in this run.
+- `./test.sh browser` passes after the settings harness waits for the painted
+  state and the asynchronous import reply.
+
+#### Added — IPv6 UDP DNS through the tunnel
+
+- **The DNS-only VPN now carries IPv6 UDP queries as well as IPv4.** The tunnel
+  advertises `fd00:111::2` as an IPv6 DNS server and routes it; `Ipv6DnsPacket`
+  validates the IPv6 header, UDP destination, mandatory checksum and MTU, and
+  builds the reply with the addresses swapped. Previously the VPN advertised an
+  IPv6 tunnel address but no IPv6 DNS server, so an IPv6-preferring resolver
+  could bypass Hisn's DNS answer. IPv6 TCP fallback and extension headers remain
+  unsupported and are counted as unsupported, not answered.
+- **IPv6 packet regression tests.** `Ipv6DnsPacketTest` covers extraction, reply
+  addresses, checksum, non-UDP/extension-header rejection, wrong port, corrupt
+  checksum and 20,000 malformed inputs.
+
+#### Fixed — three Franco-Arabic corpus misses
+
+- **`aflam neek` and `film neek` are clear Arabizi evidence.** The two reviewed
+  phrases now block the three `aflam`/`film` + `neek` corpus rows while `neek`
+  alone, `neek masri`, `Neek HD`, `Watch Neek Masri live, free` and
+  `tahmil aflam Nik Cage mojani` stay allowed. The fourth row,
+  `sksy download free`, is deliberately still allowed because `sksy` is also
+  Indonesian "SKS"; the corpus is **71/72 adult, 0/133 benign**. Record:
+  [Android 1.6.0](docs/ANDROID_1.6.0.md).
+
+#### Changed — craft pass (on the 1.2.3 tree)
+
+- **The three tabs move to warm paper and ink.** A 2 dp rule, a tracked page
+  line, a 33 sp serif verdict and one state sentence replace the rounded hero
+  and its centred ring. The three layers become one white coverage ledger with
+  a state dot per column instead of three tinted tiles. The next step is a
+  labelled section with one filled button; when DNS is that step, the section
+  hides and the DNS card owns the only fill. Settings row icons are secondary
+  ink, cards are hairline sheets without elevation, and section labels are
+  tracked small caps. Arabic drops tracking.
+- **Rules opens with twelve named site chips.** YouTube, Reddit, X, Instagram,
+  Facebook, TikTok, Twitch, Netflix, Hacker News, Amazon, Pinterest and LinkedIn
+  add or remove their own domain through the existing `PolicyStore.update`
+  path. A chip is not a category, a protection lock freezes it, and a site
+  covered by a wider rule stays selected and explains the wider rule instead of
+  silently removing it. The only new core code is the pure `DistractionSites`
+  state/add/remove helper and its test.
+- **The block page leads with a breath.** **A BLOCK** / **A PAUSE**, a serif
+  **One breath first** or **Take a pause**, the reason in one sentence, a fine
+  breath ring, and the exit visible immediately. The reminder, **What do you
+  need?**, the four choices and the day's count are revealed only after the
+  third breath; **Breathe again** stays quiet. No unlock, open budget,
+  countdown to a bypass or exercise challenge is added.
+- **The first run and the direct-build shield use the same surface.** The
+  welcome pages replace the filled icon tile with a hairline seal and a serif
+  statement; the shield page is left-aligned with the same rule, eyebrow, serif
+  title and a soft countdown panel. The 8-second hold and the 60-second
+  self-close are unchanged.
+
+No enforcement layer, permission, consent sentence, lock rule, seed, list,
+stored field or version changed. The signed 1.2.3 Play/direct artifacts predate
+this pass. Record: [the craft pass](docs/ANDROID_CRAFT_2026-11-07.md); captures:
+[design/android-craft-2026-11-07](design/android-craft-2026-11-07/README.md).
+
+#### Verification
+
+- `android/test-core.sh` — every core suite passes, including the new
+  `DistractionSites` cases; `check-strings.py` reports 564 strings, 16 plurals
+  and 553 source references in English and Arabic; `check-notices.py` passes.
+- `:app:assembleDebug` and `:app:lintDebug` pass.
+- The debug build was installed on the API 36 `hisn_ui2` emulator and inspected
+  in English light, English dark and Arabic RTL. The three tabs, chip selection
+  and removal, a voluntary pause, the debug block screen and the shield screen
+  were captured. 20 images are in the capture folder.
+- No signed APK, physical phone, Play upload or device acceptance is claimed.
+  No user study, TalkBack audit, large-font, tablet or landscape pass was run.
+  The 1.2.3 signed artifacts must be rebuilt under a new version before release.
+
+#### Added
+
+- **A Social apps shortcut in the app chooser.** Android inspects whole app
+  windows, not posts: one positive adult-media frame leaves the app, which is
+  stronger than hiding a single post and is the only response a native social
+  feed can support without a localised adult region. To make that existing
+  guard reachable on social media, the chooser now has a **Social apps** action
+  that ticks the installed X, Instagram, Facebook, Reddit, TikTok, Threads,
+  Bluesky, LinkedIn, Pinterest, Tumblr and Snapchat packages. It edits only the
+  ordinary chosen-apps list — no new layer, no stored category, and nothing is
+  selected automatically — and it respects the existing list limit.
+  `core/SocialApps.java` holds the named list and the `installed`/`select`
+  helpers; `core/SocialAppsTest.java` pins installed-only selection, stable
+  order, idempotence, the limit and the package-name contract.
+- Verification: `android/test-core.sh` passes with `SocialApps` in its suite
+  loop, `check-strings.py` passes with the new English and Arabic strings, and
+  `./gradlew :app:compileDebugJavaWithJavac` builds the picker change. No
+  emulator capture, physical-phone or Arabic-OEM acceptance is claimed here.
+
+### iPhone & iPad
+
+#### Fixed
+
+- **The real published list header no longer makes every update fail.** The
+  signed `domains_core.txt` starts with two generated `#` comments; the iOS
+  verifier counted them as domains (239,887 vs the manifest's 239,885) and
+  rejected the real v6 generation. The verified bytes are now canonicalized
+  before parsing/storing (comments and blanks dropped, CRLF normalized), while
+  the signed hash still covers the original file. On the host, the real v6
+  generation now verifies as 239,885 domains and terms v6, installs as `gen-6`
+  through `ListGenerationStore`, loads through `DNSFilterAssets`, and produces a
+  Safari shard. A commented signed fixture covers the store/proxy path. Record:
+  [iOS list updates](docs/IOS_LIST_UPDATES_2026-11-10.md).
+- **The shared Safari text scorer no longer treats a name or `sksy` as enough
+  evidence alone.** `neek`/`nik`/`sksy` terms require a reviewed clear term in
+  the same zone; `aflam neek`/`film neek` are clear. The three Android miss rows
+  block and the `Neek Masri`, `Nik Cage` and `sksy download` controls stay
+  readable. The iOS Safari extension stages the same `extension/lib/score.js`;
+  `ios/test_web_extension.py` passes.
+
+#### Added
+
+- **The six Safari blockers can use the same downloaded generation.** After an
+  install the app prebuilds six shards of at most 40,000 rules each, puts the
+  sponsored adult TLDs in the last shard, and writes a readiness marker only
+  after all six are durable. Each blocker reads its own shard from the App
+  Group; a missing, damaged or partial set falls back to the signed
+  `rules.json` in its bundle. The app reloads all six after an install. The
+  blocker targets gain the Hisn App Group entitlement, so a signed direct build
+  needs that group in each extension's provisioning profile.
+- **The DNS filter can install a signed published list generation.** The app
+  fetches the manifest, signature, domains and terms over HTTPS at most once a
+  day when DNS is enabled; `ListGeneration` verifies the pinned Ed25519
+  signature, both artifact hashes, the domain index and the host-term payload
+  before anything is written. `ListGenerationStore` stages a generation in the
+  App Group, checks it through the same loader the proxy uses, then moves a
+  monotonic pointer and floor. The proxy prefers the active generation, falls
+  back to the signed bundle if it is missing or damaged, and watches the App
+  Group pointer so a newly committed generation is swapped in without a restart.
+  Record:
+  [the iOS list update note](docs/IOS_LIST_UPDATES_2026-11-10.md).
+- **An allowed question cannot carry a listed alias.** The DNS filter now
+  follows CNAME, DNAME and HTTPS/SVCB target names in the upstream answer and
+  returns NXDOMAIN when a target is blocked, matching Android's reply guard.
+  A malformed reply fails closed with SERVFAIL instead of being forwarded
+  unchecked. This closes first-party CNAME cloaking for names in Hisn's list;
+  a client with a hard-coded DoH address still bypasses a DNS-only filter.
+- **Public encrypted-DNS provider names are answered locally.** The DNS filter
+  now returns NXDOMAIN for the reviewed provider names Android already guards —
+  Google, Cloudflare, Quad9, OpenDNS, AdGuard, NextDNS, Mullvad, Control D,
+  CleanBrowsing, the Firefox canary and `resolver.arpa` — before the person's
+  own allowance, so a saved site cannot turn a DoH endpoint into the route
+  around Hisn. The Swift list is checked against the Android list by a new
+  Python parity test. Clients with a hard-coded bootstrap address or an
+  IP-literal endpoint still bypass a DNS-only filter; that limit is unchanged.
+- **The Safari scanner hides a whole social post.** `content/social-media.css`
+  now ships in the Hisn Text web extension as a second, host-scoped
+  `content_scripts` entry — Instagram, Facebook, Reddit, TikTok, Threads,
+  Bluesky, LinkedIn, Pinterest, Tumblr and Snapchat — with no page script and
+  no notice inserted into the page. When Hisn Text's visual checks are on, a
+  locally flagged image or video removes the post container around it; X keeps
+  the per-post explanation from `content/feed.js`. The stylesheet is staged by
+  `prepare_web_extension.py` and pinned by the Python manifest test and the
+  Swift scanner-package test. Visual checks remain opt-in on this extension, so
+  the rule stays dormant until the person turns them on.
+
+### Browser extension
+
+#### Fixed
+
+- **`neek`/`nik`/`sksy` are contextual in the shared scorer again.** The three
+  reviewed rows `Watch aflam neek masri free`, `tahmil film neek arabi` and
+  `tahmil aflam neek 7elwa mojani` block, while `Watch Neek Masri live, free`,
+  `tahmil aflam Nik Cage mojani` and `sksy download free` stay readable. A
+  contextual term scores only beside a reviewed clear term in the same zone;
+  `aflam neek`/`film neek` are clear. `arabizi.test.js` covers 7 cases and
+  `score-equivalence` carries the same rule in its reference. Record:
+  [Arabizi context](docs/ARABIZI_CONTEXT_2026-11-10.md).
+- **The offscreen engine now accepts the real Chrome service-worker sender.**
+  Chromium leaves `sender.url` undefined when a service worker sends a
+  message, so the offscreen visual document rejected every prepare, inspect and
+  status message from Hisn's worker: the layer could look enabled while no
+  model verdict ever arrived. The gate accepts the undefined URL as well as the
+  Firefox worker script URL, and still rejects a popup, a content script, another
+  extension id and a missing sender. `offscreen-sender.test.js` covers the
+  matrix. Record: [the sender note](docs/EXTENSION_VISUAL_SENDER_2026-11-10.md).
+
+#### Changed
+
+- **Media checks are on by default, for every site.** The bundled on-device
+  classifier used to wait for an explicit opt-in, so an X/Twitter post whose
+  adult content was a picture or a video with no caption passed the text-only
+  feed adapter untouched. `DEFAULT_STATE.inspectVisual` is now `true`; the
+  **Adult-media checks** switch in Settings still turns it off, and an existing
+  saved `false` keeps it off. Person blur remains a separate, off-by-default
+  viewing preference.
+- **A hidden frame now hides the post around it.** `content/feed.js` treats a
+  `data-hisn-visual="adult-hidden"` image or video inside a rendered post as the
+  post's own verdict: the article collapses to the same short explanation and
+  its media is paused, even when the words are clean and even after the text
+  verdict already arrived. The explanation says media, not words. The marker is
+  written only by the local model — the platform's generic "sensitive content"
+  notice is still deliberately not a verdict (`docs/VISUAL_PROTECTION_PLAN.md`).
+  The `data-hisn-visual` attribute joins the feed observer's filter, and a
+  recycled post whose new media is not flagged is released. The media verdict is
+  local evidence, not part of the text signature, so it never resends unchanged
+  post text to the worker.
+- **A runtime that cannot host the engine shows media instead of blanking it.**
+  `getVisualSettings` now carries `available`, `visual/broker.js` exposes
+  `visualSupported()`, and `content/visual.js` keeps the pre-display gate open
+  and releases an already hidden record when the answer is "cannot run here".
+  Transient inference failures still fail closed. Making the layer default-on
+  would otherwise turn a browser without the engine into a web with no images
+  and no explanation (the failure `docs/EXTENSION_IMPROVEMENT_PLAN_2026-11-08.md`
+  records for the 1.2.1 permission regression). For the same reason, Settings
+  permits turning media checks off when the engine is unavailable, not only on.
+- **The same rule now covers the other large social feeds.** The X adapter was
+  the only per-post integration, so an adult image or video with no caption
+  stayed readable on Instagram, Facebook, Reddit, TikTok, Threads, Bluesky,
+  LinkedIn, Pinterest, Tumblr and Snapchat; only the media itself was hidden.
+  `content/social-media.css` is a registered extension stylesheet with one
+  `:has()` rule per platform for the post container around a
+  `data-hisn-visual="adult-hidden"` image or video, so the whole post disappears
+  and returns by itself when a newer verdict clears the marker. A registered
+  extension stylesheet is used rather than a page script so a strict page CSP
+  (Reddit, Instagram) cannot suppress it; no page script runs, nothing is
+  inserted, and the platform's own NSFW/sensitive flag is still never read. The
+  rule is registered only while media checks are on and only in the top frame,
+  and is read back in the enforcement receipt as a new layer. A moved
+  post container costs the whole-post suppression, not the media hiding.
+- **The visual model loads on first media, not worker start.** With the
+  offscreen sender repaired, the eager `prepareVisualEngine` call delayed the
+  text policy path on pages with no media. The worker now registers the visual
+  scanner without preparing models; the first capture creates the offscreen
+  document and loads only the selected model, while the pre-display gate holds
+  media until its verdict.
+
+#### Verification
+
+- `extension/content/feed.js` and `content/visual.js` parse and the packaged
+  stylesheet is delivered; the JavaScript suite passes, including `feed.test.js`
+  (100 checks, six new media-verdict cases), `social-media.test.js` (37 checks)
+  and `visual-scanner.test.js` (716 checks, five new availability cases).
+- `runtime.test.js` (160 checks) covers default-on registration, the existing
+  explicit-off path, the social rule appearing and disappearing with the media
+  layer, and the unavailable-engine payload.
+- `offscreen-sender.test.js` (8 checks) covers the Chromium and Firefox worker
+  sender forms, popup, content script, other extension and missing sender.
+- `visual_live.sh` drives `getVisualStatus` from an extension page through the
+  real service worker and offscreen document in headless Chrome; the worker
+  keeps its production `background.js` URL. The broker also treats a closed
+  engine port as `failed`, not an undefined success.
+- The live scanner suite (`scan-live.sh`) passes, including the trusted policy
+  recheck and both X/Twitter feeds, after the eager model load was removed.
+- The real-DOM fixtures pass: `feed-compatibility.html` (a generic "sensitive
+  material" warning post stays usable; a locally flagged video collapses its
+  post; removing the marker restores it) and `social-media.html` (a flagged
+  image or video removes the Instagram-style article, Facebook role-article,
+  Reddit, Bluesky and Pinterest containers, a clean post and loose media stay
+  visible, a person-blur marker hides nothing, and a newer
+  clean verdict restores the post with no scanner code running).
+- `./test.sh extension` passes, including `package.sh`/`check_package.py` and
+  the evaluation corpus at sensitivities 50, 80 and 100. `./test.sh browser`
+  passes. No packaged zip, version bump or store upload is claimed here.
+
+## Android 1.6.0 — 2026-11-10
+
+Development candidate. No signed 1.6.0 artifact, Play upload or phone run is
+claimed.
+
+### Added
+
+- **The committed candidate has a number.** The 1.5.3 feature set, the package-2
+  readiness and receipt work, the package-3 signed list updates, hostname
+  explanation and portable rule tools, and the 1.5.4 reconnect lifecycle now
+  build as 1.6.0 / 43. Record: [the 1.6.0 note](docs/ANDROID_1.6.0.md).
+- **A list generation now carries its vocabulary, not only its domains.**
+  `AdultListUpdater` fetches and verifies `terms.json` with the domain artifact,
+  compiles the hostname and text policies before anything becomes visible, and
+  publishes both through `HostListStore.adopt` so the DNS and text layers move
+  to the same generation. A damaged terms file rejects the update; a damaged
+  installed terms file falls back to the APK terms while the signed domain list
+  keeps enforcing. `AdultPolicyAssets` can now load a generation's version of
+  the terms instead of accepting only the bundled seed version.
+- **The guard proves the bound service instead of waiting for a callback.**
+  `TextGuardService.onCreate` marks the live instance connected and runs the
+  idempotent setup, `onUnbind` returns true, `onRebind` re-arms, a live
+  accessibility event restores `connected`, and `MainActivity` asks a live but
+  not-yet-connected service to re-arm on resume. The reconnect row and the
+  disconnected attention copy now name Accessibility → Installed apps and say
+  to return. The 1.5.4 phone record and hashes are in
+  [the 1.5.4 note](docs/ANDROID_1.5.4.md).
+
+### Verification
+
+- `android/test-core.sh` with JDK 25: every core class passes, including the
+  orphan guard, the signed seed, strings, notices and the synthetic corpus.
+- `:app:assembleDebug`, `:app:assembleDebugAndroidTest`, `:app:lintDebug` and
+  `:app:assembleRelease` pass; the release APK is unsigned in this run.
+- `CoreDeviceTestRunner` now exercises the version-aware host and text term
+  loaders against the bundled seed before it reports protection.
+- A signed fixture generation (separate test key, version 7, 1,100 fixture
+  domains, one host term and one text term) was installed on the API 36
+  emulator. It activated the domain list, host terms and text vocabulary;
+  a flipped signature was rejected; damaged terms left the active generation
+  in place; the fixture was removed afterwards. No phone was used.
+- The browser, Python, macOS and iOS suites are unchanged by this pass; their
+  results are recorded in [release state](docs/RELEASE_STATE_2026-11-10.md).
+
+### Limits
+
+- The post-reboot dashboard is still unverified. The 1.5.4 record says it could
+  read disconnected with the service bound; this candidate adds the lifecycle
+  evidence and the foreground rearm but has no phone run.
+- No signed 1.6.0 APK or AAB, no `check-release.py` result against a 1.6.0
+  artifact, and no adult-positive visual benchmark.
+
 ## Android 1.5.3 — 2026-11-08
 
 ### Added

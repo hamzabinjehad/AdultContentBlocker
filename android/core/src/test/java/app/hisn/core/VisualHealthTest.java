@@ -25,6 +25,23 @@ public final class VisualHealthTest {
         expect(VisualHealth.State.PROTECTED, health, "protected window stays visible until a sample");
         health.report(VisualHealth.State.SAMPLED);
         expect(VisualHealth.State.SAMPLED, health, "a later inspected sample clears it");
+        if (health.sampledAt() != -1) throw new AssertionError("untimed sample is not evidence");
+        health.report(VisualHealth.State.SAMPLED, 7_000);
+        if (health.sampledAt() != 7_000) throw new AssertionError("timed sample not recorded");
+        health.report(VisualHealth.State.WAITING, 8_000);
+        if (health.sampledAt() != 7_000) throw new AssertionError("waiting erased the receipt");
+        PolicyReceipt receipt = new PolicyReceipt(4, 3, 9, PolicyReceipt.Kind.VISUAL_SAMPLE,
+                PolicyReceipt.Result.PASSED, 9_000);
+        health.report(VisualHealth.State.SAMPLED, 9_000, receipt);
+        if (health.receipt() != receipt || health.sampledAt() != 9_000) {
+            throw new AssertionError("visual receipt not stored");
+        }
+        health.report(VisualHealth.State.ERROR, 10_000);
+        if (!health.shown().failure() || health.receipt() != receipt) {
+            throw new AssertionError("visual failure erased the receipt or stayed hidden");
+        }
+        health.report(VisualHealth.State.SAMPLED);
+        if (health.sampledAt() != 9_000) throw new AssertionError("untimed sample moved the receipt");
         health.report(VisualHealth.State.WAITING);
         expect(VisualHealth.State.WAITING, health, "no failure, current state shown");
         for (VisualHealth.State clearing : new VisualHealth.State[]{VisualHealth.State.OFF, VisualHealth.State.UNSUPPORTED}) {

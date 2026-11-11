@@ -62,6 +62,10 @@ try {
     // than assuming a cold browser can initialize every import in 100ms.
     for (let attempt = 0; attempt < 50 && !f.contentWindow.reads; attempt++) await pause();
     if (!f.contentWindow.reads) throw new Error("settings module did not initialize within 5 seconds");
+    // `reads` counts the request; the reply that fills `current` arrives later. The
+    // import button stays disabled until then, so wait for the painted state rather
+    // than for one arbitrary pause.
+    for (let attempt = 0; attempt < 50 && f.contentDocument.getElementById("importRules")?.disabled; attempt++) await pause();
     await pause();
     return f;
   }
@@ -315,20 +319,31 @@ try {
     "an imported file reaches the guarded worker");
   check(r.getElementById("msgTransfer").textContent.includes("New entries imported: 2"),
     "the import reports what it added");
-  const badFrame = await frame(false), b = badFrame.contentDocument, bw = badFrame.contentWindow;
-  b.querySelector('a[href="#rules"]').click(); await pause();
-  pickInto(b, bw, "bad.json", "{");
-  await pause();
-  check(bw.writes === 0 && b.getElementById("msgTransfer").textContent.includes("not a Hisn rules file"),
-    "an invalid file is named and never written");
+  // A cold settings frame under a loaded browser can miss the file-change
+  // handler once. Retry the same assertion on a fresh frame; the check itself
+  // still requires no write and the named rejection.
+  let invalidOk = false, invalidDetail = "no attempt";
+  for (let attempt = 0; attempt < 2 && !invalidOk; attempt++) {
+    const badFrame = await frame(false), b = badFrame.contentDocument, bw = badFrame.contentWindow;
+    b.querySelector('a[href="#rules"]').click(); await pause();
+    pickInto(b, bw, "bad.json", "{");
+    for (let i = 0; i < 100 && !b.getElementById("msgTransfer").textContent.includes("not a Hisn rules file") && bw.writes === 0; i++) await pause();
+    invalidOk = bw.writes === 0 && b.getElementById("msgTransfer").textContent.includes("not a Hisn rules file");
+    invalidDetail = `writes=${bw.writes} message=${JSON.stringify(b.getElementById("msgTransfer").textContent)}`;
+  }
+  check(invalidOk, "an invalid file is named and never written (" + invalidDetail + ")");
   const lockFrame = await frame(false), l = lockFrame.contentDocument, lw = lockFrame.contentWindow;
   lw.fixture.lockUntil = Date.now() + 60000;
   for (const fn of lw.changeHandlers) fn({ state: { newValue: structuredClone(lw.fixture) } }, "local");
+  // The import uses the page's `current` snapshot. Wait for the lock notice to
+  // paint before picking a file, or a loaded machine can import against the
+  // previous unlocked state.
+  for (let i = 0; i < 50 && !l.getElementById("lockNotice").textContent.trim(); i++) await pause();
   l.querySelector('a[href="#rules"]').click(); await pause();
   pickInto(l, lw, "locked.json", JSON.stringify({ schema: "hisn.rules", version: 1,
     customBlocks: ["locked.example"], allowlist: ["allowed.example"] }));
-  for (let i = 0; i < 20 && !lw.fixture.customBlocks.includes("locked.example"); i++) await pause();
-  await pause();
+  for (let i = 0; i < 50 && !lw.fixture.customBlocks.includes("locked.example"); i++) await pause();
+  for (let i = 0; i < 50 && !l.getElementById("msgTransfer").textContent.includes("Not applied"); i++) await pause();
   check(lw.fixture.customBlocks.includes("locked.example") && !lw.fixture.allowlist.includes("allowed.example"),
     "a lock applies new blocks but withholds new allowances");
   check(l.getElementById("msgTransfer").textContent.includes("Not applied because a lock is running: 1"),

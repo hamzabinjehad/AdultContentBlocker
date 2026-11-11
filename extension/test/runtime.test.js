@@ -111,8 +111,14 @@ check(nativeMessages.some((message) => message?.incognitoAllowed === true),
 check(actionWrites.some(([kind, values]) => kind === "badge" && values.text === "?")
       && actionBadge === "" && actionTitle === "Hisn — Rules and registrations verified",
       "worker starts checking and clears toolbar uncertainty only after verified browser application");
-check(registeredScripts[0].js.join(",") === "content/feed.js,content/scan.js" && registrations === 1,
+check(registeredScripts.find(script => script.id === "hisn-scan")?.js.join(",") === "content/feed.js,content/scan.js",
       "worker migrates legacy persisted scanner registration to feed dependency order");
+check(registeredScripts.some(script => script.id === "hisn-visual"),
+      "a fresh install registers the on-device media scanner without an opt-in step");
+const socialRule = registeredScripts.find(script => script.id === "hisn-social-media");
+check(socialRule?.matches.includes("*://*.instagram.com/*")
+      && socialRule.css?.includes("content/social-media.css") && !(socialRule.js || []).length,
+      "a fresh install registers the CSP-proof social whole-post stylesheet, with no page script");
 check(!enabled.includes("lockdown"), "worker startup retires an inherited legacy static lockdown");
 check(!dynamic.some((r) => r.condition.urlFilter === "*"),
       "a fresh unlocked worker does not replace stale static lockdown with dynamic lockdown");
@@ -137,8 +143,8 @@ for (const [key,value] of [['allFrames',false],['matchOriginAsFallback',false],
   registeredScripts=[{...scannerContract,[key]:value}];
   const before=registrations;
   await restoreWorkerProtection();
-  check(registrations===before+1 && registeredScripts[0].allFrames===true
-    && registeredScripts[0].runAt==='document_start',
+  const repaired = registeredScripts.find(script => script.id === "hisn-scan");
+  check(registrations>before && repaired?.allFrames===true && repaired?.runAt==='document_start',
     `worker repairs text-scanner ${key} even when script filenames match`);
 }
 state={...state,inspectVisual:true};
@@ -153,8 +159,9 @@ check(registrations===beforeVisualRepair+1
   'visual gate coverage is repaired independently of matching model/script files');
 state={...state,inspectVisual:false};
 await restoreWorkerProtection();
-check(!registeredScripts.some(script=>script.id==='hisn-visual'),
-  'recovery does not enable a visual layer the user never chose');
+check(!registeredScripts.some(script=>script.id==='hisn-visual')
+  && !registeredScripts.some(script=>script.id==='hisn-social-media'),
+  'recovery does not enable a visual layer or its social rule without a verdict source');
 state={...DEFAULT_STATE};
 enabled.push("lockdown");
 rejectDynamic = true;
@@ -279,7 +286,11 @@ check((await message({ type: "update", patch: { textAllow: ["held.example"] } })
 // other transaction behind it forever.
 nativeReply = "hang";
 const pending = message({ type: "forceSync" });
-await Promise.resolve();
+// Let the queued transaction start and register its native timeout before
+// firing it. One turn was enough before the media scanner became default-on
+// and added a hop to the settings path; settle the microtask queue instead of
+// depending on how many hops today's code happens to need.
+for (let i = 0; i < 8; i++) await Promise.resolve();
 fire(10000);
 check(!(await pending).ok, "a hung native host times out and counts as unreachable");
 nativeReply = null;
@@ -374,14 +385,16 @@ for (const patch of [{ inspectVisual: false }, { personBlur: 'off' }, { personBl
 }
 check((await message({ type: 'update', patch: { personBlur: 'all' } })).ok, 'worker permits strengthening person coverage');
 r = await message({ type: 'getVisualSettings' }, PAGE);
-check(r.inspectVisual === true && r.personBlur === 'all' && r.lockUntil === undefined, 'content receives only visual preferences');
+check(r.inspectVisual === true && r.personBlur === 'all' && r.lockUntil === undefined
+  && typeof r.available === 'boolean', 'content receives only visual preferences and a runtime availability answer');
 check((await message({ type: 'getVisualStatus' }, PAGE)).reason === 'forbidden-sender', 'content cannot inspect engine privileged channel');
 check((await message({ type: 'inspectVisualMedia', id: 'x', width: 1, height: 1, rgba: 'AAAAAA==' }, OPTIONS)).reason === 'forbidden-sender', 'options cannot impersonate content capture');
 check((await message({ type: 'inspectVisualMedia', id: 'x', width: 1, height: 1, rgba: 'AAAAAA==' }, PAGE)).state === 'unavailable', 'unsupported engine never returns clean');
 state.lockUntil = 0;
 check((await message({ type: 'update', patch: { inspectVisual: false, personBlur: 'off' } })).ok, 'unlocked user can disable visual beta');
 check(!registeredScripts.some(script => script.id === 'hisn-visual')
-  && ['blocklist', 'keywords', 'safesearch', 'paths', 'web_protection', 'evasion', 'encoded_queries'].every(id => enabled.includes(id)), 'visual off keeps baseline enforcement');
+  && !registeredScripts.some(script => script.id === 'hisn-social-media')
+  && ['blocklist', 'keywords', 'safesearch', 'paths', 'web_protection', 'evasion', 'encoded_queries'].every(id => enabled.includes(id)), 'visual off keeps baseline enforcement and drops the social rule');
 
 // Short-video blocking: opt-in ruleset plus a top-frame script, on together,
 // read back together, and only switched off outside a lock.
@@ -586,7 +599,7 @@ dynamicWriteDelayMs = 0;
 check(r.ok && r.state.enforcement.status === "applied" && nativeCalls === callsBeforeIndependentRepair,
       "seven-second independent repair succeeds only after browser readback without native IPC");
 
-state = { ...DEFAULT_STATE, customBlocks: ["standalone-block.example"], inspectText: false };
+state = { ...DEFAULT_STATE, customBlocks: ["standalone-block.example"], inspectText: false, inspectVisual: false };
 enabled = [];
 registeredScripts = [];
 r = await message({ type: "repairProtection" });

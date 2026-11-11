@@ -14,6 +14,24 @@ you the lock; Hisn adds the coverage those built-in filters miss. Read
 
 ## Latest
 
+- **Mac — the app now runs on macOS 12 (Monterey).** The deployment target
+  moved from 13 to 12: the content filter, the Mach-service XPC channel and the
+  lock stores never needed 13, only the SwiftUI shell did. The menu bar item is
+  an `NSStatusItem` whose rows are built from state, the sidebar is an
+  `HSplitView`, the main window is hidden rather than closed because macOS 12
+  cannot reopen a `WindowGroup` window, and `Grid`, the `Layout` protocol and
+  `OSAllocatedUnfairLock` each have a macOS 12 spelling. macOS 13 and newer keep
+  their current look and API paths. Builds and tests run at the 12 target; the
+  app has not been launched on a booted macOS 12 machine. Record:
+  [the macOS 12 note](docs/MACOS_12_SUPPORT.md).
+- **Android 1.6.0 — the committed candidate, with the reconnect lifecycle.**
+  The 1.5.3 feature set, signed list updates, readiness receipts, rule tools and
+  the 1.5.4 lifecycle now build as **1.6.0 / 43**. `onCreate` proves the bound
+  guard, `onRebind` re-arms, a live event restores `connected`, and the
+  dashboard asks a live but not-yet-connected service to re-arm on resume; the
+  reconnect copy names Accessibility → Installed apps. Development candidate:
+  no signed artifact, no phone run, and the post-reboot dashboard remains
+  unverified. Record: [the 1.6.0 note](docs/ANDROID_1.6.0.md).
 - **iPhone & iPad 1.8.0 — a device-wide DNS filter, and a direct build.** The
   new `HisnDNSProxy` Network Extension answers Hisn's signed list (236,586
   domains), the four adult TLDs, the 116 hostname terms and the person's saved
@@ -162,6 +180,18 @@ you the lock; Hisn adds the coverage those built-in filters miss. Read
   instead of polling them four times a second. Signed Play/direct builds, the
   core suite, the device runner and an emulator stress case pass; no 1.2.3
   phone run is claimed. Record: [the 1.2.3 note](docs/ANDROID_1.2.3.md).
+- **Android craft pass (development, on the 1.2.3 tree).** The three tabs move
+  to the Mac's warm paper and ink: a tracked page line, one serif verdict, a
+  three-column coverage ledger in place of tinted tiles, and one next action.
+  Rules opens with twelve named site chips that write the ordinary blocked-domain
+  list, so a chip is not a hidden category and a protection lock freezes it like
+  every other rule. The block page leads with a breath and keeps the exit
+  visible; the reminder and four needs appear only after the third breath. The
+  welcome, settings and direct-build shield surfaces follow. No enforcement,
+  permission, consent text or version changed, and the signed 1.2.3 artifacts
+  predate the pass. Record:
+  [the craft pass](docs/ANDROID_CRAFT_2026-11-07.md); captures:
+  [design/android-craft-2026-11-07](design/android-craft-2026-11-07/README.md).
 - **Android 1.2.2** — the DNS tunnel now applies the same hostname-keyword
   contract as the Mac and Chrome (`HostTermPolicy`, the adult TLDs and the Arabic
   and Franco-Arabic folds) to names no seed list carries, after the person's own
@@ -229,26 +259,27 @@ captures, including dark, Arabic RTL and the 760-point layout, are in the
 [Mac craft pass](design/macos-craft-2026-11-07/README.md).
 
 <p align="center">
-  <img src="design/android-ui-2026-11-06/10-after-protection-en-light.png" width="280" alt="Hisn Android protection page with one line per rule">
-  <img src="design/android-ui-2026-11-06/04-after-protection-en-dark.png" width="280" alt="Hisn Android protection page in dark mode">
+  <img src="design/android-craft-2026-11-07/after-protection-partly.png" width="280" alt="Hisn Android protection page with a serif verdict and a three-column coverage ledger">
+  <img src="design/android-craft-2026-11-07/after-protection-dark.png" width="280" alt="Hisn Android protection page in dark mode">
 </p>
 
-The Android app answers in a trailing column: one line per rule, a state pill on
-each layer's card, and a hero tinted by its own verdict. The three tabs in
-English, Arabic RTL and both palettes are in the
-[Android UI pass record](design/android-ui-2026-11-06/README.md).
+The Android app opens on a warm-paper verdict, reads the three layers as one
+coverage ledger, and keeps one filled action on the page. Rules adds named site
+chips; the block page is a breath first and a reflection second. The three tabs
+in English, Arabic RTL and both palettes are in the
+[Android craft pass record](design/android-craft-2026-11-07/README.md).
 
 ## Platforms
 
 | Platform | What it does | State | Start here |
 | --- | --- | --- | --- |
-| Browser extension (Chromium) | Blocks listed domains and adult TLDs, checks page text in the page's language, optional local image/video checks, portable hand lists | 1.5.3 | [Using the extension](docs/EXTENSION_USAGE.md) |
-| Mac | Content-filter system extension, adult-TLD and hostname guards, browser guard, locks, authority checks, accountability partner, root guardian daemon, an on-demand breathing pause, a read-only site checker, an aggregate blocked-connection count, MDM enrollment and a profile-managed non-removable filter | 1.1.18, needs a signed build | [Mac setup](docs/SETUP.md) · [MDM](docs/MDM_DEPLOYMENT.md) |
+| Browser extension (Chromium) | Blocks listed domains and adult TLDs, checks page text in the page's language, on-device image/video checks on by default, hides the whole post on X and the main social feeds when its media is flagged, portable hand lists | 1.5.3 | [Using the extension](docs/EXTENSION_USAGE.md) |
+| Mac | Content-filter system extension, adult-TLD and hostname guards, browser guard, locks, authority checks, accountability partner, root guardian daemon, an on-demand breathing pause, a read-only site checker, an aggregate blocked-connection count, MDM enrollment and a profile-managed non-removable filter | 1.1.18, needs a signed build · runs on macOS 12 or later | [Mac setup](docs/SETUP.md) · [MDM](docs/MDM_DEPLOYMENT.md) |
 | iPhone & iPad | A device-wide DNS filter with the adult-TLD and hostname guards, six Safari blockers, Safari text extension, Screen Time app limits with a custom bilingual shield, a browser and VPN guard, a pause rule with a daily opens budget, protection lock for saved rules, an on-demand pause, daily quiet hours and a removal-protection Lock Center; distributed directly as a signed-on-install IPA | 1.8.0, development · needs a signed device | [iOS README](ios/README.md) · [direct install](docs/IOS_DIRECT.md) |
-| Android | DNS filtering with the adult-TLD and hostname guards, selected-app and word restrictions, per-app daily time limits, first-run welcome, voluntary pause, optional image checks and people cover, browser-coverage screen, schedules, protection lock that freezes saved rules, opt-in device-owner uninstall guard and managed lockdown, direct-build removal guard, layer watchdog and bundled-list freshness warning | 1.5.3 development · signed Play/direct builds, no phone adult test; 1.1.0 direct APK published, Play AAB not uploaded | [Android README](android/README.md) · [1.5.3 record](docs/ANDROID_1.5.3.md) |
+| Android | DNS filtering with the adult-TLD and hostname guards, selected-app and word restrictions, per-app daily time limits, first-run welcome, voluntary pause, optional image checks, browser-coverage screen, schedules, protection lock that freezes saved rules, opt-in device-owner uninstall guard and managed lockdown, direct-build removal guard, layer watchdog, bundled-list freshness warning, signed list updates, readiness receipts and portable rule tools | 1.6.0 development candidate · core and build tests, no signed 1.6.0 APK or phone run; 1.5.4 on the owner's phone; post-reboot dashboard unverified | [Android README](android/README.md) · [1.6.0 record](docs/ANDROID_1.6.0.md) |
 | Network / router | Verified signed DNS rules for administrator import | Tools only | [Network tools](network/README.md) |
 
-Seed **v5** raises the bundled core from 159,768 to **239,885 domains** on every
+Seed **v5** raises the bundled core from 159,768 to **236,586 domains** on every
 surface, the largest tier the browser, six Safari blockers and the Android seed
 can hold without truncation. The selection rules, the 1,261 domains deferred by
 capacity and the licensing boundary are in the
@@ -272,11 +303,11 @@ statements to check before a release.
 | Layer | Closes | Defeated by |
 |---|---|---|
 | Network DNS (administrator setup) | Listed hosts on devices using the resolver | Outside DNS, tunnels, another network, gateway reset |
-| Browser extension | Known domains, page text and opt-in readable image/video samples in supported browsers | Another browser, removal/disablement, unreadable media, classification misses |
+| Browser extension | Known domains, page text and on-device readable image/video samples in supported browsers | Another browser, removal/disablement, unreadable media, classification misses |
 | Configuration profile | Supported DNS, Private Relay, and browser settings | A tunnel; an administrator removing the profile |
 | Content filter (system extension) | Host/application decisions on new Mac flows | Provider loss, established flows, unidentified destinations outside strict mode, recovery/admin changes |
 | Accountability partner | Ordinary user loosening an active policy | Guardian authority or recovery; a separate unprotected device |
-| Browser guard (in the app) | Warns/closes disconnected browsers and repeatedly confirmed off standard profiles at all times while Hisn runs | Force-quitting Hisn, explicitly trusted unknown apps, unreadable/custom profiles, guest/private windows, admin changes |
+| Browser guard (in the app) | Keeps a browser open when its extension misses a heartbeat; closes only a standard profile that confirms the extension was disabled or removed, after a five-minute countdown (unsupported browsers: one minute) | Force-quitting Hisn, explicitly trusted unknown apps, unreadable/custom profiles, guest/private windows, admin changes |
 
 These layers address different gaps and need independent checks. A browser
 model cannot replace a device/network control, while DNS and socket decisions
@@ -310,7 +341,7 @@ console and phone-laptop pairing) is planned in
 blocklist/       list pipeline: fetch → merge → sign, keyword layer, seed bundle  (Python)
 network/         capability planning + verified DNS-rule publication             (Python)
 profile/         .mobileconfig generator: DNS, DoH, Private Relay                (Python)
-extension/       Chromium MV3 extension + opt-in local visual engine             (JS)
+extension/       Chromium MV3 extension + on-device local visual engine        (JS)
 macos/           the app + content filter                                        (Swift)
 ios/             universal iPhone/iPad app, Safari blockers + device DNS filter (Swift)
 android/         DNS, selected-app/text and opt-in visual protection preview      (Java)

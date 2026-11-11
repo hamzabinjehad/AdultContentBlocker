@@ -79,24 +79,26 @@ menu bar or Applications. It runs while the protected Mac account is signed
 in; logout, restart and shutdown are allowed. Sleep pauses its work, which
 resumes when the Mac wakes. The app is also the **browser guard**. While a lock is active, or
 **Blocking Rules → Browser protection → Keep browser protection on** is enabled,
-a browser without a verified extension connection gets a visible one-minute
-recovery countdown, followed by a termination request if protection does not
-return. Supported browsers also close for repeatedly confirmed removal or
-disablement in a standard profile. Safari and other known unsupported browsers
-have no automatic exemption and cannot be trusted as app exceptions; use a
+a linked browser without a verified extension connection stays open and is
+shown as waiting; a missed heartbeat alone never closes it. It closes only when
+two separated profile readings confirm the extension was removed or disabled,
+after a visible five-minute countdown and a termination request. Safari and
+other known unsupported browsers keep their one-minute countdown and have no
+automatic exemption; they cannot be trusted as app exceptions, so use a
 supported browser with Hisn connected. You may explicitly trust an unknown
 non-browser app that only registers for web links, before a lock. A custom
 browser granted that exception can bypass checks, so review exceptions carefully.
 
 **Keep browser protection on** requires confirmation and is off by default.
 It cannot be switched off during a lock. Detection is periodic: check-ins are
-scheduled every thirty seconds and become stale after ninety seconds; the
-one-minute countdown starts on detection, not at the exact moment of removal.
-A refusing browser may be force-closed after ten additional seconds, with fresh
-connection, consent and recovery-deadline checks. Reopening an unrepaired browser
-does not restart the countdown; after closure its repeat warning is five seconds.
-Sleep/wake gets a visible recovery window. Standard-profile checks do not verify
-custom paths, guest/private windows or unreadable preferences.
+scheduled every thirty seconds and become stale after ninety seconds. A stale
+heartbeat is reported as waiting, not as a deadline. The five-minute countdown
+starts when confirmed profile loss is detected, not at the exact moment of
+removal. A refusing browser may be force-closed after ten additional seconds,
+with fresh profile, consent and recovery-deadline checks. Reopening an unrepaired
+browser gets the full five-minute warning again. Sleep/wake can extend a pending
+force-close's recovery window. Standard-profile checks do not verify custom
+paths, guest/private windows or unreadable preferences.
 
 The agent is scoped to the account that ran the installer. It exits cleanly
 in other accounts, so they do not run a second guard. The daemon logs only the

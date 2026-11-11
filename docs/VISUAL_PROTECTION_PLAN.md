@@ -1,10 +1,11 @@
 # Visual protection and independent layers
 
-Status: experimental opt-in implementation and remaining acceptance plan,
+Status: experimental on-device implementation and remaining acceptance plan,
 2026-10-11. The repository now includes a bundled local visual engine, bounded
 image/video sampling, optional face-based media blurring, and an adaptive
-protection-layer interface. Visual checks and person blurring are off by default.
-The browser's baseline rules still work without the native app. Updating this
+protection-layer interface. Visual checks are on by default for every site; the
+person-blur viewing preference is off by default. The browser's baseline rules
+still work without the native app. Updating this
 source does not install the extension, upgrade an installed app, or publish a
 signed release.
 
@@ -15,6 +16,15 @@ preferences are separate: a predicted woman/man is not a pornography verdict.
 Keep normal videos available, as the user requested. Never equate a generic
 platform "sensitive content" notice with adult content; it can describe other
 material. Explain that classification can miss content and make mistakes.
+
+A positive adult-media verdict from the local model also suppresses the whole
+post that contains the media. X/Twitter does this through its text adapter and
+shows a short explanation. Instagram, Facebook, Reddit, TikTok, Threads,
+Bluesky, LinkedIn, Pinterest, Tumblr and Snapchat do it through
+`content/social-media.css`, a registered extension stylesheet that removes the
+post silently rather than injecting a notice into another app. Those rules key only on the local marker; a platform
+sensitive-content flag is still never a verdict. If a site moves its post
+markup, the whole-post tidy-up is lost while the flagged media stays hidden.
 
 The extension works independently and gains reinforcement when Hisn is
 connected. Losing one layer must not turn off the others. Chromium visual
@@ -156,8 +166,9 @@ operation and displays separate layer states, not one universal green
 reinforcement prompt, not a failure of independent baseline filtering.
 Private-window and site-permission gaps remain visible.
 
-Settings distinguish adult-content detection from optional person blurring
-(both off by default), explain whole-media blurring and face-only limits, and
+Settings distinguish adult-content detection (on by default) from optional
+person blurring (off by default), explain whole-media blurring and face-only
+limits, and
 save choices automatically. Model readiness is reported for the selected
 features rather than inferred from an unrelated loaded model. No fake
 percentages, invented block counts or one-click policy weakening during an

@@ -12,6 +12,8 @@ struct DNSFilterEngine {
         case adultTld
         case hostTerm
         case customSite
+        /// A public encrypted-DNS provider name; answered locally so it cannot become the route around Hisn.
+        case encryptedDns
     }
 
     enum Decision: Equatable {
@@ -29,7 +31,18 @@ struct DNSFilterEngine {
     /// person's own blocked sites while the proxy runs, and the extension
     /// re-reads them on a short cache instead of restarting the tunnel.
     func decide(_ question: DNSQuestion, customSites: [String] = []) -> Decision {
-        let host = question.name
+        decision(host: question.name, customSites: customSites)
+    }
+
+    /// True when a resolved alias target is blocked. CNAME/DNAME/SVCB answers
+    /// must be checked as well as the question, or a first-party name can point
+    /// at a listed domain and carry its content through an allowed query.
+    func blocksHost(_ host: String, customSites: [String] = []) -> Bool {
+        if case .blocked = decision(host: host, customSites: customSites) { return true }
+        return false
+    }
+
+    private func decision(host: String, customSites: [String]) -> Decision {
         guard !host.isEmpty else { return .allowed }
         // The route-check alias, and any name under the reserved `.hisn.invalid`
         // domain, is answered on the device so the app can prove the path. A
@@ -37,6 +50,10 @@ struct DNSFilterEngine {
         if host == "hisn.invalid" || host.hasSuffix(".hisn.invalid") {
             return .selfCheck
         }
+        // Before the person's own allowlist, as Android applies it: a saved
+        // allowance must not turn a public DoH endpoint into the route around
+        // the DNS layer because a bypass is not a content preference.
+        if EncryptedDNSProviders.blocks(host) { return .blocked(.encryptedDns) }
         if CustomSitePolicy.covers(customSites, host) { return .blocked(.customSite) }
         if domains.blocks(host: host) { return .blocked(.list) }
         if AdultTldGuard.matches(host: host) { return .blocked(.adultTld) }

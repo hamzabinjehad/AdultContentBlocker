@@ -7,7 +7,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-/** Bounds-checks a reply and follows reachable CNAME, DNAME and HTTPS/SVCB aliases. */
+/** Bounds-checks a reply and checks reachable aliases and HTTPS/SVCB service endpoints. */
 final class DnsReplyGuard {
     static boolean blocks(byte[] reply, DnsPolicy.Rules rules) throws IOException {
         if (reply == null || reply.length < 17 || reply.length > 4096 || u16(reply, 4) != 1) throw invalid();
@@ -18,6 +18,7 @@ final class DnsReplyGuard {
         if (count > 256) throw invalid();
         Map<String, String> aliases = new HashMap<>();
         Map<String, String> subtrees = new HashMap<>();
+        Map<String, Set<String>> services = new HashMap<>();
         for (int i = 0; i < count; i++) {
             Name owner = name(reply, cursor);
             cursor = owner.end;
@@ -41,6 +42,12 @@ final class DnsReplyGuard {
                 if (u16(reply, cursor) == 0 && !target.value.isEmpty()) {
                     String old = aliases.put(owner.value, target.value);
                     if (old != null && !old.equals(target.value)) throw invalid();
+                } else if (u16(reply, cursor) > 0 && !target.value.isEmpty()
+                        && !target.value.equals(owner.value)) {
+                    // ServiceMode can supply connection hints before any A/AAAA lookup of
+                    // TargetName. Check every alternative, not just AliasMode (priority 0).
+                    // A root or equal TargetName means this owner, already checked below.
+                    services.computeIfAbsent(owner.value, ignored -> new HashSet<>()).add(target.value);
                 }
             } else if (clazz == 1 && ((type == 1 && length != 4) || (type == 28 && length != 16))) {
                 throw invalid();
@@ -48,11 +55,25 @@ final class DnsReplyGuard {
             cursor = end;
         }
         if (cursor != reply.length) throw invalid();
+        return blocksChain(question.value, aliases, subtrees, services, rules);
+    }
+
+    private static boolean blocksChain(String start, Map<String, String> aliases,
+            Map<String, String> subtrees, Map<String, Set<String>> services,
+            DnsPolicy.Rules rules) throws IOException {
         Set<String> seen = new HashSet<>();
-        String current = question.value;
+        String current = start;
         for (int depth = 0; depth < 32; depth++) {
             if (!seen.add(current)) throw invalid();
             if (rules.evaluate(current) == DomainPolicy.Decision.BLOCK) return true;
+            Set<String> endpoints = services == null ? null : services.get(current);
+            if (endpoints != null) {
+                for (String endpoint : endpoints) {
+                    // A ServiceMode endpoint resolves A/AAAA and their aliases, not a
+                    // second SVCB service. This also keeps endpoint fan-out bounded.
+                    if (blocksChain(endpoint, aliases, subtrees, null, rules)) return true;
+                }
+            }
             String next = aliases.get(current);
             if (next == null) {
                 // Prefer the longest DNAME owner suffix.

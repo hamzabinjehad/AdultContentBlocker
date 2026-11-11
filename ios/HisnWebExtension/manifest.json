@@ -13,6 +13,14 @@
     "css": ["content/visual-gate.css"],
     "run_at": "document_start",
     "all_frames": true
+  }, {
+    "matches": ["*://*.instagram.com/*", "*://*.facebook.com/*", "*://*.reddit.com/*",
+                "*://*.tiktok.com/*", "*://*.threads.net/*", "*://*.threads.com/*",
+                "*://bsky.app/*", "*://*.linkedin.com/*", "*://*.pinterest.com/*",
+                "*://*.tumblr.com/*", "*://*.snapchat.com/*"],
+    "css": ["content/social-media.css"],
+    "run_at": "document_start",
+    "all_frames": false
   }],
   "web_accessible_resources": [{
     "resources": ["blocked.html", "blocked.js"],

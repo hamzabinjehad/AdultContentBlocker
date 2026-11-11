@@ -71,14 +71,15 @@ Links: [Privacy policy](https://github.com/hamzabinjehad/AdultContentBlocker/blo
 | `storage` | Keep settings, rules, the installed list version and local verdict caches | No sync to a server; no account |
 | `alarms` | Check for a signed list generation every six hours and retry a failed install later | No background browsing collection |
 | `nativeMessaging` | Ask the Hisn Mac app for its lock state and app-owned lists over a local native host | No remote endpoint; no data leaves the machine |
-| `scripting` | Register the page-text scanner and the opt-in visual scanner on permitted pages | Does not run on browser settings pages or without site access |
-| `offscreen` | Run the opted-in local visual model in a hidden extension document, because a service worker has no DOM or canvas | Only an extension page; created only when visual checks are enabled and closed when they are disabled; no page content leaves the device |
+| `scripting` | Register the page-text scanner, the on-device visual scanner, and a CSS-only social-feed rule on permitted pages | Does not run on browser settings pages or without site access; the social rule injects no page script |
+| `offscreen` | Run the local visual model in a hidden extension document, because a service worker has no DOM or canvas | Only an extension page; closed when visual checks are disabled; no page content leaves the device |
 | `<all_urls>` host permission | Any page can contain adult text or media, and the block/SafeSearch rules must apply on any site | Reads only what a permitted page exposes to the scanner |
 
-The `offscreen` permission is declared because the opt-in visual engine runs its
-local model in an extension offscreen document; a service worker has no DOM or
-canvas. It is created only when the person enables visual checks, and it is
-closed when they are disabled. It is not used for page scraping or remote work.
+The `offscreen` permission is declared because the on-device visual engine runs
+its local model in an extension offscreen document; a service worker has no DOM
+or canvas. Visual checks are on by default, so the document may be created on
+install; it is closed when the person switches visual checks off. It is not used
+for page scraping or remote work.
 There is no `tabs`, `history`, `cookies`, `webRequest` or `management`
 permission.
 
@@ -139,8 +140,9 @@ No account, sign-in, adult content or special network is needed:
    Mode header where the browser exposes it.
 4. Open a page with ordinary text. The scanner must not block it. A benign
    medical or news page is the expected pass case.
-5. Turn on visual checks only if testing them; they are opt-in and local. No
-   camera or upload prompt should appear.
+5. Visual checks are on by default and local; confirm an ordinary image is shown
+   and no camera or upload prompt appears. Switch them off and confirm the media
+   gate opens.
 6. Remove the custom `example.com` rule and confirm the site loads.
 7. In **Blocking Rules → Move your rules**, choose **Export file** and confirm
    a `hisn-rules.json` download appears. Import the same file back and confirm

@@ -154,9 +154,12 @@ class BrowserRunnerTests(unittest.TestCase):
             fake = Path(directory) / "empty-browser"
             fake.write_text("#!/bin/sh\nexit 0\n")
             fake.chmod(0o755)
+            # Five seconds, not one: a loaded machine can take longer than a second to
+            # start the shell and observe its exit. The pending-browser test below still
+            # pins the timeout path with a short bound.
             result = subprocess.run([sys.executable, str(RUNNER_PATH), "--browser", str(fake),
-                                     "--harness", "popup.html", "--timeout", "1"],
-                                    capture_output=True, text=True, timeout=10)
+                                     "--harness", "popup.html", "--timeout", "5"],
+                                    capture_output=True, text=True, timeout=20)
             self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
             self.assertIn("without a verdict", result.stderr)
             self.assertNotIn("PASS", result.stdout)

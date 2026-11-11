@@ -45,6 +45,12 @@ final class VisualOverlay implements AutoCloseable {
                 R.string.person_overlay_hint);
     }
 
+    /** A native fast pre-check found a face; the full result will refine this cover. */
+    void showChecking() {
+        show(null, R.string.person_checking_title, R.string.person_checking_body,
+                R.string.person_checking_hint);
+    }
+
     /** A protected/private window cannot be inspected; cover it rather than expose pixels. */
     void showProtected() {
         if (snapshot != null && snapshotView != null) {

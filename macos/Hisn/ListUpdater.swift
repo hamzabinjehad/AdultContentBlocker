@@ -30,6 +30,13 @@ public actor ListUpdater {
     private let base = URL(string:
         "https://raw.githubusercontent.com/hamzabinjehad/AdultContentBlocker/lists")!
     private let minimumInterval: TimeInterval = 6 * 3600
+    private static let manifestLimit = 64 << 10
+    private static let signatureLimit = 512
+    /// The full deflated domain list, not the inflated one; the published
+    /// generation is about 21 MB and this leaves ample headroom without
+    /// letting a bad response allocate the process away.
+    private static let domainLimit = 64 << 20
+    private static let termsLimit = 2 << 20
 
     /// What the shared container holds after a successful update, in the
     /// order they are written. `FilterDataProvider` reads exactly these.
@@ -79,10 +86,10 @@ public actor ListUpdater {
     public func update() async {
         let defaults = UserDefaults(suiteName: LockStore.appGroup)
         do {
-            async let manifestBytes = data("manifest.json")
-            async let sigBytes = data("manifest.json.sig")
-            async let domainBytes = data("domains.packed.deflate")
-            async let termBytes = data("terms.json")
+            async let manifestBytes = data("manifest.json", limit: Self.manifestLimit)
+            async let sigBytes = data("manifest.json.sig", limit: Self.signatureLimit)
+            async let domainBytes = data("domains.packed.deflate", limit: Self.domainLimit)
+            async let termBytes = data("terms.json", limit: Self.termsLimit)
 
             let (manifest, sig, deflated, terms) =
                 try await (manifestBytes, sigBytes, domainBytes, termBytes)
@@ -148,15 +155,33 @@ public actor ListUpdater {
         }
     }
 
-    private func data(_ name: String) async throws -> Data {
+    /// Fetch one artifact with a hard byte ceiling. Signature verification
+    /// happens after the download, so a hostile or broken response must not be
+    /// able to make the app allocate without bound before that check.
+    private func data(_ name: String, limit: Int) async throws -> Data {
         var request = URLRequest(url: base.appendingPathComponent(name))
         request.cachePolicy = .reloadIgnoringLocalCacheData
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (stream, response) = try await URLSession.shared.bytes(for: request)
         guard let http = response as? HTTPURLResponse,
               (200..<300).contains(http.statusCode) else {
             throw URLError(.badServerResponse)
         }
-        return data
+        if let length = http.value(forHTTPHeaderField: "Content-Length"),
+           let declared = Int(length), declared > limit {
+            throw URLError(.dataLengthExceedsMaximum)
+        }
+        var collected = BoundedData(limit: limit)
+        var chunk = Data()
+        chunk.reserveCapacity(16 << 10)
+        for try await byte in stream {
+            chunk.append(byte)
+            if chunk.count == 16 << 10 {
+                try collected.append(chunk)
+                chunk.removeAll(keepingCapacity: true)
+            }
+        }
+        try collected.append(chunk)
+        return collected.data
     }
 
     /// Atomic swap: write to a temp directory, then replace. The extension must
@@ -183,5 +208,27 @@ public actor ListUpdater {
         } else {
             try fm.moveItem(at: staging, to: live)
         }
+    }
+}
+
+
+/// A byte collector with an explicit ceiling, used before a downloaded
+/// generation has been authenticated. Internal for the Mac tests.
+struct BoundedData {
+    let limit: Int
+    private(set) var data = Data()
+
+    init(limit: Int) {
+        precondition(limit > 0)
+        self.limit = limit
+        data.reserveCapacity(min(limit, 64 << 10))
+    }
+
+    mutating func append(_ chunk: Data) throws {
+        guard !chunk.isEmpty else { return }
+        guard data.count <= limit, chunk.count <= limit - data.count else {
+            throw URLError(.dataLengthExceedsMaximum)
+        }
+        data.append(chunk)
     }
 }

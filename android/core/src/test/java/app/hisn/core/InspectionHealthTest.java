@@ -20,6 +20,25 @@ public final class InspectionHealthTest {
         health.record(InspectionHealth.Outcome.COMPLETE);
         health.record(InspectionHealth.Outcome.INCOMPLETE);
         expect(true, health, "the latest scan decides");
+        if (health.completedAt() != -1) throw new AssertionError("untimed scan is not evidence");
+        health.record(InspectionHealth.Outcome.COMPLETE, 5_000);
+        if (health.completedAt() != 5_000) throw new AssertionError("timed complete not recorded");
+        health.record(InspectionHealth.Outcome.INCOMPLETE, 6_000);
+        if (health.completedAt() != 5_000) throw new AssertionError("a failure erased the receipt");
+        health.record(InspectionHealth.Outcome.COMPLETE);
+        if (health.completedAt() != 5_000) throw new AssertionError("untimed success moved the receipt");
+        PolicyReceipt receipt = new PolicyReceipt(9, 2, 4, PolicyReceipt.Kind.TEXT_SCAN,
+                PolicyReceipt.Result.PASSED, 7_000);
+        health.record(InspectionHealth.Outcome.COMPLETE, receipt);
+        if (health.receipt() != receipt || health.completedAt() != 7_000) {
+            throw new AssertionError("timed receipt not stored");
+        }
+        health.record(InspectionHealth.Outcome.INCOMPLETE, 8_000);
+        if (health.receipt() != receipt || health.completedAt() != 7_000) {
+            throw new AssertionError("failure erased the receipt");
+        }
+        health.record(InspectionHealth.Outcome.INCOMPLETE);
+        expect(true, health, "the latest scan decides");
         try { health.record(null); throw new AssertionError("Missing outcome accepted"); }
         catch (IllegalArgumentException expected) { }
         expect(true, health, "a rejected record changes nothing");

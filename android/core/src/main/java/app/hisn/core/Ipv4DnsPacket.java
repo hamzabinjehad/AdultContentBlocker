@@ -2,11 +2,13 @@ package app.hisn.core;
 
 import java.util.Arrays;
 
-/** IPv4/UDP DNS packet adapter. Fragmented packets and IPv6 are explicitly unsupported. */
-public final class Ipv4DnsPacket {
+/** IPv4/UDP DNS packet adapter. Fragmented packets are rejected; IPv6/UDP has its own adapter. */
+public final class Ipv4DnsPacket implements UdpDnsPacket {
     private final byte[] request;
     private final int headerSize;
     public final byte[] dns;
+
+    @Override public byte[] getDns() { return dns; }
 
     private Ipv4DnsPacket(byte[] request, int headerSize) {
         this.request = request;
@@ -28,7 +30,7 @@ public final class Ipv4DnsPacket {
         return new Ipv4DnsPacket(packet.clone(), header);
     }
 
-    public byte[] response(byte[] payload) {
+    @Override public byte[] response(byte[] payload) {
         if (payload == null || payload.length < 12 || payload.length > 1472) {
             throw new IllegalArgumentException("Response exceeds tunnel MTU");
         }

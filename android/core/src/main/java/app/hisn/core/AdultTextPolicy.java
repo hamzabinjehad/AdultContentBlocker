@@ -106,6 +106,12 @@ public final class AdultTextPolicy {
     // ("neek masri", "aflam neek") stay contextual like "نيك سعودي".
     private static final Set<String> AMBIGUOUS = immutableSet("نيك", "بورنو", "بورن", "كسكس", "كسكسي", "طابون",
             "nik", "neek", "niek", "neik");
+    // Reviewed two-word Arabizi phrases where the ambiguous "neek" is the head's
+    // object, not a person's name: "aflam neek" / "film neek". They are clear
+    // evidence even though "neek" alone, "neek masri" and "Neek HD" stay
+    // contextual; the controls "Watch Neek Masri live, free" and
+    // "tahmil aflam Nik Cage mojani" therefore keep their verdict.
+    private static final Set<String> REVIEWED_ARABIZI_CLEAR = immutableSet("aflam neek", "film neek");
     // The seed's spellings of "pornographic" (Arabic اباحي, اباحيه) with 7 or h, trusted alone like them.
     private static final Set<String> ARABIZI_EXPLICIT = immutableSet("aba7i", "aba7ia", "aba7iat", "aba7ih",
             "aba7it", "aba7y", "aba7ya", "aba7yat", "aba7yh", "aba7yt", "aba7e", "aba7ea", "aba7eat", "aba7eh",
@@ -708,7 +714,8 @@ public final class AdultTextPolicy {
             }
             boolean clearArabizi = words.length == 1
                     ? ARABIZI_CLEAR.contains(phrase) || EXPLICIT.contains(phrase) : !everyday;
-            this.ambiguous = shared || (arabizi && !clearArabizi);
+            this.ambiguous = (shared && !REVIEWED_ARABIZI_CLEAR.contains(phrase))
+                    || (arabizi && !clearArabizi);
         }
     }
 

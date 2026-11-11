@@ -1,6 +1,9 @@
 # Android: from a working tree to the end project
 
-Date: 8 November 2026. Status: plan, plus artifacts.
+Date: 8 November 2026. Status: plan, plus artifacts. The candidate is now
+committed and numbered **1.6.0 / 43**; the 1.5.4 reconnect lifecycle is ported.
+See [release state](RELEASE_STATE_2026-11-10.md) and
+[the 1.6.0 note](ANDROID_1.6.0.md).
 
 **Update after the first delivery pass.** The latest complete Android line is
 not this checkout. A clean sibling worktree
@@ -17,12 +20,14 @@ person-blur work that is present here but not yet on the 1.5.3 line. It should
 merge forward into a **1.6.0** release, not ship as 1.4.0. The P0 below is still
 correct for this checkout, and the 1.4.0/36 candidate artifacts in
 `dist/android-final-2026-11-08/` are a preview of that merge, not the end
-project.
+project. On 10 November the candidate was committed, the 1.5.4 reconnect
+lifecycle was ported, and the version was set to 1.6.0 / 43. The remaining P0
+work is the signed build and the phone acceptance.
 
 The broader feature list already exists in
 [the Android feature plan](ANDROID_FEATURE_IMPROVEMENT_PLAN_2026-11-08.md). Its
 “starting point” has one stale claim: it says the native TFLite classes are
-absent. They are present in this checkout, untracked. This plan supersedes that
+absent. They are present in this checkout and were committed on 10 November. This plan supersedes that
 paragraph and focuses on delivery.
 
 ## What “end project” means here
@@ -58,10 +63,10 @@ Java 17 language settings; the CI runner uses JDK 17.
 | Release signature | `apksigner` certificate SHA-256 `2F:BE:D6:57:…:70:C5`, the release key created 3 November 2026 |
 | Core suites | `JAVA_HOME=<JDK 25> sh test-core.sh` **PASS**; strings 651 / 18 plurals / 645 references, notices pass, all Java core tests pass |
 | Lint and test APK | `:app:lintDebug :app:assembleDebugAndroidTest` **PASS**; 0 lint errors, 82 warnings, 1 hint (see the report) |
-| Text quality | Synthetic corpus: **68/72** expected adult blocks, **0/133** benign controls; 4 Franco-Arabic misses (listed below) |
+| Text quality | Synthetic corpus: **71/72** expected adult blocks, **0/133** benign controls; 3 of 4 Franco-Arabic misses closed, `sksy` remains a reviewed control (listed below) |
 | Existing 1.4.0 artifact | Signed and valid, but `check-release.py` **rejects it against the current source**: artifact is 36/1.4.0-direct, source declares 32/1.2.3 |
 | Source package | Fresh extraction of `hisn-android-1.4.0-source.zip` passes `test-core.sh`, `seed bundle verified` and `assembleDebug`, producing a 1.4.0/36 APK |
-| Source state | `build.gradle` 1.2.3/32; `versions.json` 1.2.3/32; **45 untracked and 42 modified Android files**; `docs/ANDROID_1.4.0.md` untracked |
+| Source state, 8 November | `build.gradle` 1.2.3/32; `versions.json` 1.2.3/32; **45 untracked and 42 modified Android files**; `docs/ANDROID_1.4.0.md` untracked. All committed on 10 November |
 | CI | The Android job runs `test-core.sh`, `assembleDebug`, `assembleDebugAndroidTest`, `lintDebug` and `assembleRelease` on Ubuntu with JDK 17 ([ci.yml](../.github/workflows/ci.yml) (lines 127–167)); it cannot see untracked files |
 
 What was not run: any physical phone, emulator instrumentation, live DNS,
@@ -71,8 +76,13 @@ reviewed; the release job fails on errors, not warnings.
 
 ## P0 — One source, one version, one artifact (this week)
 
-The checkout is the real problem. It contains a **future release that is not in
-git**:
+**Status, 10 November:** steps 1–3 are done. The tree is committed, numbered
+1.6.0 / 43, and the metadata is updated. The list updater now carries terms with
+domains, as 3A.2 requires. Steps 4 (signed build), 6 (artifact gate) and 7
+(phone) remain.
+
+The checkout was the real problem. It contained a **future release that was not
+in git**:
 
 - `TfliteClassifier.java` and `assets/nsfw_mobilenet_v2.tflite` (native visual
   runtime, ~10 MB model);
@@ -140,25 +150,28 @@ to the artifacts in `dist/`.
 
 These are the gaps the evidence actually shows, not a wish list.
 
-### 1. Four Franco-Arabic misses
+### 1. Franco-Arabic misses — three closed, one deliberate control
 
-The core corpus reports 68/72 adult blocks and 0/133 benign blocks. The four
-misses are:
+The core corpus reports **71/72** adult blocks and **0/133** benign blocks. The
+three closed misses are:
 
 - `Watch aflam neek masri free`
 - `tahmil film neek arabi`
 - `tahmil aflam neek 7elwa mojani`
-- `sksy download free`
 
-`neek` is a transliteration the shared vocabulary normally carries; these rows
-combine it with `aflam`/`tahmil` and, in one case, `sksy` rather than `sks`. Add
-these as reviewed fixtures first, then decide whether the fix belongs in
-`TextFolding`, `WordMatcher`, `AdultTextPolicy` or the seed vocabulary. Keep the
-benign 0/133 gate intact; do not globally fold digits into letters.
+`AdultTextPolicy` now treats the reviewed two-word phrases `aflam neek` and
+`film neek` as clear evidence while leaving `neek` alone, `neek masri` and
+`Neek HD` contextual. The controls `Watch Neek Masri live, free` and
+`tahmil aflam Nik Cage mojani` still do not block.
 
-**Proof:** the four rows block; the existing 133 benign controls still do not;
+The fourth row, `sksy download free`, is **not** closed. It is in the reviewed
+benign set because `sksy` is also Indonesian "SKS" (university credits); a
+promotion beside it is not enough to distinguish the two uses. Blocking it
+would break the 0/133 gate.
+
+**Proof:** the three rows block; the existing 133 benign controls still do not;
 Arabic, Arabizi and mixed-script cases report misses and false blocks
-separately.
+separately. The remaining miss is named rather than hidden in the total.
 
 ### 2. The visual layer has benign evidence, not detection evidence
 

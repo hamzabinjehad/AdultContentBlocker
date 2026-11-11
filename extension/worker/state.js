@@ -50,7 +50,11 @@ export const DEFAULT_STATE = {
   enforcement: null,        // versioned browser API receipt, not stored intent
   failClosed: false,        // true once we lost the native app mid-lock
   inspectText: true,        // page-text scoring
-  inspectVisual: false,     // explicit opt-in; model quality is not universal coverage
+  inspectVisual: true,      // on-device media classifier, on for every site by
+                            // default; the user can turn it off in Settings.
+                            // A runtime that cannot host the engine keeps the
+                            // gate open instead of blanking media (see
+                            // content/visual.js and broker.visualSupported).
   personBlur: "off",        // optional estimated-face preference, not adult content
   blockShortVideo: false,   // opt-in: Shorts, Reels, Explore, TikTok (rules/short_video.json)
   textSensitivity: 50,      // 0-100, higher = stricter (see lib/score.js)

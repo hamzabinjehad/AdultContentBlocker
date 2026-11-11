@@ -97,6 +97,22 @@ public final class LabelScanTest {
         check(labels(card("Outer", card("Left", image(null)), card("Right", image(null))))
                 .equals(Arrays.asList("Left", "Right")), "sibling cards are each read once, in screen order");
         check(labels(card("Root card", image(null))).equals(Arrays.asList("Root card")), "the root itself can be a card");
+        check(labels(new Node("Watch free porn videos", "Other description", false, true, image(null)))
+                .equals(Arrays.asList("Watch free porn videos")), "a container's own text is read before its description");
+        check(labels(new Node("Parent text", null, false, true, card(null, image(null))))
+                .equals(Arrays.asList("Parent text")), "a parent text label survives empty nested views");
+        check(labels(new Node("   ", "Card description", false, true, image(null)))
+                .equals(Arrays.asList("Card description")), "a blank parent text falls back to its description");
+        check(labels(new Node("Parent text", null, false, true, leaf("Child label")))
+                .equals(Arrays.asList("Child label")), "a text-bearing child still covers a parent text label");
+        check(labels(new Node("Search: secret words", null, false, true, input("secret words", null))).isEmpty(),
+                "parent text holding an input is never read");
+        check(labels(new Node("Reply: draft", null, false, true, hidden(card(null, input("draft", null))))).isEmpty(),
+                "parent text with a hidden input container is never read");
+        Node parentTextMissing = new Node("Unverified parent text", null, false, true, image(null));
+        parentTextMissing.children.add(null);
+        check(scan(parentTextMissing).isPartial() && labels(parentTextMissing).isEmpty(),
+                "an unreadable child prevents reading the parent's text");
 
         Node missing = card("Card", image(null));
         missing.children.add(null);
@@ -108,6 +124,9 @@ public final class LabelScanTest {
         for (int i = 0; i < many.length; i++) many[i] = image(null);
         VisibleTextSample cut = scan(card("Big card", many));
         check(cut.isPartial() && cut.text().isEmpty(), "a subtree cut by the node budget never yields its parent");
+        VisibleTextSample cutParentText = scan(new Node("Unverified parent text", null, false, true, many));
+        check(cutParentText.isPartial() && cutParentText.text().isEmpty(),
+                "a budget cut also prevents reading the parent's text");
         // A card inspected in full survives a budget cut in a later, wide list.
         Node[] list = new Node[LabelScan.NODE_BUDGET + 188];
         for (int i = 0; i < list.length; i++) list[i] = leaf("row " + i);
@@ -226,7 +245,7 @@ public final class LabelScanTest {
             VisibleTextSample actual = scan(tree);
             check(!actual.isPartial() && actual.text().equals(reference(tree)), "small trees follow the direct rule");
         }
-        System.out.println("LabelScan tests passed (leaf labels, card descriptions, input fields, budget, release"
+        System.out.println("LabelScan tests passed (leaf labels, parent text/descriptions, input fields, budget, release"
                 + " and 2,400 random trees)");
     }
 
@@ -244,7 +263,8 @@ public final class LabelScanTest {
                     : kind < 5 ? new Node(random.nextBoolean() ? "" : null, random.nextBoolean() ? label : null, false, visible)
                     : kind < 6 ? new Node(random.nextBoolean() ? " " : null, null, false, visible)
                     : kind < 7 ? new Node(label, random.nextBoolean() ? label : null, true, visible)
-                    : new Node(null, descriptions && random.nextBoolean() ? label : null, false, visible);
+                    : new Node(descriptions && random.nextBoolean() ? label : null,
+                            descriptions && random.nextBoolean() ? label : null, false, visible);
             parents.get(random.nextInt(parents.size())).children.add(node);
             if (kind >= 6) parents.add(node);
         }
@@ -287,7 +307,7 @@ public final class LabelScanTest {
                 String value = node.text == null || node.text.isEmpty() ? node.description : node.text;
                 if (value != null && !value.isEmpty()) leaves.append(value).append('\n');
             } else {
-                if (Boolean.TRUE.equals(read.get(node))) cards.append(node.description).append('\n');
+                if (Boolean.TRUE.equals(read.get(node))) cards.append(parentLabel(node)).append('\n');
                 queue.addAll(node.children);
             }
         }
@@ -304,8 +324,13 @@ public final class LabelScanTest {
         }
         int below = 0;
         for (Node child : node.children) below = Math.max(below, settle(child, read));
-        boolean own = node.description != null && !node.description.trim().isEmpty() && below == 0;
+        String label = parentLabel(node);
+        boolean own = label != null && !label.trim().isEmpty() && below == 0;
         read.put(node, own);
         return own ? 1 : below;
+    }
+
+    static String parentLabel(Node node) {
+        return node.text == null || node.text.trim().isEmpty() ? node.description : node.text;
     }
 }

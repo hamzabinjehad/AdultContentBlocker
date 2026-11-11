@@ -1,4 +1,4 @@
-# Hisn Android 1.1.0: signed self-control release
+# Hisn Android 1.6.0: development candidate
 
 The Android app contains an opt-in DNS-only VPN, saved custom rules, selected-app
 accessibility restrictions, opt-in daily app schedules, opt-in daily app time
@@ -6,8 +6,19 @@ limits, built-in adult-text checks and sampled image/video checks, an in-app
 protection lock, an optional legacy-admin confirmation step, an opt-in
 device-owner uninstall guard with an optional managed lockdown, and a background
 layer-health watchdog. The interface follows the system light/dark appearance,
-uses bottom navigation for Protection, Rules and Guide, and supports Arabic and
-English.
+uses bottom navigation for Protection, Rules and Settings, and supports Arabic
+and English.
+
+**Source state, 10 November 2026.** This folder is the **1.6.0 / 43**
+development candidate: the 1.5.3 feature set, packages 2 and 3 (signed mobile
+list updates whose generations carry domains and terms together, policy receipts and readiness, rule import/preview, the site
+checker, person blur) and the ported 1.5.4 reconnect lifecycle. No signed
+1.6.0 artifact and no phone run exist; the core and signed fixture adoption
+pass on the API 36 emulator. The post-reboot dashboard state is unverified. Do not install it over the owner's 1.5.4 phone until a signed
+1.6.0 build passes the phone acceptance. See
+[the 1.6.0 note](../docs/ANDROID_1.6.0.md),
+[release state](../docs/RELEASE_STATE_2026-11-10.md) and
+[the end-project plan](../docs/ANDROID_END_PROJECT_PLAN_2026-11-08.md).
 
 1.0.0 was the first signed direct-sideload release. 1.1.0 adds a first-run
 welcome, a voluntary pause action, and today's usage in the daily-limit editor;
@@ -244,7 +255,43 @@ claim is made. The signed Play APK/AAB and direct APK pass `check-release.py`
 and `apksigner`. Details and limits:
 [the 1.2.3 record](../docs/ANDROID_1.2.3.md).
 
+## Social apps shortcut (2026-11-10)
+
+The app chooser has a **Social apps** action that ticks the installed X,
+Instagram, Facebook, Reddit, TikTok (both package names), Threads, Bluesky,
+LinkedIn, Pinterest, Tumblr and Snapchat packages. It edits only the ordinary
+chosen-apps list, so it turns on whichever response the person already chose
+for those apps — the whole-app block, or text and visual inspection — and it
+respects the list limit. `core/SocialApps.java` holds the named list;
+`SocialAppsTest` pins installed-only selection, stable order, idempotence, the
+limit and the package-name contract.
+
+Android's inspection unit is the app window, not a post. `VisualGuard` samples
+one frame and a positive adult verdict leaves the app. That is deliberately
+stronger than hiding a single post, and it is what a native feed can support
+without a localised adult region. A post-level response on Android would need
+region localisation and would be a weaker action, so it is not implemented;
+the shortcut is how the existing whole-app guard reaches social media.
+
+## Craft pass (2026-11-07, on the 1.2.3 tree)
+
+The three tabs now use the Mac's warm-paper and ink language: a 2 dp rule, a
+tracked page line, one serif verdict, and a white coverage ledger with a state
+dot per layer. The Protection page has one next action, and when DNS is that
+action the DNS card owns the only filled button. Rules opens with twelve named
+site chips that write the ordinary blocked-domain list, so a chip is not a
+category and a protection lock freezes it like any other rule. The block page
+focuses on a breath first, keeps the way out visible, and reveals the reminder
+and four needs only after the third breath. The welcome seal, the settings
+icons and the direct-build shield page follow the same surface.
+
+No enforcement path, permission, consent text, stored field or version changed.
+The signed 1.2.3 artifacts predate the pass. Record:
+[the craft pass](../docs/ANDROID_CRAFT_2026-11-07.md); captures:
+[design/android-craft-2026-11-07](../design/android-craft-2026-11-07/README.md).
+
 ## 1.2.2 the unlisted-host guard
+
 
 Two on-device rails now sit in front of the seed list in the DNS policy, after
 the person's saved domain allowance:

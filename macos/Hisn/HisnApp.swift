@@ -21,20 +21,17 @@ enum AppLifecyclePolicy {
 @main
 struct HisnApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
-    @StateObject private var icon = MenuBarIcon.shared
-    @Environment(\.openWindow) private var openWindow
 
     var body: some Scene {
-        WindowGroup(id: MainWindow.id) { ContentView() }
-            // Resizable, with a floor set by `ContentView`. The old fixed
-            // 420-point column forced every explanation into caption-sized
-            // text; this window is mostly explanations.
-            .defaultSize(width: 980, height: 700)
+        WindowGroup { ContentView() }
+            // Resizable, with a floor set by `ContentView` and the first
+            // launch's size set by `MainWindow.adopt` — `.defaultSize` is
+            // macOS 13, and the same 980×700 has to arrive on macOS 12.
             .commands {
                 CommandGroup(replacing: .newItem) {}
                 CommandMenu("Go") {
                     ForEach(ContentView.Page.allCases) { page in
-                        Button(page.title) { MainWindow.show(page, open: openWindow) }
+                        Button(page.title) { MainWindow.show(page) }
                             .keyboardShortcut(shortcut(for: page), modifiers: .command)
                     }
                 }
@@ -50,10 +47,10 @@ struct HisnApp: App {
                         .keyboardShortcut("p", modifiers: [.command, .shift])
                     Button("Check a website…") {
                         AppNavigation.shared.siteCheckRequested = true
-                        MainWindow.show(.overview, open: openWindow)
+                        MainWindow.show(.overview)
                     }
                     .keyboardShortcut("k", modifiers: .command)
-                    Button("Start a lock…") { MainWindow.show(.lock, open: openWindow) }
+                    Button("Start a lock…") { MainWindow.show(.lock) }
                         .keyboardShortcut("l", modifiers: [.command, .shift])
                 }
                 CommandGroup(replacing: .appTermination) {
@@ -61,23 +58,6 @@ struct HisnApp: App {
                         .keyboardShortcut("q")
                 }
             }
-        // Started at login the app has no window; this is the way back to it,
-        // and the lock's time left without opening anything. While a lock
-        // runs, the countdown replaces the app's name — the same fact the
-        // sidebar and the menu show, readable without a click.
-        MenuBarExtra {
-            StatusMenu()
-        } label: {
-            Label {
-                if let remaining = icon.remainingText {
-                    Text(verbatim: remaining)
-                } else {
-                    Text("Hisn")
-                }
-            } icon: {
-                Image(nsImage: icon.image)
-            }
-        }
     }
 
     private func shortcut(for page: ContentView.Page) -> KeyEquivalent {
@@ -154,6 +134,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             reason: "Maintain browser protection and scheduled locks")
         NativeMessagingInstaller.installIfNeeded()
         AppLanguage.publish()
+        // The menu bar item is how the app is reached once its window is
+        // hidden, and the only place a running lock's time left shows without
+        // opening anything. A status item rather than `MenuBarExtra`: that
+        // scene is macOS 13, and the item has to exist on macOS 12 too.
+        StatusItemController.shared.start()
         BrowserGuard.shared.start()
         FilterSync.shared.start()
         Task { @MainActor in ScreenGrayscale.shared.start() }
@@ -173,8 +158,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // guard and the updater without putting a window in front of anyone.
         if CommandLine.arguments.contains("--background") {
             // Not the guard's countdown panel, which may already be up.
+            // Hiding, not closing: the window group's window is the one the
+            // menu bar reopens, and macOS 12 has no way to remake it.
             DispatchQueue.main.async {
-                MainWindow.all.forEach { $0.close() }
+                MainWindow.hide()
             }
         }
     }
@@ -186,6 +173,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// menu bar or the Dock.
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         false
+    }
+
+    /// Clicking the Dock icon brings the window back after its close button
+    /// hid it. The window is hidden, never destroyed, so this is a show — the
+    /// same call the menu bar's Open Hisn makes.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag, !Self.isHostingTests {
+            MainWindow.show(AppNavigation.shared.page ?? .overview)
+        }
+        return true
     }
 
     /// Ordinary Quit closes the interface while protection keeps running.

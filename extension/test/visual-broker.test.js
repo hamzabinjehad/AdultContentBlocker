@@ -233,4 +233,15 @@ function harness({holdPreparation=false} = {}) {
     'opt-out during engine recovery cannot wake a replacement model context');
   h.resolve(0);
 }
+{
+  const h = harness(), status = getVisualStatus(enabled); await flush();
+  const send = globalThis.chrome.runtime.sendMessage;
+  globalThis.chrome.runtime.sendMessage = async () => undefined;
+  h.ready();
+  const result = await status;
+  check(result.state === 'failed' && result.reason === 'engine-unreachable',
+    'a closed engine port is a failed verdict, not an undefined success');
+  globalThis.chrome.runtime.sendMessage = send;
+  await disableVisualEngine();
+}
 print(`  ${checks}/${checks} visual broker race checks passed`);

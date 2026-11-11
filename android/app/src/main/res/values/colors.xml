@@ -1,28 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Day palette. Every foreground/background pair here keeps at least 4.5:1 for body text. -->
+<!-- Day palette: warm paper, ink text and one deep ink-blue accent. Every foreground/background
+     pair here keeps at least 4.5:1 for body text. -->
 <resources>
-    <color name="background">#F3F6FA</color>
-    <color name="surface">#FFFFFF</color>
-    <color name="surface_alt">#EEF2F8</color>
-    <color name="surface_sunken">#E3E9F2</color>
-    <color name="text_primary">#101828</color>
-    <color name="text_secondary">#46536B</color>
-    <color name="text_tertiary">#64748B</color>
-    <color name="divider">#E2E8F0</color>
-    <color name="accent">#1D5BD8</color>
-    <color name="accent_soft">#E8F0FF</color>
-    <color name="on_accent">#FFFFFF</color>
-    <color name="success">#157347</color>
-    <color name="warning">#8A5300</color>
-    <color name="warning_soft">#FDF3E1</color>
-    <color name="danger">#B42318</color>
-    <color name="danger_soft">#FDECEA</color>
-    <color name="hero_start">#EAF2FF</color>
-    <color name="hero_end">#FFFFFF</color>
-    <color name="control_highlight">#331D5BD8</color>
-    <color name="ripple_on_accent">#33FFFFFF</color>
-    <color name="warning_border">#EBD3A4</color>
-    <color name="danger_border">#F3C4C0</color>
-    <color name="accent_border">#C9DBFF</color>
+    <color name="background">#F4F1EA</color>
+    <color name="surface">#FFFDF8</color>
+    <color name="surface_alt">#ECE6DB</color>
+    <color name="surface_sunken">#E2DACC</color>
+    <color name="text_primary">#1C1A17</color>
+    <color name="text_secondary">#5E574B</color>
+    <color name="text_tertiary">#6F6659</color>
+    <color name="divider">#DDD5C7</color>
+    <color name="accent">#1F3A5F</color>
+    <color name="accent_soft">#E7EBEF</color>
+    <color name="on_accent">#FFFDF8</color>
+    <color name="success">#336B4B</color>
+    <color name="warning">#855B10</color>
+    <color name="warning_soft">#F8EEDC</color>
+    <color name="danger">#A13B2B</color>
+    <color name="danger_soft">#F9E8E3</color>
+    <color name="hero_start">#F4F1EA</color>
+    <color name="hero_end">#ECE6DB</color>
+    <color name="control_highlight">#221F3A5F</color>
+    <color name="ripple_on_accent">#33FFFDF8</color>
+    <color name="warning_border">#D8BE86</color>
+    <color name="danger_border">#DDB0A4</color>
+    <color name="accent_border">#C7D0DA</color>
     <color name="ic_launcher_background">#0F2744</color>
 </resources>

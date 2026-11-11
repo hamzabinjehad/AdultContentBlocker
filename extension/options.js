@@ -534,8 +534,12 @@ function renderVisualSettings() {
   $("visualEngineStatus").className = `visual-status ${visual.level}`;
   $("inspectVisual").checked = current?.inspectVisual === true;
   $("personBlur").value = current?.personBlur ?? "off";
-  $("inspectVisual").disabled = !current || !visual.available || saving ||
-    (restrictionsActive(current) && current.inspectVisual === true);
+  // An unavailable engine cannot be switched ON, but it must always be
+  // possible to switch it OFF: media checks are on by default, and a runtime
+  // that cannot host the engine must not leave a switch nobody can turn off.
+  $("inspectVisual").disabled = !current || saving
+    || (restrictionsActive(current) && current.inspectVisual === true)
+    || (!visual.available && current.inspectVisual !== true);
   $("personBlur").disabled = !current || !visual.available || saving;
   const covered = { off: [], female: ["female"], male: ["male"], all: ["female", "male"] };
   for (const option of $("personBlur").options) {

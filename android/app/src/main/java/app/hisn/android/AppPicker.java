@@ -15,6 +15,7 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.BaseAdapter;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -29,6 +30,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+
+import app.hisn.core.SocialApps;
 
 /**
  * A searchable, icon-bearing app chooser. It keeps the whole saved selection, including packages
@@ -84,6 +87,24 @@ final class AppPicker {
         counterParams.topMargin = Ui.dp(activity, 8);
         root.addView(counterRow, counterParams);
 
+        // One tap covers the social platforms this phone has installed. The
+        // preset only ticks ordinary rows: it stores nothing, and it leaves
+        // every other choice exactly as it was.
+        LinearLayout socialRow = new LinearLayout(activity);
+        socialRow.setOrientation(LinearLayout.HORIZONTAL);
+        socialRow.setGravity(Gravity.CENTER_VERTICAL);
+        Button social = Ui.button(activity, R.string.social_apps_action, Ui.ButtonKind.GHOST);
+        socialRow.addView(social);
+        TextView socialHint = Ui.caption(activity, activity.getString(R.string.social_apps_hint));
+        LinearLayout.LayoutParams socialHintParams = new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+        socialHintParams.setMarginStart(Ui.dp(activity, 10));
+        socialRow.addView(socialHint, socialHintParams);
+        LinearLayout.LayoutParams socialParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        socialParams.topMargin = Ui.dp(activity, 6);
+        root.addView(socialRow, socialParams);
+
         TextView error = Ui.caption(activity, "");
         error.setTextColor(Ui.color(activity, R.color.danger));
         error.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
@@ -126,6 +147,21 @@ final class AppPicker {
         };
         Adapter adapter = new Adapter(activity, visible, chosen, icons, selectionChanged, atLimit);
         list.setAdapter(adapter);
+        social.setOnClickListener(view -> {
+            Set<String> installed = new java.util.HashSet<>();
+            for (ChosenApps.Entry entry : apps) installed.add(entry.packageName);
+            int available = SocialApps.installed(installed).size();
+            int added = SocialApps.select(installed, chosen, PolicyStore.MAX_APPS);
+            selectionChanged.run();
+            adapter.notifyDataSetChanged();
+            if (available == 0) {
+                error.setText(activity.getString(R.string.social_apps_none));
+                error.setVisibility(View.VISIBLE);
+                error.announceForAccessibility(error.getText());
+            } else if (added > 0 && chosen.size() >= PolicyStore.MAX_APPS && added < available) {
+                atLimit.run();
+            }
+        });
 
         Runnable refilter = () -> {
             String query = search.getText().toString().trim().toLowerCase(Locale.getDefault());

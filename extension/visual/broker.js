@@ -27,6 +27,10 @@ function cancelRequests(predicate = () => true) {
 const disabled = () => ({ state: 'disabled', available: supported(), supportedPersonModes: ['off', 'all', 'female', 'male'] });
 function api() { return globalThis.browser ?? globalThis.chrome; }
 function supported() { return typeof document !== 'undefined' || !!api()?.offscreen?.createDocument; }
+/** Whether this runtime can host the local engine at all. A content script uses
+ *  it to keep the pre-display gate OFF instead of blanking media forever on a
+ *  browser that will never produce a verdict. Exposed without touching models. */
+export function visualSupported() { return supported(); }
 async function engine() {
   if (!localEngine) localEngine = import('./engine.bundle.js').then(module => module.createVisualEngine({ baseURL: api().runtime.getURL('visual/') }));
   return localEngine;
@@ -138,6 +142,9 @@ async function relay(operation, payload = {}) {
     result = ['inspect', 'prepare'].includes(operation)
       ? await bounded(Promise.race([work, cancellation]), VISUAL_RESPONSE_TIMEOUT_MS,
         () => { if (!request.cancelled) recoverStalledEngine(request); }) : await work;
+    // A closed port or a rejected sender resolves undefined, not an error. Never
+    // turn that silence into an "unknown" that the page treats as a verdict.
+    if (result == null) throw new Error('engine-unreachable');
     if (!request.cancelled && operation === 'inspect') verdictCache.put(ticket, fingerprint, result, payload.preferences);
     return request.cancelled ? cancelled() : identified(result);
   } catch (error) {

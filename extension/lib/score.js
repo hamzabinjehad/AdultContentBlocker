@@ -77,6 +77,26 @@ if (LOCAL_TERMS.length > EVASION_TERM_LIMIT) {
 }
 const LOCAL_BITS = new Map(LOCAL_TERMS.map((term, i) => [term, 1 << i]));
 const PROMOTION_WORDS = new Set(["watch", "download", "stream", "شاهد", "تحميل", "مشاهده"]);
+// Reviewed Arabizi context. `neek`/`nik` and `sksy` are also names, chat and
+// Indonesian "SKS"; they score only beside a clear reviewed phrase or word.
+// `aflam neek`/`film neek` are clear, matching the Android policy and keeping
+// "Watch Neek Masri live, free", "tahmil aflam Nik Cage mojani" and
+// "sksy download free" readable.
+export const ARABIZI_AMBIGUOUS = new Set(["neek", "nik", "niek", "neik"]);
+const ARABIZI_CONTEXTUAL = new Set([
+  "sksy", "sksi", "sksya", "sksia", "sksyh", "sksih",
+]);
+export const ARABIZI_CLEAR = new Set([
+  "aflam neek", "film neek", "sharmota", "sharmoot", "sharamet", "shrmota",
+  "shrmuta", "shrmot", "shrmut", "shramit", "shrmo6a", "shrm6a", "kahba",
+  "kahbat", "gahba", "3ahra", "3ahira", "3ahrat", "3aherat", "arabsex",
+  "sexarab", "sksarab", "mtnak", "mtnaka", "d3ara", "da3ara", "mnyok", "mnyuk",
+]);
+export function isArabiziContextual(term) {
+  if (ARABIZI_CLEAR.has(term)) return false;
+  return ARABIZI_CONTEXTUAL.has(term)
+    || term.split(" ").some((word) => ARABIZI_AMBIGUOUS.has(word));
+}
 
 /** A narrow additional verdict, not a replacement for page scoring. Require
  * two distinct reviewed strong terms AND promotional wording in 16 tokens.
@@ -406,8 +426,12 @@ function scoreZone(text, index, counts, inspectLocal = false, sensitivity = 50) 
   // promotion lane stop seeing them without any error.
   const strong = inspectLocal ? new Uint32Array(tokens.length) : null;
   const negative = inspectLocal ? new Uint8Array(tokens.length) : null;
-  let union = 0, starts = null;
+  let union = 0, starts = null, arabiziClear = false;
+  function note(term) {
+    if (ARABIZI_CLEAR.has(term)) arabiziClear = true;
+  }
   function record(term, start, end = start) {
+    note(term);
     if (!inspectLocal) return;
     const bit = LOCAL_BITS.get(term) ?? 0;
     if (bit && (index.positive.get(term) ?? 0) >= 8 && !index.negative.has(term)) {
@@ -447,6 +471,7 @@ function scoreZone(text, index, counts, inspectLocal = false, sensitivity = 50) 
       const key = index.canonical?.get(v) ?? v;
       if (index.positive.has(v)) {
         positiveMatch = true;
+        note(key);
         if (!formChoice(key, tokens, i, index)) {
           counts.set(key, (counts.get(key) ?? 0) + 1); record(key, i);
         }
@@ -464,7 +489,10 @@ function scoreZone(text, index, counts, inspectLocal = false, sensitivity = 50) 
     let node = index.phrases.get(tokens[i]);
     for (let j = i + 1; node && j < tokens.length; j++) {
       node = node.next.get(tokens[j]);
-      if (node?.term) { counts.set(node.term, (counts.get(node.term) ?? 0) + 1); record(node.term, i, j); }
+      if (node?.term) {
+        note(node.term);
+        counts.set(node.term, (counts.get(node.term) ?? 0) + 1); record(node.term, i, j);
+      }
     }
   }
 
@@ -494,7 +522,7 @@ function scoreZone(text, index, counts, inspectLocal = false, sensitivity = 50) 
     counts.set(term, (counts.get(term) ?? 0) + 1);
     if (inspectLocal) record(term, tokenAt(match.index + match[0].length - match[1].length));
   }
-  return { words: tokens.length,
+  return { words: tokens.length, arabiziClear,
     local: inspectLocal && (union & (union - 1)) !== 0
       ? localPromotion(tokens, strong, negative, index, sensitivity) : null };
 }
@@ -529,6 +557,7 @@ export function scorePage(zones, index, sensitivity = 50, options = {}) {
     if (!localEvidence && result.local) localEvidence = { zone, ...result.local };
 
     for (const [term, raw] of counts) {
+      if (isArabiziContextual(term) && !result.arabiziClear) continue;
       const occurrences = Math.min(raw, MAX_OCCURRENCES);
       const w = scoringIndex.positive.get(term) ?? scoringIndex.negative.get(term) ?? 0;
       score += w * occurrences * weight;

@@ -5,6 +5,12 @@
 	};
 	objectVersion = 56;
 	objects = {
+		58148B49A40E82D8CBE9F579  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "../shared/apple/AdultTldGuard.swift";
+			sourceTree = "<group>";
+		};
 		B68499C7EA29DC064714AED1  = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -53,6 +59,12 @@
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = "HisnSafariOnly/SafariOnlyApp.swift";
+			sourceTree = "<group>";
+		};
+		24C82CD6B06A4A65F3A2F063  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Shared/SafariGenerationRules.swift";
 			sourceTree = "<group>";
 		};
 		ED9BA85BF38759FD67931242  = {
@@ -130,12 +142,14 @@
 		C7F72C0E6EDDC20FF9C16D2F  = {
 			isa = PBXGroup;
 			children = (
+				58148B49A40E82D8CBE9F579,
 				B68499C7EA29DC064714AED1,
 				50D5E2EE75626431AAA2BD98,
 				4FBC244AD919421502A7BBD6,
 				6CB3CEF61F360B26D4CD8F00,
 				1349496B0BFBD6AE9C197419,
 				1AE0F1DCF32D9A544B737270,
+				24C82CD6B06A4A65F3A2F063,
 				ED9BA85BF38759FD67931242,
 				B9A01987720A964863B71216,
 			);
@@ -416,11 +430,21 @@
 			isa = PBXBuildFile;
 			fileRef = 1349496B0BFBD6AE9C197419;
 		};
+		4CFDCAE0725A26A108DACC63  = {
+			isa = PBXBuildFile;
+			fileRef = 24C82CD6B06A4A65F3A2F063;
+		};
+		62D9B5AFDFD62FE6B547310F  = {
+			isa = PBXBuildFile;
+			fileRef = 58148B49A40E82D8CBE9F579;
+		};
 		AE559C6E4DD0A8EFAA9D9893  = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				12247C38BBBA159AB1CA10C4,
+				4CFDCAE0725A26A108DACC63,
+				62D9B5AFDFD62FE6B547310F,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -537,11 +561,21 @@
 			isa = PBXBuildFile;
 			fileRef = 1349496B0BFBD6AE9C197419;
 		};
+		256D1CA4F5B4E7C05367AF9E  = {
+			isa = PBXBuildFile;
+			fileRef = 24C82CD6B06A4A65F3A2F063;
+		};
+		A181B775D5C1864761E51CB3  = {
+			isa = PBXBuildFile;
+			fileRef = 58148B49A40E82D8CBE9F579;
+		};
 		0F983949479CBF13EADA8DDD  = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				2D7760E35E6CCEBC0B1EFCEC,
+				256D1CA4F5B4E7C05367AF9E,
+				A181B775D5C1864761E51CB3,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -658,11 +692,21 @@
 			isa = PBXBuildFile;
 			fileRef = 1349496B0BFBD6AE9C197419;
 		};
+		9A40372F41FC4D763431C6F9  = {
+			isa = PBXBuildFile;
+			fileRef = 24C82CD6B06A4A65F3A2F063;
+		};
+		4F8BFE1C4BAE551A831F8797  = {
+			isa = PBXBuildFile;
+			fileRef = 58148B49A40E82D8CBE9F579;
+		};
 		A3F32B39CA25B4E853B1A852  = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				CD05155F9BB490283F9FF191,
+				9A40372F41FC4D763431C6F9,
+				4F8BFE1C4BAE551A831F8797,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -779,11 +823,21 @@
 			isa = PBXBuildFile;
 			fileRef = 1349496B0BFBD6AE9C197419;
 		};
+		3EFBC4865D5BC5D0A1AB165A  = {
+			isa = PBXBuildFile;
+			fileRef = 24C82CD6B06A4A65F3A2F063;
+		};
+		18B06DDD3FAE62A75869DBAE  = {
+			isa = PBXBuildFile;
+			fileRef = 58148B49A40E82D8CBE9F579;
+		};
 		73559754AB0F2BF0DB4A0A2C  = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				1C6E6F5812081176DA931911,
+				3EFBC4865D5BC5D0A1AB165A,
+				18B06DDD3FAE62A75869DBAE,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -900,11 +954,21 @@
 			isa = PBXBuildFile;
 			fileRef = 1349496B0BFBD6AE9C197419;
 		};
+		4E51D7481A9BE038F9ACD69A  = {
+			isa = PBXBuildFile;
+			fileRef = 24C82CD6B06A4A65F3A2F063;
+		};
+		87A1B591F90CC4A159204C5C  = {
+			isa = PBXBuildFile;
+			fileRef = 58148B49A40E82D8CBE9F579;
+		};
 		6D43E53A0CEA928EEEA84AFB  = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				2DBC60E8747A53B043C2B012,
+				4E51D7481A9BE038F9ACD69A,
+				87A1B591F90CC4A159204C5C,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1021,11 +1085,21 @@
 			isa = PBXBuildFile;
 			fileRef = 1349496B0BFBD6AE9C197419;
 		};
+		CDF6C175C38A11987144D26A  = {
+			isa = PBXBuildFile;
+			fileRef = 24C82CD6B06A4A65F3A2F063;
+		};
+		BD38DD39C3D8D885F9FF7C1B  = {
+			isa = PBXBuildFile;
+			fileRef = 58148B49A40E82D8CBE9F579;
+		};
 		8D7F028464973A5AF2F9F35F  = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				B911F36D47D7D587D0144E9C,
+				CDF6C175C38A11987144D26A,
+				BD38DD39C3D8D885F9FF7C1B,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

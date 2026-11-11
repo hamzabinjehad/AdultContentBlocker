@@ -81,7 +81,10 @@ public final class DnsPolicy {
         if (decision == DomainPolicy.Decision.INVALID) return unsupported();
         if (decision == DomainPolicy.Decision.ALLOW) {
             String rewrite = rewriter == null ? null : rewriter.target(name.toString());
-            if (rewrite != null && (queryType == 1 || queryType == 28)) {
+            // HTTPS/SVCB can carry endpoint IP hints used before A/AAAA answers.
+            // Return the same restricted CNAME so those hints cannot bypass SafeSearch.
+            if (rewrite != null && (queryType == 1 || queryType == 28
+                    || queryType == 64 || queryType == 65)) {
                 return new Result(Action.REWRITE, cnameResponse(query, questionEnd, rewrite),
                         questionEnd, rewrite);
             }

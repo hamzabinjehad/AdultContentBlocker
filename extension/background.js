@@ -19,7 +19,7 @@
 import { isLocked } from "./lib/policy.js";
 import { createLock } from "./lib/serial.js";
 import { describeEnforcement } from "./lib/status.js";
-import { cancelVisualTab, getVisualStatus, handleVisualMessage } from "./visual/broker.js";
+import { cancelVisualTab, getVisualStatus, handleVisualMessage, visualSupported } from "./visual/broker.js";
 import { DEFAULT_STATE, getState, toolbarStatus } from "./worker/state.js";
 import { applyRules } from "./worker/rules.js";
 import { pollNative } from "./worker/native.js";
@@ -171,7 +171,10 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         const state = await getState();
         sendResponse({ inspectVisual: state.inspectVisual === true, personBlur: state.personBlur ?? "off",
           personRegion: state.personRegion ?? "full", personEffect: state.personEffect ?? "solid",
-          personMedia: state.personMedia ?? "both" });
+          personMedia: state.personMedia ?? "both",
+          // A browser that cannot host the engine will never return a verdict.
+          // The page uses this to show media instead of a permanently hidden web.
+          available: visualSupported() });
         break;
       }
       case "getVisualStatus":

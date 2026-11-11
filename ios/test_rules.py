@@ -266,6 +266,9 @@ class SafariRuleTests(unittest.TestCase):
                 if key.startswith(("hisn.", "shield.", "exclamationmark.",
                                    "arrow.", "hand.", "moon.", "pause.")): continue
                 if key == "app.hisn.mobile.commitment": continue  # Keychain service, not UI text.
+                # List/download file names, not localization keys.
+                if key in {"manifest.json", "manifest.json.sig", "terms.json", "domains_core.txt"}:
+                    continue
                 self.assertIn(key, english, (path.name, key))
 
 

@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "version": 7,
+  "terms": [
+    {
+      "t": "fixtureterm",
+      "w": 8,
+      "l": "en"
+    }
+  ],
+  "negatives": [],
+  "host_terms": [
+    {
+      "t": "fixturehost",
+      "kind": "token"
+    }
+  ],
+  "never_keyword": [],
+  "keyword_exempt_hosts": [],
+  "defaults": {
+    "sensitivity": 50
+  }
+}

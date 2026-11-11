@@ -14,11 +14,15 @@ import java.util.function.Predicate;
  */
 public final class SavedSettings {
     public static final String UNKNOWN = "commitment_unknown", RESTORED = "restored_from_copy";
+    /** The committed policy version; absent in files written before policy identities existed. */
+    public static final String REVISION = "policy_revision";
     public final String domains, words;
     public final Set<String> apps, scans;
     public final boolean adultWords, visual, shortVideo, uninstallLock, installLock, managedLockdown, managedStrict, suspendBlocked;
     public final AppTimeLimit timeLimits;
     public final DailyAppSchedule schedule;
+    /** A validated, persisted policy version. Zero means a legacy record with no version yet. */
+    public final long revision;
 
     private SavedSettings(Map<String, ?> values) {
         domains = text(values, "domains");
@@ -40,6 +44,7 @@ public final class SavedSettings {
                 number(values, "schedule_end", 420), names(values, "schedule_apps"),
                 flag(values, "schedule_all_apps"), number(values, "schedule_days",
                         DailyAppSchedule.ALL_DAYS));
+        revision = longNumber(values, REVISION, 0);
     }
 
     /** The rule fields of saved values. Missing fields read as the defaults of Hisn 0.5.3 and earlier. */
@@ -144,6 +149,18 @@ public final class SavedSettings {
         return values;
     }
 
+    /**
+     * Commit a policy version into already-built values and reseal them. The revision is
+     * written in the same preferences commit as the rules it identifies, so a reader can
+     * never see new rules under an old identity.
+     */
+    public static Map<String, Object> withRevision(Map<String, Object> values, long revision) {
+        if (revision < 0) throw new IllegalArgumentException("Invalid policy revision");
+        values.put(REVISION, revision);
+        values.put(SettingsIntegrity.SEAL, SettingsIntegrity.seal(values));
+        return values;
+    }
+
     // Values saved before 0.5.4 may lack a field; the defaults are the ones those versions read.
     public static CommitmentClock clock(Map<String, ?> values, int boot) {
         Object remaining = values.get("remaining"), elapsed = values.get("elapsed");
@@ -241,6 +258,17 @@ public final class SavedSettings {
         Object value = values.get(key);
         if (value == null) return fallback;
         if (value instanceof Integer) return (Integer) value;
+        throw new IllegalArgumentException("Invalid " + key);
+    }
+
+    private static long longNumber(Map<String, ?> values, String key, long fallback) {
+        Object value = values.get(key);
+        if (value == null) return fallback;
+        if (value instanceof Long) {
+            long number = (Long) value;
+            if (number < 0) throw new IllegalArgumentException("Invalid " + key);
+            return number;
+        }
         throw new IllegalArgumentException("Invalid " + key);
     }
 }

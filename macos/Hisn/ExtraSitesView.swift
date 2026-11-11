@@ -35,13 +35,11 @@ struct ExtraSitesPicker: View {
                 }
             }
 
-            HnFlowLayout(spacing: 7) {
-                ForEach(ExtraSites.suggestions, id: \.self) { domain in
-                    ExtraSiteChip(domain: domain,
-                                  coverage: ExtraSites.coverage(of: domain, in: blocks),
-                                  isLocked: isLocked,
-                                  toggle: { toggle(domain) })
-                }
+            HnChipFlow(items: ExtraSites.suggestions, spacing: 7) { domain in
+                ExtraSiteChip(domain: domain,
+                              coverage: ExtraSites.coverage(of: domain, in: blocks),
+                              isLocked: isLocked,
+                              toggle: { toggle(domain) })
             }
 
             if isLocked {
@@ -127,6 +125,97 @@ private struct ExtraSiteChip: View {
     }
 }
 
+/// The chip flow, taking the `Layout` on macOS 13 and the measured fallback
+/// below it. The chips decide their own width; the container decides where the
+/// line ends.
+private struct HnChipFlow<Content: View>: View {
+    let items: [String]
+    let spacing: CGFloat
+    let content: (String) -> Content
+
+    var body: some View {
+        if #available(macOS 13.0, *), !HnCompat.forceLegacy {
+            HnFlowLayout(spacing: spacing) {
+                ForEach(items, id: \.self) { content($0) }
+            }
+        } else {
+            HnMeasuredChipFlow(items: items, spacing: spacing, content: content)
+        }
+    }
+}
+
+/// The macOS 12 spelling of `HnFlowLayout`.
+///
+/// A chip's width is its natural size, so each row is the longest run that
+/// still fits the width the flow is given. Widths and the container width are
+/// measured with preferences; both are stable for a given text and font, so
+/// the flow settles after one layout pass and does not oscillate.
+private struct HnMeasuredChipFlow<Content: View>: View {
+    let items: [String]
+    let spacing: CGFloat
+    let content: (String) -> Content
+
+    @State private var widths: [String: CGFloat] = [:]
+    @State private var available: CGFloat = 0
+
+    private var rows: [[String]] {
+        guard available > 0 else { return items.map { [$0] } }
+        var rows: [[String]] = []
+        var row: [String] = []
+        var used: CGFloat = 0
+        for item in items {
+            let width = widths[item] ?? 0
+            if row.isEmpty {
+                row = [item]
+                used = width
+            } else if used + spacing + width <= available {
+                row.append(item)
+                used += spacing + width
+            } else {
+                rows.append(row)
+                row = [item]
+                used = width
+            }
+        }
+        if !row.isEmpty { rows.append(row) }
+        return rows
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: spacing) {
+            ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                HStack(spacing: spacing) {
+                    ForEach(row, id: \.self) { item in
+                        content(item)
+                            .fixedSize()
+                            .background(GeometryReader { proxy in
+                                Color.clear.preference(key: HnChipWidthKey.self,
+                                                       value: [item: proxy.size.width])
+                            })
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(GeometryReader { proxy in
+            Color.clear
+                .onAppear { available = proxy.size.width }
+                .onChange(of: proxy.size.width) { available = $0 }
+        })
+        .onPreferenceChange(HnChipWidthKey.self) { measured in
+            widths.merge(measured) { _, new in new }
+        }
+    }
+}
+
+private struct HnChipWidthKey: PreferenceKey {
+    static var defaultValue: [String: CGFloat] = [:]
+
+    static func reduce(value: inout [String: CGFloat], nextValue: () -> [String: CGFloat]) {
+        value.merge(nextValue()) { _, new in new }
+    }
+}
+
 /// A wrapping row of variable-width chips.
 ///
 /// `LazyVGrid` gives every cell the same width, which turns twelve short
@@ -135,6 +224,7 @@ private struct ExtraSiteChip: View {
 /// for right-to-left languages, so the placement below is always written from
 /// the leading edge; the framework flips it, including the order and each
 /// chip's own icon/text order.
+@available(macOS 13.0, *)
 private struct HnFlowLayout: Layout {
     var spacing: CGFloat = 8
 

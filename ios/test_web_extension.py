@@ -96,6 +96,18 @@ class SafariWebExtensionTests(unittest.TestCase):
                          ["content/feed.js", "content/scan.js", "visual/capture.js", "content/visual-effects.js", "content/visual.js"])
         self.assertEqual(manifest["content_scripts"][0]["run_at"], "document_start")
         self.assertEqual(manifest["content_scripts"][0]["css"], ["content/visual-gate.css"])
+        # The whole-post rule is a stylesheet delivered only to the social feeds
+        # it names, never to every page.
+        self.assertEqual(len(manifest["content_scripts"]), 2)
+        social = manifest["content_scripts"][1]
+        self.assertEqual(social["css"], ["content/social-media.css"])
+        self.assertNotIn("js", social)
+        self.assertEqual(social["run_at"], "document_start")
+        self.assertEqual(social["all_frames"], False)
+        self.assertIn("*://*.instagram.com/*", social["matches"])
+        self.assertIn("*://bsky.app/*", social["matches"])
+        self.assertFalse(any("x.com" in pattern or "twitter.com" in pattern
+                             or "youtube.com" in pattern for pattern in social["matches"]))
         self.assertNotIn("key", manifest)
         self.assertNotIn("declarative_net_request", manifest)
         self.assertNotIn("nativeMessaging", manifest.get("permissions", []))

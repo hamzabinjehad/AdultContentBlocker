@@ -15,7 +15,6 @@ import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.Button;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -28,6 +27,10 @@ import java.time.LocalDate;
  * Shows a reason category, never captured text, matched words or browsing history, then a short
  * pause: guided breaths, a reminder, a question about what the person needs, and today's count.
  * Returning home is never delayed by the pause.
+ *
+ * <p>The reflection is progressive: the breath and one way out are on the first screen, and the
+ * reminder and the four needs appear only after the third breath. The page still never gates the
+ * exit on finishing the exercise.
  */
 public final class RestrictionActivity extends Activity {
     private static final String PAUSE_PREFS = "pause";
@@ -47,6 +50,7 @@ public final class RestrictionActivity extends Activity {
     private TextView breathLabel;
     private TextView breathStep;
     private Button breatheAgain;
+    private LinearLayout reflectionPanel;
     private int cycle;
     private boolean voluntary;
 
@@ -64,39 +68,36 @@ public final class RestrictionActivity extends Activity {
         scroll.setBackgroundColor(Ui.color(this, R.color.background));
         LinearLayout column = new LinearLayout(this);
         column.setOrientation(LinearLayout.VERTICAL);
-        column.setGravity(Gravity.CENTER_HORIZONTAL);
         column.setPadding(side, top, side, bottom);
         scroll.addView(column, new ScrollView.LayoutParams(
                 ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT));
 
-        ImageView mark = Ui.iconInTile(this, R.drawable.ic_shield, R.color.accent, 72, 40);
-        LinearLayout.LayoutParams markParams = (LinearLayout.LayoutParams) mark.getLayoutParams();
-        markParams.gravity = Gravity.CENTER_HORIZONTAL;
-        column.addView(mark);
-        TextView title = Ui.text(this, getString(voluntary ? R.string.pause_voluntary_title
-                : R.string.restriction_title), 28, R.color.text_primary);
-        title.setTypeface(Ui.medium());
-        title.setGravity(Gravity.CENTER);
-        title.setPadding(0, Ui.dp(this, 20), 0, 0);
-        Ui.heading(title);
-        column.addView(title);
+        View rule = new View(this);
+        rule.setBackgroundColor(Ui.color(this, R.color.accent));
+        column.addView(rule, new LinearLayout.LayoutParams(Ui.dp(this, 44), Ui.dp(this, 2)));
 
-        TextView body = Ui.text(this, getString(reason()), 16, R.color.text_secondary);
-        body.setGravity(Gravity.CENTER);
-        body.setPadding(0, Ui.dp(this, 10), 0, 0);
-        column.addView(body);
+        TextView eyebrow = Ui.eyebrow(this, getString(voluntary
+                ? R.string.pause_eyebrow : R.string.block_eyebrow));
+        LinearLayout.LayoutParams eyebrowParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        eyebrowParams.topMargin = Ui.dp(this, 14);
+        column.addView(eyebrow, eyebrowParams);
 
-        // A voluntary pause must not open with the loudest control on the screen: leaving is
-        // allowed, but the breath is the point. An enforced pause keeps the way out primary.
-        addRestCard(column);
+        TextView title = Ui.display(this, getString(voluntary ? R.string.pause_voluntary_title
+                : R.string.restriction_title), 32);
+        title.setGravity(Gravity.START);
+        LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        titleParams.topMargin = Ui.dp(this, 8);
+        column.addView(title, titleParams);
 
-        Button home = Ui.button(this, voluntary ? R.string.pause_voluntary_done
-                : R.string.restriction_home,
-                voluntary ? Ui.ButtonKind.GHOST : Ui.ButtonKind.PRIMARY);
-        column.addView(home, Ui.margins(this, 18, 0));
-        home.setOnClickListener(view -> {
-            if (voluntary) finish(); else goHome();
-        });
+        TextView body = Ui.text(this, getString(reason()), 15, R.color.text_secondary);
+        body.setGravity(Gravity.START);
+        body.setLineSpacing(Ui.dp(this, 4), 1.18f);
+        LinearLayout.LayoutParams bodyParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        bodyParams.topMargin = Ui.dp(this, 10);
+        column.addView(body, bodyParams);
 
         addPause(column, state == null);
 
@@ -119,47 +120,6 @@ public final class RestrictionActivity extends Activity {
             getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
                     android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, this::back);
         }
-    }
-
-    /** The "rest longer / lock screen" card, only after a word or image detection. */
-    private void addRestCard(LinearLayout column) {
-        final String app = getIntent().getStringExtra(TextGuardService.EXTRA_APP);
-        final int minutes = getIntent().getIntExtra(TextGuardService.EXTRA_MINUTES, 0);
-        if (!getIntent().getBooleanExtra("canrest", false) || app == null || minutes <= 0) return;
-        LinearLayout card = Ui.card(this);
-        card.setPadding(Ui.dp(this, 22), Ui.dp(this, 18), Ui.dp(this, 22), Ui.dp(this, 18));
-        TextView closed = Ui.text(this, getString(R.string.restriction_closed,
-                getString(R.string.rest_minutes, minutes)), 15, R.color.text_secondary);
-        closed.setGravity(Gravity.CENTER);
-        card.addView(closed);
-        Button five = Ui.button(this, R.string.restriction_rest_5, Ui.ButtonKind.TONAL);
-        five.setOnClickListener(view -> rest(app, 5));
-        card.addView(five, Ui.buttonParams(this));
-        Button fifteen = Ui.button(this, R.string.restriction_rest_15, Ui.ButtonKind.TONAL);
-        fifteen.setOnClickListener(view -> rest(app, 15));
-        card.addView(fifteen, Ui.buttonParams(this));
-        Button hour = Ui.button(this, R.string.restriction_rest_60, Ui.ButtonKind.TONAL);
-        hour.setOnClickListener(view -> rest(app, 60));
-        card.addView(hour, Ui.buttonParams(this));
-        if (Build.VERSION.SDK_INT >= 28) {
-            Button lock = Ui.button(this, R.string.restriction_lock_screen, Ui.ButtonKind.GHOST);
-            lock.setOnClickListener(view -> lockScreen());
-            card.addView(lock, Ui.buttonParams(this));
-        }
-        column.addView(card, Ui.margins(this, 16, 0));
-    }
-
-    private void rest(String app, int minutes) {
-        sendBroadcast(new Intent(TextGuardService.ACTION_REST).setPackage(getPackageName())
-                .putExtra(TextGuardService.EXTRA_APP, app)
-                .putExtra(TextGuardService.EXTRA_MINUTES, minutes)
-                .putExtra(TextGuardService.EXTRA_VISUAL, getIntent().getBooleanExtra("visual", false)));
-        goHome();
-    }
-
-    private void lockScreen() {
-        sendBroadcast(new Intent(TextGuardService.ACTION_LOCK_SCREEN).setPackage(getPackageName()));
-        goHome();
     }
 
     private int reason() {
@@ -188,30 +148,37 @@ public final class RestrictionActivity extends Activity {
         super.onDestroy();
     }
 
-    private void addPause(LinearLayout layout, boolean count) {
-        LinearLayout card = Ui.card(this);
-        card.setPadding(Ui.dp(this, 22), Ui.dp(this, 22), Ui.dp(this, 22), Ui.dp(this, 22));
-        LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        cardParams.topMargin = Ui.dp(this, 22);
-        layout.addView(card, cardParams);
+    private void addPause(LinearLayout page, boolean count) {
+        // Counting is a day and a number only. A recreated screen (rotation) is the same pause.
+        SharedPreferences prefs = getSharedPreferences(PAUSE_PREFS, MODE_PRIVATE);
+        PauseTally tally = PauseTally.record(prefs.getLong("day", -1), prefs.getInt("count", 0),
+                prefs.getLong("at", 0), LocalDate.now().toEpochDay(), System.currentTimeMillis());
+        if (count) {
+            prefs.edit().putLong("day", tally.day).putInt("count", tally.count)
+                    .putLong("at", tally.at).apply();
+        }
 
-        TextView heading = Ui.text(this, getString(R.string.pause_title), 22, R.color.text_primary);
-        heading.setTypeface(Ui.medium());
-        heading.setGravity(Gravity.CENTER);
-        Ui.heading(heading);
-        card.addView(heading);
+        LinearLayout breath = new LinearLayout(this);
+        breath.setOrientation(LinearLayout.VERTICAL);
+        breath.setGravity(Gravity.CENTER_HORIZONTAL);
+        LinearLayout.LayoutParams breathParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        breathParams.topMargin = Ui.dp(this, 22);
+        page.addView(breath, breathParams);
 
         FrameLayout ringBox = new FrameLayout(this);
         LinearLayout.LayoutParams ringBoxParams = new LinearLayout.LayoutParams(
-                Ui.dp(this, 188), Ui.dp(this, 188));
+                Ui.dp(this, 172), Ui.dp(this, 172));
         ringBoxParams.gravity = Gravity.CENTER_HORIZONTAL;
-        ringBoxParams.topMargin = Ui.dp(this, 14);
-        card.addView(ringBox, ringBoxParams);
+        breath.addView(ringBox, ringBoxParams);
         GradientDrawable ring = new GradientDrawable();
         ring.setShape(GradientDrawable.OVAL);
-        ring.setColor(Ui.withAlpha(Ui.color(this, R.color.accent), 0.10f));
-        ring.setStroke(Ui.dp(this, 2), Ui.color(this, R.color.accent));
+        ring.setGradientType(GradientDrawable.RADIAL_GRADIENT);
+        ring.setGradientRadius(Ui.dp(this, 66));
+        ring.setGradientCenter(0.5f, 0.5f);
+        int accent = Ui.color(this, R.color.accent);
+        ring.setColors(new int[]{Ui.withAlpha(accent, 0.16f), Ui.withAlpha(accent, 0.02f)});
+        ring.setStroke(Math.max(1, Ui.dp(this, 1)), accent);
         circle = new View(this);
         circle.setBackground(ring);
         circle.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
@@ -219,22 +186,26 @@ public final class RestrictionActivity extends Activity {
         circle.setScaleX(rest);
         circle.setScaleY(rest);
         FrameLayout.LayoutParams circleParams = new FrameLayout.LayoutParams(
-                Ui.dp(this, 148), Ui.dp(this, 148), Gravity.CENTER);
+                Ui.dp(this, 132), Ui.dp(this, 132), Gravity.CENTER);
         ringBox.addView(circle, circleParams);
 
-        breathLabel = Ui.text(this, getString(R.string.pause_breathe_in), 18, R.color.text_primary);
-        breathLabel.setTypeface(Ui.medium());
+        breathLabel = Ui.display(this, getString(R.string.pause_breathe_in), 24);
         breathLabel.setGravity(Gravity.CENTER);
-        card.addView(breathLabel);
+        breathLabel.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+        LinearLayout.LayoutParams labelParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        labelParams.topMargin = Ui.dp(this, 18);
+        breath.addView(breathLabel, labelParams);
+
         breathStep = Ui.caption(this, getString(R.string.pause_breath_step, 1, BREATH_CYCLES));
         breathStep.setGravity(Gravity.CENTER);
         breathStep.setPadding(0, Ui.dp(this, 4), 0, 0);
-        card.addView(breathStep);
+        breath.addView(breathStep);
 
         LinearLayout dotRow = new LinearLayout(this);
         dotRow.setOrientation(LinearLayout.HORIZONTAL);
         dotRow.setGravity(Gravity.CENTER);
-        dotRow.setPadding(0, Ui.dp(this, 10), 0, 0);
+        dotRow.setPadding(0, Ui.dp(this, 12), 0, 0);
         for (int index = 0; index < BREATH_CYCLES; index++) {
             View dot = new View(this);
             GradientDrawable shape = new GradientDrawable();
@@ -242,32 +213,61 @@ public final class RestrictionActivity extends Activity {
             shape.setColor(Ui.color(this, R.color.surface_alt));
             dot.setBackground(shape);
             dot.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-            LinearLayout.LayoutParams dotParams = new LinearLayout.LayoutParams(Ui.dp(this, 7), Ui.dp(this, 7));
+            LinearLayout.LayoutParams dotParams = new LinearLayout.LayoutParams(
+                    Ui.dp(this, 6), Ui.dp(this, 6));
             if (index > 0) dotParams.setMarginStart(Ui.dp(this, 6));
             dotRow.addView(dot, dotParams);
             dots[index] = dot;
         }
-        card.addView(dotRow);
+        breath.addView(dotRow);
 
-        breatheAgain = Ui.button(this, R.string.pause_breathe_again, Ui.ButtonKind.TONAL);
+        breatheAgain = Ui.button(this, R.string.pause_breathe_again, Ui.ButtonKind.QUIET);
         breatheAgain.setVisibility(View.GONE);
-        card.addView(breatheAgain, Ui.buttonParams(this));
+        breath.addView(breatheAgain, Ui.buttonParams(this));
         breatheAgain.setOnClickListener(view -> breathe());
 
-        LinearLayout reminderPanel = Ui.softPanel(this);
-        TextView reminder = Ui.text(this, getString(REMINDERS[0]), 15, R.color.text_secondary);
-        reminder.setGravity(Gravity.CENTER);
-        reminderPanel.addView(reminder);
-        card.addView(reminderPanel, Ui.margins(this, 16, 0));
+        // The way out stays on the first screen. The reflection below never gates it.
+        Button home = Ui.button(this, voluntary ? R.string.pause_voluntary_done
+                : R.string.restriction_home,
+                voluntary ? Ui.ButtonKind.GHOST : Ui.ButtonKind.PRIMARY);
+        page.addView(home, Ui.margins(this, 22, 0));
+        home.setOnClickListener(view -> {
+            if (voluntary) finish(); else goHome();
+        });
 
-        TextView question = Ui.text(this, getString(R.string.pause_need_question), 15, R.color.text_primary);
-        question.setTypeface(Ui.medium());
-        question.setGravity(Gravity.CENTER);
-        question.setPadding(0, Ui.dp(this, 18), 0, Ui.dp(this, 6));
-        card.addView(question);
+        reflectionPanel = new LinearLayout(this);
+        reflectionPanel.setOrientation(LinearLayout.VERTICAL);
+        reflectionPanel.setVisibility(View.GONE);
+        page.addView(reflectionPanel, Ui.margins(this, 24, 0));
+        reflectionPanel.addView(Ui.divider(this));
+
+        LinearLayout quote = new LinearLayout(this);
+        quote.setOrientation(LinearLayout.HORIZONTAL);
+        quote.setGravity(Gravity.TOP);
+        LinearLayout.LayoutParams quoteParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        quoteParams.topMargin = Ui.dp(this, 14);
+        reflectionPanel.addView(quote, quoteParams);
+        View quoteRule = new View(this);
+        quoteRule.setBackgroundColor(Ui.color(this, R.color.accent));
+        quote.addView(quoteRule, new LinearLayout.LayoutParams(Ui.dp(this, 2), Ui.dp(this, 54)));
+        TextView reminder = Ui.text(this, getString(REMINDERS[PauseTally.reminderFor(tally.count) - 1]),
+                15, R.color.text_primary);
+        reminder.setLineSpacing(Ui.dp(this, 4), 1.18f);
+        LinearLayout.LayoutParams reminderParams = new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+        reminderParams.setMarginStart(Ui.dp(this, 12));
+        quote.addView(reminder, reminderParams);
+
+        TextView question = Ui.display(this, getString(R.string.pause_need_question), 22);
+        question.setGravity(Gravity.START);
+        LinearLayout.LayoutParams questionParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        questionParams.topMargin = Ui.dp(this, 20);
+        reflectionPanel.addView(question, questionParams);
 
         TextView tip = Ui.text(this, "", 14, R.color.accent);
-        tip.setGravity(Gravity.CENTER);
+        tip.setGravity(Gravity.START);
         tip.setVisibility(View.GONE);
         tip.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
         tip.setPadding(0, Ui.dp(this, 8), 0, 0);
@@ -284,26 +284,16 @@ public final class RestrictionActivity extends Activity {
                 needButtons[index] = choice;
                 choice.setOnClickListener(view -> chooseNeed(index, tip));
             }
-            card.addView(row, Ui.margins(this, 8, 0));
+            reflectionPanel.addView(row, Ui.margins(this, 8, 0));
         }
-        card.addView(tip);
-
-        // Counting is a day and a number only. A recreated screen (rotation) is the same pause.
-        SharedPreferences prefs = getSharedPreferences(PAUSE_PREFS, MODE_PRIVATE);
-        PauseTally tally = PauseTally.record(prefs.getLong("day", -1), prefs.getInt("count", 0),
-                prefs.getLong("at", 0), LocalDate.now().toEpochDay(), System.currentTimeMillis());
-        if (count) {
-            prefs.edit().putLong("day", tally.day).putInt("count", tally.count)
-                    .putLong("at", tally.at).apply();
-        }
-
-        reminder.setText(REMINDERS[PauseTally.reminderFor(tally.count) - 1]);
+        reflectionPanel.addView(tip);
 
         TextView today = tally.count == 1 ? Ui.caption(this, getString(R.string.pause_tally_first))
                 : Ui.caption(this, getString(R.string.pause_tally_many, tally.count));
-        today.setGravity(Gravity.CENTER);
-        today.setPadding(0, Ui.dp(this, 16), 0, 0);
-        card.addView(today);
+        today.setGravity(Gravity.START);
+        today.setPadding(0, Ui.dp(this, 20), 0, 0);
+        reflectionPanel.addView(today);
+
         breathe();
     }
 
@@ -319,6 +309,12 @@ public final class RestrictionActivity extends Activity {
     private void breathe() {
         handler.removeCallbacksAndMessages(null);
         breatheAgain.setVisibility(View.GONE);
+        if (reflectionPanel != null) {
+            reflectionPanel.animate().cancel();
+            reflectionPanel.setVisibility(View.GONE);
+            reflectionPanel.setAlpha(1f);
+            reflectionPanel.setTranslationY(0f);
+        }
         cycle = 0;
         updateDots(0);
         phase(true);
@@ -342,8 +338,22 @@ public final class RestrictionActivity extends Activity {
             if (inhale) { phase(false); return; }
             if (++cycle < BREATH_CYCLES) { phase(true); return; }
             updateDots(BREATH_CYCLES - 1);
-            breathLabel.setText(R.string.pause_breath_done);
+            breathLabel.setText(R.string.pause_title);
+            breathStep.setText(R.string.pause_breath_done);
             breatheAgain.setVisibility(View.VISIBLE);
+            if (reflectionPanel != null) {
+                reflectionPanel.setVisibility(View.VISIBLE);
+                reflectionPanel.setAlpha(0f);
+                reflectionPanel.setTranslationY(Ui.dp(this, 10));
+                if (ValueAnimator.areAnimatorsEnabled()) {
+                    reflectionPanel.animate().alpha(1f).translationY(0f)
+                            .setDuration(320).start();
+                } else {
+                    reflectionPanel.setAlpha(1f);
+                    reflectionPanel.setTranslationY(0f);
+                }
+                reflectionPanel.announceForAccessibility(getString(R.string.pause_need_question));
+            }
         }, duration);
     }
 

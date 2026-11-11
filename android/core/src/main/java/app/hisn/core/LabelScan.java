@@ -9,8 +9,8 @@ import java.util.List;
  * Breadth-first over at most 2048 visited nodes and 2048 scheduled children. Editable,
  * password and EditText nodes are never read and their subtrees are skipped; invisible
  * nodes are skipped, and an invisible node with children is not opened. A childless node gives its text, else its content description.
- * A parent's own content description, common on card and button layouts whose children
- * are images, is read only when its whole subtree was inspected, gave no text, and held
+ * A parent's own text (or content description when it has no text), common on card and button
+ * layouts whose children are images, is read only when its whole subtree was inspected, gave no text, and held
  * no editable or password node (even an invisible one) and no invisible node with children,
  * which may hide one (an input inside a hidden container). A cut-short subtree never yields
  * its parent's description, and a parent that is read covers every enclosing parent.
@@ -36,12 +36,12 @@ public final class LabelScan {
         void release(N node);
     }
 
-    /** A parent whose description is read at the end unless something in its subtree rules it out. */
+    /** A parent whose label is read at the end unless something in its subtree rules it out. */
     private static final class Parent {
-        final CharSequence description;
+        final CharSequence label;
         final Parent outer;
         boolean ruledOut;
-        Parent(CharSequence description, Parent outer) { this.description = description; this.outer = outer; }
+        Parent(CharSequence label, Parent outer) { this.label = label; this.outer = outer; }
     }
 
     private static final class Queued<N> {
@@ -89,11 +89,12 @@ public final class LabelScan {
                     int count = tree.childCount(node);
                     if (count > 0) {
                         Parent owner = item.owner;
-                        CharSequence description = tree.description(node);
-                        if (hasText(description)) {
-                            if (held + description.length() <= VisibleTextSample.LIMIT) {
-                                held += description.length();
-                                parents.add(owner = new Parent(description, owner));
+                        CharSequence label = tree.text(node);
+                        if (!hasText(label)) label = tree.description(node);
+                        if (hasText(label)) {
+                            if (held + label.length() <= VisibleTextSample.LIMIT) {
+                                held += label.length();
+                                parents.add(owner = new Parent(label, owner));
                             } else { text.markPartial(); ruleOut(owner); } // Skipped, but still text inside.
                         }
                         for (int i = 0; i < count; i++) {
@@ -131,7 +132,7 @@ public final class LabelScan {
             ruleOut(parent.outer);
         }
         // Appended in screen order, after the leaf labels.
-        for (int i = 0; i < read.length; i++) if (read[i]) text.append(parents.get(i).description);
+        for (int i = 0; i < read.length; i++) if (read[i]) text.append(parents.get(i).label);
         return text;
     }
 

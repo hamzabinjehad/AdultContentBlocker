@@ -19,7 +19,8 @@ about the browser side's structure.
 | 8 | Dynamic policy | strict catch-all, allowlist, custom blocks, scoped SafeSearch | `lib/policy.js` | `worker/rules.js` installs and reads it back |
 | 9 | Page text | rendered text, alt text and metadata of every frame | `lib/score.js` + `lib/normalize.js` | `content/scan.js` collects, `worker/inspection.js` scores |
 | 10 | Feed items | one rendered post at a time on supported mixed sites | `content/feed.js` | `content/scan.js` delegates to it |
-| 11 | Visual checks (opt-in) | readable images and video frames | `visual/` + `content/visual.js` | separate registration, off by default |
+| 11 | Visual checks | readable images and video frames | `visual/` + `content/visual.js` | separate registration, on by default |
+| 12 | Social posts | the post around a locally flagged image/video on feeds with no text adapter | `content/social-media.css` | stylesheet only, registered while visual checks are on |
 
 Priorities are global across rulesets: strict catch-all 1, plumbing 2, published
 domain list 3, keyword/path rules 4, obfuscation and encoded queries 5, the

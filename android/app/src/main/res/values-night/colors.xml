@@ -1,28 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Night palette. Same semantic names as values/colors.xml, at least 4.5:1 on their surfaces. -->
+<!-- Night palette. Same semantic names as values/colors.xml; warm charcoal rather than blue-black,
+     at least 4.5:1 on the matching surfaces. -->
 <resources>
-    <color name="background">#0A0E14</color>
-    <color name="surface">#131923</color>
-    <color name="surface_alt">#1B2330</color>
-    <color name="surface_sunken">#232D3B</color>
-    <color name="text_primary">#EDF2F9</color>
-    <color name="text_secondary">#AEB9C9</color>
-    <color name="text_tertiary">#94A3B8</color>
-    <color name="divider">#253041</color>
-    <color name="accent">#8AB4FF</color>
-    <color name="accent_soft">#172B47</color>
-    <color name="on_accent">#081120</color>
-    <color name="success">#6EE7A8</color>
-    <color name="warning">#F5C878</color>
-    <color name="warning_soft">#2E2513</color>
-    <color name="danger">#FFA39E</color>
-    <color name="danger_soft">#351B1B</color>
-    <color name="hero_start">#13243C</color>
-    <color name="hero_end">#131923</color>
-    <color name="control_highlight">#338AB4FF</color>
-    <color name="ripple_on_accent">#330A1526</color>
-    <color name="warning_border">#5E4A22</color>
-    <color name="danger_border">#5C302D</color>
-    <color name="accent_border">#2B4368</color>
+    <color name="background">#141311</color>
+    <color name="surface">#1C1A17</color>
+    <color name="surface_alt">#25221D</color>
+    <color name="surface_sunken">#2E2A24</color>
+    <color name="text_primary">#F2EDE3</color>
+    <color name="text_secondary">#BDB5A7</color>
+    <color name="text_tertiary">#9A9183</color>
+    <color name="divider">#332E27</color>
+    <color name="accent">#A7C2E2</color>
+    <color name="accent_soft">#22303F</color>
+    <color name="on_accent">#0D1620</color>
+    <color name="success">#8FCCA1</color>
+    <color name="warning">#E7C17F</color>
+    <color name="warning_soft">#2B2317</color>
+    <color name="danger">#ECA99E</color>
+    <color name="danger_soft">#33201B</color>
+    <color name="hero_start">#191714</color>
+    <color name="hero_end">#141311</color>
+    <color name="control_highlight">#33A7C2E2</color>
+    <color name="ripple_on_accent">#330D1620</color>
+    <color name="warning_border">#5A482C</color>
+    <color name="danger_border">#5C3730</color>
+    <color name="accent_border">#39485A</color>
     <color name="ic_launcher_background">#0F2744</color>
 </resources>

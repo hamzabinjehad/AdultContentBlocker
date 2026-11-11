@@ -53,3 +53,8 @@ website/vendor/dist/
 
 # Local Claude Code worktrees.
 .claude/worktrees/
+
+# Local agent worktrees. A nested checkout is not source; committing one would
+# copy a whole repository into the tree. Move worktrees outside the checkout
+# when possible.
+/.agents/worktrees/

@@ -133,7 +133,7 @@ final class PauseTests: XCTestCase {
     func testGuardAlertRendersInBothLanguages() async throws {
         let now = Date(timeIntervalSince1970: 1_800_000_000)
         let alert = BrowserGuard.Alert(id: 1, name: "Chrome",
-                                       reason: .extensionSilent,
+                                       reason: .profileUnprotected,
                                        closeAt: now.addingTimeInterval(42))
         for language in ["en", "ar"] {
             let view = NSHostingView(rootView: ZStack {

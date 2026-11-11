@@ -2354,6 +2354,7 @@
       }
     },
     "Closed while browser guarding is active if its extension stops checking in or is confirmed missing or disabled in a standard profile." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -3717,6 +3718,7 @@
       }
     },
     "Hisn cannot confirm an extension connection from %@. Reinstall or enable it in %@’s extensions page and check its app connection, or %@ will close." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -3728,6 +3730,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hisn cannot confirm an extension connection from %1$@. Reinstall or enable it in %2$@’s extensions page and check its app connection, or %3$@ will close."
+          }
+        }
+      }
+    },
+    "Hisn cannot confirm an extension connection from %@. The browser stays open; page-content checks may be reduced until the extension reconnects." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يستطيع حصن تأكيد اتصال الإضافة من %@. يبقى المتصفح مفتوحًا؛ وقد تنخفض فحوص محتوى الصفحات حتى تعيد الإضافة الاتصال."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hisn cannot confirm an extension connection from %@. The browser stays open; page-content checks may be reduced until the extension reconnects."
           }
         }
       }
@@ -4553,6 +4571,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "أبقِ موقع الخدمة متاحاً مع فحص نصوصه. في متصفحات Chromium المدعومة، يفحص حصن النصوص المتغيرة ويخفي منشورات X/Twitter المكتشفة كلّاً على حدة؛ اكتشاف منشور واحد لا يضيف الخدمة كلها إلى مواقعك المحظورة."
+          }
+        }
+      }
+    },
+    "Kept open when its extension misses a heartbeat; closed only when a standard profile confirms the extension was removed or disabled." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يبقى مفتوحًا عندما تفوّت إضافته نبضة؛ ولا يُغلق إلا عندما يؤكد ملف تعريف قياسي أن الإضافة حُذفت أو عُطّلت."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kept open when its extension misses a heartbeat; closed only when a standard profile confirms the extension was removed or disabled."
           }
         }
       }
@@ -9222,7 +9256,24 @@
         }
       }
     },
+    "There is no off switch and no lock needed: a missed heartbeat never closes a browser by itself. If a standard profile confirms the extension was disabled or removed, the browser shows a five-minute countdown and then closes." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يوجد مفتاح للإيقاف ولا حاجة إلى قفل: النبضة المفقودة لا تُغلق المتصفح وحدها. وإذا أكّد ملف تعريف قياسي أن الإضافة عُطّلت أو حُذفت، يعرض المتصفح عدًّا تنازليًا مدته خمس دقائق ثم يُغلق."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There is no off switch and no lock needed: a missed heartbeat never closes a browser by itself. If a standard profile confirms the extension was disabled or removed, the browser shows a five-minute countdown and then closes."
+          }
+        }
+      }
+    },
     "There is no off switch and no lock needed: if the extension stops answering, the browser shows a countdown and then closes." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -10161,7 +10212,24 @@
         }
       }
     },
+    "While browser protection is active, a linked browser whose extension stops answering stays open and is shown as waiting. It closes only when a standard profile confirms the extension was removed or disabled, after a visible five-minute countdown. Safari and other unsupported browsers close after one minute." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أثناء تفعيل حماية المتصفح، يبقى المتصفح المرتبط الذي تتوقف إضافته عن الاستجابة مفتوحًا ويظهر في حالة انتظار. ولا يُغلق إلا عندما يؤكد ملف تعريف قياسي أن الإضافة حُذفت أو عُطّلت، بعد عدّ تنازلي ظاهر مدته خمس دقائق. أما Safari والمتصفحات غير المدعومة فتُغلق بعد دقيقة واحدة."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "While browser protection is active, a linked browser whose extension stops answering stays open and is shown as waiting. It closes only when a standard profile confirms the extension was removed or disabled, after a visible five-minute countdown. Safari and other unsupported browsers close after one minute."
+          }
+        }
+      }
+    },
     "While browser protection is active, losing the extension connection starts a visible one-minute recovery countdown. Restore protection or the browser closes. Safari and other unsupported browsers also close." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {

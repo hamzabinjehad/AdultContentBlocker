@@ -21,22 +21,52 @@ public final class AdultPolicyAssets {
     public enum State { IDLE, LOADING, READY, ERROR }
     public static volatile State state = State.IDLE;
     private static volatile AdultTextPolicy policy;
+    /** A newer installed generation invalidates an in-flight asset load. */
+    private static volatile int loadToken;
 
     public static AdultTextPolicy policy() { return policy; }
 
     public static synchronized void ensureLoaded(Context context) {
         if (state != State.IDLE) return;
         state = State.LOADING;
+        final int token = ++loadToken;
         Context application = context.getApplicationContext() == null ? context : context.getApplicationContext();
         new Thread(() -> {
+            // A verified list generation carries terms; prefer the installed copy
+            // so the text and DNS layers read the same vocabulary.
+            try {
+                HostListStore.Active installed = HostListStore.active(application);
+                if (installed.textPolicy != null) {
+                    synchronized (AdultPolicyAssets.class) {
+                        if (token != loadToken) return;
+                        policy = installed.textPolicy;
+                        state = State.READY;
+                    }
+                    return;
+                }
+            } catch (RuntimeException ignored) { /* Fall back to the APK terms. */ }
             try (InputStream input = application.getAssets().open("terms.json")) {
-                policy = load(input, BuildConfig.TERMS_SEED_SHA256);
-                state = State.READY;
+                AdultTextPolicy loaded = load(input, BuildConfig.TERMS_SEED_SHA256);
+                synchronized (AdultPolicyAssets.class) {
+                    if (token != loadToken) return;
+                    policy = loaded;
+                    state = State.READY;
+                }
             } catch (Exception unavailable) {
-                policy = null;
-                state = State.ERROR;
+                synchronized (AdultPolicyAssets.class) {
+                    if (token != loadToken) return;
+                    policy = null;
+                    state = State.ERROR;
+                }
             }
         }, "hisn-adult-terms").start();
+    }
+
+    /** Publish terms that arrived with a verified list generation. */
+    static synchronized void adopt(AdultTextPolicy next) {
+        loadToken++;
+        policy = next;
+        state = next == null ? State.ERROR : State.READY;
     }
 
     /** Explicit retry only; invalid assets are never replaced by unverified data. */
@@ -59,7 +89,11 @@ public final class AdultPolicyAssets {
     }
 
     static AdultTextPolicy load(InputStream input, String expectedDigest) throws Exception {
-        JSONObject data = readVerified(input, expectedDigest);
+        return load(input, expectedDigest, BuildConfig.DOMAIN_SEED_VERSION);
+    }
+
+    static AdultTextPolicy load(InputStream input, String expectedDigest, int expectedVersion) throws Exception {
+        JSONObject data = readVerified(input, expectedDigest, expectedVersion);
         JSONArray terms = data.getJSONArray("terms");
         JSONArray negatives = data.getJSONArray("negatives");
         if (terms.length() < 1 || terms.length() > 8192 || negatives.length() > 1000)
@@ -83,7 +117,11 @@ public final class AdultPolicyAssets {
     }
 
     static HostTermPolicy loadHostPolicy(InputStream input, String expectedDigest) throws Exception {
-        JSONObject data = readVerified(input, expectedDigest);
+        return loadHostPolicy(input, expectedDigest, BuildConfig.DOMAIN_SEED_VERSION);
+    }
+
+    static HostTermPolicy loadHostPolicy(InputStream input, String expectedDigest, int expectedVersion) throws Exception {
+        JSONObject data = readVerified(input, expectedDigest, expectedVersion);
         JSONArray hostTerms = data.getJSONArray("host_terms");
         if (hostTerms.length() < 1 || hostTerms.length() > HostTermPolicy.MAX_TERMS)
             throw new IOException("Invalid host term count");
@@ -122,7 +160,8 @@ public final class AdultPolicyAssets {
     }
 
     /** The one digest/encoding/schema check every reader of this asset shares. */
-    private static JSONObject readVerified(InputStream input, String expectedDigest) throws Exception {
+    private static JSONObject readVerified(InputStream input, String expectedDigest,
+                                           int expectedVersion) throws Exception {
         if (input == null || expectedDigest == null || !expectedDigest.matches("[0-9a-f]{64}"))
             throw new IOException("Invalid terms metadata");
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
@@ -141,7 +180,7 @@ public final class AdultPolicyAssets {
         String text = StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT)
                 .onUnmappableCharacter(CodingErrorAction.REPORT).decode(ByteBuffer.wrap(raw)).toString();
         JSONObject data = new JSONObject(text);
-        if (data.getInt("schema") != 1 || data.getInt("version") != BuildConfig.DOMAIN_SEED_VERSION)
+        if (data.getInt("schema") != 1 || data.getInt("version") != expectedVersion)
             throw new IOException("Unsupported terms version");
         return data;
     }

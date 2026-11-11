@@ -25,9 +25,6 @@ public final class GuardTestSetupActivity extends Activity {
                         + " PERIODIC_INSPECTIONS " + TextGuardService.periodicInspections
                         + " LAST_SCAN_MS " + TextGuardService.lastInspectionMillis
                         + " FAST_TEXT " + TextGuardService.fastTextInterventions
-                        + " REST " + AfterBlock.minutes(this)
-                        + " BROWSER_BACKS " + TextGuardService.browserBacks
-                        + " RESTS " + TextGuardService.restExtensions + " LOCKS " + TextGuardService.screenLocks
                         + " SCHEDULE_INTERVENTIONS " + TextGuardService.scheduleInterventions
                         + " SCHEDULE_ENABLED " + schedule.enabled + " SCHEDULE_START " + schedule.startMinute
                         + " SCHEDULE_END " + schedule.endMinute + " SCHEDULE_APP_COUNT " + schedule.apps.size()
@@ -66,18 +63,10 @@ public final class GuardTestSetupActivity extends Activity {
             }
             if ("restriction-screen".equals(mode)) {
                 // Opens the restriction screen and its pause without needing a live guard intervention.
-                android.content.Intent screen = new android.content.Intent(this, RestrictionActivity.class)
+                startActivity(new android.content.Intent(this, RestrictionActivity.class)
                         .putExtra("word", getIntent().getBooleanExtra("word", false))
                         .putExtra("schedule", getIntent().getBooleanExtra("schedule", false))
-                        .putExtra("visual", getIntent().getBooleanExtra("visual", false));
-                String app = getIntent().getStringExtra("app");
-                if (app != null) {
-                    screen.putExtra(TextGuardService.EXTRA_APP, app)
-                            .putExtra(TextGuardService.EXTRA_MINUTES,
-                                    getIntent().getIntExtra("minutes", AfterBlock.minutes(this)))
-                            .putExtra("canrest", getIntent().getBooleanExtra("canrest", false));
-                }
-                startActivity(screen);
+                        .putExtra("visual", getIntent().getBooleanExtra("visual", false)));
                 report("PASS " + mode);
                 return;
             }
@@ -157,11 +146,9 @@ public final class GuardTestSetupActivity extends Activity {
                         .putStringSet("scans", rules.scannedApps).putBoolean("adult_words", rules.adultWordsEnabled)
                         .putBoolean("adult_test", "setup-adult".equals(mode)).putBoolean("schedule_test", scheduleTest)
                         .putInt("schedule_start", rules.schedule.startMinute).putInt("schedule_end", rules.schedule.endMinute)
-                        .putInt("rest_minutes", AfterBlock.minutes(this)).commit())
+                        .commit())
                     throw new IllegalStateException("Cannot save fixture backup");
                 try {
-                    // The live driver waits 62 seconds for the hold; the product default is five minutes.
-                    AfterBlock.set(this, 1);
                     if (scheduleTest) {
                         java.time.LocalTime time = java.time.LocalTime.now();
                         int start = (time.getHour() * 60 + time.getMinute() + 2) % 1440;
@@ -218,7 +205,6 @@ public final class GuardTestSetupActivity extends Activity {
     }
 
     private void restore(PolicyStore store, SharedPreferences backup) {
-        AfterBlock.set(this, backup.getInt("rest_minutes", app.hisn.core.RestPeriod.DEFAULT_MINUTES));
         // Never erase concurrent owner additions. Remove only our fixture additions,
         // and only when they did not already exist at setup time. A newly started
         // commitment still prevents weakening through PolicyStore.update.

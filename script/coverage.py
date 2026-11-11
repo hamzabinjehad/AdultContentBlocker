@@ -97,7 +97,7 @@ part of the bundled core.
 
 | Surface | Domain tier | Page text | Visual | Short video | Native apps |
 | --- | --- | --- | --- | --- | --- |
-| Chromium extension | Core · {core} domains, {static_rules} static rules + an adult-TLD guard ({GUARD_TLDS} TLDs) | Yes (language-aware: en/ar/de/es/fr/it/pt, evasion) | Opt-in, hide-first on supported sites | Opt-in (YouTube, Instagram, Facebook, Snapchat, TikTok) | No |
+| Chromium extension | Core · {core} domains, {static_rules} static rules + an adult-TLD guard ({GUARD_TLDS} TLDs) | Yes (language-aware: en/ar/de/es/fr/it/pt, evasion) | On by default; hides the flagged post or media | Opt-in (YouTube, Instagram, Facebook, Snapchat, TikTok) | No |
 | Mac content filter | Full · {full} domains once a published generation is installed; core seed before that; {GUARD_TLDS} adult TLDs always | No native-app text | No | No | All apps at host/flow level |
 | Safari and DNS on iPhone/iPad | Core · {core} domains + {GUARD_TLDS} adult-TLD rules in six blockers, and the same list plus {host_terms} hostname terms in the DNS filter | Safari text extension | Opt-in local | No | Every app's system DNS (names only); page content WebKit only |
 | Android DNS | Core · {core} domains, plus {GUARD_TLDS} adult TLDs and {host_terms} hostname terms | Selected apps via accessibility | Selected apps, Android 14+ | Selected apps | Selected apps only |

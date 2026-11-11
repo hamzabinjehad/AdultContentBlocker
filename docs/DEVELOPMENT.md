@@ -100,11 +100,12 @@ undoing protections.
 
 Mac **Blocking Rules → Browser protection** has an optional **Keep browser
 protection on** switch, off by default with explicit confirmation. Active locks
-always require guarding. Loss of a verified extension connection or confirmed
-standard-profile removal starts a visible **60-second recovery countdown**.
-Known unsupported browsers, including Safari, also close and cannot use app
-exceptions. An unrepaired relaunch cannot renew the warning. Check-ins are
-scheduled every thirty seconds; detection is periodic, not instantaneous.
+always require guarding. A lost extension heartbeat keeps the browser open and
+is shown as waiting; only confirmed standard-profile removal or disablement
+starts a visible **five-minute countdown**. Known unsupported browsers,
+including Safari, keep their 60-second countdown and cannot use app exceptions.
+An unrepaired relaunch gets the full five minutes again. Check-ins are scheduled
+every thirty seconds; detection is periodic, not instantaneous.
 This is best-effort process closure while Hisn runs, not an immediate traffic
 block or uninstall prohibition.
 Native check-ins now identify the OS-resolved launching browser process. A
@@ -244,16 +245,20 @@ Ordinary articles remain available. Text scanning alone cannot classify media
 without useful descriptions or every viewer layout. After installing a new
 unpacked copy, reload existing
 X/Twitter tabs so they use its scanner. The iPhone/iPad Safari extension packages
-the same scanner; updating source files alone does not update an installed app.
+the same scanner and the same host-scoped `content/social-media.css` rule (a
+CSS-only `content_scripts` entry, no page script); visual checks remain opt-in
+there. Updating source files alone does not update an installed app.
 
-**Content options → Local visual checks · beta** adds an experimental, opt-in
-image/video classifier. Bundled models inspect readable images and sampled video
-frames locally, without media uploads or stored browsing results. A matching
-adult-media verdict hides that media and pauses a flagged video; normal videos
-remain available. Separate **Person blur** preferences blur the whole media
+**Content options → Local visual checks · beta** runs the experimental on-device
+image/video classifier, on by default. Bundled models inspect readable images and
+sampled video frames locally, without media uploads or stored browsing results. A
+matching adult-media verdict hides that media and pauses a flagged video; on
+X/Twitter, Instagram, Facebook, Reddit, TikTok, Threads, Bluesky, LinkedIn,
+Pinterest, Tumblr and Snapchat it removes the whole post, so a caption-less post
+cannot stay readable around a blocked picture. Normal videos remain available. Separate **Person blur** preferences blur the whole media
 when a visible face matches an all/female/male estimate. This is not full-body
-recognition, an identity determination or a pornography verdict. Both visual
-features start off; model failures and inaccessible media are not verified safe.
+recognition, an identity determination or a pornography verdict. Person blur starts off; media
+checks start on. Model failures and inaccessible media are not verified safe.
 During an app-managed commitment, Chromium visual preferences can strengthen
 but not weaken through the settings. Safari's visual preferences are independent
 and are not locked by the native app commitment.
@@ -323,6 +328,19 @@ Without a team it still compiles and the tests still pass — pass
 
 The app must be in `/Applications` before the system extension will install;
 macOS refuses to activate one from a DerivedData path.
+
+The filter's per-flow verdict and list-load cost have their own measurement:
+
+```bash
+script/bench_macos_blocklist.sh          # the committed seed tier
+script/bench_macos_blocklist.sh full     # dist/ (or HISN_LIST_DIR)
+```
+
+It compiles the shipping `BlocklistStore` and shared guards against a driver, so
+the numbers are the real matcher's, not a simulation. It is deliberately not in
+`test.sh` — a shared CI runner is not a benchmark. The recorded before/after and
+the invariants the fast paths must keep are in
+[the filter performance note](MACOS_FILTER_PERFORMANCE_2026-11-09.md).
 
 ### Native messaging host
 

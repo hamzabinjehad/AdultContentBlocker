@@ -59,6 +59,14 @@
     scanner.start(); await settle();
     check(!hidden(ordinary) && !hidden(document.querySelector('#warning')) && hidden(adult),
       'Ordinary posts/videos and a generic sensitive warning remain usable; explicit adult post stays hidden');
+    // The generic platform warning is not a verdict. A marker from the local
+    // model is, and it must collapse the whole post, not just its video.
+    const warning = document.querySelector('#warning'), warningVideo = warning.querySelector('video');
+    warningVideo.dataset.hisnVisual = 'adult-hidden'; await settle();
+    check(hidden(warning) && !hidden(ordinary) && warning.textContent.includes('sensitive'),
+      'A locally classified adult video collapses its post even when the only platform text is a generic warning');
+    warningVideo.removeAttribute('data-hisn-visual'); await settle();
+    check(!hidden(warning), 'A released media verdict restores a clean post');
     check(sent.filter(zones => zones.body.includes('Gardening:')).every(zones => !zones.body.includes('fixtureadult')),
       'Player-control extraction excludes author-hidden text and script/template payloads');
     check(getComputedStyle(caption).visibility === 'hidden' && sent.some(zones => zones.alt.includes(caption.alt)),

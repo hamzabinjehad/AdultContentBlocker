@@ -45,8 +45,32 @@ language for the current page. Detection is a heuristic and does not make the
 layer complete: mixed-language pages and text the browser cannot render remain
 gaps.
 
-Use the sidebar to move between sections. Each section saves independently;
-an **Unsaved changes** label distinguishes edits from applied settings, and
+On X (`x.com` and `twitter.com`) the extension judges one post at a time
+instead of the whole feed: a post it hides is replaced by a short explanation
+while the rest of the page stays usable. A post whose text says nothing about
+it — an image or video with no caption — is covered by the on-device media
+check, which is on by default under **Content options → Local visual checks ·
+beta**. When that check flags a post's picture or video, the whole post is
+replaced, and a flagged video is paused. The platform's own "sensitive
+content" warning is not treated as a verdict; only the local model's result
+hides media. A browser that cannot run the model shows its media rather than
+leaving a blank page, and Settings reports the check as unavailable there.
+After updating an unpacked copy, reload it from the extensions page; the switch
+keeps the saved state, so turn it on if it had been saved off. The settings
+status distinguishes a loaded model from one still waiting for the first page
+with media.
+
+The same whole-post rule runs on the other large social feeds, which have no
+per-post text adapter: Instagram, Facebook, Reddit, TikTok, Threads, Bluesky,
+LinkedIn, Pinterest, Tumblr and Snapchat. There it removes the post silently
+rather than inserting a notice into someone else's app, and the platform's own
+NSFW or sensitive-content flag is still never read. If a site changes its post
+markup, only that tidy-up is lost — the flagged picture or video itself is
+still hidden. Pages opened before the extension was installed or updated need
+a reload to pick up the rule.
+
+Use the sidebar to move between sections; an **Unsaved changes** label
+distinguishes edits from applied settings, and
 **Discard edits** restores that section's saved values. The popup labels the
 connection as **Browser only**, **App connected**, or **App offline**. Blocked
 pages offer a new-tab action and a shortcut to review settings.

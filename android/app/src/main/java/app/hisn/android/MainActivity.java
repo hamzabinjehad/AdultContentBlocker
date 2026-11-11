@@ -40,6 +40,7 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -60,16 +61,25 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import app.hisn.core.BrowserCoverage;
 import app.hisn.core.AppTimeLimit;
 import app.hisn.core.DailyAppSchedule;
+import app.hisn.core.DistractionSites;
 import app.hisn.core.GuardHealth;
+import app.hisn.core.HostDecision;
+import app.hisn.core.PolicyReceipt;
+import app.hisn.core.ProtectionReadiness;
+import app.hisn.core.VisualHealth;
 import app.hisn.core.PolicyChangeError;
-import app.hisn.core.RestPeriod;
 import app.hisn.core.ProtectionLock;
+import app.hisn.core.RuleDocument;
+import app.hisn.core.RulePreview;
 import app.hisn.core.SeedFreshness;
 import app.hisn.core.SetupGuide;
+import app.hisn.core.SiteCheckInput;
 import app.hisn.core.UninstallProtection;
 import app.hisn.core.WordMatcher;
 import app.hisn.core.WordRuleList;
@@ -85,6 +95,8 @@ import app.hisn.core.WordRuleList;
 public final class MainActivity extends Activity {
     private static final int TEXT_LIMIT = 65536;
     private static final int MAX_RULE_LINES = 1000;
+    private static final int REQUEST_EXPORT_RULES = 103;
+    private static final int REQUEST_IMPORT_RULES = 104;
     private static final int PAGE_PROTECTION = 0;
     private static final int PAGE_RULES = 1;
     private static final int PAGE_GUIDE = 2;
@@ -110,11 +122,11 @@ public final class MainActivity extends Activity {
 
     private TextView statusTitle;
     private TextView statusBody;
-    private Ui.ShieldView heroShield;
+    private View heroRule;
     private Ui.LayerTile layerDns;
     private Ui.LayerTile layerApps;
     private Ui.LayerTile layerImages;
-    private LinearLayout heroCard;
+    private LinearLayout setupSection;
     private boolean heroAttention;
     private LinearLayout attentionCard;
     private LinearLayout attentionList;
@@ -157,7 +169,9 @@ public final class MainActivity extends Activity {
     private Switch safeSearchToggle;
     private Ui.SettingRow domainsRow;
     private Ui.SettingRow wordsRow;
-    private Ui.SettingRow settingsRestRow;
+    private Ui.SettingRow checkSiteRow;
+    private Ui.SettingRow portableRow;
+    private Ui.SettingRow updateRow;
     private Ui.SettingRow blockedRow;
     private Ui.SettingRow scannedRow;
     private Ui.SettingRow browserRow;
@@ -172,8 +186,16 @@ public final class MainActivity extends Activity {
     private TextView scheduleState;
     private TextView commitmentStateRules;
     private Ui.SettingRow commitmentRow;
+    private final List<Ui.Chip> distractionChipViews = new ArrayList<>();
+    private List<DistractionSites.Site> distractionSites = new ArrayList<>();
 
     private SetupGuide.Step currentSetupStep = SetupGuide.Step.CHOOSE_RULES;
+    /** A passed route check is network-scoped and invalidated by change; a day bounds an unchanged one. */
+    private static final long DNS_EVIDENCE_MAX_AGE_MILLIS = 24L * 60 * 60 * 1000;
+    /** An app/text decision describes the current viewing spell; after ten quiet minutes it is unproven. */
+    private static final long APP_EVIDENCE_MAX_AGE_MILLIS = 10L * 60 * 1000;
+    /** Frames are sampled continuously while a selected window is visible; five quiet minutes expire it. */
+    private static final long VISUAL_EVIDENCE_MAX_AGE_MILLIS = 5L * 60 * 1000;
 
     /** Open dialogs showing the person's lists, and whether this window currently has FLAG_SECURE. */
     private int privateDialogs;
@@ -181,6 +203,11 @@ public final class MainActivity extends Activity {
     private PolicyStore settings;
     private long lastUninstallSyncAt;
     private final Handler handler = new Handler(Looper.getMainLooper());
+    private final ExecutorService hostLookup = Executors.newSingleThreadExecutor(runnable -> {
+        Thread thread = new Thread(runnable, "hisn-host-check");
+        thread.setDaemon(true);
+        return thread;
+    });
     private final Runnable refresh = new Runnable() {
         @Override public void run() {
             refreshStatus();
@@ -237,16 +264,20 @@ public final class MainActivity extends Activity {
         appBarRow = new LinearLayout(this);
         appBarRow.setOrientation(LinearLayout.HORIZONTAL);
         appBarRow.setGravity(Gravity.CENTER_VERTICAL);
-        appBarRow.setPadding(sidePadding, Ui.dp(this, 6), sidePadding, Ui.dp(this, 6));
-        appBarRow.addView(Ui.iconInTile(this, R.drawable.ic_shield, R.color.accent, 38, 22));
+        appBarRow.setPadding(sidePadding, Ui.dp(this, 8), sidePadding, Ui.dp(this, 8));
+        ImageView brandMark = Ui.iconInTile(this, R.drawable.ic_shield,
+                R.color.accent, 38, 22);
+        appBarRow.addView(brandMark);
         LinearLayout brand = new LinearLayout(this);
         brand.setOrientation(LinearLayout.VERTICAL);
         // The bar names the page once. On Protection it carries the product name and tagline;
         // the other pages swap in the page name, so their content needs no second title.
-        appBarTitle = Ui.text(this, getString(R.string.app_name), 18, R.color.text_primary);
-        appBarTitle.setTypeface(Ui.medium());
-        appBarSubtitle = Ui.text(this, getString(R.string.app_tagline), 11,
+        appBarTitle = Ui.display(this, getString(R.string.app_name), 22);
+        appBarTitle.setGravity(Gravity.CENTER_VERTICAL);
+        appBarSubtitle = Ui.text(this, getString(R.string.app_tagline), 10,
                 R.color.text_tertiary);
+        appBarSubtitle.setAllCaps(true);
+        if (!Ui.isRtl(this)) appBarSubtitle.setLetterSpacing(0.08f);
         brand.addView(appBarTitle);
         brand.addView(appBarSubtitle);
         LinearLayout.LayoutParams brandParams = new LinearLayout.LayoutParams(0,
@@ -293,7 +324,7 @@ public final class MainActivity extends Activity {
         navBar = new LinearLayout(this);
         ((LinearLayout) navBar).setOrientation(LinearLayout.VERTICAL);
         navBar.setBackgroundColor(Ui.color(this, R.color.surface));
-        navBar.setElevation(Ui.dp(this, 10));
+        navBar.setElevation(Ui.dp(this, 2));
         ((LinearLayout) navBar).addView(Ui.divider(this));
         navRow = new LinearLayout(this);
         navRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -309,7 +340,7 @@ public final class MainActivity extends Activity {
             item.setBackgroundResource(R.drawable.bg_row);
             item.setClickable(true);
             item.setFocusable(true);
-            item.setMinimumHeight(Ui.dp(this, 58));
+            item.setMinimumHeight(Ui.dp(this, 62));
             item.setContentDescription(getString(labels[index]));
             FrameLayout wrap = new FrameLayout(this);
             wrap.setBackgroundResource(0);
@@ -317,7 +348,7 @@ public final class MainActivity extends Activity {
             wrap.addView(icon, new FrameLayout.LayoutParams(Ui.dp(this, 21), Ui.dp(this, 21), Gravity.CENTER));
             LinearLayout.LayoutParams wrapParams = new LinearLayout.LayoutParams(Ui.dp(this, 46), Ui.dp(this, 28));
             item.addView(wrap, wrapParams);
-            TextView label = Ui.text(this, getString(labels[index]), 12, R.color.text_secondary);
+            TextView label = Ui.text(this, getString(labels[index]), 12, R.color.text_tertiary);
             label.setGravity(Gravity.CENTER);
             label.setMaxLines(1);
             label.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
@@ -328,8 +359,11 @@ public final class MainActivity extends Activity {
             navWraps[index] = wrap;
             navIcons[index] = icon;
             navLabels[index] = label;
-            navRow.addView(item, new LinearLayout.LayoutParams(0,
-                    LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+            LinearLayout.LayoutParams navParams = new LinearLayout.LayoutParams(0,
+                    LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+            navParams.setMarginStart(Ui.dp(this, 3));
+            navParams.setMarginEnd(Ui.dp(this, 3));
+            navRow.addView(item, navParams);
         }
         ((LinearLayout) navBar).addView(navRow);
         shell.addView(navBar, new LinearLayout.LayoutParams(
@@ -344,8 +378,8 @@ public final class MainActivity extends Activity {
                                 | android.view.WindowInsets.Type.displayCutout());
                 android.graphics.Insets ime = insets.getInsets(android.view.WindowInsets.Type.ime());
                 view.setPadding(bars.left, 0, bars.right, 0);
-                appBarRow.setPadding(sidePadding, Ui.dp(this, 6) + bars.top,
-                        sidePadding, Ui.dp(this, 6));
+                appBarRow.setPadding(sidePadding, Ui.dp(this, 8) + bars.top,
+                        sidePadding, Ui.dp(this, 8));
                 boolean keyboard = ime.bottom > 0;
                 navBar.setVisibility(keyboard ? View.GONE : View.VISIBLE);
                 navRow.setPadding(sidePadding, Ui.dp(this, 4), sidePadding,
@@ -403,9 +437,10 @@ public final class MainActivity extends Activity {
             boolean visible = i == selectedPage;
             pages[i].setVisibility(visible ? View.VISIBLE : View.GONE);
             navItems[i].setSelected(visible);
-            navWraps[i].setBackgroundResource(visible ? R.drawable.bg_nav_selected : 0);
-            navIcons[i].setColorFilter(Ui.color(this, visible ? R.color.accent : R.color.text_secondary));
-            navLabels[i].setTextColor(Ui.color(this, visible ? R.color.accent : R.color.text_secondary));
+            navItems[i].setBackgroundResource(visible ? R.drawable.bg_nav_selected : R.drawable.bg_row);
+            navWraps[i].setBackgroundResource(0);
+            navIcons[i].setColorFilter(Ui.color(this, visible ? R.color.accent : R.color.text_tertiary));
+            navLabels[i].setTextColor(Ui.color(this, visible ? R.color.accent : R.color.text_tertiary));
             navLabels[i].setTypeface(visible ? Ui.medium() : Typeface.create("sans-serif", Typeface.NORMAL));
         }
         if (animate && changes && android.animation.ValueAnimator.areAnimatorsEnabled()) {
@@ -476,74 +511,68 @@ public final class MainActivity extends Activity {
         });
 
         LinearLayout hero = new LinearLayout(this);
-        heroCard = hero;
         hero.setOrientation(LinearLayout.VERTICAL);
-        hero.setBackgroundResource(R.drawable.bg_hero);
-        hero.setGravity(Gravity.CENTER_HORIZONTAL);
-        hero.setPadding(Ui.dp(this, 22), Ui.dp(this, 24), Ui.dp(this, 22), Ui.dp(this, 20));
+        hero.setBackgroundResource(R.drawable.bg_card);
+        hero.setPadding(Ui.dp(this, 20), Ui.dp(this, 20), Ui.dp(this, 20), Ui.dp(this, 18));
 
-        heroShield = new Ui.ShieldView(this);
-        LinearLayout.LayoutParams shieldParams = new LinearLayout.LayoutParams(
-                Ui.dp(this, 92), Ui.dp(this, 92));
-        shieldParams.gravity = Gravity.CENTER_HORIZONTAL;
-        hero.addView(heroShield, shieldParams);
+        heroRule = new View(this);
+        heroRule.setBackgroundColor(Ui.color(this, R.color.accent));
+        hero.addView(heroRule, new LinearLayout.LayoutParams(Ui.dp(this, 46), Ui.dp(this, 2)));
 
-        statusTitle = Ui.text(this, getString(R.string.status_title), 23, R.color.text_primary);
-        statusTitle.setTypeface(Ui.medium());
-        statusTitle.setGravity(Gravity.CENTER);
-        statusTitle.setLineSpacing(Ui.dp(this, 2), 1.08f);
+        TextView eyebrow = Ui.eyebrow(this, getString(R.string.nav_protection));
+        LinearLayout.LayoutParams eyebrowParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        eyebrowParams.topMargin = Ui.dp(this, 14);
+        hero.addView(eyebrow, eyebrowParams);
+
+        statusTitle = Ui.display(this, getString(R.string.status_title), 31);
+        statusTitle.setGravity(Gravity.START);
         statusTitle.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
         LinearLayout.LayoutParams statusTitleParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        statusTitleParams.topMargin = Ui.dp(this, 16);
+        statusTitleParams.topMargin = Ui.dp(this, 6);
         hero.addView(statusTitle, statusTitleParams);
 
-        statusBody = Ui.text(this, "", 14, R.color.text_secondary);
-        statusBody.setGravity(Gravity.CENTER);
-        statusBody.setLineSpacing(Ui.dp(this, 4), 1.16f);
+        statusBody = Ui.text(this, "", 15, R.color.text_secondary);
+        statusBody.setGravity(Gravity.START);
+        statusBody.setLineSpacing(Ui.dp(this, 4), 1.18f);
         LinearLayout.LayoutParams statusBodyParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        statusBodyParams.topMargin = Ui.dp(this, 8);
+        statusBodyParams.topMargin = Ui.dp(this, 10);
         hero.addView(statusBody, statusBodyParams);
-
+        LinearLayout.LayoutParams heroDivider = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(this, 1));
+        heroDivider.topMargin = Ui.dp(this, 16);
+        heroDivider.bottomMargin = Ui.dp(this, 14);
+        hero.addView(Ui.divider(this), heroDivider);
+        LinearLayout coverage = new LinearLayout(this);
+        coverage.setOrientation(LinearLayout.VERTICAL);
         LinearLayout layerRow = new LinearLayout(this);
         layerRow.setOrientation(LinearLayout.HORIZONTAL);
-        layerRow.setPadding(0, Ui.dp(this, 20), 0, 0);
+        layerRow.setGravity(Gravity.CENTER_VERTICAL);
         layerDns = Ui.layerTile(this, getString(R.string.layer_dns), getString(R.string.state_off), Ui.OFF);
         layerApps = Ui.layerTile(this, getString(R.string.layer_apps), getString(R.string.state_off), Ui.OFF);
         layerImages = Ui.layerTile(this, getString(R.string.layer_images), getString(R.string.state_off),
                 Ui.OFF);
         Ui.LayerTile[] tiles = {layerDns, layerApps, layerImages};
         for (int i = 0; i < tiles.length; i++) {
+            if (i > 0) {
+                View divider = new View(this);
+                divider.setBackgroundColor(Ui.color(this, R.color.divider));
+                LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(
+                        Math.max(1, Ui.dp(this, 1)), Ui.dp(this, 38));
+                dividerParams.gravity = Gravity.CENTER_VERTICAL;
+                dividerParams.setMarginStart(Ui.dp(this, 10));
+                dividerParams.setMarginEnd(Ui.dp(this, 10));
+                layerRow.addView(divider, dividerParams);
+            }
             LinearLayout.LayoutParams tileParams = new LinearLayout.LayoutParams(0,
                     LinearLayout.LayoutParams.WRAP_CONTENT, 1);
-            if (i > 0) tileParams.setMarginStart(Ui.dp(this, 8));
             layerRow.addView(tiles[i].root, tileParams);
         }
-        hero.addView(layerRow);
-
-        // The single next action lives with the verdict, not in a second card below it.
-        setupCard = new LinearLayout(this);
-        setupCard.setOrientation(LinearLayout.VERTICAL);
-        setupCard.setPadding(0, Ui.dp(this, 22), 0, 0);
-        LinearLayout.LayoutParams setupParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        setupParams.topMargin = Ui.dp(this, 2);
-        hero.addView(setupCard, setupParams);
-        TextView nextStep = Ui.text(this, getString(R.string.next_step), 11, R.color.accent);
-        nextStep.setTypeface(Ui.medium());
-        nextStep.setLetterSpacing(0.08f);
-        nextStep.setGravity(Gravity.CENTER);
-        setupCard.addView(nextStep);
-        setupState = Ui.caption(this, getString(R.string.setup_first));
-        setupState.setGravity(Gravity.CENTER);
-        setupState.setLineSpacing(Ui.dp(this, 2), 1.14f);
-        setupCard.addView(setupState, Ui.margins(this, 6, 0));
-        setupNext = Ui.button(this, R.string.setup_next, Ui.ButtonKind.PRIMARY);
-        setupCard.addView(setupNext, Ui.margins(this, 12, 0));
-        setupNext.setOnClickListener(view -> nextSetupStep());
-
-        page.addView(hero, Ui.margins(this, 0, 12));
+        coverage.addView(layerRow);
+        hero.addView(coverage);
+        page.addView(hero, Ui.margins(this, 8, 16));
 
         attentionCard = Ui.card(this);
         attentionCard.setBackgroundResource(R.drawable.bg_warning_card);
@@ -553,7 +582,23 @@ public final class MainActivity extends Activity {
         attentionDetails = Ui.disclosure(this, getString(R.string.section_attention), attentionList);
         attentionCard.addView(attentionDetails.root);
         attentionCard.setVisibility(View.GONE);
-        page.addView(attentionCard, Ui.margins(this, 0, 12));
+        page.addView(attentionCard, Ui.margins(this, 0, 10));
+
+        // One next action, on paper. The label is hidden with the step on the DNS pages, where
+        // the DNS card below owns the same action.
+        setupSection = new LinearLayout(this);
+        setupSection.setOrientation(LinearLayout.VERTICAL);
+        setupSection.addView(Ui.sectionLabel(this, getString(R.string.next_step)));
+        setupCard = Ui.card(this);
+        setupCard.setPadding(Ui.dp(this, 18), Ui.dp(this, 16), Ui.dp(this, 18), Ui.dp(this, 16));
+        setupState = Ui.text(this, getString(R.string.setup_first), 15, R.color.text_secondary);
+        setupState.setLineSpacing(Ui.dp(this, 3), 1.16f);
+        setupCard.addView(setupState);
+        setupNext = Ui.button(this, R.string.setup_next, Ui.ButtonKind.PRIMARY);
+        setupCard.addView(setupNext, Ui.margins(this, 12, 0));
+        setupNext.setOnClickListener(view -> nextSetupStep());
+        setupSection.addView(setupCard);
+        page.addView(setupSection, Ui.margins(this, 0, 14));
 
         LinearLayout network = Ui.card(this);
         LinearLayout networkHead = new LinearLayout(this);
@@ -732,6 +777,43 @@ public final class MainActivity extends Activity {
         rulesLockCard.setVisibility(View.GONE);
         page.addView(rulesLockCard, Ui.margins(this, 0, 10));
 
+        // Named sites, not categories. One tap writes the same ordinary domain rules the editor
+        // below writes, so a chip can never hide or bypass the saved-list contract.
+        page.addView(Ui.sectionLabel(this, getString(R.string.section_common_sites)));
+        LinearLayout commonSites = Ui.card(this);
+        commonSites.setPadding(Ui.dp(this, 18), Ui.dp(this, 4), Ui.dp(this, 18), Ui.dp(this, 4));
+        TextView commonIntro = Ui.body(this, getString(R.string.common_sites_intro));
+        commonIntro.setPadding(0, Ui.dp(this, 12), 0, 0);
+        commonSites.addView(commonIntro);
+        HorizontalScrollView chipScroll = new HorizontalScrollView(this);
+        chipScroll.setHorizontalScrollBarEnabled(true);
+        chipScroll.setHorizontalFadingEdgeEnabled(true);
+        chipScroll.setFadingEdgeLength(Ui.dp(this, 24));
+        chipScroll.setClipToPadding(false);
+        chipScroll.setPadding(0, Ui.dp(this, 10), 0, Ui.dp(this, 2));
+        LinearLayout chipRow = new LinearLayout(this);
+        chipRow.setOrientation(LinearLayout.HORIZONTAL);
+        distractionSites = DistractionSites.common();
+        for (DistractionSites.Site site : distractionSites) {
+            Ui.Chip chip = Ui.chip(this, site.label);
+            chip.root.setOnClickListener(view -> toggleCommonSite(site));
+            LinearLayout.LayoutParams chipParams = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            chipParams.setMarginEnd(Ui.dp(this, 8));
+            chipRow.addView(chip.root, chipParams);
+            distractionChipViews.add(chip);
+        }
+        chipScroll.addView(chipRow, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT));
+        commonSites.addView(chipScroll);
+        // Establish the leading edge after measurement; ScrollView otherwise restores an
+        // arbitrary left offset when an RTL window contains Latin site labels.
+        chipScroll.post(() -> chipScroll.fullScroll(Ui.isRtl(this) ? View.FOCUS_RIGHT : View.FOCUS_LEFT));
+        TextView commonNote = Ui.caption(this, getString(R.string.common_sites_note));
+        commonNote.setPadding(0, Ui.dp(this, 2), 0, Ui.dp(this, 12));
+        commonSites.addView(commonNote);
+        page.addView(commonSites, Ui.margins(this, 0, 12));
+
         LinearLayout builtin = addCard(page, R.string.section_builtin);
         adultToggle = Ui.toggle(this, getString(R.string.toggle_adult));
         adultToggle.setOnClickListener(view -> {
@@ -787,6 +869,16 @@ public final class MainActivity extends Activity {
                 getString(R.string.edit_words), getString(R.string.none_saved),
                 view -> editRules(false));
         custom.addView(wordsRow.root);
+        custom.addView(Ui.divider(this));
+        checkSiteRow = Ui.settingRow(this, R.drawable.ic_search,
+                getString(R.string.check_site_title), getString(R.string.check_site_summary),
+                view -> showSiteCheck());
+        custom.addView(checkSiteRow.root);
+        custom.addView(Ui.divider(this));
+        portableRow = Ui.settingRow(this, R.drawable.ic_book,
+                getString(R.string.rules_file_title), getString(R.string.rules_file_summary),
+                view -> showRulesFile());
+        custom.addView(portableRow.root);
 
         LinearLayout appRules = addCard(page, R.string.section_apps);
         blockedRow = Ui.settingRow(this, R.drawable.ic_lock,
@@ -833,28 +925,6 @@ public final class MainActivity extends Activity {
         return row;
     }
 
-    private CharSequence restSummary() {
-        return getString(R.string.settings_rest_summary,
-                getString(R.string.rest_minutes, AfterBlock.minutes(this)));
-    }
-
-    private void chooseRestPeriod() {
-        int[] choices = RestPeriod.ALLOWED_MINUTES;
-        int current = AfterBlock.minutes(this);
-        CharSequence[] labels = new CharSequence[choices.length];
-        int checked = 0;
-        for (int i = 0; i < choices.length; i++) {
-            labels[i] = getString(R.string.rest_minutes, choices[i]);
-            if (choices[i] == current) checked = i;
-        }
-        new AlertDialog.Builder(this).setTitle(R.string.settings_rest_title)
-                .setSingleChoiceItems(labels, checked, (dialog, which) -> {
-                    AfterBlock.set(this, choices[which]);
-                    if (settingsRestRow != null) settingsRestRow.setSummary(restSummary());
-                    dialog.dismiss();
-                }).show();
-    }
-
     // ------------------------------------------------------------------ settings page
 
     private void buildGuidePage(LinearLayout page) {
@@ -879,15 +949,15 @@ public final class MainActivity extends Activity {
         protection.addView(batteryRow.root);
         protection.addView(Ui.divider(this));
 
-        settingsRestRow = Ui.settingRow(this, R.drawable.ic_clock,
-                getString(R.string.settings_rest_title), restSummary(), view -> chooseRestPeriod());
-        protection.addView(settingsRestRow.root);
-        protection.addView(Ui.divider(this));
-
         Ui.SettingRow guardianRow = Ui.settingRow(this, R.drawable.ic_shield,
                 getString(R.string.guardian_pair_title), getString(R.string.settings_guardian_summary),
                 view -> startActivity(new Intent(this, GuardianPairActivity.class)));
         protection.addView(guardianRow.root);
+        protection.addView(Ui.divider(this));
+        updateRow = Ui.settingRow(this, R.drawable.ic_pulse,
+                getString(R.string.list_update_title), getString(R.string.list_update_summary),
+                view -> showListUpdate());
+        protection.addView(updateRow.root);
         page.addView(protection, Ui.margins(this, 0, 12));
 
         page.addView(Ui.sectionLabel(this, getString(R.string.settings_about_title)));
@@ -1208,6 +1278,7 @@ public final class MainActivity extends Activity {
             setRuleSummaries(getString(R.string.policy_unavailable), getString(R.string.policy_unavailable),
                     getString(R.string.policy_unavailable), getString(R.string.policy_unavailable),
                     getString(R.string.policy_unavailable));
+            setDistractionChipsUnavailable();
             return;
         }
         try {
@@ -1226,10 +1297,63 @@ public final class MainActivity extends Activity {
                     scanned == 0 ? getString(R.string.none_chosen)
                             : getResources().getQuantityString(R.plurals.inspected_apps_count, scanned, scanned),
                     browserSummary(rules));
+            refreshDistractionChips(rules.domains.blockedRules());
         } catch (RuntimeException unavailable) {
             setRuleSummaries(getString(R.string.policy_unavailable), getString(R.string.policy_unavailable),
                     getString(R.string.policy_unavailable), getString(R.string.policy_unavailable),
                     getString(R.string.policy_unavailable));
+            setDistractionChipsUnavailable();
+        }
+    }
+
+    /** A chip is the answer for the exact site or for a parent rule; both read as blocked. */
+    private void refreshDistractionChips(Set<String> savedRules) {
+        for (int index = 0; index < distractionChipViews.size(); index++) {
+            DistractionSites.Site site = distractionSites.get(index);
+            DistractionSites.State state = DistractionSites.state(savedRules, site.domain);
+            Ui.Chip chip = distractionChipViews.get(index);
+            chip.setSelected(state != DistractionSites.State.NONE);
+            chip.root.setContentDescription(site.label);
+        }
+    }
+
+    private void setDistractionChipsUnavailable() {
+        for (Ui.Chip chip : distractionChipViews) chip.setEnabled(false);
+    }
+
+    /** One tap writes the normal domain list. A covered chip explains its wider rule instead. */
+    private void toggleCommonSite(DistractionSites.Site site) {
+        if (refuseIfRulesLocked()) return;
+        if (settings == null) {
+            Toast.makeText(this, R.string.policy_unavailable, Toast.LENGTH_LONG).show();
+            return;
+        }
+        try {
+            PolicyStore.Snapshot rules = settings.snapshot();
+            Set<String> saved = rules.domains.blockedRules();
+            DistractionSites.State state = DistractionSites.state(saved, site.domain);
+            if (state == DistractionSites.State.COVERED) {
+                Toast.makeText(this, getString(R.string.common_sites_covered, site.label),
+                        Toast.LENGTH_LONG).show();
+                return;
+            }
+            String next = state == DistractionSites.State.DIRECT
+                    ? DistractionSites.remove(saved, site.domain)
+                    : DistractionSites.add(saved, site.domain);
+            settings.update(next, settings.wordText(), rules.blockedApps, rules.scannedApps,
+                    rules.adultWordsEnabled);
+            refreshRuleSummaries();
+            refreshStatus();
+            // Removing the exact line can leave the site covered by a wider saved rule; say so
+            // instead of leaving a selected chip that looks like a failed tap.
+            if (state == DistractionSites.State.DIRECT
+                    && DistractionSites.state(settings.snapshot().domains.blockedRules(), site.domain)
+                    == DistractionSites.State.COVERED) {
+                Toast.makeText(this, getString(R.string.common_sites_covered, site.label),
+                        Toast.LENGTH_LONG).show();
+            }
+        } catch (RuntimeException refused) {
+            showRefusal(refused);
         }
     }
 
@@ -1279,6 +1403,104 @@ public final class MainActivity extends Activity {
 
     // ------------------------------------------------------------------ refresh
 
+    /** The layer identity the saved settings currently describe, or -1 when unreadable. */
+    private long savedIdentity(ProtectionReadiness.Layer layer) {
+        if (settings == null) return -1;
+        try {
+            switch (layer) {
+                case DNS: return PolicyEvidence.dns(settings, AdultListUpdater.installedGeneration(this));
+                case APPS: return PolicyEvidence.text(settings);
+                case VISUAL: return PolicyEvidence.visual(settings);
+                default: return -1;
+            }
+        } catch (RuntimeException unreadable) {
+            return -1;
+        }
+    }
+
+    /**
+     * The DNS tile's honest state. A passed route check is evidence for this policy, service
+     * session and network only: a policy or network change clears it, and its age is bounded.
+     * The service being connected is not evidence.
+     */
+    private ProtectionReadiness.Status dnsReadiness(DnsVpnService.State current,
+            DnsVpnService.CheckState check, boolean privateDnsBypass) {
+        boolean chosen = current != DnsVpnService.State.OFF || DnsVpnService.resumeRequested(this);
+        boolean failed = current == DnsVpnService.State.DEGRADED
+                || current == DnsVpnService.State.ERROR || privateDnsBypass
+                || check == DnsVpnService.CheckState.FAILED;
+        boolean running = current == DnsVpnService.State.RUNNING
+                || current == DnsVpnService.State.DEGRADED;
+        long saved = savedIdentity(ProtectionReadiness.Layer.DNS);
+        PolicyReceipt receipt = DnsVpnService.connectionCheck.receipt;
+        long applied = receipt == null ? -1 : receipt.identity;
+        long evidenceAt = -1;
+        if (receipt != null && saved >= 0 && receipt.identity == saved
+                && receipt.session == DnsVpnService.serviceSession) evidenceAt = receipt.completedAt;
+        ProtectionReadiness.Facts facts = chosen
+                ? ProtectionReadiness.Facts.expected(null, running,
+                        current == DnsVpnService.State.STARTING, failed, evidenceAt, saved, applied)
+                : ProtectionReadiness.Facts.off();
+        return ProtectionReadiness.evaluate(ProtectionReadiness.Layer.DNS, facts,
+                SystemClock.elapsedRealtime(), DNS_EVIDENCE_MAX_AGE_MILLIS);
+    }
+
+    /**
+     * The selected-app tile's honest state. A bound service that has not completed a scan
+     * is not evidence that text was checked; the receipt names the policy and session it
+     * belongs to. An app-rule decision and a text pass are both app-layer decisions.
+     */
+    private ProtectionReadiness.Status appsReadiness(boolean configured, Boolean permission,
+            boolean scanIncomplete) {
+        long saved = savedIdentity(ProtectionReadiness.Layer.APPS);
+        PolicyReceipt receipt = TextGuardService.inspection.receipt();
+        long applied = receipt == null ? -1 : receipt.identity;
+        long evidenceAt = -1;
+        if (receipt != null && saved >= 0 && receipt.identity == saved
+                && receipt.session == TextGuardService.serviceSession) evidenceAt = receipt.completedAt;
+        ProtectionReadiness.Facts facts = configured
+                ? ProtectionReadiness.Facts.expected(permission, TextGuardService.connected, false,
+                        scanIncomplete, evidenceAt, saved, applied)
+                : ProtectionReadiness.Facts.off();
+        return ProtectionReadiness.evaluate(ProtectionReadiness.Layer.APPS, facts,
+                SystemClock.elapsedRealtime(), APP_EVIDENCE_MAX_AGE_MILLIS);
+    }
+
+    /**
+     * The image tile's honest state. Sampling is opt-in and needs a selected window; no
+     * inspected sample means "not checked", not "on". The receipt names the policy, guard
+     * session and window that produced the sample. An unsupported Android version is a
+     * coverage gap, not a failure.
+     */
+    private ProtectionReadiness.Status visualReadiness(PolicyStore.Snapshot rules, Boolean permission) {
+        // The receipt is stamped with elapsedRealtime, so deep sleep ages a sample instead of
+        // freezing its age at the moment the screen went off. The sampling cadence itself still
+        // uses uptime, because no sampling happens while the screen is off.
+        long now = SystemClock.elapsedRealtime();
+        if (Build.VERSION.SDK_INT < 34) {
+            return ProtectionReadiness.evaluate(ProtectionReadiness.Layer.VISUAL,
+                    ProtectionReadiness.Facts.unsupported(), now, VISUAL_EVIDENCE_MAX_AGE_MILLIS);
+        }
+        boolean chosen = rules != null && rules.visualEnabled && !rules.scannedApps.isEmpty();
+        if (!chosen) {
+            return ProtectionReadiness.evaluate(ProtectionReadiness.Layer.VISUAL,
+                    ProtectionReadiness.Facts.off(), now, VISUAL_EVIDENCE_MAX_AGE_MILLIS);
+        }
+        VisualHealth.State shown = VisualGuard.health.shown();
+        boolean starting = shown == VisualHealth.State.LOADING
+                || shown == VisualHealth.State.CHECKING;
+        long saved = savedIdentity(ProtectionReadiness.Layer.VISUAL);
+        PolicyReceipt receipt = VisualGuard.health.receipt();
+        long applied = receipt == null ? -1 : receipt.identity;
+        long evidenceAt = -1;
+        if (receipt != null && saved >= 0 && receipt.identity == saved
+                && receipt.session == TextGuardService.serviceSession) evidenceAt = receipt.completedAt;
+        ProtectionReadiness.Facts facts = ProtectionReadiness.Facts.expected(permission,
+                TextGuardService.connected, starting, shown.failure(), evidenceAt, saved, applied);
+        return ProtectionReadiness.evaluate(ProtectionReadiness.Layer.VISUAL, facts, now,
+                VISUAL_EVIDENCE_MAX_AGE_MILLIS);
+    }
+
     private void refreshStatus() {
         if (statusTitle == null || isFinishing()) return;
         DnsVpnService.State current = DnsVpnService.state;
@@ -1313,6 +1535,10 @@ public final class MainActivity extends Activity {
         Boolean permission = guardPermissionEnabled();
         GuardHealth guard = GuardHealth.evaluate(permission,
                 TextGuardService.connected, accessibilityConfigured, settingsReadable, inspectionPartial);
+        ProtectionReadiness.Status dnsStatus = dnsReadiness(current, check, privateDnsBypass);
+        ProtectionReadiness.Status appsStatus = appsReadiness(accessibilityConfigured, permission,
+                scanIncomplete);
+        ProtectionReadiness.Status visualStatus = visualReadiness(rules, permission);
 
         if (rules != null) {
             refreshSchedule(rules.schedule);
@@ -1361,6 +1587,7 @@ public final class MainActivity extends Activity {
         boolean needsAttention = guard.needsAttention || current == DnsVpnService.State.ERROR
                 || current == DnsVpnService.State.DEGRADED || dnsExpected || privateDnsBypass
                 || check == DnsVpnService.CheckState.FAILED || visualReason != 0
+                || dnsStatus.attention() || appsStatus.attention() || visualStatus.attention()
                 || unknown || restored || uninstallAttention || managedAttention
                 || watchdogLost || notificationsAttention;
         CharSequence title = getString(needsAttention ? R.string.protection_attention
@@ -1368,23 +1595,22 @@ public final class MainActivity extends Activity {
                 ? R.string.protection_partial : R.string.status_title);
         Ui.setTextIfChanged(statusTitle, title);
         statusTitle.setTextColor(Ui.color(this, needsAttention ? R.color.warning : R.color.text_primary));
-        if (heroCard != null && heroAttention != needsAttention) {
+        if (heroRule != null && heroAttention != needsAttention) {
             heroAttention = needsAttention;
-            heroCard.setBackgroundResource(needsAttention
-                    ? R.drawable.bg_hero_attention : R.drawable.bg_hero);
+            heroRule.setBackgroundColor(Ui.color(this,
+                    needsAttention ? R.color.warning : R.color.accent));
         }
-        heroShield.setState(needsAttention ? Ui.ATTENTION
-                : current == DnsVpnService.State.STARTING || guard == GuardHealth.LIMITED
-                ? Ui.STARTING
-                : current == DnsVpnService.State.RUNNING || guard == GuardHealth.ACTIVE
-                ? Ui.ON : Ui.OFF);
         Ui.setTextIfChanged(statusBody, !settingsReadable
                 ? getString(R.string.policy_unavailable)
                 : rulesLocked
                 ? getString(R.string.status_body_locked, Durations.remaining(this, remaining))
-                : rules != null && rules.hasConfiguredRestrictions()
-                ? getString(R.string.status_body_unlocked)
-                : getString(R.string.status_body_short));
+                : needsAttention
+                ? getString(R.string.status_body_attention)
+                : current == DnsVpnService.State.RUNNING
+                || current == DnsVpnService.State.STARTING
+                || guard == GuardHealth.ACTIVE
+                ? getString(R.string.status_body_partial)
+                : getString(R.string.status_body_off));
 
         // The three tiles are the fastest reading of the app: one word per layer.
         int dnsKind, appsKind, imagesKind;
@@ -1397,6 +1623,15 @@ public final class MainActivity extends Activity {
             default: dnsKind = Ui.OFF; dnsText = R.string.state_off; break;
         }
         if (privateDnsBypass) dnsKind = Ui.ATTENTION;
+        // A connected tunnel is not evidence that it blocked the check. Until a route check
+        // passes, the tile says so instead of reading "On" because the service is running.
+        if (dnsStatus.state == ProtectionReadiness.State.NOT_CHECKED) {
+            dnsKind = Ui.OFF;
+            dnsText = R.string.state_not_checked;
+        } else if (dnsStatus.state == ProtectionReadiness.State.WORKING) {
+            dnsKind = Ui.ON;
+            dnsText = R.string.state_on;
+        }
         switch (guard) {
             case ACTIVE: appsKind = Ui.ON; appsText = R.string.state_on; break;
             case LIMITED: appsKind = Ui.ATTENTION; appsText = R.string.state_attention; break;
@@ -1406,6 +1641,12 @@ public final class MainActivity extends Activity {
             case PERMISSION_UNKNOWN:
             case SETTINGS_UNAVAILABLE: appsKind = Ui.ATTENTION; appsText = R.string.state_attention; break;
             default: appsKind = Ui.OFF; appsText = R.string.state_off; break;
+        }
+        // Bound and configured is not the same as having completed one inspection.
+        if (guard == GuardHealth.ACTIVE
+                && appsStatus.state == ProtectionReadiness.State.NOT_CHECKED) {
+            appsKind = Ui.OFF;
+            appsText = R.string.state_not_checked;
         }
         if (Build.VERSION.SDK_INT < 34) {
             imagesKind = Ui.UNSUPPORTED;
@@ -1422,7 +1663,8 @@ public final class MainActivity extends Activity {
         } else {
             switch (VisualGuard.health.shown()) {
                 case ERROR:
-                case UNREADABLE: imagesKind = Ui.ATTENTION; imagesText = R.string.state_attention; break;
+                case UNREADABLE:
+                case PROTECTED: imagesKind = Ui.ATTENTION; imagesText = R.string.state_attention; break;
                 case LOADING:
                 case CHECKING: imagesKind = Ui.STARTING; imagesText = R.string.state_starting; break;
                 case SAMPLED:
@@ -1431,9 +1673,22 @@ public final class MainActivity extends Activity {
                 default: imagesKind = Ui.OFF; imagesText = R.string.state_off; break;
             }
         }
+        // Opted-in sampling with no inspected sample yet is watched, not verified.
+        if (Build.VERSION.SDK_INT >= 34 && rules != null && rules.visualEnabled
+                && !rules.scannedApps.isEmpty()
+                && visualStatus.state == ProtectionReadiness.State.NOT_CHECKED) {
+            imagesKind = Ui.OFF;
+            imagesText = R.string.state_not_checked;
+        }
         layerDns.setState(getString(dnsText), dnsKind);
         layerApps.setState(getString(appsText), appsKind);
         layerImages.setState(getString(imagesText), imagesKind);
+        PolicyReceipt appsReceipt = TextGuardService.inspection.receipt();
+        int appsSubject = appsReceipt != null && appsReceipt.kind == PolicyReceipt.Kind.TEXT_SCAN
+                ? R.string.evidence_subject_text : R.string.evidence_subject_app;
+        layerDns.setDetail(Durations.evidence(this, dnsStatus, R.string.evidence_subject_dns));
+        layerApps.setDetail(Durations.evidence(this, appsStatus, appsSubject));
+        layerImages.setDetail(Durations.evidence(this, visualStatus, R.string.evidence_subject_image));
 
         int networkText;
         switch (current) {
@@ -1611,6 +1866,7 @@ public final class MainActivity extends Activity {
         setRowEnabled(browserRow, editable);
         setRowEnabled(scheduleRow, editable);
         setRowEnabled(timeLimitRow, editable);
+        for (Ui.Chip chip : distractionChipViews) chip.setEnabled(editable);
         if (rulesLockCard == null || rulesLockText == null) return;
         rulesLockCard.setVisibility(locked ? View.VISIBLE : View.GONE);
         if (locked) {
@@ -1812,7 +2068,7 @@ public final class MainActivity extends Activity {
         // hero action and let the DNS button carry the primary emphasis.
         boolean dnsStep = currentSetupStep == SetupGuide.Step.ENABLE_DNS
                 || currentSetupStep == SetupGuide.Step.READY_APPS;
-        setupCard.setVisibility(dnsStep ? View.GONE : View.VISIBLE);
+        setupSection.setVisibility(dnsStep ? View.GONE : View.VISIBLE);
         if (dnsStep != dnsPrimaryStyle) {
             dnsPrimaryStyle = dnsStep;
             Ui.style(startDns, dnsStep ? Ui.ButtonKind.PRIMARY : Ui.ButtonKind.TONAL);
@@ -1911,16 +2167,12 @@ public final class MainActivity extends Activity {
                 case CHECKING: label = R.string.visual_checking; kind = Ui.STARTING; break;
                 case SAMPLED: label = R.string.visual_sampled; kind = Ui.ON; break;
                 case UNREADABLE:
+                case PROTECTED:
                     label = R.string.visual_unreadable;
                     kind = Ui.ATTENTION;
                     attention = R.string.attention_visual;
                     break;
                 case INPUT: label = R.string.visual_input; kind = Ui.ON; break;
-                case PROTECTED:
-                    label = R.string.visual_protected;
-                    kind = Ui.ATTENTION;
-                    attention = R.string.attention_visual;
-                    break;
                 case ERROR:
                     label = R.string.visual_error;
                     kind = Ui.ATTENTION;
@@ -1942,7 +2194,8 @@ public final class MainActivity extends Activity {
         if (personBlurRow != null) {
             String people = PersonBlur.mode(this);
             String response = PersonBlur.response(this);
-            personBlurRow.setValue(getString(PersonBlur.label(people)), PersonBlur.on(people) ? Ui.ON : Ui.OFF);
+            personBlurRow.setValue(getString(PersonBlur.label(people)),
+                    PersonBlur.on(people) ? Ui.ON : Ui.OFF);
             boolean enabled = Build.VERSION.SDK_INT >= 34 && rules.visualEnabled && remaining == 0;
             Ui.setEnabledWithAlpha(personBlurRow.root, enabled);
             if (personResponseRow != null) {
@@ -2092,54 +2345,6 @@ public final class MainActivity extends Activity {
                 });
     }
 
-    private void editPersonBlur() {
-        if (settings == null || refuseIfRulesLocked() || Build.VERSION.SDK_INT < 34) return;
-        if (!settings.snapshot().visualEnabled) {
-            new AlertDialog.Builder(this).setTitle(R.string.person_blur_title)
-                    .setMessage(R.string.person_blur_need_visual)
-                    .setPositiveButton(android.R.string.ok, null).show();
-            return;
-        }
-        String[] modes = {PersonBlur.OFF, PersonBlur.ALL, PersonBlur.WOMEN, PersonBlur.MEN};
-        CharSequence[] labels = new CharSequence[modes.length];
-        int checked = 0;
-        String current = PersonBlur.mode(this);
-        for (int i = 0; i < modes.length; i++) {
-            labels[i] = getString(PersonBlur.label(modes[i]));
-            if (modes[i].equals(current)) checked = i;
-        }
-        new AlertDialog.Builder(this).setTitle(R.string.person_blur_title)
-                .setSingleChoiceItems(labels, checked, (dialog, which) -> {
-                    PersonBlur.set(this, modes[which]);
-                    if (personBlurRow != null) personBlurRow.setValue(getString(PersonBlur.label(modes[which])),
-                            PersonBlur.on(modes[which]) ? Ui.ON : Ui.OFF);
-                    dialog.dismiss();
-                })
-                .setNegativeButton(android.R.string.cancel, null).show();
-    }
-
-    private void editPersonResponse() {
-        if (settings == null || refuseIfRulesLocked() || Build.VERSION.SDK_INT < 34) return;
-        if (!PersonBlur.on(PersonBlur.mode(this))) {
-            new AlertDialog.Builder(this).setTitle(R.string.person_response_title)
-                    .setMessage(R.string.person_response_need_people)
-                    .setPositiveButton(android.R.string.ok, null).show();
-            return;
-        }
-        String[] responses = {PersonBlur.BACK, PersonBlur.COVER};
-        CharSequence[] labels = {getString(R.string.person_response_back),
-                getString(R.string.person_response_cover)};
-        int checked = PersonBlur.COVER.equals(PersonBlur.response(this)) ? 1 : 0;
-        new AlertDialog.Builder(this).setTitle(R.string.person_response_title)
-                .setSingleChoiceItems(labels, checked, (dialog, which) -> {
-                    PersonBlur.setResponse(this, responses[which]);
-                    if (personResponseRow != null) personResponseRow.setValue(
-                            getString(PersonBlur.responseLabel(responses[which])), Ui.ON);
-                    dialog.dismiss();
-                })
-                .setNegativeButton(android.R.string.cancel, null).show();
-    }
-
     /** One short paragraph, then the full disclosure only for anyone who opens it. */
     private void showLayerConsent(int titleRes, int shortRes, int fullRes, Runnable onAccept) {
         LinearLayout form = new LinearLayout(this);
@@ -2175,6 +2380,288 @@ public final class MainActivity extends Activity {
         catch (RuntimeException unavailable) { return true; }
     }
 
+    /** Read-only hostname explanation. It never opens the destination or stores the query. */
+    private void showSiteCheck() {
+        if (settings == null) return;
+        LinearLayout form = new LinearLayout(this);
+        form.setOrientation(LinearLayout.VERTICAL);
+        form.setPadding(Ui.dp(this, 20), Ui.dp(this, 4), Ui.dp(this, 20), Ui.dp(this, 8));
+        form.addView(Ui.body(this, getString(R.string.check_site_summary)));
+        form.addView(Ui.caption(this, getString(R.string.check_site_path_note)), Ui.margins(this, 4, 0));
+        EditText input = Ui.input(this, R.string.check_site_hint, false);
+        input.setSingleLine(true);
+        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT
+                | android.text.InputType.TYPE_TEXT_VARIATION_URI);
+        input.setImeOptions(android.view.inputmethod.EditorInfo.IME_ACTION_GO);
+        form.addView(input, Ui.margins(this, 10, 0));
+        Button check = Ui.button(this, R.string.check_site_button, Ui.ButtonKind.TONAL);
+        form.addView(check, Ui.buttonParams(this));
+        TextView result = Ui.text(this, "", 14, R.color.text_secondary);
+        result.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+        form.addView(result, Ui.margins(this, 8, 0));
+        Button add = Ui.button(this, R.string.check_site_add, Ui.ButtonKind.QUIET);
+        add.setVisibility(View.GONE);
+        form.addView(add, Ui.buttonParams(this));
+        ScrollView scroll = new ScrollView(this);
+        scroll.addView(form, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle(R.string.check_site_title)
+                .setView(scroll)
+                .setNegativeButton(android.R.string.cancel, null).create();
+        final String[] checkedHost = new String[1];
+        check.setEnabled(false);
+        input.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                checkedHost[0] = null;
+                result.setText("");
+                add.setVisibility(View.GONE);
+                check.setEnabled(s.toString().trim().length() > 0);
+            }
+            @Override public void afterTextChanged(Editable text) { }
+        });
+        input.setOnEditorActionListener((view, action, event) -> {
+            if (action != android.view.inputmethod.EditorInfo.IME_ACTION_GO) return false;
+            if (check.isEnabled()) check.performClick();
+            return true;
+        });
+        check.setOnClickListener(view -> {
+            String raw = input.getText().toString();
+            if (raw.trim().isEmpty() || !input.isEnabled()) return;
+            input.setEnabled(false);
+            checkedHost[0] = null;
+            result.setText(R.string.check_site_checking);
+            result.setTextColor(Ui.color(this, R.color.text_tertiary));
+            add.setVisibility(View.GONE);
+            check.setEnabled(false);
+            hostLookup.execute(() -> {
+                String message;
+                boolean canAdd = false;
+                String host = null;
+                try {
+                    host = SiteCheckInput.host(raw);
+                    HostDecision.Result decision = HostData.policy(this).evaluate(host);
+                    message = getString(R.string.check_site_host, host) + "\n"
+                            + siteCheckMessage(decision) + "\n"
+                            + getString(R.string.check_site_generation, decision.generation);
+                    HostListStore.Active source = HostListStore.active(this);
+                    if (source.source != HostListStore.Source.INSTALLED) {
+                        message += "\n" + getString(R.string.check_site_bundled, source.generation);
+                    }
+                    if ("installed-older".equals(source.error)) {
+                        message += "\n" + getString(R.string.check_site_older);
+                    } else if (source.error != null) {
+                        message += "\n" + getString(R.string.check_site_degraded);
+                    }
+                    if (HostData.termsFailed()) {
+                        message += "\n" + getString(R.string.check_site_terms_unavailable);
+                    }
+                    canAdd = decision.outcome == HostDecision.Outcome.NOT_LISTED;
+                } catch (SiteCheckInput.Invalid invalid) {
+                    message = getString(R.string.check_site_invalid);
+                } catch (RuntimeException unavailable) {
+                    message = getString(R.string.check_site_unavailable);
+                }
+                final String shown = message;
+                final boolean offer = canAdd;
+                final String found = host;
+                runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed() || !dialog.isShowing()) return;
+                    input.setEnabled(true);
+                    check.setEnabled(true);
+                    result.setText(shown);
+                    result.setTextColor(Ui.color(this, offer
+                            ? R.color.text_secondary : R.color.text_primary));
+                    checkedHost[0] = found;
+                    add.setVisibility(offer ? View.VISIBLE : View.GONE);
+                });
+            });
+        });
+        add.setOnClickListener(view -> {
+            String host = checkedHost[0];
+            if (host != null) confirmAddSite(host, dialog);
+        });
+        showPrivate(dialog);
+    }
+
+    private void showRulesFile() {
+        if (settings == null) return;
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.rules_file_title)
+                .setMessage(R.string.rules_file_summary)
+                .setPositiveButton(R.string.rules_export, (dialog, which) -> exportRules())
+                .setNeutralButton(R.string.rules_import, (dialog, which) -> importRules())
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void exportRules() {
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT)
+                .addCategory(Intent.CATEGORY_OPENABLE)
+                .setType("application/json")
+                .putExtra(Intent.EXTRA_TITLE, "hisn-rules.json");
+        try { startActivityForResult(intent, REQUEST_EXPORT_RULES); }
+        catch (RuntimeException unavailable) { Toast.makeText(this, R.string.rules_export_failed, Toast.LENGTH_LONG).show(); }
+    }
+
+    private void importRules() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT)
+                .addCategory(Intent.CATEGORY_OPENABLE)
+                .setType("*/*")
+                .putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"application/json", "text/plain"});
+        try { startActivityForResult(intent, REQUEST_IMPORT_RULES); }
+        catch (RuntimeException unavailable) { Toast.makeText(this, R.string.rules_import_failed, Toast.LENGTH_LONG).show(); }
+    }
+
+    private void applyImportedRules(RuleDocument.Result imported) {
+        try {
+            PolicyStore.Snapshot current = settings.snapshot();
+            String domains = RuleDocument.merge(settings.domainText(), imported.blocks);
+            String words = RuleDocument.merge(settings.wordText(), imported.words);
+            settings.update(domains, words, current.blockedApps, current.scannedApps);
+            Toast.makeText(this, R.string.rules_imported, Toast.LENGTH_SHORT).show();
+            refreshRuleSummaries();
+            refreshStatus();
+        } catch (RuntimeException refused) {
+            showRefusal(refused);
+        }
+    }
+
+    private String siteCheckMessage(HostDecision.Result decision) {
+        switch (decision.source) {
+            case PERSONAL_BLOCK: return getString(R.string.check_site_blocked_personal);
+            case ADULT_TLD: return getString(R.string.check_site_blocked_tld);
+            case HOST_TERM: return getString(R.string.check_site_blocked_term);
+            case PUBLISHED_LIST:
+                return getString(R.string.check_site_blocked_list);
+            default:
+                if (decision.outcome == HostDecision.Outcome.NOT_LISTED) {
+                    return getString(R.string.check_site_not_listed);
+                }
+                if (decision.outcome == HostDecision.Outcome.UNAVAILABLE) {
+                    return getString(R.string.check_site_unavailable);
+                }
+                return getString(R.string.check_site_invalid);
+        }
+    }
+
+    private void confirmAddSite(String host, AlertDialog checker) {
+        new AlertDialog.Builder(this)
+                .setTitle(getString(R.string.check_site_add_title, host))
+                .setMessage(R.string.check_site_add_body)
+                .setPositiveButton(R.string.check_site_add, (dialog, which) -> {
+                    try {
+                        PolicyStore.Snapshot current = settings.snapshot();
+                        String domains = settings.domainText();
+                        settings.update(domains.trim().isEmpty() ? host : domains + "\n" + host,
+                                settings.wordText(), current.blockedApps, current.scannedApps);
+                        Toast.makeText(this, R.string.check_site_added, Toast.LENGTH_SHORT).show();
+                        refreshRuleSummaries();
+                        refreshStatus();
+                        if (checker != null && checker.isShowing()) checker.dismiss();
+                    } catch (RuntimeException refused) {
+                        showRefusal(refused);
+                    }
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void showListUpdate() {
+        int generation = AdultListUpdater.installedGeneration(this);
+        String current = getString(R.string.list_update_summary, generation) + "\n\n"
+                + getString(R.string.list_update_domains_only);
+        long verified = AdultListUpdater.verifiedAt(this);
+        if (verified > 0) {
+            current += "\n" + getString(R.string.list_update_verified,
+                    java.text.DateFormat.getDateTimeInstance().format(new java.util.Date(verified)));
+        }
+        String error = AdultListUpdater.lastError(this);
+        if (error != null && !error.isEmpty()) {
+            current += "\n" + getString(R.string.list_update_failed, error);
+        }
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.list_update_title)
+                .setMessage(current)
+                .setPositiveButton(R.string.list_update_check, (dialog, which) -> {
+                    Toast.makeText(this, R.string.list_update_checking, Toast.LENGTH_SHORT).show();
+                    AdultListUpdater.check(this, true, result -> {
+                        if (isFinishing() || isDestroyed()) return;
+                        if (result.error != null && !result.error.isEmpty()) {
+                            new AlertDialog.Builder(this).setTitle(R.string.list_update_title)
+                                    .setMessage(getString(R.string.list_update_failed, result.error))
+                                    .setPositiveButton(android.R.string.ok, null).show();
+                        } else {
+                            new AlertDialog.Builder(this).setTitle(R.string.list_update_title)
+                                    .setMessage(getString(result.updated
+                                            ? R.string.list_update_new : R.string.list_update_ok,
+                                            result.generation))
+                                    .setPositiveButton(android.R.string.ok, null).show();
+                        }
+                        refreshUpdateRow();
+                    });
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void refreshUpdateRow() {
+        if (updateRow == null) return;
+        int generation = AdultListUpdater.installedGeneration(this);
+        updateRow.setSummary(getString(generation == BuildConfig.DOMAIN_SEED_VERSION
+                ? R.string.list_update_bundled : R.string.list_update_installed, generation));
+    }
+
+    private void editPersonBlur() {
+        if (settings == null || refuseIfRulesLocked() || Build.VERSION.SDK_INT < 34) return;
+        if (!settings.snapshot().visualEnabled) {
+            new AlertDialog.Builder(this).setTitle(R.string.person_blur_title)
+                    .setMessage(R.string.person_blur_need_visual)
+                    .setPositiveButton(android.R.string.ok, null).show();
+            return;
+        }
+        String[] modes = {PersonBlur.OFF, PersonBlur.ALL, PersonBlur.WOMEN, PersonBlur.MEN};
+        CharSequence[] labels = new CharSequence[modes.length];
+        int checked = 0;
+        String current = PersonBlur.mode(this);
+        for (int i = 0; i < modes.length; i++) {
+            labels[i] = getString(PersonBlur.label(modes[i]));
+            if (modes[i].equals(current)) checked = i;
+        }
+        new AlertDialog.Builder(this).setTitle(R.string.person_blur_title)
+                .setSingleChoiceItems(labels, checked, (dialog, which) -> {
+                    PersonBlur.set(this, modes[which]);
+                    if (personBlurRow != null) personBlurRow.setValue(
+                            getString(PersonBlur.label(modes[which])),
+                            PersonBlur.on(modes[which]) ? Ui.ON : Ui.OFF);
+                    dialog.dismiss();
+                })
+                .setNegativeButton(android.R.string.cancel, null).show();
+    }
+
+    private void editPersonResponse() {
+        if (settings == null || refuseIfRulesLocked() || Build.VERSION.SDK_INT < 34) return;
+        if (!PersonBlur.on(PersonBlur.mode(this))) {
+            new AlertDialog.Builder(this).setTitle(R.string.person_response_title)
+                    .setMessage(R.string.person_response_need_people)
+                    .setPositiveButton(android.R.string.ok, null).show();
+            return;
+        }
+        String[] responses = {PersonBlur.BACK, PersonBlur.COVER};
+        CharSequence[] labels = {getString(R.string.person_response_back),
+                getString(R.string.person_response_cover)};
+        int checked = PersonBlur.COVER.equals(PersonBlur.response(this)) ? 1 : 0;
+        new AlertDialog.Builder(this).setTitle(R.string.person_response_title)
+                .setSingleChoiceItems(labels, checked, (dialog, which) -> {
+                    PersonBlur.setResponse(this, responses[which]);
+                    if (personResponseRow != null) personResponseRow.setValue(
+                            getString(PersonBlur.responseLabel(responses[which])), Ui.ON);
+                    dialog.dismiss();
+                })
+                .setNegativeButton(android.R.string.cancel, null).show();
+    }
+
     private void editRules(boolean domain) {
         if (settings == null || refuseIfRulesLocked()) return;
         LinearLayout form = new LinearLayout(this);
@@ -2187,25 +2674,30 @@ public final class MainActivity extends Activity {
         input.setText(domain ? settings.domainText() : settings.wordText());
         input.setFilters(new InputFilter[]{new InputFilter.LengthFilter(TEXT_LIMIT)});
         form.addView(input, Ui.margins(this, 10, 0));
-        int lines = countRules(input.getText().toString());
-        TextView counter = Ui.caption(this, getResources().getQuantityString(
-                R.plurals.editor_lines, lines, lines, MAX_RULE_LINES));
+        TextView counter = Ui.caption(this, "");
         form.addView(counter, Ui.margins(this, 4, 0));
+        TextView preview = Ui.caption(this, "");
+        preview.setTextColor(Ui.color(this, R.color.text_tertiary));
+        preview.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+        form.addView(preview, Ui.margins(this, 2, 0));
+        EditText find = Ui.input(this, R.string.rule_preview_search, false);
+        form.addView(find, Ui.margins(this, 6, 0));
         TextView error = Ui.caption(this, "");
         error.setTextColor(Ui.color(this, R.color.danger));
         error.setVisibility(View.GONE);
         error.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
         form.addView(error);
-        input.addTextChangedListener(new TextWatcher() {
+        final RulePreview.Report[] report = new RulePreview.Report[1];
+        Runnable refresh = () -> refreshRulePreview(input.getText().toString(), domain,
+                find.getText().toString(), counter, preview, error, report);
+        refresh.run();
+        TextWatcher watcher = new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence text, int start, int count, int after) { }
             @Override public void onTextChanged(CharSequence text, int start, int before, int count) { }
-            @Override public void afterTextChanged(Editable text) {
-                int count = countRules(text.toString());
-                counter.setText(getResources().getQuantityString(
-                        R.plurals.editor_lines, count, count, MAX_RULE_LINES));
-                error.setVisibility(View.GONE);
-            }
-        });
+            @Override public void afterTextChanged(Editable text) { refresh.run(); }
+        };
+        input.addTextChangedListener(watcher);
+        find.addTextChangedListener(watcher);
         ScrollView scroll = new ScrollView(this);
         scroll.addView(form, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
@@ -2218,13 +2710,21 @@ public final class MainActivity extends Activity {
             Window window = dialog.getWindow();
             if (window != null) window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
+                RulePreview.Report current = report[0];
+                if (current == null) {
+                    error.setText(R.string.rules_invalid);
+                    error.setVisibility(View.VISIBLE);
+                    return;
+                }
                 try {
                     PolicyStore.Snapshot old = settings.snapshot();
-                    settings.update(domain ? input.getText().toString() : settings.domainText(),
-                            domain ? settings.wordText() : input.getText().toString(),
+                    String accepted = current.acceptedText();
+                    settings.update(domain ? accepted : settings.domainText(),
+                            domain ? settings.wordText() : accepted,
                             old.blockedApps, old.scannedApps);
                     dialog.dismiss();
-                    Toast.makeText(this, R.string.rules_saved, Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, getString(R.string.rule_preview_saved, current.accepted.size(),
+                            current.duplicates + current.rejected), Toast.LENGTH_SHORT).show();
                     refreshRuleSummaries();
                     refreshStatus();
                 } catch (RuntimeException refused) {
@@ -2235,6 +2735,55 @@ public final class MainActivity extends Activity {
             });
         });
         showPrivate(dialog);
+    }
+
+    private void refreshRulePreview(String text, boolean domain, String query, TextView counter,
+            TextView preview, TextView error, RulePreview.Report[] report) {
+        try {
+            RulePreview.Report next = RulePreview.of(text,
+                    domain ? RulePreview.Kind.DOMAIN : RulePreview.Kind.WORD, MAX_RULE_LINES);
+            report[0] = next;
+            int count = next.accepted.size();
+            counter.setText(getResources().getQuantityString(
+                    R.plurals.editor_lines, count, count, MAX_RULE_LINES));
+            StringBuilder detail = new StringBuilder(getString(R.string.rule_preview_counts,
+                    next.accepted.size(), next.duplicates, next.rejected));
+            String search = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
+            if (!search.isEmpty()) {
+                int matches = 0;
+                for (RulePreview.Entry entry : next.entries) {
+                    if (entry.status != RulePreview.Status.VALID) continue;
+                    if (!entry.normalized.toLowerCase(Locale.ROOT).contains(search)) continue;
+                    if (matches == 0) detail.append('\n').append(getString(R.string.rule_preview_search_matches));
+                    if (matches < 8) detail.append('\n').append(entry.normalized);
+                    matches++;
+                }
+                if (matches == 0) detail.append('\n').append(getString(R.string.rule_preview_no_matches));
+            } else {
+                int shown = 0;
+                for (RulePreview.Entry entry : next.entries) {
+                    if (entry.status == RulePreview.Status.VALID || shown >= 6) continue;
+                    String reason = entry.status == RulePreview.Status.DUPLICATE
+                            ? getString(R.string.rule_reason_duplicate)
+                            : "hostname".equals(entry.reason) ? getString(R.string.rule_reason_hostname)
+                            : getString(R.string.rule_reason_word);
+                    String raw = entry.raw.length() > 80 ? entry.raw.substring(0, 80) + "…" : entry.raw;
+                    detail.append('\n').append(getString(R.string.rule_preview_rejected, raw, reason));
+                    shown++;
+                }
+            }
+            preview.setText(detail.toString());
+            preview.setTextColor(Ui.color(this, next.hasRejected()
+                    ? R.color.warning : R.color.text_tertiary));
+            error.setVisibility(View.GONE);
+        } catch (RuntimeException invalid) {
+            report[0] = null;
+            counter.setText(getResources().getQuantityString(
+                    R.plurals.editor_lines, countRules(text), countRules(text), MAX_RULE_LINES));
+            preview.setText("");
+            error.setText(R.string.rules_invalid);
+            error.setVisibility(View.VISIBLE);
+        }
     }
 
     private void chooseApps(boolean scan) {
@@ -3065,6 +3614,45 @@ public final class MainActivity extends Activity {
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == 100 && resultCode == RESULT_OK) startDnsService();
+        else if (requestCode == REQUEST_EXPORT_RULES && resultCode == RESULT_OK && data != null) {
+            android.net.Uri uri = data.getData();
+            if (uri == null) return;
+            try (java.io.OutputStream out = getContentResolver().openOutputStream(uri, "wt")) {
+                if (out == null) throw new java.io.IOException("no stream");
+                out.write(RuleDocument.export(settings.domainText(), settings.wordText())
+                        .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                Toast.makeText(this, R.string.rules_exported, Toast.LENGTH_SHORT).show();
+            } catch (RuntimeException | java.io.IOException failed) {
+                Toast.makeText(this, R.string.rules_export_failed, Toast.LENGTH_LONG).show();
+            }
+        } else if (requestCode == REQUEST_IMPORT_RULES && resultCode == RESULT_OK && data != null) {
+            android.net.Uri uri = data.getData();
+            if (uri == null) return;
+            try (java.io.InputStream in = getContentResolver().openInputStream(uri)) {
+                if (in == null) throw new java.io.IOException("no stream");
+                byte[] bytes = HostListStore.read(in, RuleDocument.MAX_BYTES + 1);
+                RuleDocument.Result imported = RuleDocument.parse(bytes);
+                String body = getString(R.string.rules_import_body,
+                        imported.blocks.size(), imported.words.size());
+                int skipped = imported.skippedHosts + imported.skippedWords;
+                if (skipped > 0) body += "\n" + getString(R.string.rules_import_skipped, skipped);
+                if (!imported.unsupported.isEmpty()) {
+                    body += "\n" + getString(R.string.rules_import_unsupported,
+                            String.join(", ", imported.unsupported));
+                }
+                new AlertDialog.Builder(this)
+                        .setTitle(R.string.rules_import_title)
+                        .setMessage(body)
+                        .setPositiveButton(R.string.rules_import_apply,
+                                (dialog, which) -> applyImportedRules(imported))
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .show();
+            } catch (java.io.IOException tooLarge) {
+                Toast.makeText(this, R.string.rules_import_oversized, Toast.LENGTH_LONG).show();
+            } catch (RuntimeException invalid) {
+                Toast.makeText(this, R.string.rules_import_failed, Toast.LENGTH_LONG).show();
+            }
+        }
     }
 
     private void startDnsService() {
@@ -3161,10 +3749,12 @@ public final class MainActivity extends Activity {
         UninstallProtectionController.sync(this);
         try { LayerWatchdog.syncSchedule(this); }
         catch (RuntimeException unavailable) { /* The next open retries. */ }
-        ensureDnsRunning();
-        rearmGuardIfNeeded();
         refreshRuleSummaries();
         refreshBatteryState();
+        AdultListUpdater.schedule(this);
+        refreshUpdateRow();
+        ensureDnsRunning();
+        rearmGuardIfNeeded();
         handler.post(refresh);
     }
 
@@ -3207,6 +3797,7 @@ public final class MainActivity extends Activity {
 
     @Override protected void onDestroy() {
         handler.removeCallbacksAndMessages(null);
+        hostLookup.shutdownNow();
         super.onDestroy();
     }
 }

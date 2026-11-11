@@ -2,8 +2,9 @@ import AppKit
 import SwiftUI
 import UserNotifications
 
-/// During a lock (or an explicit outside-lock opt-in), warn and close
-/// non-exempt browsers without a live extension connection.
+/// During a lock (or an explicit outside-lock opt-in), watch non-exempt
+/// browsers and close one only when its standard profile confirms that the
+/// Hisn extension was disabled or removed.
 ///
 /// THE HOLE THIS CLOSES
 /// --------------------
@@ -14,6 +15,22 @@ import UserNotifications
 /// until it is force-installed from a store, nothing stops that click. A lock
 /// that one click undoes is not a lock.
 ///
+/// Silence is not evidence of that click. Chrome and Chromium forks delay
+/// service-worker alarms, sleep, and restart their workers; a missed heartbeat
+/// while the extension is still installed must not cost the person their
+/// tabs. A browser with no answer is shown as awaiting the extension and stays
+/// open. Only two consistent profile readings that the extension is explicitly
+/// disabled or absent start the visible five-minute close countdown.
+///
+/// THE TRADE-OFF
+/// -------------
+/// Someone who removes the native-host link while leaving the extension
+/// installed keeps the browser open. That is deliberate: the heartbeat is a
+/// lagging signal, not proof of a click, and the extension still carries its
+/// declarative rules and fails closed to strict mode during a lock. Someone
+/// who disables or uninstalls the extension is caught by the profile evidence,
+/// which is the only positive evidence this guard accepts for a closure.
+///
 /// While guarding is active, apps identified as browsers are judged:
 ///
 ///  * **Safari and other unsupported known browsers** have no connected Hisn
@@ -21,8 +38,10 @@ import UserNotifications
 ///    Screen Time or DNS alone is not proof that page scanning is present.
 ///  * **A Chromium browser Hisn links** (`NativeMessagingInstaller.browsers`)
 ///    stays open for as long as its extension keeps checking in through the
-///    bridge. When it stops, the person is warned, and the browser is closed if
-///    the extension is not back on within the warning.
+///    bridge. When it stops, the person is told the extension is not replying
+///    but the browser stays open. It closes only when two separated profile
+///    readings confirm the extension was disabled or removed, after a visible
+///    five-minute countdown.
 ///  * **Any other browser** — Firefox, Tor Browser, a Chromium fork downloaded
 ///    tonight — has nothing of Hisn inside it, so it is closed after a visible
 ///    one-minute warning. "Browser" is decided from the app's own Info.plist (it declares
@@ -62,8 +81,8 @@ public enum BrowserGuardPolicy {
         return local
     }
 
-    /// Session-local timing by browser, not process. An unverified restart
-    /// cannot buy a new connection grace or warning countdown.
+    /// Session-local warning bookkeeping by browser, not process. An
+    /// unverified restart cannot buy a new confirmed-loss countdown.
     public struct Session {
         private var starts: [String: Date] = [:]
         private var violations: [String: Date] = [:]
@@ -81,6 +100,11 @@ public enum BrowserGuardPolicy {
             activeInstances = instances
         }
         public func hasUnresolvedWarning(browser: String) -> Bool { violations[browser] != nil }
+        /// Record this process's identity transition for the session ledger.
+        /// The returned first-observation time is diagnostic only: a lost
+        /// heartbeat no longer sets a closure deadline, but the ledger still
+        /// decides whether a confirmed profile-loss countdown is inherited or
+        /// cleared by a restart.
         public mutating func graceStart(browser: String, now: Date, notBefore floor: Date,
                                         instance: String? = nil) -> Date {
             if (activeInstances[browser]?.count ?? 0) > 1 {
@@ -143,8 +167,24 @@ public enum BrowserGuardPolicy {
                     if verifiedConnection { verifiedInstances[browser, default: []].insert(instance) }
                 case .close:
                     closedInstances[browser, default: []].insert(instance)
+                case .attention:
+                    // No readable profile says the extension was disabled or
+                    // removed, and no heartbeat says it is alive. That is not
+                    // positive evidence for a closure: drop this instance's
+                    // pending deadline rather than manufacturing one.
+                    closedInstances[browser]?.remove(instance)
+                    verifiedInstances[browser]?.remove(instance)
+                    instanceViolations[browser]?[instance] = nil
                 }
                 if case .ok = verdict, let unresolved = instanceViolations[browser]?.values.min() {
+                    violations[browser] = unresolved
+                    healthyRestart.remove(browser)
+                    return
+                }
+                if case .attention = verdict,
+                   let unresolved = instanceViolations[browser]?.values.min() {
+                    // A sibling still has confirmed profile loss; keep that
+                    // browser-level deadline instead of clearing it here.
                     violations[browser] = unresolved
                     healthyRestart.remove(browser)
                     return
@@ -166,6 +206,14 @@ public enum BrowserGuardPolicy {
                 closedBrowsers.remove(browser)
                 healthyRestart.remove(browser)
                 if violations[browser] == nil { violations[browser] = now }
+            case .attention:
+                // Degraded, not closing. Clear a browser-level deadline only
+                // when no running process still carries confirmed loss.
+                if instanceViolations[browser]?.values.min() == nil {
+                    violations[browser] = nil
+                }
+                closedBrowsers.remove(browser)
+                healthyRestart.remove(browser)
             }
         }
         public mutating func reset() {
@@ -195,6 +243,10 @@ public enum BrowserGuardPolicy {
 
     public enum Verdict: Equatable {
         case ok
+        /// Degraded but not closing: the extension has not answered and no
+        /// profile confirms it was disabled or removed. There is deliberately
+        /// no deadline — a late alarm is not a reason to close a browser.
+        case attention(Reason)
         case warn(Reason, closeAt: Date)
         case close(Reason)
     }
@@ -237,19 +289,28 @@ public enum BrowserGuardPolicy {
         "com.google.Chrome.beta", "com.google.Chrome.dev", "com.google.Chrome.canary",
     ]
 
-    /// Visible recovery window for a just-launched or just-woken browser.
-    /// It is a deadline floor, never a hidden period of presumed protection.
+    /// A pending force-close waits this long after a wake before it may act,
+    /// so a decision made before sleep does not terminate the browser the
+    /// moment the lid opens. It is a recovery floor, not presumed protection.
     public static let launchGrace: TimeInterval = 60
     /// Three nominal thirty-second check-ins. Leaves room for the ten-second
     /// native timeout and authority refresh; Chrome may still delay alarms.
+    /// This is the age at which the app stops calling the connection live; it
+    /// is no longer a closure deadline.
     public static let staleAfter: TimeInterval = 90
     /// A heartbeat stamped this far in the FUTURE is not evidence of anything:
     /// winding the clock back would otherwise make the last check-in look
     /// fresh for as long as the clock stays wound back.
     public static let clockSkewTolerance: TimeInterval = 60
-    public static let warnSilent: TimeInterval = 60
+    /// The visible countdown before a browser whose standard profile confirms
+    /// the extension is disabled or removed is closed. Five minutes, because
+    /// a false closure costs the person their open work and because Chrome
+    /// may disable an extension after an update through no action of theirs.
+    public static let warnProfileLoss: TimeInterval = 300
     public static let warnUncovered: TimeInterval = 60
-    /// Relaunched without fixing what got it closed: no second long warning.
+    /// An unsupported browser relaunched without fixing what got it closed
+    /// gets a short warning, not a second minute. A linked browser keeps the
+    /// full five minutes because its profile is the only positive evidence.
     public static let warnRepeat: TimeInterval = 5
     public static let repeatWindow: TimeInterval = 10 * 60
 
@@ -299,14 +360,17 @@ public enum BrowserGuardPolicy {
     }
 
     /// Recheck delayed force-termination against current consent and recovery,
-    /// rather than blindly applying a decision made ten seconds ago.
+    /// rather than blindly applying a decision made ten seconds ago. A linked
+    /// browser is force-closable only while its profile still confirms the
+    /// extension is disabled or removed; a heartbeat that merely lapsed never
+    /// reaches this path.
     public static func shouldForceClose(active: Bool, coverage: Coverage,
                                          lastSeen: Date?, now: Date, profileLoss: Bool = false,
                                          notBefore: Date? = nil) -> Bool {
         guard active, notBefore.map({ now >= $0 }) ?? true else { return false }
         switch coverage {
         case .exempt, .allowedByUser: return false
-        case .needsExtension: return profileLoss || !extensionAlive(lastSeen: lastSeen, now: now)
+        case .needsExtension: return profileLoss
         case .uncovered: return true
         }
     }
@@ -315,9 +379,9 @@ public enum BrowserGuardPolicy {
     /// warning deadline. Repairing a running profile deserves the same fresh
     /// evidence check as repairing one while its browser was stopped.
     public static func profileRefreshRequired(profileLoss: Bool, checkedAt: Date?, now: Date,
-                                               firstViolation: Date?, recentlyClosed: Bool) -> Bool {
+                                               firstViolation: Date?) -> Bool {
         guard profileLoss, let firstViolation else { return false }
-        let deadline = firstViolation.addingTimeInterval(recentlyClosed ? warnRepeat : warnSilent)
+        let deadline = firstViolation.addingTimeInterval(warnProfileLoss)
         guard now >= deadline else { return false }
         guard let checkedAt, checkedAt >= deadline, checkedAt <= now else { return true }
         return false
@@ -326,15 +390,12 @@ public enum BrowserGuardPolicy {
     /// The verdict for one running browser.
     ///
     /// - Parameters:
-    ///   - graceStart: the later of the browser's first observation in this
-    ///     enforcement session, the Mac's last wake and the guard's own start.
-    ///     Only a restart following verified connectivity can renew it.
-    ///   - firstViolation: when the guard first found it in breach, if it has.
-    ///     The caller records it the first time this returns `.warn`.
+    ///   - firstViolation: when the guard first confirmed profile loss, if it
+    ///     has. The caller records it the first time this returns `.warn`.
     ///   - recentlyClosed: the guard closed this browser within
     ///     `repeatWindow` and it has been relaunched.
     public static func verdict(coverage: Coverage, lastSeen: Date?, now: Date,
-                               graceStart: Date, firstViolation: Date?,
+                               firstViolation: Date?,
                                recentlyClosed: Bool, profileLoss: Bool = false,
                                profileRefreshPending: Bool = false) -> Verdict {
         let reason: Reason
@@ -344,17 +405,21 @@ public enum BrowserGuardPolicy {
             return .ok
         case .needsExtension:
             if !profileLoss && extensionAlive(lastSeen: lastSeen, now: now) { return .ok }
-            reason = profileLoss ? .profileUnprotected : .extensionSilent
-            warning = recentlyClosed ? warnRepeat : warnSilent
+            guard profileLoss else {
+                // No heartbeat, but no readable profile says the extension was
+                // disabled or removed either. Silence alone never closes a
+                // browser: Chrome delays alarms, workers sleep, and a bridge
+                // can be fixed. Keep it open and say the connection is missing.
+                return .attention(.extensionSilent)
+            }
+            reason = .profileUnprotected
+            warning = warnProfileLoss
         case .uncovered:
             reason = .uncovered
             warning = recentlyClosed ? warnRepeat : warnUncovered
         }
         let since = firstViolation ?? now
-        var closeAt = since.addingTimeInterval(warning)
-        if reason == .extensionSilent && !recentlyClosed {
-            closeAt = max(closeAt, graceStart.addingTimeInterval(launchGrace))
-        }
+        let closeAt = since.addingTimeInterval(warning)
         // A repaired, relaunched browser deserves a new reading before an
         // old cached profile failure can close it again. Keep the original
         // violation timestamp; a genuinely off profile cannot reset its timer.
@@ -549,6 +614,12 @@ public final class BrowserGuard: ObservableObject {
         FilterSync.soon()
     }
 
+    /// Open linked browsers whose extension is not answering. They stay open;
+    /// the Protection screen names the gap without a countdown.
+    public var awaitingExtension: [Connection] {
+        connections.filter { $0.state == .awaitingExtension }
+    }
+
     /// Every app on this Mac that can open web pages, with how the guard
     /// would treat it — installed ones from Launch Services, plus whatever is
     /// running now.
@@ -696,7 +767,9 @@ public final class BrowserGuard: ObservableObject {
                 lastSeen: BrowserGuardPolicy.checkIn(browser: id, processID: pid, authority: authorityCheckIns,
                     local: ExtensionPresence.lastSeen(browser: id, processID: pid, in: defaults)),
                 launchedAt: app.launchDate)
-            let graceStart = session.graceStart(browser: id, now: now,
+            // The session ledger still tracks which process is speaking, even
+            // though a missing heartbeat no longer sets a close deadline.
+            _ = session.graceStart(browser: id, now: now,
                 notBefore: max(awakeSince, max(started, enforcementBegan)),
                 instance: instance)
             let repeatOffender = BrowserGuardPolicy.isRepeatClosure(
@@ -704,13 +777,13 @@ public final class BrowserGuard: ObservableObject {
             let profileLoss = !(profileChecks[id]?.confirmed(at: now).isEmpty ?? true)
             if coverage == .needsExtension && BrowserGuardPolicy.profileRefreshRequired(
                 profileLoss: profileLoss, checkedAt: profileCheckedAt[id], now: now,
-                firstViolation: session.firstViolation(browser: id), recentlyClosed: repeatOffender) {
+                firstViolation: session.firstViolation(browser: id)) {
                 needsFreshProfile.insert(id)
             }
             let verdict = BrowserGuardPolicy.verdict(
                 coverage: coverage,
                 lastSeen: lastSeen,
-                now: now, graceStart: graceStart,
+                now: now,
                 firstViolation: session.firstViolation(browser: id),
                 recentlyClosed: repeatOffender,
                 profileLoss: profileLoss, profileRefreshPending: needsFreshProfile.contains(id))
@@ -738,8 +811,17 @@ public final class BrowserGuard: ObservableObject {
                 if notified.insert(pid).inserted {
                     notify(name: name, reason: reason, seconds: closeAt.timeIntervalSince(now))
                 }
+            case .attention:
+                // The extension is not answering, but nothing proves it was
+                // disabled or removed. Leave the browser open, show the gap in
+                // the connection list, and cancel any pending force-close from
+                // profile evidence that no longer holds.
+                notified.remove(pid)
+                recentlyClosed.removeValue(forKey: id)
+                closing.removeValue(forKey: pid)?.cancel()
+                closingIDs.removeValue(forKey: pid)
             case .close:
-                NSLog("[Hisn] guard closing disconnected browser %@ (%@)", name, id)
+                NSLog("[Hisn] guard closing browser with confirmed profile loss %@ (%@)", name, id)
                 notified.remove(pid)
                 recentlyClosed[id] = now
                 close(app)
@@ -866,14 +948,21 @@ public final class BrowserGuard: ObservableObject {
 
     // MARK: Telling the person
 
+    /// A linked browser that is not answering and has no readable profile
+    /// evidence of disablement or removal. It is deliberately not an alert:
+    /// there is no countdown and no closure.
+    public static func attentionMessage(name: String) -> String {
+        String(localized: """
+            Hisn cannot confirm an extension connection from \(name). The browser \
+            stays open; page-content checks may be reduced until the extension \
+            reconnects.
+            """)
+    }
+
     public static func message(name: String, reason: BrowserGuardPolicy.Reason) -> String {
         switch reason {
         case .extensionSilent:
-            return String(localized: """
-                Hisn cannot confirm an extension connection from \(name). Reinstall \
-                or enable it in \(name)’s extensions page and check its app \
-                connection, or \(name) will close.
-                """)
+            return attentionMessage(name: name)
         case .uncovered:
             return String(localized: """
                 \(name) has no Hisn protection inside it, so it cannot stay \

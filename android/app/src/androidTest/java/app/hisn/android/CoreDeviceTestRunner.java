@@ -4,16 +4,20 @@ import android.app.Activity;
 import android.app.Instrumentation;
 import android.os.Bundle;
 
+import app.hisn.core.AdultTextPolicy;
 import app.hisn.core.DnsExchange;
 import app.hisn.core.DnsPolicy;
 import app.hisn.core.DomainPolicy;
 import app.hisn.core.DomainSeed;
+import app.hisn.core.HostTermPolicy;
 import app.hisn.core.AppTimeLimit;
 import app.hisn.core.LayerWatch;
 import app.hisn.core.SeedFreshness;
+import app.hisn.core.SignedManifest;
 import app.hisn.core.WordRuleList;
 import app.hisn.core.VisibleTextSample;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -33,6 +37,18 @@ public final class CoreDeviceTestRunner extends Instrumentation {
                 seed = DomainSeed.load(input, BuildConfig.DOMAIN_SEED_SHA256, BuildConfig.DOMAIN_SEED_COUNT);
             }
             if (seed.domainCount < 50000 || seed.policy.blocks("example.com")) throw new AssertionError("Seed check failed");
+            // The version-aware loader is what a downloaded generation uses; the
+            // bundled seed must pass the same path before a device relies on it.
+            try (InputStream terms = getTargetContext().getAssets().open("terms.json")) {
+                HostTermPolicy host = AdultPolicyAssets.loadHostPolicy(terms,
+                        BuildConfig.TERMS_SEED_SHA256, BuildConfig.DOMAIN_SEED_VERSION);
+                if (!host.matches("sex.example")) throw new AssertionError("Host terms check failed");
+            }
+            try (InputStream terms = getTargetContext().getAssets().open("terms.json")) {
+                AdultTextPolicy text = AdultPolicyAssets.load(terms,
+                        BuildConfig.TERMS_SEED_SHA256, BuildConfig.DOMAIN_SEED_VERSION);
+                if (!text.blocksPromotion("watch free porn")) throw new AssertionError("Text terms check failed");
+            }
             if (WordRuleList.compile("example\nإباحِيّ").matches("إباحي").isEmpty()) throw new AssertionError("Arabic rule check failed");
             if (!WordRuleList.compile("sex").matches("Essex").isEmpty()) throw new AssertionError("Word boundary check failed");
             DnsPolicy policy = new DnsPolicy(new DomainPolicy(Collections.singleton("blocked.example"), Collections.emptyList()));
@@ -43,11 +59,14 @@ public final class CoreDeviceTestRunner extends Instrumentation {
             testAdultPolicy();
             testAdultCommitment();
             testVisualCommitment();
+            testPolicyRevision();
+            testCommitmentMutations();
             testTimeLimits();
             testUninstallGuard();
             testLegacyEmptyCommitment();
             testDamagedSettings();
             testLayerHealthAndSeedAge();
+            testListGenerationFixture();
             VisibleTextSample sample = new VisibleTextSample();
             sample.append("blocked " + "ordinary ".repeat(1000));
             if (WordRuleList.compile("blocked").matches(sample.text()).isEmpty())
@@ -56,7 +75,7 @@ public final class CoreDeviceTestRunner extends Instrumentation {
             if (!sample.isPartial() || sample.text().length() > 32768)
                 throw new AssertionError("Inspection budget failed");
             results.putString("stream", "\nPASS: verified APK seed loaded " + seed.domainCount
-                    + " domains; Arabic matching, boundaries, local DNS block, saved rules, Unicode persistence, long-text sampling, verified adult terms, visual settings, daily time limits, commitment, damaged-settings and invalid-settings, uninstall-guard, layer-watch expectation and seed-age checks passed. No VPN was enabled; no accessibility service, admin or device-owner policy was changed.\n");
+                    + " domains; Arabic matching, boundaries, local DNS block, saved rules, Unicode persistence, long-text sampling, verified adult terms, visual settings, daily time limits, commitment, policy-version and copy-recovery, damaged-settings and invalid-settings, uninstall-guard, layer-watch expectation, seed-age checks, and signed fixture generation adoption and rollback passed. No VPN was enabled; no accessibility service, admin or device-owner policy was changed.\n");
             finish(Activity.RESULT_OK, results);
         } catch (Throwable failure) {
             StringBuilder detail = new StringBuilder();
@@ -91,6 +110,79 @@ public final class CoreDeviceTestRunner extends Instrumentation {
             if (!restored.visualEnabled || !restored.scannedApps.equals(apps))
                 throw new AssertionError("Rejected update damaged visual rules");
         } finally { forget(context, name); }
+    }
+
+    /** A policy version advances only for an effective change, survives reload/copy recovery,
+     *  and is not moved by an identical save or by starting a commitment. */
+    private void testPolicyRevision() {
+        String name = "hisn_revision_test_" + java.util.UUID.randomUUID();
+        android.content.Context context = getTargetContext();
+        try {
+            PolicyStore store = new PolicyStore(context, name);
+            if (store.policyRevision() != 0) throw new AssertionError("Fresh policy has a version");
+            store.update("first.example", "", Collections.emptySet(), Collections.emptySet());
+            long first = store.policyRevision();
+            if (first != 1) throw new AssertionError("First change did not create version 1");
+            store.update("first.example", "", Collections.emptySet(), Collections.emptySet());
+            if (store.policyRevision() != first) throw new AssertionError("Identical save advanced the version");
+            store.update("second.example", "", Collections.emptySet(), Collections.emptySet());
+            long second = store.policyRevision();
+            if (second != first + 1) throw new AssertionError("Changed list did not advance the version");
+            store.startCommitment(1);
+            if (store.policyRevision() != second) throw new AssertionError("Commitment start advanced the version");
+            store.updateUninstallLock(true);
+            if (store.policyRevision() != second)
+                throw new AssertionError("Removal choice changed the layer policy version");
+            PolicyStore reloaded = new PolicyStore(context, name);
+            if (reloaded.policyRevision() != second || !reloaded.uninstallLock())
+                throw new AssertionError("Version did not survive reload");
+            // Lose the main file; the intact copy must carry the same version and rules.
+            context.getSharedPreferences(name, android.content.Context.MODE_PRIVATE).edit().clear().commit();
+            PolicyStore recovered = new PolicyStore(context, name);
+            if (recovered.policyRevision() != second
+                    || !recovered.snapshot().domains.blockedRules().contains("second.example"))
+                throw new AssertionError("Copy recovery lost the policy version");
+        } finally { forget(context, name); }
+    }
+
+    /** Every saved-rule editor is refused at the store boundary during a commitment,
+     *  and a refused edit leaves both the rules and the policy version intact. */
+    private void testCommitmentMutations() {
+        String name = "hisn_mutation_test_" + java.util.UUID.randomUUID();
+        android.content.Context context = getTargetContext();
+        try {
+            PolicyStore store = new PolicyStore(context, name);
+            java.util.Set<String> blocked = java.util.Collections.singleton("com.example.blocked");
+            java.util.Set<String> scanned = java.util.Collections.singleton("com.example.scanned");
+            store.update("blocked.example", "word", blocked, scanned, true);
+            store.updateVisual(true);
+            store.updateShortVideo(true);
+            store.updateSchedule(new app.hisn.core.DailyAppSchedule(true, 0, 1380,
+                    java.util.Collections.emptySet(), true));
+            store.updateTimeLimits(new AppTimeLimit(java.util.Collections.singletonMap(
+                    "com.example.scanned", 30)));
+            store.startCommitment(1);
+            final long version = store.policyRevision();
+            refused(() -> store.update("", "", java.util.Collections.emptySet(),
+                    java.util.Collections.emptySet(), false), "domain/word/app removal");
+            refused(() -> store.updateVisual(false), "visual switch off");
+            refused(() -> store.updateShortVideo(false), "short-video switch off");
+            refused(() -> store.updateSchedule(app.hisn.core.DailyAppSchedule.disabled()), "schedule off");
+            refused(() -> store.updateTimeLimits(AppTimeLimit.none()), "time limits cleared");
+            refused(() -> store.updateFromGuardian("", "", java.util.Collections.emptySet(),
+                    java.util.Collections.emptySet()), "guardian weakening");
+            if (store.policyRevision() != version) throw new AssertionError("Refused edit moved the policy version");
+            PolicyStore.Snapshot reloaded = new PolicyStore(context, name).snapshot();
+            if (!reloaded.adultWordsEnabled || !reloaded.visualEnabled || !reloaded.shortVideoEnabled
+                    || !reloaded.schedule.enabled || !reloaded.timeLimits.configured()
+                    || !reloaded.blockedApps.equals(blocked) || !reloaded.scannedApps.equals(scanned))
+                throw new AssertionError("Refused edits damaged the saved rules");
+        } finally { forget(context, name); }
+    }
+
+    private static void refused(Runnable action, String step) {
+        try { action.run(); throw new AssertionError("Commitment allowed " + step); }
+        catch (IllegalStateException expected) { }
     }
 
     /** Daily time limits survive a sealed-store reload, keep working across other
@@ -435,5 +527,75 @@ public final class CoreDeviceTestRunner extends Instrumentation {
         }
         bytes.write(0); bytes.write(0); bytes.write(1); bytes.write(0); bytes.write(1);
         return bytes.toByteArray();
+    }
+
+    /**
+     * A signed fixture generation exercises the same verification and atomic
+     * adoption path as a downloaded list, including terms. It is deliberately
+     * last: the fixture pointer is removed and the store invalidated afterwards.
+     */
+    private void testListGenerationFixture() throws Exception {
+        android.content.Context context = getTargetContext();
+        byte[] manifest = asset("manifest.json");
+        String signature = new String(asset("manifest.json.sig"), StandardCharsets.US_ASCII).trim();
+        byte[] domains = asset("domains_core.txt");
+        byte[] terms = asset("terms.json");
+        byte[] key = hex(new String(asset("public_key.hex"), StandardCharsets.US_ASCII).trim());
+
+        AdultListUpdater.Result installed = AdultListUpdater.installForTest(
+                context, manifest, signature, domains, terms, key);
+        if (!installed.updated || installed.generation != 7) throw new AssertionError("Fixture generation not installed");
+        HostListStore.Active active = HostListStore.active(context);
+        if (active.generation != 7 || !active.policy.blocks("fixture0001.example")) {
+            throw new AssertionError("Fixture domain list not active");
+        }
+        if (active.hostTerms == null || !active.hostTerms.matches("fixturehost.example")) {
+            throw new AssertionError("Fixture host terms not active");
+        }
+        if (AdultPolicyAssets.policy() == null) throw new AssertionError("Fixture text terms not adopted");
+
+        String badSignature = (signature.charAt(0) == '0' ? '1' : '0') + signature.substring(1);
+        try {
+            AdultListUpdater.installForTest(context, manifest, badSignature, domains, terms, key);
+            throw new AssertionError("Fixture with a bad signature was accepted");
+        } catch (SignedManifest.Invalid expected) { }
+
+        byte[] badTerms = terms.clone();
+        badTerms[0] ^= 1;
+        AdultListUpdater.Result rejected = AdultListUpdater.installForTest(
+                context, manifest, signature, domains, badTerms, key);
+        if (rejected.updated || !"artifact".equals(rejected.error)) {
+            throw new AssertionError("Fixture with damaged terms was not rejected");
+        }
+        if (HostListStore.active(context).generation != 7) {
+            throw new AssertionError("A rejected update replaced the active generation");
+        }
+
+        deleteTree(new File(context.getFilesDir(), HostListStore.DIRECTORY));
+        context.deleteSharedPreferences("hisn_list_update");
+        HostListStore.invalidate();
+    }
+
+    private byte[] asset(String name) throws Exception {
+        try (InputStream input = getContext().getAssets().open("list-fixture/" + name)) {
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            byte[] buffer = new byte[8192];
+            int count;
+            while ((count = input.read(buffer)) != -1) bytes.write(buffer, 0, count);
+            return bytes.toByteArray();
+        }
+    }
+
+    private static byte[] hex(String text) {
+        byte[] out = new byte[text.length() / 2];
+        for (int i = 0; i < out.length; i++) out[i] = (byte) Integer.parseInt(text.substring(i * 2, i * 2 + 2), 16);
+        return out;
+    }
+
+    private static void deleteTree(File file) {
+        if (file == null || !file.exists()) return;
+        File[] children = file.listFiles();
+        if (children != null) for (File child : children) deleteTree(child);
+        file.delete();
     }
 }

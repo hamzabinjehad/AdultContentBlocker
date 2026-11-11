@@ -155,6 +155,12 @@
 			path = "Hisn/HisnUI.swift";
 			sourceTree = "<group>";
 		};
+		F144496A1CD93678A10B07E0  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Hisn/ListUpdater.swift";
+			sourceTree = "<group>";
+		};
 		FCE2B547D5D74B8316E364F7  = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -313,6 +319,12 @@
 			path = "HisnTests/DNSFilterTests.swift";
 			sourceTree = "<group>";
 		};
+		70D2542A9C31E92FB3406754  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "HisnTests/ListGenerationTests.swift";
+			sourceTree = "<group>";
+		};
 		663781E64B80A15C0EE27C59  = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -341,6 +353,12 @@
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = "HisnTests/QuietHoursTests.swift";
+			sourceTree = "<group>";
+		};
+		6CA53B741DBE3F8935FA131C  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "HisnTests/SafariGenerationRulesTests.swift";
 			sourceTree = "<group>";
 		};
 		5A4596A8AC23253937A69D67  = {
@@ -385,6 +403,12 @@
 			path = "Shared/DNSMessage.swift";
 			sourceTree = "<group>";
 		};
+		0963274D2C3FB112D11F221D  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Shared/DNSReplyGuard.swift";
+			sourceTree = "<group>";
+		};
 		540F64C242CD2A13F37529C7  = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
@@ -397,16 +421,40 @@
 			path = "Shared/DomainIndex.swift";
 			sourceTree = "<group>";
 		};
+		03778AF5BC70E1F9637E5716  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Shared/EncryptedDNSProviders.swift";
+			sourceTree = "<group>";
+		};
 		E97CEE2199ECC7931DCA55E4  = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = "Shared/HostTermPolicy.swift";
 			sourceTree = "<group>";
 		};
+		A5A87FAFDF8C15EA7D961056  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Shared/ListGeneration.swift";
+			sourceTree = "<group>";
+		};
+		58F53AAA5B00AC1B3D65000C  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Shared/ListGenerationStore.swift";
+			sourceTree = "<group>";
+		};
 		D83ACD8756A1B1ABE39CDD3B  = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = "Shared/PauseRule.swift";
+			sourceTree = "<group>";
+		};
+		24C82CD6B06A4A65F3A2F063  = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "Shared/SafariGenerationRules.swift";
 			sourceTree = "<group>";
 		};
 		85E4F1747E8749EE39D50512  = {
@@ -569,6 +617,7 @@
 				9B58D6F32A0B01CC13845E15,
 				04C0750083C97DDB24B4923E,
 				9E23A713F382FFCA64AA280A,
+				F144496A1CD93678A10B07E0,
 				FCE2B547D5D74B8316E364F7,
 				5F9265D85EAD1C04BD50005C,
 				9307E419CCB6058B20DA0572,
@@ -593,11 +642,13 @@
 				AA7435CE49B19E8A74589018,
 				3121358B9829FA8B92F7CC6D,
 				F5D9215D6261F976DD1DD549,
+				70D2542A9C31E92FB3406754,
 				663781E64B80A15C0EE27C59,
 				1A8B5976E8468D0F3F208589,
 				DADDC3D1AD209F4E73A9D6C8,
 				BE6633623FB5F04FD1889366,
 				6B370C5B5825A5A83C02CBCC,
+				6CA53B741DBE3F8935FA131C,
 				5A4596A8AC23253937A69D67,
 				26F31B81F17BFBA64615DDB8,
 				D7657ACB162603C4DD0A1D40,
@@ -605,10 +656,15 @@
 				76CFB910A4011D94CDB9761F,
 				DF6CF61D1D4D4026514AD894,
 				7DF9096670FC3E369FFA005C,
+				0963274D2C3FB112D11F221D,
 				540F64C242CD2A13F37529C7,
 				1C67CCB221F0A36EA58D344B,
+				03778AF5BC70E1F9637E5716,
 				E97CEE2199ECC7931DCA55E4,
+				A5A87FAFDF8C15EA7D961056,
+				58F53AAA5B00AC1B3D65000C,
 				D83ACD8756A1B1ABE39CDD3B,
+				24C82CD6B06A4A65F3A2F063,
 				85E4F1747E8749EE39D50512,
 				6A6050B4078DF3D6C6D4F890,
 				ED9BA85BF38759FD67931242,
@@ -688,6 +744,10 @@
 			isa = PBXBuildFile;
 			fileRef = 9B1C567182189D556CEB6F78;
 		};
+		811BBE38322A639CB75D8DE8  = {
+			isa = PBXBuildFile;
+			fileRef = F144496A1CD93678A10B07E0;
+		};
 		84BE4D50F3BB96D786709121  = {
 			isa = PBXBuildFile;
 			fileRef = 04C0750083C97DDB24B4923E;
@@ -739,6 +799,26 @@
 		817719823A3D182492A8C2BD  = {
 			isa = PBXBuildFile;
 			fileRef = E97CEE2199ECC7931DCA55E4;
+		};
+		F592CE887E5DE2F7060F6CD4  = {
+			isa = PBXBuildFile;
+			fileRef = 03778AF5BC70E1F9637E5716;
+		};
+		03D2F268066FDCF74CC56DAE  = {
+			isa = PBXBuildFile;
+			fileRef = 0963274D2C3FB112D11F221D;
+		};
+		69E2E0EE0190B0A94B2081B4  = {
+			isa = PBXBuildFile;
+			fileRef = A5A87FAFDF8C15EA7D961056;
+		};
+		4F620507C35D2E62BAA601E4  = {
+			isa = PBXBuildFile;
+			fileRef = 58F53AAA5B00AC1B3D65000C;
+		};
+		F831E4C0818FFB1E969D7A06  = {
+			isa = PBXBuildFile;
+			fileRef = 24C82CD6B06A4A65F3A2F063;
 		};
 		2154272EA949FF29A20D04CD  = {
 			isa = PBXBuildFile;
@@ -814,6 +894,7 @@
 				8FBFBA5A8ADD3BE4B0A07206,
 				0343B885940FE4E46D7256D2,
 				34EC5F63A1DAA0FFA001F894,
+				811BBE38322A639CB75D8DE8,
 				84BE4D50F3BB96D786709121,
 				689F692F72579F60E4CC3326,
 				9AA38CA65687C2B6218D67F9,
@@ -827,6 +908,11 @@
 				7E1D82A4EDA8CAD8DE2EF1C9,
 				E0605A2E7E9E03C78559B983,
 				817719823A3D182492A8C2BD,
+				F592CE887E5DE2F7060F6CD4,
+				03D2F268066FDCF74CC56DAE,
+				69E2E0EE0190B0A94B2081B4,
+				4F620507C35D2E62BAA601E4,
+				F831E4C0818FFB1E969D7A06,
 				2154272EA949FF29A20D04CD,
 				26F81AD26B46EE4C005E5BFA,
 				4357DB8B37D766A98AFC75F2,
@@ -1194,11 +1280,21 @@
 			isa = PBXBuildFile;
 			fileRef = 1349496B0BFBD6AE9C197419;
 		};
+		4CFDCAE0725A26A108DACC63  = {
+			isa = PBXBuildFile;
+			fileRef = 24C82CD6B06A4A65F3A2F063;
+		};
+		62D9B5AFDFD62FE6B547310F  = {
+			isa = PBXBuildFile;
+			fileRef = 58148B49A40E82D8CBE9F579;
+		};
 		AE559C6E4DD0A8EFAA9D9893  = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				12247C38BBBA159AB1CA10C4,
+				4CFDCAE0725A26A108DACC63,
+				62D9B5AFDFD62FE6B547310F,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1257,6 +1353,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				SKIP_INSTALL = YES;
 				HISN_PART = 1;
+				CODE_SIGN_ENTITLEMENTS = HisnBlocker/HisnBlocker.entitlements;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				ENABLE_TESTABILITY = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
@@ -1286,6 +1383,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				SKIP_INSTALL = YES;
 				HISN_PART = 1;
+				CODE_SIGN_ENTITLEMENTS = HisnBlocker/HisnBlocker.entitlements;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				ENABLE_TESTABILITY = NO;
 			};
@@ -1320,11 +1418,21 @@
 			isa = PBXBuildFile;
 			fileRef = 1349496B0BFBD6AE9C197419;
 		};
+		256D1CA4F5B4E7C05367AF9E  = {
+			isa = PBXBuildFile;
+			fileRef = 24C82CD6B06A4A65F3A2F063;
+		};
+		A181B775D5C1864761E51CB3  = {
+			isa = PBXBuildFile;
+			fileRef = 58148B49A40E82D8CBE9F579;
+		};
 		0F983949479CBF13EADA8DDD  = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				2D7760E35E6CCEBC0B1EFCEC,
+				256D1CA4F5B4E7C05367AF9E,
+				A181B775D5C1864761E51CB3,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1383,6 +1491,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				SKIP_INSTALL = YES;
 				HISN_PART = 2;
+				CODE_SIGN_ENTITLEMENTS = HisnBlocker/HisnBlocker.entitlements;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				ENABLE_TESTABILITY = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
@@ -1412,6 +1521,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				SKIP_INSTALL = YES;
 				HISN_PART = 2;
+				CODE_SIGN_ENTITLEMENTS = HisnBlocker/HisnBlocker.entitlements;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				ENABLE_TESTABILITY = NO;
 			};
@@ -1446,11 +1556,21 @@
 			isa = PBXBuildFile;
 			fileRef = 1349496B0BFBD6AE9C197419;
 		};
+		9A40372F41FC4D763431C6F9  = {
+			isa = PBXBuildFile;
+			fileRef = 24C82CD6B06A4A65F3A2F063;
+		};
+		4F8BFE1C4BAE551A831F8797  = {
+			isa = PBXBuildFile;
+			fileRef = 58148B49A40E82D8CBE9F579;
+		};
 		A3F32B39CA25B4E853B1A852  = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				CD05155F9BB490283F9FF191,
+				9A40372F41FC4D763431C6F9,
+				4F8BFE1C4BAE551A831F8797,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1509,6 +1629,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				SKIP_INSTALL = YES;
 				HISN_PART = 3;
+				CODE_SIGN_ENTITLEMENTS = HisnBlocker/HisnBlocker.entitlements;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				ENABLE_TESTABILITY = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
@@ -1538,6 +1659,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				SKIP_INSTALL = YES;
 				HISN_PART = 3;
+				CODE_SIGN_ENTITLEMENTS = HisnBlocker/HisnBlocker.entitlements;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				ENABLE_TESTABILITY = NO;
 			};
@@ -1572,11 +1694,21 @@
 			isa = PBXBuildFile;
 			fileRef = 1349496B0BFBD6AE9C197419;
 		};
+		3EFBC4865D5BC5D0A1AB165A  = {
+			isa = PBXBuildFile;
+			fileRef = 24C82CD6B06A4A65F3A2F063;
+		};
+		18B06DDD3FAE62A75869DBAE  = {
+			isa = PBXBuildFile;
+			fileRef = 58148B49A40E82D8CBE9F579;
+		};
 		73559754AB0F2BF0DB4A0A2C  = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				1C6E6F5812081176DA931911,
+				3EFBC4865D5BC5D0A1AB165A,
+				18B06DDD3FAE62A75869DBAE,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1635,6 +1767,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				SKIP_INSTALL = YES;
 				HISN_PART = 4;
+				CODE_SIGN_ENTITLEMENTS = HisnBlocker/HisnBlocker.entitlements;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				ENABLE_TESTABILITY = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
@@ -1664,6 +1797,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				SKIP_INSTALL = YES;
 				HISN_PART = 4;
+				CODE_SIGN_ENTITLEMENTS = HisnBlocker/HisnBlocker.entitlements;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				ENABLE_TESTABILITY = NO;
 			};
@@ -1698,11 +1832,21 @@
 			isa = PBXBuildFile;
 			fileRef = 1349496B0BFBD6AE9C197419;
 		};
+		4E51D7481A9BE038F9ACD69A  = {
+			isa = PBXBuildFile;
+			fileRef = 24C82CD6B06A4A65F3A2F063;
+		};
+		87A1B591F90CC4A159204C5C  = {
+			isa = PBXBuildFile;
+			fileRef = 58148B49A40E82D8CBE9F579;
+		};
 		6D43E53A0CEA928EEEA84AFB  = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				2DBC60E8747A53B043C2B012,
+				4E51D7481A9BE038F9ACD69A,
+				87A1B591F90CC4A159204C5C,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1761,6 +1905,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				SKIP_INSTALL = YES;
 				HISN_PART = 5;
+				CODE_SIGN_ENTITLEMENTS = HisnBlocker/HisnBlocker.entitlements;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				ENABLE_TESTABILITY = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
@@ -1790,6 +1935,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				SKIP_INSTALL = YES;
 				HISN_PART = 5;
+				CODE_SIGN_ENTITLEMENTS = HisnBlocker/HisnBlocker.entitlements;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				ENABLE_TESTABILITY = NO;
 			};
@@ -1824,11 +1970,21 @@
 			isa = PBXBuildFile;
 			fileRef = 1349496B0BFBD6AE9C197419;
 		};
+		CDF6C175C38A11987144D26A  = {
+			isa = PBXBuildFile;
+			fileRef = 24C82CD6B06A4A65F3A2F063;
+		};
+		BD38DD39C3D8D885F9FF7C1B  = {
+			isa = PBXBuildFile;
+			fileRef = 58148B49A40E82D8CBE9F579;
+		};
 		8D7F028464973A5AF2F9F35F  = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				B911F36D47D7D587D0144E9C,
+				CDF6C175C38A11987144D26A,
+				BD38DD39C3D8D885F9FF7C1B,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1887,6 +2043,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				SKIP_INSTALL = YES;
 				HISN_PART = 6;
+				CODE_SIGN_ENTITLEMENTS = HisnBlocker/HisnBlocker.entitlements;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				ENABLE_TESTABILITY = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
@@ -1916,6 +2073,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				SKIP_INSTALL = YES;
 				HISN_PART = 6;
+				CODE_SIGN_ENTITLEMENTS = HisnBlocker/HisnBlocker.entitlements;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				ENABLE_TESTABILITY = NO;
 			};
@@ -2500,6 +2658,22 @@
 			isa = PBXBuildFile;
 			fileRef = E97CEE2199ECC7931DCA55E4;
 		};
+		CB81A32B3388BBEDF50C8EA6  = {
+			isa = PBXBuildFile;
+			fileRef = 03778AF5BC70E1F9637E5716;
+		};
+		09C52D8A57EE05F6EE136C93  = {
+			isa = PBXBuildFile;
+			fileRef = 0963274D2C3FB112D11F221D;
+		};
+		A2842227F24F4D5AA2DD8235  = {
+			isa = PBXBuildFile;
+			fileRef = A5A87FAFDF8C15EA7D961056;
+		};
+		C9B88D9803BA29BEB8BCB15A  = {
+			isa = PBXBuildFile;
+			fileRef = 58F53AAA5B00AC1B3D65000C;
+		};
 		25F769C6A2ADE22B3EA7B66F  = {
 			isa = PBXBuildFile;
 			fileRef = DF6CF61D1D4D4026514AD894;
@@ -2540,6 +2714,10 @@
 				0AA04F5C56FAAE6C33D27C71,
 				C6E325BE07AAEF03ED874070,
 				C2DE1B1330C4602BE22F6433,
+				CB81A32B3388BBEDF50C8EA6,
+				09C52D8A57EE05F6EE136C93,
+				A2842227F24F4D5AA2DD8235,
+				C9B88D9803BA29BEB8BCB15A,
 				25F769C6A2ADE22B3EA7B66F,
 				4F88299B6FEF39A26AEEE99C,
 				3CBD1708515C362B26BFCB9E,
@@ -2713,6 +2891,14 @@
 			isa = PBXBuildFile;
 			fileRef = D7657ACB162603C4DD0A1D40;
 		};
+		5F8EFD2C985ADC25D6B07852  = {
+			isa = PBXBuildFile;
+			fileRef = 70D2542A9C31E92FB3406754;
+		};
+		BAF35238AB9BA4E408714B9D  = {
+			isa = PBXBuildFile;
+			fileRef = 6CA53B741DBE3F8935FA131C;
+		};
 		59C5F51CCE4172371A75875E  = {
 			isa = PBXBuildFile;
 			fileRef = 7164AD19C122B8FA8BC1D8E7;
@@ -2733,6 +2919,8 @@
 				1D2E2FDFDBA629FBE9118371,
 				30B9327EF4765266D8897F0A,
 				B4E33653E5CEACB4287CDE7F,
+				5F8EFD2C985ADC25D6B07852,
+				BAF35238AB9BA4E408714B9D,
 				59C5F51CCE4172371A75875E,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -11,6 +11,7 @@ import app.hisn.core.DomainPolicy;
 import app.hisn.core.ProtectionLock;
 import app.hisn.core.UninstallProtection;
 import app.hisn.core.PolicyChangeError;
+import app.hisn.core.PolicyVersion;
 import app.hisn.core.SavedSettings;
 import app.hisn.core.WordMatcher;
 import app.hisn.core.WordRuleList;
@@ -42,6 +43,8 @@ public final class PolicyStore {
         public final boolean shortVideoEnabled;
         public final DailyAppSchedule schedule;
         public final app.hisn.core.AppTimeLimit timeLimits;
+        /** The persisted policy version these rules were saved under; 0 for a legacy record. */
+        public final long revision;
 
         Snapshot(String domainText, String wordText, Set<String> apps, Set<String> scans) {
             this(domainText, wordText, apps, scans, false);
@@ -85,6 +88,29 @@ public final class PolicyStore {
             this.shortVideoEnabled = shortVideoEnabled;
             this.schedule = schedule;
             this.timeLimits = timeLimits;
+            this.revision = 0;
+        }
+
+        /**
+         * The same immutable rules under a newly committed version. A policy receipt
+         * captured from this store can then prove which write it enforced.
+         */
+        Snapshot withRevision(long revision) {
+            if (revision < 0) throw new IllegalArgumentException("Invalid policy revision");
+            return new Snapshot(this, revision);
+        }
+
+        private Snapshot(Snapshot source, long revision) {
+            domains = source.domains;
+            words = source.words;
+            blockedApps = source.blockedApps;
+            scannedApps = source.scannedApps;
+            adultWordsEnabled = source.adultWordsEnabled;
+            visualEnabled = source.visualEnabled;
+            shortVideoEnabled = source.shortVideoEnabled;
+            schedule = source.schedule;
+            timeLimits = source.timeLimits;
+            this.revision = revision;
         }
 
         public boolean hasWordProtection() { return adultWordsEnabled || !words.configuredRules().isEmpty(); }
@@ -127,6 +153,7 @@ public final class PolicyStore {
     private long copyRetryAt;
     private volatile Snapshot snapshot;
     private CommitmentClock commitment;
+    private long policyRevision;
     private boolean uninstallLock;
     private boolean installLock;
     private boolean managedLockdown;
@@ -164,6 +191,7 @@ public final class PolicyStore {
             SavedSettings.Load load = SavedSettings.load(main, second, copyFile.exists(), boot,
                     SystemClock.elapsedRealtime(), PolicyStore::valid);
             SavedSettings loadedSettings = SavedSettings.rules(load.rules);
+            policyRevision = loadedSettings.revision;
             snapshot = snapshot(loadedSettings);
             uninstallLock = loadedSettings.uninstallLock;
             installLock = loadedSettings.installLock;
@@ -184,6 +212,9 @@ public final class PolicyStore {
 
     /** Reload through a fresh store when another component updates settings. */
     public Snapshot snapshot() { return snapshot; }
+
+    /** The committed policy version; 0 for a legacy record that has not changed yet. */
+    public synchronized long policyRevision() { return policyRevision; }
 
     /** True while a commitment runs whose saved end could not be read; it ends within 90 days at most. */
     public synchronized boolean commitmentUnknown() { return commitmentUnknown && remainingMillis() > 0; }
@@ -471,8 +502,10 @@ public final class PolicyStore {
             throw new PolicyChangeError.Refused(PolicyChangeError.COMMITMENT,
                     "The protection lock prevents changing rules");
         }
-        context.getSharedPreferences(DnsVpnService.PREFS, Context.MODE_PRIVATE).edit()
-                .putBoolean(DnsVpnService.SAFE_SEARCH, enabled).apply();
+        if (!context.getSharedPreferences(DnsVpnService.PREFS, Context.MODE_PRIVATE).edit()
+                .putBoolean(DnsVpnService.SAFE_SEARCH, enabled).commit()) {
+            throw saveFailed("Cannot save SafeSearch");
+        }
     }
 
     /**
@@ -481,14 +514,24 @@ public final class PolicyStore {
      * succeeds, a damaged main file can only be detected, not restored.
      */
     private void persist(Snapshot rules, CommitmentClock clock, boolean unknown, boolean restoredNotice) {
+        // A layer version advances only for an effective saved rule change: identical saves,
+        // countdown checkpoints, commitments and restores keep the identity already persisted.
+        // Managed/removal choices are read back by their own controller and do not invalidate
+        // DNS, text or visual evidence.
+        boolean changed = !sameRules(snapshot, rules);
+        long nextRevision;
+        try { nextRevision = PolicyVersion.next(policyRevision, changed); }
+        catch (IllegalStateException exhausted) { throw saveFailed("Policy revision exhausted"); }
         Map<String, Object> values = SavedSettings.values(String.join("\n", rules.domains.blockedRules()),
                 String.join("\n", rules.words.configuredRules()), rules.blockedApps, rules.scannedApps,
                 rules.adultWordsEnabled, rules.visualEnabled, rules.shortVideoEnabled, uninstallLock, installLock,
                 managedLockdown, managedStrict, suspendBlocked, rules.timeLimits, rules.schedule, clock, unknown,
                 restoredNotice);
+        SavedSettings.withRevision(values, nextRevision);
         if (!write(prefs, values)) throw saveFailed("Cannot save settings");
         saved = values;
-        snapshot = rules;
+        policyRevision = nextRevision;
+        snapshot = rules.withRevision(nextRevision);
         commitment = clock;
         commitmentUnknown = unknown;
         restored = restoredNotice;
@@ -528,7 +571,7 @@ public final class PolicyStore {
 
     private static Snapshot snapshot(SavedSettings saved) {
         return new Snapshot(saved.domains, saved.words, saved.apps, saved.scans, saved.adultWords,
-                saved.schedule, saved.visual, saved.shortVideo, saved.timeLimits);
+                saved.schedule, saved.visual, saved.shortVideo, saved.timeLimits).withRevision(saved.revision);
     }
 
     private static boolean valid(Map<String, ?> values) { rules(values); return true; }

@@ -21,7 +21,6 @@ import android.view.accessibility.AccessibilityWindowInfo;
 import android.widget.TextView;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -29,10 +28,10 @@ import java.util.concurrent.Executors;
 import java.util.function.Predicate;
 import app.hisn.core.GuardWindows;
 import app.hisn.core.InspectionHealth;
+import app.hisn.core.PolicyReceipt;
 import app.hisn.core.InterventionRepeat;
 import app.hisn.core.LabelScan;
 import app.hisn.core.ProtectionLock;
-import app.hisn.core.RestPeriod;
 import app.hisn.core.SelfProtectionScreens;
 import app.hisn.core.SelfProtectionScreens.Guard;
 import app.hisn.core.ShortVideoSurfaces;
@@ -45,8 +44,12 @@ public final class TextGuardService extends AccessibilityService {
     public static volatile boolean connected;
     /** MainActivity asks a live service instance to re-run its idempotent setup after an update. */
     static final String ACTION_REARM = "app.hisn.android.action.REARM_GUARD";
+    /** Increments for every guard instance; a receipt from an earlier one is stale. */
+    public static volatile int serviceSession;
     /** Setup ran in this service instance; reset when Android unbinds it. */
     private boolean started;
+    /** The rearm receiver is registered in onCreate and must be removed in onDestroy. */
+    private boolean rearmRegistered;
     /** Setup finished and events are handled; the boot shield waits for this. */
     static volatile boolean ready;
     /** Set by an incomplete or failed inspection; cleared by a later complete one. */
@@ -69,23 +72,40 @@ public final class TextGuardService extends AccessibilityService {
     static volatile long lastInspectionMillis;
     /** Word/adult matches made from the accessibility event itself, before a tree walk. */
     static volatile long fastTextInterventions;
+    /** Feedback interrupts do not stop protection; used by the harmless live regression. */
+    static volatile long feedbackInterrupts;
     /** A full tree scan is forced at least this often while a selected window stays on screen. */
     private static final long FORCED_TEXT_SCAN_MILLIS = 3000;
     /** A scan that has not reported in this long is a stuck Binder walk, not a slow screen. */
     private static final long SCAN_TIMEOUT_MILLIS = 20000;
     /** While the signed adult vocabulary is still loading, retry the text pass quickly. */
     private static final long ADULT_LOAD_RETRY_MILLIS = 250;
-    /** The pause screen asks the service to hold the detected app longer. */
-    static final String ACTION_REST = "app.hisn.android.REST";
-    /** The pause screen asks the service for a screen lock. */
-    static final String ACTION_LOCK_SCREEN = "app.hisn.android.LOCK_SCREEN";
-    static final String EXTRA_APP = "app";
-    static final String EXTRA_MINUTES = "minutes";
-    static final String EXTRA_VISUAL = "visual";
+    /** After a word or image block, reopening the same app within this period returns Home again. */
+    static final long BLOCK_HOLD_MILLIS = 60000;
 
-    static volatile long browserBacks;
-    static volatile long restExtensions;
-    static volatile long screenLocks;
+    /** One receipt path: every scan result carries the monotonic time it happened. */
+    private void recordInspection(InspectionHealth.Outcome outcome) {
+        inspection.record(outcome, -1);
+    }
+
+    /**
+     * Record a current app/text decision with the policy, session and scan generation it
+     * belongs to. The text-list component is part of the layer identity, so a vocabulary
+     * change cannot inherit the previous pass's receipt.
+     */
+    private void recordInspection(InspectionHealth.Outcome outcome, PolicyReceipt.Kind kind) {
+        PolicyReceipt receipt = null;
+        if (outcome == InspectionHealth.Outcome.COMPLETE && kind != null) {
+            try {
+                receipt = new PolicyReceipt(PolicyEvidence.text(PolicyStore.get(this)), serviceSession,
+                        scanGeneration, kind, PolicyReceipt.Result.PASSED,
+                        SystemClock.elapsedRealtime());
+            } catch (RuntimeException unreadable) {
+                // No receipt is better than one for unknown inputs; the outcome still records.
+            }
+        }
+        inspection.record(outcome, receipt);
+    }
     private final Handler handler = new Handler(Looper.getMainLooper());
     private String pendingPackage;
     private long lastIntervention;
@@ -93,11 +113,6 @@ public final class TextGuardService extends AccessibilityService {
     private String heldPackage;
     private long heldUntil;
     private boolean heldWord, heldVisual;
-    /** The app whose page was just closed; the pause screen offers to hold it longer. */
-    private String pendingApp;
-    /** Link-opening apps, cached once per service instance: their page is closed before Home. */
-    private Set<String> browsers;
-    private BroadcastReceiver pauseActions;
     private int rootRetries;
     private Set<String> excluded;
     private VisualGuard visual;
@@ -151,12 +166,9 @@ public final class TextGuardService extends AccessibilityService {
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
                     .putExtra("word", pendingWordReason).putExtra("schedule", pendingScheduleReason)
                     .putExtra("limit", pendingLimitReason)
-                    .putExtra("visual", pendingVisualReason).putExtra("shortvideo", pendingShortVideoReason)
-                    .putExtra(EXTRA_APP, pendingApp)
-                    .putExtra(EXTRA_MINUTES, restMinutes())
-                    .putExtra("canrest", pendingWordReason || pendingVisualReason));
+                    .putExtra("visual", pendingVisualReason).putExtra("shortvideo", pendingShortVideoReason));
         } catch (RuntimeException unavailable) {
-            inspection.record(InspectionHealth.Outcome.INCOMPLETE);
+            recordInspection(InspectionHealth.Outcome.INCOMPLETE);
             inspectionOutcome = "restriction-screen-unavailable";
         }
     };
@@ -180,7 +192,7 @@ public final class TextGuardService extends AccessibilityService {
                                 | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
                         .putExtra("selfprotect", true));
             } catch (RuntimeException alsoUnavailable) {
-                inspection.record(InspectionHealth.Outcome.INCOMPLETE);
+                recordInspection(InspectionHealth.Outcome.INCOMPLETE);
                 inspectionOutcome = "shield-screen-unavailable";
             }
         }
@@ -194,13 +206,20 @@ public final class TextGuardService extends AccessibilityService {
         }
     };
 
-    @android.annotation.SuppressLint("UnspecifiedRegisterReceiverFlag")
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     @Override public void onCreate() {
         super.onCreate();
         IntentFilter filter = new IntentFilter(ACTION_REARM);
         // The flagged overload exists only on API 33+; the package-scoped intent is not exported.
         if (Build.VERSION.SDK_INT >= 33) registerReceiver(rearm, filter, Context.RECEIVER_NOT_EXPORTED);
         else registerReceiver(rearm, filter);
+        rearmRegistered = true;
+        // The system created this service because it is bound. Android does not
+        // always repeat onServiceConnected after an update or rebind, and waiting
+        // for a callback that never comes left `connected` false while the service
+        // was in fact running. Prove the live instance here.
+        connected = true;
+        startGuard();
     }
 
     @Override protected void onServiceConnected() {
@@ -218,14 +237,12 @@ public final class TextGuardService extends AccessibilityService {
     private void startGuard() {
         if (started) return;
         started = true;
+        serviceSession++;
         handler.removeCallbacks(checkpoint);
         handler.post(checkpoint);
         try {
             // The uninstall guard needs nothing else, so it is armed before image setup.
             excluded = ChosenApps.excluded(this);
-            browsers = new HashSet<>();
-            for (ChosenApps.Entry entry : ChosenApps.browsers(this)) browsers.add(entry.packageName);
-            registerPauseActions();
             if (PolicyStore.get(this).snapshot().adultWordsEnabled) AdultPolicyAssets.ensureLoaded(this);
             textDirty = true;
             ready = true;
@@ -245,7 +262,7 @@ public final class TextGuardService extends AccessibilityService {
             visual = newVisualGuard();
             inspectCurrentSelectedWindow();
         } catch (RuntimeException unavailable) {
-            inspection.record(InspectionHealth.Outcome.INCOMPLETE);
+            recordInspection(InspectionHealth.Outcome.INCOMPLETE);
             inspectionOutcome = "setup-unavailable";
         }
     }
@@ -278,7 +295,7 @@ public final class TextGuardService extends AccessibilityService {
             handler.removeCallbacks(heartbeat);
             handler.post(inspect);
         } catch (RuntimeException unavailable) {
-            inspection.record(InspectionHealth.Outcome.INCOMPLETE);
+            recordInspection(InspectionHealth.Outcome.INCOMPLETE);
         }
     }
 
@@ -298,7 +315,7 @@ public final class TextGuardService extends AccessibilityService {
             handler.removeCallbacks(heartbeat);
             handler.post(inspect);
         } catch (RuntimeException unavailable) {
-            inspection.record(InspectionHealth.Outcome.INCOMPLETE);
+            recordInspection(InspectionHealth.Outcome.INCOMPLETE);
             inspectionOutcome = "windows-unavailable";
         }
     }
@@ -352,7 +369,10 @@ public final class TextGuardService extends AccessibilityService {
 
     @Override public void onAccessibilityEvent(AccessibilityEvent event) {
         // An event proves this instance is alive even when the bind callback was not repeated.
-        if (!started) { connected = true; startGuard(); }
+        // Restore a flag cleared by a temporary unbind as well: a live event is stronger
+        // evidence than the last lifecycle callback.
+        if (!connected) connected = true;
+        if (!started) startGuard();
         if (connected && visual == null) visual = newVisualGuard();
         // Only a window change discards an in-flight image sample. Scrolls and content changes
         // in feeds and videos are constant; the frame gate still requires the same app and
@@ -417,7 +437,7 @@ public final class TextGuardService extends AccessibilityService {
                 GuardWindows.Window target = activeWindow(name, event.getWindowId());
                 if (target != null) {
                     pendingPackage = name;
-                    inspection.record(InspectionHealth.Outcome.COMPLETE);
+                    recordInspection(InspectionHealth.Outcome.COMPLETE, PolicyReceipt.Kind.TEXT_SCAN);
                     if (intervene(target.app, target.id, true, true, false, false, false, false))
                         fastTextInterventions++;
                     else {
@@ -454,7 +474,7 @@ public final class TextGuardService extends AccessibilityService {
                 handler.postDelayed(inspect, 50);
             }
         } catch (RuntimeException unavailable) {
-            inspection.record(InspectionHealth.Outcome.INCOMPLETE);
+            recordInspection(InspectionHealth.Outcome.INCOMPLETE);
             inspectionOutcome = "settings-unavailable";
         }
     }
@@ -469,7 +489,7 @@ public final class TextGuardService extends AccessibilityService {
             inspectedKey = windows == null ? null : GuardWindows.key(windows);
             if (windows == null) {
                 inspectionOutcome = "no-root";
-                if (!retryRoot(name)) inspection.record(InspectionHealth.Outcome.INCOMPLETE);
+                if (!retryRoot(name)) recordInspection(InspectionHealth.Outcome.INCOMPLETE);
                 return;
             }
             if (windows.isEmpty()) {
@@ -500,14 +520,14 @@ public final class TextGuardService extends AccessibilityService {
             // Blocked, scheduled and nothing-to-read decisions are complete inspections too.
             for (GuardWindows.Window window : windows) {
                 if (rules.blockedApps.contains(window.app)) {
-                    inspection.record(InspectionHealth.Outcome.COMPLETE);
+                    recordInspection(InspectionHealth.Outcome.COMPLETE, PolicyReceipt.Kind.APP_DECISION);
                     intervene(window.app, window.id, window.active, false, false, false, false, false);
                     return;
                 }
             }
             for (GuardWindows.Window window : windows) {
                 if (limitReached(rules, window.app)) {
-                    inspection.record(InspectionHealth.Outcome.COMPLETE);
+                    recordInspection(InspectionHealth.Outcome.COMPLETE, PolicyReceipt.Kind.APP_DECISION);
                     intervene(window.app, window.id, window.active, false, false, false, true, false);
                     return;
                 }
@@ -519,7 +539,7 @@ public final class TextGuardService extends AccessibilityService {
             boolean scheduledOnScreen = false;
             for (GuardWindows.Window window : windows) {
                 if (rules.schedule.blocks(window.app, minute, day)) {
-                    inspection.record(InspectionHealth.Outcome.COMPLETE);
+                    recordInspection(InspectionHealth.Outcome.COMPLETE, PolicyReceipt.Kind.APP_DECISION);
                     intervene(window.app, window.id, window.active, false, true, false, false, false);
                     return;
                 }
@@ -546,7 +566,7 @@ public final class TextGuardService extends AccessibilityService {
                 }
             }
             if (scanned.isEmpty()) {
-                inspection.record(InspectionHealth.Outcome.COMPLETE);
+                recordInspection(InspectionHealth.Outcome.COMPLETE, PolicyReceipt.Kind.APP_DECISION);
                 // A static allowed screen must still be blocked when its daily window begins,
                 // and a feed must be rechecked while it can move into Shorts or Reels.
                 if (scheduledOnScreen || !held.isEmpty() || shortVideoOnScreen) scheduleHeartbeat();
@@ -567,7 +587,7 @@ public final class TextGuardService extends AccessibilityService {
                     && AdultPolicyAssets.state == AdultPolicyAssets.State.LOADING;
             textDirty = false;
             lastTextScanAt = scanNow;
-            // One 2,048-node budget shared by every window, so split screen costs no more than one app.
+            // One 1,024-node budget shared by every window, so split screen costs no more than one app.
             // Small windows (PiP, then other inactive ones) are read first and hand what they leave
             // to the window in use (rule and tests in core GuardWindows.scanOrder).
             scanned = GuardWindows.scanOrder(scanned);
@@ -588,7 +608,7 @@ public final class TextGuardService extends AccessibilityService {
                 throw unavailable;
             }
             if (roots.isEmpty()) {
-                inspection.record(InspectionHealth.Outcome.INCOMPLETE);
+                recordInspection(InspectionHealth.Outcome.INCOMPLETE);
                 inspectionOutcome = "no-readable-roots";
                 textDirty = true;
                 scheduleHeartbeat();
@@ -598,6 +618,10 @@ public final class TextGuardService extends AccessibilityService {
             final int generation = scanGeneration;
             final String scanName = name;
             final PolicyStore.Snapshot scanRules = rules;
+            // Capture the policy and service session at submission; the worker may finish after
+            // a rule edit, a vocabulary change or a rebind, and must then discard its result.
+            final long scanIdentity = PolicyEvidence.text(scanRules.revision);
+            final int scanSession = serviceSession;
             final app.hisn.core.AdultTextPolicy scanAdult = adult;
             final List<WindowScan> scanRoots = roots;
             final boolean scanPartial = partial;
@@ -607,7 +631,7 @@ public final class TextGuardService extends AccessibilityService {
             handler.postDelayed(timeout, SCAN_TIMEOUT_MILLIS);
             try {
                 scanner.execute(() -> scanText(scanId, generation, scanName, scanRules, scanAdult, scanRoots,
-                        scanPartial, adultLoading));
+                        scanPartial, adultLoading, scanIdentity, scanSession));
             } catch (RuntimeException unavailable) {
                 clearScanTimeout();
                 activeScan = 0;
@@ -617,7 +641,7 @@ public final class TextGuardService extends AccessibilityService {
         } catch (RuntimeException unavailable) {
             // No unverified decision when a node changes or settings are unavailable.
             // Keep rechecking this app, more slowly, instead of going silent.
-            inspection.record(InspectionHealth.Outcome.INCOMPLETE);
+            recordInspection(InspectionHealth.Outcome.INCOMPLETE);
             inspectionOutcome = "inspection-failed";
             inspectedKey = null;
             textDirty = true;
@@ -652,7 +676,7 @@ public final class TextGuardService extends AccessibilityService {
         activeScan = 0;
         scanGeneration++;
         textDirty = true;
-        inspection.record(InspectionHealth.Outcome.INCOMPLETE);
+        recordInspection(InspectionHealth.Outcome.INCOMPLETE);
         inspectionOutcome = "inspection-timeout";
         inspectionFailures++;
         scanner.shutdownNow();
@@ -668,7 +692,7 @@ public final class TextGuardService extends AccessibilityService {
      */
     private void scanText(int scanId, int generation, String name, PolicyStore.Snapshot rules,
             app.hisn.core.AdultTextPolicy adult, List<WindowScan> roots, boolean partial,
-            boolean adultLoading) {
+            boolean adultLoading, long scanIdentity, int scanSession) {
         boolean read = false, matched = false, failed = false;
         GuardWindows.Window matchedWindow = null;
         int screens = 0, unread = 0;
@@ -710,7 +734,7 @@ public final class TextGuardService extends AccessibilityService {
         final GuardWindows.Window scanWindow = matchedWindow;
         final int scanScreens = screens;
         handler.post(() -> scanFinished(scanId, generation, scanPartial, scanRead, scanMatched, scanWindow,
-                scanScreens, adultLoading));
+                scanScreens, adultLoading, scanIdentity, scanSession));
     }
 
     /** A window root fetched on the main thread and handed to the scanner thread. */
@@ -725,7 +749,8 @@ public final class TextGuardService extends AccessibilityService {
 
     /** Applies a completed worker scan on the main thread, where the guard may act. */
     private void scanFinished(int scanId, int generation, boolean partial, boolean read, boolean matched,
-            GuardWindows.Window window, int screens, boolean adultLoading) {
+            GuardWindows.Window window, int screens, boolean adultLoading, long scanIdentity,
+            int scanSession) {
         if (scanId != activeScan) return; // A newer scan, or an interrupt, replaced this one.
         clearScanTimeout();
         activeScan = 0;
@@ -737,9 +762,22 @@ public final class TextGuardService extends AccessibilityService {
             scheduleHeartbeat(50);
             return;
         }
+        // The policy or the service instance may have changed while the worker was reading.
+        // A result from that older context must not certify or act on the new one.
+        boolean policyCurrent;
+        try {
+            policyCurrent = scanSession == serviceSession
+                    && PolicyEvidence.text(PolicyStore.get(this)) == scanIdentity;
+        } catch (RuntimeException unreadable) {
+            policyCurrent = false;
+        }
+        if (!policyCurrent) {
+            textDirty = true;
+            scheduleHeartbeat(50);
+            return;
+        }
         if (matched && window != null) {
             // A positive match is a complete decision even when a checkpoint stopped the walk.
-            inspection.record(InspectionHealth.Outcome.COMPLETE);
             try {
                 PolicyStore.Snapshot rules = PolicyStore.get(this).snapshot();
                 List<GuardWindows.Window> current = selectedWindows(this, excluded, app -> isSelected(rules, app));
@@ -753,6 +791,7 @@ public final class TextGuardService extends AccessibilityService {
                 scheduleHeartbeat(250);
                 return;
             }
+            recordScan(false, true, scanIdentity, scanSession, generation);
             if (!intervene(window.app, window.id, window.active, true, false, false, false, false)) {
                 // Repeat hold-off: the screen stayed and was already acted on, so keep reading it.
                 textDirty = true;
@@ -760,7 +799,7 @@ public final class TextGuardService extends AccessibilityService {
             }
             return;
         }
-        inspection.record(partial ? InspectionHealth.Outcome.INCOMPLETE : InspectionHealth.Outcome.COMPLETE);
+        recordScan(partial, read, scanIdentity, scanSession, generation);
         inspectionOutcome = read ? "no-word-match" : "no-readable-leaves";
         if (adultLoading) {
             // The signed adult vocabulary was still being verified: keep the screen dirty and
@@ -775,12 +814,26 @@ public final class TextGuardService extends AccessibilityService {
         scheduleHeartbeat(textDirty ? 50 : 1000);
     }
 
+    /**
+     * A captured scan's own receipt. A pass with no readable text is an app-rule decision,
+     * not a text inspection; a partial pass records the failure without evidence.
+     */
+    private void recordScan(boolean partial, boolean read, long identity, int session, int generation) {
+        if (partial) {
+            inspection.record(InspectionHealth.Outcome.INCOMPLETE, (PolicyReceipt) null);
+            return;
+        }
+        inspection.record(InspectionHealth.Outcome.COMPLETE, new PolicyReceipt(identity, session, generation,
+                read ? PolicyReceipt.Kind.TEXT_SCAN : PolicyReceipt.Kind.APP_DECISION,
+                PolicyReceipt.Result.PASSED, SystemClock.elapsedRealtime()));
+    }
+
     private void scanFailed(int scanId) {
         if (scanId != activeScan) return;
         clearScanTimeout();
         activeScan = 0;
         if (destroyed) return;
-        inspection.record(InspectionHealth.Outcome.INCOMPLETE);
+        recordInspection(InspectionHealth.Outcome.INCOMPLETE);
         inspectionOutcome = "inspection-failed";
         inspectedKey = null;
         textDirty = true;
@@ -998,7 +1051,7 @@ public final class TextGuardService extends AccessibilityService {
             if (guard == Guard.NONE) return;
             leaveTamperScreen(guard);
         } catch (RuntimeException unavailable) {
-            inspection.record(InspectionHealth.Outcome.INCOMPLETE);
+            recordInspection(InspectionHealth.Outcome.INCOMPLETE);
             inspectionOutcome = "self-protection-unavailable";
         } finally { if (root != null) root.recycle(); }
     }
@@ -1109,7 +1162,7 @@ public final class TextGuardService extends AccessibilityService {
         return false;
     }
 
-    /** Leaf labels, plus a card or button's own description when nothing inside it has text or an
+    /** Leaf labels, plus a card or button's own label when nothing inside it has text or an
      * input field (rule and tests in core {@link LabelScan}). Counts the nodes it obtains, so the
      * windows inspected together share one budget. */
     private static final class Nodes implements LabelScan.Tree<AccessibilityNodeInfo> {
@@ -1127,78 +1180,6 @@ public final class TextGuardService extends AccessibilityService {
         @Override public CharSequence text(AccessibilityNodeInfo node) { return node.getText(); }
         @Override public CharSequence description(AccessibilityNodeInfo node) { return node.getContentDescription(); }
         @Override public void release(AccessibilityNodeInfo node) { node.recycle(); }
-    }
-
-    private boolean browser(String app) {
-        return app != null && browsers != null && browsers.contains(app);
-    }
-
-    /** Closes the page's window: PiP is dismissed when possible, otherwise Home is pressed. */
-    private void leaveApp(String app, int window) {
-        if (destroyed) return;
-        if (dismissPictureInPicture(app, window)) inspectionOutcome += "-pip-dismissed";
-        else if (!performGlobalAction(GLOBAL_ACTION_HOME)) {
-            // For example under screen pinning. BACK at least leaves the current screen.
-            homeFailures++;
-            inspectionOutcome += "-home-failed";
-            performGlobalAction(GLOBAL_ACTION_BACK);
-        }
-    }
-
-    /** The app's remaining quiet minutes for the pause screen; the configured period otherwise. */
-    private int restMinutes() {
-        if (pendingApp != null && pendingApp.equals(heldPackage)) {
-            int left = RestPeriod.remainingMinutes(heldUntil, SystemClock.elapsedRealtime());
-            if (left > 0) return left;
-        }
-        return AfterBlock.minutes(this);
-    }
-
-    @SuppressLint("UnspecifiedRegisterReceiverFlag")
-    private void registerPauseActions() {
-        if (pauseActions != null) return;
-        pauseActions = new BroadcastReceiver() {
-            @Override public void onReceive(Context context, Intent intent) {
-                if (intent == null || intent.getAction() == null) return;
-                if (ACTION_LOCK_SCREEN.equals(intent.getAction())) {
-                    if (Build.VERSION.SDK_INT >= 28 && performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN)) screenLocks++;
-                    return;
-                }
-                if (ACTION_REST.equals(intent.getAction())) extendRest(intent);
-            }
-        };
-        IntentFilter filter = new IntentFilter(ACTION_REST);
-        filter.addAction(ACTION_LOCK_SCREEN);
-        // Same-app only: the pause screen is the sole sender.
-        if (Build.VERSION.SDK_INT >= 33) registerReceiver(pauseActions, filter, Context.RECEIVER_NOT_EXPORTED);
-        else registerReceiver(pauseActions, filter);
-    }
-
-    private void unregisterPauseActions() {
-        if (pauseActions == null) return;
-        try { unregisterReceiver(pauseActions); } catch (RuntimeException alreadyGone) { /* Nothing to do. */ }
-        pauseActions = null;
-    }
-
-    /** Holds the detected app for the chosen extra period, then returns to the launcher. */
-    private void extendRest(Intent intent) {
-        String app = intent.getStringExtra(EXTRA_APP);
-        if (app == null || app.equals(getPackageName()) || excluded == null || excluded.contains(app)) return;
-        int minutes = RestPeriod.sanitize(intent.getIntExtra(EXTRA_MINUTES, AfterBlock.minutes(this)));
-        heldPackage = app;
-        heldUntil = SystemClock.elapsedRealtime() + RestPeriod.millis(minutes);
-        heldWord = !intent.getBooleanExtra(EXTRA_VISUAL, false);
-        heldVisual = intent.getBooleanExtra(EXTRA_VISUAL, false);
-        restExtensions++;
-        handler.removeCallbacks(showRestriction);
-        pendingWordReason = false;
-        pendingScheduleReason = false;
-        pendingLimitReason = false;
-        pendingVisualReason = false;
-        pendingShortVideoReason = false;
-        pendingApp = app;
-        inspectionOutcome = "rest-extended";
-        performGlobalAction(GLOBAL_ACTION_HOME);
     }
 
     /** Acts on the offending app: closes its window when that is picture-in-picture, else Home.
@@ -1224,7 +1205,7 @@ public final class TextGuardService extends AccessibilityService {
             String blocked = app != null ? app : activePackage();
             if (blocked != null && excluded != null && !excluded.contains(blocked)) {
                 heldPackage = blocked;
-                heldUntil = now + RestPeriod.millis(AfterBlock.minutes(this));
+                heldUntil = now + BLOCK_HOLD_MILLIS;
                 heldWord = word;
                 heldVisual = visualReason;
             }
@@ -1235,18 +1216,12 @@ public final class TextGuardService extends AccessibilityService {
         pendingPackage = null;
         // Never debounce enforcement: reopening during the warning cooldown
         // must still leave the restricted app immediately.
-        pendingApp = app;
-        // A browser keeps its page in its own task. Leave the page first, then the window, so
-        // reopening the browser does not restore the page that was just closed. Other apps only
-        // need the window closed.
-        boolean backFirst = !held && (word || visualReason) && browser(app);
-        if (backFirst) {
-            browserBacks++;
-            inspectionOutcome += "-page-left";
+        if (dismissPictureInPicture(app, window)) inspectionOutcome += "-pip-dismissed";
+        else if (!performGlobalAction(GLOBAL_ACTION_HOME)) {
+            // For example under screen pinning. BACK at least leaves the current screen.
+            homeFailures++;
+            inspectionOutcome += "-home-failed";
             performGlobalAction(GLOBAL_ACTION_BACK);
-            handler.postDelayed(() -> leaveApp(app, window), 250);
-        } else {
-            leaveApp(app, window);
         }
         if (now - lastIntervention < 1500) { cooldownEnforcements++; return true; }
         lastIntervention = now;
@@ -1292,6 +1267,23 @@ public final class TextGuardService extends AccessibilityService {
     }
 
     @Override public void onInterrupt() {
+        // Android interrupts feedback here, not the service connection. In particular,
+        // AccessibilityManager.interrupt() can be called by another app. Stopping the
+        // heartbeat would leave a static selected screen unchecked until its next event.
+        // Hisn has no speech or vibration to cancel; keep existing protection running.
+        feedbackInterrupts++;
+        if (connected && started && !destroyed && excluded != null) {
+            textDirty = true;
+            inspectedKey = null;
+            if (!discoverPending) {
+                discoverPending = true;
+                handler.post(discover);
+            }
+        }
+    }
+
+    /** Release inspection work only when Android actually disconnects or destroys the service. */
+    private void stopGuardChecks() {
         clearScanTimeout();
         activeScan = 0;
         scanGeneration++;
@@ -1316,24 +1308,35 @@ public final class TextGuardService extends AccessibilityService {
         connected = false;
         ready = false;
         started = false;
-        unregisterPauseActions();
         handler.removeCallbacks(checkpoint);
-        onInterrupt();
-        return super.onUnbind(intent);
+        stopGuardChecks();
+        // true asks Android to call onRebind when this accessibility service is
+        // bound again. Without it a rebound instance stayed alive with `connected`
+        // false until a screen event happened to arrive.
+        return true;
+    }
+
+    @Override public void onRebind(Intent intent) {
+        super.onRebind(intent);
+        connected = true;
+        startGuard();
     }
 
     @Override public void onDestroy() {
         destroyed = true;
-        unregisterPauseActions();
         clearScanTimeout();
         activeScan = 0;
         scanner.shutdownNow();
         removeGuardOverlay();
+        if (rearmRegistered) {
+            try { unregisterReceiver(rearm); } catch (RuntimeException alreadyGone) { /* the process is ending */ }
+            rearmRegistered = false;
+        }
         connected = false;
         ready = false;
         started = false;
         handler.removeCallbacks(checkpoint);
-        onInterrupt();
+        stopGuardChecks();
         super.onDestroy();
     }
 }

@@ -56,7 +56,8 @@ suite_release() {
     bash macos/release/release.sh --check
     bash -n macos/release/release.sh macos/release/installer/preinstall \
         macos/release/installer/postinstall macos/install_native_host.sh macos/install.sh macos/install_update.sh \
-        macos/verify_mdm.sh script/build_and_run.sh
+        macos/verify_mdm.sh script/build_and_run.sh \
+        script/bench_macos_blocklist.sh
 }
 
 suite_extension() {
@@ -115,7 +116,9 @@ suite_browser() {
     check "browser: exact-capture cache with real SHA-256" env HISN_HARNESS_REALTIME=1 extension/test/browser/run.sh visual-cache.html || rc=1
     check "browser: real cross-origin image reload and pixel binding" env HISN_HARNESS_REALTIME=1 extension/test/browser/run.sh visual-cors.html || rc=1
     check "browser: bundled visual models on CPU" env HISN_HARNESS_REALTIME=1 extension/test/browser/run.sh visual-real-engine.html || rc=1
+    check "browser: offscreen visual status" extension/test/browser/visual_live.sh || rc=1
     check "browser: X player and visual-layer compatibility" extension/test/browser/run.sh feed-compatibility.html || rc=1
+    check "browser: social-feed whole-post rule" extension/test/browser/run.sh social-media.html || rc=1
     echo "── extension: the block page, English and Arabic"
     check "browser: block page" extension/test/browser/run.sh blocked.html || rc=1
     echo "── extension: network rules in a real browser (SafeSearch, blocklist)"
@@ -144,6 +147,8 @@ suite_macos() {
       if [ "${pipeline_status[0]}" -ne 0 ]; then exit "${pipeline_status[0]}"; fi
       if [ "${pipeline_status[1]}" -ne 0 ]; then exit "${pipeline_status[1]}"; fi
       grep -q "\*\* TEST SUCCEEDED \*\*" "$SCRATCH/xcodebuild-test.log" )
+    echo "── macos: Safari extension target and staged scanner"
+    python3 macos/test_safari_extension.py
     echo "── macos: every string has Arabic"
     # The export reads what the compiled code uses, not the catalog, so a new
     # string without a translation fails here rather than appearing in

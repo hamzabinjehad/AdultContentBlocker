@@ -35,7 +35,8 @@ final class SafariWebScannerPackageTests: XCTestCase {
             "manifest.json", "background.js", "background.html", "blocked.html", "blocked.js",
             "options.html", "options.js", "options.css",
             "content/scan.js", "content/feed.js", "content/visual.js", "content/visual-effects.js",
-            "content/visual-gate.css", "lib/score.js", "lib/language.js", "lib/normalize.js",
+            "content/visual-gate.css", "content/social-media.css",
+            "lib/score.js", "lib/language.js", "lib/normalize.js",
             "seed/terms.json", "icons/icon-32.png", "icons/icon-128.png",
             "visual/capture.js", "visual/broker.js", "visual/decisions.js", "visual/queue.js",
             "visual/verdict-cache.js",
@@ -82,7 +83,7 @@ final class SafariWebScannerPackageTests: XCTestCase {
         let action = try XCTUnwrap(manifest["action"] as? [String: Any])
         XCTAssertEqual(action["default_popup"] as? String, "options.html")
         let scripts = try XCTUnwrap(manifest["content_scripts"] as? [[String: Any]])
-        XCTAssertEqual(scripts.count, 1)
+        XCTAssertEqual(scripts.count, 2)
         let script = try XCTUnwrap(scripts.first)
         XCTAssertEqual(script["js"] as? [String],
                        ["content/feed.js", "content/scan.js", "visual/capture.js",
@@ -90,6 +91,18 @@ final class SafariWebScannerPackageTests: XCTestCase {
         XCTAssertEqual(script["matches"] as? [String], ["http://*/*", "https://*/*"])
         XCTAssertEqual(script["run_at"] as? String, "document_start")
         XCTAssertEqual(script["all_frames"] as? Bool, true)
+        // The whole-post rule is CSS only, scoped to the social platforms.
+        let social = try XCTUnwrap(scripts.last)
+        XCTAssertEqual(social["css"] as? [String], ["content/social-media.css"])
+        XCTAssertNil(social["js"])
+        XCTAssertEqual(social["run_at"] as? String, "document_start")
+        XCTAssertEqual(social["all_frames"] as? Bool, false)
+        let socialMatches = try XCTUnwrap(social["matches"] as? [String])
+        XCTAssertTrue(socialMatches.contains("*://*.instagram.com/*"))
+        XCTAssertTrue(socialMatches.contains("*://bsky.app/*"))
+        XCTAssertFalse(socialMatches.contains(where: {
+            $0.contains("x.com") || $0.contains("twitter.com") || $0.contains("youtube.com")
+        }))
     }
 
     func testVisualModelsReferenceOnlyTheirBundledWeightShards() throws {
