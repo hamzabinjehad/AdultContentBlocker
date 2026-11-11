@@ -1,5 +1,7 @@
 package app.hisn.android.nativeshell
 
+import androidx.activity.compose.LocalActivity
+import android.view.WindowManager
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -13,14 +15,19 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -32,6 +39,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -48,7 +56,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
@@ -59,6 +66,12 @@ import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+
+private data class LayerConsentRequest(
+    val key: String,
+    val enabled: Boolean,
+    val consent: ShellConsent
+)
 
 private enum class Destination(val icon: ImageVector) {
     Protection(Icons.Outlined.Lock),
@@ -78,7 +91,9 @@ private fun fallbackLabels() = ShellLabels(
     live = "Live · read-only preview",
     liveBody = "Real saved rules and service state. Changes open the classic Hisn screen.",
     attention = "What needs attention",
-    layers = "Protection layers"
+    layers = "Protection layers",
+    locked = "Rules are locked until the protection lock ends.",
+    unsupported = "This layer needs Android 14 or later."
 )
 
 /**
@@ -96,10 +111,12 @@ fun NativeShell(host: NativeShellHost?) {
     var protection by remember { mutableStateOf<ShellProtection?>(null) }
     var rules by remember { mutableStateOf<ShellRules?>(null) }
     var settings by remember { mutableStateOf<ShellSettings?>(null) }
+    var consentRequest by remember { mutableStateOf<LayerConsentRequest?>(null) }
+    var editor by remember { mutableStateOf<ShellRulesEditor?>(null) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
-    val lifecycleOwner = LocalContext.current as? LifecycleOwner
+    val lifecycleOwner: LifecycleOwner? = LocalActivity.current as? LifecycleOwner
     var resumed by remember {
         mutableStateOf(
             lifecycleOwner?.lifecycle?.currentState?.isAtLeast(Lifecycle.State.RESUMED) == true
@@ -144,6 +161,32 @@ fun NativeShell(host: NativeShellHost?) {
         ?: rules?.labels
         ?: settings?.labels
         ?: fallbackLabels()
+
+    SecureEditorWindow(editor != null)
+
+    fun lockedMessage() {
+        scope.launch { snackbar.showSnackbar(labels.locked) }
+    }
+
+    fun requestLayer(key: String, enabled: Boolean) {
+        if (rules?.locked == true) {
+            lockedMessage()
+            return
+        }
+        val consent = host?.layerConsent(key)
+        if (consent == null) {
+            scope.launch { snackbar.showSnackbar(labels.unsupported) }
+            return
+        }
+        haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+        consentRequest = LayerConsentRequest(key, enabled, consent)
+    }
+
+    fun editRules(kind: String) {
+        val next = host?.rulesEditor(kind) ?: return
+        haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+        editor = next
+    }
 
     fun openClassic() {
         haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
@@ -257,9 +300,80 @@ fun NativeShell(host: NativeShellHost?) {
                         labels = labels,
                         onCheck = ::runCheck,
                         onOpenClassic = ::openClassic,
+                        onLayer = ::requestLayer,
+                        onEditRules = ::editRules,
                         modifier = Modifier.weight(1f)
                     )
                 }
+            }
+        }
+    }
+
+    consentRequest?.let { request ->
+        AlertDialog(
+            onDismissRequest = { consentRequest = null },
+            title = { Text(request.consent.title) },
+            text = {
+                Column(
+                    Modifier
+                        .heightIn(max = 360.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Text(request.consent.body, style = MaterialTheme.typography.bodyMedium)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val pending = request
+                    consentRequest = null
+                    scope.launch {
+                        val result = host?.setLayer(pending.key, pending.enabled)
+                            ?: ShellActionResult(labels.unsupported, ok = false, refresh = false)
+                        snackbar.showSnackbar(result.message)
+                        if (result.ok) refresh()
+                    }
+                }) {
+                    Text(request.consent.acceptLabel)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { consentRequest = null }) {
+                    Text(request.consent.cancelLabel)
+                }
+            }
+        )
+    }
+
+    editor?.let { current ->
+        RulesEditorDialog(
+            editor = current,
+            onPreview = { text -> host?.previewRules(current.kind, text) ?: ShellRulesPreview("") },
+            onSave = { text ->
+                host?.saveRules(current.kind, text)
+                    ?: ShellActionResult(labels.unsupported, ok = false, refresh = false)
+            },
+            onDismiss = { editor = null },
+            onResult = { result ->
+                if (result.ok) {
+                    editor = null
+                    scope.launch { refresh() }
+                }
+                scope.launch { snackbar.showSnackbar(result.message) }
+            }
+        )
+    }
+}
+
+@Composable
+private fun SecureEditorWindow(active: Boolean) {
+    val activity = LocalActivity.current
+    DisposableEffect(active) {
+        if (active) {
+            activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        }
+        onDispose {
+            if (active) {
+                activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
             }
         }
     }
@@ -275,6 +389,8 @@ private fun ShellContent(
     labels: ShellLabels,
     onCheck: () -> Unit,
     onOpenClassic: () -> Unit,
+    onLayer: (String, Boolean) -> Unit,
+    onEditRules: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val layoutDirection = LocalLayoutDirection.current
@@ -304,7 +420,9 @@ private fun ShellContent(
                 )
                 index == 1 && rules != null -> RulesShellScreen(
                     state = rules,
-                    onOpenClassic = onOpenClassic
+                    onOpenClassic = onOpenClassic,
+                    onLayer = onLayer,
+                    onEditRules = onEditRules
                 )
                 index == 2 && settings != null -> SettingsShellScreen(
                     state = settings,
