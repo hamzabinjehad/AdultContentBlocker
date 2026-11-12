@@ -702,18 +702,17 @@ public final class TextGuardService extends AccessibilityService {
             for (int index = 0; index < roots.size(); index++) {
                 WindowScan window = roots.get(index);
                 Nodes nodes = new Nodes();
+                ScreenCheck check = new ScreenCheck(rules, adult);
                 // LabelScan.sample takes ownership of this root and recycles it whether it returns
                 // or throws. Record that before the call so the cleanup below cannot double-recycle.
                 unread = index + 1;
                 VisibleTextSample sample = LabelScan.sample(nodes, window.root,
-                        GuardWindows.share(left, roots.size() - index),
-                        (partialSample, visited) -> matchesPromotion(rules, adult, partialSample.text()));
+                        GuardWindows.share(left, roots.size() - index), check);
                 left -= nodes.obtained;
                 screens++;
                 partial |= sample.isPartial();
-                String text = sample.text();
-                read |= !text.isEmpty();
-                if (matches(rules, adult, text)) { matched = true; matchedWindow = window.window; break; }
+                read |= !sample.isEmpty();
+                if (check.matches(sample)) { matched = true; matchedWindow = window.window; break; }
             }
         } catch (RuntimeException unavailable) {
             // The outer catch below cannot see this thread; report the failure on the main thread.
@@ -919,14 +918,42 @@ public final class TextGuardService extends AccessibilityService {
         return rules.adultWordsEnabled && adult != null && adult.blocksPromotion(text);
     }
 
-    private static boolean matches(PolicyStore.Snapshot rules, app.hisn.core.AdultTextPolicy adult, String text) {
-        if (text.isEmpty()) return false;
-        if (!rules.words.matches(text).isEmpty()) return true;
-        if (!rules.adultWordsEnabled || adult == null) return false;
-        // Each label is judged alone, so a medical/news label elsewhere in the UI never
-        // exempts an unrelated adult-promotion label; it only stops a bare term such as a
-        // "Porn" tag chip from blocking by itself. Custom rules remain independent.
-        return adult.blocksAnyLine(text);
+    /**
+     * The checkpoints and final verdict of one window's tree walk. The sample grows a line at a
+     * time, so each checkpoint reads only what arrived since the last one: the adult policy
+     * normalizes every line once ({@link app.hisn.core.AdultTextPolicy.ScreenScan}) and the
+     * custom words see the new lines plus the previous last line. Re-reading the whole sample
+     * at each of up to 32 checkpoints made a large screen quadratic. The final verdict still
+     * reads the complete sample, exactly as before.
+     */
+    private static final class ScreenCheck implements LabelScan.Check {
+        private final PolicyStore.Snapshot rules;
+        private final app.hisn.core.AdultTextPolicy.ScreenScan screen;
+        private int wordsFrom;
+
+        ScreenCheck(PolicyStore.Snapshot rules, app.hisn.core.AdultTextPolicy adult) {
+            this.rules = rules;
+            this.screen = rules.adultWordsEnabled && adult != null ? adult.screen() : null;
+        }
+
+        /** A verdict that is safe before the whole screen has been read; see matchesPromotion. */
+        @Override public boolean stop(VisibleTextSample sample, int visited) {
+            if (!rules.words.isEmpty()) {
+                boolean hit = !rules.words.matches(sample.textFrom(wordsFrom)).isEmpty();
+                wordsFrom = sample.lastLineStart();
+                if (hit) return true;
+            }
+            return screen != null && screen.blocksPromotion(sample);
+        }
+
+        boolean matches(VisibleTextSample sample) {
+            if (sample.isEmpty()) return false;
+            if (!rules.words.matches(sample.text()).isEmpty()) return true;
+            // Each label is judged alone, so a medical/news label elsewhere in the UI never
+            // exempts an unrelated adult-promotion label; it only stops a bare term such as a
+            // "Porn" tag chip from blocking by itself. Custom rules remain independent.
+            return screen != null && screen.blocksAnyLine(sample);
+        }
     }
 
     private static boolean isSelected(PolicyStore.Snapshot rules, String name) {

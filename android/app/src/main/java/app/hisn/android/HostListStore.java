@@ -243,12 +243,13 @@ final class HostListStore {
                     byte[] terms = read(new File(dir, SignedManifest.TERMS), MAX_TERMS);
                     if (terms.length == manifest.terms().bytes
                             && sha256(terms).equals(manifest.terms().sha256)) {
-                        hostTerms = AdultPolicyAssets.loadHostPolicy(
+                        AdultPolicyAssets.Both both = AdultPolicyAssets.loadBoth(
                                 new ByteArrayInputStream(terms), manifest.terms().sha256,
                                 manifest.version);
-                        textPolicy = AdultPolicyAssets.load(
-                                new ByteArrayInputStream(terms), manifest.terms().sha256,
-                                manifest.version);
+                        // Both layers or neither: never a partial vocabulary from this generation.
+                        if (both.host == null || both.text == null) throw new IOException("Invalid terms");
+                        hostTerms = both.host;
+                        textPolicy = both.text;
                     }
                 } catch (Exception damagedTerms) {
                     // The signed domain list still enforces; the DNS and text
@@ -270,14 +271,13 @@ final class HostListStore {
                     BuildConfig.DOMAIN_SEED_COUNT);
             HostTermPolicy hostTerms = null;
             AdultTextPolicy textPolicy = null;
+            // One read, digest and JSON parse for both layers; each still loads on its own.
             try (InputStream terms = context.getAssets().open("terms.json")) {
-                hostTerms = AdultPolicyAssets.loadHostPolicy(terms,
+                AdultPolicyAssets.Both both = AdultPolicyAssets.loadBoth(terms,
                         BuildConfig.TERMS_SEED_SHA256, BuildConfig.DOMAIN_SEED_VERSION);
+                hostTerms = both.host;
+                textPolicy = both.text;
             } catch (Exception unavailable) { /* The domain list still enforces. */ }
-            try (InputStream terms = context.getAssets().open("terms.json")) {
-                textPolicy = AdultPolicyAssets.load(terms,
-                        BuildConfig.TERMS_SEED_SHA256, BuildConfig.DOMAIN_SEED_VERSION);
-            } catch (Exception unavailable) { /* The text layer reports its own state. */ }
             return new Active(seed.policy, BuildConfig.DOMAIN_SEED_VERSION, Source.BUNDLED, null,
                     hostTerms, textPolicy);
         } catch (IOException | RuntimeException unavailable) {

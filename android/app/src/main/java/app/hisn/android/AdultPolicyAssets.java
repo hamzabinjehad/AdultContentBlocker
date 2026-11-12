@@ -93,7 +93,29 @@ public final class AdultPolicyAssets {
     }
 
     static AdultTextPolicy load(InputStream input, String expectedDigest, int expectedVersion) throws Exception {
+        return textPolicy(readVerified(input, expectedDigest, expectedVersion));
+    }
+
+    /**
+     * Read, hash and parse the terms once for both layers that use them. Either policy may
+     * still fail to compile on its own, as with separate loads; it is then null.
+     */
+    static Both loadBoth(InputStream input, String expectedDigest, int expectedVersion) throws Exception {
         JSONObject data = readVerified(input, expectedDigest, expectedVersion);
+        HostTermPolicy host = null;
+        AdultTextPolicy text = null;
+        try { host = hostPolicy(data); } catch (Exception unavailable) { /* The domain list still enforces. */ }
+        try { text = textPolicy(data); } catch (Exception unavailable) { /* The text layer reports its own state. */ }
+        return new Both(host, text);
+    }
+
+    static final class Both {
+        final HostTermPolicy host;
+        final AdultTextPolicy text;
+        Both(HostTermPolicy host, AdultTextPolicy text) { this.host = host; this.text = text; }
+    }
+
+    private static AdultTextPolicy textPolicy(JSONObject data) throws Exception {
         JSONArray terms = data.getJSONArray("terms");
         JSONArray negatives = data.getJSONArray("negatives");
         if (terms.length() < 1 || terms.length() > 8192 || negatives.length() > 1000)
@@ -121,7 +143,10 @@ public final class AdultPolicyAssets {
     }
 
     static HostTermPolicy loadHostPolicy(InputStream input, String expectedDigest, int expectedVersion) throws Exception {
-        JSONObject data = readVerified(input, expectedDigest, expectedVersion);
+        return hostPolicy(readVerified(input, expectedDigest, expectedVersion));
+    }
+
+    private static HostTermPolicy hostPolicy(JSONObject data) throws Exception {
         JSONArray hostTerms = data.getJSONArray("host_terms");
         if (hostTerms.length() < 1 || hostTerms.length() > HostTermPolicy.MAX_TERMS)
             throw new IOException("Invalid host term count");

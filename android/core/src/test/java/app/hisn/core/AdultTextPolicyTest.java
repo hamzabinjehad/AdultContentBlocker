@@ -293,12 +293,50 @@ public final class AdultTextPolicyTest {
         String gap = "ordinary ".repeat(40);
         check(seed.blocks("sexual health ".repeat(8) + gap + "Watch porn and hentai" + gap
                 + "sex education ".repeat(8)), "actual seed local evidence survives distant negative prose");
+        checkScreenScan(seed);
         System.out.println("AdultTextPolicy actual seed passed: " + rules.size() + " submitted / "
                 + seed.ruleCount() + " canonical rules");
     }
 
     /** Random everyday Arabizi chat, names and every contextual single Arabizi seed spelling, beside
      * promotion words, never blocks; one clear seed phrase in the same window does. */
+    /**
+     * ScreenScan, fed a sample a few lines at a time as LabelScan does, gives the verdict the
+     * whole-text calls give at every checkpoint up to the first block, and the same final verdict.
+     */
+    private static void checkScreenScan(AdultTextPolicy seed) {
+        String[] labels = {"Home", "Subscriptions", "Watch later", "Share", "Download", "Free shipping",
+                "Watch porn and hentai", "Download adult videos", "\u0634\u0627\u0647\u062f \u0627\u0644\u0625\u0628\u0627\u062d\u064a\u0629",
+                "\u0645\u0634\u0627\u0647\u062f\u0629 \u0633\u0643\u0633", "Watch p0rn", "Porn", "hentai", "porn videos", "Watch sex education",
+                "Study links porn addiction to anxiety", "Watch porn addiction recovery resources",
+                "\u0639\u0644\u0627\u062c \u0627\u062f\u0645\u0627\u0646 \u0627\u0644\u0627\u0628\u0627\u062d\u064a\u0647", "Essex council", "tahmil aflam neek masri mojani",
+                "Watch pussy cats playing", "1.2M views", "\u0627\u0644\u0631\u0626\u064a\u0633\u064a\u0629", "Breaking news today",
+                "p.o.r.n", "Caf\u00e9 menu", "free", "stream", "milf", "Research definitions include porn and hentai"};
+        java.util.Random random = new java.util.Random(7L);
+        int blocked = 0, early = 0;
+        for (int round = 0; round < 4000; round++) {
+            VisibleTextSample sample = new VisibleTextSample(true);
+            AdultTextPolicy.ScreenScan screen = seed.screen();
+            int lines = 1 + random.nextInt(round % 10 == 0 ? 400 : 40);
+            boolean stopped = false;
+            for (int line = 0; line < lines; line++) {
+                // Mostly benign screens, so most checkpoints run to the end like real feeds.
+                sample.append(random.nextInt(6) == 0 ? labels[random.nextInt(labels.length)]
+                        : labels[random.nextInt(6)] + " " + labels[18 + random.nextInt(6)]);
+                if (random.nextInt(5) == 0) {
+                    boolean whole = seed.blocksPromotion(sample.text());
+                    check(screen.blocksPromotion(sample) == whole, "screen checkpoint verdict: " + sample.text());
+                    if (whole) { stopped = true; early++; break; }
+                }
+            }
+            if (stopped) continue;
+            boolean whole = seed.blocksAnyLine(sample.text());
+            check(screen.blocksAnyLine(sample) == whole, "screen final verdict: " + sample.text());
+            if (whole) blocked++;
+        }
+        check(blocked > 100 && early > 100, "screen fixture exercises both verdicts: " + blocked + "/" + early);
+    }
+
     private static void checkArabiziChat(List<AdultTextPolicy.Rule> rules, AdultTextPolicy seed) {
         List<String> promotion = Arrays.asList("watch", "free", "download", "tahmil", "mojani", "moshahda");
         // Words of multi-word Arabizi phrases are left out so no seed phrase can form by chance.

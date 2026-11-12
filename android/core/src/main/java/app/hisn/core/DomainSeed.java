@@ -9,10 +9,7 @@ import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /** Loads an APK seed against the digest pinned at the signature-verified build step. */
@@ -50,43 +47,74 @@ public final class DomainSeed {
         } catch (NoSuchAlgorithmException unavailable) {
             throw new IOException("SHA-256 unavailable", unavailable);
         }
+        // Every published list so far is plain ASCII, which is valid UTF-8 as it stands: read
+        // its lines straight from the bytes instead of first decoding a 4 MB String.
+        boolean ascii = true;
+        for (byte value : content) if (value < 0) { ascii = false; break; }
         final String text;
-        try {
+        if (ascii) text = null;
+        else try {
             text = StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT)
                     .onUnmappableCharacter(CodingErrorAction.REPORT).decode(ByteBuffer.wrap(content)).toString();
         } catch (CharacterCodingException invalid) { throw new IOException("Invalid seed encoding", invalid); }
-        Set<String> entries = new HashSet<>();
-        List<String> names = new ArrayList<>();
+        // One pass, normalizing each line as it is accepted, into one packed table rather than
+        // a set of 236k Strings (CompactHostSet explains the memory).
+        CompactHostSet.Builder entries = new CompactHostSet.Builder();
+        // IP literals cannot be enforced by domain-only DNS filtering. They still count
+        // toward the signed entry total, so they are tracked (five lines) and skipped.
+        Set<String> addresses = new HashSet<>();
         int skipped = 0;
-        for (String line : text.split("\n")) {
-            String name = line.trim();
+        int length = ascii ? content.length : text.length();
+        int start = 0;
+        while (start <= length) {
+            int end = ascii ? indexOf(content, start) : text.indexOf('\n', start);
+            if (end < 0) end = length;
+            String name = (ascii ? new String(content, start, end - start, StandardCharsets.US_ASCII)
+                    : text.substring(start, end)).trim();
+            start = end + 1;
             if (name.isEmpty() || name.startsWith("#")) continue;
-            if (name.length() > 253 || !entries.add(name) || entries.size() > expectedEntries) {
-                throw new IOException("Invalid seed entries");
+            if (name.length() > 253) throw new IOException("Invalid seed entries");
+            if (ipv4(name)) {
+                if (!addresses.add(name)) throw new IOException("Invalid seed entries");
+                skipped++;
+            } else {
+                try {
+                    entries.add(Hostname.normalize(name));
+                } catch (IllegalArgumentException invalid) {
+                    throw new IOException("Invalid seed domain", invalid);
+                }
             }
-            // IP literals in the shared list cannot be enforced by domain-only DNS filtering.
-            if (ipv4(name)) skipped++;
-            else names.add(name);
+            if (entries.count() + addresses.size() > expectedEntries)
+                throw new IOException("Invalid seed entries");
         }
-        if (entries.size() != expectedEntries || names.isEmpty()) throw new IOException("Seed count mismatch");
-        try {
-            return new DomainSeed(new DomainPolicy(names, Collections.emptyList()), names.size(), skipped);
-        } catch (IllegalArgumentException invalid) { throw new IOException("Invalid seed domain", invalid); }
+        if (entries.count() + addresses.size() != expectedEntries || entries.count() == 0)
+            throw new IOException("Seed count mismatch");
+        CompactHostSet domains = entries.build();
+        if (domains == null) throw new IOException("Invalid seed entries"); // A repeated domain.
+        return new DomainSeed(DomainPolicy.fromCanonical(domains), domains.size(), skipped);
     }
 
+    private static int indexOf(byte[] content, int from) {
+        for (int i = from; i < content.length; i++) if (content[i] == '\n') return i;
+        return -1;
+    }
+
+    /** Four dotted decimal labels; no allocation or regex per line. */
     private static boolean ipv4(String name) {
-        String[] parts = name.split("\\.", -1);
-        if (parts.length != 4) return false;
-        for (String part : parts) {
-            if (part.isEmpty() || part.length() > 3) return false;
-            int value = 0;
-            for (int i = 0; i < part.length(); i++) {
-                char c = part.charAt(i);
+        int labels = 0, digits = 0, value = 0;
+        for (int i = 0; i <= name.length(); i++) {
+            if (i == name.length() || name.charAt(i) == '.') {
+                if (digits == 0 || digits > 3 || value > 255) return false;
+                labels++;
+                digits = 0;
+                value = 0;
+            } else {
+                char c = name.charAt(i);
                 if (c < '0' || c > '9') return false;
-                value = value * 10 + c - '0';
+                value = value * 10 + (c - '0');
+                digits++;
             }
-            if (value > 255) return false;
         }
-        return true;
+        return labels == 4;
     }
 }

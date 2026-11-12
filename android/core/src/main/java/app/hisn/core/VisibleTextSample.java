@@ -17,6 +17,15 @@ public final class VisibleTextSample {
     public boolean isFull() { return text.length() >= LIMIT; }
     public boolean isEmpty() { return text.length() == 0; }
     public String text() { return text.toString(); }
+    /** Characters held so far. The sample only grows, one newline-terminated line at a time. */
+    public int length() { return text.length(); }
+    /** The text appended since {@code start}, without copying the part already read. */
+    public String textFrom(int start) { return text.substring(start); }
+    /** Where the last complete line begins, or 0. */
+    public int lastLineStart() {
+        int end = text.length() - 1;
+        return end <= 0 ? 0 : text.lastIndexOf("\n", end - 1) + 1;
+    }
 
     public void append(CharSequence value) {
         if (value == null || value.length() == 0) return;

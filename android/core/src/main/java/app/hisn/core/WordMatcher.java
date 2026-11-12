@@ -24,6 +24,9 @@ public final class WordMatcher {
     /** Canonical configured rules, for comparing settings during a commitment. */
     public Set<String> configuredRules() { return rules; }
 
+    /** No configured rules: {@link #matches} can only return an empty list. */
+    public boolean isEmpty() { return rules.isEmpty(); }
+
     public WordMatcher(Iterable<String> input) {
         Set<String> compiled = new LinkedHashSet<>();
         for (String raw : input) {
@@ -49,6 +52,8 @@ public final class WordMatcher {
         if (input.codePointCount(0, input.length()) > MAX_TEXT_CODEPOINTS) {
             throw new IllegalArgumentException("Text exceeds the inspection limit");
         }
+        // Most people add no custom words; skip normalizing a whole screen for nothing.
+        if (rules.isEmpty()) return Collections.emptyList();
         String text = " " + normalize(input) + " ";
         if (index != null) return indexedMatches(text);
         List<String> matches = new ArrayList<>();
@@ -111,6 +116,12 @@ public final class WordMatcher {
     }
 
     static String normalize(String input) {
+        String quick = TextFolding.quickCanonical(input);
+        return quick != null ? quick : normalizeSlow(input);
+    }
+
+    /** The reference path; {@link TextFolding#quickCanonical} must agree with it. */
+    static String normalizeSlow(String input) {
         // NFD exposes the hamza/vowel marks that NFKC leaves attached, so both
         // user rules and page text fold أ/إ/آ and their family to bare alef.
         // The shared TextFolding step then covers the forms decomposition

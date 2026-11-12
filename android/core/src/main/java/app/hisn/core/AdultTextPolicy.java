@@ -222,7 +222,7 @@ public final class AdultTextPolicy {
     /** Classify a bounded sample. Oversized input is rejected, never silently truncated. */
     public boolean blocks(String input) {
         String[] tokens = tokens(input);
-        return tokens != null && judge(tokens, true);
+        return tokens != null && judge(tokens, tokens.length, true, 0);
     }
 
     /** Classify one event label before the full screen has been read. A call to action and a
@@ -236,7 +236,7 @@ public final class AdultTextPolicy {
         for (String token : tokens) {
             if (isPromotion(token)) { promotion = true; break; }
         }
-        return promotion && judge(tokens, false);
+        return promotion && judge(tokens, tokens.length, false, 0);
     }
 
     /** Classify each line of a screen sample (one visible label per line) on its own, as
@@ -254,8 +254,82 @@ public final class AdultTextPolicy {
             tokens[at] = tokens(lines[at]);
             if (tokens[at] != null && protective(tokens[at])) lone = false;
         }
-        for (String[] line : tokens) if (line != null && judge(line, lone)) return true;
+        for (String[] line : tokens) if (line != null && judge(line, line.length, lone, 0)) return true;
         return false;
+    }
+
+    /** A new incremental judge for one growing screen sample; see {@link ScreenScan}. */
+    public ScreenScan screen() { return new ScreenScan(); }
+
+    /**
+     * One screen sample read while {@link LabelScan} is still filling it. The sample only
+     * grows by whole lines, so each line is normalized and tokenized exactly once:
+     * {@link #blocksPromotion} answers what {@link AdultTextPolicy#blocksPromotion} answers
+     * for the lines read so far, judging only windows that reach the new lines, and
+     * {@link #blocksAnyLine} answers what {@link AdultTextPolicy#blocksAnyLine} answers for
+     * the finished sample from the tokens already held. A tree walk used to re-normalize the
+     * whole growing sample at every checkpoint and once more at the end.
+     *
+     * Not thread-safe; one per scan. The tokens live only as long as the scan.
+     */
+    public final class ScreenScan {
+        private final List<String[]> lines = new ArrayList<>();
+        private String[] flat = new String[256];
+        private int flatLength, consumed, checkedTo;
+        private boolean protectiveLine;
+
+        private ScreenScan() { }
+
+        /** Promotion verdict over every line read so far (one token stream, as the whole
+         * sample would be). Windows that ended before the previous call were already judged
+         * false and later lines only add context to them, so they are not judged again. */
+        public boolean blocksPromotion(VisibleTextSample sample) {
+            feed(sample, false);
+            if (flatLength == checkedTo) return false;
+            int from = Math.max(0, checkedTo - (WINDOW + CONTEXT + MAX_PHRASE_TOKENS));
+            boolean promotion = false;
+            for (int at = from; at < flatLength && !promotion; at++) promotion = isPromotion(flat[at]);
+            boolean result = promotion && judge(flat, flatLength, false, checkedTo);
+            checkedTo = flatLength;
+            return result;
+        }
+
+        /** {@link AdultTextPolicy#blocksAnyLine} for the finished sample. */
+        public boolean blocksAnyLine(VisibleTextSample sample) {
+            feed(sample, true);
+            for (String[] line : lines) {
+                if (line != null && judge(line, line.length, !protectiveLine, 0)) return true;
+            }
+            return false;
+        }
+
+        private void feed(VisibleTextSample sample, boolean finished) {
+            if (sample.length() <= consumed) return;
+            String fresh = sample.textFrom(consumed);
+            int start = 0;
+            for (int end = fresh.indexOf('\n'); end >= 0; end = fresh.indexOf('\n', start)) {
+                add(fresh.substring(start, end));
+                start = end + 1;
+            }
+            // A sample always ends its lines; an unterminated tail is only read once finished.
+            if (finished && start < fresh.length()) {
+                add(fresh.substring(start));
+                start = fresh.length();
+            }
+            consumed += start;
+        }
+
+        private void add(String line) {
+            String[] tokens = line.isEmpty() ? null : tokens(line);
+            lines.add(tokens);
+            if (tokens == null) return;
+            if (!protectiveLine && protective(tokens)) protectiveLine = true;
+            if (flatLength + tokens.length > flat.length) {
+                flat = Arrays.copyOf(flat, Math.max(flat.length * 2, flatLength + tokens.length));
+            }
+            System.arraycopy(tokens, 0, flat, flatLength, tokens.length);
+            flatLength += tokens.length;
+        }
     }
 
     private static void checkLength(String text, String message) {
@@ -267,8 +341,9 @@ public final class AdultTextPolicy {
         if (input == null || input.isEmpty()) return null;
         checkLength(input, "Adult-text sample exceeds inspection limit");
         if (entries.isEmpty()) return null;
-        String normalized = canonical(recoverSeparatedSpellings(
-                recoverCompactSpellings(Normalizer.normalize(input, Normalizer.Form.NFKC))));
+        // NFKC leaves ASCII unchanged; skip the pass for the common plain-ASCII label.
+        String compatible = TextFolding.ascii(input) ? input : Normalizer.normalize(input, Normalizer.Form.NFKC);
+        String normalized = canonical(recoverSeparatedSpellings(recoverCompactSpellings(compatible)));
         if (normalized.isEmpty()) return null;
         // NFKC can expand compatibility characters. Bound the normalized work
         // too, rather than permitting large hidden allocation after validation.
@@ -290,17 +365,26 @@ public final class AdultTextPolicy {
         return false;
     }
 
-    private boolean judge(String[] tokens, boolean lone) {
-        boolean[] promotions = new boolean[tokens.length];
+    /**
+     * Judges tokens[0, length). Windows ending before firstEnd are not judged: the caller
+     * already judged them false on a prefix, and later tokens can only add negative context
+     * to them. Tokens further back than one window plus its context and a phrase cannot
+     * affect a window ending at or after firstEnd, so they are not scanned.
+     */
+    private boolean judge(String[] tokens, int length, boolean lone, int firstEnd) {
+        int from = Math.max(0, firstEnd - (WINDOW + CONTEXT + MAX_PHRASE_TOKENS));
+        boolean[] promotions = new boolean[length];
         boolean anyPromotion = false;
-        for (int at = 0; at < tokens.length; at++) {
+        for (int at = from; at < length; at++) {
             promotions[at] = isPromotion(tokens[at]);
             anyPromotion |= promotions[at];
         }
         // A complete two-word media label is evidence without a call to action.
         // Do not apply this to substrings of research/recovery prose or generic
         // "adult" labels; configured strong terms and negative context still score.
-        if (!anyPromotion && (explicitMediaLabel(tokens) || (lone && loneExplicitLabel(tokens)))) {
+        // Both labels need length <= 3, which a resumed judge (from > 0) never has.
+        if (!anyPromotion && from == 0
+                && (explicitMediaLabel(tokens, length) || (lone && loneExplicitLabel(tokens, length)))) {
             promotions[0] = true;
             anyPromotion = true;
         }
@@ -308,12 +392,12 @@ public final class AdultTextPolicy {
         // per-rule scoring buffers and hit lists when no verdict is possible.
         if (!anyPromotion) return false;
         @SuppressWarnings("unchecked")
-        List<Hit>[] hits = (List<Hit>[]) new List<?>[tokens.length];
+        List<Hit>[] hits = (List<Hit>[]) new List<?>[length];
         @SuppressWarnings("unchecked")
-        List<Hit>[] starts = (List<Hit>[]) new List<?>[tokens.length];
-        for (int start = 0; start < tokens.length; start++) {
+        List<Hit>[] starts = (List<Hit>[]) new List<?>[length];
+        for (int start = from; start < length; start++) {
             Trie branch = index;
-            for (int end = start; end < Math.min(tokens.length, start + MAX_PHRASE_TOKENS); end++) {
+            for (int end = start; end < Math.min(length, start + MAX_PHRASE_TOKENS); end++) {
                 branch = branch.children.get(tokens[end]);
                 if (branch == null) break;
                 if (branch.entry != null) record(hits, starts, new Hit(branch.entry, start, end,
@@ -324,11 +408,11 @@ public final class AdultTextPolicy {
                 record(hits, starts, new Hit(variant, start, start, ambiguous(tokens[start], variant)));
             }
         }
-        return classifyWindows(hits, starts, promotions);
+        return classifyWindows(hits, starts, promotions, from, firstEnd);
     }
 
-    private boolean explicitMediaLabel(String[] tokens) {
-        if (tokens.length != 2) return false;
+    private boolean explicitMediaLabel(String[] tokens, int length) {
+        if (length != 2) return false;
         String explicit;
         if (tokens[1].equals("videos") || tokens[1].equals("video")
                 || tokens[1].equals("photos") || tokens[1].equals("images")) {
@@ -347,9 +431,9 @@ public final class AdultTextPolicy {
      * every one a lone explicit term, states its intent like a media label. Any other word
      * may be protective ("Porn, hentai blocker", "ضد سكس اباحي", "porn porn recovery"),
      * and only reviewed bigrams carry negative weight, so one other word is never allowed. */
-    private boolean loneExplicitLabel(String[] tokens) {
-        if (tokens.length > LONE_TOKENS) return false;
-        for (String token : tokens) if (!loneExplicit(token)) return false;
+    private boolean loneExplicitLabel(String[] tokens, int length) {
+        if (length > LONE_TOKENS) return false;
+        for (int at = 0; at < length; at++) if (!loneExplicit(tokens[at])) return false;
         return true;
     }
 
@@ -367,7 +451,8 @@ public final class AdultTextPolicy {
         return entry.ambiguous || AMBIGUOUS.contains(token);
     }
 
-    private boolean classifyWindows(List<Hit>[] hits, List<Hit>[] starts, boolean[] promotions) {
+    private boolean classifyWindows(List<Hit>[] hits, List<Hit>[] starts, boolean[] promotions,
+                                    int from, int firstEnd) {
         int[] clearCounts = new int[entries.size()];
         int[] ambiguousCounts = new int[entries.size()];
         int[] negativeCounts = new int[entries.size()];
@@ -378,9 +463,10 @@ public final class AdultTextPolicy {
         int negativeScore = 0, promotion = 0;
         // All mutations concern one bounded sliding window, never rescan the
         // vocabulary for each text position. Each hit enters/leaves once.
-        for (int end = 0; end < hits.length; end++) {
+        // Nothing before from was recorded, so starting there adds and expires the same hits.
+        for (int end = from; end < hits.length; end++) {
             int contextEnd = Math.min(hits.length - 1, end + CONTEXT);
-            int oldContextEnd = end == 0 ? -1 : Math.min(hits.length - 1, end - 1 + CONTEXT);
+            int oldContextEnd = end == from ? from - 1 : Math.min(hits.length - 1, end - 1 + CONTEXT);
             for (int at = oldContextEnd + 1; at <= contextEnd; at++) {
                 if (hits[at] == null) continue;
                 for (Hit hit : hits[at]) if (hit.entry.weight < 0 && negativeCounts[hit.entry.id]++ == 0) {
@@ -422,7 +508,7 @@ public final class AdultTextPolicy {
             // A contextual phrase must earn its signed weight; neither one
             // generic "education" nor distant benign paragraphs grant immunity.
             int threshold = strong >= 2 ? 16 : 8;
-            if (promotion > 0 && strong > 0 && (trusted > 0 || strong >= 2)
+            if (end >= firstEnd && promotion > 0 && strong > 0 && (trusted > 0 || strong >= 2)
                     && positiveScore - negativeScore >= threshold) return true;
         }
         return false;
@@ -673,6 +759,13 @@ public final class AdultTextPolicy {
     }
 
     private static String canonical(String input) {
+        String quick = TextFolding.quickCanonical(input);
+        if (quick != null) return quick;
+        return canonicalSlow(input);
+    }
+
+    /** The reference path; {@link TextFolding#quickCanonical} must agree with it. */
+    static String canonicalSlow(String input) {
         String compatible = Normalizer.normalize(input, Normalizer.Form.NFKC);
         String decomposed = Normalizer.normalize(compatible, Normalizer.Form.NFD).toLowerCase(Locale.ROOT);
         StringBuilder normalized = new StringBuilder();

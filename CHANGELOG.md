@@ -84,6 +84,29 @@ bump without an entry here is an unfinished release.
 
 ### Android
 
+#### Changed — faster screen text checks and a smaller domain list in memory
+
+- **A screen's text is normalized once per scan.** The tree walk's checkpoint
+  re-read the whole growing sample every 64 nodes (up to 32 times) and the final
+  verdict read it again, each time through three Unicode normalizer passes.
+  `AdultTextPolicy.ScreenScan` now tokenizes each new line once, judges only the
+  windows that reach new lines, and gives the final per-line verdict from the
+  tokens already held; custom words read only the new lines plus the previous
+  last line, and are skipped entirely when none are configured. ASCII and plain
+  Arabic text skip the normalizer passes through `TextFolding.quickCanonical`.
+  Verdicts are unchanged: a 200,000-case fuzz test checks the fast path against
+  the reference normalizer, 4,000 random screens check every checkpoint and the
+  final verdict against the whole-text calls, and the synthetic corpus stays at
+  71/72 blocks and 0/133 benign. On a desktop JVM a 1,700-label screen went from
+  25–60 ms to 2–4 ms; no phone timing is claimed.
+- **The 236,581-domain list is a packed table.** `CompactHostSet` keeps the
+  names in one byte array with an open-addressing index instead of a
+  `HashSet<String>`: about 9 MB instead of 25 MB of heap on a desktop JVM, a
+  faster load, and the same block decisions. The seed test checks every listed
+  name against the table.
+- **`terms.json` is read, hashed and parsed once** for both the hostname and
+  text layers instead of once each.
+
 #### Changed — Android 6.0 (API 23) support
 
 - **The app now installs and runs on Android 6.0 (API 23) and later.** The

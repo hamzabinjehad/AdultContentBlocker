@@ -22,6 +22,26 @@ public final class DomainPolicy {
         this.allowed = compile(allowed);
     }
 
+    /**
+     * A policy over names that are already {@link Hostname#normalize}d. The caller must
+     * hand over a set it no longer mutates; the seed loader uses this to keep one set
+     * instead of copying a 236k-entry list into a second set.
+     */
+    static DomainPolicy fromCanonical(Set<String> canonicalBlocked) {
+        if (canonicalBlocked == null || canonicalBlocked.size() > MAX_RULES)
+            throw new IllegalArgumentException("Missing or oversized rules");
+        // A CompactHostSet is already immutable; wrapping it would only add a call per lookup.
+        Set<String> blocked = canonicalBlocked instanceof CompactHostSet ? canonicalBlocked
+                : Collections.unmodifiableSet(canonicalBlocked);
+        return new DomainPolicy(blocked,
+                Collections.emptySet(), true);
+    }
+
+    private DomainPolicy(Set<String> blocked, Set<String> allowed, boolean precompiled) {
+        this.blocked = blocked;
+        this.allowed = allowed;
+    }
+
     /** Invalid input is distinct from a valid name that is allowed. */
     public Decision evaluate(String hostname) {
         if (hostname == null) return Decision.INVALID;
