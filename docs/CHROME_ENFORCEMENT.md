@@ -12,11 +12,15 @@ administrator/recovery access can still undo protections.
 
 ## What the app guard adds
 
-When the Mac browser guard is required, Hisn warns and closes supported,
-non-exempt browser processes that lose their verified extension check-in,
-after the configured recovery grace period. Process-scoped check-ins prevent
-a healthy, separate browser process from covering a disconnected process.
-This requires the matching app, bridge and filter versions and Hisn to run.
+The Mac browser guard runs continuously while Hisn runs. It warns and closes
+supported, non-exempt browser processes whose verified extension check-in is
+missing: a one-minute countdown for silence, five minutes when a standard
+profile confirms removal or disablement, and a returning heartbeat cancels
+either. A remembered locked-authority IPC outage is shown as waiting without a
+countdown, because unreadable check-ins are not evidence of absence.
+Process-scoped check-ins prevent a healthy, separate browser process from
+covering a disconnected process. This requires the matching app, bridge and
+filter versions and Hisn to run.
 
 A process check-in is **not** proof of protection in every profile, guest or
 private window inside that process. Runtime checks of standard-profile

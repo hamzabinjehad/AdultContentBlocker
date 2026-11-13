@@ -760,7 +760,8 @@ public enum PolicyMerge {
                                 text: true,
                                 textSensitivity: max(editor.inspection.textSensitivity,
                                                      other.inspection.textSensitivity),
-                                hostKeywords: true),
+                                hostKeywords: true,
+                                visual: true),
                               guardAllowed: [], recoveryRequired: true)
         }
         let locked = [editor, other].filter(\.locked)
@@ -807,7 +808,8 @@ public enum PolicyMerge {
             inspection: Inspection.Settings(
                 text: e.text || i.text,
                 textSensitivity: max(e.textSensitivity, i.textSensitivity),
-                hostKeywords: e.hostKeywords || i.hostKeywords),
+                hostKeywords: e.hostKeywords || i.hostKeywords,
+                visual: e.visual || i.visual),
             guardAllowed: first.guardAllowed.filter(guardOK.contains))
     }
 
@@ -841,6 +843,7 @@ extension PolicyView {
             "inspectText": inspection.text,
             "textSensitivity": inspection.textSensitivity,
             "hostKeywords": inspection.hostKeywords,
+            "inspectVisual": inspection.visual,
             "listVersion": listVersion,
         ]
     }

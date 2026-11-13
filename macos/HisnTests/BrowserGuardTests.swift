@@ -42,7 +42,7 @@ final class BrowserGuardPolicyTests: XCTestCase {
                                         now: now, profileLoss: true), .profileUnprotected)
     }
 
-    func testIndependentBrowserRepliesKeepHealthyBrowserOpenThroughoutRecovery() throws {
+    func testIndependentBrowserRepliesDoNotLendProofAndSilenceCloses() throws {
         let healthyID = "com.google.Chrome", missingID = "net.imput.helium"
         let key = try XCTUnwrap(BrowserCheckInIdentity.key(browser: healthyID, processID: 101))
         for seconds in [0.0, 30, 59, 60, 120, 600] {
@@ -55,16 +55,19 @@ final class BrowserGuardPolicyTests: XCTestCase {
             XCTAssertEqual(P.verdict(coverage: .needsExtension, lastSeen: healthy, now: time,
                                     firstViolation: now, recentlyClosed: false), .ok)
             XCTAssertNil(missing)
-            // Silenced is not disabled: however long the gap, no deadline.
+            // Another browser's reply is not this browser's proof. Silence
+            // runs its own countdown and closes when that expires.
+            let expected: P.Verdict = seconds >= P.warnSilent
+                ? .close(.extensionSilent)
+                : .warn(.extensionSilent, closeAt: now.addingTimeInterval(P.warnSilent))
             XCTAssertEqual(P.verdict(coverage: .needsExtension, lastSeen: missing, now: time,
-                                    firstViolation: now, recentlyClosed: false),
-                           .attention(.extensionSilent))
+                                    firstViolation: now, recentlyClosed: false), expected)
             XCTAssertEqual(P.connectionState(coverage: .needsExtension, lastSeen: missing,
                                             now: time, profileLoss: false), .awaitingExtension)
         }
     }
 
-    func testReplyRestoredBeforeAnyDeadlineCancelsAttentionAndUpdatesStatus() {
+    func testReplyRestoredBeforeAnyDeadlineCancelsCountdownAndUpdatesStatus() {
         let restored = now.addingTimeInterval(59)
         XCTAssertEqual(P.verdict(coverage: .needsExtension, lastSeen: restored, now: restored,
                                 firstViolation: now, recentlyClosed: false), .ok)
@@ -75,7 +78,8 @@ final class BrowserGuardPolicyTests: XCTestCase {
                                         now: restored, profileLoss: false), .awaitingExtension)
         XCTAssertEqual(P.verdict(coverage: .needsExtension, lastSeen: stale, now: restored,
                                 firstViolation: now, recentlyClosed: false),
-                       .attention(.extensionSilent))
+                       .warn(.extensionSilent,
+                             closeAt: now.addingTimeInterval(P.warnSilent)))
     }
 
     func testGuardIsContinuousWhileHisnRuns() {
@@ -154,13 +158,16 @@ final class BrowserGuardPolicyTests: XCTestCase {
             profileLoss: true), .close(.profileUnprotected))
     }
 
-    func testForceCloseRequiresConfirmedProfileLoss() throws {
+    func testForceCloseRequiresConfirmedLossOrASilentHeartbeat() throws {
         let id = "net.imput.helium"
-        // A wrong-process or missing heartbeat is not evidence for force.
-        XCTAssertFalse(P.shouldForceClose(active: true, coverage: .needsExtension,
+        // A missing heartbeat is enough once its visible countdown expired,
+        // but an unreadable check-in source is not evidence of absence.
+        XCTAssertTrue(P.shouldForceClose(active: true, coverage: .needsExtension,
             lastSeen: nil, now: now))
         XCTAssertFalse(P.shouldForceClose(active: true, coverage: .needsExtension,
             lastSeen: now, now: now))
+        XCTAssertFalse(P.shouldForceClose(active: true, coverage: .needsExtension,
+            lastSeen: nil, now: now, checkInsTrustworthy: false))
         XCTAssertTrue(P.shouldForceClose(active: true, coverage: .needsExtension,
             lastSeen: nil, now: now, profileLoss: true))
         // A fresh reply from the same PID cannot cancel a confirmed profile loss.
@@ -282,22 +289,24 @@ final class BrowserGuardPolicyTests: XCTestCase {
         XCTAssertNil(session.firstViolation(browser: id))
     }
 
-    func testUnconfirmedProfileAfterWarningCancelsTheCountdown() {
+    func testUnconfirmedProfileKeepsTheSilentCountdown() {
         let id = "net.imput.helium"
         var session = P.Session()
         _ = session.graceStart(browser: id, now: now, notBefore: now, instance: "first")
         session.observe(.warn(.profileUnprotected, closeAt: now.addingTimeInterval(P.warnProfileLoss)),
                         browser: id, at: now, instance: "first")
         XCTAssertNotNil(session.firstViolation(browser: id))
-        // The next read cannot reproduce the loss: the evidence is no longer
-        // positive, so the browser must not be closed on the old deadline.
-        let attention = P.verdict(coverage: .needsExtension, lastSeen: nil,
-            now: now.addingTimeInterval(60), firstViolation: session.firstViolation(browser: id),
+        // The next read cannot reproduce the loss, but the extension is still
+        // silent. The original warning stands; only a fresh heartbeat cancels
+        // it, and the reason changes from profile loss to silence.
+        let silent = P.verdict(coverage: .needsExtension, lastSeen: nil,
+            now: now.addingTimeInterval(30), firstViolation: session.firstViolation(browser: id),
             recentlyClosed: false, profileLoss: false)
-        XCTAssertEqual(attention, .attention(.extensionSilent))
-        session.observe(attention, browser: id, at: now.addingTimeInterval(60), instance: "first")
-        XCTAssertNil(session.firstViolation(browser: id))
-        XCTAssertFalse(P.shouldForceClose(active: true, coverage: .needsExtension,
+        XCTAssertEqual(silent, .warn(.extensionSilent,
+            closeAt: now.addingTimeInterval(P.warnSilent)))
+        session.observe(silent, browser: id, at: now.addingTimeInterval(30), instance: "first")
+        XCTAssertEqual(session.firstViolation(browser: id), now)
+        XCTAssertTrue(P.shouldForceClose(active: true, coverage: .needsExtension,
             lastSeen: nil, now: now.addingTimeInterval(P.warnProfileLoss)))
     }
 
@@ -351,15 +360,17 @@ final class BrowserGuardPolicyTests: XCTestCase {
         XCTAssertEqual(verdict(.needsExtension, lastSeen: 30), .ok)
     }
 
-    func testSilenceIsNeverAClosureEvenAfterHours() {
+    func testSilenceClosesAfterItsOneMinuteWarning() {
         XCTAssertEqual(verdict(.needsExtension, lastSeen: nil),
-                       .attention(.extensionSilent))
+                       .warn(.extensionSilent,
+                             closeAt: now.addingTimeInterval(P.warnSilent)))
         XCTAssertEqual(verdict(.needsExtension, lastSeen: nil, firstViolationAgo: 4 * 3600),
-                       .attention(.extensionSilent))
+                       .close(.extensionSilent))
         XCTAssertEqual(verdict(.needsExtension, lastSeen: 4 * 3600),
-                       .attention(.extensionSilent))
-        XCTAssertEqual(P.shouldForceClose(active: true, coverage: .needsExtension,
-            lastSeen: nil, now: now), false)
+                       .warn(.extensionSilent,
+                             closeAt: now.addingTimeInterval(P.warnSilent)))
+        XCTAssertTrue(P.shouldForceClose(active: true, coverage: .needsExtension,
+            lastSeen: nil, now: now))
     }
 
     func testConfirmedProfileLossGetsTheFullFiveMinutes() {
@@ -396,7 +407,8 @@ final class BrowserGuardPolicyTests: XCTestCase {
         let staleInstance = P.instanceCheckIn(lastSeen: now, launchedAt: now.addingTimeInterval(1))
         XCTAssertEqual(P.verdict(coverage: .needsExtension, lastSeen: staleInstance,
             now: now.addingTimeInterval(55), firstViolation: now,
-            recentlyClosed: false), .attention(.extensionSilent))
+            recentlyClosed: false),
+            .warn(.extensionSilent, closeAt: now.addingTimeInterval(P.warnSilent)))
     }
 
     func testForceTerminationRespectsCurrentWarningAndWakeRecovery() {
@@ -487,20 +499,52 @@ final class BrowserGuardPolicyTests: XCTestCase {
     func testHeartbeatTimingBudgetIsIndependentOfExpectedConstants() {
         XCTAssertEqual(P.staleAfter, 90)
         XCTAssertEqual(P.launchGrace, 60)
+        XCTAssertEqual(P.warnSilent, 60)
         XCTAssertEqual(P.warnProfileLoss, 300)
         XCTAssertEqual(P.warnUncovered, 60)
         XCTAssertEqual(P.warnRepeat, 5)
     }
 
-    func testSilentExtensionIsAttentionNotAClosure() {
+    func testSilentExtensionGetsItsOneMinuteWarning() {
         XCTAssertEqual(verdict(.needsExtension, lastSeen: 600),
-                       .attention(.extensionSilent))
+                       .warn(.extensionSilent,
+                             closeAt: now.addingTimeInterval(P.warnSilent)))
     }
 
-    func testNeverSeenExtensionIsAttentionNotAClosure() {
-        guard case .attention(.extensionSilent) = verdict(.needsExtension, lastSeen: nil) else {
-            return XCTFail("a browser that never checked in must be shown, not closed")
-        }
+    func testNeverSeenExtensionGetsACountdown() {
+        XCTAssertEqual(verdict(.needsExtension, lastSeen: nil),
+                       .warn(.extensionSilent,
+                             closeAt: now.addingTimeInterval(P.warnSilent)))
+    }
+
+    func testSilentCountdownIsFlooredByLaunchOrWakeGrace() {
+        // A violation inherited from before a sleep or a just-launched process
+        // does not close on the next tick: the full recovery warning is
+        // floored at the grace start.
+        XCTAssertEqual(P.verdict(coverage: .needsExtension, lastSeen: nil, now: now,
+            graceStart: now, firstViolation: now.addingTimeInterval(-3600),
+            recentlyClosed: false),
+            .warn(.extensionSilent,
+                  closeAt: now.addingTimeInterval(P.launchGrace)))
+        // A repeat offender keeps the short reminder, not a third grace.
+        XCTAssertEqual(P.verdict(coverage: .needsExtension, lastSeen: nil, now: now,
+            graceStart: now, firstViolation: nil, recentlyClosed: true),
+            .warn(.extensionSilent,
+                  closeAt: now.addingTimeInterval(P.warnRepeat)))
+    }
+
+    func testUnreadableCheckInsAreUnknownNotMissing() {
+        // A remembered locked-authority outage supplies an empty check-in set.
+        // An absent stamp then says nothing about the extension, so no
+        // deadline is manufactured; confirmed profile loss still counts.
+        XCTAssertEqual(P.verdict(coverage: .needsExtension, lastSeen: nil, now: now,
+            firstViolation: now.addingTimeInterval(-3600), recentlyClosed: false,
+            checkInsTrustworthy: false), .attention(.extensionSilent))
+        XCTAssertEqual(P.verdict(coverage: .needsExtension, lastSeen: nil, now: now,
+            firstViolation: nil, recentlyClosed: false, profileLoss: true,
+            checkInsTrustworthy: false),
+            .warn(.profileUnprotected,
+                  closeAt: now.addingTimeInterval(P.warnProfileLoss)))
     }
 
     func testConfirmedLossWarningRunsOutThenCloses() {
@@ -531,9 +575,9 @@ final class BrowserGuardPolicyTests: XCTestCase {
         // Last seen an hour "from now": the clock was wound back after the
         // extension was switched off. Not evidence of a live extension.
         XCTAssertFalse(P.extensionAlive(lastSeen: now.addingTimeInterval(3600), now: now))
-        guard case .attention = verdict(.needsExtension, lastSeen: -3600) else {
-            return XCTFail("a check-in stamped in the future must not keep a browser healthy")
-        }
+        XCTAssertEqual(verdict(.needsExtension, lastSeen: -3600),
+                       .warn(.extensionSilent,
+                             closeAt: now.addingTimeInterval(P.warnSilent)))
     }
 
     func testSmallClockDriftIsTolerated() {
@@ -843,11 +887,12 @@ final class BrowserProfileEvidenceTests: XCTestCase {
             recentlyClosed: true, profileLoss: true), .close(.profileUnprotected))
         XCTAssertEqual(P.verdict(coverage: .needsExtension, lastSeen: now, now: now,
             firstViolation: first, recentlyClosed: true, profileLoss: false), .ok)
-        // Refreshing profile settings does not suspend a missing heartbeat, but
-        // a missing heartbeat is still attention, never a closure on its own.
+        // Refreshing profile settings does not suspend a missing heartbeat.
+        // Once the profile evidence is gone, silence still closes on the
+        // inherited deadline; only a heartbeat cancels it.
         XCTAssertEqual(P.verdict(coverage: .needsExtension, lastSeen: nil, now: now,
             firstViolation: first, recentlyClosed: true,
-            profileRefreshPending: true), .attention(.extensionSilent))
+            profileRefreshPending: true), .close(.extensionSilent))
     }
     func testRunningProfileRequiresAReadingAtOriginalWarningDeadline() {
         typealias P = BrowserGuardPolicy

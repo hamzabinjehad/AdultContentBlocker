@@ -6,7 +6,7 @@ import { describeEnforcement } from "./status.js";
 // heartbeat never silently transfers authority back to the browser.
 const APP_FIELDS = new Set([
   "mode", "lockUntil", "allowlist", "customBlocks", "customTerms",
-  "inspectText", "textSensitivity",
+  "inspectText", "textSensitivity", "inspectVisual",
 ]);
 
 export function settingsAccess(state, patch) {

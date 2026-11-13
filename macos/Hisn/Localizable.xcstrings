@@ -2124,6 +2124,16 @@
         }
       }
     },
+    "Check images and videos" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افحص الصور والفيديو"
+          }
+        }
+      }
+    },
     "Check the words on a page" : {
       "localizations" : {
         "ar" : {
@@ -2264,6 +2274,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Checks a harmless adult-category test name and an ordinary name through this Mac's system resolver. No website is opened and no settings are changed."
+          }
+        }
+      }
+    },
+    "Checks accessible images and sampled video frames on this device in supported Chromium browsers with Hisn connected. Unreadable media and missed detections remain possible." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يفحص الصور المتاحة وإطارات مختارة من الفيديو على هذا الجهاز في متصفحات Chromium المدعومة المتصلة بحصن. تبقى الوسائط غير القابلة للقراءة والحالات التي لم تُكتشف ممكنة."
           }
         }
       }
@@ -3718,7 +3738,6 @@
       }
     },
     "Hisn cannot confirm an extension connection from %@. Reinstall or enable it in %@’s extensions page and check its app connection, or %@ will close." : {
-      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -6469,12 +6488,12 @@
         }
       }
     },
-    "Open the Hisn extension, choose Manage protection, then Visual checks. Adult-media checks and person blur are separate choices, saved in that browser." : {
+    "Adult image and video checks are switched on or off here, in Content checking. Person blur is a separate choice: open the Hisn extension, choose Manage protection, then Visual checks. It is saved in that browser." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "افتح إضافة حصن، واختر «إدارة الحماية» ثم «الفحص البصري». فحص الوسائط الإباحية وتمويه الأشخاص خياران منفصلان يُحفظان في ذلك المتصفح."
+            "value" : "يُشغَّل فحص الصور والفيديو الإباحية أو يُوقَف من هنا، في «فحص المحتوى». أما تمويه الأشخاص فخيار منفصل: افتح إضافة حصن، واختر «إدارة الحماية» ثم «الفحص البصري». ويُحفظ في ذلك المتصفح."
           }
         }
       }
@@ -8765,12 +8784,12 @@
         }
       }
     },
-    "The app does not verify visual-check settings. Accessible images and sampled video frames can be checked locally; unreadable media and missed detections remain possible." : {
+    "The app does not verify person-blur settings. Accessible images and sampled video frames can be checked locally; unreadable media and missed detections remain possible." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "لا يتحقق التطبيق من إعدادات الفحص البصري. يمكن فحص الصور وإطارات الفيديو المتاحة محليًا؛ تبقى الوسائط غير القابلة للقراءة والحالات التي لم تُكتشف ممكنة."
+            "value" : "لا يتحقق التطبيق من إعدادات تمويه الأشخاص. يمكن فحص الصور وإطارات الفيديو المتاحة محليًا؛ تبقى الوسائط غير القابلة للقراءة والحالات التي لم تُكتشف ممكنة."
           }
         }
       }
@@ -9257,6 +9276,7 @@
       }
     },
     "There is no off switch and no lock needed: a missed heartbeat never closes a browser by itself. If a standard profile confirms the extension was disabled or removed, the browser shows a five-minute countdown and then closes." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -9273,7 +9293,6 @@
       }
     },
     "There is no off switch and no lock needed: if the extension stops answering, the browser shows a countdown and then closes." : {
-      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -9839,6 +9858,16 @@
         }
       }
     },
+    "turn off image and video checking" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "إيقاف فحص الصور والفيديو"
+          }
+        }
+      }
+    },
     "turn off keyword checking" : {
       "localizations" : {
         "ar" : {
@@ -10056,12 +10085,12 @@
         }
       }
     },
-    "Visual checks in the extension" : {
+    "Person blur in the extension" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "الفحوص البصرية في الإضافة"
+            "value" : "تمويه الأشخاص في الإضافة"
           }
         }
       }
@@ -10213,6 +10242,7 @@
       }
     },
     "While browser protection is active, a linked browser whose extension stops answering stays open and is shown as waiting. It closes only when a standard profile confirms the extension was removed or disabled, after a visible five-minute countdown. Safari and other unsupported browsers close after one minute." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -10229,7 +10259,6 @@
       }
     },
     "While browser protection is active, losing the extension connection starts a visible one-minute recovery countdown. Restore protection or the browser closes. Safari and other unsupported browsers also close." : {
-      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {

@@ -288,9 +288,10 @@ final class FilterRecoveryTests: XCTestCase {
         XCTAssertNil(BrowserGuardPolicy.checkIn(browser: "custom.browser", processID: 42,
             authority: checkIns, local: stamp))
         XCTAssertEqual(BrowserGuardPolicy.verdict(coverage: .needsExtension, lastSeen: nil,
-            now: stamp, firstViolation: nil, recentlyClosed: false),
+            now: stamp, firstViolation: nil, recentlyClosed: false,
+            checkInsTrustworthy: false),
             .attention(.extensionSilent),
-            "authority loss keeps the browser open; only profile evidence closes it")
+            "an authority outage keeps the browser open; unreadable check-ins are not evidence")
     }
 
     func testLiveAuthorityHeartbeatIsNeverCachedAsFreshDuringOutage() {

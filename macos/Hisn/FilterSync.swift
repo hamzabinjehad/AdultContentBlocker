@@ -158,6 +158,13 @@ public final class FilterSync: ObservableObject {
         lockEvidence.effectiveGuardCheckIns(live: status?.checkIns)
     }
 
+    /// True while `guardCheckIns` is the empty placeholder for a remembered
+    /// locked authority that cannot be reached. The guard must treat an absent
+    /// stamp in that state as unknown rather than as a missing extension.
+    var guardCheckInsUnavailable: Bool {
+        status == nil && lockEvidence.locked
+    }
+
     /// Kick a sync without waiting for it — for call sites that just saved.
     public nonisolated static func soon() {
         Task { @MainActor in await FilterSync.shared.sync() }

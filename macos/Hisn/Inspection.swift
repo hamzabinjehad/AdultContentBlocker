@@ -9,18 +9,14 @@ import Foundation
 /// in background.js enforces the same asymmetry a second time, because a value
 /// posted from a devtools console never passes through this file.
 ///
-/// ── WHAT IS DELIBERATELY ABSENT ────────────────────────────────────────────
-/// There is no image-blurring setting here, and there should not be one until
-/// image classification exists. A settings pane offering a switch for a feature
-/// that is not built is worse than an empty pane: it is the "looks protected,
-/// is not" failure `docs/THREAT_MODEL.md` rates as more damaging than being
-/// switched off, because the person stops being careful. Every field below
-/// corresponds to a layer that is actually running.
+/// Every field below corresponds to a layer that is actually running. Person
+/// blur stays a browser-owned preference: it is not an adult-content check.
 public enum Inspection {
 
     public static let textKey = "inspectText"
     public static let textSensitivityKey = "textSensitivity"
     public static let hostKeywordsKey = "hostKeywords"
+    public static let visualKey = "inspectVisual"
 
     public struct Settings: Equatable, Codable {
         /// Score the rendered text of a page in the browser extension.
@@ -33,18 +29,23 @@ public enum Inspection {
         /// Match keywords in hostnames at the socket filter, and in full URLs
         /// through the browser's rule engine.
         public var hostKeywords: Bool
+        /// Check images and sampled video frames for adult content in the
+        /// browser extension (its `inspectVisual`).
+        public var visual: Bool
 
         public init(text: Bool = true,
                     textSensitivity: Int = 50,
-                    hostKeywords: Bool = true) {
+                    hostKeywords: Bool = true,
+                    visual: Bool = true) {
             self.text = text
             self.textSensitivity = textSensitivity
             self.hostKeywords = hostKeywords
+            self.visual = visual
         }
 
         public static let `default` = Settings()
 
-        private enum CodingKeys: String, CodingKey { case text, textSensitivity, hostKeywords }
+        private enum CodingKeys: String, CodingKey { case text, textSensitivity, hostKeywords, visual }
 
         /// Missing fields take their defaults: this is stored inside the
         /// filter's policy record, which must still decode after a build adds
@@ -53,7 +54,8 @@ public enum Inspection {
             let c = try decoder.container(keyedBy: CodingKeys.self)
             self.init(text: try c.decodeIfPresent(Bool.self, forKey: .text) ?? true,
                       textSensitivity: try c.decodeIfPresent(Int.self, forKey: .textSensitivity) ?? 50,
-                      hostKeywords: try c.decodeIfPresent(Bool.self, forKey: .hostKeywords) ?? true)
+                      hostKeywords: try c.decodeIfPresent(Bool.self, forKey: .hostKeywords) ?? true,
+                      visual: try c.decodeIfPresent(Bool.self, forKey: .visual) ?? true)
         }
     }
 
@@ -89,6 +91,7 @@ public enum Inspection {
         var s = Settings.default
         if let v = d.object(forKey: textKey) as? Bool { s.text = v }
         if let v = d.object(forKey: hostKeywordsKey) as? Bool { s.hostKeywords = v }
+        if let v = d.object(forKey: visualKey) as? Bool { s.visual = v }
         if let v = d.object(forKey: textSensitivityKey) as? Int {
             s.textSensitivity = clamp(v)
         }
@@ -110,6 +113,9 @@ public enum Inspection {
         if current.hostKeywords, !next.hostKeywords {
             reasons.append(String(localized: "turn off keyword checking"))
         }
+        if current.visual, !next.visual {
+            reasons.append(String(localized: "turn off image and video checking"))
+        }
         if next.textSensitivity < current.textSensitivity {
             reasons.append(String(localized: "lower the sensitivity"))
         }
@@ -128,6 +134,7 @@ public enum Inspection {
         }
         defaults?.set(next.text, forKey: textKey)
         defaults?.set(next.hostKeywords, forKey: hostKeywordsKey)
+        defaults?.set(next.visual, forKey: visualKey)
         defaults?.set(clamp(next.textSensitivity), forKey: textSensitivityKey)
     }
 }

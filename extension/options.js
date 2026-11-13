@@ -537,7 +537,8 @@ function renderVisualSettings() {
   // An unavailable engine cannot be switched ON, but it must always be
   // possible to switch it OFF: media checks are on by default, and a runtime
   // that cannot host the engine must not leave a switch nobody can turn off.
-  $("inspectVisual").disabled = !current || saving
+  // The Mac app owns adult-media checks once it has connected (lib/settings.js).
+  $("inspectVisual").disabled = !current || saving || !!current.appPresent
     || (restrictionsActive(current) && current.inspectVisual === true)
     || (!visual.available && current.inspectVisual !== true);
   $("personBlur").disabled = !current || !visual.available || saving;

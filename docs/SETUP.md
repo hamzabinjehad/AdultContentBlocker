@@ -77,28 +77,29 @@ link for every Chromium browser, and runs the verifier. Hisn stays in the backgr
 or use Quit, with or without an active lock. Open the window again from the
 menu bar or Applications. It runs while the protected Mac account is signed
 in; logout, restart and shutdown are allowed. Sleep pauses its work, which
-resumes when the Mac wakes. The app is also the **browser guard**. While a lock is active, or
-**Blocking Rules → Browser protection → Keep browser protection on** is enabled,
-a linked browser without a verified extension connection stays open and is
-shown as waiting; a missed heartbeat alone never closes it. It closes only when
-two separated profile readings confirm the extension was removed or disabled,
-after a visible five-minute countdown and a termination request. Safari and
-other known unsupported browsers keep their one-minute countdown and have no
-automatic exemption; they cannot be trusted as app exceptions, so use a
+resumes when the Mac wakes. The app is also the **browser guard**, running
+continuously while Hisn runs. A linked browser without a verified extension
+connection gets a visible one-minute recovery countdown: restore the extension
+or the browser is closed. When two separated profile readings confirm the
+extension was removed or disabled, the countdown is five minutes instead.
+Safari and other known unsupported browsers keep their one-minute countdown and
+have no automatic exemption; they cannot be trusted as app exceptions, so use a
 supported browser with Hisn connected. You may explicitly trust an unknown
 non-browser app that only registers for web links, before a lock. A custom
 browser granted that exception can bypass checks, so review exceptions carefully.
 
-**Keep browser protection on** requires confirmation and is off by default.
-It cannot be switched off during a lock. Detection is periodic: check-ins are
-scheduled every thirty seconds and become stale after ninety seconds. A stale
-heartbeat is reported as waiting, not as a deadline. The five-minute countdown
-starts when confirmed profile loss is detected, not at the exact moment of
-removal. A refusing browser may be force-closed after ten additional seconds,
-with fresh profile, consent and recovery-deadline checks. Reopening an unrepaired
-browser gets the full five-minute warning again. Sleep/wake can extend a pending
-force-close's recovery window. Standard-profile checks do not verify custom
-paths, guest/private windows or unreadable preferences.
+Detection is periodic: check-ins are scheduled every thirty seconds and become
+stale after ninety seconds. The one-minute countdown starts when the guard can
+read the missing heartbeat, not at the exact moment of removal; a browser that
+has just launched or a Mac that has just woken keeps a full recovery window. A
+refusing browser may be force-closed after ten additional seconds, with fresh
+heartbeat, consent and recovery-deadline checks. Reopening a browser closed for
+silence gets the short repeat warning; confirmed profile loss keeps the full
+five minutes. Sleep/wake can extend a pending force-close's recovery window.
+One exception: if a remembered locked filter authority is unreachable, the
+guard cannot read check-ins at all, so it shows the browser as waiting without
+a countdown instead of closing it on an outage. Standard-profile checks do not
+verify custom paths, guest/private windows or unreadable preferences.
 
 The agent is scoped to the account that ran the installer. It exits cleanly
 in other accounts, so they do not run a second guard. The daemon logs only the

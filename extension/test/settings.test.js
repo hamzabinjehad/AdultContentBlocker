@@ -10,7 +10,7 @@ const parsed = parseDomains("https://www.example.com/path\nexample.com\nbad doma
 check(parsed.domains.join() === "example.com", "normalize and deduplicate domains");
 check(parsed.invalid.join() === "3,4", "identify invalid lines rather than silently discarding them");
 check(parseDomains("").domains.length === 0, "empty list is valid");
-for (const key of ["mode", "allowlist", "customBlocks", "customTerms", "inspectText", "textSensitivity"]) {
+for (const key of ["mode", "allowlist", "customBlocks", "customTerms", "inspectText", "textSensitivity", "inspectVisual"]) {
   check(settingsAccess(solo, { [key]: [] }).ok, `${key}: standalone editable`);
   check(!settingsAccess(managed, { [key]: [] }).ok, `${key}: app authoritative even without a lock`);
 }

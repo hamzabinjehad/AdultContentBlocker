@@ -245,6 +245,10 @@ for (const c of fixture.cases.filter((c) => c.mode === "strict")) {
                    inspectText: true, textSensitivity: 200, extra: 1, appPresent: false }),
      { mode: "strict", allowlist: ["github.com"], inspectText: true },
      "a malformed field is left alone, unknown fields are ignored, good fields are canonical");
+  eq(bridgePatch({ inspectVisual: false }), { inspectVisual: false },
+     "the Mac app can switch adult-media checks off");
+  eq(bridgePatch({ inspectVisual: "no" }), {},
+     "a malformed visual flag is left alone");
   eq(bridgePatch({ lockUntil: 0 }), {},
      "a field the bridge does not mention is not touched (upgrade safety)");
 }

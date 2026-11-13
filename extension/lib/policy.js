@@ -596,6 +596,7 @@ export function validatePatch(patch) {
  */
 export const BRIDGE_FIELDS = Object.freeze([
   "mode", "allowlist", "customBlocks", "customTerms", "inspectText", "textSensitivity",
+  "inspectVisual",
 ]);
 
 export function bridgePatch(reply) {

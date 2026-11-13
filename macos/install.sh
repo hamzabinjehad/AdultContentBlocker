@@ -92,6 +92,9 @@ if [ -z "$BUILT" ]; then
         # Ad-hoc signing grants no Network Extension entitlement or notarization.
         codesign --force --sign - "$BUILT/Contents/MacOS/HisnBridge"
         codesign --force --sign - "$BUILT/Contents/Library/SystemExtensions/HisnFilter.systemextension"
+        for APPEX in "$BUILT"/Contents/PlugIns/*.appex; do
+            if [ -e "$APPEX" ]; then codesign --force --sign - "$APPEX"; fi
+        done
         codesign --force --sign - "$BUILT"
     fi
 else

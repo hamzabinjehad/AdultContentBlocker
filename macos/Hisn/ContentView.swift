@@ -713,8 +713,9 @@ private struct OverviewPage: View {
                              + BrowserGuard.message(name: alert.name, reason: alert.reason),
                          systemImage: "exclamationmark.shield.fill", level: .caution)
             }
-            // A lost heartbeat is a gap to show, not a countdown. Saying so
-            // next to the closing warnings keeps the difference visible.
+            // A remembered locked-authority outage makes check-ins unknown.
+            // That is a gap to show without a countdown; a heartbeat the guard
+            // can read and find silent is a numbered warning above instead.
             ForEach(guardian.awaitingExtension) { connection in
                 HnNotice(title: nil,
                          verbatim: BrowserGuard.attentionMessage(name: connection.name),
@@ -1370,13 +1371,13 @@ private struct BrowserSetupHelp: View {
 private struct ExtensionVisualGuidance: View {
     var body: some View {
         HStack(spacing: 6) {
-            Label("Visual checks in the extension", systemImage: "eye")
+            Label("Person blur in the extension", systemImage: "eye")
                 .font(.system(.callout).weight(.medium))
                 .foregroundStyle(HnPalette.ink)
             HnExplain {
-                Text("Open the Hisn extension, choose Manage protection, then Visual checks. Adult-media checks and person blur are separate choices, saved in that browser.")
+                Text("Adult image and video checks are switched on or off here, in Content checking. Person blur is a separate choice: open the Hisn extension, choose Manage protection, then Visual checks. It is saved in that browser.")
                 Text("Person blur uses detected faces and can be off, all people, women or men. The women and men options estimate appearance; they do not identify a person or mean their image is adult content.")
-                Text("The app does not verify visual-check settings. Accessible images and sampled video frames can be checked locally; unreadable media and missed detections remain possible.")
+                Text("The app does not verify person-blur settings. Accessible images and sampled video frames can be checked locally; unreadable media and missed detections remain possible.")
             }
             Spacer(minLength: 0)
         }
@@ -3238,12 +3239,10 @@ struct BrowsersSection: View {
     var body: some View {
         PageSection(title: "Browser protection",
                 subtitle: """
-                    While browser protection is active, a linked browser whose \
-                    extension stops answering stays open and is shown as waiting. \
-                    It closes only when a standard profile confirms the extension \
-                    was removed or disabled, after a visible five-minute \
-                    countdown. Safari and other unsupported browsers close after \
-                    one minute.
+                    While browser protection is active, losing the extension \
+                    connection starts a visible one-minute recovery countdown. \
+                    Restore protection or the browser closes. Safari and other \
+                    unsupported browsers also close.
                     """,
                 systemImage: "safari") {
             HnCard {
@@ -3253,7 +3252,7 @@ struct BrowsersSection: View {
                             .font(.system(.callout).weight(.medium))
                             .foregroundStyle(HnPalette.calm)
                         HnExplain {
-                            Text("There is no off switch and no lock needed: a missed heartbeat never closes a browser by itself. If a standard profile confirms the extension was disabled or removed, the browser shows a five-minute countdown and then closes.")
+                            Text("There is no off switch and no lock needed: if the extension stops answering, the browser shows a countdown and then closes.")
                             Text("browser.live.cadence")
                             Text("""
                                 Hisn stays in the background when its window closes; the separately \
@@ -3641,6 +3640,12 @@ private struct SettingsPage: View {
                     HnToggleRow(title: "Check the words on a page",
                                 detail: "Checks changing page text in supported Chromium browsers with Hisn connected. Detected X/Twitter posts are hidden individually; other sites use page-level checking. Images and videos without meaningful text can be missed.",
                                 isOn: $settings.text)
+                }
+                HnHairline(inset: 16)
+                HnGroupRow {
+                    HnToggleRow(title: "Check images and videos",
+                                detail: "Checks accessible images and sampled video frames on this device in supported Chromium browsers with Hisn connected. Unreadable media and missed detections remain possible.",
+                                isOn: $settings.visual)
                 }
                 HnHairline(inset: 16)
                 HnGroupRow {

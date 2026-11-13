@@ -73,3 +73,28 @@ extension HnLock where State == Void {
         return try body()
     }
 }
+
+// MARK: - Date comparison
+
+/// `Date`'s `>=` and `<=`, compiled into this module instead of called in the
+/// OS.
+///
+/// The macOS 27.2 SDK marks Foundation's own versions
+/// `@backDeployed(before: macOS 27.2)`: on 27.2 and later the binary calls the
+/// OS's exported symbol instead of the inlined copy. Pre-release 27.2 builds
+/// report 27.2 but do not export it, so the weak import resolves to null and
+/// the first comparison — `LockManager.tick()`, once a second — crashes the
+/// app, the filter and the bridge alike. A declaration in this module is
+/// preferred over the imported one, so every comparison here uses this copy,
+/// which is exactly what Foundation inlines on older systems.
+extension Date {
+    @_transparent
+    public static func >= (lhs: Date, rhs: Date) -> Bool {
+        lhs.timeIntervalSinceReferenceDate >= rhs.timeIntervalSinceReferenceDate
+    }
+
+    @_transparent
+    public static func <= (lhs: Date, rhs: Date) -> Bool {
+        lhs.timeIntervalSinceReferenceDate <= rhs.timeIntervalSinceReferenceDate
+    }
+}

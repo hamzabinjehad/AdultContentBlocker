@@ -140,9 +140,10 @@ final class InspectionTests: XCTestCase {
                               customBlocks: ["b.example"], customTerms: ["gambling"],
                               blockedApps: ["com.example.app"],
                               inspection: Inspection.Settings(text: false, textSensitivity: 35,
-                                                              hostKeywords: true))
+                                                              hostKeywords: true, visual: false))
         let reply = view.bridgeReply(listVersion: 7)
         XCTAssertEqual(reply["inspectText"] as? Bool, false)
+        XCTAssertEqual(reply["inspectVisual"] as? Bool, false)
         XCTAssertEqual(reply["textSensitivity"] as? Int, 35)
         XCTAssertEqual(reply["customTerms"] as? [String], ["gambling"])
         XCTAssertEqual(reply["mode"] as? String, "off")

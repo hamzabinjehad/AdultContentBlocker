@@ -82,24 +82,23 @@ all-app removal prohibition or silent OS setting changes are introduced.
 
 ## Browser extension removal and disconnection
 
-On Mac, browser guarding already runs during an active commitment. The
-**Blocking Rules → Browser protection → Keep browser protection on**
-switch extends that behavior outside a commitment with explicit confirmation.
-It is off by default; disabling it does not disable the guard inside a lock.
-The UI does not offer turning an enabled requirement off during a lock.
+On Mac, browser guarding runs continuously while Hisn runs. The former
+**Blocking Rules → Browser protection → Keep browser protection on** opt-in is
+gone; there is no off switch, and a lock no longer decides whether a browser is
+guarded.
 
 Supported Chromium browser processes need their own extension heartbeat. A
-missing or stale heartbeat is shown as attention, never as a closure: the
-browser stays open while the app waits for a reply. Only confirmed removal or
-disablement in a standard profile starts the visible warning and termination
-request. Known unsupported browsers, including Safari and Firefox, receive the
-same first one-minute warning. There is no automatic Safari exemption. A known active filter
+missing or stale heartbeat starts a visible one-minute recovery countdown;
+restoring the extension before it expires cancels the close. Only confirmed
+removal or disablement in a standard profile extends that to five minutes.
+Known unsupported browsers, including Safari and Firefox, receive the same
+first one-minute warning. There is no automatic Safari exemption. A known active filter
 authority's empty check-in record no longer falls back to editable app defaults;
 that fallback remains only when there is no live authority and no previously
 confirmed authority lock remembered by this app process. During a remembered
-locked-authority outage, the guard treats check-ins as authoritative-empty and
-shows the ordinary missing-connection attention instead of trusting editable
-local stamps.
+locked-authority outage, check-ins cannot be read at all: the guard shows the
+ordinary missing-connection attention without a countdown, because an
+unreadable check-in is not evidence that the extension is gone.
 App exceptions likewise remain the intersection of the local set and the last
 confirmed locked authority set. A confirmed unlock clears this session-local
 constraint; missing IPC does not. Cached constraints never mark filtering live.
@@ -123,16 +122,16 @@ prove Helium's native-host parent identity or real closure on the installed Mac.
 The Mac runtime also reads supported Chromium browsers' standard `Default` and
 `Profile *` preferences off the main thread. Two consistent readings at least
 ten seconds apart are needed before explicit extension disablement/removal
-overrides a fresh heartbeat from another profile. Routine reads are fifteen
-seconds apart. A relaunch prompts a fresh read before cached profile evidence
-may close the browser again. Profile-only closure also needs a read started at
-or after the original warning deadline, even if the browser never restarted;
-awaiting that read does not reset the countdown. The force-close fallback
-independently rereads the same still-confirmed folders and rechecks consent and
-process identity. A recovered or unconfirmed reread prevents profile-only force
-closure; a stale heartbeat alone never closes a browser and never starts a
-deadline. Reenablement clears profile-loss evidence. A heartbeat from another
-profile neither clears nor shortens it.
+extends a missing-heartbeat warning from one minute to five. Routine reads are
+fifteen seconds apart. A relaunch prompts a fresh read before cached profile
+evidence may close the browser again. Profile-only closure also needs a read
+started at or after the original warning deadline, even if the browser never
+restarted; awaiting that read does not reset the countdown. The force-close
+fallback independently rereads the same still-confirmed folders and rechecks
+consent, process identity and the heartbeat. A returned heartbeat prevents a
+silence-only force close; confirmed profile loss still closes. Reenablement
+clears profile-loss evidence. A heartbeat from another profile neither clears
+nor shortens it.
 
 The reader accepts the modern disable-reason representation without assuming
 an absent legacy `state` means disabled. Malformed, conflicting or unreadable
@@ -145,23 +144,26 @@ setup/managed-deployment checks retain their separate conservative semantics.
 The extension schedules native check-ins every thirty seconds and repairs a
 legacy one-minute alarm on every worker boot, including re-enable and restart.
 Heartbeats become stale after ninety seconds and the Browsers screen reports the
-gap; a stale heartbeat is not a closure trigger and starts no deadline. A
-linked browser whose standard profile confirms the extension was removed or
-disabled gets a visible five-minute countdown. An unsupported browser still gets
-sixty seconds. A browser closed for confirmed loss that is relaunched without
-repair gets the full five-minute warning again, because the profile remains the
-only positive evidence; a successful verified reconnection clears the warning.
+gap. A linked browser without a readable heartbeat gets a visible one-minute
+countdown. A linked browser whose standard profile confirms the extension was
+removed or disabled gets a visible five-minute countdown. An unsupported browser
+still gets sixty seconds. A browser closed for silence that is relaunched
+without repair gets the short repeat warning; a profile-confirmed loss keeps the
+full five minutes because the profile remains the positive evidence. A
+successful verified reconnection clears either warning.
 
-Checks run every five seconds. After the five-minute profile-loss countdown
-(or the unsupported browser's minute) the app requests termination; a refusing
-browser may be force-closed after ten more seconds. Fresh consent, process
-identity, still-confirmed profile loss and any visible/wake recovery deadline
-are rechecked before force termination. Pending force-closure is cancelled when
-guarding stops or coverage recovers. A previous process's heartbeat does not
-verify a relaunched browser instance. These are recovery allowances, not
-immediate denial of traffic. The countdown begins when loss is detected, not
-necessarily when the extension is deleted; Chrome explicitly permits delayed
-alarms, and such a delay is no longer treated as evidence for a closure.
+Checks run every five seconds. After the one-minute silence countdown (or the
+five-minute profile-loss countdown, or the unsupported browser's minute) the app
+requests termination; a refusing browser may be force-closed after ten more
+seconds. Fresh consent, process identity, still-confirmed profile loss, a
+returned heartbeat and any visible/wake recovery deadline are rechecked before
+force termination. Pending force-closure is cancelled when the heartbeat
+returns, the profile is repaired or guarding stops. A previous process's
+heartbeat does not verify a relaunched browser instance. These are recovery
+allowances, not immediate denial of traffic. The countdown begins when the
+guard reads the absence, not necessarily when the extension was deleted; Chrome
+explicitly permits delayed alarms, and the one-minute window absorbs a late
+alarm while still closing a browser that stays without an extension.
 
 The Mac Browser protection screen now shows each detected running browser process
 separately, its last verified reply, current connection evidence and the actual
@@ -169,27 +171,31 @@ warning deadline or closure request. Installed but closed browsers are labelled
 as not running. The same sampled process-specific authority and profile evidence
 drives both enforcement and the live status; a healthy sibling cannot turn a
 warning green. Confirmed standard-profile loss is shown even if another profile
-still replies. The screen keeps observing when guarding is off, but observation
-alone never starts a countdown or closes a browser. “Check status now” reads the
-current evidence; it does not claim to send a fresh challenge to the extension.
-The monitor and authority reconciliation both run in common run-loop modes so
-ordinary menu tracking pauses neither connection checks nor their authority
-snapshot refresh. Sleep, OS stalls and delayed browser alarms still prevent real-time
-guarantees. This process guard is Mac-only, not an iOS browser-termination feature.
+still replies. The screen reports the same evidence enforcement uses; opening it
+or pressing “Check status now” only reads the current evidence and does not claim
+to challenge the extension. The monitor and authority reconciliation both run in
+common run-loop modes so ordinary menu tracking pauses neither connection checks
+nor their authority snapshot refresh. Sleep, OS stalls and delayed browser alarms
+still prevent real-time guarantees. An unreadable check-in source during a
+remembered locked-authority outage is shown as waiting without a countdown. This
+process guard is Mac-only, not an iOS browser-termination feature.
 
 A restart does not renew or reset a confirmed profile-loss countdown while the
 browser process is still the same. A genuinely new process after a closure gets
-a fresh five-minute warning; alternating healthy observations cannot manufacture
-that transition. The evidence is session-local: restarting Hisn or changing the
-system clock is not solved by this ledger.
+a fresh warning: the short repeat for silence, the full five minutes for
+confirmed profile loss. Alternating healthy observations cannot manufacture that
+transition. The evidence is session-local: restarting Hisn or changing the system
+clock is not solved by this ledger.
 
-Removing the native-host link while leaving the extension installed is no
-longer a closure trigger: the browser stays open and is shown as waiting. The
-extension keeps its declarative rules and, during a lock, still fails closed to
-strict mode without the app. Disabling or uninstalling the extension is caught
-by the standard-profile evidence, which is the guard's only positive basis for
-closing a linked browser; custom and unreadable profiles remain a bypass, as
-before.
+Removing the native-host link while leaving the extension installed is a
+closure trigger now: the extension stops checking in, so the browser gets the
+one-minute countdown unless it reconnects. The extension keeps its declarative
+rules and, during a lock, still fails closed to strict mode without the app, but
+the guard no longer treats that layer as a substitute for a connection.
+Disabling or uninstalling the extension is confirmed by standard-profile
+evidence, which extends the countdown to five minutes; custom and unreadable
+profiles cannot buy an extension exemption, because the missing heartbeat is
+itself the trigger.
 
 Non-rendering link-routing apps remain exempt because they hand links to a real
 browser. Known browsers, including Safari and its preview, cannot use saved app
