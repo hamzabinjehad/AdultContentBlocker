@@ -100,6 +100,10 @@ android {
         release {
             // Without the owner's key, assembleRelease still produces an unsigned APK for inspection.
             if (releaseSigningCount != 0) signingConfig signingConfigs.release
+            // R8 drops the unused Compose icons and libraries (the APK was about 44 MB without it).
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
             // Run fixed visual fixtures alongside the owner's app without restarting its services.

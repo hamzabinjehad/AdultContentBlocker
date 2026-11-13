@@ -1416,6 +1416,7 @@ fun PermissionsScreen(state: HisnState, onBack: () -> Unit) {
 @Composable
 fun DiagnosticsScreen(state: HisnState, onBack: () -> Unit) {
     val context = LocalContext.current
+    val resources = androidx.compose.ui.platform.LocalResources.current
     val haptics = rememberHisnHaptics()
     val snackbar = LocalHisnSnackbar.current
     // Re-read the service counters whenever the shell's refresh tick lands.
@@ -1427,29 +1428,29 @@ fun DiagnosticsScreen(state: HisnState, onBack: () -> Unit) {
         }
     }
     val summary = remember(tick, state.dnsState) {
-        context.getString(
+        resources.getString(
             R.string.dns_summary,
-            context.getString(
+            resources.getString(
                 R.string.dns_stats, DnsVpnService.domains, DnsVpnService.blocked.get(),
                 DnsVpnService.forwarded.get(), DnsVpnService.rewritten.get(), DnsVpnService.errors.get()
             ),
-            context.getString(
+            resources.getString(
                 R.string.dns_packet_diagnostics, DnsVpnService.unsupportedPackets.get(),
                 DnsVpnService.unsupportedTcpPackets.get(), DnsVpnService.malformedPackets.get()
             ),
-            context.getString(
+            resources.getString(
                 R.string.dns_benign_packets, DnsVpnService.ignoredPackets.get(),
                 DnsVpnService.refusedTlsConnections.get(), DnsVpnService.blockedResolvers.get()
             ),
-            context.getString(R.string.dns_recoveries, DnsVpnService.recoveries.get()),
-            context.getString(
+            resources.getString(R.string.dns_recoveries, DnsVpnService.recoveries.get()),
+            resources.getString(
                 if (DnsVpnService.networkMonitoring) R.string.dns_monitor_active else R.string.dns_monitor_inactive,
                 DnsVpnService.networkChanges.get()
             ),
-            context.getString(
+            resources.getString(
                 R.string.dns_cancelled_network_requests, DnsVpnService.cancelledNetworkRequests.get()
             ),
-            context.getString(
+            resources.getString(
                 R.string.dns_tcp_stats, DnsVpnService.tcpQueries.get(),
                 DnsVpnService.tcpReplies.get(), DnsVpnService.udpTruncated.get()
             )
@@ -1495,7 +1496,7 @@ fun DiagnosticsScreen(state: HisnState, onBack: () -> Unit) {
                         val clipboard = context.getSystemService(android.content.ClipboardManager::class.java)
                         clipboard?.setPrimaryClip(android.content.ClipData.newPlainText("Hisn", summary))
                         haptics.confirm()
-                        snackbar(HisnMessage(context.getString(R.string.diagnostics_copied)))
+                        snackbar(HisnMessage(resources.getString(R.string.diagnostics_copied)))
                     }
                 ) {
                     Text(stringResource(R.string.copy_diagnostics))
@@ -1626,6 +1627,7 @@ fun SiteCheckScreen(state: HisnState, onBack: () -> Unit) {
     val haptics = rememberHisnHaptics()
     val snackbar = LocalHisnSnackbar.current
     val context = LocalContext.current
+    val resources = androidx.compose.ui.platform.LocalResources.current
     val focusManager = LocalFocusManager.current
 
     fun run() {
@@ -1652,7 +1654,7 @@ fun SiteCheckScreen(state: HisnState, onBack: () -> Unit) {
                     state.addDomain(host)
                     // A protection lock or an invalid rule refuses the write and says why itself.
                     if (state.domains.size > before) {
-                        snackbar(HisnMessage(context.getString(R.string.check_site_added)))
+                        snackbar(HisnMessage(resources.getString(R.string.check_site_added)))
                         result = null
                         input = ""
                     }
@@ -1861,6 +1863,7 @@ fun PersonalScreen(state: HisnState, onBack: () -> Unit) {
     val haptics = rememberHisnHaptics()
     val snackbar = LocalHisnSnackbar.current
     val context = LocalContext.current
+    val resources = androidx.compose.ui.platform.LocalResources.current
     val isCustom = preset == app.hisn.core.PersonalProfile.CUSTOM
 
     if (confirmClear) {
@@ -1874,7 +1877,7 @@ fun PersonalScreen(state: HisnState, onBack: () -> Unit) {
                     state.clearPersonal()
                     name = ""; preset = ""; custom = ""
                     haptics.confirm()
-                    snackbar(HisnMessage(context.getString(R.string.personal_removed)))
+                    snackbar(HisnMessage(resources.getString(R.string.personal_removed)))
                     onBack()
                 }) { Text(stringResource(R.string.personal_clear_confirm)) }
             },
@@ -1974,7 +1977,7 @@ fun PersonalScreen(state: HisnState, onBack: () -> Unit) {
                         } else {
                             state.savePersonal(name, preset, if (isCustom) custom else "")
                             haptics.confirm()
-                            snackbar(HisnMessage(context.getString(R.string.personal_saved)))
+                            snackbar(HisnMessage(resources.getString(R.string.personal_saved)))
                             onBack()
                         }
                     },

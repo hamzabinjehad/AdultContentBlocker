@@ -107,7 +107,7 @@ fun NativeShell(state: HisnState, initialTab: Int = 0, tabRequest: Int = 0) {
     val context = LocalContext.current
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val copy = protectionCopy(
-        androidx.core.os.ConfigurationCompat.getLocales(configuration)[0] ?: java.util.Locale.getDefault()
+        androidx.core.os.ConfigurationCompat.getLocales(configuration)[0] ?: java.util.Locale.ENGLISH
     )
     val dark = when (state.themeMode) {
         "dark" -> true

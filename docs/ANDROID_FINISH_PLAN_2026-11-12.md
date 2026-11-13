@@ -115,6 +115,32 @@ Local only, no data leaves the phone.
    and the shell state mapper.
 6. Play decision: accessibility declaration review, direct versus Play split.
 
+## Progress, 13 November 2026
+
+Checked against the working tree, then built and run on the `hisn_ui` emulator (API 36).
+Nothing here was run on a phone.
+
+- **Phase 1 and most of Phase 2 are in the code.** The shell reads live state, the check
+  re-reads the services instead of claiming a pass, "Fix gaps" goes one layer at a time,
+  `DnsVpnService` starts sticky and a `MY_PACKAGE_REPLACED` receiver exists. The TCP
+  reader idles at a 2 s poll.
+- **Lint gate is green.** `lintDebug` had 20 errors (locale read without observation,
+  `LocalContext` resource reads in Compose, and the removed profile-installer receiver).
+  They are fixed; no baseline is needed.
+- **R8 is on for release (5.1).** `minifyEnabled` + `shrinkResources` with
+  `app/proguard-rules.pro` (no renaming, TFLite and the WebView bridge kept). The direct
+  release APK went from 44.1 MB to 32.8 MB, and dex from about 47 MB to 3.9 MB.
+  `check-release.py --expect-distribution direct` passes. On the emulator the shrunk
+  build ran onboarding and the DNS layer (229,034 domains; adult hosts unresolved,
+  wikipedia.org resolved), and the guard service bound with image checks and "check every
+  app" on, with no crash. A confirmed TFLite inference was not observed, because the
+  diagnostics screen does not show the image backend.
+- **Still open:** a signed 1.6.0 / 43 from a clean commit (5.2), the phone acceptance
+  matrix (5.3), Phase 3.7 (`MainActivity` still serves some pages through
+  `ShellActivity.openSettings`), Phase 4, and the owner decisions below. Most of the
+  remaining APK size is TFLite native code for four ABIs (about 14.6 MB). Dropping x86 and
+  x86_64 would save about 9 MB, but x86 emulators and Chromebooks could no longer run it.
+
 ## Owner decisions needed
 
 - Was the signed 1.6.0 build installed on the Galaxy?

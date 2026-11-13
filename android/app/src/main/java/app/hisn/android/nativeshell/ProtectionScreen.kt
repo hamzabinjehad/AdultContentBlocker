@@ -314,7 +314,12 @@ fun ProtectionScreen(
                         RuleRow(
                             icon = Icons.Rounded.Security,
                             title = tr("Blocked lookups this session"),
-                            value = String.format(java.util.Locale.getDefault(), "%,d", state.blockedLookups),
+                            value = String.format(
+                                androidx.core.os.ConfigurationCompat.getLocales(
+                                    androidx.compose.ui.platform.LocalConfiguration.current
+                                )[0] ?: java.util.Locale.ENGLISH,
+                                "%,d", state.blockedLookups
+                            ),
                             onClick = { onOpen("diagnostics") }
                         )
                         InsetDivider()
@@ -345,11 +350,12 @@ fun ProtectionScreen(
 @Composable
 private fun PersonalCard(summary: PersonalSummary, onSetUp: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val resources = androidx.compose.ui.platform.LocalResources.current
     if (summary.empty) {
         HisnCard {
             IssueRowPlain(
-                title = context.getString(app.hisn.android.R.string.personal_prompt_title),
-                supporting = context.getString(app.hisn.android.R.string.personal_prompt_body),
+                title = resources.getString(app.hisn.android.R.string.personal_prompt_title),
+                supporting = resources.getString(app.hisn.android.R.string.personal_prompt_body),
                 onClick = onSetUp
             )
         }
@@ -362,7 +368,7 @@ private fun PersonalCard(summary: PersonalSummary, onSetUp: () -> Unit) {
             modifier = Modifier
                 .clickable(
                     role = Role.Button,
-                    onClickLabel = context.getString(app.hisn.android.R.string.personal_edit),
+                    onClickLabel = resources.getString(app.hisn.android.R.string.personal_edit),
                     onClick = onSetUp
                 )
                 .padding(16.dp),
@@ -374,7 +380,7 @@ private fun PersonalCard(summary: PersonalSummary, onSetUp: () -> Unit) {
             )
             if (summary.reason.isNotEmpty()) {
                 Text(
-                    text = context.getString(app.hisn.android.R.string.personal_quote, summary.reason),
+                    text = resources.getString(app.hisn.android.R.string.personal_quote, summary.reason),
                     style = MaterialTheme.typography.bodyLarge
                 )
             }
