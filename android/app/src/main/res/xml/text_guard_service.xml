@@ -9,4 +9,4 @@
     android:canTakeScreenshot="true"
     android:isAccessibilityTool="false"
     android:description="@string/accessibility_description"
-    android:settingsActivity="app.hisn.android.MainActivity" />
+    android:settingsActivity="app.hisn.android.ShellActivity" />

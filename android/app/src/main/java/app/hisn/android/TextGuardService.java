@@ -42,7 +42,7 @@ import app.hisn.core.VisibleTextSample;
  * screen content is never retained. */
 public final class TextGuardService extends AccessibilityService {
     public static volatile boolean connected;
-    /** MainActivity asks a live service instance to re-run its idempotent setup after an update. */
+    /** The shell asks a live service instance to re-run its idempotent setup after an update. */
     static final String ACTION_REARM = "app.hisn.android.action.REARM_GUARD";
     /** Increments for every guard instance; a receipt from an earlier one is stale. */
     public static volatile int serviceSession;

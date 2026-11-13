@@ -42,7 +42,7 @@ class ShellActivity : ComponentActivity(), ShellActions {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         requestedTab = tabOf(intent)
-        MainActivity.syncShortcuts(this)
+        Shortcuts.sync(this)
         if (savedInstanceState == null) {
             val settings = try {
                 PolicyStore.get(this)
@@ -62,11 +62,22 @@ class ShellActivity : ComponentActivity(), ShellActions {
 
     override fun onResume() {
         super.onResume()
+        keepLayersInStep()
         ensureDnsRunning()
         rearmGuard()
         // The saved gray choice applies itself whenever the app is opened, guard or no guard.
         ScreenGray.reassert(this)
         state?.refreshAll()
+    }
+
+    override fun onPause() {
+        // Save the lock countdown while the app is in front; the services do it in the background.
+        try {
+            PolicyStore.get(this).checkpoint()
+        } catch (unsaved: RuntimeException) {
+            // The guard and the tunnel checkpoint every minute.
+        }
+        super.onPause()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -432,8 +443,9 @@ class ShellActivity : ComponentActivity(), ShellActions {
         PersonalStore(this).clear()
     }
 
-    override fun openClassic(page: Int) =
-        openSettings(Intent(this, MainActivity::class.java).putExtra("page", page))
+    override fun openUninstall(onChanged: () -> Unit) = UninstallDialog.show(this) { onChanged() }
+
+    override fun uninstallSummary(): String = UninstallDialog.summary(this)
 
     override fun confirmNetworkCheck() {
         AlertDialog.Builder(this)
@@ -558,6 +570,36 @@ class ShellActivity : ComponentActivity(), ShellActions {
     }
 
     // ------------------------------------------------------------------ lifecycle helpers
+
+    /**
+     * Upkeep on every visit: a lock may have expired or a guardian may have changed it while the
+     * app was closed, so re-assert uninstall protection and the boot shield, keep the layer
+     * watchdog scheduled for the saved choices, and keep the signed list update scheduled.
+     */
+    private fun keepLayersInStep() {
+        try {
+            UninstallProtectionController.sync(this)
+            val settings = PolicyStore.get(this)
+            BootShieldService.mirror(
+                this,
+                app.hisn.core.ProtectionLock.bootShieldArmed(
+                    BuildConfig.SELF_PROTECTION, settings.uninstallLock(), settings.remainingMillis()
+                )
+            )
+        } catch (unavailable: RuntimeException) {
+            // The status rows report an unreadable policy.
+        }
+        try {
+            LayerWatchdog.syncSchedule(this)
+        } catch (unavailable: RuntimeException) {
+            // The next open retries.
+        }
+        try {
+            AdultListUpdater.schedule(this)
+        } catch (unavailable: RuntimeException) {
+            // The next open retries.
+        }
+    }
 
     private fun ensureDnsRunning() {
         if (!DnsVpnService.resumeRequested(this)) return

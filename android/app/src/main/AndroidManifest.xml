@@ -51,7 +51,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".MainActivity" android:exported="false" />
         <activity android:name=".RestrictionActivity" android:exported="false" android:excludeFromRecents="true" />
         <activity android:name=".WelcomeActivity" android:exported="false" android:excludeFromRecents="true" />
         <activity android:name=".GuardianPairActivity" android:exported="false"

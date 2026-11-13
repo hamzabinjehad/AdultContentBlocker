@@ -17,7 +17,7 @@ public final class VpnBootReceiver extends BroadcastReceiver {
         // returns early so an unmanaged install is a no-op and a managed one
         // never keeps a stale uninstall block without a running commitment.
         try { UninstallProtectionController.sync(context); }
-        catch (RuntimeException ignored) { /* MainActivity repairs on next open. */ }
+        catch (RuntimeException ignored) { /* The shell repairs on next open. */ }
         // Fallback when the direct-boot start was missed; a running shield ignores it.
         BootShieldService.startIfNeeded(context);
         // Re-arm the periodic loss check for the keep switch and any DNS session.

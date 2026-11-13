@@ -43,8 +43,11 @@ interface ShellActions {
     fun remainingLabel(millis: Long): String
     fun openGuardian()
 
-    /** Opens the classic screen at a page (1 rules, 2 settings) for tools not yet ported. */
-    fun openClassic(page: Int)
+    /** Opens the uninstall-protection choices (direct build); the shell refreshes after a change. */
+    fun openUninstall(onChanged: () -> Unit)
+
+    /** The live uninstall-protection state as one line. */
+    fun uninstallSummary(): String
 
     /** The local personal layer as display text; see [PersonalSummary]. */
     fun personal(): PersonalSummary
@@ -188,13 +191,15 @@ class HisnState(private val context: Context, private val actions: ShellActions)
         private set
     var blockedLookups: Long by mutableStateOf(DnsVpnService.blocked.get())
         private set
+    var uninstallSummary: String by mutableStateOf("")
+        private set
 
     private fun readRemaining(): Long = runCatching { store()?.remainingMillis() ?: 0L }.getOrDefault(0L)
 
     fun startLock(days: Int) = actions.startLock(days) { refreshAll() }
     fun openPermission(key: String) = actions.openPermission(key)
     fun openGuardian() = actions.openGuardian()
-    fun openClassic(page: Int) = actions.openClassic(page)
+    fun openUninstall() = actions.openUninstall { refreshAll() }
 
     fun openIntroduction() = actions.openIntroduction()
     fun checkSite(raw: String, onResult: (SiteCheck) -> Unit) = actions.checkSite(raw, onResult)
@@ -456,6 +461,7 @@ class HisnState(private val context: Context, private val actions: ShellActions)
 
     fun refreshAll() {
         refreshStatus()
+        uninstallSummary = runCatching { actions.uninstallSummary() }.getOrDefault("")
         scanAll.refresh()
         grayApplied = runCatching { actions.grayApplied() }.getOrDefault(false)
         grayCanApply = runCatching { actions.grayCanApply() }.getOrDefault(false)

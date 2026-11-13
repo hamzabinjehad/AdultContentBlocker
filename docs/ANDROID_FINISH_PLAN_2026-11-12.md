@@ -141,6 +141,27 @@ Nothing here was run on a phone.
   remaining APK size is TFLite native code for four ABIs (about 14.6 MB). Dropping x86 and
   x86_64 would save about 9 MB, but x86 emulators and Chromebooks could no longer run it.
 
+### Later on 13 November: the classic screen is gone (3.7)
+
+- **`MainActivity` is deleted** (4,076 lines). Its last shell entry, uninstall protection,
+  is now `UninstallDialog`, opened straight from Settings. The row shows the live state
+  ("Switched on, but Hisn's accessibility service is off…") instead of a fixed line.
+  The launcher shortcuts moved to `Shortcuts`, and the accessibility service's settings
+  link now opens the shell. `Ui.java` stays, because Welcome, the shield, guardian pairing,
+  the app picker and the personal form still use it.
+- **Upkeep the shell had dropped is back.** Once the shell became the launcher, nothing
+  re-synced uninstall protection or the boot shield on open, scheduled the layer
+  watchdog or the signed list update, or saved the lock countdown when the app went to
+  the background. `ShellActivity` now does all of these on resume and on pause, as the
+  classic screen did.
+- **Checked:** `lintDebug`, unit tests, `test-core.sh`, string parity, play and direct
+  `assembleRelease` with `check-release.py` (direct 32.6 MB). On the `hisn_ui` emulator,
+  with the direct debug build, the dialog opened from Settings, "Turn on" saved the
+  choice and opened the overlay permission for the boot shield, and the row then read
+  the new state. No crash. Nothing was run on a phone.
+- **Still open for 1.6.0:** the signed build from a clean commit (5.2) and the phone
+  acceptance matrix (5.3). Both need the owner: the signing key and a phone.
+
 ## Owner decisions needed
 
 - Was the signed 1.6.0 build installed on the Galaxy?

@@ -133,12 +133,12 @@ fun SettingsScreen(
                     icon = Icons.Rounded.Security,
                     title = tr("Uninstall protection"),
                     supporting = if (BuildConfig.SELF_PROTECTION) {
-                        tr("Direct build · Works while a protection lock is active")
+                        state.uninstallSummary.ifEmpty { tr("Direct build · Works while a protection lock is active") }
                     } else {
                         tr("Not in this build · Direct build only")
                     },
                     onClick = {
-                        if (BuildConfig.SELF_PROTECTION) state.openClassic(2) else onOpen("info:uninstall")
+                        if (BuildConfig.SELF_PROTECTION) state.openUninstall() else onOpen("info:uninstall")
                     }
                 )
                 InsetDivider()
