@@ -19,12 +19,22 @@ public final class DnsUdpTruncationTest {
             query[plain.length + 3] = (byte) (size >>> 8); query[plain.length + 4] = (byte) size;
             int expected = Math.max(512, Math.min(1232, size));
             check(policy.udpResponseLimit(query) == expected, "EDNS limit not clamped");
+            // The parsed-offset overload must return exactly what the parsing call returns.
+            DnsPolicy.Result parsed = policy.evaluate(query);
+            check(policy.udpResponseLimit(query, parsed.questionEnd) == expected,
+                    "parsed EDNS limit not clamped");
             byte[] response = policy.truncatedResponse(query);
             check(response.length == plain.length + 11 && (response[2] & 2) != 0, "EDNS truncation malformed");
             check(!policy.blocksReply(response), "EDNS response record bounds");
         }
         check(policy.udpResponseLimit(null) == 0 && policy.truncatedResponse(new byte[2]) == null,
                 "Unsupported request gained a fabricated response");
+        byte[] edns = Arrays.copyOf(plain, plain.length + 11);
+        edns[11] = 1; edns[plain.length + 2] = 41; edns[plain.length + 3] = 0x04; edns[plain.length + 4] = (byte) 0xd0;
+        check(policy.udpResponseLimit(edns) == policy.udpResponseLimit(edns, policy.evaluate(edns).questionEnd),
+                "Offset limit differs from parsed limit");
+        check(policy.udpResponseLimit(edns, -1) == 0 && policy.udpResponseLimit(edns, edns.length + 1) == 0,
+                "Invalid offset produced a limit");
         System.out.println("DnsUdpTruncation tests passed (512/EDNS limits, TC flags, intact questions, no reflected record bytes)");
     }
     private static void check(boolean value, String message) { if (!value) throw new AssertionError(message); }

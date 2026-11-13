@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
 /**
  * The Android side of the hostname keyword contract, the layer macOS and the
@@ -54,6 +55,11 @@ public final class HostTermPolicy {
     /** Repeated DNS questions skip folding and regex work; bounded so a hostile stream cannot grow it. */
     private final ConcurrentHashMap<String, Boolean> decisions = new ConcurrentHashMap<>();
     private static final int DECISION_CACHE_LIMIT = 8192;
+    // Compiled once. String.replaceAll/matches compile their pattern on every call, and
+    // decide() runs these for every token of every previously unseen hostname.
+    private static final Pattern COMBINING = Pattern.compile("\\p{M}+");
+    private static final Pattern TAIL_DIGITS = Pattern.compile("[0-9]+$");
+    private static final Pattern REPEATS = Pattern.compile("(.)\\1{2,}");
 
     public HostTermPolicy(Collection<String> tokens, Collection<String> substrings,
             Collection<String> neverKeyword, Collection<String> exemptHosts) {
@@ -119,15 +125,13 @@ public final class HostTermPolicy {
     public int substringCount() { return substrings.size(); }
 
     private boolean isExempt(String host) {
-        if (exemptHosts.isEmpty()) return false;
-        String[] labels = host.split("\\.", -1);
-        for (int i = 0; i < labels.length - 1; i++) {
-            StringBuilder suffix = new StringBuilder();
-            for (int j = i; j < labels.length; j++) {
-                if (suffix.length() > 0) suffix.append('.');
-                suffix.append(labels[j]);
-            }
-            if (exemptHosts.contains(suffix.toString())) return true;
+        // Only a handful of whole sites are exempt. Compare each one directly instead
+        // of materializing every dotted suffix of every new hostname.
+        for (String exempt : exemptHosts) {
+            if (host.equals(exempt)) return true;
+            int at = host.length() - exempt.length();
+            if (at > 0 && host.charAt(at - 1) == '.'
+                    && host.regionMatches(at, exempt, 0, exempt.length())) return true;
         }
         return false;
     }
@@ -140,6 +144,10 @@ public final class HostTermPolicy {
      */
     static String canonicalHost(String value) {
         if (value == null) return "";
+        // DNS names and the seed are lowercase ASCII; only a punycode label can change
+        // under IDN.toUnicode. Returning the spelling nameprep would produce avoids a
+        // full Unicode pass for the common case.
+        if (isCanonicalAsciiHost(value)) return value;
         String host = value.trim();
         while (host.endsWith(".")) host = host.substring(0, host.length() - 1);
         if (host.isEmpty() || host.length() > MAX_HOST_LENGTH) return "";
@@ -149,6 +157,29 @@ public final class HostTermPolicy {
             // Bad punycode cannot name an adult host; leave it for the list.
         }
         return host.toLowerCase(Locale.ROOT).trim();
+    }
+
+    /** Lowercase ASCII LDH/underscore host with no punycode label, which toUnicode leaves alone. */
+    private static boolean isCanonicalAsciiHost(String host) {
+        int length = host.length();
+        if (length < 1 || length > MAX_HOST_LENGTH || host.charAt(length - 1) == '.') return false;
+        boolean labelStart = true;
+        for (int i = 0; i < length; i++) {
+            char c = host.charAt(i);
+            if (c == '.') {
+                if (labelStart) return false;
+                labelStart = true;
+                continue;
+            }
+            // A valid ACE label (xn--) decodes to a different string, so it takes the slow path.
+            if (labelStart && c == 'x' && length - i >= 4
+                    && host.charAt(i + 1) == 'n' && host.charAt(i + 2) == '-'
+                    && host.charAt(i + 3) == '-') return false;
+            if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')
+                    || c == '-' || c == '_')) return false;
+            labelStart = false;
+        }
+        return true;
     }
 
     private static Set<String> normalizeSet(Collection<String> values, String what) {
@@ -180,6 +211,14 @@ public final class HostTermPolicy {
     }
 
     static String fold(String value) {
+        boolean ascii = true;
+        for (int i = 0; i < value.length(); i++) {
+            if (value.charAt(i) >= 128) { ascii = false; break; }
+        }
+        if (ascii) {
+            // NFKC/NFD/NFC and combining-mark removal are no-ops over ASCII.
+            return value.toLowerCase(Locale.ROOT).trim();
+        }
         StringBuilder folded = new StringBuilder(value.length());
         String nfkc = Normalizer.normalize(value, Normalizer.Form.NFKC);
         for (int i = 0; i < nfkc.length();) {
@@ -190,8 +229,8 @@ public final class HostTermPolicy {
         }
         // Latin diacritics: decompose and drop the combining marks. Arabic
         // tashkeel was removed above, so this is a no-op for Arabic.
-        String decomposed = Normalizer.normalize(folded, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}+", "");
+        String decomposed = COMBINING.matcher(
+                Normalizer.normalize(folded, Normalizer.Form.NFD)).replaceAll("");
         return Normalizer.normalize(decomposed, Normalizer.Form.NFC)
                 .toLowerCase(Locale.ROOT).trim();
     }
@@ -231,11 +270,11 @@ public final class HostTermPolicy {
                 break;
             }
         }
-        String trimmed = token.replaceAll("[0-9]+$", "");
+        String trimmed = TAIL_DIGITS.matcher(token).replaceAll("");
         if (!trimmed.equals(token) && trimmed.codePointCount(0, trimmed.length()) >= 3) out.add(trimmed);
-        if (token.matches(".*(.)\\1\\1.*")) {
-            String one = token.replaceAll("(.)\\1{2,}", "$1");
-            String two = token.replaceAll("(.)\\1{2,}", "$1$1");
+        if (REPEATS.matcher(token).find()) {
+            String one = REPEATS.matcher(token).replaceAll("$1");
+            String two = REPEATS.matcher(token).replaceAll("$1$1");
             if (one.codePointCount(0, one.length()) >= 3) out.add(one);
             if (two.codePointCount(0, two.length()) >= 3) out.add(two);
         }

@@ -9,11 +9,17 @@ public final class DnsExchange {
         public final byte[] answer;
         public final boolean blocked;
         public final boolean rewrite;
-        Resolution(byte[] answer, boolean blocked) { this(answer, blocked, false); }
-        Resolution(byte[] answer, boolean blocked, boolean rewrite) {
+        /** Offset just past the validated question, so the caller can read the client's
+         * EDNS ceiling without parsing and evaluating the same query a second time. */
+        public final int questionEnd;
+        Resolution(byte[] answer, boolean blocked, int questionEnd) {
+            this(answer, blocked, false, questionEnd);
+        }
+        Resolution(byte[] answer, boolean blocked, boolean rewrite, int questionEnd) {
             this.answer = answer;
             this.blocked = blocked;
             this.rewrite = rewrite;
+            this.questionEnd = questionEnd;
         }
     }
     public interface Transport {
@@ -39,9 +45,10 @@ public final class DnsExchange {
         byte[] request = query.clone();
         DnsPolicy.Result result = policy.evaluate(request);
         if (result.action == DnsPolicy.Action.UNSUPPORTED) throw new IOException("Unsupported DNS request");
-        if (result.action == DnsPolicy.Action.BLOCK) return new Resolution(result.response, true);
+        if (result.action == DnsPolicy.Action.BLOCK)
+            return new Resolution(result.response, true, result.questionEnd);
         if (result.action == DnsPolicy.Action.REWRITE) {
-            return new Resolution(result.response, false, true);
+            return new Resolution(result.response, false, true, result.questionEnd);
         }
         byte originalHigh = request[0], originalLow = request[1];
         int upstreamId = random.nextInt(65536);
@@ -58,10 +65,11 @@ public final class DnsExchange {
         for (int i = 12; i < result.questionEnd; i++) {
             if (response[i] != request[i]) throw new IOException("DNS question mismatch");
         }
-        if (policy.blocksReply(response)) return new Resolution(policy.blockedResponse(query), true);
+        if (policy.blocksReply(response))
+            return new Resolution(policy.blockedResponse(query), true, result.questionEnd);
         byte[] answer = response.clone();
         answer[0] = originalHigh;
         answer[1] = originalLow;
-        return new Resolution(answer, false);
+        return new Resolution(answer, false, result.questionEnd);
     }
 }

@@ -117,8 +117,19 @@ public final class DnsPolicy {
     public int udpResponseLimit(byte[] query) {
         Result parsed = evaluate(query);
         if (parsed.action == Action.UNSUPPORTED) return 0;
-        return read16(query, 10) == 0 ? 512
-                : Math.max(512, Math.min(1232, read16(query, parsed.questionEnd + 3)));
+        return udpResponseLimit(query, parsed.questionEnd);
+    }
+
+    /**
+     * The same ceiling for a query already parsed by {@link #evaluate} (or by
+     * {@link DnsExchange}), avoiding a second full policy evaluation per answer.
+     * Returns 0 for an offset that cannot belong to this supported query.
+     */
+    public int udpResponseLimit(byte[] query, int questionEnd) {
+        if (query == null || questionEnd < 17 || questionEnd > query.length) return 0;
+        if (read16(query, 10) == 0) return 512;
+        if (questionEnd + 11 > query.length) return 0;
+        return Math.max(512, Math.min(1232, read16(query, questionEnd + 3)));
     }
 
     // Alias targets get the same underscore/single-label handling as questions.

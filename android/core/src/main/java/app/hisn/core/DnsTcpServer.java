@@ -303,6 +303,9 @@ public final class DnsTcpServer {
     }
 
     /** Drop flow generations on network changes without terminating the endpoint. */
+    /** True when no TCP flow needs a timer, so the reader may sleep longer between polls. */
+    public synchronized boolean idle() { return flows.isEmpty(); }
+
     public synchronized void invalidate() { flows.clear(); }
 
     public synchronized void close() {

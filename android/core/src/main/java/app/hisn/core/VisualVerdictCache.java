@@ -32,6 +32,19 @@ public final class VisualVerdictCache {
 
     private final Map<Integer, Entry> entries = new LinkedHashMap<>();
 
+    /**
+     * A cache key over every pixel of the downscaled frame, not the 16 x 16 grid the cadence uses.
+     * The grid can miss a thumbnail that loads between its sample points, and a reused "allow"
+     * would then skip the model for up to {@link #TTL_MILLIS}. Low colour bits are ignored like the
+     * cadence signature, so dithering still hits the cache; any real change misses it.
+     */
+    public static long fingerprint(int[] pixels, int width) {
+        long hash = 0xCBF29CE484222325L;
+        hash = (hash ^ width) * 0x100000001B3L;
+        for (int pixel : pixels) hash = (hash ^ (pixel & 0xF0F0F0)) * 0x100000001B3L;
+        return hash;
+    }
+
     /** The cached verdict for this window and signature, or null when absent or expired. */
     public synchronized String get(int window, long signature, long now) {
         Entry entry = entries.get(window);
