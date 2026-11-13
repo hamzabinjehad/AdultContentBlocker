@@ -1,13 +1,16 @@
 #!/bin/bash
-# Render the native Apple icon, appearance previews, and fallback/browser PNGs.
+# Render the native Apple icon, appearance previews, and fallback PNGs.
 # Usage: bash design/app-icon/export.sh [path-to-square-master.png]
 set -euo pipefail
+
+# The vector mark (hisn_mark.py) writes the Apple source plates, the Android
+# vectors and launcher PNGs, and the browser toolbar icons.
+python3 "$(dirname "$0")/hisn_mark.py"
 
 DESIGN_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(cd "$DESIGN_DIR/../.." && pwd)"
 MASTER_ICON="${1:-$DESIGN_DIR/Hisn.png}"
 APPICON_DIR="$REPO_DIR/macos/Hisn/Assets.xcassets/AppIcon.appiconset"
-BROWSER_ICON_DIR="$REPO_DIR/extension/icons"
 ICON_DOCUMENT="$REPO_DIR/macos/Hisn/AppIcon.icon"
 APPEARANCE_DIR="$DESIGN_DIR/appearances"
 ICON_EXPORTER=""
@@ -29,7 +32,7 @@ if [[ ! -f "$MASTER_ICON" ]]; then
     echo "Missing master icon: $MASTER_ICON" >&2
     exit 1
 fi
-mkdir -p "$APPICON_DIR" "$BROWSER_ICON_DIR"
+mkdir -p "$APPICON_DIR"
 
 for point_size in 16 32 128 256 512; do
     for scale in 1 2; do
@@ -41,10 +44,6 @@ for point_size in 16 32 128 256 512; do
     done
 done
 
-for pixel_size in 16 32 48 128; do
-    sips -z "$pixel_size" "$pixel_size" "$MASTER_ICON" \
-        --out "$BROWSER_ICON_DIR/icon-${pixel_size}.png" >/dev/null
-done
 
 # These PNGs are review previews. The native .icon document, compiled by Xcode,
 # supplies the adaptive appearances in the app; browsers use the default PNGs.
@@ -72,4 +71,4 @@ if [[ -n "$ICON_EXPORTER" ]]; then
     done
     echo "Exported native appearance previews to $APPEARANCE_DIR"
 fi
-echo "Exported macOS and browser icons from $MASTER_ICON"
+echo "Exported macOS icons from $MASTER_ICON"

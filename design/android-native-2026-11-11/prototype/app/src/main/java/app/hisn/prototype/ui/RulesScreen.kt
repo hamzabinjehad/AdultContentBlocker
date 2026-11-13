@@ -3,7 +3,6 @@ package app.hisn.prototype.ui
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -42,6 +41,7 @@ fun RulesScreen(
     onOpen: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
+    val snackbar = LocalHisnSnackbar.current
     var showGrayDialog by remember { mutableStateOf(false) }
     var grayOnScreen by remember { mutableStateOf(ScreenGray.isGray(context)) }
 
@@ -127,14 +127,14 @@ fun RulesScreen(
                             if (ScreenGray.set(context, true)) {
                                 state.gray.set(true)
                                 grayOnScreen = true
-                                toast(context, "Screen is gray")
+                                snackbar(HisnMessage("Screen is gray"))
                             } else {
                                 showGrayDialog = true
                             }
                         } else {
                             state.gray.set(false)
                             if (!ScreenGray.set(context, false)) {
-                                toast(context, "Turn grayscale off in Accessibility › Color correction")
+                                snackbar(HisnMessage("Turn grayscale off in Accessibility › Color correction"))
                             }
                             grayOnScreen = ScreenGray.isGray(context)
                         }
@@ -182,7 +182,11 @@ fun RulesScreen(
                 RuleRow(
                     Icons.Rounded.Timer,
                     "Daily limit",
-                    if (state.limit.on) "On" else "Off",
+                    when {
+                        !state.limit.on -> "Off"
+                        state.appLimits.isEmpty() -> "No apps"
+                        else -> "${state.appLimits.size} ${if (state.appLimits.size == 1) "app" else "apps"}"
+                    },
                     onClick = { onOpen("limit") }
                 )
             }
@@ -209,6 +213,8 @@ fun RulesScreen(
 @Composable
 private fun GrayPermissionDialog(command: String, onDismiss: () -> Unit) {
     val context = LocalContext.current
+    val snackbar = LocalHisnSnackbar.current
+    val haptics = rememberHisnHaptics()
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Gray screen needs one Android permission") },
@@ -230,7 +236,8 @@ private fun GrayPermissionDialog(command: String, onDismiss: () -> Unit) {
             TextButton(onClick = {
                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                 clipboard.setPrimaryClip(ClipData.newPlainText("adb grant", command))
-                toast(context, "Command copied")
+                haptics.confirm()
+                snackbar(HisnMessage("Command copied"))
             }) {
                 Text("Copy command")
             }
@@ -244,8 +251,4 @@ private fun GrayPermissionDialog(command: String, onDismiss: () -> Unit) {
             }
         }
     )
-}
-
-private fun toast(context: Context, message: String) {
-    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
 }

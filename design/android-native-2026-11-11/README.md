@@ -1,8 +1,18 @@
 # Hisn Android: native UI redesign
 
-**Status: design prototype, 11 November 2026.** The screenshots come from a standalone
-Compose app in [`prototype/`](prototype/), not from a build of Hisn. Nothing in
-`android/app` has been changed yet.
+**Status: design record, 11 November 2026.** The redesign is no longer a prototype. The
+Compose shell is the app's launcher, reads live state and lives in
+`android/app/src/main/java/app/hisn/android/nativeshell/`; the standalone app in
+[`prototype/`](prototype/) remains as the design reference and its captures below are the
+original design record.
+
+**Owner decision, 11 November 2026: the native shell is the app.** `ShellActivity` is the
+launcher; every layer, rules and settings row opens the classic Views activity until that
+editor is ported. The duplicate packages (`app.hisn.prototype`, `app.hisn.android.nativeshell`)
+were removed from the test devices, and the classic activity is no longer a launcher — it will
+be deleted with the last ported editor. The 1.6.0 build also carries the unrelated personal
+layer ([note](../../docs/ANDROID_PERSONAL_2026-11-11.md)). Record:
+[the shell note](../../docs/ANDROID_NATIVE_SHELL_2026-11-11.md).
 
 The prototype started as fake state. After the first review it was given a real,
 saved rule set: toggles and lists persist in `SharedPreferences`, **Apps to block** reads
@@ -33,7 +43,7 @@ native.
 
 | Before: 1.6.0 craft pass | After: native prototype |
 | --- | --- |
-| ![Before](00-before-protection.png) | ![After](01-protection-light.png) |
+| ![Before](00-before-protection.png) | ![After](40-protection-light-motion.png) |
 
 The old screen is an editorial layout: serif headline, hairline paper cards, all-caps
 overlines, a hand-built app bar and bottom nav. The new screen keeps the warm paper
@@ -62,8 +72,54 @@ the cards to white surfaces, and gives the status one clear action.
   scheme; the brand scheme stays the default.
 - **Reduced redundancy.** The old page repeated “what is running” in the hero, the
   attention card and every layer tile. The new page says it once, then lists the layers.
-- **Native motion.** Crossfade between tabs, Material switch animation, ripple/state
-  layers, and the platform back gesture.
+- **Native motion, specified.** Directional tab transitions, a predictive-back detail
+  push, a coverage-ring seal, swipe-to-remove with undo, a theme bottom sheet, haptics and
+  reduced motion. See [Motion and interaction](#motion-and-interaction).
+
+## Motion and interaction
+
+A screenshot cannot show this pass, so the tokens are written down. They are Material 3's
+2026 motion scheme rather than an invented curve: spatial springs **0.9 / 700** (standard),
+**0.9 / 1400** (fast), **0.9 / 300** (slow); effects — colour and alpha — critically damped
+**1.0 / 1600**; fades **200 / 90 ms**. Anything that can be interrupted (position, size,
+shape) is a spring; only opacity is a tween. The `--ez` capture overrides still work, and
+`Remove animations` zeroes the whole set.
+
+| Moment | Motion | Why it reads as Android |
+| --- | --- | --- |
+| Tab switch | `AnimatedContent`, 1/6-width shared-axis slide + 180 ms fade, 300 ms; mirrored in RTL | Direction follows the tab order, like `ViewPager`/navigation suites |
+| Detail push | 450 ms slow spatial spring; the shell scales to 0.945 and steps aside; 16% scrim | The pushed page has depth without a full-screen crossfade |
+| Predictive back | The finger drives the push; cancelling springs it back, committing finishes the slide | The API 33+ gesture is not swallowed by a plain `BackHandler` |
+| Hero state | Colour 320 ms; title and body crossfade; the seal's ring springs to the coverage count | Status changes without re-laying out the card |
+| Coverage ledger | Each dot's colour and scale spring; the On/Off word crossfades | The gap is legible in motion, not just at rest |
+| Fix gaps | Missing layers arm in a 90 ms cascade with a tick per layer, then Confirm + snackbar | The repair is visible as four steps, and undo is one tap |
+| Check / pull | The seal spins for 900 ms, then Confirm + snackbar | `PullToRefreshBox` supplies the platform indicator |
+| Lists | `Modifier.animateItem` placement spring; swipe reveals a red Remove background; snackbar Undo | The list closes its own gap; no dead row |
+| Theme | `ModalBottomSheet`; selecting a theme animates every visible colour role over 320 ms | No flash of the old surface when the scheme changes |
+| App picker | Six shimmer skeleton rows while `PackageManager` is read | The page keeps its final shape instead of jumping from a spinner |
+| Numbers | 220 ms vertical roll with tabular figures | Counts change without the row resizing |
+
+The hero's seal is the coverage state itself: **4/4** draws a full ring, **3/4** leaves a
+visible gap, a check makes the ring spin, and closing the last gap fires a single 780 ms
+halo. The ring is a `Canvas` in the draw phase, so it never recomposes the card. When
+`Remove animations` is on, the halo and the cascade delays are skipped and the seal shows
+the static coverage arc.
+
+Motion is also feedback. Switches use `ToggleOn`/`ToggleOff`; adding or fixing confirms;
+invalid domains and words reject; chips and navigation tick. These are Compose's
+`HapticFeedbackType`s, so the system's own haptic setting still decides whether the phone
+buzzes, and no `VIBRATE` permission is added.
+
+Accessibility was kept in the same pass: the hero title is a polite live region, every
+target is at least 48 dp, the theme sheet is a real radio group, and the reduced-motion
+local reads both `ANIMATOR_DURATION_SCALE` and `TRANSITION_ANIMATION_SCALE`. The remaining
+gap is a full TalkBack pass and an API 23 motion test; neither is claimed here.
+
+No third-party motion dependency was added. GitHub's official
+[android/skills](https://github.com/android/skills) collection and the AndroidX sources show
+that `AnimatedContent`, predictive back, `animateItem`, haptics and the Material 3 motion
+scheme cover every interaction above; Lottie or a JS animation library
+would only add weight and a second timing model.
 
 ## What you can tap in the prototype
 
@@ -73,8 +129,10 @@ every rule is written to `SharedPreferences` when it changes and read back at la
 - **Protection layers** — DNS filtering, app protection, **adult tags** and image checks.
   Each switch is the real saved rule; the hero's **Fix gaps** re-arms all four, and the
   layered coverage ledger flips between **Protected / Partly protected / Needs attention**.
-- **Blocked domains / Blocked words** — add, validate, delete; the counts on Protection
-  and Rules update, and the list survives a restart.
+- **Blocked domains / Blocked words** — add with inline validation (the field turns red
+  and the haptic rejects), swipe a row left or right to remove it, or use the trash button;
+  both remove paths offer **Undo** and the counts on Protection and Rules update. The list
+  survives a restart.
 - **Apps to block** — a picker over the phone's own launchable apps (`PackageManager`,
   `MATCH_ALL`, declared `<queries>` for `MAIN`/`LAUNCHER`): real icon, real label, package
   name, search box, blocked-first ordering. The choice is saved by package name, so it
@@ -86,12 +144,21 @@ every rule is written to `SharedPreferences` when it changes and read back at la
   `accessibility_display_daltonizer_enabled` / `…_daltonizer` settings through
   `WRITE_SECURE_SETTINGS`; without that one-time `adb` grant it explains the grant and
   opens Accessibility instead of silently pretending.
-- **Schedule / Daily limit / Protection lock** — choose days, minutes or a duration and
-  save; the days and the Rules summary persist.
-- **Theme** — System / Light / Dark, applied live and remembered.
+- **Daily limit, per app** — pick the apps, give each one its own minutes (5 min − 8 h,
+  edited from the row), and the row shows today's real screen time with a progress bar,
+  read from Android's own on-device usage record (Usage access, granted once in
+  Settings). Limits are saved by package name; the Rules row counts them.
+- **Schedule / Protection lock** — choose days or a duration and save; the days and the
+  Rules summary persist.
+- **Theme** — a modal bottom sheet with System / Light / Dark, applied with a colour blend
+  and remembered.
+- **Motion** — switch tabs, open a detail page, drag back from either edge, pull to refresh,
+  fix the attention state, or swipe a domain or word away. Each has haptics and an undo
+  where the action is destructive.
 - **Permissions, Diagnostics, word tester, info screens** — open, read, and run the
   local word test.
-- **Back** — the top-bar arrow and the system back gesture return to the tab.
+- **Back** — the top-bar arrow pops the detail page, `limit:apps` returns to
+  `limit`, and the system back gesture drives the same push through `PredictiveBackHandler`.
 
 What is still not real: the DNS tunnel, the accessibility text/image guard and the image
 model. "Protected" describes saved rules and layer switches, not live traffic filtering,
@@ -103,7 +170,7 @@ and the About screen says so.
 
 | Protected | Needs attention |
 | --- | --- |
-| ![Protected](17-protection-four-layers.png) | ![Attention](02-protection-attention.png) |
+| ![Protected](40-protection-light-motion.png) | ![Attention](41-protection-attention-motion.png) |
 
 The hero answers three questions in order: *am I protected, which layer is the gap,
 and what do I do next*. The coverage ledger (`Network / Apps / Adult tags / Images`)
@@ -113,7 +180,7 @@ row is an action.
 
 ### Rules
 
-![Rules](18-rules-no-quick-blocks.png)
+![Rules](44-rules-light-motion.png)
 
 Grouped as **Built-in checks → Custom rules → Protection lock**. The old Quick blocks
 chip row is gone (see [`03-rules-light.png`](03-rules-light.png) for the earlier
@@ -124,7 +191,7 @@ protection lock is its own card, not a banner mixed into the rules.
 
 ### Settings
 
-![Settings](04-settings-light.png)
+![Settings](45-settings-light-motion.png)
 
 Grouped as **Protection → Appearance → Information**, with the destructive and
 irreversible actions first and the diagnostics/about material last. The theme row
@@ -135,7 +202,7 @@ switch; `Language` is a separate row.
 
 | Protection | Rules | Settings |
 | --- | --- | --- |
-| ![Dark protection](05-protection-dark.png) | ![Dark rules](06-rules-dark.png) | ![Dark settings](07-settings-dark.png) |
+| ![Dark protection](42-protection-dark-motion.png) | ![Dark rules](53-rules-dark-motion.png) | ![Dark settings](54-settings-dark-motion.png) |
 
 The dark palette is warm charcoal (`#121416`), not blue-black. Cards are `#1E2022`;
 the success/warning containers are re-toned so they do not glow. Status bar icons flip
@@ -151,9 +218,9 @@ left edge instead of stretching across a 12-inch screen.
 
 ### Large text and Arabic
 
-| 1.3× font scale | Arabic, protected | Arabic, attention |
+| 1.3× font scale | Arabic, protected | Arabic, partly protected |
 | --- | --- | --- |
-| ![Large text](09-large-text.png) | ![Arabic protected](10-protection-ar.png) | ![Arabic attention](11-protection-attention-ar.png) |
+| ![Large text](09-large-text.png) | ![Arabic protected](52-protection-arabic-protected.png) | ![Arabic partly protected](43-protection-arabic-motion.png) |
 
 The Arabic screens are a real RTL pass, not a mirrored English screenshot: the rail/nav
 order, chevrons, switches, status columns and text alignment all flip. The prototype
@@ -165,7 +232,7 @@ clipping.
 
 | Protection, four layers | Apps to block, the phone's own list | Gray screen permission |
 | --- | --- | --- |
-| ![Four layers](17-protection-four-layers.png) | ![Installed apps](19-apps-installed.png) | ![Gray permission](20-gray-permission.png) |
+| ![Four layers](40-protection-light-motion.png) | ![Installed apps](19-apps-installed.png) | ![Gray permission](20-gray-permission.png) |
 
 - **Adult tags is a fourth layer.** It shares one saved rule with the Adult tags switch in
   Built-in checks: turning it off in Protection shows it off in Rules, the hero becomes
@@ -186,9 +253,29 @@ clipping.
   and the callback plumbing were removed; the empty domain state now points at the domain
   screen instead.
 
-| Dark, four layers | Arabic, four layers |
-| --- | --- |
-| ![Dark four layers](21-dark-four-layers.png) | ![Arabic four layers](22-protection-ar-four-layers.png) |
+| Daily limit, per app | Dark, four layers | Arabic, four layers |
+| --- | --- | --- |
+| ![Daily limit per app](23-daily-limit-per-app.png) | ![Dark four layers](21-dark-four-layers.png) | ![Arabic four layers](22-protection-ar-four-layers.png) |
+
+The per-app limit replaces the old one global minutes choice: each selected app carries its own
+value, and the row reports "used today" from `UsageStatsManager` (granted through Usage access).
+
+### Motion
+
+| Theme bottom sheet | Swipe to remove | Undo snackbar |
+| --- | --- | --- |
+| ![Theme sheet](46-theme-sheet.png) | ![Swipe to remove](47-swipe-remove.png) | ![Undo](48-swipe-undo.png) |
+
+| Pull to check | The check result | Fix gaps, Arabic |
+| --- | --- | --- |
+| ![Pull to refresh](50-pull-to-refresh.png) | ![Check snackbar](51-check-snackbar.png) | ![Fix and undo](49-fix-undo-arabic.png) |
+
+The theme sheet is a `ModalBottomSheet`, not a dialog: it drags, scrims and dismisses like the
+platform picker. The row behind the swipe is a `SwipeToDismissBox` with the error container
+and a real Undo; `animateItem` closes the gap. The pull indicator is Material's own
+`PullToRefreshBox`, and the result is a snackbar above the navigation bar — not a Toast.
+The Arabic capture is the same flow after tapping **إصلاح الثغرات**: the four layers arm
+in sequence and the snackbar offers **تراجع**.
 
 ## Samsung device check
 
@@ -270,7 +357,7 @@ only 28 dp surface; buttons are full pills.
 | Framework `Switch` tinted by theme | Material 3 `Switch` with a `toggleable` row |
 | Custom chips | `FilterChip` with leading check |
 | Status dots and tiles built by hand | Dot + word in a shared `LayerStat`; semantic containers |
-| Custom dialogs | Material 3 `AlertDialog` (not yet in the prototype) |
+| Custom dialogs | Material 3 `AlertDialog` for permission/minutes; `ModalBottomSheet` for Theme |
 
 ## What the prototype does not do
 
@@ -281,8 +368,9 @@ only 28 dp surface; buttons are full pills.
   Production `values-ar` already covers the rest.
 - No Welcome, Shield/block page, pause flow, import/export, notifications, or
   device-owner screens were redesigned.
-- No screenshot tests, TalkBack pass, haptics, or full motion spec yet. The dynamic
-  color switch is wired, but no dynamic-color screenshot is included.
+- No automated screenshot tests, TalkBack pass, or API 23 motion test. The reduced-motion
+  path is implemented and the dynamic-color switch is wired; neither is covered by an
+  automated capture.
 - The prototype is `minSdk 26`; Hisn is `minSdk 23`. Compose supports 23, but the real
   port must be tested on API 23.
 
@@ -321,9 +409,10 @@ dependencies {
 }
 ```
 
-**Phase 1 — shell and tokens.** Port `Theme.kt`, `Components.kt`, the top bar, the
-bottom bar/rail and the crossfade. Put the new shell behind a debug flag so the existing
-`MainActivity` remains the fallback until parity.
+**Phase 1 — shell and tokens (done, now the launcher).** Port `Theme.kt`, `Components.kt`, the top bar,
+the bottom bar/rail and the crossfade. Put the new shell behind a debug flag so the existing
+`MainActivity` remains the fallback until parity. The port landed in `android/nativeshell`
+with sample content; see [the Phase 1 record](../../docs/ANDROID_NATIVE_SHELL_2026-11-11.md).
 
 **Phase 2 — Protection.** Map the current status reads to an immutable
 `ProtectionUiState` (layers, counts, receipts, next action) and render it. Wire actions
@@ -378,6 +467,10 @@ adb shell am start -n app.hisn.prototype/.MainActivity --ei screen 0 --ez attent
 adb shell am start -n app.hisn.prototype/.MainActivity --ei screen 0 --ez dark true
 adb shell am start -n app.hisn.prototype/.MainActivity --ei screen 0 --ez arabic true
 adb shell am start -n app.hisn.prototype/.MainActivity --ei screen 0 --ez rtl true
+
+# detail route without tapping: domains, words, apps, schedule, limit, limit:apps,
+# lock, permissions, diagnostics, wordtester, info:about, info:how, info:bypass
+adb shell am start -n app.hisn.prototype/.MainActivity --es detail domains
 ```
 
 The captures were taken on a Pixel 7 AVD at 1080 × 2400, 420 dpi, Android 16 (API 36),
@@ -387,6 +480,12 @@ font scale 0.8). Large text used `font_scale 1.3`.
 ## Sources
 
 - [pick-ui-library](https://github.com/emilkowalski/skills/tree/main/skills/pick-ui-library) — web-only list; not used for the Android stack.
+- [android/skills](https://github.com/android/skills) — the official Android skills collection; the native counterpart to the web-only list.
+- [Material 3 motion](https://m3.material.io/styles/motion/overview/specs) and [Expressive motion theming](https://m3.material.io/blog/m3-expressive-motion-theming) — the spring and effects scheme the tokens follow.
+- [Compose animation quick guide](https://developer.android.com/develop/ui/compose/animation/quick-guide) and [item animations](https://developer.android.com/develop/ui/compose/lists#item-animations) — `AnimatedContent`, `animateItem` and the spring defaults.
+- [Predictive back](https://developer.android.com/guide/navigation/custom-back/predictive-back-gesture) — the Activity API used for the detail push; Android 16 enables it at target 36.
+- [Haptic feedback](https://developer.android.com/develop/ui/views/haptics/haptic-feedback) and [`HapticFeedbackType`](https://developer.android.com/reference/kotlin/androidx/compose/ui/hapticfeedback/HapticFeedbackType) — ToggleOn/Off, Confirm, Reject and SegmentTick.
+- [Android 16 behavior changes](https://developer.android.com/about/versions/16/behavior-changes-16) — edge-to-edge, predictive back and large-screen rules that shaped the shell.
 - [Android UI development is Compose-first](https://android-developers.googleblog.com/2026/05/android-ui-development-is-compose-first.html) — the 2026 platform direction.
 - [Material Components for Android is in maintenance mode](https://github.com/material-components/material-components-android) — why the redesign is Compose, not Views.
 - [Compose Material 3](https://developer.android.com/develop/ui/compose/designsystems/material3) and [Material 3 releases](https://developer.android.com/jetpack/androidx/releases/compose-material3) — stable 1.4.0, November 2026.

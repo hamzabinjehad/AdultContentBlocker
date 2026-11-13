@@ -3,8 +3,8 @@ package app.hisn.prototype
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 
@@ -59,9 +59,6 @@ class HisnState(context: Context) {
     var themeMode: String by mutableStateOf(prefs.getString("ui.theme", "system") ?: "system")
         private set
 
-    var limitMinutes: Int by mutableIntStateOf(prefs.getInt("rule.limitMinutes", 60))
-        private set
-
     /** Weekdays that the schedule covers; 0 is Monday, as the day chips are labelled. */
     var scheduleDays: Set<Int> by mutableStateOf(
         prefs.getStringSet("rule.scheduleDays", null)
@@ -77,6 +74,21 @@ class HisnState(context: Context) {
         prefs.edit().putStringSet("rule.scheduleDays", days.map { it.toString() }.toSet()).apply()
     }
 
+    /**
+     * Daily limit per app, in minutes, keyed by package name. One entry per app, so two apps can
+     * have different limits and the Rules summary can count how many apps are limited.
+     */
+    val appLimits = mutableStateMapOf<String, Int>().apply {
+        prefs.getStringSet("rule.appLimits", null)
+            ?.forEach { entry ->
+                val packageName = entry.substringBefore('=')
+                val minutes = entry.substringAfter('=', "").toIntOrNull()
+                if (packageName.isNotBlank() && minutes != null) {
+                    put(packageName, minutes.coerceIn(MIN_MINUTES, MAX_MINUTES))
+                }
+            }
+    }
+
     val domains = mutableStateListOf<String>().apply { addAll(readList("rule.domains")) }
     val words = mutableStateListOf<String>().apply { addAll(readList("rule.words")) }
     /** Package names, not labels: the phone decides which apps exist. */
@@ -88,12 +100,24 @@ class HisnState(context: Context) {
         prefs.edit().putString("ui.theme", mode).apply()
     }
 
-    fun setLimit(enabled: Boolean, minutes: Int) {
-        limit.set(enabled)
-        if (limitMinutes != minutes) {
-            limitMinutes = minutes
-            prefs.edit().putInt("rule.limitMinutes", minutes).apply()
-        }
+    fun appLimit(packageName: String): Int? = appLimits[packageName]
+
+    fun setAppLimit(packageName: String, minutes: Int) {
+        val clamped = minutes.coerceIn(MIN_MINUTES, MAX_MINUTES)
+        if (appLimits[packageName] == clamped) return
+        appLimits[packageName] = clamped
+        writeAppLimits()
+    }
+
+    fun removeAppLimit(packageName: String) {
+        if (appLimits.remove(packageName) == null) return
+        writeAppLimits()
+    }
+
+    private fun writeAppLimits() {
+        prefs.edit()
+            .putStringSet("rule.appLimits", appLimits.map { "${it.key}=${it.value}" }.toSet())
+            .apply()
     }
 
     fun addDomain(domain: String) {
@@ -137,5 +161,11 @@ class HisnState(context: Context) {
 
     private fun writeList(key: String, values: List<String>) {
         prefs.edit().putStringSet(key, values.toSet()).apply()
+    }
+
+    companion object {
+        const val MIN_MINUTES = 5
+        const val MAX_MINUTES = 480
+        const val DEFAULT_MINUTES = 30
     }
 }

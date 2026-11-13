@@ -51,7 +51,9 @@ data class ProtectionCopy(
     val appsBlocked: String,
     val bypass: String,
     val reassurance: String,
-    val checkPassed: String
+    val checkPassed: String,
+    val allArmed: String,
+    val undo: String
 ) {
     /** "1 app blocked", "3 apps blocked", "No apps selected" — one phrase, not three strings. */
     fun appsBlockedText(count: Int): String = when {
@@ -107,7 +109,9 @@ val EnglishProtectionCopy = ProtectionCopy(
     appsBlocked = "Apps to block",
     bypass = "What can bypass Hisn",
     reassurance = "Nothing leaves this phone. Rules and checks stay on-device.",
-    checkPassed = "All four layers responded — prototype check"
+    checkPassed = "All four layers responded — prototype check",
+    allArmed = "All four layers re-armed.",
+    undo = "Undo"
 )
 
 val ArabicProtectionCopy = ProtectionCopy(
@@ -156,5 +160,7 @@ val ArabicProtectionCopy = ProtectionCopy(
     appsBlocked = "التطبيقات المحظورة",
     bypass = "ما يمكن أن يتجاوز حصن",
     reassurance = "لا شيء يغادر هذا الهاتف. القواعد والفحوص تبقى على الجهاز.",
-    checkPassed = "استجابت الطبقات الأربع — فحص النموذج"
+    checkPassed = "استجابت الطبقات الأربع — فحص النموذج",
+    allArmed = "أُعيد تفعيل الطبقات الأربع.",
+    undo = "تراجع"
 )

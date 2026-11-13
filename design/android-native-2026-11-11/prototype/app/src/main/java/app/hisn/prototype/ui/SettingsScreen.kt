@@ -1,6 +1,5 @@
 package app.hisn.prototype.ui
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -11,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.BatteryChargingFull
@@ -23,70 +23,87 @@ import androidx.compose.material.icons.rounded.People
 import androidx.compose.material.icons.rounded.PrivacyTip
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.TextFields
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import app.hisn.prototype.HisnState
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     state: HisnState,
     onOpen: (String) -> Unit = {}
 ) {
-    var showThemeDialog by remember { mutableStateOf(false) }
+    var showThemeSheet by remember { mutableStateOf(false) }
     val themeLabel = when (state.themeMode) {
         "light" -> "Light"
         "dark" -> "Dark"
         else -> "System"
     }
+    val themeSupporting = when (state.themeMode) {
+        "light" -> "Always light"
+        "dark" -> "Always dark"
+        else -> "Follow system"
+    }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scope = rememberCoroutineScope()
+    val haptics = rememberHisnHaptics()
 
-    if (showThemeDialog) {
-        AlertDialog(
-            onDismissRequest = { showThemeDialog = false },
-            title = { Text("Theme") },
-            text = {
-                Column {
+    if (showThemeSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showThemeSheet = false },
+            sheetState = sheetState,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 24.dp, end = 24.dp, bottom = 28.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    text = "Theme",
+                    style = MaterialTheme.typography.titleLarge
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = "The app repaints with a short colour blend; Android keeps its own dark-mode switch.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(12.dp))
+                listOf(
+                    "system" to "Follow system",
+                    "light" to "Light",
+                    "dark" to "Dark"
+                ).forEach { (mode, label) ->
                     ThemeOption(
-                        label = "Follow system",
-                        selected = state.themeMode == "system",
+                        label = label,
+                        selected = state.themeMode == mode,
                         onClick = {
-                            state.updateThemeMode("system")
-                            showThemeDialog = false
+                            haptics.tick()
+                            state.updateThemeMode(mode)
+                            scope.launch { sheetState.hide() }
+                                .invokeOnCompletion { showThemeSheet = false }
                         }
                     )
-                    ThemeOption(
-                        label = "Light",
-                        selected = state.themeMode == "light",
-                        onClick = {
-                            state.updateThemeMode("light")
-                            showThemeDialog = false
-                        }
-                    )
-                    ThemeOption(
-                        label = "Dark",
-                        selected = state.themeMode == "dark",
-                        onClick = {
-                            state.updateThemeMode("dark")
-                            showThemeDialog = false
-                        }
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showThemeDialog = false }) {
-                    Text("Done")
                 }
             }
-        )
+        }
     }
 
     LazyColumn(
@@ -139,9 +156,9 @@ fun SettingsScreen(
                 SettingRow(
                     icon = Icons.Rounded.DarkMode,
                     title = "Theme",
-                    supporting = "Follow system",
+                    supporting = themeSupporting,
                     trailing = { ValueTrailing(themeLabel) },
-                    onClick = { showThemeDialog = true }
+                    onClick = { showThemeSheet = true }
                 )
                 InsetDivider()
                 SwitchRow(
@@ -227,12 +244,20 @@ private fun ThemeOption(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .selectable(
+                selected = selected,
+                role = Role.RadioButton,
+                onClick = onClick
+            )
             .padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        RadioButton(selected = selected, onClick = onClick)
-        Spacer(Modifier.width(8.dp))
-        Text(label)
+        RadioButton(selected = selected, onClick = null)
+        Spacer(Modifier.width(12.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }

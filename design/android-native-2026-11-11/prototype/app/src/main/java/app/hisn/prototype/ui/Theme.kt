@@ -1,6 +1,10 @@
 package app.hisn.prototype.ui
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
@@ -232,6 +236,67 @@ private val HisnShapes = Shapes(
     extraLarge = RoundedCornerShape(28.dp)
 )
 
+/**
+ * Colour changes are effects, so they animate with a critically damped spring rather than a hard
+ * swap. This is what makes Light/Dark and "Use system colors" feel like Android instead of a
+ * configuration restart: 320 ms, every visible role, no flash of the old surface edges.
+ */
+@Composable
+private fun Color.animatedRole(label: String): Color = animateColorAsState(
+    targetValue = this,
+    animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing),
+    label = label
+).value
+
+@Composable
+private fun animateScheme(target: ColorScheme): ColorScheme = target.copy(
+    primary = target.primary.animatedRole("primary"),
+    onPrimary = target.onPrimary.animatedRole("onPrimary"),
+    primaryContainer = target.primaryContainer.animatedRole("primaryContainer"),
+    onPrimaryContainer = target.onPrimaryContainer.animatedRole("onPrimaryContainer"),
+    inversePrimary = target.inversePrimary.animatedRole("inversePrimary"),
+    secondary = target.secondary.animatedRole("secondary"),
+    onSecondary = target.onSecondary.animatedRole("onSecondary"),
+    secondaryContainer = target.secondaryContainer.animatedRole("secondaryContainer"),
+    onSecondaryContainer = target.onSecondaryContainer.animatedRole("onSecondaryContainer"),
+    tertiary = target.tertiary.animatedRole("tertiary"),
+    tertiaryContainer = target.tertiaryContainer.animatedRole("tertiaryContainer"),
+    background = target.background.animatedRole("background"),
+    onBackground = target.onBackground.animatedRole("onBackground"),
+    surface = target.surface.animatedRole("surface"),
+    onSurface = target.onSurface.animatedRole("onSurface"),
+    surfaceVariant = target.surfaceVariant.animatedRole("surfaceVariant"),
+    onSurfaceVariant = target.onSurfaceVariant.animatedRole("onSurfaceVariant"),
+    surfaceTint = target.surfaceTint.animatedRole("surfaceTint"),
+    inverseSurface = target.inverseSurface.animatedRole("inverseSurface"),
+    inverseOnSurface = target.inverseOnSurface.animatedRole("inverseOnSurface"),
+    error = target.error.animatedRole("error"),
+    onError = target.onError.animatedRole("onError"),
+    errorContainer = target.errorContainer.animatedRole("errorContainer"),
+    onErrorContainer = target.onErrorContainer.animatedRole("onErrorContainer"),
+    outline = target.outline.animatedRole("outline"),
+    outlineVariant = target.outlineVariant.animatedRole("outlineVariant"),
+    surfaceBright = target.surfaceBright.animatedRole("surfaceBright"),
+    surfaceDim = target.surfaceDim.animatedRole("surfaceDim"),
+    surfaceContainer = target.surfaceContainer.animatedRole("surfaceContainer"),
+    surfaceContainerHigh = target.surfaceContainerHigh.animatedRole("surfaceContainerHigh"),
+    surfaceContainerHighest = target.surfaceContainerHighest.animatedRole("surfaceContainerHighest"),
+    surfaceContainerLow = target.surfaceContainerLow.animatedRole("surfaceContainerLow"),
+    surfaceContainerLowest = target.surfaceContainerLowest.animatedRole("surfaceContainerLowest")
+)
+
+@Composable
+private fun animateStatus(target: HisnStatusColors): HisnStatusColors = target.copy(
+    success = target.success.animatedRole("success"),
+    successContainer = target.successContainer.animatedRole("successContainer"),
+    onSuccessContainer = target.onSuccessContainer.animatedRole("onSuccessContainer"),
+    warning = target.warning.animatedRole("warning"),
+    warningContainer = target.warningContainer.animatedRole("warningContainer"),
+    onWarningContainer = target.onWarningContainer.animatedRole("onWarningContainer"),
+    card = target.card.animatedRole("card"),
+    cardMuted = target.cardMuted.animatedRole("cardMuted")
+)
+
 @Composable
 fun HisnTheme(
     darkTheme: Boolean,
@@ -239,15 +304,15 @@ fun HisnTheme(
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
-    val colors = when {
+    val target = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         darkTheme -> DarkColors
         else -> LightColors
     }
-    CompositionLocalProvider(
-        LocalHisnStatusColors provides if (darkTheme) DarkStatusColors else LightStatusColors
-    ) {
+    val colors = animateScheme(target)
+    val status = animateStatus(if (darkTheme) DarkStatusColors else LightStatusColors)
+    CompositionLocalProvider(LocalHisnStatusColors provides status) {
         MaterialTheme(
             colorScheme = colors,
             typography = HisnTypography,

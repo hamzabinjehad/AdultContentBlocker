@@ -5,6 +5,10 @@
          what lets that grant apply (it is never granted by an install alone). -->
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
 
+    <!-- Daily limit reads Android's own screen-time record for today (Usage access, granted by the
+         owner in Settings). Declaring it here is what makes that special access grant apply. -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
+
     <!-- Apps to block lists the apps this phone can launch, so Android 11+ needs visibility for
          exactly that intent. No QUERY_ALL_PACKAGES: the picker only ever shows launchable apps. -->
     <queries>

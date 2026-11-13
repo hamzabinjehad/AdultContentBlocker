@@ -1,19 +1,36 @@
 # Hisn app icon
 
-A blue glass shield and white fortress gateway represent protection and the name Hisn (حصن). The normal appearance uses a pearl background; the dark appearance uses a charcoal-black background while retaining the blue shield and white gateway.
+A navy fortress shield with a pearl skull knocked out of it. The battlements on the shield's top edge tie the mark to the name Hisn (حصن, "fortress"); the skull says what the app keeps out. The normal appearance is a navy shield on pearl; the dark appearance is a bone-white shield on charcoal. All platforms share the same mark.
 
-The artwork was generated with the built-in image generation tool. The full-bleed source plates are `Hisn-source.png` and `Hisn-dark-source.png`. Their 1024 × 1024 imports are stored in the native document's `Assets` directory. Apple's Icon Composer supplies the clean system enclosure and renders the appearance variants.
+The mark is drawn as vector paths in `hisn_mark.py`, the single source for every platform. It uses a 108 × 108 canvas (Android adaptive-icon units). The shield is the ink layer, the skull is cut out of it (the jaw notches form the teeth), and the eyes and nose are drawn back in ink. The same paths produce the colour icons and a solid one-colour silhouette for themed, tinted and clear modes. `skull-concepts/` holds the three explored directions; this mark is concept C.
+
+| Token | Hex | Use |
+| --- | --- | --- |
+| Navy | `#1F3A5F` | shield (light), splash background |
+| Pearl | `#F4F1EA` | background and skull (light) |
+| Charcoal | `#121722` | background and skull (dark) |
+| Bone | `#E9E4D8` | shield (dark) |
 
 ## Editable source and exports
 
-- `../../macos/Hisn/AppIcon.icon`: editable native Icon Composer document, included in the app target.
-- `Hisn-source.png` and `Hisn-dark-source.png`: generated source artwork for the normal and dark appearances.
+Run `bash design/app-icon/export.sh` from the repository root. It runs `hisn_mark.py` (needs Pillow), then renders the native Apple icon with Xcode's Icon Composer exporter when available.
+
+`hisn_mark.py` writes:
+
+- `hisn-mark.svg`: vector master of the mark.
+- `Hisn-source.png` and `Hisn-dark-source.png`: 1024 × 1024 full-bleed light and dark plates, also copied into `../../macos/Hisn/AppIcon.icon/Assets/`.
+- `../../ios/Hisn/Assets.xcassets/AppIcon.appiconset/Hisn1024.png`: opaque light plate.
+- `../../android/app/src/main/res/drawable/`: `ic_launcher_foreground.xml`, `ic_launcher_monochrome.xml` (themed icon, one even-odd silhouette), `ic_splash_mark.xml` (pearl on navy) and `ic_brand_mark.xml` (silhouette cropped to the shield and tinted in code). In the launcher layers the mark is scaled to 0.8, so the battlement corners stay inside Android's 66 dp safe circle.
+- `../../android/app/src/main/res/mipmap-*/`: pre-Android 8 launcher PNGs, rounded-square and round.
+- `../../extension/icons/`: 16, 32, 48 and 128 pixel toolbar icons. These show the shield alone, without a plate, so the mark fills the square.
+
+`export.sh` then writes:
+
 - `Hisn.png`: final 1024 × 1024 transparent PNG rendered by Icon Composer.
 - `appearances/`: 512 × 512 review previews for Default, Dark, Clear Light/Dark, and blue Tinted Light/Dark.
 - `../../macos/Hisn/Assets.xcassets/AppIcon.appiconset/`: all ten traditional macOS size/scale exports.
-- `../../extension/icons/`: 16, 32, 48, and 128 pixel browser-extension icons.
 
-Run `bash design/app-icon/export.sh` from the repository root to render the native icon and its appearance previews using Xcode's bundled Icon Composer exporter, then reproduce the fallback and browser PNGs with `sips`. When the exporter is unavailable, the script uses the committed `Hisn.png` and keeps existing appearance previews. An optional PNG argument exports that file directly without updating native appearance previews.
+When the exporter is unavailable, the script uses the committed `Hisn.png` and keeps existing appearance previews. An optional PNG argument exports that file directly without updating native appearance previews.
 
 The generated Xcode project includes both the native icon document and the PNG catalog with the `AppIcon` build setting. The app retains its macOS 13 minimum deployment target; Xcode produces the native icon assets and a legacy `AppIcon.icns`.
 
@@ -30,11 +47,3 @@ For older supported macOS releases, Xcode generates static fallback icon images 
 Apple references: [Change Appearance settings on Mac](https://support.apple.com/guide/mac-help/change-appearance-settings-mchlp1225/mac) and [Creating your app icon using Icon Composer](https://developer.apple.com/documentation/xcode/creating-your-app-icon-using-icon-composer).
 
 Design references: Apple's [app icon guidance](https://developer.apple.com/design/human-interface-guidelines/app-icons/) and [Icon Composer](https://developer.apple.com/icon-composer/).
-
-## Final design specification
-
-The following specification describes the committed artwork; it is not a verbatim record of the original generation and edit prompts.
-
-Create an original Apple-inspired icon for Hisn (حصن), a protection app. Center a blue glass shield with a white fortress gateway. Use a clear silhouette, a cyan-to-deep-blue gradient, soft highlights, and restrained depth. Keep the symbol readable at small sizes and omit text.
-
-For the normal appearance, fill the square source canvas with a pearl-white background. For the dark appearance, use a charcoal-black background and retain the bright blue shield and white gateway with subtle cyan edge highlights. Keep the protection mark centered in both source plates, without an outer rounded-square enclosure. Apple's Icon Composer supplies the enclosure and derives Clear and Tinted appearances from the dark source.
