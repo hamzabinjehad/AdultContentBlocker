@@ -1243,6 +1243,23 @@ sh test-core.sh
 ./gradlew --no-daemon assembleDebug assembleDebugAndroidTest lintDebug assembleRelease
 ```
 
+UI and UX tests for the native shell run on an emulator only (the script refuses
+a phone, because the tests use the app's real saved rules):
+
+```sh
+bash test-ui.sh               # first running emulator, direct build
+bash test-ui.sh emulator-5554 play
+```
+
+They live in `app/src/androidTest/java/app/hisn/android/nativeshell/` and drive
+the real Compose screens against a fake `ShellActions`, so no VPN, accessibility
+or system dialog is touched. They cover tab and row navigation, Back from a
+detail page, the uninstall row per build, that Home never says "Protected" while
+nothing runs, a spoken label on every control, 48 dp touch targets, and no text
+off screen at 2x text, in right-to-left, or both. `-PhisnUiTests=true` switches
+the test runner to `AndroidJUnitRunner`; without it the APK keeps
+`CoreDeviceTestRunner`.
+
 Add `-PhisnDistribution=direct` for the sideload build. It turns on the
 accessibility uninstall-screen guard (`BuildConfig.SELF_PROTECTION`) and adds
 `-direct` to the version name. Never upload a direct build to Google Play; see

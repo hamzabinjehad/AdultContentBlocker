@@ -75,6 +75,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -241,6 +242,14 @@ fun NativeShell(state: HisnState, initialTab: Int = 0, tabRequest: Int = 0) {
                             scaleY = scale
                             translationX = -dir * widthPx * 0.055f * push
                         }
+                        // Covered tabs are not on screen: TalkBack must not reach or tap them.
+                        .then(
+                            if (detail != null) {
+                                Modifier.clearAndSetSemantics { }
+                            } else {
+                                Modifier
+                            }
+                        )
                 ) {
                     HisnScaffold(
                         selectedTab = selectedTab,

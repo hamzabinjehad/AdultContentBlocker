@@ -162,6 +162,17 @@ Nothing here was run on a phone.
 - **Still open for 1.6.0:** the signed build from a clean commit (5.2) and the phone
   acceptance matrix (5.3). Both need the owner: the signing key and a phone.
 
+### UI and UX tests (13 November)
+
+- `android/test-ui.sh` runs 10 Compose tests on an emulator: navigation, honest home
+  state, labels, 48 dp touch targets, and layout at 2x text and right-to-left. Both
+  builds pass.
+- **Fixed on the way:** while a detail page was open, the covered tab underneath stayed
+  in the accessibility tree, so TalkBack could reach and tap hidden rows. The covered
+  tabs are now cleared from semantics (Phase 3.5).
+- Not covered: real TalkBack speech, Arabic copy (the tests mirror the layout but the
+  text stays English), dark mode, and detail-page editors beyond Permissions.
+
 ## Owner decisions needed
 
 - Was the signed 1.6.0 build installed on the Galaxy?
