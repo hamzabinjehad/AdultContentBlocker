@@ -50,6 +50,42 @@ final class ScreenGray {
         return true;
     }
 
+    /**
+     * Saves the choice even when Android will not let Hisn apply it yet, so the rule takes effect
+     * by itself as soon as the permission exists. False only when a commitment refuses turning
+     * it off. Use {@link #isGray} to see whether the screen actually changed.
+     */
+    static boolean choose(Context context, boolean on, boolean committed) {
+        if (!on && committed && wanted(context)) return false;
+        prefs(context).edit().putBoolean(WANTED, on).apply();
+        if (canControl(context)) {
+            try {
+                Settings.Secure.putInt(context.getContentResolver(), ENABLED, on ? 1 : 0);
+                if (on) Settings.Secure.putInt(context.getContentResolver(), MODE, MONOCHROMACY);
+            } catch (RuntimeException revoked) { /* The row reports that Android has not applied it. */ }
+        }
+        return true;
+    }
+
+    /**
+     * Calls back on the main thread whenever Android's grayscale switch or mode changes, so the
+     * guard can put gray back at once instead of at its next minute check. Returns the observer
+     * to unregister, or null when it could not be registered.
+     */
+    static android.database.ContentObserver watch(Context context, Runnable changed) {
+        android.database.ContentObserver observer = new android.database.ContentObserver(
+                new android.os.Handler(android.os.Looper.getMainLooper())) {
+            @Override public void onChange(boolean self) { changed.run(); }
+        };
+        try {
+            context.getContentResolver().registerContentObserver(
+                    Settings.Secure.getUriFor(ENABLED), false, observer);
+            context.getContentResolver().registerContentObserver(
+                    Settings.Secure.getUriFor(MODE), false, observer);
+            return observer;
+        } catch (RuntimeException unavailable) { return null; }
+    }
+
     /** Puts gray back if Hisn wants it and something turned it off. */
     static void reassert(Context context) {
         try {

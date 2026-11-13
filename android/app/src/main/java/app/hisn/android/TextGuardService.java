@@ -126,6 +126,7 @@ public final class TextGuardService extends AccessibilityService {
     private final Runnable inspect = this::inspectWindow;
     private final Runnable discover = this::inspectCurrentSelectedWindow;
     private final Runnable checkpoint = this::checkpointCommitment;
+    private android.database.ContentObserver grayWatch;
     private final Runnable selfCheck = this::checkSelfProtection;
     private final Runnable heartbeat = () -> {
         rootRetries = 5;
@@ -243,6 +244,10 @@ public final class TextGuardService extends AccessibilityService {
         try {
             // The uninstall guard needs nothing else, so it is armed before image setup.
             excluded = ChosenApps.excluded(this);
+            scanSkipped = scanSkipped(this, excluded);
+            // Gray is applied now and restored the moment Settings or another app switches it off.
+            ScreenGray.reassert(this);
+            if (grayWatch == null) grayWatch = ScreenGray.watch(this, () -> ScreenGray.reassert(this));
             if (PolicyStore.get(this).snapshot().adultWordsEnabled) AdultPolicyAssets.ensureLoaded(this);
             textDirty = true;
             ready = true;
@@ -457,7 +462,7 @@ public final class TextGuardService extends AccessibilityService {
                     || event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
                     || event.getEventType() == AccessibilityEvent.TYPE_VIEW_SCROLLED;
             // Scrolling or changing content in a selected window brings the next image sample forward.
-            if (visual != null && rules.visualEnabled && rules.scannedApps.contains(name)) visual.activity();
+            if (visual != null && rules.visualEnabled && scans(rules, name)) visual.activity();
             pendingPackage = name;
             inspectionOutcome = "scheduled";
             handler.removeCallbacks(heartbeat);
@@ -543,7 +548,7 @@ public final class TextGuardService extends AccessibilityService {
                     intervene(window.app, window.id, window.active, false, true, false, false, false);
                     return;
                 }
-                if (rules.scannedApps.contains(window.app) && rules.hasWordProtection()) scanned.add(window);
+                if (scans(rules, window.app) && rules.hasWordProtection()) scanned.add(window);
                 scheduledOnScreen |= rules.schedule.selects(window.app, minute, day);
             }
             boolean shortVideoOnScreen = false;
@@ -869,7 +874,7 @@ public final class TextGuardService extends AccessibilityService {
      * here. The event's source is only asked whether it is visible; no screen state is retained.
      */
     private boolean quickTextMatch(PolicyStore.Snapshot rules, String name, AccessibilityEvent event) {
-        if (!rules.scannedApps.contains(name) || !rules.hasWordProtection()) return false;
+        if (!scans(rules, name) || !rules.hasWordProtection()) return false;
         if (event.isPassword()) return false;
         StringBuilder text = new StringBuilder();
         java.util.List<CharSequence> lines = event.getText();
@@ -956,8 +961,32 @@ public final class TextGuardService extends AccessibilityService {
         }
     }
 
+    /** Apps the "every app" scope never reads: Hisn, system screens, launchers, dialers, keyboards. */
+    private static volatile Set<String> scanSkipped = java.util.Collections.emptySet();
+
+    /** Refreshed when the service connects, so a newly installed keyboard is skipped after a rebind. */
+    private static Set<String> scanSkipped(android.content.Context context, Set<String> excluded) {
+        Set<String> skipped = new java.util.HashSet<>(excluded);
+        try {
+            android.view.inputmethod.InputMethodManager keyboards =
+                    context.getSystemService(android.view.inputmethod.InputMethodManager.class);
+            if (keyboards != null) {
+                for (android.view.inputmethod.InputMethodInfo keyboard : keyboards.getEnabledInputMethodList()) {
+                    skipped.add(keyboard.getPackageName());
+                }
+            }
+        } catch (RuntimeException unavailable) { /* The fixed exclusions still apply. */ }
+        return skipped;
+    }
+
+    /** True when the saved rule reads this app's text and images: chosen by name, or every app. */
+    static boolean scans(PolicyStore.Snapshot rules, String name) {
+        if (!app.hisn.core.ScanScope.covers(rules.scannedApps, name)) return false;
+        return rules.scannedApps.contains(name) || !scanSkipped.contains(name);
+    }
+
     private static boolean isSelected(PolicyStore.Snapshot rules, String name) {
-        return rules.blockedApps.contains(name) || rules.scannedApps.contains(name)
+        return rules.blockedApps.contains(name) || scans(rules, name)
                 || rules.timeLimits.monitored(name)
                 || rules.schedule.selects(name, minuteOfDay(), dayOfWeek())
                 || (rules.shortVideoEnabled && ShortVideoSurfaces.watches(name));
@@ -1351,6 +1380,11 @@ public final class TextGuardService extends AccessibilityService {
 
     @Override public void onDestroy() {
         destroyed = true;
+        if (grayWatch != null) {
+            try { getContentResolver().unregisterContentObserver(grayWatch); }
+            catch (RuntimeException ignored) { /* Already gone with the process. */ }
+            grayWatch = null;
+        }
         clearScanTimeout();
         activeScan = 0;
         scanner.shutdownNow();

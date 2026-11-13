@@ -64,6 +64,8 @@ class ShellActivity : ComponentActivity(), ShellActions {
         super.onResume()
         ensureDnsRunning()
         rearmGuard()
+        // The saved gray choice applies itself whenever the app is opened, guard or no guard.
+        ScreenGray.reassert(this)
         state?.refreshAll()
     }
 
@@ -499,6 +501,25 @@ class ShellActivity : ComponentActivity(), ShellActions {
             }
             .show()
     }
+
+    override fun grayWanted(): Boolean = ScreenGray.wanted(this)
+
+    override fun chooseGray(on: Boolean): Boolean {
+        val committed = try {
+            PolicyStore.get(this).remainingMillis() > 0
+        } catch (unavailable: RuntimeException) {
+            false
+        }
+        return ScreenGray.choose(this, on, committed)
+    }
+
+    override fun grayApplied(): Boolean = try {
+        ScreenGray.isGray(this)
+    } catch (unavailable: RuntimeException) {
+        false
+    }
+
+    override fun grayCanApply(): Boolean = ScreenGray.canControl(this)
 
     override fun openGrayScreenHelp() {
         val command = "adb shell pm grant $packageName android.permission.WRITE_SECURE_SETTINGS"

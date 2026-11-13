@@ -50,15 +50,35 @@ fun RulesScreen(
     val context = LocalContext.current
     val snackbar = LocalHisnSnackbar.current
     var showGrayDialog by remember { mutableStateOf(false) }
-    var grayOnScreen by remember { mutableStateOf(ScreenGray.isGray(context)) }
+    var showScanAllDialog by remember { mutableStateOf(false) }
 
-    // Coming back to Rules is the moment the saved rules are reconciled with the phone: gray is
-    // re-asserted if it was switched off elsewhere, and the real system state replaces the saved one.
-    LaunchedEffect(Unit) {
-        // Re-assert the saved rule when Android allows it, then show the real system state. A revoked
-        // grant is not allowed to silently drop the rule: the row says Android has not applied it.
-        ScreenGray.reassert(context, state.gray.on)
-        grayOnScreen = ScreenGray.isGray(context)
+    if (showScanAllDialog) {
+        AlertDialog(
+            onDismissRequest = { showScanAllDialog = false },
+            title = { Text(tr("Check every app?")) },
+            text = {
+                Text(
+                    tr(
+                        "Hisn will read on-screen text, and sample images when image checks are on, in " +
+                            "every app instead of only the ones you chose. Nothing leaves this phone. " +
+                            "System screens, the launcher, the phone app, keyboards and password fields " +
+                            "are skipped. Expect more battery use and more mistaken blocks. While a " +
+                            "protection lock is active this cannot be turned off."
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showScanAllDialog = false
+                    state.scanAll.set(true)
+                }) { Text(tr("Turn on")) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showScanAllDialog = false }) {
+                    Text(androidx.compose.ui.res.stringResource(android.R.string.cancel))
+                }
+            }
+        )
     }
 
     if (showGrayDialog) {
@@ -136,6 +156,20 @@ fun RulesScreen(
                 )
                 InsetDivider()
                 SwitchRow(
+                    icon = Icons.Rounded.Apps,
+                    title = tr("Check every app"),
+                    supporting = if (state.scanAll.on) {
+                        tr("On · Adult tags and image checks read every app")
+                    } else {
+                        String.format(tr("Off · Checks read only the apps you chose (%1\$d)"), state.scannedCount)
+                    },
+                    checked = state.scanAll.on,
+                    onCheckedChange = { wanted ->
+                        if (wanted) showScanAllDialog = true else state.scanAll.set(false)
+                    }
+                )
+                InsetDivider()
+                SwitchRow(
                     icon = Icons.Rounded.PlayCircle,
                     title = tr("Short videos"),
                     supporting = if (state.shortVideos.on) {
@@ -151,26 +185,22 @@ fun RulesScreen(
                     icon = Icons.Rounded.Contrast,
                     title = tr("Gray screen"),
                     supporting = when {
-                        state.gray.on && grayOnScreen -> tr("On · The whole screen is gray")
+                        state.gray.on && state.grayApplied -> tr("On · The whole screen is gray")
+                        state.gray.on && !state.grayCanApply ->
+                            tr("On · Waiting for Android's permission, then it applies by itself")
                         state.gray.on -> tr("On · Android has not applied it — see Accessibility")
                         else -> tr("Off · Turns the whole screen gray, not the app")
                     },
                     checked = state.gray.on,
                     onCheckedChange = { wanted ->
-                        if (wanted) {
-                            if (ScreenGray.set(context, true)) {
-                                state.gray.set(true)
-                                grayOnScreen = true
-                                snackbar(HisnMessage(tr("Screen is gray")))
-                            } else {
-                                showGrayDialog = true
-                            }
-                        } else {
-                            state.gray.set(false)
-                            if (!ScreenGray.set(context, false)) {
+                        state.gray.set(wanted)
+                        when {
+                            // A lock refused turning it off; the state class already said why.
+                            state.gray.on != wanted -> Unit
+                            wanted && !state.grayCanApply -> showGrayDialog = true
+                            wanted -> snackbar(HisnMessage(tr("Screen is gray")))
+                            !state.grayCanApply && state.grayApplied ->
                                 snackbar(HisnMessage(tr("Turn grayscale off in Accessibility › Color correction")))
-                            }
-                            grayOnScreen = ScreenGray.isGray(context)
                         }
                     }
                 )

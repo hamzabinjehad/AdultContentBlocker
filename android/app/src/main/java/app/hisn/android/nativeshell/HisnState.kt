@@ -22,6 +22,14 @@ interface ShellActions {
     fun stopDns()
     fun openAccessibility()
     fun openGrayScreenHelp()
+
+    /** Hisn's saved gray-screen choice, whether or not Android has applied it. */
+    fun grayWanted(): Boolean
+
+    /** Saves the choice and applies it when Android allows; false when a lock refuses turning it off. */
+    fun chooseGray(on: Boolean): Boolean
+    fun grayApplied(): Boolean
+    fun grayCanApply(): Boolean
     fun confirmAdult(enable: Boolean, onAccept: () -> Unit)
     fun confirmImages(enable: Boolean, onAccept: () -> Unit)
     fun toast(text: String)
@@ -258,16 +266,41 @@ class HisnState(private val context: Context, private val actions: ShellActions)
         }
     )
 
-    val gray = LayerSwitch(
-        read = { ScreenGray.isGray(context) },
+    /** Text and image checks in every app, not only the chosen ones. Saved with the rules. */
+    val scanAll = LayerSwitch(
+        read = { app.hisn.core.ScanScope.all(snapshot()?.scannedApps) },
         write = { on ->
-            if (ScreenGray.set(context, on)) {
+            // Turning it on only adds coverage, so a lock allows it; turning it off is refused.
+            if (!on && locked()) refuseLocked() else {
+                runCatching {
+                    val store = store() ?: return@runCatching
+                    val rules = store.snapshot()
+                    store.update(
+                        store.domainText(), store.wordText(), rules.blockedApps,
+                        app.hisn.core.ScanScope.with(rules.scannedApps, on), rules.adultWordsEnabled
+                    )
+                }.onFailure { refuse(it) }
                 refreshAll()
-            } else {
-                actions.openGrayScreenHelp()
             }
         }
     )
+
+    /** Apps chosen by name for the checks, not counting the every-app scope. */
+    var scannedCount: Int by mutableStateOf(0)
+        private set
+
+    /** The saved choice. The guard applies it and puts it back; [grayApplied] says if it is on now. */
+    val gray = LayerSwitch(
+        read = { runCatching { actions.grayWanted() }.getOrDefault(false) },
+        write = { on ->
+            if (!actions.chooseGray(on)) refuseLocked()
+            refreshAll()
+        }
+    )
+    var grayApplied: Boolean by mutableStateOf(false)
+        private set
+    var grayCanApply: Boolean by mutableStateOf(false)
+        private set
 
     // Custom rules.
     val schedule = LayerSwitch(
@@ -423,6 +456,10 @@ class HisnState(private val context: Context, private val actions: ShellActions)
 
     fun refreshAll() {
         refreshStatus()
+        scanAll.refresh()
+        grayApplied = runCatching { actions.grayApplied() }.getOrDefault(false)
+        grayCanApply = runCatching { actions.grayCanApply() }.getOrDefault(false)
+        scannedCount = app.hisn.core.ScanScope.chosen(snapshot()?.scannedApps)
         dns.refresh()
         apps.refresh()
         tags.refresh()

@@ -181,7 +181,8 @@ final class VisualGuard implements AutoCloseable {
         List<GuardWindows.Window> eligible = new ArrayList<>();
         PolicyStore.Snapshot rules = PolicyStore.get(service).snapshot();
         if (!rules.visualEnabled) { eligibility = "OFF"; return eligible; }
-        List<GuardWindows.Window> windows = TextGuardService.selectedWindows(service, excluded, rules.scannedApps::contains);
+        List<GuardWindows.Window> windows = TextGuardService.selectedWindows(service, excluded,
+                name -> TextGuardService.scans(rules, name));
         if (windows == null) { eligibility = "NO_ROOT"; return eligible; }
         List<Integer> ids = new ArrayList<>();
         for (GuardWindows.Window window : windows) ids.add(window.id);

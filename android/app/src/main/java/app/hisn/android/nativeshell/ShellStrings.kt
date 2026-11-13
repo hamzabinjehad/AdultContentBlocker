@@ -91,5 +91,12 @@ private val ArabicShell: Map<String, String> = mapOf(
     "Most pauses come between %1\$s and %2\$s. Plan something else for those hours." to "أكثر الوقفات تقع بين %1\$s و%2\$s. خطّط لشيء آخر في هذه الساعات.",
     "Not enough pauses yet to show a usual time." to "لا توجد وقفات كافية بعد لإظهار وقت معتاد.",
     "Only the hour is kept — no app, site or date." to "تُحفظ الساعة فقط — لا تطبيق ولا موقع ولا تاريخ.",
-    "Blocked lookups this session" to "عمليات البحث المحظورة في هذه الجلسة"
+    "Blocked lookups this session" to "عمليات البحث المحظورة في هذه الجلسة",
+    "Check every app" to "فحص كل التطبيقات",
+    "On · Adult tags and image checks read every app" to "مفعّل · تقرأ فحوص الوسوم والصور كل التطبيقات",
+    "Off · Checks read only the apps you chose (%1\$d)" to "متوقف · تقرأ الفحوص التطبيقات التي اخترتها فقط (%1\$d)",
+    "Check every app?" to "فحص كل التطبيقات؟",
+    "Hisn will read on-screen text, and sample images when image checks are on, in every app instead of only the ones you chose. Nothing leaves this phone. System screens, the launcher, the phone app, keyboards and password fields are skipped. Expect more battery use and more mistaken blocks. While a protection lock is active this cannot be turned off." to "سيقرأ حصن النص الظاهر على الشاشة، ويفحص عيّنات من الصور إذا كان فحص الصور مفعّلًا، في كل التطبيقات بدلًا من التطبيقات التي اخترتها فقط. لا شيء يغادر هذا الهاتف. تُستثنى شاشات النظام والشاشة الرئيسية وتطبيق الهاتف ولوحات المفاتيح وحقول كلمات المرور. توقّع استهلاكًا أكبر للبطارية وحظرًا خاطئًا أكثر. لا يمكن إيقاف هذا الخيار ما دام قفل الحماية مفعّلًا.",
+    "Turn on" to "تفعيل",
+    "On · Waiting for Android's permission, then it applies by itself" to "مفعّلة · بانتظار إذن أندرويد، ثم تُطبَّق تلقائيًا"
 )

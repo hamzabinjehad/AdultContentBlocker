@@ -1530,7 +1530,7 @@ public final class MainActivity extends Activity {
             int domains = countRules(settings.domainText());
             int words = countRules(settings.wordText());
             int blocked = rules.blockedApps.size();
-            int scanned = rules.scannedApps.size();
+            int scanned = app.hisn.core.ScanScope.chosen(rules.scannedApps);
             setRuleSummaries(
                     domains == 0 ? getString(R.string.none_saved)
                             : getResources().getQuantityString(R.plurals.saved_domains, domains, domains),
@@ -1612,7 +1612,8 @@ public final class MainActivity extends Activity {
         if (browsers.isEmpty()) return getString(R.string.browsers_none);
         List<String> names = new ArrayList<>();
         for (ChosenApps.Entry browser : browsers) names.add(browser.packageName);
-        int uncovered = BrowserCoverage.withoutCoverage(names, rules.blockedApps, rules.scannedApps,
+        int uncovered = BrowserCoverage.withoutCoverage(names, rules.blockedApps,
+                app.hisn.core.ScanScope.expand(rules.scannedApps, names),
                 inspectionActive(rules), domainsRunning()).size();
         return getString(R.string.browsers_summary, browsers.size(), uncovered);
     }
@@ -3044,7 +3045,9 @@ public final class MainActivity extends Activity {
                         PolicyStore.Snapshot current = settings.snapshot();
                         settings.update(settings.domainText(), settings.wordText(),
                                 scan ? current.blockedApps : selected,
-                                scan ? selected : current.scannedApps);
+                                // The picker lists real apps only; keep the "every app" scope it cannot show.
+                                scan ? app.hisn.core.ScanScope.with(selected,
+                                        app.hisn.core.ScanScope.all(current.scannedApps)) : current.scannedApps);
                         Toast.makeText(this, R.string.rules_saved, Toast.LENGTH_SHORT).show();
                         refreshRuleSummaries();
                         refreshStatus();
