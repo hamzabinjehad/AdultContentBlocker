@@ -454,6 +454,33 @@ def _not_followed_by(suffixes: list[str]) -> str:
     return build(trie)
 
 
+def _not_preceded_by(prefixes: list[str]) -> str:
+    """The mirror of `_not_followed_by`, for an innocent word that has the term
+    in its MIDDLE or END: `erotic` inside athero*scl*erotic, `porn` inside
+    *aga*pornis. RE2 has no lookbehind either, so the preceding characters are
+    spelled out right to left: with the guard `scl` this becomes
+    (?:^|[^l]|(?:^|[^c]|(?:^|[^s])c)l), and `…sclerotic` cannot match while
+    `autoerotic` and `www.erotic` still do."""
+    trie: dict = {}
+    for pre in prefixes:
+        node = trie
+        for ch in reversed(pre):
+            node = node.setdefault(ch, {})
+        node["$end"] = True
+
+    def build(node: dict) -> str:
+        chars = sorted(k for k in node if k != "$end")
+        parts = ["^", "[^" + "".join(chars) + "]"]
+        for ch in chars:
+            child = node[ch]
+            if child.get("$end"):
+                continue            # the whole innocent prefix: no match here
+            parts.append(build(child) + re.escape(ch))
+        return "(?:" + "|".join(parts) + ")"
+
+    return build(trie)
+
+
 def write_keyword_rules(path: Path, terms: list[dict], never: list[str],
                         exempt: list[str], start_id: int) -> int:
     """
@@ -506,9 +533,21 @@ def write_keyword_rules(path: Path, terms: list[dict], never: list[str],
             guards = sorted(w[len(term):] for w in never_set
                             if w.startswith(term) and len(w) > len(term)
                             and re.fullmatch(r"[a-z0-9]+", w))
-            if guards and regex_used < MAX_REGEX_RULES:
+            # And where the term sits INSIDE an innocent word (never_keyword:
+            # atherosclerotic, agapornis), "not preceded by the start of it".
+            # Only the part before the term is checked: the guard words are
+            # long and specific, so the shorter context is already decisive.
+            pre_guards = sorted({w[:w.index(term)] for w in never_set
+                                 if term in w and not w.startswith(term)
+                                 and re.fullmatch(r"[a-z0-9]+", w)})
+            if (guards or pre_guards) and regex_used < MAX_REGEX_RULES:
                 regex_used += 1
-                condition = {"regexFilter": re.escape(term) + _not_followed_by(guards),
+                pattern = re.escape(term)
+                if pre_guards:
+                    pattern = _not_preceded_by(pre_guards) + pattern
+                if guards:
+                    pattern += _not_followed_by(guards)
+                condition = {"regexFilter": pattern,
                              "isUrlFilterCaseSensitive": False}
             else:
                 condition = {"urlFilter": term}

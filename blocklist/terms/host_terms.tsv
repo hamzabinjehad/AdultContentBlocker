@@ -181,3 +181,64 @@ fapello	substring
 thothub	substring
 coomer	token
 nsfw	token
+
+# --- found by auditing the misses (2026-11-13) ------------------------------
+# A 200,000-domain sample of the published adult list was run through this
+# file; these are the most frequent shapes it still missed. Every substring
+# below was checked against the 236,000-word system dictionary (no innocent
+# word contains it) AND against two-word joins, which is what ruled most
+# candidates out:
+#   sexphoto / sexshop / sexstory / sexvid / sexgirl  -> essexphotography,
+#                                                       sussexshop, ...
+#   hotsex     -> screenshotsexample, headshotsexpert
+#   xvideo     -> foxvideo, boxvideo
+# Those stay with the page-text layer and the domain list. Do not re-add them
+# as substrings: the innocent-token guard only removes WHOLE labels, so it
+# cannot save `essexphotography.co.uk`.
+sexygirl	substring
+sexxx	substring
+sexkontakt	substring
+xxxvid	substring
+xxxpic	substring
+xxxmovie	substring
+nakedgirl	substring
+nudegirl	substring
+escortgirl	substring
+fuckbook	substring
+shemale	substring
+upskirt	substring
+sluts	substring
+# ^ guarded: slutsky (the economist and his equation) is in never_keyword.txt
+# Indonesian for porn; the largest non-English miss. Not `bokeh` (photography).
+bokep	substring
+# Brands with no innocent reading — catches mirrors on fresh domains.
+stripchat	substring
+bongacams	substring
+livejasmin	token
+# ^ olivejasmine (soap and candle shops)
+myfreecams	substring
+manyvids	substring
+eporner	substring
+camsoda	substring
+simpcity	substring
+javhd	substring
+realitykings	substring
+bangbros	substring
+naughtyamerica	substring
+teamskeet	substring
+clips4sale	substring
+adultfriendfinder	substring
+
+# Whole label only.
+pussy	token
+# ^ pussycat, pussyfoot, pussywillow
+fuck	token
+# ^ kept off substring so a news URL that quotes the word is not a site block
+beeg	token
+erome	token
+txxx	token
+missav	token
+# ^ missavenue, missavalon
+xtube	token
+# ^ foxtube, boxtube, maxtube
+thisvid	token

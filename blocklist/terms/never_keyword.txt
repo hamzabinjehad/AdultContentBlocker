@@ -128,3 +128,26 @@ shitake
 # Each also becomes a "not followed by" guard on the browser's URL rule (build.py).
 milford
 pornic
+# Water milfoil, the lake weed: lake associations and invasive-species pages.
+milfoil
+
+# --- contains a substring term in the MIDDLE ---------------------------------
+# build.py turns these into a "not preceded by" guard on the browser's URL rule,
+# and the host matcher removes them as whole tokens like every line above.
+# `erotic` is inside the medical word for hardened arteries — without these,
+# every heart-disease page with it in the URL was blocked in Chrome.
+sclerotic
+atherosclerotic
+arteriosclerotic
+# Agapornis, the lovebird genus: pet-bird breeders and forums, mostly in Spanish
+# and Portuguese.
+agapornis
+# "zero tickets", "hero tickets": event and ticketing sites.
+zeroticket
+zerotickets
+heroticket
+herotickets
+
+# --- starts with "sluts" ------------------------------------------------------
+# The Slutsky equation (consumer theory) and the surname.
+slutsky

@@ -300,6 +300,26 @@ class TestKeywordRules(unittest.TestCase):
         self.assertIsNone(rx.search("https://www.milfordsound.org/"))
         self.assertTrue(rx.search("https://milford-milf.example/"), "only the innocent word is excused")
 
+    def test_innocent_words_around_the_term_are_guarded(self):
+        """erotic is not atherosclerotic; porn is not agapornis — the term
+        sits in the MIDDLE of these, so the guard looks backwards."""
+        rx = self._regex("erotic", "substring",
+                         never=["sclerotic", "atherosclerotic", "zeroticket"])
+        for url in ["https://www.webmd.com/heart/atherosclerotic-disease",
+                    "https://med.example/arteriosclerotic", "https://zerotickets.com/"]:
+            self.assertIsNone(rx.search(url), url)
+        for url in ["https://erotic.example/", "https://free-erotic.net/",
+                    "https://example.com/?q=erotic", "https://autoerotic.example/",
+                    "https://sclerotic-and-erotic.example/"]:
+            self.assertTrue(rx.search(url), url)
+
+        both = self._regex("porn", "substring", never=["pornic", "agapornis"])
+        for url in ["https://aves.es/agapornis-roseicollis", "https://www.pornic.fr/"]:
+            self.assertIsNone(both.search(url), url)
+        for url in ["https://x.example/?q=porn", "https://agapornis-porn.example/",
+                    "https://bestpornsite.io/"]:
+            self.assertTrue(both.search(url), url)
+
     def test_non_ascii_terms_never_reach_chrome(self):
         self.assertIsNone(self._rule("سكس", "substring"))
 

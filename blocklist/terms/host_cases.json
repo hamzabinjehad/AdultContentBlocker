@@ -222,6 +222,91 @@
       "host": "nsfwjs.com",
       "block": false,
       "why": "token only: nsfwjs is not the label nsfw"
+    },
+    {
+      "host": "free-bokep-terbaru.site",
+      "block": true,
+      "why": "Indonesian porn slang, the largest non-English gap in the 2026-11-13 audit"
+    },
+    {
+      "host": "hotsexygirls.top",
+      "block": true,
+      "why": "concatenated compound caught by the sexygirl substring"
+    },
+    {
+      "host": "stripchat-mirror.net",
+      "block": true,
+      "why": "cam brand mirrored on a fresh domain"
+    },
+    {
+      "host": "pussy-pics.top",
+      "block": true,
+      "why": "explicit whole label"
+    },
+    {
+      "host": "fuck.example",
+      "block": true,
+      "why": "explicit whole label"
+    },
+    {
+      "host": "upskirtcollection.cc",
+      "block": true,
+      "why": "concatenated label with no separators"
+    },
+    {
+      "host": "pussycatdolls.com",
+      "block": false,
+      "why": "pussy is token-only: a band, pussyfoot, pussy willow"
+    },
+    {
+      "host": "fuckinggreatadvice.com",
+      "block": false,
+      "why": "fuck is token-only: profanity in a name is not a porn site"
+    },
+    {
+      "host": "www.olivejasmine.com",
+      "block": false,
+      "why": "livejasmin is token-only: olive + jasmine"
+    },
+    {
+      "host": "zerotickets.com",
+      "block": false,
+      "why": "erotic inside zero tickets — a whole-label guard in never_keyword"
+    },
+    {
+      "host": "atherosclerotic.example.org",
+      "block": false,
+      "why": "erotic inside the medical word for hardened arteries"
+    },
+    {
+      "host": "agapornis.es",
+      "block": false,
+      "why": "porn inside the lovebird genus"
+    },
+    {
+      "host": "milfoil-control.org",
+      "block": false,
+      "why": "milf at the start of water milfoil, the lake weed"
+    },
+    {
+      "host": "slutsky.example.edu",
+      "block": false,
+      "why": "sluts at the start of Slutsky, the economist"
+    },
+    {
+      "host": "essexphotography.co.uk",
+      "block": false,
+      "why": "why sexphoto is NOT a substring term: the innocent-token guard only removes whole labels"
+    },
+    {
+      "host": "foxvideo.example",
+      "block": false,
+      "why": "why xvideo is NOT a term: fox + video"
+    },
+    {
+      "host": "bokeh-photography.com",
+      "block": false,
+      "why": "bokep is not bokeh"
     }
   ]
 }
