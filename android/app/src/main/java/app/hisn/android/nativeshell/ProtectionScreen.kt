@@ -24,13 +24,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.AutoFixHigh
-import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.FactCheck
 import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.LocalOffer
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Security
@@ -295,35 +293,22 @@ fun ProtectionScreen(
 
             item { SectionHeader(copy.yourRules) }
             item {
-                HisnCard {
-                    RuleRow(
-                        icon = Icons.Rounded.Language,
-                        title = copy.domains,
-                        value = state.domains.size.toString(),
-                        onClick = { onOpen("domains") }
-                    )
-                    InsetDivider()
-                    RuleRow(
-                        icon = Icons.Rounded.Block,
-                        title = copy.appsBlocked,
-                        value = state.blockedApps.size.toString(),
-                        onClick = { onOpen("apps") }
-                    )
-                    InsetDivider()
-                    if (state.dns.on) {
-                        RuleRow(
-                            icon = Icons.Rounded.Security,
-                            title = tr("Blocked lookups this session"),
-                            value = String.format(
-                                androidx.core.os.ConfigurationCompat.getLocales(
-                                    androidx.compose.ui.platform.LocalConfiguration.current
-                                )[0] ?: java.util.Locale.ENGLISH,
-                                "%,d", state.blockedLookups
-                            ),
-                            onClick = { onOpen("diagnostics") }
-                        )
-                        InsetDivider()
+                val locale = androidx.core.os.ConfigurationCompat.getLocales(
+                    androidx.compose.ui.platform.LocalConfiguration.current
+                )[0] ?: java.util.Locale.ENGLISH
+                fun count(n: Long) = String.format(locale, "%,d", n)
+                StatStrip(
+                    buildList {
+                        add(Stat(copy.domains, count(state.domains.size.toLong())) { onOpen("domains") })
+                        add(Stat(copy.appsBlocked, count(state.blockedApps.size.toLong())) { onOpen("apps") })
+                        if (state.dns.on) {
+                            add(Stat(tr("Lookups blocked"), count(state.blockedLookups)) { onOpen("diagnostics") })
+                        }
                     }
+                )
+            }
+            item {
+                HisnCard {
                     RuleRow(
                         icon = Icons.Rounded.Info,
                         title = copy.bypass,

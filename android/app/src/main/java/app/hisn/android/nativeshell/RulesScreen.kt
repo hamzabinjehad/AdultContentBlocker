@@ -15,6 +15,8 @@ import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
@@ -214,46 +216,84 @@ fun RulesScreen(
             )
         }
         item {
-            HisnCard {
-                RuleRow(
-                    Icons.Rounded.Language,
-                    tr("Blocked domains"),
-                    state.domains.size.toString(),
-                    onClick = { onOpen("domains") }
-                )
-                InsetDivider()
-                RuleRow(
-                    Icons.Rounded.Block,
-                    tr("Blocked words"),
-                    if (state.words.isEmpty()) tr("None") else state.words.size.toString(),
-                    onClick = { onOpen("words") }
-                )
-                InsetDivider()
-                RuleRow(
-                    Icons.Rounded.Apps,
-                    tr("Apps to block"),
-                    state.blockedApps.size.toString(),
-                    onClick = { onOpen("apps") }
-                )
-                InsetDivider()
-                RuleRow(
-                    Icons.Rounded.Schedule,
-                    tr("Schedule"),
-                    if (state.schedule.on) tr("On") else tr("Off"),
-                    onClick = { onOpen("schedule") }
-                )
-                InsetDivider()
-                RuleRow(
-                    Icons.Rounded.Timer,
-                    tr("Daily limit"),
-                    when {
-                        !state.limit.on -> tr("Off")
-                        state.appLimits.isEmpty() -> tr("No apps")
-                        else -> "${state.appLimits.size} ${tr(if (state.appLimits.size == 1) "app" else "apps")}"
+            // A saved rule does nothing while its layer is off, so the tile says so where the
+            // person is looking instead of leaving it to the Protection tab.
+            val guardReady = state.apps.on && state.guardConnected
+            val guardIssue = if (state.apps.on) tr("App protection not connected") else tr("App protection is off")
+            val limitedApps = state.appLimits.size
+            TileGrid(
+                listOf(
+                    { modifier ->
+                        RuleTile(
+                            icon = Icons.Rounded.Language,
+                            title = tr("Blocked domains"),
+                            value = state.domains.size.toString(),
+                            onClick = { onOpen("domains") },
+                            modifier = modifier,
+                            active = state.domains.isNotEmpty(),
+                            issue = tr("DNS filtering is off").takeIf { state.domains.isNotEmpty() && !state.dns.on }
+                        )
                     },
-                    onClick = { onOpen("limit") }
+                    { modifier ->
+                        RuleTile(
+                            icon = Icons.Rounded.Block,
+                            title = tr("Blocked words"),
+                            value = if (state.words.isEmpty()) tr("None") else state.words.size.toString(),
+                            onClick = { onOpen("words") },
+                            modifier = modifier,
+                            active = state.words.isNotEmpty(),
+                            issue = guardIssue.takeIf { state.words.isNotEmpty() && !guardReady }
+                        )
+                    },
+                    { modifier ->
+                        RuleTile(
+                            icon = Icons.Rounded.Apps,
+                            title = tr("Apps to block"),
+                            value = state.blockedApps.size.toString(),
+                            onClick = { onOpen("apps") },
+                            modifier = modifier,
+                            active = state.blockedApps.isNotEmpty(),
+                            issue = guardIssue.takeIf { state.blockedApps.isNotEmpty() && !guardReady },
+                            extra = if (state.blockedApps.isEmpty()) null else {
+                                {
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        state.blockedApps.take(3).forEach { AppIcon(it, size = 24.dp) }
+                                    }
+                                }
+                            }
+                        )
+                    },
+                    { modifier ->
+                        RuleTile(
+                            icon = Icons.Rounded.Timer,
+                            title = tr("Daily limit"),
+                            value = when {
+                                !state.limit.on -> tr("Off")
+                                limitedApps == 0 -> tr("No apps")
+                                else -> "$limitedApps ${tr(if (limitedApps == 1) "app" else "apps")}"
+                            },
+                            onClick = { onOpen("limit") },
+                            modifier = modifier,
+                            active = state.limit.on && limitedApps > 0,
+                            issue = guardIssue.takeIf { state.limit.on && limitedApps > 0 && !guardReady }
+                        )
+                    },
+                    { modifier ->
+                        RuleTile(
+                            icon = Icons.Rounded.Schedule,
+                            title = tr("Schedule"),
+                            value = if (state.schedule.on) tr("On") else tr("Off"),
+                            onClick = { onOpen("schedule") },
+                            modifier = modifier,
+                            active = state.schedule.on,
+                            issue = guardIssue.takeIf { state.schedule.on && !guardReady }
+                        )
+                    }
                 )
-            }
+            )
         }
 
         item { SectionHeader(tr("Tools")) }
