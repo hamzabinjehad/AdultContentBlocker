@@ -8,7 +8,13 @@ export function presentationPreferences(state = {}) {
 export const MAX_EDGE = 384;
 export const MAX_RGBA_BYTES = MAX_EDGE * MAX_EDGE * 4;
 const CLASSES = ['Porn', 'Hentai', 'Sexy', 'Neutral', 'Drawing'];
-const OPPOSITE_CONFIDENCE = 0.80;
+// 0.80 hid most faces the small 64x64 appearance model was merely fairly sure about,
+// which in practice covered many faces outside the chosen preference.
+const OPPOSITE_CONFIDENCE = 0.70;
+// Below this many capture pixels on its shorter side, a face is upscaled at least
+// 2x into the 64x64 appearance model and its estimate is too weak to justify
+// hiding it when the estimate leans the other way (avatars, thumbnails, crowds).
+export const SMALL_FACE_PIXELS = 32;
 
 export function visualPreferences(state = {}) {
   return { inspectVisual: state.inspectVisual === true,
@@ -112,11 +118,13 @@ export function personDecision(faces, bodies, mode, width, height) {
     // A weak estimate in either direction is not evidence that a face falls
     // outside the selected preference. Withhold uncertain faces too, without
     // asserting their gender. Only a confident opposite estimate is excluded.
-    // This recall-biased policy can also hide unintended faces, as disclosed
-    // beside the opt-in controls. It is not a full-body/identity guarantee.
+    // A small face leaning the other way is also shown: the estimate is noise at that
+    // size. This policy can still hide unintended faces, as disclosed beside the
+    // opt-in controls. It is not a full-body/identity guarantee.
     if (mode !== 'all' && (!['female', 'male'].includes(face.gender) || !Number.isFinite(face.genderScore)
         || face.genderScore < 0.50 || face.genderScore > 1
-        || (face.gender !== mode && face.genderScore >= OPPOSITE_CONFIDENCE && face.appearanceUncertain !== true))) continue;
+        || (face.gender !== mode && ((face.genderScore >= OPPOSITE_CONFIDENCE && face.appearanceUncertain !== true)
+          || Math.min(face.box?.[2], face.box?.[3]) < SMALL_FACE_PIXELS)))) continue;
     const region = normalizedRegion(face.box, width, height);
     if (region) regions.push(region);
   }

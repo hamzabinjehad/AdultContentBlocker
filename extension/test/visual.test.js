@@ -40,7 +40,7 @@ for (const invalid of [[NaN, .1], [1.1, -.1], [.9, .9], [.8], null]) {
 }
 for (const [probabilities, mode, required] of [
   [[.1,.9], 'female', true], [[.9,.1], 'male', true],
-  [[.2,.8], 'female', true], [[.3,.7], 'female', false],
+  [[.2,.8], 'female', true], [[.3,.7], 'female', true], [[.35,.65], 'female', false],
   [[.9,.1], 'female', false], [[.1,.9], 'male', false],
   [[.1,.9], 'all', false], [[.1,.9], 'off', false], [[.5,.5], 'female', false],
 ]) check(needsAppearanceConfirmation(appearancePrediction(probabilities), mode) === required,
@@ -48,7 +48,8 @@ for (const [probabilities, mode, required] of [
 for (const [primary, mirrored, uncertain] of [
   [[.1,.9], [.12,.88], false], [[.9,.1], [.82,.18], false],
   [[.1,.9], [.8,.2], true], [[.9,.1], [.1,.9], true],
-  [[.1,.9], [.21,.79], true], [[.9,.1], [.79,.21], true],
+  [[.1,.9], [.21,.79], false], [[.9,.1], [.79,.21], false],
+  [[.1,.9], [.31,.69], true], [[.9,.1], [.69,.31], true],
 ]) {
   const result = confirmAppearance(primary, mirrored), original = appearancePrediction(primary);
   check(result.appearanceUncertain === uncertain && result.gender === original.gender
@@ -78,12 +79,27 @@ check(!personDecision([face], [], 'male', 100, 100).blur, 'other appearance is n
 check(!personDecision([{ ...face, genderScore: .4 }], [], 'female', 100, 100).blur, 'low-confidence appearance not asserted');
 for (const probability of [.51, .543, .568, .674, .735, .799]) {
   check(personDecision([{ ...face, genderScore: probability }], [], 'female', 100, 100).blur,
-    'selected leading estimate is not discarded by the former 80-percent cutoff');
-  check(personDecision([{ ...face, gender: 'male', genderScore: probability }], [], 'female', 100, 100).blur,
-    'an uncertain opposite estimate is withheld without claiming it is a selected gender');
-  check(personDecision([{ ...face, gender: 'male', genderScore: probability }], [], 'male', 100, 100).blur,
-    'male preference receives the same wider recall as female preference');
+    'selected leading estimate is not discarded by a confidence cutoff');
 }
+for (const probability of [.51, .543, .568, .674, .699]) {
+  check(personDecision([{ ...face, gender: 'male', genderScore: probability }], [], 'female', 100, 100).blur,
+    'an uncertain opposite estimate on a readable face is withheld without claiming it is a selected gender');
+  check(personDecision([{ ...face, gender: 'female', genderScore: probability }], [], 'male', 100, 100).blur,
+    'male preference receives the same recall as female preference');
+}
+for (const probability of [.70, .735, .799]) {
+  check(!personDecision([{ ...face, gender: 'male', genderScore: probability }], [], 'female', 100, 100).blur,
+    'a fairly confident opposite estimate is shown, not hidden as uncertain');
+}
+const smallFace = { ...face, box: [10, 10, 31, 40] };
+check(!personDecision([{ ...smallFace, gender: 'male', genderScore: .55 }], [], 'female', 100, 100).blur,
+  'a small face leaning the other way is shown: its estimate is too weak to hide it');
+check(!personDecision([{ ...smallFace, gender: 'male', genderScore: .9, appearanceUncertain: true }], [], 'female', 100, 100).blur,
+  'a small face with disagreeing views leaning the other way is shown');
+check(personDecision([{ ...smallFace, gender: 'female', genderScore: .55 }], [], 'female', 100, 100).blur,
+  'a small face leaning toward the chosen preference is still hidden');
+check(personDecision([{ ...face, box: [10, 10, 32, 32], gender: 'male', genderScore: .55 }], [], 'female', 100, 100).blur,
+  'a face at the size threshold keeps the recall-biased rule');
 check(!personDecision([{...face, genderScore: NaN}], [], 'female', 100, 100).blur, 'non-finite appearance confidence never masks a face');
 check(!personDecision([{...face, gender:'male',genderScore:.80}], [], 'female', 100, 100).blur,
   'a confident opposite estimate can remain outside the selected preference');

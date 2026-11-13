@@ -75,6 +75,16 @@ outside that preference. Consequently this wider-coverage setting can also mask
 unintended faces, as disclosed beside the English and Arabic controls. Choose
 all detected faces to avoid relying on appearance estimates for selection.
 
+**2026-11-13 update — fewer unintended covers.** In practice the 0.80 bar hid
+many faces outside the chosen preference. An opposite estimate is now shown at
+0.70 or above when the original and mirrored views agree (the mirrored check
+uses the same 0.70). A face whose shorter side is under 32 capture pixels is
+also shown when its estimate leans the opposite way, because the 64x64
+appearance model cannot judge a face that small; a small face leaning toward the
+chosen preference is still hidden. Larger faces with an opposite estimate from
+0.50 to just under 0.70 stay withheld as uncertain. No accuracy figure is claimed
+for either change: no labelled face corpus exists in this repository.
+
 Malformed, non-finite or tied appearance outputs remain unknown and withheld,
 not a no-person/clean verdict. Adult-positive blocking stays independent.
 Existing full-media/face-only, black-mask/blur and image/video choices are
