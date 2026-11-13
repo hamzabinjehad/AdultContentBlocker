@@ -507,6 +507,8 @@
     <string name="welcome_finish">Set up protection</string>
     <string name="welcome_page">Page %1$d of %2$d</string>
     <string name="welcome_step">Step %1$d of %2$d</string>
+    <string name="welcome_back">Back</string>
+    <string name="welcome_needed_progress">%1$d of %2$d on</string>
     <string name="welcome_needed_group">Needed for blocking</string>
     <string name="welcome_optional_group">Optional, for limits and reliability</string>
     <string name="welcome_privacy_line">Your rules and activity stay on this phone. No account.</string>

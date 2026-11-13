@@ -1,7 +1,6 @@
 package app.hisn.android.nativeshell
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -11,10 +10,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -37,12 +33,15 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.BatteryChargingFull
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Lock
@@ -54,14 +53,20 @@ import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -75,6 +80,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -85,6 +92,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.hisn.android.R
+import kotlinx.coroutines.launch
 
 /** What the onboarding can ask of the activity. Every grant is read live, never assumed. */
 interface OnboardingActions {
@@ -141,6 +149,9 @@ private val PAGE_GUARD = PAGE_YOU + 2
  * Android grants as switches with one line of why, and on the direct build the uninstall guard.
  * Skipping is always available, and nothing is granted by this screen itself.
  *
+ * The pages sit in a pager, so a swipe moves between them the way Android's own setup does; a
+ * tap, the buttons, the back arrow and the system back gesture do the same.
+ *
  * [refresh] changes whenever the activity resumes or a system result returns, so grants are
  * re-read after the person comes back from Android's settings.
  */
@@ -155,19 +166,40 @@ fun Onboarding(
 ) {
     val lastPage = if (directBuild) PAGE_GUARD else PAGE_PERMISSIONS
     val setupSteps = lastPage - PAGE_YOU + 1
-    var page by rememberSaveable { mutableIntStateOf(0) }
+    val pager = rememberPagerState(pageCount = { lastPage + 1 })
+    val page = pager.currentPage
+    val scope = rememberCoroutineScope()
+    val focus = LocalFocusManager.current
     var name by rememberSaveable { mutableStateOf(initialName) }
     var preset by rememberSaveable { mutableStateOf(initialPreset) }
     var reason by rememberSaveable { mutableStateOf(initialReason) }
     val haptics = rememberHisnHaptics()
     val reduceMotion = systemReduceMotion(LocalContext.current)
 
-    fun savePersonalIfShown() {
-        if (page == PAGE_YOU) {
+    fun savePersonal() {
             val custom = preset == app.hisn.core.PersonalProfile.CUSTOM
             val words = if (custom) reason.trim() else ""
             // A custom reason with no words is saved as no reason, not as an empty choice.
             actions.savePersonal(name.trim(), if (custom && words.isEmpty()) "" else preset, words)
+    }
+
+    fun savePersonalIfShown() {
+        if (pager.currentPage == PAGE_YOU) savePersonal()
+    }
+
+    fun go(target: Int) {
+        scope.launch {
+            if (reduceMotion) pager.scrollToPage(target) else pager.animateScrollToPage(target)
+        }
+    }
+
+    // A swipe leaves the personal page without pressing anything, so it saves here too.
+    LaunchedEffect(pager) {
+        var last = pager.settledPage
+        snapshotFlow { pager.settledPage }.collect { now ->
+            if (last == PAGE_YOU && now != PAGE_YOU) savePersonal()
+            if (last != now) focus.clearFocus()
+            last = now
         }
     }
 
@@ -180,7 +212,7 @@ fun Onboarding(
         haptics.tick()
         savePersonalIfShown()
         when {
-            page < lastPage -> page++
+            page < lastPage -> go(page + 1)
             page == PAGE_GUARD -> finish(enableGuard = !actions.guardOn())
             else -> finish(enableGuard = false)
         }
@@ -188,7 +220,7 @@ fun Onboarding(
 
     BackHandler {
         savePersonalIfShown()
-        if (page > 0) page-- else finish(enableGuard = false)
+        if (page > 0) go(page - 1) else finish(enableGuard = false)
     }
 
     val granted = remember(refresh, page) {
@@ -229,6 +261,19 @@ fun Onboarding(
                     .padding(top = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                if (page > 0) {
+                    IconButton(onClick = {
+                        haptics.tick()
+                        savePersonalIfShown()
+                        go(page - 1)
+                    }) {
+                        Icon(
+                            Icons.AutoMirrored.Rounded.ArrowBack,
+                            contentDescription = stringResource(R.string.welcome_back)
+                        )
+                    }
+                    Spacer(Modifier.width(4.dp))
+                }
                 Text(
                     text = when {
                         page >= PAGE_YOU -> stringResource(R.string.welcome_step, page - PAGE_YOU + 1, setupSteps)
@@ -246,42 +291,42 @@ fun Onboarding(
                     modifier = Modifier.heightIn(min = 48.dp)
                 ) { Text(stringResource(R.string.welcome_skip)) }
             }
-            StoryDots(page, lastPage + 1)
+            StoryProgress(page, lastPage + 1)
 
-            AnimatedContent(
-                targetState = page,
-                modifier = Modifier.weight(1f),
-                transitionSpec = {
-                    if (reduceMotion) {
-                        fadeIn(tween(120)) togetherWith fadeOut(tween(80))
-                    } else {
-                        (fadeIn(tween(420, delayMillis = 60)) +
-                            slideInVertically(tween(420, easing = FastOutSlowInEasing)) { it / 14 }) togetherWith
-                            fadeOut(tween(160))
-                    }
-                },
-                label = "onboarding page"
+            HorizontalPager(
+                state = pager,
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag(ONBOARDING_PAGER),
+                pageSpacing = 24.dp
             ) { shown ->
-                when {
-                    shown < PAGE_YOU -> StoryPage(Stories[shown], onTap = { next() })
-                    shown == PAGE_YOU -> ConversationPage {
-                        YouPage(
-                            name = name,
-                            onName = {
-                                name = limitCodePoints(it, app.hisn.core.PersonalProfile.MAX_NAME_CODE_POINTS)
-                            },
-                            preset = preset,
-                            onPreset = { preset = if (preset == it) "" else it },
-                            reason = reason,
-                            onReason = {
-                                reason = limitCodePoints(it, app.hisn.core.PersonalProfile.MAX_REASON_CODE_POINTS)
-                            }
-                        )
+                // Only the page in view is read out and tappable; a neighbour kept ready for the
+                // swipe would otherwise give TalkBack two "Tap to continue" buttons.
+                Box(
+                    if (shown == pager.currentPage) Modifier.fillMaxSize()
+                    else Modifier.fillMaxSize().clearAndSetSemantics { }
+                ) {
+                    when {
+                        shown < PAGE_YOU -> StoryPage(Stories[shown], onTap = { next() })
+                        shown == PAGE_YOU -> ConversationPage {
+                            YouPage(
+                                name = name,
+                                onName = {
+                                    name = limitCodePoints(it, app.hisn.core.PersonalProfile.MAX_NAME_CODE_POINTS)
+                                },
+                                preset = preset,
+                                onPreset = { preset = if (preset == it) "" else it },
+                                reason = reason,
+                                onReason = {
+                                    reason = limitCodePoints(it, app.hisn.core.PersonalProfile.MAX_REASON_CODE_POINTS)
+                                }
+                            )
+                        }
+                        shown == PAGE_PERMISSIONS -> ConversationPage {
+                            PermissionsPage(name.trim(), granted) { actions.request(it) }
+                        }
+                        else -> ConversationPage { GuardPage(guardOn, granted["accessibility"] == true) }
                     }
-                    shown == PAGE_PERMISSIONS -> ConversationPage {
-                        PermissionsPage(name.trim(), granted) { actions.request(it) }
-                    }
-                    else -> ConversationPage { GuardPage(guardOn, granted["accessibility"] == true) }
                 }
             }
 
@@ -319,30 +364,25 @@ fun Onboarding(
     }
 }
 
+/** The pager's tag, so tests can tell it from a row that scrolls sideways inside a page. */
+const val ONBOARDING_PAGER = "onboarding-pager"
+
+/** How far through the pages; the step label beside Skip says the same in words. */
 @Composable
-private fun StoryDots(page: Int, count: Int) {
-    Row(
-        Modifier
+private fun StoryProgress(page: Int, count: Int) {
+    val progress by animateFloatAsState(
+        targetValue = (page + 1).toFloat() / count,
+        animationSpec = tween(320, easing = FastOutSlowInEasing),
+        label = "onboarding progress"
+    )
+    LinearProgressIndicator(
+        progress = { progress },
+        modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp)
             .clearAndSetSemantics { },
-        horizontalArrangement = Arrangement.spacedBy(5.dp)
-    ) {
-        repeat(count) { index ->
-            val color by animateColorAsState(
-                if (index <= page) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
-                label = "dot"
-            )
-            Box(
-                Modifier
-                    .weight(1f)
-                    .height(3.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(color)
-            )
-        }
-    }
+        trackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
+    )
 }
 
 // ---------------------------------------------------------------------- story
@@ -654,7 +694,7 @@ private fun PermissionsPage(name: String, granted: Map<String, Boolean>, onReque
         dim = true
     )
     Said(stringResource(R.string.welcome_chat_permission))
-    GrantGroup(R.string.welcome_needed_group, OnboardingKeys.NEEDED, granted, onRequest)
+    GrantGroup(R.string.welcome_needed_group, OnboardingKeys.NEEDED, granted, onRequest, count = true)
     GrantGroup(R.string.welcome_optional_group, OnboardingKeys.OPTIONAL, granted, onRequest)
     Spacer(Modifier.height(16.dp))
     Text(
@@ -667,16 +707,38 @@ private fun PermissionsPage(name: String, granted: Map<String, Boolean>, onReque
 }
 
 @Composable
-private fun GrantGroup(title: Int, keys: List<String>, granted: Map<String, Boolean>, onRequest: (String) -> Unit) {
+private fun GrantGroup(
+    title: Int,
+    keys: List<String>,
+    granted: Map<String, Boolean>,
+    onRequest: (String) -> Unit,
+    count: Boolean = false
+) {
     Spacer(Modifier.height(20.dp))
-    Text(
-        stringResource(title),
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier
-            .padding(start = 4.dp, bottom = 8.dp)
-            .semantics { heading() }
-    )
+    Row(
+        Modifier.padding(start = 4.dp, end = 4.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            stringResource(title),
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .weight(1f)
+                .semantics { heading() }
+        )
+        if (count) {
+            // Says how much of the blocking is actually on, read from Android, not from taps.
+            val on = keys.count { granted[it] == true }
+            Spacer(Modifier.width(12.dp))
+            Text(
+                stringResource(R.string.welcome_needed_progress, on, keys.size),
+                style = MaterialTheme.typography.labelLarge,
+                color = if (on == keys.size) LocalHisnStatusColors.current.success
+                else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
     HisnCard {
         keys.forEachIndexed { index, key ->
             GrantRow(Grants.getValue(key), granted[key] == true) { onRequest(key) }
@@ -692,34 +754,22 @@ private fun GrantGroup(title: Int, keys: List<String>, granted: Map<String, Bool
 @Composable
 private fun GrantRow(grant: Grant, on: Boolean, onRequest: () -> Unit) {
     val colors = MaterialTheme.colorScheme
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .toggleable(value = on, role = Role.Switch, onValueChange = { onRequest() })
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(colors.primary.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(grant.icon, contentDescription = null, tint = colors.primary, modifier = Modifier.size(22.dp))
-        }
-        Spacer(Modifier.width(14.dp))
-        Column(Modifier.weight(1f)) {
-            Text(stringResource(grant.title), style = MaterialTheme.typography.titleMedium)
+    ListItem(
+        headlineContent = { Text(stringResource(grant.title), style = MaterialTheme.typography.titleMedium) },
+        supportingContent = {
             Text(
                 stringResource(grant.body),
                 style = MaterialTheme.typography.bodyMedium,
                 color = colors.onSurfaceVariant
             )
-        }
-        Spacer(Modifier.width(12.dp))
-        Switch(checked = on, onCheckedChange = null)
-    }
+        },
+        leadingContent = {
+            Icon(grant.icon, contentDescription = null, tint = colors.primary, modifier = Modifier.size(24.dp))
+        },
+        trailingContent = { Switch(checked = on, onCheckedChange = null) },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        modifier = Modifier.toggleable(value = on, role = Role.Switch, onValueChange = { onRequest() })
+    )
 }
 
 @Composable

@@ -220,6 +220,7 @@ fun RulesScreen(
             // person is looking instead of leaving it to the Protection tab.
             val guardReady = state.apps.on && state.guardConnected
             val guardIssue = if (state.apps.on) tr("App protection not connected") else tr("App protection is off")
+            val fixGuard = { state.openPermission("accessibility") }
             val limitedApps = state.appLimits.size
             TileGrid(
                 listOf(
@@ -231,7 +232,8 @@ fun RulesScreen(
                             onClick = { onOpen("domains") },
                             modifier = modifier,
                             active = state.domains.isNotEmpty(),
-                            issue = tr("DNS filtering is off").takeIf { state.domains.isNotEmpty() && !state.dns.on }
+                            issue = tr("DNS filtering is off").takeIf { state.domains.isNotEmpty() && !state.dns.on },
+                            onIssue = { state.dns.set(true) }
                         )
                     },
                     { modifier ->
@@ -242,7 +244,8 @@ fun RulesScreen(
                             onClick = { onOpen("words") },
                             modifier = modifier,
                             active = state.words.isNotEmpty(),
-                            issue = guardIssue.takeIf { state.words.isNotEmpty() && !guardReady }
+                            issue = guardIssue.takeIf { state.words.isNotEmpty() && !guardReady },
+                            onIssue = fixGuard
                         )
                     },
                     { modifier ->
@@ -254,6 +257,7 @@ fun RulesScreen(
                             modifier = modifier,
                             active = state.blockedApps.isNotEmpty(),
                             issue = guardIssue.takeIf { state.blockedApps.isNotEmpty() && !guardReady },
+                            onIssue = fixGuard,
                             extra = if (state.blockedApps.isEmpty()) null else {
                                 {
                                     Row(
@@ -278,7 +282,8 @@ fun RulesScreen(
                             onClick = { onOpen("limit") },
                             modifier = modifier,
                             active = state.limit.on && limitedApps > 0,
-                            issue = guardIssue.takeIf { state.limit.on && limitedApps > 0 && !guardReady }
+                            issue = guardIssue.takeIf { state.limit.on && limitedApps > 0 && !guardReady },
+                            onIssue = fixGuard
                         )
                     },
                     { modifier ->
@@ -289,7 +294,8 @@ fun RulesScreen(
                             onClick = { onOpen("schedule") },
                             modifier = modifier,
                             active = state.schedule.on,
-                            issue = guardIssue.takeIf { state.schedule.on && !guardReady }
+                            issue = guardIssue.takeIf { state.schedule.on && !guardReady },
+                            onIssue = fixGuard
                         )
                     }
                 )

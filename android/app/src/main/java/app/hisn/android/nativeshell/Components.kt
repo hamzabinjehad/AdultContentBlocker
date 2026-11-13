@@ -42,6 +42,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Warning
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -74,6 +76,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -774,7 +777,7 @@ fun ReassuranceRow(
 
 /**
  * One rule as a tile: what it is, how much of it there is, and a warning chip when the rule is
- * saved but the layer that enforces it is not running. Label first, so a screen reader says
+ * saved but the layer that enforces it is not running; tapping the chip runs [onIssue]. Label first, so a screen reader says
  * "Blocked domains, 3".
  */
 @Composable
@@ -786,6 +789,7 @@ fun RuleTile(
     modifier: Modifier = Modifier,
     active: Boolean = true,
     issue: String? = null,
+    onIssue: (() -> Unit)? = null,
     extra: @Composable (() -> Unit)? = null
 ) {
     val status = LocalHisnStatusColors.current
@@ -835,21 +839,27 @@ fun RuleTile(
                 fontWeight = FontWeight.SemiBold
             )
             if (issue != null) {
-                Spacer(Modifier.height(10.dp))
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = status.warningContainer,
-                    contentColor = status.onWarningContainer
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Rounded.Warning, contentDescription = null, modifier = Modifier.size(14.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text(issue, style = MaterialTheme.typography.labelMedium)
-                    }
-                }
+                // The chip is the fix: one tap turns the missing layer on.
+                AssistChip(
+                    onClick = {
+                        haptics.tick()
+                        (onIssue ?: onClick)()
+                    },
+                    label = { Text(issue, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Rounded.Warning,
+                            contentDescription = null,
+                            modifier = Modifier.size(AssistChipDefaults.IconSize)
+                        )
+                    },
+                    colors = AssistChipDefaults.assistChipColors(
+                        containerColor = status.warningContainer,
+                        labelColor = status.onWarningContainer,
+                        leadingIconContentColor = status.onWarningContainer
+                    ),
+                    border = null
+                )
             }
         }
     }

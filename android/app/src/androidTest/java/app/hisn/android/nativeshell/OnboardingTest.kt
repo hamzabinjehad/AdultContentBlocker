@@ -15,6 +15,10 @@ import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
@@ -98,6 +102,29 @@ class OnboardingTest {
         repeat(3) { tapStory() }
         rule.onNodeWithText("Step 1 of 3").assertIsDisplayed()
         rule.onNodeWithText("What should I call you?").assertIsDisplayed()
+    }
+
+    @Test fun swipeAndBackArrowMoveBetweenPages() {
+        show()
+        rule.onNodeWithContentDescription("Back").assertDoesNotExist()
+        rule.onNodeWithTag(ONBOARDING_PAGER).performTouchInput { swipeLeft() }
+        rule.waitForIdle()
+        rule.onNodeWithText("Break the autopilot").assertIsDisplayed()
+        // The page left behind is not offered to a screen reader.
+        rule.onNodeWithText("A shield for your phone").assertDoesNotExist()
+        rule.onNodeWithContentDescription("Back").performClick()
+        rule.waitForIdle()
+        rule.onNodeWithText("A shield for your phone").assertIsDisplayed()
+    }
+
+    @Test fun swipingOffThePersonalPageSavesIt() {
+        val actions = show()
+        toYou()
+        rule.onNodeWithText("For my family").performScrollTo().performClick()
+        rule.onNodeWithTag(ONBOARDING_PAGER).performTouchInput { swipeLeft() }
+        rule.waitForIdle()
+        assertEquals(Triple("", "family", ""), actions.saved)
+        rule.onNodeWithText("0 of 2 on").assertIsDisplayed()
     }
 
     @Test fun playBuildHasNoGuardStep() {

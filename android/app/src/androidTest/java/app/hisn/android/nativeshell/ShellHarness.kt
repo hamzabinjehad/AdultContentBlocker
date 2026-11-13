@@ -88,7 +88,9 @@ fun SemanticsNode.spokenLabel(): String {
 fun SemanticsNode.insideHorizontalScroll(): Boolean {
     var node: SemanticsNode? = parent
     while (node != null) {
-        if (node.config.getOrNull(SemanticsProperties.HorizontalScrollAxisRange) != null) return true
+        // The onboarding pager scrolls sideways but shows one full page, so its text must still fit.
+        val pager = node.config.getOrNull(SemanticsProperties.TestTag) == ONBOARDING_PAGER
+        if (!pager && node.config.getOrNull(SemanticsProperties.HorizontalScrollAxisRange) != null) return true
         node = node.parent
     }
     return false
