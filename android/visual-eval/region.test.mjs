@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { nearMiss, centreCrop, CROP_FRACTION } from '../../android/app/src/main/assets/visual/region.js';
+import { nearMiss, centreCrop, strongBlock, CROP_FRACTION } from '../../android/app/src/main/assets/visual/region.js';
 
 // nearMiss is a bounded closer look, not a lower block threshold.
 assert.equal(nearMiss(null), false);
@@ -25,4 +25,10 @@ assert.deepEqual([crop.width, crop.height], [7, 7]);
 assert.equal(centreCrop('not-base64', 3, 3), null);
 assert.equal(centreCrop(source.toString('base64'), 10, 9), null);
 assert.equal(centreCrop(source.toString('base64'), 0, 10), null);
+// A strong block skips the guard's second capture; a near-threshold block does not.
+assert.equal(strongBlock(null), false);
+assert.equal(strongBlock({ block: false, scores: { Porn: 0.95, Hentai: 0 } }), false);
+assert.equal(strongBlock({ block: true, scores: { Porn: 0.72, Hentai: 0.05 } }), false);
+assert.equal(strongBlock({ block: true, scores: { Porn: 0.90, Hentai: 0.02 } }), true);
+assert.equal(strongBlock({ block: true, scores: { Porn: 0.50, Hentai: 0.45 } }), true);
 console.log('region crop tests passed');

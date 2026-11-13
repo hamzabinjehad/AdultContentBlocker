@@ -29,6 +29,15 @@ pass on the API 36 emulator. The post-reboot dashboard state is unverified. Do n
 [release state](../docs/RELEASE_STATE_2026-11-10.md) and
 [the end-project plan](../docs/ANDROID_END_PROJECT_PLAN_2026-11-08.md).
 
+**Personal layer, 11 November 2026.** The optional welcome page can save a
+local name and a reason; a saved name replaces the tagline with a greeting, the
+Protection page keeps the reason beside a local **Day N with Hisn · N pauses
+taken** line, and the pause screen repeats the same words. The values are not a
+rule, are not covered by the protection lock, and are never sent, exported or
+put in diagnostics. They are not a clean-day streak or a recovery score.
+Details, storage and the emulator evidence are in
+[the personal-layer note](../docs/ANDROID_PERSONAL_2026-11-11.md).
+
 1.0.0 was the first signed direct-sideload release. 1.1.0 adds a first-run
 welcome, a voluntary pause action, and today's usage in the daily-limit editor;
 it adds no enforcement layer and relaxes no rule. The APK and certificate

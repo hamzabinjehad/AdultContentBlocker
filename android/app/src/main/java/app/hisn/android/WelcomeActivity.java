@@ -40,12 +40,13 @@ public final class WelcomeActivity extends Activity {
     private static final String PREFS = "welcome";
     private static final String SEEN = "seen";
     private static final int PAGE_INTROS = 3;
-    private static final int PAGE_PERMISSIONS = 3;
-    private static final int PAGE_LOCK = 4;
+    private static final int PAGE_PERSONAL = 3;
+    private static final int PAGE_PERMISSIONS = 4;
+    private static final int PAGE_LOCK = 5;
     private static final int REQUEST_VPN = 900;
     private static final int REQUEST_NOTIFICATIONS = 902;
 
-    private static final int[] INTRO_ICONS = {R.drawable.ic_shield, R.drawable.ic_clock, R.drawable.ic_lock};
+    private static final int[] INTRO_ICONS = {R.drawable.ic_brand_mark, R.drawable.ic_clock, R.drawable.ic_lock};
     private static final int[] INTRO_TITLES = {R.string.welcome_title_1, R.string.welcome_title_2,
             R.string.welcome_title_3};
     private static final int[] INTRO_BODIES = {R.string.welcome_body_1, R.string.welcome_body_2,
@@ -58,6 +59,8 @@ public final class WelcomeActivity extends Activity {
     private final List<View> dots = new ArrayList<>();
     private final List<PermissionCard> permissionCards = new ArrayList<>();
     private PolicyStore settings;
+    private PersonalStore personal;
+    private PersonalForm personalForm;
 
     static boolean shouldShow(Context context, PolicyStore settings) {
         if (context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(SEEN, false)) return false;
@@ -77,6 +80,7 @@ public final class WelcomeActivity extends Activity {
         if (Build.VERSION.SDK_INT >= 30) getWindow().setDecorFitsSystemWindows(false);
         try { settings = PolicyStore.get(this); }
         catch (RuntimeException unavailable) { settings = null; }
+        personal = new PersonalStore(this);
 
         int side = Ui.sidePadding(this);
         int top = Ui.dp(this, 20);
@@ -165,6 +169,12 @@ public final class WelcomeActivity extends Activity {
         refreshLockState();
     }
 
+    @Override protected void onPause() {
+        // A name typed on the personal page is kept even if the person leaves with Home.
+        if (page == PAGE_PERSONAL && personalForm != null) personalForm.save(personal);
+        super.onPause();
+    }
+
     @SuppressLint("GestureBackNavigation")
     @Override public void onBackPressed() { back(); }
 
@@ -173,21 +183,24 @@ public final class WelcomeActivity extends Activity {
     }
 
     private void back() {
+        if (page == PAGE_PERSONAL && personalForm != null) personalForm.save(personal);
         if (page > 0) render(page - 1);
         else finishWelcome();
     }
 
     private void advance() {
+        if (page == PAGE_PERSONAL && personalForm != null) personalForm.save(personal);
         if (page < pageCount() - 1) render(page + 1);
         else if (page == PAGE_LOCK) enableGuardAndFinish();
         else finishWelcome();
     }
 
     private void finishWelcome() {
+        if (personalForm != null) personalForm.save(personal);
         markSeen(this);
-        startActivity(new Intent(this, MainActivity.class)
-                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                .putExtra("page", 0));
+        // The native shell is the app's home now; the classic activity is not a launcher.
+        startActivity(new Intent(this, ShellActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP));
         finish();
     }
 
@@ -195,12 +208,15 @@ public final class WelcomeActivity extends Activity {
         page = newPage;
         content.removeAllViews();
         permissionCards.clear();
+        personalForm = null;
         if (page < PAGE_INTROS) renderIntro();
+        else if (page == PAGE_PERSONAL) renderPersonal();
         else if (page == PAGE_PERMISSIONS) renderPermissions();
         else renderLock();
         updateDots();
         next.setText(getString(page == PAGE_LOCK ? R.string.welcome_lock_action
-                : page == PAGE_PERMISSIONS ? R.string.welcome_perm_continue : R.string.welcome_next));
+                : page == PAGE_PERSONAL || page == PAGE_PERMISSIONS
+                ? R.string.welcome_perm_continue : R.string.welcome_next));
         content.setAlpha(0f);
         content.animate().alpha(1f).setDuration(180).start();
         content.announceForAccessibility(getString(R.string.welcome_page, page + 1, pageCount()));
@@ -243,6 +259,46 @@ public final class WelcomeActivity extends Activity {
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         bodyParams.topMargin = Ui.dp(this, 14);
         content.addView(body, bodyParams);
+    }
+
+    // ------------------------------------------------------------------ personal
+
+    /** Optional, one page, and always skippable: the first-run path must not require a name. */
+    private void renderPersonal() {
+        content.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+        ImageView icon = Ui.iconInTile(this, R.drawable.ic_brand_mark, R.color.accent, 56, 27);
+        icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(
+                Ui.dp(this, 56), Ui.dp(this, 56));
+        iconParams.gravity = Gravity.CENTER_HORIZONTAL;
+        content.addView(icon, iconParams);
+
+        TextView title = Ui.display(this, getString(R.string.personal_prompt_title), 30);
+        title.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        titleParams.topMargin = Ui.dp(this, 18);
+        content.addView(title, titleParams);
+
+        TextView body = Ui.text(this, getString(R.string.welcome_personal_body), 15,
+                R.color.text_secondary);
+        body.setGravity(Gravity.CENTER);
+        body.setLineSpacing(Ui.dp(this, 4), 1.18f);
+        LinearLayout.LayoutParams bodyParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        bodyParams.topMargin = Ui.dp(this, 10);
+        bodyParams.bottomMargin = Ui.dp(this, 18);
+        content.addView(body, bodyParams);
+
+        LinearLayout card = Ui.card(this);
+        card.setPadding(Ui.dp(this, 18), Ui.dp(this, 16), Ui.dp(this, 18), Ui.dp(this, 16));
+        personalForm = new PersonalForm(this, personal.profile());
+        card.addView(personalForm.root);
+        TextView note = Ui.caption(this, getString(R.string.welcome_personal_note));
+        note.setPadding(0, Ui.dp(this, 12), 0, 0);
+        card.addView(note);
+        content.addView(card, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
     }
 
     // ------------------------------------------------------------------ permissions

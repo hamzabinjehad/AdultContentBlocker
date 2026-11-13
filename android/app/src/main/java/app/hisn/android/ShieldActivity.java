@@ -221,7 +221,7 @@ public final class ShieldActivity extends Activity {
     }
 
     private void openHisn() {
-        startActivity(new Intent(this, MainActivity.class)
+        startActivity(new Intent(this, ShellActivity.class)
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP));
         finish();
     }

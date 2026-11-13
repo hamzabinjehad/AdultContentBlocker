@@ -43,12 +43,15 @@
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="false"
         tools:targetApi="33">
-        <activity android:name=".MainActivity" android:exported="true">
+        <!-- The native shell is the app's front door. The classic Views activity keeps the
+             editors that have not been ported yet and is reachable in-app only. -->
+        <activity android:name=".ShellActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".MainActivity" android:exported="false" />
         <activity android:name=".RestrictionActivity" android:exported="false" android:excludeFromRecents="true" />
         <activity android:name=".WelcomeActivity" android:exported="false" android:excludeFromRecents="true" />
         <activity android:name=".GuardianPairActivity" android:exported="false"
@@ -80,9 +83,12 @@
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Owner-enabled boot cover until the app's accessibility guard is running" />
         </service>
-        <!-- Resumes DNS filtering after reboot only if left on and VPN approval remains. -->
+        <!-- Resumes DNS filtering after reboot or an app update only if left on and VPN approval remains. -->
         <receiver android:name=".VpnBootReceiver" android:exported="false">
-            <intent-filter><action android:name="android.intent.action.BOOT_COMPLETED" /></intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
         </receiver>
         <!-- Periodic local check that notices a stopped DNS VPN or accessibility
              guard while the app is closed. It never restarts a service. -->
@@ -105,5 +111,11 @@
             <intent-filter><action android:name="android.net.VpnService" /></intent-filter>
             <meta-data android:name="android.net.VpnService.SUPPORTS_ALWAYS_ON" android:value="true" />
         </service>
+        <!-- Compose pulls in androidx.profileinstaller, whose receiver is guarded by the DUMP
+             permission so adb can trigger profile installs. The release rule allows no DUMP
+             surface, and the library's startup initializer still installs the profile. -->
+        <receiver
+            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+            tools:node="remove" />
     </application>
 </manifest>

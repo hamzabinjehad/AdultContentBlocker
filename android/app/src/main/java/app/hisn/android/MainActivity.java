@@ -71,6 +71,7 @@ import app.hisn.core.DistractionSites;
 import app.hisn.core.GuardHealth;
 import app.hisn.core.HostDecision;
 import app.hisn.core.PolicyReceipt;
+import app.hisn.core.PersonalProfile;
 import app.hisn.core.ProtectionReadiness;
 import app.hisn.core.VisualHealth;
 import app.hisn.core.PolicyChangeError;
@@ -160,6 +161,13 @@ public final class MainActivity extends Activity {
     private Ui.SettingRow settingsUninstallRow;
     private Ui.SettingRow settingsPermissionsRow;
 
+    /** The optional local name and reason; never a protection rule. */
+    private PersonalStore personal;
+    private LinearLayout personalCard;
+    private Ui.SettingRow personalNameRow;
+    private Ui.SettingRow personalReasonRow;
+    private TextView personalSettingsNote;
+
     private Switch adultToggle;
     private Switch visualToggle;
     private Ui.SettingRow personBlurRow;
@@ -223,6 +231,7 @@ public final class MainActivity extends Activity {
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         try { settings = PolicyStore.get(this); }
         catch (RuntimeException unavailable) { settings = null; }
+        personal = new PersonalStore(this);
 
         // A fresh install gets one short, skippable explanation before the dashboard.
         // Rules already saved mean this is an upgrade or a configured install; no welcome.
@@ -236,7 +245,8 @@ public final class MainActivity extends Activity {
         setContentView(shell);
         applyInsets();
         Ui.applySystemBarIcons(getWindow(), this);
-        syncShortcuts();
+        syncShortcuts(this);
+        refreshPersonal();
         // Keep the background layer check alive for the choices already saved:
         // a DNS session the owner left on, or the direct build's keep switch.
         try { LayerWatchdog.syncSchedule(this); }
@@ -265,8 +275,8 @@ public final class MainActivity extends Activity {
         appBarRow.setOrientation(LinearLayout.HORIZONTAL);
         appBarRow.setGravity(Gravity.CENTER_VERTICAL);
         appBarRow.setPadding(sidePadding, Ui.dp(this, 8), sidePadding, Ui.dp(this, 8));
-        ImageView brandMark = Ui.iconInTile(this, R.drawable.ic_shield,
-                R.color.accent, 38, 22);
+        ImageView brandMark = Ui.iconInTile(this, R.drawable.ic_brand_mark,
+                R.color.accent, 38, 26);
         appBarRow.addView(brandMark);
         LinearLayout brand = new LinearLayout(this);
         brand.setOrientation(LinearLayout.VERTICAL);
@@ -391,22 +401,23 @@ public final class MainActivity extends Activity {
         shell.requestApplyInsets();
     }
 
-    private void syncShortcuts() {
+    /** Package-visible so the native shell keeps the long-press shortcuts current too. */
+    static void syncShortcuts(Context context) {
         // ShortcutManager arrived in Android 7.1; 6.x simply has no long-press shortcuts.
         if (Build.VERSION.SDK_INT < 25) return;
-        syncShortcutsApi25();
+        syncShortcutsApi25(context);
     }
 
     @SuppressLint("NewApi") // Only called from syncShortcuts after its Android 7.1 check.
-    private void syncShortcutsApi25() {
+    private static void syncShortcutsApi25(Context context) {
         try {
-            ShortcutManager manager = getSystemService(ShortcutManager.class);
+            ShortcutManager manager = context.getSystemService(ShortcutManager.class);
             if (manager == null) return;
             List<ShortcutInfo> shortcuts = new ArrayList<>();
-            shortcuts.add(shortcut("rules", R.string.shortcut_rules_short, R.string.shortcut_rules_long,
-                    R.drawable.ic_tune, PAGE_RULES));
-            shortcuts.add(shortcut("guide", R.string.shortcut_guide_short, R.string.shortcut_guide_long,
-                    R.drawable.ic_book, PAGE_GUIDE));
+            shortcuts.add(shortcut(context, "rules", R.string.shortcut_rules_short,
+                    R.string.shortcut_rules_long, R.drawable.ic_tune, PAGE_RULES));
+            shortcuts.add(shortcut(context, "guide", R.string.shortcut_guide_short,
+                    R.string.shortcut_guide_long, R.drawable.ic_book, PAGE_GUIDE));
             manager.setDynamicShortcuts(shortcuts);
         } catch (RuntimeException unavailable) {
             // A launcher without shortcut support, or a rate limit: the app still opens normally.
@@ -414,12 +425,14 @@ public final class MainActivity extends Activity {
     }
 
     @SuppressLint("NewApi") // Only reached from syncShortcutsApi25.
-    private ShortcutInfo shortcut(String id, int shortLabel, int longLabel, int icon, int page) {
-        return new ShortcutInfo.Builder(this, id)
-                .setShortLabel(getString(shortLabel))
-                .setLongLabel(getString(longLabel))
-                .setIcon(Icon.createWithResource(this, icon))
-                .setIntent(new Intent(this, MainActivity.class).setAction(Intent.ACTION_VIEW)
+    private static ShortcutInfo shortcut(Context context, String id, int shortLabel, int longLabel,
+            int icon, int page) {
+        // The shell is the launcher now; a shortcut names the tab it should open.
+        return new ShortcutInfo.Builder(context, id)
+                .setShortLabel(context.getString(shortLabel))
+                .setLongLabel(context.getString(longLabel))
+                .setIcon(Icon.createWithResource(context, icon))
+                .setIntent(new Intent(context, ShellActivity.class).setAction(Intent.ACTION_VIEW)
                         .setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP)
                         .putExtra("page", page))
                 .build();
@@ -469,6 +482,25 @@ public final class MainActivity extends Activity {
         int titleRes = home ? R.string.app_name
                 : selectedPage == PAGE_RULES ? R.string.nav_rules : R.string.nav_guide;
         Ui.setTextIfChanged(appBarTitle, getString(titleRes));
+        if (home) {
+            PersonalProfile profile = personal == null ? PersonalProfile.empty() : personal.profile();
+            if (profile.hasName()) {
+                // A name replaces the all-caps tagline with an ordinary sentence, because a
+                // greeting set in tracked capitals reads like a label rather than a welcome.
+                Ui.setTextIfChanged(appBarSubtitle, getString(R.string.greeting_with_name,
+                        PersonalStore.greeting(this), profile.name));
+                appBarSubtitle.setAllCaps(false);
+                appBarSubtitle.setTextSize(12);
+                appBarSubtitle.setLetterSpacing(0f);
+                appBarSubtitle.setTextColor(Ui.color(this, R.color.text_secondary));
+            } else {
+                Ui.setTextIfChanged(appBarSubtitle, getString(R.string.app_tagline));
+                appBarSubtitle.setAllCaps(true);
+                appBarSubtitle.setTextSize(10);
+                if (!Ui.isRtl(this)) appBarSubtitle.setLetterSpacing(0.08f);
+                appBarSubtitle.setTextColor(Ui.color(this, R.color.text_tertiary));
+            }
+        }
         appBarSubtitle.setVisibility(home ? View.VISIBLE : View.GONE);
     }
 
@@ -591,6 +623,12 @@ public final class MainActivity extends Activity {
         attentionCard.addView(attentionDetails.root);
         attentionCard.setVisibility(View.GONE);
         page.addView(attentionCard, Ui.margins(this, 0, 10));
+
+        // The person's own name and reason, built by refreshPersonal(). It sits below the
+        // status and attention so a coverage gap is never pushed off the first screen by it.
+        personalCard = new LinearLayout(this);
+        personalCard.setOrientation(LinearLayout.VERTICAL);
+        page.addView(personalCard, Ui.margins(this, 0, 10));
 
         // One next action, on paper. The label is hidden with the step on the DNS pages, where
         // the DNS card below owns the same action.
@@ -757,6 +795,186 @@ public final class MainActivity extends Activity {
                 R.string.pause_voluntary_action, getString(R.string.pause_voluntary_summary),
                 view -> startActivity(new Intent(this, RestrictionActivity.class)
                         .putExtra("voluntary", true)));
+    }
+
+    // ------------------------------------------------------------------ personal layer
+
+    /**
+     * Rebuilds the one personal card and the Settings rows. The card is rebuilt only when the
+     * profile changes, not on the two-second status refresh, so a name is never re-measured while
+     * the page scrolls.
+     */
+    private void refreshPersonal() {
+        PersonalProfile profile = personal == null ? PersonalProfile.empty() : personal.profile();
+        if (personalCard != null) {
+            personalCard.removeAllViews();
+            personalCard.setBackgroundResource(0);
+            personalCard.setPadding(0, 0, 0, 0);
+            if (profile.hasReason()) buildPersonalReason(profile);
+            else buildPersonalPrompt(profile);
+        }
+        updatePersonalSettings(profile);
+        updateAppBar();
+    }
+
+    /** The unset state is one tappable row, not a second filled action under the setup card. */
+    private void buildPersonalPrompt(PersonalProfile profile) {
+        personalCard.setBackgroundResource(R.drawable.bg_card);
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setBackgroundResource(R.drawable.bg_row);
+        row.setPadding(Ui.dp(this, 18), Ui.dp(this, 16), Ui.dp(this, 18), Ui.dp(this, 16));
+        row.setMinimumHeight(Ui.dp(this, 76));
+        row.setClickable(true);
+        row.setFocusable(true);
+        row.addView(Ui.iconInTile(this, R.drawable.ic_person, R.color.accent, 34, 19));
+        LinearLayout copy = new LinearLayout(this);
+        copy.setOrientation(LinearLayout.VERTICAL);
+        CharSequence title = getString(profile.hasName()
+                ? R.string.personal_prompt_reason_title : R.string.personal_prompt_title);
+        CharSequence body = getString(profile.hasName()
+                ? R.string.personal_prompt_reason_body : R.string.personal_prompt_body);
+        TextView titleView = Ui.strong(this, title);
+        titleView.setTextSize(16);
+        copy.addView(titleView);
+        TextView bodyView = Ui.text(this, body, 13.5f, R.color.text_secondary);
+        bodyView.setLineSpacing(Ui.dp(this, 3), 1.14f);
+        bodyView.setPadding(0, Ui.dp(this, 3), 0, 0);
+        copy.addView(bodyView);
+        LinearLayout.LayoutParams copyParams = new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1);
+        copyParams.setMarginStart(Ui.dp(this, 12));
+        copyParams.setMarginEnd(Ui.dp(this, 8));
+        row.addView(copy, copyParams);
+        row.addView(Ui.icon(this, R.drawable.ic_chevron_right, R.color.text_tertiary, 18));
+        row.setContentDescription(title + ". " + body);
+        row.setOnClickListener(view -> showPersonalDialog());
+        personalCard.addView(row);
+    }
+
+    /** The saved state gives the reason its own voice, with an ordinary Edit target. */
+    private void buildPersonalReason(PersonalProfile profile) {
+        personalCard.setBackgroundResource(R.drawable.bg_card);
+        personalCard.setPadding(Ui.dp(this, 20), Ui.dp(this, 16),
+                Ui.dp(this, 20), Ui.dp(this, 16));
+        View rule = new View(this);
+        rule.setBackgroundColor(Ui.color(this, R.color.accent));
+        personalCard.addView(rule, new LinearLayout.LayoutParams(Ui.dp(this, 34), Ui.dp(this, 2)));
+
+        LinearLayout header = new LinearLayout(this);
+        header.setOrientation(LinearLayout.HORIZONTAL);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+        TextView eyebrow = Ui.eyebrow(this, getString(R.string.personal_card_eyebrow));
+        header.addView(eyebrow, new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+        TextView edit = Ui.text(this, getString(R.string.personal_edit), 13.5f, R.color.accent);
+        edit.setTypeface(Ui.medium());
+        edit.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
+        edit.setMinHeight(Ui.dp(this, 48));
+        edit.setMinWidth(Ui.dp(this, 48));
+        edit.setPadding(Ui.dp(this, 12), 0, 0, 0);
+        edit.setBackgroundResource(R.drawable.bg_row);
+        edit.setClickable(true);
+        edit.setFocusable(true);
+        edit.setContentDescription(getString(R.string.personal_edit) + ", "
+                + getString(R.string.personal_dialog_title));
+        edit.setOnClickListener(view -> showPersonalDialog());
+        header.addView(edit);
+        LinearLayout.LayoutParams headerParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        headerParams.topMargin = Ui.dp(this, 8);
+        personalCard.addView(header, headerParams);
+
+        TextView quote = Ui.display(this, getString(R.string.personal_quote,
+                PersonalStore.reasonLabel(this, profile)), 21);
+        quote.setLineSpacing(Ui.dp(this, 4), 1.14f);
+        personalCard.addView(quote, Ui.margins(this, 2, 0));
+
+        TextView metric = Ui.caption(this, personalMetric(profile));
+        personalCard.addView(metric, Ui.margins(this, 10, 0));
+    }
+
+    private CharSequence personalMetric(PersonalProfile profile) {
+        String pauses = profile.pauses == 0
+                ? getString(R.string.personal_no_pauses)
+                : getResources().getQuantityString(R.plurals.personal_pauses, profile.pauses,
+                        profile.pauses);
+        int day = PersonalStore.dayNumber(profile);
+        return day > 0 ? getString(R.string.personal_metric, getString(R.string.personal_day, day),
+                pauses) : pauses;
+    }
+
+    private void updatePersonalSettings(PersonalProfile profile) {
+        if (personalNameRow == null) return;
+        String notSet = getString(R.string.personal_not_set);
+        personalNameRow.setValue(profile.hasName() ? profile.name : notSet,
+                profile.hasName() ? Ui.STARTING : Ui.OFF);
+        // The full reason is already the quote on Protection; a long custom line here
+        // would force the title to wrap around a truncated value.
+        personalReasonRow.setValue(profile.hasReason()
+                        ? getString(R.string.personal_set) : notSet,
+                profile.hasReason() ? Ui.STARTING : Ui.OFF);
+    }
+
+    /**
+     * The one place the name and reason are edited. It is a secure window: the recent-apps
+     * preview and screen recording must not show a name the person typed for themselves.
+     */
+    private void showPersonalDialog() {
+        if (personal == null) return;
+        PersonalProfile current = personal.profile();
+        PersonalForm form = new PersonalForm(this, current);
+        LinearLayout body = new LinearLayout(this);
+        body.setOrientation(LinearLayout.VERTICAL);
+        body.setPadding(Ui.dp(this, 20), Ui.dp(this, 4), Ui.dp(this, 20), Ui.dp(this, 8));
+        body.addView(Ui.body(this, getString(R.string.personal_dialog_body)));
+        body.addView(form.root, Ui.margins(this, 14, 0));
+        body.addView(Ui.caption(this, getString(R.string.personal_local_note)),
+                Ui.margins(this, 14, 0));
+        ScrollView scroll = new ScrollView(this);
+        scroll.addView(body, new ScrollView.LayoutParams(
+                ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT));
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this)
+                .setTitle(R.string.personal_dialog_title)
+                .setView(scroll)
+                .setPositiveButton(R.string.personal_save, null)
+                .setNegativeButton(android.R.string.cancel, null);
+        if (current.hasDetails()) builder.setNeutralButton(R.string.personal_clear, null);
+        AlertDialog dialog = builder.create();
+        dialog.setOnShowListener(ignored -> {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
+                if (form.customMissing()) {
+                    Toast.makeText(this, R.string.personal_custom_empty, Toast.LENGTH_LONG).show();
+                    form.custom.requestFocus();
+                    return;
+                }
+                form.save(personal);
+                refreshPersonal();
+                Toast.makeText(this, R.string.personal_saved, Toast.LENGTH_SHORT).show();
+                dialog.dismiss();
+            });
+            if (current.hasDetails()) {
+                dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
+                        .setOnClickListener(view -> confirmClearPersonal(dialog));
+            }
+        });
+        showPrivate(dialog);
+    }
+
+    private void confirmClearPersonal(AlertDialog editor) {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.personal_clear_title)
+                .setMessage(R.string.personal_clear_body)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.personal_clear_confirm, (dialog, which) -> {
+                    personal.clear();
+                    refreshPersonal();
+                    Toast.makeText(this, R.string.personal_removed, Toast.LENGTH_SHORT).show();
+                    editor.dismiss();
+                })
+                .show();
     }
 
     // ------------------------------------------------------------------ rules page
@@ -933,6 +1151,23 @@ public final class MainActivity extends Activity {
     // ------------------------------------------------------------------ settings page
 
     private void buildGuidePage(LinearLayout page) {
+        page.addView(Ui.sectionLabel(this, getString(R.string.settings_personal_title)));
+        LinearLayout personalSection = Ui.card(this);
+        personalNameRow = Ui.settingRow(this, R.drawable.ic_person,
+                getString(R.string.personal_name_title), "", getString(R.string.personal_not_set),
+                view -> showPersonalDialog());
+        personalSection.addView(personalNameRow.root);
+        personalSection.addView(Ui.divider(this));
+        personalReasonRow = Ui.settingRow(this, R.drawable.ic_heart,
+                getString(R.string.personal_reason_title), "", getString(R.string.personal_not_set),
+                view -> showPersonalDialog());
+        personalSection.addView(personalReasonRow.root);
+        personalSettingsNote = Ui.caption(this, getString(R.string.personal_local_note));
+        personalSettingsNote.setPadding(Ui.dp(this, 2), Ui.dp(this, 12),
+                Ui.dp(this, 2), Ui.dp(this, 10));
+        personalSection.addView(personalSettingsNote);
+        page.addView(personalSection, Ui.margins(this, 0, 12));
+
         page.addView(Ui.sectionLabel(this, getString(R.string.settings_protection_title)));
         LinearLayout protection = Ui.card(this);
 
@@ -2263,6 +2498,8 @@ public final class MainActivity extends Activity {
         }
         if (same && single != null) {
             summary = getString(R.string.time_limits_summary_limit, summary, timeLimitText(single));
+        } else if (!same) {
+            summary = getString(R.string.time_limits_summary_mixed, summary);
         }
         boolean access = AppUsage.hasAccess(this);
         if (!access) summary = getString(R.string.time_limits_summary_access, summary);
@@ -3029,13 +3266,22 @@ public final class MainActivity extends Activity {
 
     // ------------------------------------------------------------ daily time limits
 
-    private void chooseTimeLimitApps(Set<String> selected, Ui.SettingRow row, Runnable onChanged) {
+    /** The value a newly picked app starts with, matching the old shared default. */
+    private static final int DEFAULT_TIME_LIMIT_MINUTES = 15;
+
+    private void chooseTimeLimitApps(Set<String> selected, Map<String, Integer> minutes,
+            Ui.SettingRow row, Runnable onChanged) {
         List<ChosenApps.Entry> apps = ChosenApps.list(this);
         Set<String> draft = new LinkedHashSet<>(selected);
         AlertDialog dialog = AppPicker.create(this, R.string.time_limits_choose_apps,
                 R.string.schedule_use_apps, apps, draft, picked -> {
                     selected.clear();
                     selected.addAll(picked);
+                    // A newly picked app starts at the old shared default; a removed one forgets its value.
+                    for (String app : selected) {
+                        if (!minutes.containsKey(app)) minutes.put(app, DEFAULT_TIME_LIMIT_MINUTES);
+                    }
+                    minutes.keySet().retainAll(selected);
                     row.setSummary(getResources().getQuantityString(R.plurals.selected_apps,
                             selected.size(), selected.size()));
                     onChanged.run();
@@ -3044,18 +3290,20 @@ public final class MainActivity extends Activity {
         showPrivate(dialog);
     }
 
-    private void pickTimeLimit(int[] minutes, Ui.SettingRow row, Runnable onChanged) {
+    /** One app's daily limit: the choices the old shared value offered, applied to one app. */
+    private void pickTimeLimit(String packageName, CharSequence label, Map<String, Integer> minutes,
+            Runnable onChanged) {
         int[] choices = {5, 15, 30, 60, 120, 240, 480, 1440};
         String[] labels = new String[choices.length];
-        int checked = 1;
+        Integer current = minutes.get(packageName);
+        int checked = -1;
         for (int index = 0; index < choices.length; index++) {
             labels[index] = timeLimitText(choices[index]);
-            if (choices[index] == minutes[0]) checked = index;
+            if (current != null && choices[index] == current) checked = index;
         }
-        new AlertDialog.Builder(this).setTitle(R.string.time_limits_limit_title)
+        new AlertDialog.Builder(this).setTitle(getString(R.string.time_limits_limit_title, label))
                 .setSingleChoiceItems(labels, checked, (dialog, which) -> {
-                    minutes[0] = choices[which];
-                    row.setSummary(timeLimitText(minutes[0]));
+                    minutes.put(packageName, choices[which]);
                     onChanged.run();
                     dialog.dismiss();
                 })
@@ -3071,10 +3319,10 @@ public final class MainActivity extends Activity {
             return;
         }
         Set<String> selected = new LinkedHashSet<>(current.timeLimits.apps());
-        int[] minutes = {15};
-        if (!current.timeLimits.apps().isEmpty()) {
-            Integer saved = current.timeLimits.minutesFor(current.timeLimits.apps().iterator().next());
-            if (saved != null) minutes[0] = saved;
+        Map<String, Integer> minutes = new LinkedHashMap<>();
+        for (String app : current.timeLimits.apps()) {
+            Integer saved = current.timeLimits.minutesFor(app);
+            minutes.put(app, saved == null ? DEFAULT_TIME_LIMIT_MINUTES : saved);
         }
 
         LinearLayout form = new LinearLayout(this);
@@ -3114,10 +3362,10 @@ public final class MainActivity extends Activity {
                         Ui.margins(this, 0, 2));
                 return;
             }
-            if (!AppUsage.hasAccess(this)) {
+            boolean granted = AppUsage.hasAccess(this);
+            if (!granted) {
                 usageList.addView(Ui.caption(this, getString(R.string.time_limits_usage_unavailable)),
                         Ui.margins(this, 0, 2));
-                return;
             }
             int shown = 0;
             for (String app : selected) {
@@ -3129,27 +3377,35 @@ public final class MainActivity extends Activity {
                 shown++;
                 String label = labels.get(app);
                 if (label == null) label = app;
-                long used = AppUsage.usedToday(this, app);
-                long usedMinutes = Math.max(0, used / 60000L);
-                LinearLayout row = new LinearLayout(this);
-                row.setOrientation(LinearLayout.VERTICAL);
-                row.setPadding(0, Ui.dp(this, 4), 0, 0);
-                row.addView(Ui.strong(this, label));
-                row.addView(Ui.caption(this, getString(R.string.time_limits_used_today,
-                        timeLimitText((int) Math.min(Integer.MAX_VALUE, usedMinutes)),
-                        timeLimitText(minutes[0]))));
-                ProgressBar bar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
-                bar.setMax(minutes[0]);
-                bar.setProgress((int) Math.min(minutes[0], usedMinutes));
-                bar.setProgressTintList(ColorStateList.valueOf(Ui.color(this, R.color.accent)));
-                bar.setProgressBackgroundTintList(ColorStateList.valueOf(
-                        Ui.color(this, R.color.surface_alt)));
-                LinearLayout.LayoutParams barParams = new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(this, 6));
-                barParams.topMargin = Ui.dp(this, 4);
-                barParams.bottomMargin = Ui.dp(this, 8);
-                row.addView(bar, barParams);
-                usageList.addView(row);
+                int limit = minutes.getOrDefault(app, DEFAULT_TIME_LIMIT_MINUTES);
+                long usedMinutes = granted ? Math.max(0, AppUsage.usedToday(this, app) / 60000L) : 0;
+                CharSequence used = granted
+                        ? getString(R.string.time_limits_used_today,
+                                timeLimitText((int) Math.min(Integer.MAX_VALUE, usedMinutes)),
+                                timeLimitText(limit))
+                        : null;
+                final String appPackage = app;
+                final String appLabel = label;
+                Ui.SettingRow appRow = Ui.settingRow(this, R.drawable.ic_clock, appLabel, used,
+                        timeLimitText(limit),
+                        view -> pickTimeLimit(appPackage, appLabel, minutes, refreshUsage[0]));
+                LinearLayout entry = new LinearLayout(this);
+                entry.setOrientation(LinearLayout.VERTICAL);
+                entry.addView(appRow.root);
+                if (granted) {
+                    ProgressBar bar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+                    bar.setMax(limit);
+                    bar.setProgress((int) Math.min(limit, usedMinutes));
+                    bar.setProgressTintList(ColorStateList.valueOf(Ui.color(this, R.color.accent)));
+                    bar.setProgressBackgroundTintList(ColorStateList.valueOf(
+                            Ui.color(this, R.color.surface_alt)));
+                    LinearLayout.LayoutParams barParams = new LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(this, 4));
+                    barParams.topMargin = Ui.dp(this, 2);
+                    barParams.bottomMargin = Ui.dp(this, 8);
+                    entry.addView(bar, barParams);
+                }
+                usageList.addView(entry);
             }
         };
 
@@ -3157,14 +3413,9 @@ public final class MainActivity extends Activity {
         appsRow[0] = Ui.settingRow(this, R.drawable.ic_apps,
                 getString(R.string.time_limits_choose_apps),
                 getResources().getQuantityString(R.plurals.selected_apps, selected.size(), selected.size()),
-                view -> chooseTimeLimitApps(selected, appsRow[0], refreshUsage[0]));
+                view -> chooseTimeLimitApps(selected, minutes, appsRow[0], refreshUsage[0]));
         form.addView(appsRow[0].root, Ui.margins(this, 8, 0));
 
-        final Ui.SettingRow[] limitRow = {null};
-        limitRow[0] = Ui.settingRow(this, R.drawable.ic_clock,
-                getString(R.string.time_limits_limit_title), timeLimitText(minutes[0]),
-                view -> pickTimeLimit(minutes, limitRow[0], refreshUsage[0]));
-        form.addView(limitRow[0].root, Ui.margins(this, 8, 0));
         refreshUsage[0].run();
         form.addView(Ui.caption(this, getString(R.string.time_limits_limits)), Ui.margins(this, 10, 0));
 
@@ -3188,7 +3439,9 @@ public final class MainActivity extends Activity {
                             limits = app.hisn.core.AppTimeLimit.none();
                         } else {
                             java.util.Map<String, Integer> map = new java.util.LinkedHashMap<>();
-                            for (String app : selected) map.put(app, minutes[0]);
+                            for (String app : selected) {
+                                map.put(app, minutes.getOrDefault(app, DEFAULT_TIME_LIMIT_MINUTES));
+                            }
                             limits = new app.hisn.core.AppTimeLimit(map);
                         }
                         settings.updateTimeLimits(limits);
@@ -3764,6 +4017,7 @@ public final class MainActivity extends Activity {
         UninstallProtectionController.sync(this);
         try { LayerWatchdog.syncSchedule(this); }
         catch (RuntimeException unavailable) { /* The next open retries. */ }
+        refreshPersonal();
         refreshRuleSummaries();
         refreshBatteryState();
         AdultListUpdater.schedule(this);
@@ -3782,7 +4036,8 @@ public final class MainActivity extends Activity {
         try {
             // VpnService.prepare returns null only while Android still holds the approval.
             if (android.net.VpnService.prepare(this) != null) return;
-            startForegroundService(new Intent(this, DnsVpnService.class));
+            // Android 8+ requires startForegroundService; Android 6 and 7 do not have it.
+            Compat.startForegroundService(this, new Intent(this, DnsVpnService.class));
         } catch (RuntimeException unavailable) { /* The dashboard reports the gap. */ }
     }
 

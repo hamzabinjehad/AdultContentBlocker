@@ -26,12 +26,16 @@ import java.util.function.Consumer;
 /** Native TFLite copy of the bundled NSFWJS MobileNetV2, adult inspection only.
  *
  * <p>The model is derived from the same pinned weights as the WebView engine and uses the same
- * 0.70/0.85 Porn/Hentai thresholds. Preprocessing is NSFWJS's own bilinear 224×224 with
+ * 0.70/0.85 Porn/Hentai thresholds and the same centred near-miss second look. Preprocessing is NSFWJS's own bilinear 224×224 with
  * alignCorners and 0..1 normalization. The interpreter and preprocessing run on one worker; the
  * callback returns to the main thread. No pixels are retained after the frame is processed.</p>
  */
 final class TfliteClassifier implements VisualRuntime {
     static final int SIZE = 224;
+    /** Scores this far over the block threshold act without a second capture. */
+    static final float STRONG = 0.90f, STRONG_SUM = 0.95f;
+    /** region.js NEAR_PORN/NEAR_HENTAI, NEAR_SUM and CROP_FRACTION. */
+    static final float NEAR = 0.45f, NEAR_SUM = 0.60f, CROP_FRACTION = 0.68f;
     static final String MODEL_SHA256 = "01215075f6e759bac8931310ed95665295bd662eff547f27a33982bcf2cb4d46";
     private static final String BACKEND = "tflite-cpu";
     private final Handler main = new Handler(Looper.getMainLooper());
@@ -97,22 +101,49 @@ final class TfliteClassifier implements VisualRuntime {
         int[] source = new int[width * height];
         frame.getPixels(source, 0, width, 0, 0, width, height);
         worker.execute(() -> {
-            String verdict;
-            try { verdict = classify(source, width, height); }
-            catch (Throwable unavailable) { verdict = "unknown"; }
-            final String value = verdict;
-            main.post(() -> { if (!closed) result.accept(new VisualResult(value, false)); });
+            VisualResult value;
+            try { value = classify(source, width, height); }
+            catch (Throwable unavailable) { value = new VisualResult("unknown", false); }
+            finally { Arrays.fill(source, 0); }
+            final VisualResult answer = value;
+            main.post(() -> { if (!closed) result.accept(answer); });
         });
     }
 
-    private String classify(int[] source, int width, int height) {
+    /** Same rule as the WebView path (decisions.js adultDecision and region.js nearMiss): a full
+     * frame block, or an uncertain full frame whose centred crop blocks. A crop block is never
+     * strong, so the guard always takes a second look before acting on it. */
+    private VisualResult classify(int[] source, int width, int height) {
+        float[] full = scores(source, width, height, 0, 0, width, height);
+        if (full == null) return new VisualResult("unknown", false);
+        float porn = full[3], hentai = full[1];
+        if (blocks(porn, hentai)) {
+            boolean strong = porn >= STRONG || hentai >= STRONG || porn + hentai >= STRONG_SUM;
+            return new VisualResult("block", false, strong);
+        }
+        if (porn >= NEAR || hentai >= NEAR || porn + hentai >= NEAR_SUM) {
+            int cropWidth = Math.max(1, Math.round(width * CROP_FRACTION));
+            int cropHeight = Math.max(1, Math.round(height * CROP_FRACTION));
+            float[] crop = scores(source, width, height, (width - cropWidth) / 2, (height - cropHeight) / 2,
+                    cropWidth, cropHeight);
+            if (crop != null && blocks(crop[3], crop[1])) return new VisualResult("block", false, false);
+        }
+        return new VisualResult("allow", false);
+    }
+
+    private static boolean blocks(float porn, float hentai) {
+        return porn >= 0.70f || hentai >= 0.70f || porn + hentai >= 0.85f;
+    }
+
+    /** Model scores (Drawing, Hentai, Neutral, Porn, Sexy) for one region of the frame, or null. */
+    private float[] scores(int[] source, int width, int height, int left, int top, int regionWidth, int regionHeight) {
         input.rewind();
         for (int y = 0; y < SIZE; y++) {
-            float sy = y * (height - 1) / (SIZE - 1f);
+            float sy = top + y * (regionHeight - 1) / (SIZE - 1f);
             int y0 = (int) sy, y1 = Math.min(y0 + 1, height - 1);
             float fy = sy - y0;
             for (int x = 0; x < SIZE; x++) {
-                float sx = x * (width - 1) / (SIZE - 1f);
+                float sx = left + x * (regionWidth - 1) / (SIZE - 1f);
                 int x0 = (int) sx, x1 = Math.min(x0 + 1, width - 1);
                 float fx = sx - x0;
                 int p00 = source[y0 * width + x0], p10 = source[y0 * width + x1];
@@ -124,14 +155,13 @@ final class TfliteClassifier implements VisualRuntime {
         }
         input.rewind();
         Interpreter current = interpreter;
-        if (current == null) return "unknown";
+        if (current == null) return null;
         try {
             current.run(input, output);
-            float porn = output[0][3], hentai = output[0][1];
-            return porn >= 0.70f || hentai >= 0.70f || porn + hentai >= 0.85f ? "block" : "allow";
+            return output[0].clone();
         } finally {
-            // The frame is transient; leave no pixel or normalized value in the reusable buffers.
-            Arrays.fill(source, 0);
+            // The frame is transient; leave no normalized value in the reusable buffer. The
+            // caller clears the source pixels once every region has been read.
             input.rewind();
             for (int i = 0; i < SIZE * SIZE * 3; i++) input.putFloat(i * 4, 0);
         }

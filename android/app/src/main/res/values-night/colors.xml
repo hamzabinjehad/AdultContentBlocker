@@ -25,5 +25,6 @@
     <color name="warning_border">#5A482C</color>
     <color name="danger_border">#5C3730</color>
     <color name="accent_border">#39485A</color>
-    <color name="ic_launcher_background">#0F2744</color>
+    <color name="ic_launcher_background">#F4F1EA</color>
+    <color name="splash_background">#1F3A5F</color>
 </resources>

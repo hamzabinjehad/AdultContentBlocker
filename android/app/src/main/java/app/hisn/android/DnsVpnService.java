@@ -151,7 +151,8 @@ public final class DnsVpnService extends VpnService {
     }
 
     /** True only while the owner left DNS filtering on; an Android revocation clears it. */
-    static boolean resumeRequested(Context context) {
+    /** True when the person left DNS filtering on and Android still holds the VPN approval. */
+    public static boolean resumeRequested(Context context) {
         return context.getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(RESUME, false);
     }
 
@@ -171,7 +172,7 @@ public final class DnsVpnService extends VpnService {
         NotificationManager notifications = context.getSystemService(NotificationManager.class);
         Compat.createChannel(context, ALERT_CHANNEL, R.string.dns_alert_channel,
                 NotificationManager.IMPORTANCE_DEFAULT);
-        PendingIntent open = PendingIntent.getActivity(context, 0, new Intent(context, MainActivity.class),
+        PendingIntent open = PendingIntent.getActivity(context, 0, new Intent(context, ShellActivity.class),
                 PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         notifications.notify(ALERT_ID, Compat.builder(context, ALERT_CHANNEL,
                 NotificationManager.IMPORTANCE_DEFAULT)
@@ -304,8 +305,27 @@ public final class DnsVpnService extends VpnService {
         }
     }
 
+    /** The app's own switch: the system keeps a bound VPN service alive, so stopService() alone
+     *  does not end the tunnel. This action clears the saved intent and closes the session. */
+    public static final String ACTION_STOP = "app.hisn.android.action.STOP_DNS";
+
     @Override public int onStartCommand(Intent intent, int flags, int startId) {
-        if (session != null) return START_NOT_STICKY;
+        if (intent != null && ACTION_STOP.equals(intent.getAction())) {
+            setResumeRequested(this, false);
+            closeSession();
+            state = State.OFF;
+            stopSelf();
+            return START_NOT_STICKY;
+        }
+        if (session != null) return START_STICKY;
+        if (intent == null) {
+            // Android restarted the service after killing the process. Resume only what the
+            // owner left on and Android still approves; never ask for consent from here.
+            boolean allowed;
+            try { allowed = resumeRequested(this) && VpnService.prepare(this) == null; }
+            catch (RuntimeException unavailable) { allowed = false; }
+            if (!allowed) { stopSelf(); return START_NOT_STICKY; }
+        }
         serviceSession++;
         try {
             // Same channel id as before, so existing installs get the corrected name.
@@ -339,8 +359,42 @@ public final class DnsVpnService extends VpnService {
             state = State.ERROR;
             alert(R.string.dns_failed_body);
             stopSelf();
+            return START_NOT_STICKY;
         }
-        return START_NOT_STICKY;
+        // Sticky: if Android kills the process for memory, it restarts the filter (see above).
+        return START_STICKY;
+    }
+
+    private static final long[] RETRY_DELAYS = {2000, 8000, 30000};
+    private static final long RETRY_WINDOW = 10 * 60 * 1000;
+    private int retries;
+    private long firstRetryAt;
+
+    /**
+     * A failed reader gets up to three rebuilds in ten minutes before the service gives up and
+     * alerts. Returns false when the budget is spent. Call with CHECK_LOCK held.
+     */
+    private boolean scheduleRetry() {
+        long now = android.os.SystemClock.elapsedRealtime();
+        if (retries == 0 || now - firstRetryAt > RETRY_WINDOW) { retries = 0; firstRetryAt = now; }
+        if (retries >= RETRY_DELAYS.length) return false;
+        long delay = RETRY_DELAYS[retries++];
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            synchronized (CHECK_LOCK) {
+                // Stopped, revoked or already replaced while waiting: nothing to rebuild.
+                if (activeService != this || !resumeRequested(this)) return;
+            }
+            closeSession();
+            try {
+                if (VpnService.prepare(this) != null) throw new IllegalStateException("VPN approval is gone");
+                startService(new Intent(this, DnsVpnService.class));
+            } catch (RuntimeException unavailable) {
+                state = State.ERROR;
+                alert(R.string.dns_failed_body);
+                stopSelf();
+            }
+        }, delay);
+        return true;
     }
 
     /** Another VPN took over or the owner disconnected Hisn in Android settings. */
@@ -364,7 +418,7 @@ public final class DnsVpnService extends VpnService {
             case PRIVATE_DNS_BYPASS: text = R.string.dns_notification_private_dns; break;
             default: text = R.string.dns_starting;
         }
-        PendingIntent open = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class),
+        PendingIntent open = PendingIntent.getActivity(this, 0, new Intent(this, ShellActivity.class),
                 PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         return Compat.builder(this, CHANNEL, NotificationManager.IMPORTANCE_LOW)
                 .setSmallIcon(R.drawable.ic_shield).setColor(getColor(R.color.accent))
@@ -442,6 +496,36 @@ public final class DnsVpnService extends VpnService {
         private final Object outputLock = new Object();
         private final ThreadPoolExecutor workers = new ThreadPoolExecutor(4, 4, 0, TimeUnit.MILLISECONDS,
                 new ArrayBlockingQueue<>(64), new ThreadPoolExecutor.AbortPolicy());
+        // The composed rule set changes only when the saved rules, the active list
+        // generation or its terms change; the compiled object itself is immutable.
+        private volatile ComposedPolicy composed;
+
+        /** Reuses the compiled rule set while its three inputs are the same objects. */
+        private HostDecision.Policy composedPolicy(HostListStore.Active active,
+                PolicyStore.Snapshot rules, HostTermPolicy terms) {
+            ComposedPolicy held = composed;
+            if (held != null && held.active == active && held.rules == rules && held.terms == terms) {
+                return held.policy;
+            }
+            HostDecision.Policy next = new HostDecision.Policy(rules.domains, active.policy,
+                    active.available(), active.generation, terms);
+            composed = new ComposedPolicy(active, rules, terms, next);
+            return next;
+        }
+
+        private static final class ComposedPolicy {
+            final HostListStore.Active active;
+            final PolicyStore.Snapshot rules;
+            final HostTermPolicy terms;
+            final HostDecision.Policy policy;
+            ComposedPolicy(HostListStore.Active active, PolicyStore.Snapshot rules,
+                    HostTermPolicy terms, HostDecision.Policy policy) {
+                this.active = active;
+                this.rules = rules;
+                this.terms = terms;
+                this.policy = policy;
+            }
+        }
 
         void run() {
             try {
@@ -488,14 +572,14 @@ public final class DnsVpnService extends VpnService {
                 DnsPolicy.Rules savedRules = hostname -> {
                     // One composed order, shared with the read-only site check:
                     // personal block, adult TLD, hostname term, then published list.
-                    HostListStore.Active active = HostListStore.active(DnsVpnService.this);
+                    HostListStore.Active active = HostListStore.peek();
+                    if (active == null) active = HostListStore.active(DnsVpnService.this);
                     // A running tunnel re-reads the active generation for every
                     // decision, so a newly adopted terms file reaches DNS without
                     // a service restart. The captured value is only the fallback
                     // when the active generation has no usable terms.
                     HostTermPolicy terms = active.hostTerms != null ? active.hostTerms : fallbackHostTerms;
-                    HostDecision.Policy current = new HostDecision.Policy(settings.snapshot().domains,
-                            active.policy, active.available(), active.generation, terms);
+                    HostDecision.Policy current = composedPolicy(active, settings.snapshot(), terms);
                     return current.evaluate(hostname).enforcement();
                 };
                 DnsPolicy.Rules rules = hostname -> EncryptedDnsProviders.blocks(hostname, privateDnsName)
@@ -548,7 +632,9 @@ public final class DnsVpnService extends VpnService {
                                 try { settings.checkpoint(); } catch (RuntimeException unsaved) { /* Retry next minute. */ }
                             });
                         }
-                        if (Os.poll(new StructPollfd[]{poll}, 250) == 0) continue;
+                        // TCP flows need quarter-second timers; with none open only the notice and the
+                        // minute checkpoint depend on this wake-up, and a packet still wakes it at once.
+                        if (Os.poll(new StructPollfd[]{poll}, tcp.idle() ? 2000 : 250) == 0) continue;
                         if ((poll.revents & (OsConstants.POLLERR | OsConstants.POLLHUP | OsConstants.POLLNVAL)) != 0) {
                             throw new IOException("Tunnel disconnected");
                         }
@@ -592,9 +678,15 @@ public final class DnsVpnService extends VpnService {
             } catch (Exception failure) {
                 synchronized (CHECK_LOCK) {
                     if (!closed && session == this) {
-                        state = State.ERROR; errors.incrementAndGet(); stopSelf();
-                        // Posted under the lock so a concurrent revocation's notice always lands last.
-                        alert(R.string.dns_failed_body);
+                        errors.incrementAndGet();
+                        if (scheduleRetry()) {
+                            // The tunnel is rebuilt shortly; the dashboard shows the gap until then.
+                            state = State.DEGRADED;
+                        } else {
+                            state = State.ERROR; stopSelf();
+                            // Posted under the lock so a concurrent revocation's notice always lands last.
+                            alert(R.string.dns_failed_body);
+                        }
                     }
                 }
             } finally {
@@ -917,7 +1009,10 @@ public final class DnsVpnService extends VpnService {
                     if (requestEpoch != networkEpoch) throw new IOException("DNS connection invalidated");
                 }
                 byte[] payload = resolution.answer;
-                boolean truncated = payload.length > policy.udpResponseLimit(packet.getDns());
+                // The exchange already parsed and evaluated this question; reuse its
+                // question offset instead of running the whole policy a second time.
+                boolean truncated = payload.length > policy.udpResponseLimit(
+                        packet.getDns(), resolution.questionEnd);
                 if (truncated) {
                     payload = policy.truncatedResponse(packet.getDns());
                 }

@@ -40,6 +40,12 @@ final class VisualGuard implements AutoCloseable {
     static volatile long interventions;
     /** Matched people sent back to the previous page instead of being covered. */
     static volatile long personBacks;
+    /** First explicit frames a second capture did not repeat: the screen was uncovered, the app not closed. */
+    static volatile long unconfirmed;
+    /** Matching faces a second capture did not repeat: covered briefly, never sent back. */
+    static volatile long personUnconfirmed;
+    /** How long a first hit waits for the confirming capture before it counts as a new first hit. */
+    static final long CONFIRM_MILLIS = 3000;
     static volatile long captures;
     static volatile long captureRequests;
     /** Long edge of the frame handed to the model. The model resizes its input to 224, and this
@@ -84,6 +90,10 @@ final class VisualGuard implements AutoCloseable {
     /** A cover-before-checking is shown once per window, never once per sample. */
     private boolean provisionalCover;
     private int captureFailureStreak;
+    /** A window whose last frame looked explicit (or showed a matching face in Back mode) and is
+     * covered until a second capture decides. -1 when none; ends at the matching deadline. */
+    private int adultConfirmWindow = -1, personConfirmWindow = -1;
+    private long adultConfirmUntil, personConfirmUntil;
     private int lastWindow = -1;
     private VisualFrameGate.Frame pendingFrame;
     private long pendingStarted;
@@ -191,6 +201,48 @@ final class VisualGuard implements AutoCloseable {
         return eligible;
     }
 
+    /** A window awaiting its confirming capture goes first; otherwise windows take turns. */
+    private GuardWindows.Window nextTarget(List<GuardWindows.Window> eligible, long now) {
+        int waiting = now < adultConfirmUntil ? adultConfirmWindow
+                : now < personConfirmUntil ? personConfirmWindow : -1;
+        if (waiting != -1) for (GuardWindows.Window window : eligible) if (window.id == waiting) return window;
+        return GuardWindows.after(eligible, lastWindow);
+    }
+
+    /** An explicit frame. A strong score, or the second explicit capture of the same window within
+     * {@link #CONFIRM_MILLIS}, closes the app and starts the rest period. A first ordinary hit only
+     * covers the screen and asks for the next capture at Android's floor, so a frame caught
+     * mid-scroll, mid-transition or half-loaded cannot lock the person out on its own. */
+    private void adultHit(GuardWindows.Window target, boolean strong, long now) {
+        boolean confirmed = strong || (adultConfirmWindow == target.id && now < adultConfirmUntil);
+        if (!confirmed) {
+            adultConfirmWindow = target.id;
+            adultConfirmUntil = now + CONFIRM_MILLIS;
+            overlay.showConfirming();
+            confirmSoon(now);
+            return;
+        }
+        adultConfirmWindow = -1;
+        adultConfirmUntil = 0;
+        overlay.hide();
+        gate.invalidate();
+        if (block.run(target)) interventions++;
+    }
+
+    /** A clean frame for this window ends a pending adult confirmation without acting. */
+    private void adultClear(GuardWindows.Window target) {
+        if (adultConfirmWindow != target.id) return;
+        adultConfirmWindow = -1;
+        adultConfirmUntil = 0;
+        unconfirmed++;
+    }
+
+    /** The confirming capture is taken as soon as Android allows one for this window. */
+    private void confirmSoon(long now) {
+        schedule(Math.max(VisualCadence.POLL_FLOOR_MILLIS,
+                lastCaptureRequestAt + VisualCadence.FAST_MILLIS - now));
+    }
+
     /** True while that window holds input focus and an input field in it is focused, including
      * passwords (rule in core GuardWindows.typing); null when it is gone. */
     private Boolean typing(GuardWindows.Window window) {
@@ -228,7 +280,7 @@ final class VisualGuard implements AutoCloseable {
             if (busy) return;
             health.report(State.WAITING);
             // Nothing is sampled while the screen is off; while it is on the model stays warm.
-            GuardWindows.Window target = interactive ? GuardWindows.after(eligibleWindows(), lastWindow) : null;
+            GuardWindows.Window target = interactive ? nextTarget(eligibleWindows(), now) : null;
             if (target == null) overlay.hide();
             // A person who chose the full-cover response should not see the screen while
             // the first sample is still running. Shown once per window, cleared by the result.
@@ -291,11 +343,11 @@ final class VisualGuard implements AutoCloseable {
                             return;
                         }
                         Bitmap hardware = Bitmap.wrapHardwareBuffer(buffer, screenshot.getColorSpace());
-                        if (hardware == null) { busy = false; health.report(State.UNREADABLE); return; }
+                        if (hardware == null) { unreadableFrame(); return; }
                         Bitmap copy = null, scaled = null;
                         try {
                             if ((long) hardware.getWidth() * hardware.getHeight() > 16777216) {
-                                busy = false; health.report(State.UNREADABLE); return;
+                                unreadableFrame(); return;
                             }
                             copy = hardware.copy(Bitmap.Config.ARGB_8888, false);
                             int edge = PersonBlur.on(personMode) ? PERSON_FRAME_EDGE : FRAME_EDGE;
@@ -311,8 +363,10 @@ final class VisualGuard implements AutoCloseable {
                                 }
                             }
                             long signature = signature(scaled);
+                            // The cache key covers every pixel; the coarse signature only paces sampling.
+                            long key = fingerprint(scaled);
                             String cached = PersonBlur.on(personMode)
-                                    ? null : verdicts.get(target.id, signature, SystemClock.uptimeMillis());
+                                    ? null : verdicts.get(target.id, key, SystemClock.uptimeMillis());
                             if (cached != null) {
                                 cached(frame, target, signature, cached);
                                 return;
@@ -324,7 +378,7 @@ final class VisualGuard implements AutoCloseable {
                             }
                             lastInferenceMillis = 0;
                             pendingInferenceStart = SystemClock.uptimeMillis();
-                            classifier.inspect(scaled, result -> decided(frame, target, signature, result));
+                            classifier.inspect(scaled, result -> decided(frame, target, signature, key, result));
                         } finally {
                             if (scaled != null && scaled != copy) scaled.recycle();
                             if (copy != null) copy.recycle();
@@ -391,6 +445,28 @@ final class VisualGuard implements AutoCloseable {
         return signature;
     }
 
+    /** Every pixel of the downscaled frame, for the verdict cache (VisualVerdictCache.fingerprint). */
+    private static long fingerprint(Bitmap frame) {
+        int width = frame.getWidth(), height = frame.getHeight();
+        int[] pixels = new int[width * height];
+        try {
+            frame.getPixels(pixels, 0, width, 0, 0, width, height);
+            return VisualVerdictCache.fingerprint(pixels, width);
+        } finally {
+            java.util.Arrays.fill(pixels, 0);
+        }
+    }
+
+    /** A capture Android returned but that cannot be read: end this sample cleanly so the next
+     * poll is not left waiting on a frame that will never decide. */
+    private void unreadableFrame() {
+        pendingFrame = null;
+        busy = false;
+        clearPendingPersonFrame();
+        health.report(State.UNREADABLE);
+        sampleEnded();
+    }
+
     private boolean current(VisualFrameGate.Frame frame, GuardWindows.Window target) {
         // A sample finishing after the screen went off, or after its window closed, changed app,
         // focused an input or stopped being selected, is discarded, never acted on.
@@ -421,6 +497,7 @@ final class VisualGuard implements AutoCloseable {
                 return;
             }
             if (!current(frame, target)) { discarded++; overlay.hide(); health.report(State.WAITING); return; }
+            String actual = verdict;
             verdict = VisualTestHooks.verdict(service.getPackageName(), target.app, verdict, now);
             if (!"block".equals(verdict) && !"allow".equals(verdict)) { fail(); return; }
             reused++;
@@ -428,17 +505,15 @@ final class VisualGuard implements AutoCloseable {
             long completedAt = SystemClock.elapsedRealtime();
             health.report(State.SAMPLED, completedAt, new PolicyReceipt(pendingPolicy, pendingSession,
                     target.id, PolicyReceipt.Kind.VISUAL_SAMPLE, PolicyReceipt.Result.PASSED, completedAt));
-            if ("block".equals(verdict)) {
-                overlay.hide();
-                gate.invalidate();
-                if (block.run(target)) interventions++;
-            } else overlay.hide();
+            // The same pixels again: a pending first hit on this window is confirmed by a still screen.
+            if ("block".equals(verdict)) adultHit(target, !verdict.equals(actual), now);
+            else { adultClear(target); overlay.hide(); }
         } catch (RuntimeException unavailable) { fail(); }
         finally { sampleEnded(); }
     }
 
     private void decided(VisualFrameGate.Frame frame, GuardWindows.Window target, long signature,
-            VisualResult result) {
+            long key, VisualResult result) {
         if (closed || pendingFrame != frame) return;
         Bitmap personFrame = pendingPersonFrame;
         pendingPersonFrame = null;
@@ -466,6 +541,8 @@ final class VisualGuard implements AutoCloseable {
             }
             String verdict = result.verdict;
             verdict = VisualTestHooks.verdict(service.getPackageName(), target.app, verdict, now);
+            // The fixture's one-shot synthetic verdict cannot repeat, so it acts like a strong score.
+            boolean strong = result.strong || !verdict.equals(result.verdict);
             if (!"block".equals(verdict) && !"allow".equals(verdict)) {
                 // Fail closed in people mode: a frame the face runtime could not answer must not
                 // reveal a screen that was already covered or may contain a matching face.
@@ -475,17 +552,29 @@ final class VisualGuard implements AutoCloseable {
             }
             samples++;
             retry.recovered();
-            if (!PersonBlur.on(personMode)) verdicts.put(target.id, signature, verdict, now);
+            if (!PersonBlur.on(personMode)) verdicts.put(target.id, key, verdict, now);
             cadence.finished(target.id, signature, now);
             long completedAt = SystemClock.elapsedRealtime();
             health.report(State.SAMPLED, completedAt, new PolicyReceipt(pendingPolicy, pendingSession,
                     target.id, PolicyReceipt.Kind.VISUAL_SAMPLE, PolicyReceipt.Result.PASSED, completedAt));
             if ("block".equals(verdict)) {
-                overlay.hide();
-                gate.invalidate();
-                if (block.run(target)) interventions++;
-            } else if (result.personBlur) {
+                adultHit(target, strong, now);
+                return;
+            }
+            adultClear(target);
+            if (result.personBlur) {
                 if (PersonBlur.BACK.equals(PersonBlur.response(service))) {
+                    if (personConfirmWindow != target.id || now >= personConfirmUntil) {
+                        // Cover at once, but leave the page only if the next capture still shows
+                        // a matching face: one misjudged frame must not navigate away.
+                        personConfirmWindow = target.id;
+                        personConfirmUntil = now + CONFIRM_MILLIS;
+                        overlay.show(personFrame);
+                        confirmSoon(now);
+                        return;
+                    }
+                    personConfirmWindow = -1;
+                    personConfirmUntil = 0;
                     overlay.hide();
                     // One Back per page transition; a second matching page is handled on its
                     // next sample, so a slow browser is not sent back several times at once.
@@ -501,6 +590,11 @@ final class VisualGuard implements AutoCloseable {
                     overlay.show(personFrame);
                 }
             } else {
+                if (personConfirmWindow == target.id) {
+                    personConfirmWindow = -1;
+                    personConfirmUntil = 0;
+                    personUnconfirmed++;
+                }
                 overlay.hide();
             }
         } catch (RuntimeException unavailable) { fail(); }
@@ -636,6 +730,8 @@ final class VisualGuard implements AutoCloseable {
         pendingStarted = 0;
         pendingInferenceStart = 0;
         pendingPolicy = -1;
+        adultConfirmWindow = personConfirmWindow = -1;
+        adultConfirmUntil = personConfirmUntil = 0;
         fastGeneration++;
         loadGeneration++;
         gate.invalidate();

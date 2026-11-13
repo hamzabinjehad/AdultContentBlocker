@@ -51,7 +51,8 @@ def tool(name, build_tools):
 
 
 def run(*command):
-    result = subprocess.run(command, capture_output=True, text=True)
+    # Dex strings are modified UTF-8; a strict decode fails on Kotlin and Compose classes.
+    result = subprocess.run(command, capture_output=True, text=True, errors="replace")
     if result.returncode != 0:
         sys.exit(f"check-release: {os.path.basename(command[0])} failed: {result.stderr.strip()[:500]}")
     return result.stdout

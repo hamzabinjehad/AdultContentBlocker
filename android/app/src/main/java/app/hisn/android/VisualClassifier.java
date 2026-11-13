@@ -125,8 +125,9 @@ final class VisualClassifier implements VisualRuntime {
                     JSONObject value = new JSONObject(answer);
                     String verdict = value.optString("v");
                     boolean person = value.optBoolean("p", false);
+                    boolean strong = value.optBoolean("s", false);
                     if ("allow".equals(verdict) || "block".equals(verdict)) {
-                        finishFrame(new VisualResult(verdict, person));
+                        finishFrame(new VisualResult(verdict, person, strong));
                     } else failed();
                 } catch (org.json.JSONException malformed) { failed(); }
             });

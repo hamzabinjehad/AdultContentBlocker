@@ -15,6 +15,16 @@ export function nearMiss(adult) {
     || scores.Porn + scores.Hentai >= NEAR_SUM);
 }
 
+export const STRONG = 0.90;
+export const STRONG_SUM = 0.95;
+
+/** A full-frame block so far above the threshold that one capture is enough to act on. */
+export function strongBlock(adult) {
+  const scores = adult?.scores;
+  return adult?.block === true && !!scores && (scores.Porn >= STRONG || scores.Hentai >= STRONG
+    || scores.Porn + scores.Hentai >= STRONG_SUM);
+}
+
 /** Centred RGBA crop of a Base64 frame, or null when the frame is malformed. */
 export function centreCrop(rgba, width, height) {
   if (typeof rgba !== 'string' || !Number.isInteger(width) || !Number.isInteger(height)

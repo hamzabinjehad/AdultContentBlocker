@@ -19,6 +19,7 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 
 import app.hisn.core.PauseTally;
+import app.hisn.core.PersonalProfile;
 
 import java.time.LocalDate;
 
@@ -52,10 +53,12 @@ public final class RestrictionActivity extends Activity {
     private LinearLayout reflectionPanel;
     private int cycle;
     private boolean voluntary;
+    private PersonalStore personal;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         voluntary = getIntent().getBooleanExtra("voluntary", false);
+        personal = new PersonalStore(this);
         if (Build.VERSION.SDK_INT >= 30) getWindow().setDecorFitsSystemWindows(false);
         int side = Ui.sidePadding(this);
         int top = Ui.dp(this, 28);
@@ -98,6 +101,7 @@ public final class RestrictionActivity extends Activity {
         bodyParams.topMargin = Ui.dp(this, 10);
         column.addView(body, bodyParams);
 
+        addPersonalReason(column);
         addPause(column, state == null);
 
         scroll.setOnApplyWindowInsetsListener((view, insets) -> {
@@ -147,14 +151,34 @@ public final class RestrictionActivity extends Activity {
         super.onDestroy();
     }
 
+    /** The person's own words, kept close to the breath rather than only on the dashboard. */
+    private void addPersonalReason(LinearLayout column) {
+        PersonalProfile profile = personal.profile();
+        if (!profile.hasReason()) return;
+        LinearLayout panel = Ui.softPanel(this);
+        panel.setPadding(Ui.dp(this, 18), Ui.dp(this, 14), Ui.dp(this, 18), Ui.dp(this, 14));
+        panel.addView(Ui.eyebrow(this, getString(R.string.pause_your_reason)));
+        TextView quote = Ui.display(this, getString(R.string.personal_quote,
+                PersonalStore.reasonLabel(this, profile)), 19);
+        quote.setLineSpacing(Ui.dp(this, 4), 1.14f);
+        quote.setPadding(0, Ui.dp(this, 6), 0, 0);
+        panel.addView(quote);
+        column.addView(panel, Ui.margins(this, 18, 0));
+    }
+
     private void addPause(LinearLayout page, boolean count) {
         // Counting is a day and a number only. A recreated screen (rotation) is the same pause.
         SharedPreferences prefs = getSharedPreferences(PAUSE_PREFS, MODE_PRIVATE);
-        PauseTally tally = PauseTally.record(prefs.getLong("day", -1), prefs.getInt("count", 0),
+        long storedDay = prefs.getLong("day", -1);
+        int storedCount = prefs.getInt("count", 0);
+        PauseTally tally = PauseTally.record(storedDay, storedCount,
                 prefs.getLong("at", 0), LocalDate.now().toEpochDay(), System.currentTimeMillis());
         if (count) {
             prefs.edit().putLong("day", tally.day).putInt("count", tally.count)
                     .putLong("at", tally.at).apply();
+            // The dashboard total follows a real new pause only: a rotation, a merged
+            // re-open or a clock moved backwards cannot inflate it.
+            if (tally.day != storedDay || tally.count != storedCount) personal.recordPause();
         }
 
         LinearLayout breath = new LinearLayout(this);

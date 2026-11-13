@@ -1,5 +1,5 @@
 import { createVisualEngine } from './engine.bundle.js';
-import { nearMiss, centreCrop } from './region.js';
+import { nearMiss, centreCrop, strongBlock } from './region.js';
 
 // Only packaged code runs in this WebView. Captures exist in memory for one request.
 const query = new URL(location.href).searchParams;
@@ -33,7 +33,9 @@ window.hisnInspect = async (id, width, height, rgba) => {
       }
     }
     const personBlur = result?.persons?.blur === true;
-    HisnResult.result(id, JSON.stringify({ v: verdict, p: personBlur }));
+    // Only a full-frame score far above the threshold skips the guard's second capture.
+    const strong = verdict === 'block' && strongBlock(result.adult);
+    HisnResult.result(id, JSON.stringify({ v: verdict, p: personBlur, s: strong }));
   } catch { HisnResult.result(id, 'unknown'); }
   finally { rgba = null; }
 };

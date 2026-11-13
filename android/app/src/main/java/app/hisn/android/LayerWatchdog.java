@@ -133,7 +133,7 @@ final class LayerWatchdog {
             Compat.createChannel(context, CHANNEL, R.string.layer_health_channel,
                     NotificationManager.IMPORTANCE_DEFAULT);
             PendingIntent open = PendingIntent.getActivity(context, 0,
-                    new Intent(context, MainActivity.class), PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+                    new Intent(context, ShellActivity.class), PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
             notifications.notify(NOTIFICATION_ID, Compat.builder(context, CHANNEL,
                     NotificationManager.IMPORTANCE_DEFAULT)
                     .setSmallIcon(R.drawable.ic_shield).setColor(context.getColor(R.color.accent))

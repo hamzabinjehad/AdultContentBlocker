@@ -5,11 +5,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.VpnService;
 
-/** Resumes DNS filtering after a reboot only if the owner left it on and Android still holds
+/** Resumes DNS filtering after a reboot or an app update only if the owner left it on and Android still holds
  * Hisn's VPN approval. It never asks for approval or changes a system setting. */
 public final class VpnBootReceiver extends BroadcastReceiver {
     @Override public void onReceive(Context context, Intent intent) {
-        if (intent == null || !Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) return;
+        // An app update stops the VPN service like a reboot does; the same resume rules apply.
+        if (intent == null || !(Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())
+                || Intent.ACTION_MY_PACKAGE_REPLACED.equals(intent.getAction()))) return;
         // Device-owner flags survive a reboot, but the commitment clock may
         // have expired while the phone was off. Reconcile before the VPN path
         // returns early so an unmanaged install is a no-op and a managed one

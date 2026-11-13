@@ -66,6 +66,10 @@ public final class BootShieldService extends Service {
     /** Called from the boot receivers; a no-op unless the shield can and should run. */
     static void startIfNeeded(Context context) {
         if (!BuildConfig.SELF_PROTECTION || !Settings.canDrawOverlays(context)) return;
+        // Android disables an app's accessibility service when the app is updated. A cover that
+        // waits for a service the system turned off cannot help: it only blocks the phone for
+        // three minutes. The dashboard reports the missing layer and offers the settings page.
+        if (!Permissions.accessibilityInSettings(context)) return;
         try {
             if (!bootPrefs(context).getBoolean("armed", false)) return;
             Compat.startForegroundService(context, new Intent(context, BootShieldService.class));
@@ -114,7 +118,7 @@ public final class BootShieldService extends Service {
         // The window extends past the screen bottom by "under"; padding keeps the text centred.
         layout.setPadding(pad, pad, pad, pad + under);
 
-        ImageView mark = Ui.iconInTile(this, R.drawable.ic_shield, R.color.accent, 68, 40);
+        ImageView mark = Ui.iconInTile(this, R.drawable.ic_brand_mark, R.color.accent, 68, 40);
         LinearLayout.LayoutParams markParams = (LinearLayout.LayoutParams) mark.getLayoutParams();
         markParams.gravity = Gravity.CENTER_HORIZONTAL;
         layout.addView(mark);

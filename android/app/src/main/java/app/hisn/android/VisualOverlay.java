@@ -9,6 +9,7 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -20,7 +21,8 @@ import android.widget.TextView;
  * needed and the app underneath cannot receive taps while the cover is up. The cover uses a
  * heavily downscaled snapshot of the frame (enough to look like blur, not enough to read) on a
  * dark scrim. It is removed only by a later clean match, a window change, screen off, disabling
- * the visual layer, or leaving the app. Nothing is written to disk.</p>
+ * the visual layer, or leaving the app. Its one button goes Home: it can take a person away from
+ * the covered screen, never reveal it. Nothing is written to disk.</p>
  */
 final class VisualOverlay implements AutoCloseable {
     static volatile long shows;
@@ -29,6 +31,7 @@ final class VisualOverlay implements AutoCloseable {
     private FrameLayout root;
     private ImageView snapshotView;
     private TextView titleView, bodyView, hintView;
+    private Button homeButton;
     private Bitmap snapshot;
     private boolean shown;
 
@@ -51,6 +54,12 @@ final class VisualOverlay implements AutoCloseable {
                 R.string.person_checking_hint);
     }
 
+    /** One frame looked explicit; the screen stays hidden while a second capture confirms it. */
+    void showConfirming() {
+        show(null, R.string.visual_confirm_title, R.string.visual_confirm_body,
+                R.string.visual_confirm_hint);
+    }
+
     /** A protected/private window cannot be inspected; cover it rather than expose pixels. */
     void showProtected() {
         if (snapshot != null && snapshotView != null) {
@@ -68,6 +77,8 @@ final class VisualOverlay implements AutoCloseable {
         titleView.setText(title);
         bodyView.setText(body);
         hintView.setText(hint);
+        // Screen readers hear what this cover is for, not a fixed face-cover label.
+        root.setContentDescription(service.getString(title) + ". " + service.getString(body));
         if (frame != null) {
             Bitmap smaller = blur(frame);
             if (smaller != null) {
@@ -86,6 +97,7 @@ final class VisualOverlay implements AutoCloseable {
                 windows.addView(root, params());
                 shown = true;
                 shows++;
+                root.announceForAccessibility(service.getString(title));
             } catch (RuntimeException unavailable) {
                 shown = false;
             }
@@ -129,7 +141,6 @@ final class VisualOverlay implements AutoCloseable {
         root.setClickable(true);
         root.setFocusable(false);
         root.setOnClickListener(view -> { /* Consume the tap: the content beneath stays covered. */ });
-        root.setContentDescription(service.getString(R.string.person_overlay_title));
 
         snapshotView = new ImageView(service);
         snapshotView.setScaleType(ImageView.ScaleType.FIT_XY);
@@ -173,6 +184,23 @@ final class VisualOverlay implements AutoCloseable {
         hintView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
         hintView.setGravity(Gravity.CENTER);
         copy.addView(hintView, margins(0, 12));
+
+        // A way out that needs no gesture knowledge. Home leaves the covered app; it never
+        // removes the cover over it.
+        homeButton = new Button(service);
+        homeButton.setText(R.string.restriction_home);
+        homeButton.setAllCaps(false);
+        homeButton.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        homeButton.setMinHeight(dp(48));
+        homeButton.setOnClickListener(view -> {
+            try { service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME); }
+            catch (RuntimeException unavailable) { /* The cover stays; Home still works. */ }
+        });
+        LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        buttonParams.gravity = Gravity.CENTER_HORIZONTAL;
+        buttonParams.topMargin = dp(8);
+        copy.addView(homeButton, buttonParams);
     }
 
     private WindowManager.LayoutParams params() {
@@ -204,5 +232,6 @@ final class VisualOverlay implements AutoCloseable {
         hide();
         root = null;
         snapshotView = null;
+        homeButton = null;
     }
 }

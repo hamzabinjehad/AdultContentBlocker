@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Android 12 splash: the same shield on the same deep background, then the normal theme. -->
+<!-- Android 12 splash: the paper shield on the brand navy, then the normal theme. -->
 <resources>
     <style name="AppTheme" parent="Theme.Hisn">
-        <item name="android:windowSplashScreenBackground">@color/ic_launcher_background</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
-        <item name="android:windowSplashScreenIconBackgroundColor">@color/ic_launcher_background</item>
+        <item name="android:windowSplashScreenBackground">@color/splash_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_splash_mark</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/splash_background</item>
     </style>
 </resources>

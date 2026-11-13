@@ -87,6 +87,13 @@ final class HostListStore {
 
     static synchronized void invalidate() { cached = null; }
 
+    /**
+     * The already-loaded generation, or null. DNS asks this for every question: a
+     * synchronized lazy-load on four worker threads is pure monitor contention once the
+     * session loaded the list, and a null simply falls back to {@link #active}.
+     */
+    static Active peek() { return cached; }
+
     /** Publish an already validated generation after the updater's atomic pointer move. */
     static synchronized void adopt(int generation, DomainPolicy policy,
                                    HostTermPolicy hostTerms, AdultTextPolicy textPolicy) {
