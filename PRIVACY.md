@@ -22,7 +22,10 @@ iPhone/iPad app and the Android app. Contact: the repository's support route in
 
 Hisn keeps its settings, rules, selected apps, commitment deadline, installed
 list version, local health state and the pause-screen count in the app's own
-storage. On a Mac with the guardian edition, a root-owned local log records the
+storage. On Android, an optional name, a short reason you choose for yourself,
+and a local day and pause count are kept in that same app storage. They are
+never sent, exported with your rules, shown in diagnostics or used in a block
+decision. On a Mac with the guardian edition, a root-owned local log records the
 protected account name, a guardian action and a timestamp (for example,
 "agent-reloaded"); it never records a site, a page or screen content. On iPhone/iPad the sealed Screen Time passcode is kept in the
 device-only Keychain (`ThisDeviceOnly`), outside iCloud and outside backups.
@@ -114,8 +117,10 @@ the app discloses every lock and its exit.
 ## Your choices
 
 You can turn off a layer, revoke a permission, clear the app's data or uninstall
-Hisn. A running commitment can delay a change inside Hisn until its date; a
-device-owner managed setup can refuse uninstall until it is released. The app
+Hisn. On Android you can also remove the optional name and reason from
+**Settings › Personal** without changing any protection rule. A running
+commitment can delay a change inside Hisn until its date; a device-owner
+managed setup can refuse uninstall until it is released. The app
 shows the level and the exit. Erasing the device removes Hisn and its local
 data; a backup may carry settings but not the iPhone/iPad passcode vault.
 
@@ -134,5 +139,5 @@ If this policy changes, the change is recorded in [CHANGELOG.md](CHANGELOG.md)
 and the effective date below is updated. A change that adds collection would
 need a new consent, not a silent edit.
 
-**Effective:** 2026-11-02 · **Applies to:** extension 1.5.0, Mac 1.1.7, iOS
+**Effective:** 2026-11-11 · **Applies to:** extension 1.5.0, Mac 1.1.7, iOS
 1.2.0, Android 0.9.0 and later builds that link to this policy.

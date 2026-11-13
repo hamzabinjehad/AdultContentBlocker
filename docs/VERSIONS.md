@@ -11,7 +11,7 @@ signed artifact has shipped. The state column is the honest release state.
 | Platform | Version | Build | State | Source of truth |
 | --- | --- | --- | --- | --- |
 | Browser extension (Chromium) | 1.5.3 | — | development · unpacked, no store listing | `extension/manifest.json` |
-| Mac | 1.1.18 | 30 | development · unsigned, needs Developer ID and notarization | `macos/Hisn.xcodeproj/project.pbxproj` |
+| Mac | 1.1.18 | 31 | development · unsigned, needs Developer ID and notarization | `macos/Hisn.xcodeproj/project.pbxproj` |
 | iPhone & iPad | 1.8.0 | 14 | development · no Apple team or test device; direct IPA path built, unsigned | `ios/HisnMobile.xcodeproj/project.pbxproj` |
 | Android | 1.6.0 | 43 | development · 1.6.0 / 43 candidate: the 1.5.3 feature set plus packages 2 and 3 and the 1.5.4 reconnect lifecycle; no signed 1.6.0 artifact and no phone run; the post-reboot dashboard state is unverified | `android/app/build.gradle` |
 
@@ -20,11 +20,11 @@ signed artifact has shipped. The state column is the honest release state.
 | Field | Value |
 | --- | --- |
 | Version | 5 |
-| Built | 2026-11-06T11:36:27+00:00 |
+| Built | 2026-11-13T01:34:40+00:00 |
 | Schema | 1 |
-| Core tier (clients) | 236,586 domains |
-| Full list (Mac/DNS) | 5,280,200 domains |
-| Keyword layer | 5,831 terms |
+| Core tier (clients) | 229,039 domains |
+| Full list (Mac/DNS) | 5,282,831 domains |
+| Keyword layer | 5,881 terms |
 
 The seed is signed (`seed/manifest.json.sig`) and verified by
 `python3 blocklist/seed.py verify`. Its version is the floor a published

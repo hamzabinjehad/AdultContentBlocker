@@ -45,20 +45,27 @@ bump without an entry here is an unfinished release.
   explicit limit (manifest, signature, deflated domains, terms), the
   `Content-Length` is checked first, and the stream is collected through a
   bounded buffer. A failed or oversized generation keeps the previous list.
-- **A missed extension heartbeat no longer closes a browser.** The guard used
-  to warn for sixty seconds and then terminate a linked Chromium browser when
-  its extension stopped checking in. Chrome and Chromium forks delay their
-  service-worker alarms, sleep and restart workers, so that countdown could
-  close a browser whose extension was installed and working the whole time.
-  A missing heartbeat is now shown as attention — the browser stays open and
-  the Browsers screen says it is waiting. The guard closes a linked browser
-  only when two separated readings of a standard profile confirm the extension
-  was removed or disabled, and then only after a visible five-minute countdown.
-  The delayed force-close path rechecks the same confirmed profile evidence, so
-  a missing heartbeat alone cannot reach a termination request. Unsupported
-  browsers keep their one-minute rule, and a browser relaunched without repair
-  gets the full five minutes again. `BrowserGuardPolicy.warnSilent` is replaced
-  by `warnProfileLoss`, and `Verdict` gains `attention`.
+- **A browser without a verified extension connection is warned and then
+  closed again.** The guard had been leaving a linked Chromium browser open
+  indefinitely when its extension stopped checking in, on the theory that a
+  delayed Chrome alarm must not cost the person their tabs. That left an
+  unreadable or custom browser profile — and a removed native-host link — as a
+  permanent hole with no extension in the browser. Silence the guard can read
+  now starts the same visible one-minute recovery countdown as an unsupported
+  browser; restoring the extension before it expires cancels the close.
+  Confirmed profile removal or disablement still gets the full five minutes,
+  because Chrome can disable an extension after an update without the person
+  acting. The delayed force-close path accepts a still-absent heartbeat as well
+  as confirmed profile loss, and the repeat warning stays five seconds. One
+  case remains open: during a remembered locked-authority IPC outage the app
+  cannot read check-ins at all, so the browser is shown as waiting without a
+  countdown instead of closing every browser on a filter hiccup. Process-scoped
+  check-ins, launch-date checks, profile evidence and wake/launch recovery
+  floors are unchanged. `warnSilent` (60 s) is restored, `Verdict` keeps
+  `attention` for the outage case only, and `FilterSync` exposes
+  `guardCheckInsUnavailable` so the guard can tell an outage from a missing
+  extension. Record:
+  [the browser-guard note](docs/MACOS_BROWSER_GUARD_2026-11-12.md).
 - **A new flow costs about 45× less filter CPU, and the bundled seed stops
   reserving memory it cannot use.** `handleNewFlow` is on the connection path
   for every socket the Mac opens, and it was normalising, tokenising and
@@ -106,6 +113,93 @@ bump without an entry here is an unfinished release.
   name against the table.
 - **`terms.json` is read, hashed and parsed once** for both the hostname and
   text layers instead of once each.
+
+#### Changed — daily limits are set per app
+
+- **Each app in Daily time limits carries its own minutes.** The editor applied
+  one value to every chosen app even though `AppTimeLimit` stored a value per
+  package and the guard enforced per app; the dialog now lists each app with its
+  own limit, its own "Used X of Y today" line and a progress bar, and the Rules
+  row says `limits set per app` when the values differ. No model, permission or
+  enforcement change. Verified on the emulator (a 5-minute limit closed YouTube
+  to the restriction screen; values survived a restart) and installed on the
+  owner's phone as 1.6.0-direct. Record:
+  [the per-app limit note](docs/ANDROID_DAILY_LIMITS_PER_APP_2026-11-11.md).
+
+#### Changed — the native shell is the app's front door
+
+- **`ShellActivity` replaces `MainActivity` as the launcher.** The manifest gives the
+  Compose shell `MAIN`/`LAUNCHER`; the classic Views activity keeps the editors that have
+  not been ported yet and is `exported="false"`, reachable only from the shell's rows. The
+  `:nativeshell` module is folded into `:app`, so Compose, Material 3, the icons and Kotlin
+  are ordinary dependencies now.
+- **The shell shows live state, not samples.** It reads `DnsVpnService` state and its live
+  domain count, `TextGuardService` connectivity, the accessibility grant, the saved
+  `PolicyStore` rules, schedule, limits and lock remainder, and the local personal
+  preferences, refreshing every 1.5 s. A layer reads **On** only when it was chosen and is
+  observed running. The hero (Protected / Partly protected / Not protected), the 4-layer
+  coverage ledger, the attention list, the Rules counts and the Settings values are real.
+- **Rows stay read-only until the editors are ported.** Every layer row, the hero action and
+  the attention list open `MainActivity` at page 0 (Protection), 1 (Rules) or 2 (Settings),
+  where the switches, consent sheets and editors still live; the screen says so in one line.
+  The welcome flow now returns to the shell, and the two dynamic shortcuts were retargeted at
+  `ShellActivity` with their tab index.
+- **Cost.** The signed direct APK grows from 31.76 MB to 39.77 MB because Compose and
+  Material 3 are now in the release variant and release R8 is still off. Shrinking is a
+  separate pass with keep rules and device re-checks.
+- **Verification:** a signed direct build with the owner key (certificate `2fbed657…`,
+  versionCode 43, versionName `1.6.0-direct`) installs as an in-place update; on API 23 a
+  fresh install ran welcome → skip → shell, the Rules and Settings tabs, and the classic
+  page from a row; Android 16 dark rendered edge-to-edge without a crash; the shortcut
+  records resolve to `ShellActivity` and its tab extra opened Rules. The phone update was
+  **not applied** — the device disconnected during the pass — and no TalkBack, Arabic,
+  screenshot-test or R8 result is claimed. Record:
+  [the native shell note](docs/ANDROID_NATIVE_SHELL_2026-11-11.md).
+- **The sample app's design is now the shell, with working switches.** The brand header, ring
+  hero, inset coverage ledger, a card of layer rows with switches and a rules card replace the
+  first dashboard pass. DNS starts through the VPN consent (off stops the service), App
+  protection opens Android's accessibility screen, and Adult tags / Image checks show the
+  classic short paragraph and full disclosure before writing the real policy; a protection
+  lock refuses the write. Rules and Settings rows still open the classic editors. The ported
+  build was installed on the owner's Galaxy as 1.6.0-direct and the sample package
+  (`app.hisn.prototype`) deleted, leaving one Hisn icon.
+- **Debug pass on the ported shell.** Three fixes from the owner's phone: the keep-installed
+  cover now skips when Android has disabled the app's accessibility service (an app update does
+  that), instead of blocking the phone for three minutes; the DNS switch can turn off through a
+  new `DnsVpnService.ACTION_STOP` (a bound VPN service ignores `stopService`); and opening the
+  shell resumes a saved DNS tunnel and re-arms the guard. The shell read 3 of 4 after the guard
+  was re-enabled; the fourth layer stayed amber because the phone had no active network.
+
+#### Added — a personal layer
+
+- **The app can carry the person's own name and reason.** One optional welcome
+  page after the introductions, and a new **Settings › Personal** section, save
+  a name (24 code points), a built-in reason or up to 80 code points of the
+  person's own words, plus the local day of the first save and a pause total.
+  The values are cleaned, stored in a separate `personal` preference file, and
+  are not part of `PolicyStore`, the protection lock, the exported rule file,
+  diagnostics, notifications or any network request. The editor is a
+  `FLAG_SECURE` window. Android backup and device transfer remain disabled for
+  the app.
+- **The dashboard and the pause screen use it.** A saved name replaces the
+  all-caps tagline with a greeting; the Protection page shows the reason in a
+  serif card with **Day N with Hisn · N pauses taken**; the pause screen repeats
+  the same words above the breathing circle. With nothing saved, Protection
+  shows one tappable **Make it yours** row instead of a second filled action.
+  **Remove personal details** deletes the name, reason and counters without
+  touching a rule.
+- **The counters are bounded local facts.** A pause total advances only when the
+  restriction screen records a genuinely new pause, so a rotation, a merge-window
+  re-open or a clock moved backwards cannot inflate it. The day number is
+  elapsed calendar days from the first save, not a clean-day streak, a recovery
+  score or evidence that a layer ran. The new pure `PersonalProfile` suite is
+  part of `android/test-core.sh`.
+- **Verification:** the core suite (including `PersonalProfile`), string parity,
+  `assembleDebug` and `assembleRelease` pass. The API 36 emulator checked the
+  English, Arabic, dark and 1.3× screens plus the welcome, pause and Settings
+  paths; no phone, TalkBack or signed-artifact result is claimed. `lintDebug`
+  passes with 0 errors. Details, screenshots and limits:
+  [the personal-layer note](docs/ANDROID_PERSONAL_2026-11-11.md).
 
 #### Changed — Android 6.0 (API 23) support
 

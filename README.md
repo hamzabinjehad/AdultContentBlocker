@@ -41,6 +41,14 @@ you the lock; Hisn adds the coverage those built-in filters miss. Read
   direct build's boot shield; API 36 stayed green. Image checks remain Android
   14+. Record:
   [the Android 6.0 note](docs/ANDROID_OLDER_VERSIONS_2026-11-11.md).
+- **Android personal layer, 11 November 2026.** One optional welcome page and a
+  **Settings › Personal** section save a local name and reason; a saved name
+  greets the person, Protection quotes the reason with a bounded day/pause line,
+  and the pause screen repeats it above the breath. The words are not a rule,
+  are not covered by the protection lock, and are never sent, exported or put in
+  diagnostics. It is not a clean-day streak or recovery score. Development
+  evidence only: record in
+  [the personal-layer note](docs/ANDROID_PERSONAL_2026-11-11.md).
 - **iPhone & iPad 1.8.0 — a device-wide DNS filter, and a direct build.** The
   new `HisnDNSProxy` Network Extension answers Hisn's signed list (236,586
   domains), the four adult TLDs, the 116 hostname terms and the person's saved
@@ -316,7 +324,7 @@ statements to check before a release.
 | Configuration profile | Supported DNS, Private Relay, and browser settings | A tunnel; an administrator removing the profile |
 | Content filter (system extension) | Host/application decisions on new Mac flows | Provider loss, established flows, unidentified destinations outside strict mode, recovery/admin changes |
 | Accountability partner | Ordinary user loosening an active policy | Guardian authority or recovery; a separate unprotected device |
-| Browser guard (in the app) | Keeps a browser open when its extension misses a heartbeat; closes only a standard profile that confirms the extension was disabled or removed, after a five-minute countdown (unsupported browsers: one minute) | Force-quitting Hisn, explicitly trusted unknown apps, unreadable/custom profiles, guest/private windows, admin changes |
+| Browser guard (in the app) | Continuously closes a browser that loses its verified extension connection: a one-minute countdown for silence, five minutes when a standard profile confirms removal/disablement; a returned heartbeat cancels it | Force-quitting Hisn, explicitly trusted unknown apps, unreadable/custom profiles, guest/private windows, a remembered locked-authority IPC outage, admin changes |
 
 These layers address different gaps and need independent checks. A browser
 model cannot replace a device/network control, while DNS and socket decisions
