@@ -604,7 +604,7 @@ private fun HisnContent(
 }
 
 @Composable
-private fun SystemBars(darkTheme: Boolean) {
+internal fun SystemBars(darkTheme: Boolean) {
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {

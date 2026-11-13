@@ -173,6 +173,17 @@ Nothing here was run on a phone.
 - Not covered: real TalkBack speech, Arabic copy (the tests mirror the layout but the
   text stays English), dark mode, and detail-page editors beyond Permissions.
 
+### Onboarding redesign (Phase 3.1, 13 November)
+
+- First run is Compose in the shell's theme: six one-sentence story pages (three promises,
+  then "how it works" on a drawn phone), then "Step n of 3": name and reason as chips,
+  grants as switches with one line of why (needed versus optional), and the uninstall
+  guard on the direct build. `WelcomeActivity.java` is replaced by `WelcomeActivity.kt`.
+- Built from the competitor pass ([design/competitors-2026-11-13](../design/competitors-2026-11-13/README.md));
+  captures in [design/android-onboarding-2026-11-13](../design/android-onboarding-2026-11-13/README.md).
+- Checked on the owner's phone with a separate test copy: 20 of 20 UI tests (direct and play),
+  lint, string parity, release check. Not checked: Arabic on a device, TalkBack speech.
+
 ## Owner decisions needed
 
 - Was the signed 1.6.0 build installed on the Galaxy?

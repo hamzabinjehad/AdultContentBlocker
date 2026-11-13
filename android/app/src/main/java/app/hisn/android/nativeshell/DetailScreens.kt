@@ -1837,7 +1837,7 @@ fun RulesFileScreen(state: HisnState, onBack: () -> Unit) {
     }
 }
 
-private val PersonalPresets = listOf(
+internal val PersonalPresets = listOf(
     "faith" to R.string.personal_preset_faith,
     "family" to R.string.personal_preset_family,
     "focus" to R.string.personal_preset_focus,
@@ -1847,7 +1847,7 @@ private val PersonalPresets = listOf(
 )
 
 /** Keeps at most [max] code points, so a name of emoji is not cut in the middle of one. */
-private fun limitCodePoints(text: String, max: Int): String =
+internal fun limitCodePoints(text: String, max: Int): String =
     if (text.codePointCount(0, text.length) <= max) text
     else text.substring(0, text.offsetByCodePoints(0, max))
 

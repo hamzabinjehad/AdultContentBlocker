@@ -1243,17 +1243,20 @@ sh test-core.sh
 ./gradlew --no-daemon assembleDebug assembleDebugAndroidTest lintDebug assembleRelease
 ```
 
-UI and UX tests for the native shell run on an emulator only (the script refuses
-a phone, because the tests use the app's real saved rules):
+UI and UX tests for the native shell and onboarding run on an emulator or a real
+phone. On a phone the script installs and tests a separate copy,
+`app.hisn.android.visualcheck`, so the installed Hisn, its rules and its lock are
+never cleared:
 
 ```sh
-bash test-ui.sh               # first running emulator, direct build
-bash test-ui.sh emulator-5554 play
+bash test-ui.sh               # first connected device, direct build
+bash test-ui.sh RZCTA0XN60K play
 ```
 
 They live in `app/src/androidTest/java/app/hisn/android/nativeshell/` and drive
 the real Compose screens against a fake `ShellActions`, so no VPN, accessibility
-or system dialog is touched. They cover tab and row navigation, Back from a
+or system dialog is touched. They cover the onboarding story and setup steps, saved personal words, grant
+switches that read Android, the guard step, tab and row navigation, Back from a
 detail page, the uninstall row per build, that Home never says "Protected" while
 nothing runs, a spoken label on every control, 48 dp touch targets, and no text
 off screen at 2x text, in right-to-left, or both. `-PhisnUiTests=true` switches
