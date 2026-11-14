@@ -84,6 +84,16 @@ public final class DomainPolicy {
     }
 
     private static boolean containsParent(Set<String> rules, String name) {
+        if (rules.isEmpty()) return false;
+        if (rules instanceof CompactHostSet) {
+            CompactHostSet packed = (CompactHostSet) rules;
+            for (int from = 0; ; ) {
+                if (packed.containsFrom(name, from)) return true;
+                int dot = name.indexOf('.', from);
+                if (dot < 0) return false;
+                from = dot + 1;
+            }
+        }
         String current = name;
         while (true) {
             if (rules.contains(current)) return true;

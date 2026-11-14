@@ -395,20 +395,26 @@ public final class AdultTextPolicy {
         List<Hit>[] hits = (List<Hit>[]) new List<?>[length];
         @SuppressWarnings("unchecked")
         List<Hit>[] starts = (List<Hit>[]) new List<?>[length];
+        // Each distinct entry that was hit gets a small slot number. The window counters
+        // are then sized by the hits on this label, not by the ~6,000-entry vocabulary:
+        // three vocabulary-sized arrays per judged label were 72 KB of garbage each.
+        Map<Entry, Integer> slots = new HashMap<>();
         for (int start = from; start < length; start++) {
             Trie branch = index;
             for (int end = start; end < Math.min(length, start + MAX_PHRASE_TOKENS); end++) {
                 branch = branch.children.get(tokens[end]);
                 if (branch == null) break;
-                if (branch.entry != null) record(hits, starts, new Hit(branch.entry, start, end,
+                if (branch.entry != null) record(hits, starts, slots, new Hit(branch.entry, start, end,
                         ambiguous(tokens[start], branch.entry)));
             }
             Entry variant = variant(tokens[start]);
             if (variant != null && !tokens[start].equals(variant.phrase)) {
-                record(hits, starts, new Hit(variant, start, start, ambiguous(tokens[start], variant)));
+                record(hits, starts, slots, new Hit(variant, start, start, ambiguous(tokens[start], variant)));
             }
         }
-        return classifyWindows(hits, starts, promotions, from, firstEnd);
+        // No configured term anywhere near: no window can hold a strong signal.
+        if (slots.isEmpty()) return false;
+        return classifyWindows(hits, starts, promotions, from, firstEnd, slots.size());
     }
 
     private boolean explicitMediaLabel(String[] tokens, int length) {
@@ -452,10 +458,10 @@ public final class AdultTextPolicy {
     }
 
     private boolean classifyWindows(List<Hit>[] hits, List<Hit>[] starts, boolean[] promotions,
-                                    int from, int firstEnd) {
-        int[] clearCounts = new int[entries.size()];
-        int[] ambiguousCounts = new int[entries.size()];
-        int[] negativeCounts = new int[entries.size()];
+                                    int from, int firstEnd, int distinct) {
+        int[] clearCounts = new int[distinct];
+        int[] ambiguousCounts = new int[distinct];
+        int[] negativeCounts = new int[distinct];
         // Each positive entry counts once: as clear evidence, or else as contextual
         // evidence that only joins a window already holding a clear strong signal
         // (a clear strong Arabizi signal for contextual Arabizi evidence).
@@ -469,14 +475,14 @@ public final class AdultTextPolicy {
             int oldContextEnd = end == from ? from - 1 : Math.min(hits.length - 1, end - 1 + CONTEXT);
             for (int at = oldContextEnd + 1; at <= contextEnd; at++) {
                 if (hits[at] == null) continue;
-                for (Hit hit : hits[at]) if (hit.entry.weight < 0 && negativeCounts[hit.entry.id]++ == 0) {
+                for (Hit hit : hits[at]) if (hit.entry.weight < 0 && negativeCounts[hit.slot]++ == 0) {
                     negativeScore -= hit.entry.weight;
                 }
             }
             int expiredContext = end - WINDOW - CONTEXT;
             if (expiredContext >= 0 && hits[expiredContext] != null) {
                 for (Hit hit : hits[expiredContext]) if (hit.entry.weight < 0
-                        && --negativeCounts[hit.entry.id] == 0) negativeScore += hit.entry.weight;
+                        && --negativeCounts[hit.slot] == 0) negativeScore += hit.entry.weight;
             }
             if (promotions[end]) promotion++;
             if (end >= WINDOW && promotions[end - WINDOW]) promotion--;
@@ -485,20 +491,20 @@ public final class AdultTextPolicy {
                 if (entry.weight <= 0) continue;
                 Evidence context = entry.arabizi ? latin : contextual;
                 if (hit.ambiguous) {
-                    if (ambiguousCounts[entry.id]++ == 0 && clearCounts[entry.id] == 0) context.add(entry, 1);
-                } else if (clearCounts[entry.id]++ == 0) {
+                    if (ambiguousCounts[hit.slot]++ == 0 && clearCounts[hit.slot] == 0) context.add(entry, 1);
+                } else if (clearCounts[hit.slot]++ == 0) {
                     clear.add(entry, 1);
-                    if (ambiguousCounts[entry.id] > 0) context.add(entry, -1);
+                    if (ambiguousCounts[hit.slot] > 0) context.add(entry, -1);
                 }
             }
             if (end >= WINDOW && starts[end - WINDOW] != null) for (Hit hit : starts[end - WINDOW]) {
                 Entry entry = hit.entry;
                 Evidence context = entry.arabizi ? latin : contextual;
                 if (hit.ambiguous) {
-                    if (--ambiguousCounts[entry.id] == 0 && clearCounts[entry.id] == 0) context.add(entry, -1);
-                } else if (--clearCounts[entry.id] == 0) {
+                    if (--ambiguousCounts[hit.slot] == 0 && clearCounts[hit.slot] == 0) context.add(entry, -1);
+                } else if (--clearCounts[hit.slot] == 0) {
                     clear.add(entry, -1);
-                    if (ambiguousCounts[entry.id] > 0) context.add(entry, 1);
+                    if (ambiguousCounts[hit.slot] > 0) context.add(entry, 1);
                 }
             }
             int with = clear.strong > 0 ? 1 : 0, withLatin = clear.arabizi > 0 ? 1 : 0;
@@ -526,11 +532,17 @@ public final class AdultTextPolicy {
         }
     }
 
-    private static void record(List<Hit>[] hits, List<Hit>[] starts, Hit hit) {
+    private static void record(List<Hit>[] hits, List<Hit>[] starts, Map<Entry, Integer> slots, Hit hit) {
         if (hits[hit.end] == null) hits[hit.end] = new ArrayList<>();
         // Exact and a reviewed alias may identify the same terminal. Avoid
         // double counting without creating an unbounded global set of text.
         for (Hit old : hits[hit.end]) if (old.entry.id == hit.entry.id && old.start == hit.start) return;
+        Integer slot = slots.get(hit.entry);
+        if (slot == null) {
+            slot = slots.size();
+            slots.put(hit.entry, slot);
+        }
+        hit.slot = slot;
         hits[hit.end].add(hit);
         if (hit.entry.weight > 0) {
             if (starts[hit.start] == null) starts[hit.start] = new ArrayList<>();
@@ -821,6 +833,8 @@ public final class AdultTextPolicy {
         final Entry entry;
         final int start, end;
         final boolean ambiguous;
+        /** Index of the entry among the distinct entries hit in this judge call. */
+        int slot;
         Hit(Entry entry, int start, int end, boolean ambiguous) {
             this.entry = entry; this.start = start; this.end = end; this.ambiguous = ambiguous;
         }

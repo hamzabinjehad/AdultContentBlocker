@@ -46,6 +46,25 @@ final class CompactHostSet extends AbstractSet<String> {
         }
     }
 
+    /**
+     * True when the set holds {@code name.substring(from)}, without creating that
+     * substring: the parent-domain walk asks once per label of every new hostname.
+     */
+    boolean containsFrom(String name, int from) {
+        int length = name.length() - from, hash = 0;
+        for (int i = from; i < name.length(); i++) hash = 31 * hash + name.charAt(i);
+        int mask = slots.length - 1;
+        for (int slot = spread(hash) & mask; ; slot = (slot + 1) & mask) {
+            int entry = slots[slot];
+            if (entry == 0) return false;
+            int start = offsets[entry - 1];
+            if (offsets[entry] - start != length) continue;
+            int i = 0;
+            while (i < length && names[start + i] == name.charAt(from + i)) i++;
+            if (i == length) return true;
+        }
+    }
+
     @Override public Iterator<String> iterator() {
         return new Iterator<String>() {
             private int next;

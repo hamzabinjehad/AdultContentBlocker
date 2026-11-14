@@ -75,6 +75,51 @@ public final class HostTermPolicyTest {
         boolean after = policy.matches("PORNHUB.COM.");
         check(before && after, "a repeated question keeps its verdict");
 
+        // The ASCII path must give the reference path's verdict. Hosts are built from the
+        // signed terms, the never-keyword words and ordinary labels, with the shapes the
+        // variants exist for: trailing digits, held keys, glued words and several innocent
+        // words in one host.
+        List<String> parts = new ArrayList<>();
+        for (String term : tokens) if (term.matches("[a-z0-9]+")) parts.add(term);
+        for (String term : substrings) if (term.matches("[a-z0-9]+")) parts.add(term);
+        for (String term : never) if (term.matches("[a-z0-9]+")) parts.add(term);
+        String[] plain = {"cdn", "static", "mail", "shop", "news", "tube", "arab", "x", "a1", "the", "my"};
+        for (String word : plain) parts.add(word);
+        String[] joins = {"", "-", ".", "_", "--"};
+        String[] tails = {"", "1", "123", "0", "x"};
+        java.util.Random random = new java.util.Random(20261114);
+        int compared = 0, differentialBlocked = 0;
+        for (int round = 0; round < 60000; round++) {
+            StringBuilder host = new StringBuilder();
+            int pieces = 1 + random.nextInt(4);
+            for (int piece = 0; piece < pieces; piece++) {
+                String word = parts.get(random.nextInt(parts.size()));
+                if (random.nextInt(6) == 0 && word.length() > 1) {
+                    // A held key: one character repeated three to five times.
+                    int at = random.nextInt(word.length());
+                    StringBuilder held = new StringBuilder(word.substring(0, at));
+                    for (int i = 0, copies = 3 + random.nextInt(3); i < copies; i++) held.append(word.charAt(at));
+                    word = held.append(word.substring(at + 1)).toString();
+                }
+                if (random.nextInt(8) == 0) word = word.toUpperCase(java.util.Locale.ROOT);
+                host.append(word).append(tails[random.nextInt(tails.length)]);
+                if (piece + 1 < pieces) host.append(joins[random.nextInt(joins.length)]);
+            }
+            host.append(random.nextInt(5) == 0 ? ".co.uk" : ".com");
+            if (random.nextInt(20) == 0) host.append('.');
+            String name = host.toString();
+            boolean reference = policy.matchesReference(name);
+            check(policy.matches(name) == reference, "ASCII path differs from the reference: " + name);
+            compared++;
+            if (reference) differentialBlocked++;
+        }
+        for (String entry : cases) {
+            String name = entry.split("\t", 2)[1];
+            check(policy.matches(name) == policy.matchesReference(name), "shared case differs: " + name);
+        }
+        check(differentialBlocked > 5000 && compared - differentialBlocked > 5000,
+                "the generated hosts exercise both verdicts");
+
         // A malformed policy is refused, never silently emptied.
         try {
             new HostTermPolicy(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
@@ -89,6 +134,6 @@ public final class HostTermPolicyTest {
 
         System.out.println("HostTermPolicy tests passed: " + blocked + " blocked, " + allowed
                 + " allowed shared cases, " + policy.tokenCount() + " tokens, "
-                + policy.substringCount() + " substrings");
+                + policy.substringCount() + " substrings, " + compared + " generated hosts agree with the reference");
     }
 }

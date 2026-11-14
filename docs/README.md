@@ -74,6 +74,7 @@ past version; *superseded* documents point to their replacement. Start with the
 
 ## Android
 
+- [Android matcher performance, 2026-11-14](ANDROID_FILTER_PERFORMANCE_2026-11-14.md): Why the screen-text scan allocates 33× less (4.4 MB → 133 KB per 120-line screen) and an uncached DNS decision costs about half the CPU; the measured before/after, the ASCII hostname path and the cases that deliberately stay on the reference path, why no native code, and the committed benchmark (`script/bench_android_core.sh`). Desktop JVM only; no phone run. No verdict changes.
 - [Android native shell, 2026-11-11](ANDROID_NATIVE_SHELL_2026-11-11.md): The Compose/Material 3 shell is now the app's launcher: live layer, rules and settings state read from the same services and policy store, with the classic editors still behind each row. Signed direct build with the owner key; API 23 and Android 16 captures; phone update not applied, editors, TalkBack, Arabic and R8 still to come.
 - [Android personal layer, 2026-11-11](ANDROID_PERSONAL_2026-11-11.md): An optional local name and reason, a greeting, a reason card with a bounded day/pause line, the same words on the pause screen, and a secure editor in Settings. Not a protection rule and not a clean-day score; emulator captures in `design/android-personal-2026-11-11/`.
 - [Android 1.6.0 signed build and phone checklist, 2026-11-13](ANDROID_1.6.0_RELEASE_CHECKLIST.md): The one-command signed build (`android/build-signed-release.sh`), an in-place install, the phone acceptance checklist and the publish steps.

@@ -50,6 +50,8 @@ public final class HostTermPolicy {
             "\u0647\u0645", "\u0647\u0646", "\u0643", "\u064A"};
     private final Set<String> tokens;
     private final List<String> substrings;
+    /** {@link #substrings} that start with an ASCII character, grouped by that character. */
+    private final String[][] substringsByFirst;
     private final Set<String> neverKeyword;
     private final Set<String> exemptHosts;
     /** Repeated DNS questions skip folding and regex work; bounded so a hostile stream cannot grow it. */
@@ -74,6 +76,20 @@ public final class HostTermPolicy {
         }
         if (built.size() > MAX_TERMS) throw new IllegalArgumentException("Too many host substrings");
         this.substrings = Collections.unmodifiableList(built);
+        // An ASCII haystack can only contain a term at a position holding the term's
+        // first character, so the scan visits each position once.
+        List<List<String>> grouped = new ArrayList<>();
+        for (int i = 0; i < 128; i++) grouped.add(null);
+        for (String term : built) {
+            char first = term.charAt(0);
+            if (first >= 128) continue;
+            if (grouped.get(first) == null) grouped.set(first, new ArrayList<String>());
+            grouped.get(first).add(term);
+        }
+        this.substringsByFirst = new String[128][];
+        for (int i = 0; i < 128; i++) {
+            if (grouped.get(i) != null) substringsByFirst[i] = grouped.get(i).toArray(new String[0]);
+        }
         this.neverKeyword = normalizeSet(neverKeyword, "never keyword");
         this.exemptHosts = normalizeHostSet(exemptHosts);
         if (this.tokens.isEmpty() && this.substrings.isEmpty())
@@ -91,13 +107,96 @@ public final class HostTermPolicy {
         return result;
     }
 
-    private boolean decide(String hostname) {
+    private boolean decide(String hostname) { return decide(hostname, true); }
+
+    /** The uncached verdict by the reference path alone; tests compare it with {@link #matches}. */
+    boolean matchesReference(String hostname) { return decide(hostname, false); }
+
+    private boolean decide(String hostname, boolean quickPath) {
         String host = canonicalHost(hostname);
         if (host.isEmpty()) return false;
         if (isExempt(host)) return false;
 
         String folded = fold(host);
         if (folded.isEmpty()) return false;
+        if (quickPath && TextFolding.ascii(folded)) {
+            int quick = decideAscii(folded);
+            if (quick != UNDECIDED) return quick == MATCH;
+        }
+        return decideReference(folded);
+    }
+
+    private static final int NO_MATCH = 0, MATCH = 1, UNDECIDED = 2;
+
+    /**
+     * The verdict for an ASCII host, which is nearly every DNS question, without the
+     * regexes and per-host sets of {@link #decideReference}. Over ASCII the token
+     * variants reduce to three forms: the token, the token without its trailing digits,
+     * and the token with each run of three or more equal characters cut to one or two
+     * (the Arabic affixes cannot occur). A host holding a never-keyword token is left
+     * to the reference path, because removing several innocent spellings from the
+     * haystack depends on the order they are removed in. {@code HostTermPolicyTest}
+     * checks the two paths agree.
+     */
+    private int decideAscii(String folded) {
+        int length = folded.length();
+        boolean innocent = false;
+        for (int start = 0; start < length; ) {
+            if (!Character.isLetterOrDigit(folded.charAt(start))) { start++; continue; }
+            int end = start + 1;
+            boolean repeats = false;
+            while (end < length && Character.isLetterOrDigit(folded.charAt(end))) {
+                if (end - start >= 2 && folded.charAt(end) == folded.charAt(end - 1)
+                        && folded.charAt(end) == folded.charAt(end - 2)) repeats = true;
+                end++;
+            }
+            String token = folded.substring(start, end);
+            if (neverKeyword.contains(token)) innocent = true;
+            else if (tokens.contains(token)) return MATCH;
+            int trimmed = end;
+            while (trimmed > start && folded.charAt(trimmed - 1) >= '0' && folded.charAt(trimmed - 1) <= '9') trimmed--;
+            if (trimmed != end && trimmed - start >= 3) {
+                String variant = folded.substring(start, trimmed);
+                if (neverKeyword.contains(variant)) innocent = true;
+                else if (tokens.contains(variant)) return MATCH;
+            }
+            if (repeats) {
+                for (int keep = 1; keep <= 2; keep++) {
+                    String variant = collapseRuns(token, keep);
+                    if (variant.length() < 3) continue;
+                    if (neverKeyword.contains(variant)) innocent = true;
+                    else if (tokens.contains(variant)) return MATCH;
+                }
+            }
+            start = end;
+        }
+        if (innocent) return UNDECIDED;
+        for (int at = 0; at < length; at++) {
+            char first = folded.charAt(at);
+            String[] candidates = first < 128 ? substringsByFirst[first] : null;
+            if (candidates == null) continue;
+            for (String candidate : candidates) {
+                if (folded.regionMatches(at, candidate, 0, candidate.length())) return MATCH;
+            }
+        }
+        return NO_MATCH;
+    }
+
+    /** Every run of three or more equal characters cut to {@code keep} of them. */
+    private static String collapseRuns(String token, int keep) {
+        StringBuilder out = new StringBuilder(token.length());
+        for (int at = 0; at < token.length(); ) {
+            char c = token.charAt(at);
+            int run = 1;
+            while (at + run < token.length() && token.charAt(at + run) == c) run++;
+            for (int i = 0, copies = run >= 3 ? keep : run; i < copies; i++) out.append(c);
+            at += run;
+        }
+        return out.toString();
+    }
+
+    /** The reference path, and the only one for a non-ASCII (decoded IDN) host. */
+    private boolean decideReference(String folded) {
         Set<String> found = new HashSet<>();
         for (String token : tokenize(folded)) found.addAll(variants(token));
 
