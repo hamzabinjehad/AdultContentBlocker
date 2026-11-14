@@ -1,0 +1,24 @@
+{
+  "android": {
+    "version": "1.5.3",
+    "versionCode": 41,
+    "channel": "direct",
+    "file": "hisn-1.5.3-direct.apk",
+    "bytes": 31290641,
+    "sha256": "e138f39d94965f9c116e1d2ed9cd893cb978a4a536ba604b242b6d28d00a7d14",
+    "certificateSha256": "2F:BE:D6:57:E6:AB:C7:1C:15:CA:D0:CD:99:1C:53:2F:59:77:2D:16:95:D7:C3:7E:65:A1:14:38:5E:94:70:C5",
+    "minSdk": 23,
+    "minAndroid": "Android 6.0+",
+    "signed": true,
+    "built": "2026-11-08",
+    "source": "dist/android-1.5.3-end",
+    "record": "docs/ANDROID_1.5.3.md",
+    "downloadName": "hisn-android.apk"
+  },
+  "next": {
+    "version": "1.6.0",
+    "versionCode": 43,
+    "state": "development",
+    "record": "docs/ANDROID_1.6.0.md"
+  }
+}

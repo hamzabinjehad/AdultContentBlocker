@@ -1,44 +1,317 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en" dir="ltr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src data:; connect-src https://api.drand.sh; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
-<title>Hisn Vault</title>
+<meta name="theme-color" content="#f6f6f3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#131314" media="(prefers-color-scheme: dark)">
+<title>Hisn — less adult content, no account</title>
+<meta name="description" content="Protection that runs on your phone: website filtering, app blocking, and text and image checks. No account, no cloud, no subscription.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Hisn — protection that stays on your phone">
+<meta property="og:description" content="Website filtering, app blocking and on-device checks. No account, no cloud, no subscription.">
+<meta name="twitter:card" content="summary">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<script src="lib/motion-flag.js"></script>
 <link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="assets/site.css">
 </head>
-<body>
-<!--
-  Hisn Vault — an off-device lock.
+<body class="site">
+<a class="skip" href="#main" data-i18n="skip">Skip to content</a>
 
-  The page is static. There is no account, no API and no analytics. A vault is a
-  JSON file you keep; its code is sealed under a key that is wrapped either to a
-  partner's P-256 key or to a future drand round. Opening needs one of those, so
-  clearing this browser, deleting an app or reading the file does not reveal it.
-
-  The only network request this page can make is to api.drand.sh, and only when
-  the time path is opened. The CSP above allows nothing else.
--->
-<header class="top">
-  <a class="brand" href="./index.html"><span class="ar">حصن</span><span class="dot">·</span><span>Hisn</span></a>
+<header class="top site-top">
+  <a class="brand" href="./index.html" aria-label="Hisn home">
+    <span class="ar">حصن</span><span class="dot">·</span><span>Hisn</span>
+  </a>
+  <nav class="site-nav" aria-label="Main" data-i18n-aria="nav.label">
+    <a href="#install" data-i18n="nav.how">How it works</a>
+    <a href="#limits" data-i18n="nav.limits">Limits</a>
+    <a href="#roadmap" data-i18n="nav.roadmap">Roadmap</a>
+    <a href="vault.html" data-i18n="nav.vault">Vault</a>
+  </nav>
   <div class="top-actions">
-    <span class="pill" id="surface-pill">Vault</span>
-    <button class="ghost" type="button" data-lang-button>العربية</button>
+    <a class="button primary get-app" href="#download" data-i18n="nav.get">Get the app</a>
+    <button class="ghost" type="button" data-lang-button aria-label="العربية">العربية</button>
   </div>
 </header>
 
-<main id="app" aria-live="polite"></main>
+<main id="main" class="site-main">
 
-<footer>
-  <span id="footer-note">No account, no server, no analytics. The vault file is yours.</span>
-  <a href="partner.html" id="footer-partner">Partner key</a>
+  <!-- A calm, centered hero: one promise, one phone, one download. -->
+  <section class="hero3">
+    <div class="hero3-aura" aria-hidden="true"></div>
+    <div class="hero3-copy">
+      <p class="eyebrow" data-i18n="hero.eyebrow">Free · Arabic &amp; English</p>
+      <h1 data-i18n="hero.title">Less adult content. No account.</h1>
+      <p class="lede" data-i18n="hero.lede">Protection that runs on your phone: website filtering, app blocking, and text and image checks. No account, no cloud, no subscription — and no screenshots sent to a stranger.</p>
+      <div class="cta-row">
+        <a class="button primary" href="downloads/hisn-android.apk" download data-i18n="hero.download">Get Hisn for Android</a>
+        <a class="button" href="#install" data-i18n="hero.secondary">See how it works</a>
+      </div>
+      <div class="proof">
+        <span data-i18n="proof.account">No account</span>
+        <span data-i18n="proof.cloud">No cloud</span>
+        <span data-i18n="proof.price">No subscription</span>
+      </div>
+      <div class="platform-pills" role="group" aria-label="Platforms" data-i18n-aria="hero.platformsLabel">
+        <span class="platform-pill">Android <span class="status available" data-i18n="status.available">Available</span></span>
+        <span class="platform-pill">Mac <span class="status soon" data-i18n="status.soon">Soon</span></span>
+        <span class="platform-pill"><span data-i18n="platform.iphone">iPhone</span> <span class="status soon" data-i18n="status.soon">Soon</span></span>
+        <span class="platform-pill"><span data-i18n="platform.browser">Browser</span> <span class="status soon" data-i18n="status.soon">Soon</span></span>
+      </div>
+      <p class="mini" data-i18n="hero.meta">Free · Android 6.0 and later</p>
+    </div>
+
+    <div class="hero3-phone">
+      <div class="phone-layer layer-left" aria-hidden="true"><img src="assets/rules.png" width="1080" height="2400" alt=""></div>
+      <div class="phone-layer layer-right" aria-hidden="true"><img src="assets/phone-checks.png" width="1080" height="2400" alt=""></div>
+      <div class="phone-frame">
+        <img src="assets/home.png" width="1080" height="2400" alt="Hisn on Android: the Protection screen with four layers">
+      </div>
+      <div class="float-card">
+        <span class="status available" data-i18n="float.tag">Four layers</span>
+        <h3 data-i18n="float.title">One phone. Four layers.</h3>
+        <ul>
+          <li data-i18n="float.dns">Websites blocked before they load</li>
+          <li data-i18n="float.apps">Apps you choose are blocked</li>
+          <li data-i18n="float.checks">Text and images checked on the phone</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- The numbers are what the app actually does. -->
+  <section class="stat-band" aria-label="Hisn in numbers" data-i18n-aria="stats.label">
+    <div class="stat"><span class="num">236,000+</span><span class="label" data-i18n="stats.domains">sites blocked before they load</span></div>
+    <div class="stat"><span class="num">4</span><span class="label" data-i18n="stats.layers">independent protection layers</span></div>
+    <div class="stat"><span class="num">0</span><span class="label" data-i18n="stats.accounts">accounts to create</span></div>
+    <div class="stat"><span class="num">0</span><span class="label" data-i18n="stats.subs">subscriptions or trials</span></div>
+  </section>
+
+  <section class="section benefits">
+    <div class="section-head">
+      <p class="eyebrow" data-i18n="benefit.eyebrow">What changes</p>
+      <h2 data-i18n="benefit.title">Protection where it happens.</h2>
+      <p class="lede" data-i18n="benefit.lede">Not one switch that claims everything. Four layers that catch different things, and a phone check that keeps them alive on the phone you actually own.</p>
+    </div>
+    <div class="benefit-grid">
+      <article class="benefit-card">
+        <span class="benefit-num">01</span>
+        <h3 data-i18n="benefit.one.title">Before the page loads</h3>
+        <p data-i18n="benefit.one.body">A DNS-only filter blocks adult sites in every browser, before the first pixel is drawn.</p>
+        <p class="scope" data-i18n="benefit.one.scope">Every browser · every app that uses the phone's DNS</p>
+      </article>
+      <article class="benefit-card">
+        <span class="benefit-num">02</span>
+        <h3 data-i18n="benefit.two.title">Inside the apps you choose</h3>
+        <p data-i18n="benefit.two.body">Block a whole app, or read its visible text and match Arabic and English adult terms on the phone.</p>
+        <p class="scope" data-i18n="benefit.two.scope">Selected apps · checks act after content appears</p>
+      </article>
+      <article class="benefit-card">
+        <span class="benefit-num">03</span>
+        <h3 data-i18n="benefit.three.title">After the screen goes off</h3>
+        <p data-i18n="benefit.three.body">Samsung, Xiaomi and Nothing each sleep apps differently. Hisn finds the battery, background and autostart settings that keep it alive.</p>
+        <p class="scope" data-i18n="benefit.three.scope">Phone checks · coming soon</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="section" id="install">
+    <div class="section-head">
+      <p class="eyebrow" data-i18n="install.eyebrow">Get started</p>
+      <h2 data-i18n="install.title">From download to protected in four steps.</h2>
+      <p class="lede" data-i18n="install.lede">Install it right from this page. Android asks for one install permission and two protections; nothing here needs a computer.</p>
+    </div>
+
+    <div class="download-panel" id="download">
+      <div class="download-version">
+        <span class="status available" data-i18n="status.available">Available</span>
+        <h3 data-i18n="download.title">Free for Android</h3>
+        <p class="mini" data-i18n="download.meta">Android 6.0 and later · English and Arabic</p>
+        <a class="button primary" href="downloads/hisn-android.apk" download data-i18n="download.button">Download Hisn</a>
+        <p class="hint" data-i18n="download.note">If Android asks, allow installs from this browser. You can turn that off after.</p>
+      </div>
+      <div class="download-extra">
+        <h3 data-i18n="download.includes">What you get</h3>
+        <ul class="check-list">
+          <li data-i18n="download.one">Website filtering in every browser</li>
+          <li data-i18n="download.two">Whole-app blocking and on-screen text checks</li>
+          <li data-i18n="download.three">Schedules, daily limits and a breathing pause</li>
+          <li data-i18n="download.four">Arabic and English, on this phone</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="steps-grid">
+      <article class="step-card">
+        <div class="step-visual no-shot"><span class="step-glyph">↓</span></div>
+        <span class="step-num">01</span>
+        <h3 data-i18n="step.one.title">Download the app</h3>
+        <p data-i18n="step.one.body">Tap Download, open the file, and allow installs from this browser once.</p>
+      </article>
+      <article class="step-card">
+        <div class="step-visual"><div class="mini-phone"><img src="assets/home.png" width="1080" height="2400" loading="lazy" alt="Hisn Protection screen"></div></div>
+        <span class="step-num">02</span>
+        <h3 data-i18n="step.two.title">Turn on the layers</h3>
+        <p data-i18n="step.two.body">App protection opens Android's accessibility screen; Website filtering shows the DNS disclosure, then the VPN prompt.</p>
+      </article>
+      <article class="step-card">
+        <div class="step-visual"><div class="mini-phone"><img src="assets/rules.png" width="1080" height="2400" loading="lazy" alt="Hisn Rules screen with custom rule tiles"></div></div>
+        <span class="step-num">03</span>
+        <h3 data-i18n="step.three.title">Add your rules</h3>
+        <p data-i18n="step.three.body">Domains, literal words, apps, a schedule and daily limits; each one stays on this phone.</p>
+      </article>
+      <article class="step-card">
+        <div class="step-visual"><div class="mini-phone"><img src="assets/phone-checks.png" width="540" height="1200" loading="lazy" alt="Hisn phone check screen on a Xiaomi phone"></div></div>
+        <span class="step-num">04</span>
+        <h3 data-i18n="step.four.title">Run the phone check</h3>
+        <p data-i18n="step.four.body">On Samsung, Xiaomi and Nothing, Hisn finds the battery and autostart settings that keep it running.</p>
+      </article>
+    </div>
+
+    <div class="oem-notes">
+      <div><h3>Samsung</h3><p data-i18n="install.samsung">If Auto Blocker blocks the install, turn it off under Settings → Security and privacy, install, then turn it back on.</p></div>
+      <div><h3 data-i18n="install.xiaomiTitle">Xiaomi / Redmi / POCO</h3><p data-i18n="install.xiaomi">Allow installs from your file manager or browser, then turn on Autostart for Hisn so it keeps running after you close it.</p></div>
+      <div><h3 data-i18n="install.nothingTitle">Nothing / stock</h3><p data-i18n="install.nothing">No extra maker screen. Set Hisn's battery use to Unrestricted so it can keep checking in the background.</p></div>
+    </div>
+    <p class="note-line" data-i18n="install.note">You can remove Hisn like any other app. If a protection lock is running, turn it off first.</p>
+  </section>
+
+  <section class="section" id="limits">
+    <div class="section-head">
+      <p class="eyebrow" data-i18n="limits.eyebrow">The limits</p>
+      <h2 data-i18n="limits.title">What Hisn will not do.</h2>
+      <p class="lede" data-i18n="limits.lede">A blocker that hides its gaps is a false promise. These are the gaps this build has; the in-app page repeats them.</p>
+    </div>
+    <ul class="limits-list">
+      <li><h3 data-i18n="limits.force.title">Survive a force stop</h3><p data-i18n="limits.force.body">Android Settings' Force stop wins. The watchdog can notice a stopped layer; no ordinary app can restart itself from there.</p></li>
+      <li><h3 data-i18n="limits.space.title">Cover a second space</h3><p data-i18n="limits.space.body">A second space, Secure Folder or dual app is a separate Android profile. Hisn must be installed there too.</p></li>
+      <li><h3 data-i18n="limits.vpn.title">Outrank another VPN</h3><p data-i18n="limits.vpn.body">Android allows one VPN at a time. Another VPN, Private DNS or an app that uses its own encrypted DNS can bypass the DNS layer.</p></li>
+      <li><h3 data-i18n="limits.ip.title">See past a direct IP</h3><p data-i18n="limits.ip.body">DNS filtering sees names, not direct IP connections, cached answers or content inside an encrypted page.</p></li>
+      <li><h3 data-i18n="limits.os.title">Replace the operating system</h3><p data-i18n="limits.os.body">The protection lock freezes rules inside Hisn. It does not stop Android settings, a data wipe, or a managed-device policy that is set separately.</p></li>
+      <li><h3 data-i18n="limits.guarantee.title">Guarantee every image</h3><p data-i18n="limits.guarantee.body">Image checks are Android 14+ and act after content appears. No classifier catches every frame, and none should be sold as certainty.</p></li>
+    </ul>
+    <p class="note-line"><span data-i18n="limits.note">Read the privacy page for what stays on the phone and what leaves it.</span> <a href="privacy.html" data-i18n="nav.privacy">Privacy</a></p>
+  </section>
+
+  <section class="section" id="different">
+    <div class="section-head">
+      <p class="eyebrow" data-i18n="diff.eyebrow">Different by design</p>
+      <h2 data-i18n="diff.title">The missing account is the feature.</h2>
+      <p class="lede" data-i18n="diff.lede">Most blockers ask for an account, a subscription or a person to review screenshots. Hisn asks for none of those. That is a privacy choice, and it is also why the limits are on this page.</p>
+    </div>
+    <div class="diff-grid">
+      <article><h3 data-i18n="diff.account.title">No account</h3><p data-i18n="diff.account.body">Nothing to sign in to, nothing to sync, no email or phone number before the first setting.</p></article>
+      <article><h3 data-i18n="diff.cloud.title">No cloud screenshots</h3><p data-i18n="diff.cloud.body">No ally inbox, no review queue, no screenshots of your screen leaving the phone.</p></article>
+      <article><h3 data-i18n="diff.price.title">No subscription</h3><p data-i18n="diff.price.body">No trial timer and no paywall after setup. Hisn is free.</p></article>
+      <article><h3 data-i18n="diff.limits.title">Limits published</h3><p data-i18n="diff.limits.body">The bypasses are named on this page and in the app, before you trust it with anything.</p></article>
+    </div>
+  </section>
+
+  <section class="section" id="roadmap">
+    <div class="section-head">
+      <p class="eyebrow" data-i18n="road.eyebrow">Roadmap</p>
+      <h2 data-i18n="road.title">Other versions are coming.</h2>
+      <p class="lede" data-i18n="road.lede">Hisn is on Android today. The other apps are in progress; we will list a version as coming soon until you can install it.</p>
+    </div>
+    <div class="roadmap-grid">
+      <article class="road-card">
+        <span class="status available" data-i18n="status.available">Available</span>
+        <h3>Android</h3>
+        <p data-i18n="road.androidNow.body">Website filtering, app blocking, text and image checks, schedules and daily limits.</p>
+        <p class="mini" data-i18n="road.androidNow.meta">Free · Android 6.0 and later</p>
+      </article>
+      <article class="road-card next">
+        <span class="status soon" data-i18n="status.soon">Coming soon</span>
+        <h3 data-i18n="road.androidNext.title">A new Android update</h3>
+        <p data-i18n="road.androidNext.body">Phone checks for Samsung, Xiaomi and Nothing, a new look, and fresher blocklists.</p>
+        <p class="mini" data-i18n="road.androidNext.meta">No date yet</p>
+      </article>
+      <article class="road-card">
+        <span class="status soon" data-i18n="status.soon">Coming soon</span>
+        <h3>Mac</h3>
+        <p data-i18n="road.mac.body">A content filter and a browser guard for Safari, Chrome and Brave.</p>
+        <p class="mini" data-i18n="road.mac.meta">No date yet</p>
+      </article>
+      <article class="road-card">
+        <span class="status soon" data-i18n="status.soon">Coming soon</span>
+        <h3 data-i18n="road.ios.title">iPhone &amp; iPad</h3>
+        <p data-i18n="road.ios.body">A device-wide DNS filter and Safari blockers, with the lock kept in Screen Time.</p>
+        <p class="mini" data-i18n="road.ios.meta">No date yet</p>
+      </article>
+      <article class="road-card">
+        <span class="status soon" data-i18n="status.soon">Coming soon</span>
+        <h3 data-i18n="road.ext.title">Browser extension</h3>
+        <p data-i18n="road.ext.body">Page text, image checks and the block screen in Chromium browsers.</p>
+        <p class="mini" data-i18n="road.ext.meta">No date yet</p>
+      </article>
+      <article class="road-card">
+        <span class="status available" data-i18n="status.available">Available</span>
+        <h3 data-i18n="road.vault.title">Hisn Vault</h3>
+        <p data-i18n="road.vault.body">The off-device time lock. Seal a code until a date or a partner's key, in a file you keep. No account and no server.</p>
+        <p class="mini"><a href="vault.html" data-i18n="road.vault.link">Open the Vault</a></p>
+      </article>
+    </div>
+    <p class="note-line" data-i18n="road.note">No dates we cannot keep. A version stays “coming soon” until there is something you can install.</p>
+  </section>
+
+  <section class="section" id="faq">
+    <div class="section-head">
+      <p class="eyebrow" data-i18n="faq.eyebrow">Questions</p>
+      <h2 data-i18n="faq.title">Before you install.</h2>
+    </div>
+    <div class="faq">
+      <details>
+        <summary data-i18n="faq.q1">Is Hisn free?</summary>
+        <p data-i18n="faq.a1">Yes. There is no account, no subscription and no in-app purchase.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.q2">What leaves my phone?</summary>
+        <p data-i18n="faq.a2">Only the blocklist update and the DNS names your phone already looks up. Matching, rules and screen checks stay on the phone. The privacy page lists every request.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.q3">How do I install it?</summary>
+        <p data-i18n="faq.a3">Tap Download on this page, open the file, and allow installs from your browser once. Then turn on App protection and Website filtering.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.q4">Does it work on Samsung, Xiaomi and Nothing?</summary>
+        <p data-i18n="faq.a4">Yes. Hisn runs on all three. An upcoming update adds a phone check that finds the maker settings that keep it running.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.q5">Can I uninstall it?</summary>
+        <p data-i18n="faq.a5">Yes, like any other app. If a protection lock is running, turn it off first. A force stop, a second space or another VPN can still bypass the layers; that is why the limits are on this page.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.q6">Does it send screenshots to anyone?</summary>
+        <p data-i18n="faq.a6">No. There is no accountability inbox and no cloud review. Optional guardian pairing can add rules, but it does not receive your screens or browsing history.</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="final-cta">
+    <h2 data-i18n="final.title">A calmer phone starts here.</h2>
+    <p data-i18n="final.body">Free, private, and built for Arabic and English. The limits are on this page before you install.</p>
+    <a class="button primary" href="downloads/hisn-android.apk" download data-i18n="hero.download">Get Hisn for Android</a>
+    <p class="mini" data-i18n="final.note">Free · Android 6.0 and later · No account</p>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <p data-i18n="footer.note">No account, no server, no analytics. Matching stays on the phone.</p>
+  <nav aria-label="Footer" data-i18n-aria="footer.label">
+    <a href="vault.html" data-i18n="nav.vault">Vault</a>
+    <a href="privacy.html" data-i18n="nav.privacy">Privacy</a>
+  </nav>
 </footer>
 
-<noscript>This page needs JavaScript. Nothing is sent anywhere; the code never leaves your browser.</noscript>
+<noscript><p class="noscript">This page works without JavaScript; only the language switch needs it. The English content is shown.</p></noscript>
 
-<script src="lib/tlock.bundle.js"></script>
-<script type="module" src="lib/app.js"></script>
+<script src="lib/vendor/anime.min.js" defer></script>
+<script src="lib/animations.js" defer></script>
+<script type="module" src="lib/site.js"></script>
 </body>
 </html>

@@ -1,62 +1,102 @@
-# Hisn Vault (web)
+# Hisn website
 
-A static page that seals a code until a date. No account, no server, no
-analytics; the vault is a JSON file you keep. The design, threat model and
-verified evidence are in [`docs/WEB_VAULT.md`](../docs/WEB_VAULT.md).
+The product site for the Android app, plus the Vault. Static files, no account,
+no server, no analytics. The site is bilingual (English and Arabic), light and
+dark, and every page has a strict CSP with no third-party resource.
+
+- `/` — the product page: signed Android download, how it works, limits,
+  roadmap and FAQ.
+- `/vault.html` — Hisn Vault, the off-device time lock. See
+  [`docs/WEB_VAULT.md`](../docs/WEB_VAULT.md).
+- `/partner.html` — the Vault's partner half.
+- `/privacy.html` — the short privacy page for the download site.
+
+The design and the competitor pass are recorded in
+[`docs/WEBSITE_2026-11-14.md`](../docs/WEBSITE_2026-11-14.md).
 
 ## Run it
 
 ```bash
 cd website
+bash stage-downloads.sh          # copies the signed APK from dist/ (not committed)
 python3 -m http.server 8765
 # http://127.0.0.1:8765/
 ```
 
 A local server is required: ES modules and `crypto.subtle` do not run from
-`file://`. Nothing is installed and nothing is fetched at load time except
-`index.html`, the stylesheet and the two scripts.
+`file://`. The download links are not staged in a fresh clone; run
+`stage-downloads.sh` first, or the build script below.
+
+## Build a deployable copy
+
+```bash
+bash website/build-site.sh
+# dist/hisn-website-<date>/       (static tree, APK staged in downloads/)
+# dist/hisn-website-<date>.zip
+cd dist/hisn-website-<date>
+python3 -m http.server 8766
+```
+
+`stage-downloads.sh` reads `release.json`, refuses a file whose size or SHA-256
+does not match, copies it to the stable public name `hisn-android.apk`, and
+writes `SHA256SUMS`. The APK is deliberately not committed
+(`website/downloads/*.apk` is ignored). `build-site.sh` leaves `release.json`,
+the build log, the vendor notice and the checksum file out of the public folder;
+the vendored runtime keeps its license.
 
 ## The files
 
 | Path | What it is |
 |---|---|
-| `index.html` | The vault: create, setup window, sealed, due, revealed. |
+| `index.html` | The product page: hero, signed download, benefits, install steps with app captures, limits, roadmap, FAQ. |
+| `vault.html` | The Vault: create, setup window, sealed, due, revealed. |
 | `partner.html` | The partner's half: keypair, public key, release. |
-| `lib/crypto.js` | AES-GCM, P-256 ECDH + HKDF, passcode drawing. No DOM, no storage. |
+| `privacy.html` | The short privacy page, linked from the product page and the app record. |
+| `release.json` | Internal release identity: version, bytes, SHA-256, certificate, source record. Not copied to the public build. |
+| `index.html` / `lib/site.js` | Product-page English copy in HTML, Arabic in `lib/site.js`; the language switch updates the document direction. |
+| `lib/crypto.js` | Vault AES-GCM, P-256 ECDH + HKDF, passcode drawing. |
 | `lib/vault.js` | The vault record, both open paths, import validation. |
 | `lib/tlock.js` | drand quicknet constants, round math, sealing/opening. |
-| `lib/app.js` | The vault page. The code lives in memory only. |
+| `lib/app.js` | The Vault page. The code lives in memory only. |
 | `lib/partner-app.js` | The partner page. The private key lives in `localStorage`. |
-| `lib/copy.js` | English and Arabic strings, date and language handling. |
-| `lib/store.js` | `localStorage`, file download/import, clipboard. |
+| `lib/copy.js` | Vault English and Arabic strings. |
+| `lib/store.js` | Vault `localStorage`, file download/import, clipboard. |
 | `lib/tlock.bundle.js` | Committed tlock-js bundle; see `vendor/`. |
-| `assets/style.css` | Light and dark, RTL by logical properties. |
+| `assets/style.css` | Shared colour tokens, typography and Vault controls, light and dark. |
+| `assets/site.css` | Product-page layout, phone mockups, stat band, steps, roadmap. |
+| `assets/home.png`, `rules.png`, `phone-checks.png` | Real Hisn emulator captures used on the product page. |
+| `test/site.test.mjs` | Release manifest, download links, translation keys, CSP and Vault links. |
+| `lib/motion-flag.js`, `lib/animations.js` | The no-flash motion setup and the scroll/entrance animations, built on the vendored anime.js. |
+| `lib/vendor/anime.min.js`, `LICENSE.anime` | anime.js 3.2.2, MIT; vendored so the CSP allows no third-party script. See `lib/vendor/README.md`. |
+| `test/browser/landing.mjs` | Headless Chrome check of the product page in English and Arabic, desktop and mobile, with screenshots. |
 
 ## Tests
 
 ```bash
-node --test website/test/*.test.mjs                 # 16 tests, includes live drand
 HISN_SKIP_NETWORK=1 node --test website/test/*.test.mjs
-node website/test/browser/e2e.mjs --shots /tmp/hisn-shots
+HISN_CHROME="/path/to/Chrome" node website/test/browser/landing.mjs --shots /tmp/hisn-landing
+HISN_CHROME="/path/to/Chrome" node website/test/browser/e2e.mjs --shots /tmp/hisn-vault
 ```
 
-The first command needs Node 20+ and is not part of the repo's bare
-`./test.sh` run (that run deliberately avoids a Node toolchain). Ask for it with
-`./test.sh website`. The browser test needs a Chromium binary; set
-`HISN_CHROME` to override the macOS default.
+The Node tests need Node 20+; the browser tests need a Chromium binary (the
+macOS Chrome path is the default). The landing test fails on a console error or
+on horizontal overflow at 390 px, and switches the page to Arabic and back.
 
 ## Hosting
 
-The page is static, but hosting is still a trust boundary: whoever serves the
-JavaScript at creation time can read the code before it is sealed. If that
-matters, run the page from a local copy, or pin a published build hash. The CSP
-in both pages allows no third-party script, no frame, no form post and no
-network connection other than `https://api.drand.sh` (the partner page allows
-none at all).
+The site is static. Hosting is still a trust boundary: whoever serves the
+JavaScript at creation time can read a Vault code before it is sealed. The CSP
+on the product and privacy pages allows no connection at all; the Vault page
+allows only `https://api.drand.sh`, and the partner page allows none.
+
+Publish the **built** folder, including `downloads/`, over HTTPS. Do not serve
+the source tree directly in production (it contains tests, `release.json` and
+the staging scripts). There is no analytics, cookie banner or third-party
+script to add, and the site must not gain one.
 
 ## Arabic
 
-Every string is in `lib/copy.js` under `en` and `ar`; `test/copy.test.mjs`
-fails if the two tables drift apart or a page asks for a missing key. The Arabic
-has not been reviewed by a native speaker yet — treat the security sentences as
-draft.
+The product page's Arabic lives in `lib/site.js`; the Vault's in `lib/copy.js`.
+`test/site.test.mjs` fails if a page asks for a missing key or an Arabic value
+contains no Arabic text. The Arabic has not been reviewed by a native speaker
+yet — treat the security and privacy sentences as draft.

@@ -1,0 +1,42 @@
+name: Website
+
+# The static site's own checks: translations, release manifest, CSP, Vault
+# links, and the product page in a real headless Chrome in English and Arabic.
+# This is a test workflow only; it does not deploy (the APK is staged from the
+# owner's signed dist/ during a release, not committed).
+
+on:
+  pull_request:
+    paths:
+      - "website/**"
+      - "docs/WEBSITE_2026-11-14.md"
+      - ".github/workflows/website.yml"
+  push:
+    branches: [main]
+    paths:
+      - "website/**"
+      - ".github/workflows/website.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  website:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Static, translation, Vault and manifest tests
+        env:
+          HISN_SKIP_NETWORK: "1"
+        run: node --test website/test/*.test.mjs
+      - name: Locate Chrome
+        run: |
+          chrome="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$chrome"
+          echo "HISN_CHROME=$chrome" >> "$GITHUB_ENV"
+      - name: Product page in English and Arabic
+        run: node website/test/browser/landing.mjs

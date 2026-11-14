@@ -50,7 +50,7 @@ async function waitFor(fn, timeout = 40000) {
   }
 }
 
-await waitFor(() => fetch(`http://127.0.0.1:${port}/index.html`).then((r) => r.ok));
+await waitFor(() => fetch(`http://127.0.0.1:${port}/vault.html`).then((r) => r.ok));
 await waitFor(() => fetch(`http://127.0.0.1:${debugPort}/json/version`).then((r) => r.ok));
 
 const errors = [];
@@ -96,7 +96,7 @@ async function open(pathname) {
 }
 
 try {
-  const vault = await open('/index.html');
+  const vault = await open('/vault.html');
   const partner = await open('/partner.html');
 
   await partner.evaluate(`document.querySelector('[data-action=create-key]').click()`);

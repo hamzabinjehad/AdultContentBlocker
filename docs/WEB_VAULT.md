@@ -2,7 +2,10 @@
 
 Status: **development preview.** The site is in [`website/`](../website/), runs
 from a static directory, and has no hosting, domain, account or analytics. The
-gates below say what was run and what was not.
+Vault page is now **`/vault.html`**; the root is the product page with the
+signed Android download (see
+[the website record](WEBSITE_2026-11-14.md)). The gates below say what was run
+and what was not.
 
 ## Why a website at all
 

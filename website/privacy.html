@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light dark">
+<title>Hisn privacy</title>
+<meta name="description" content="What Hisn keeps on the phone, what leaves it, and why. No account, no analytics, no advertising.">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body class="site">
+<a class="skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<header class="top site-top">
+  <a class="brand" href="./index.html" aria-label="Hisn home">
+    <span class="ar">حصن</span><span class="dot">·</span><span>Hisn</span>
+  </a>
+  <nav class="site-nav" aria-label="Main" data-i18n-aria="nav.label">
+    <a href="index.html#download" data-i18n="nav.download">Download</a>
+    <a href="index.html#limits" data-i18n="nav.limits">Limits</a>
+    <a href="index.html#roadmap" data-i18n="nav.roadmap">Roadmap</a>
+    <a href="vault.html" data-i18n="nav.vault">Vault</a>
+  </nav>
+  <div class="top-actions">
+    <button class="ghost" type="button" data-lang-button aria-label="العربية">العربية</button>
+  </div>
+</header>
+
+<main id="main" class="site-main">
+  <section class="section">
+    <div class="section-head">
+      <p class="eyebrow" data-i18n="privacy.eyebrow">Privacy</p>
+      <h1 class="page-title" data-i18n="privacy.title">What stays on the phone.</h1>
+      <p class="lede" data-i18n="privacy.lede">Hisn is built so that the only routine data that leaves your phone is the blocklist update and the DNS queries the phone already makes. There is no account, no analytics SDK, no advertising and no telemetry.</p>
+    </div>
+
+    <div class="privacy-grid">
+      <article class="card">
+        <h2 data-i18n="privacy.stays.title">Stays on the phone</h2>
+        <p data-i18n="privacy.stays.body">Rules, chosen apps, schedule, limits, the protection deadline, the installed list version, local health state and the pause count live in Hisn's own storage. On Android, an optional name and reason you type for yourself stay there too. None of it is uploaded, exported with your rules or put in diagnostics.</p>
+        <p data-i18n="privacy.stays.screen">Screen text, images and DNS answers are handled on the device and are not saved or sent.</p>
+      </article>
+
+      <article class="card">
+        <h2 data-i18n="privacy.leaves.title">Leaves the phone</h2>
+        <ul class="privacy-list">
+          <li data-i18n="privacy.leaves.update">Blocklist update — the app checks for a newer list. That request reveals your IP address and the time, not what you browse.</li>
+          <li data-i18n="privacy.leaves.dns">DNS queries, if you enable filtering — the resolver you configured sees the names your phone resolves, as it would without Hisn.</li>
+          <li data-i18n="privacy.leaves.time">Apple time — only on iPhone/iPad, for the time lock and vault reveal. Hisn reads only the date.</li>
+          <li data-i18n="privacy.leaves.partner">An accountability request — only if you pair a partner; it says a request was made and when, never which site you visited.</li>
+        </ul>
+        <p class="mini" data-i18n="privacy.leaves.note">Your ISP, network, employer and platform may still collect data under their own policies. Hisn cannot change that.</p>
+      </article>
+
+      <article class="card">
+        <h2 data-i18n="privacy.permissions.title">Permissions, and why</h2>
+        <p data-i18n="privacy.permissions.body">Website filtering uses Android's VPN service for DNS only; app protection uses the accessibility service to read visible text and close the apps you chose; daily limits read Android's own usage record; the pause screen and the optional boot shield use the overlay permission. Notifications are for layer-health notices. Every layer is optional except the one you choose to turn on.</p>
+      </article>
+
+      <article class="card">
+        <h2 data-i18n="privacy.site.title">This website</h2>
+        <p data-i18n="privacy.site.body">No analytics, no cookies, no third-party script and no server of ours. Your language choice stays in this browser. The Vault keeps its file in your browser or downloads it to you; the time lock only reads a public clock service.</p>
+      </article>
+
+      <article class="card">
+        <h2 data-i18n="privacy.control.title">Your control</h2>
+        <p data-i18n="privacy.control.body">Uninstalling Hisn deletes its local rules, settings and personal layer. Clearing Android's app data does the same. The optional removal guard only exists while a protection lock is active, and it never blocks a data wipe or a managed-device policy.</p>
+      </article>
+
+      <article class="card">
+        <h2 data-i18n="privacy.contact.title">Questions</h2>
+        <p data-i18n="privacy.contact.body">This page covers the website and the app. The app's Settings → Privacy repeats the short version, and each permission has its own one-line explanation before you turn it on.</p>
+      </article>
+    </div>
+
+    <p class="note-line"><a href="index.html" data-i18n="privacy.back">Back to the download page</a></p>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <p data-i18n="footer.note">No account, no server, no analytics. Matching stays on the phone.</p>
+  <nav aria-label="Footer" data-i18n-aria="footer.label">
+    <a href="vault.html" data-i18n="nav.vault">Vault</a>
+    <a href="privacy.html" data-i18n="nav.privacy">Privacy</a>
+  </nav>
+</footer>
+
+<script type="module" src="lib/site.js"></script>
+</body>
+</html>
