@@ -65,8 +65,8 @@ android {
         manifestPlaceholders = [hisnAppLabel: '@string/app_name']
         minSdk 23
         targetSdk 36
-        versionCode 43
-        versionName '1.6.0'
+        versionCode 44
+        versionName '1.0.0-beta1'
         // -PhisnUiTests=true runs the Compose shell tests (androidTest/.../nativeshell) instead
         // of the engine checks; both live in the same test APK.
         testInstrumentationRunner providers.gradleProperty('hisnUiTests').orNull == 'true'
