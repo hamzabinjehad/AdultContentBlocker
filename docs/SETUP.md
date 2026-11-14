@@ -94,8 +94,9 @@ read the missing heartbeat, not at the exact moment of removal; a browser that
 has just launched or a Mac that has just woken keeps a full recovery window. A
 refusing browser may be force-closed after ten additional seconds, with fresh
 heartbeat, consent and recovery-deadline checks. Reopening a browser closed for
-silence gets the short repeat warning; confirmed profile loss keeps the full
-five minutes. Sleep/wake can extend a pending force-close's recovery window.
+silence gets a full one-minute countdown again; confirmed profile loss keeps
+the full five minutes. Sleep/wake can extend a pending force-close's recovery
+window.
 One exception: if a remembered locked filter authority is unreachable, the
 guard cannot read check-ins at all, so it shows the browser as waiting without
 a countdown instead of closing it on an outage. Standard-profile checks do not
@@ -155,7 +156,12 @@ vocabulary lives. Until it is on the Chrome Web Store, load it unpacked:
    **Developer mode**, **Load unpacked**, and pick the newly prepared
    `dist/hisn-unpacked-chrome-1.0.1/` folder. It loads with the pinned id
    `hfhaffbmoeepcdolgejeidkgaoapcjig`.
-3. The Hisn popup should say **App connected** within a minute.
+3. The Hisn popup should say **App connected** within a minute. If it does
+   not, and the app was moved or replaced after `install_native_host.sh`
+   last ran, rerun that script with `sudo` (its manifest still names the
+   old bridge). While it runs, the app rewrites a missing or stale
+   user-scope link, so a browser that lost its route reconnects instead of
+   being closed.
 
 If loading a previously used folder fails with **Cannot load extension with
 file or directory name _metadata**, that is a browser-generated rules cache,

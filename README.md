@@ -32,6 +32,31 @@ you the lock; Hisn adds the coverage those built-in filters miss. Read
   reconnect copy names Accessibility → Installed apps. Development candidate:
   no signed artifact, no phone run, and the post-reboot dashboard remains
   unverified. Record: [the 1.6.0 note](docs/ANDROID_1.6.0.md).
+- **Android phone-maker setup, 14 November 2026.** Hisn now reads whether it
+  runs on a Samsung, Xiaomi/Redmi/POCO, Nothing, OPPO/realme/OnePlus,
+  vivo/iQOO, Huawei/HONOR or TECNO/Infinix/itel build and shows the extra
+  background switch that maker adds. Battery and background restriction are
+  live Android readings; autostart and the Recents lock are the owner's own
+  ticks. On the Galaxy the standard battery request does not exist and Device
+  care's power screens need a Samsung signature permission, so the screen opens
+  app info instead, where **Battery** and **Manage app if unused** live.
+  Nothing OS and stock builds show only Android's reading. The screen also
+  explains second spaces, the Samsung Auto Blocker install switch, and links
+  Always-on VPN. Record:
+  [the phone-maker note](docs/ANDROID_OEM_PHONES_2026-11-14.md).
+- **Website — the Android download and the roadmap, 14 November 2026.** A
+  bilingual product page at `website/index.html` offers the Android app as a
+  free download, explains the four layers and the bypasses, and shows
+  **the next Android update, Mac, iPhone/iPad, the browser extension and the
+  Vault** as available or coming soon. It borrows the atmosphere and motion of
+  Unchaind and the section flow of ScreenZen — a centered promise, layered
+  phone screens, a stat band, benefits, step cards and an FAQ — without
+  inventing ratings, testimonials or a subscription. Version numbers, hashes,
+  checksums and source links are kept off the public page; the release identity
+  is still checked in `website/release.json` before a build. The Vault moved to
+  `/vault.html`; a privacy page was added. `bash website/build-site.sh` stages
+  the APK and writes a deployable folder and zip. No hosting or domain is set
+  up yet. Record: [the website note](docs/WEBSITE_2026-11-14.md).
 - **Android 6.0 support — the candidate runs on API 23 and later.** Java 8+
   APIs are desugared, one `Compat` surface covers Android 6/7, the DoT resolver
   verifies the certificate name on every release and carries a pinned SSL.com
@@ -390,8 +415,8 @@ Building, signing, the seed bundle, the extension, the Mac app, the native
 messaging host and lock lengths are covered in
 [development notes](docs/DEVELOPMENT.md). Maintainers releasing a build follow
 the [release runbook](docs/RELEASE_RUNBOOK.md) and record results in
-[release validation](docs/RELEASE_VALIDATION.md); every change is summarized in
-the [changelog](CHANGELOG.md).
+[release validation](docs/RELEASE_VALIDATION.md); each release has a dated note
+in the [documentation index](docs/README.md).
 
 ## Privacy
 

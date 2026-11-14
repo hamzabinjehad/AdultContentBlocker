@@ -148,8 +148,8 @@ gap. A linked browser without a readable heartbeat gets a visible one-minute
 countdown. A linked browser whose standard profile confirms the extension was
 removed or disabled gets a visible five-minute countdown. An unsupported browser
 still gets sixty seconds. A browser closed for silence that is relaunched
-without repair gets the short repeat warning; a profile-confirmed loss keeps the
-full five minutes because the profile remains the positive evidence. A
+without repair gets a full one-minute countdown again; a profile-confirmed loss
+keeps the full five minutes because the profile remains the positive evidence. A
 successful verified reconnection clears either warning.
 
 Checks run every five seconds. After the one-minute silence countdown (or the
@@ -182,14 +182,16 @@ process guard is Mac-only, not an iOS browser-termination feature.
 
 A restart does not renew or reset a confirmed profile-loss countdown while the
 browser process is still the same. A genuinely new process after a closure gets
-a fresh warning: the short repeat for silence, the full five minutes for
+a fresh warning: the full minute for silence, the full five minutes for
 confirmed profile loss. Alternating healthy observations cannot manufacture that
 transition. The evidence is session-local: restarting Hisn or changing the system
 clock is not solved by this ledger.
 
-Removing the native-host link while leaving the extension installed is a
-closure trigger now: the extension stops checking in, so the browser gets the
-one-minute countdown unless it reconnects. The extension keeps its declarative
+Removing the native-host link while leaving the extension installed stops the
+extension checking in. The app rewrites a missing or stale user-scope link at
+launch and while the guard runs, so this does not silently mute the extension;
+with no rebuildable route the browser still gets the one-minute countdown
+unless it reconnects. The extension keeps its declarative
 rules and, during a lock, still fails closed to strict mode without the app, but
 the guard no longer treats that layer as a substitute for a connection.
 Disabling or uninstalling the extension is confirmed by standard-profile
