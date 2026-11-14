@@ -161,6 +161,11 @@ public final class TextGuardService extends AccessibilityService {
     private java.util.List<String> selfNames;
     /** What the last self-protection check found, until the shield page is launched. */
     private Guard pendingGuard = Guard.NONE;
+    /** The last wait-before-opening screen launched, so a burst of window events shows it once. */
+    private String waitShownFor;
+    private long waitShownAt;
+    /** How often the wait activity did not appear and the overlay stood in (maker pop-up block). */
+    private int waitOverlayFallbacks;
     private final Runnable showRestriction = () -> {
         try {
             startActivity(new Intent(this, RestrictionActivity.class)
@@ -416,12 +421,34 @@ public final class TextGuardService extends AccessibilityService {
                 handler.postDelayed(selfCheck, 20);
             }
         }
+        // The person left the app the overlay waits for (Home, Recents, another app): take it away.
+        if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
+                && OpenWaitOverlay.leftBy(name, getPackageName())) {
+            OpenWaitOverlay.hide(this);
+        }
         if (excluded == null) return;
         if (excluded.contains(name)) {
             // Background/stale events from Settings, the launcher or our own
             // window must not cancel a selected window's queued check.
             // inspectWindow still checks window ownership before reading any text.
             return;
+        }
+        // Wait before opening: a chosen app coming to the front gets the breath screen first.
+        // A blocked app still meets its block after "Open"; the wait never lets anything through.
+        try {
+            boolean newWindow = event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED;
+            if (name.equals(OpenWaitOverlay.getApp())) return;
+            if (OpenWaitStore.onAppEvent(this, name, newWindow)) {
+                long now = SystemClock.elapsedRealtime();
+                if (!name.equals(waitShownFor) || now - waitShownAt > 2000) {
+                    waitShownFor = name;
+                    waitShownAt = now;
+                    showOpenWait(name, now);
+                }
+                return;
+            }
+        } catch (RuntimeException unavailable) {
+            // The wait is a courtesy; a failure here must never stop the checks below.
         }
         if (name.equals(heldPackage) && SystemClock.elapsedRealtime() < heldUntil
                 && event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
@@ -1162,6 +1189,37 @@ public final class TextGuardService extends AccessibilityService {
         handler.postDelayed(showShield, 100);
     }
 
+    /**
+     * The wait screen as an activity, and the overlay if the activity has not appeared two seconds
+     * later: Xiaomi's and vivo's background pop-up switch drops the activity without an error.
+     * A slow activity that appears after all removes the overlay itself.
+     */
+    private void showOpenWait(String app, long launchedAt) {
+        boolean overlayOnly = BuildConfig.DEBUG && android.provider.Settings.Global.getInt(
+                getContentResolver(), "hisn_debug_wait_overlay", 0) == 1;
+        if (!overlayOnly) {
+            try {
+                startActivity(new Intent(this, OpenWaitActivity.class)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
+                        .putExtra(OpenWaitActivity.EXTRA_APP, app));
+            } catch (RuntimeException refused) {
+                overlayOnly = true;
+            }
+        }
+        if (overlayOnly) {
+            OpenWaitOverlay.show(this, app);
+            return;
+        }
+        handler.postDelayed(() -> {
+            boolean appeared = app.equals(OpenWaitActivity.getResumedFor())
+                    && OpenWaitActivity.getResumedAt() >= launchedAt;
+            if (!appeared && !destroyed) {
+                waitOverlayFallbacks++;
+                OpenWaitOverlay.show(this, app);
+            }
+        }, 2000);
+    }
+
     private void showGuardOverlay() {
         if (Build.VERSION.SDK_INT < 30 || guardOverlay != null) return;
         try {
@@ -1379,6 +1437,7 @@ public final class TextGuardService extends AccessibilityService {
     }
 
     @Override public void onDestroy() {
+        OpenWaitOverlay.hide(this);
         destroyed = true;
         if (grayWatch != null) {
             try { getContentResolver().unregisterContentObserver(grayWatch); }

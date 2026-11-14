@@ -53,6 +53,12 @@ fun RulesScreen(
     val snackbar = LocalHisnSnackbar.current
     var showGrayDialog by remember { mutableStateOf(false) }
     var showScanAllDialog by remember { mutableStateOf(false) }
+    // The wait-before-opening screen is its own activity; re-read its count on coming back.
+    var resumes by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
+        resumes++
+        onPauseOrDispose { }
+    }
 
     if (showScanAllDialog) {
         AlertDialog(
@@ -284,6 +290,23 @@ fun RulesScreen(
                             modifier = modifier,
                             active = state.limit.on && limitedApps > 0,
                             issue = guardIssue.takeIf { state.limit.on && limitedApps > 0 && !guardReady },
+                            onIssue = fixGuard
+                        )
+                    },
+                    { modifier ->
+                        val waiting = remember(resumes) { app.hisn.android.OpenWaitStore.apps(context).size }
+                        RuleTile(
+                            icon = OpenWaitIcon,
+                            title = androidx.compose.ui.res.stringResource(app.hisn.android.R.string.open_wait_rule),
+                            value = if (waiting == 0) tr("Off") else "$waiting ${tr(if (waiting == 1) "app" else "apps")}",
+                            onClick = {
+                                context.startActivity(
+                                    android.content.Intent(context, app.hisn.android.OpenWaitSettingsActivity::class.java)
+                                )
+                            },
+                            modifier = modifier,
+                            active = waiting > 0,
+                            issue = guardIssue.takeIf { waiting > 0 && !guardReady },
                             onIssue = fixGuard
                         )
                     },

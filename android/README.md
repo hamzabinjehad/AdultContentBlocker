@@ -18,6 +18,30 @@ for the 236,000-domain seed. The behavior table, the security decisions and the
 API 23 evidence are in
 [the Android 6.0 support note](../docs/ANDROID_OLDER_VERSIONS_2026-11-11.md).
 
+**Phone-maker setup, 14 November 2026.** The app now reads the build and shows
+the background switches the phone maker adds. `DeviceFamily` classifies
+Samsung, Xiaomi/Redmi/POCO, Nothing, OPPO/realme/OnePlus, vivo/iQOO,
+Huawei/HONOR, TECNO/Infinix/itel, stock and unknown builds; `OemGuide` keeps
+measured steps (battery optimization, Android's app-info background
+restriction) separate from the owner's confirmations (the maker's autostart
+switch, the Recents lock); `OemSupport` opens the maker's screen with ordered
+fallbacks, and a new **Keep protection running** screen shows the checklist,
+Always-on VPN, a second-space warning and an install-switch note. On the
+owner's Galaxy SM-G990B2 / Android 16 the standard battery request resolves to
+nothing and Device care's power screens need a Samsung signature permission,
+so the screen opens app info instead, where **Battery** and **Manage app if
+unused** live. Nothing OS and stock builds show only Android's reading. The
+the five phone-screen tests and the full UI suite (35 tests then; 39 after the
+separate Open Wait tests landed) pass on the API 36 emulator, the real-build
+classification test passed on the connected Galaxy through the isolated
+`app.hisn.android.visualcheck` copy, and a disposable AOSP emulator with
+Xiaomi/Redmi build properties passed the full 39-test suite plus the real-app
+Xiaomi screen, the live battery reading, the autostart fallback and the saved
+tick (5 of 5 phone tests). No
+MIUI image was available, so MIUI's own screens and the ColorOS/OriginOS/EMUI
+components remain unverified on hardware. Record:
+[the phone-maker note](../docs/ANDROID_OEM_PHONES_2026-11-14.md).
+
 **Source state, 10 November 2026.** This folder is the **1.6.0 / 43**
 development candidate: the 1.5.3 feature set, packages 2 and 3 (signed mobile
 list updates whose generations carry domains and terms together, policy receipts and readiness, rule import/preview, the site

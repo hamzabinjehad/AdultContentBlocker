@@ -56,3 +56,31 @@ empty and "Not now" skips the rest).
 (the start answer orders the grants; the promise by TalkBack's action; swiping off the name
 page saves it). By hand on the emulator: a tap, a 0.4 s and a 0.9 s press do not promise; a
 1.7 s hold does. Not checked: a real phone, light theme and Arabic by eye.
+
+## Fourth pass (same day): "Choose what Hisn checks"
+
+Every competitor turns protection on before onboarding ends (Opal pre-selects a block list,
+BlockerX opens on its filter switch). Hisn finished with Adult tags and Image checks off and
+no apps chosen, so a new page sits between the permissions and the setup summary
+(`09-checks.png`):
+
+- Two switches, **Adult words and tags** and **Images and video**, each with the shell's
+  short disclosure under it. Turning one on shows the **same full disclosure dialog** as the
+  switch in the main app (`10-checks-disclosure.png`); "Cancel" leaves it off. Images is
+  disabled below Android 14.
+- **Apps to check**: browsers first, then today's most-used (with usage access), then A–Z;
+  eight shown, "Show all apps" for the rest. **"Add all browsers (N)"** ticks every installed
+  browser in one tap. Nothing is ticked for the person (`11-checks-chosen.png`).
+- If App protection is off, the page says in one line that these checks run through it.
+- The setup summary adds a row for each check: "On · apps: N" only when App protection runs;
+  otherwise "Saved, not running". Choices are written to the same rules the shell uses, so
+  Home shows them straight away.
+
+Setup is now 12 steps on the direct build and 11 on Play.
+
+Checked: `bash android/test-ui.sh emulator-5560 direct`, 35 of 35 (a new test: the switch
+asks before it saves, and ticking an app saves it and updates the count). By hand on the
+emulator: the dialog, "Add all browsers", and the summary. Installed on the owner's phone
+(signed direct release, data kept). Arabic in dark theme looked at by eye
+(`12-checks-ar-dark.png`, `13-checks-ar-dark-apps.png`): right-to-left order, switches and
+checkboxes on the leading edge, nothing cut off. Not checked: this page on the real phone.

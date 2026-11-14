@@ -33,6 +33,7 @@ import androidx.compose.material.icons.rounded.Accessibility
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.BarChart
+import androidx.compose.material.icons.rounded.BatteryChargingFull
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
@@ -100,7 +101,7 @@ import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DetailScaffold(
+internal fun DetailScaffold(
     title: String,
     onBack: () -> Unit,
     content: @Composable (PaddingValues) -> Unit
@@ -1442,7 +1443,7 @@ private val PermissionItems = listOf(
 )
 
 @Composable
-fun PermissionsScreen(state: HisnState, onBack: () -> Unit) {
+fun PermissionsScreen(state: HisnState, onBack: () -> Unit, onOpen: (String) -> Unit = {}) {
     val status = LocalHisnStatusColors.current
     DetailScaffold(stringResource(R.string.settings_permissions), onBack) { innerPadding ->
         LazyColumn(
@@ -1452,6 +1453,19 @@ fun PermissionsScreen(state: HisnState, onBack: () -> Unit) {
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            item {
+                HisnCard {
+                    SettingRow(
+                        icon = Icons.Rounded.BatteryChargingFull,
+                        title = stringResource(R.string.phone_title),
+                        supporting = stringResource(
+                            R.string.phone_checks_body,
+                            state.phone.maker.ifEmpty { "Android" }
+                        ),
+                        onClick = { onOpen("phone") }
+                    )
+                }
+            }
             item {
                 HisnCard {
                     PermissionItems.forEachIndexed { index, item ->
@@ -2137,7 +2151,8 @@ fun DetailHost(
         )
         detail == "limit:apps" -> LimitAppsScreen(state, onBack = { onNavigate("limit") })
         detail == "lock" -> LockScreen(state, onBack)
-        detail == "permissions" -> PermissionsScreen(state, onBack)
+        detail == "phone" -> PhoneSetupScreen(state, onBack)
+        detail == "permissions" -> PermissionsScreen(state, onBack, onNavigate)
         detail == "diagnostics" -> DiagnosticsScreen(state, onBack)
         detail == "personal" -> PersonalScreen(state, onBack)
         detail == "sitecheck" -> SiteCheckScreen(state, onBack)

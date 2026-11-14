@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import app.hisn.android.DnsVpnService
+import app.hisn.android.R
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -24,6 +25,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.AutoFixHigh
+import androidx.compose.material.icons.rounded.BatteryChargingFull
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.FactCheck
@@ -52,6 +54,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
@@ -142,6 +145,11 @@ fun ProtectionScreen(
         }
     }
     val showAttention = attention && issues.isNotEmpty()
+    // A real measured gap, not a maker guess: the battery is optimized or Android's own
+    // background switch is restricting Hisn. Shown even when every layer is currently running,
+    // because this is what stops them the next time the screen goes off.
+    val phoneAttention = state.phone.maker.isNotEmpty() &&
+        (!state.phone.batteryUnrestricted || state.phone.backgroundRestricted == true)
 
     val onCount = layers.count { it.on }
     val allOn = onCount == layers.size
@@ -273,6 +281,22 @@ fun ProtectionScreen(
                     summary = state.personal,
                     onSetUp = { onOpen("personal") }
                 )
+            }
+
+            if (phoneAttention) {
+                item {
+                    HisnCard {
+                        IssueRow(
+                            icon = Icons.Rounded.BatteryChargingFull,
+                            title = stringResource(
+                                R.string.phone_attention_title,
+                                state.phone.maker
+                            ),
+                            supporting = stringResource(R.string.phone_attention_body),
+                            onClick = { onOpen("phone") }
+                        )
+                    }
+                }
             }
 
             item { SectionHeader(copy.layers) }

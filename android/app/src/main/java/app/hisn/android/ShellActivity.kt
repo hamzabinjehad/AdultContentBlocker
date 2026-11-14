@@ -19,6 +19,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import app.hisn.android.nativeshell.HisnState
 import app.hisn.android.nativeshell.NativeShell
+import app.hisn.android.nativeshell.PhoneState
 import app.hisn.android.nativeshell.ShellActions
 
 /**
@@ -191,17 +192,35 @@ class ShellActivity : ComponentActivity(), ShellActions {
             "notifications" -> if (!Compat.openNotificationSettings(this)) {
                 toast(getString(R.string.perm_settings_unavailable))
             }
-            "battery" -> try {
-                startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, app))
-            } catch (unavailable: RuntimeException) {
+            // OemSupport tries the maker's own screen where one exists, then the standard
+            // battery request and app info. Samsung's standard request resolves to nothing
+            // (checked on SM-G990B2 / Android 16); app info is its reachable path.
+            "battery" -> if (!OemSupport.openBattery(this)) {
                 toast(getString(R.string.battery_unavailable))
-                try {
-                    startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
-                } catch (missing: RuntimeException) {
-                    // The message above already says where to go.
-                }
             }
         }
+    }
+
+    override fun phone(): PhoneState = PhoneState(
+        maker = OemSupport.maker(),
+        model = OemSupport.model(),
+        android = OemSupport.android(),
+        family = OemSupport.family(),
+        batteryUnrestricted = Permissions.battery(this),
+        backgroundRestricted = OemSupport.backgroundRestricted(this),
+        popupsAllowed = OemSupport.backgroundPopups(this)
+    )
+
+    override fun openPhoneSetting(key: String) {
+        val opened = when (key) {
+            "battery" -> OemSupport.openBattery(this)
+            "appinfo" -> OemSupport.openAppInfo(this)
+            "autostart" -> OemSupport.openAutostart(this)
+            "popups" -> OemSupport.openPopups(this)
+            "vpn" -> OemSupport.openVpnSettings(this)
+            else -> false
+        }
+        if (!opened) toast(getString(R.string.perm_settings_unavailable))
     }
 
     private fun openSettings(intent: Intent) {

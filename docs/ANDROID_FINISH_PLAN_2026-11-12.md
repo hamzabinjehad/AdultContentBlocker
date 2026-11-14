@@ -184,6 +184,34 @@ Nothing here was run on a phone.
 - Checked on the owner's phone with a separate test copy: 20 of 20 UI tests (direct and play),
   lint, string parity, release check. Not checked: Arabic on a device, TalkBack speech.
 
+### Phone-maker setup (14 November)
+
+- **Done in the working tree.** `DeviceFamily` (nine families), `OemGuide`
+  (measured versus confirmed rows), `OemSupport` (ordered maker deep links with
+  fallbacks), and a **Keep protection running** screen reached from Settings,
+  Permissions and Home's attention card. Battery and Android's background
+  restriction are live; autostart and Recents are the owner's ticks.
+- **A real Samsung dead end is fixed.** On SM-G990B2 / Android 16 the standard
+  battery request resolves to nothing and Device care's power screens require
+  `READ_SEARCH_INDEXABLES`; the app now opens app info, whose Battery and
+  Manage-app-if-unused rows are reachable. Checked with `resolve-activity` and
+  `am start` on the owner's phone.
+- **Checked:** `DeviceFamilyTest` (23 builds), `OemGuideTest` (216 states),
+  string parity, debug build, five phone-screen Compose tests on the API 36
+  emulator, and the full 35-test UI suite there. On the Galaxy the real-build
+  classification test passed through the isolated
+  `app.hisn.android.visualcheck` copy (1 of 1); its Compose tests were blocked
+  by the phone's lock screen, and the test copy was uninstalled afterwards.
+  The installed Hisn was not changed. A disposable AOSP emulator with
+  Xiaomi/Redmi build properties then passed the full 39-test UI suite,
+  `PhoneSetupTest` 5 of 5, and the real app's Xiaomi screen, one-tap battery
+  update, autostart fallback to app info and saved tick. No MIUI image existed, so MIUI's own screens and power
+  policy are still unverified.
+- **Still open:** retail Nothing, OPPO, vivo and Huawei hardware and a retail
+  Xiaomi/MIUI run; a signed 1.6.0 artifact; the phone acceptance matrix. The
+  maker components for those families are documented names, not device-verified. Record:
+  [the phone-maker note](ANDROID_OEM_PHONES_2026-11-14.md).
+
 ## Owner decisions needed
 
 - Was the signed 1.6.0 build installed on the Galaxy?

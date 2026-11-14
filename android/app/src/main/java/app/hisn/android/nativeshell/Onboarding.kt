@@ -124,6 +124,18 @@ interface OnboardingActions {
 
     /** Leaves onboarding; [enableGuard] turns the uninstall guard on first (direct build). */
     fun finish(enableGuard: Boolean)
+
+    /** "tags" or "images": whether the saved rules have that check on. */
+    fun checkOn(key: String): Boolean = false
+
+    /** Turns a check on after the same disclosure the shell shows, or off at once. */
+    fun setCheck(key: String, on: Boolean) {}
+
+    /** The apps the text and image checks look inside, as saved. */
+    fun checkedApps(): Set<String> = emptySet()
+
+    /** Saves the apps the checks look inside. */
+    fun setCheckedApps(packages: Set<String>) {}
 }
 
 object OnboardingKeys {
@@ -182,8 +194,9 @@ private val PLEDGES = listOf(
     R.string.welcome_pledge_text_3
 )
 private val PAGE_PERMISSIONS = PAGE_PLEDGE + PLEDGES.size
-private val PAGE_READY = PAGE_PERMISSIONS + 1
-private val PAGE_GUARD = PAGE_PERMISSIONS + 2
+private val PAGE_CHECKS = PAGE_PERMISSIONS + 1
+private val PAGE_READY = PAGE_PERMISSIONS + 2
+private val PAGE_GUARD = PAGE_PERMISSIONS + 3
 private val PLEDGE_PAGES = PAGE_PLEDGE until PAGE_PERMISSIONS
 private val PERSONAL_PAGES = setOf(PAGE_NAME, PAGE_REASON)
 
@@ -319,6 +332,13 @@ fun Onboarding(
         }
     }
     val guardOn = remember(refresh, page) { runCatching { actions.guardOn() }.getOrDefault(false) }
+    val checks = remember(refresh, page) {
+        listOf("tags", "images").associateWith { runCatching { actions.checkOn(it) }.getOrDefault(false) }
+    }
+    // Held here so a tick shows at once; the saved set is read again after each refresh.
+    var checkedApps by remember(refresh, page) {
+        mutableStateOf(runCatching { actions.checkedApps() }.getOrDefault(emptySet()))
+    }
 
     // A deep, calm field: the brand colour glows from the top, the rest stays quiet.
     val colors = MaterialTheme.colorScheme
@@ -440,8 +460,20 @@ fun Onboarding(
                         shown == PAGE_PERMISSIONS -> ConversationPage {
                             PermissionsPage(name.trim(), start, granted) { actions.request(it) }
                         }
+                        shown == PAGE_CHECKS -> ConversationPage {
+                            ChecksPage(
+                                checks = checks,
+                                checked = checkedApps,
+                                appProtectionOn = granted["accessibility"] == true,
+                                onCheck = { key, on -> actions.setCheck(key, on) },
+                                onApps = {
+                                    actions.setCheckedApps(it)
+                                    checkedApps = runCatching { actions.checkedApps() }.getOrDefault(it)
+                                }
+                            )
+                        }
                         shown == PAGE_READY -> ConversationPage {
-                            ReadyPage(name.trim(), reasonText, hard, before, directBuild, granted)
+                            ReadyPage(name.trim(), reasonText, hard, before, directBuild, granted, checks, checkedApps.size)
                         }
                         else -> ConversationPage { GuardPage(guardOn, granted["accessibility"] == true) }
                     }
@@ -907,6 +939,157 @@ private fun ReasonPage(
     AnswersStayHere()
 }
 
+/**
+ * What the checks look at. Opal pre-picks your block list and BlockerX opens on its filter
+ * switch; Hisn lets the person turn the checks on here, behind the shell's own disclosure, and
+ * pick the apps, with every browser one tap away. Nothing is ticked for them.
+ */
+@Composable
+private fun ChecksPage(
+    checks: Map<String, Boolean>,
+    checked: Set<String>,
+    appProtectionOn: Boolean,
+    onCheck: (String, Boolean) -> Unit,
+    onApps: (Set<String>) -> Unit
+) {
+    val context = LocalContext.current
+    val colors = MaterialTheme.colorScheme
+    val apps by androidx.compose.runtime.produceState(initialValue = emptyList<InstalledApp>()) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { installedApps(context) }
+    }
+    val browsers = remember(apps) { browserPackages(context) }
+    val usage = remember(apps) {
+        if (Usage.hasAccess(context)) Usage.usedTodayAll(context) else emptyMap()
+    }
+    var showAll by rememberSaveable { mutableStateOf(false) }
+    val ordered = remember(apps, browsers, usage) {
+        apps.sortedWith(
+            compareByDescending<InstalledApp> { it.packageName in browsers }
+                .thenByDescending { usage[it.packageName] ?: 0L }
+                .thenBy { it.label.lowercase() }
+        )
+    }
+
+    Spacer(Modifier.height(16.dp))
+    Said(stringResource(R.string.welcome_checks_title))
+    Text(
+        stringResource(R.string.welcome_checks_body),
+        style = MaterialTheme.typography.bodyLarge,
+        color = colors.onSurfaceVariant,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth()
+    )
+    if (!appProtectionOn) {
+        Spacer(Modifier.height(12.dp))
+        Text(
+            stringResource(R.string.welcome_checks_needs_access),
+            style = MaterialTheme.typography.bodyMedium,
+            color = colors.error,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+    Spacer(Modifier.height(16.dp))
+    HisnCard {
+        CheckRow(Icons.Rounded.LocalOffer, R.string.welcome_check_tags, R.string.adult_mode_short,
+            checks["tags"] == true, enabled = true) { onCheck("tags", it) }
+        InsetDivider()
+        val imagesSupported = android.os.Build.VERSION.SDK_INT >= 34
+        CheckRow(Icons.Rounded.Image, R.string.welcome_check_images,
+            if (imagesSupported) R.string.visual_short else R.string.welcome_check_images_old,
+            checks["images"] == true, enabled = imagesSupported) { onCheck("images", it) }
+    }
+
+    Spacer(Modifier.height(20.dp))
+    Row(Modifier.padding(start = 4.dp, end = 4.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            stringResource(R.string.welcome_apps_title),
+            style = MaterialTheme.typography.titleSmall,
+            color = colors.primary,
+            modifier = Modifier
+                .weight(1f)
+                .semantics { heading() }
+        )
+        Text(
+            stringResource(R.string.welcome_apps_count, checked.size),
+            style = MaterialTheme.typography.labelLarge,
+            color = colors.onSurfaceVariant
+        )
+    }
+    val installedBrowsers = ordered.filter { it.packageName in browsers }.map { it.packageName }.toSet()
+    if (installedBrowsers.isNotEmpty() && !checked.containsAll(installedBrowsers)) {
+        androidx.compose.material3.FilledTonalButton(
+            onClick = { onApps(checked + installedBrowsers) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+        ) { Text(stringResource(R.string.welcome_apps_browsers, installedBrowsers.size)) }
+        Spacer(Modifier.height(10.dp))
+    }
+    HisnCard {
+        val shown = if (showAll) ordered else ordered.take(8)
+        shown.forEachIndexed { index, app ->
+            val on = app.packageName in checked
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 56.dp)
+                    .toggleable(value = on, role = Role.Checkbox, onValueChange = {
+                        onApps(if (it) checked + app.packageName else checked - app.packageName)
+                    })
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                AppIcon(app.packageName, 32.dp)
+                Spacer(Modifier.width(14.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(app.label, style = MaterialTheme.typography.titleMedium, maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                    if (app.packageName in browsers) {
+                        Text(stringResource(R.string.welcome_apps_browser_tag),
+                            style = MaterialTheme.typography.bodySmall, color = colors.onSurfaceVariant)
+                    }
+                }
+                androidx.compose.material3.Checkbox(checked = on, onCheckedChange = null)
+            }
+            if (index < shown.lastIndex) InsetDivider()
+        }
+        if (ordered.size > 8) {
+            TextButton(
+                onClick = { showAll = !showAll },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp)
+            ) { Text(stringResource(if (showAll) R.string.welcome_apps_fewer else R.string.welcome_apps_all)) }
+        }
+    }
+}
+
+/** One check: its mark, its name, the short disclosure, and a switch that asks before it saves. */
+@Composable
+private fun CheckRow(icon: ImageVector, title: Int, body: Int, on: Boolean, enabled: Boolean, onChange: (Boolean) -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    ListItem(
+        headlineContent = { Text(stringResource(title), style = MaterialTheme.typography.titleMedium) },
+        supportingContent = {
+            Text(stringResource(body), style = MaterialTheme.typography.bodyMedium, color = colors.onSurfaceVariant)
+        },
+        leadingContent = { Icon(icon, contentDescription = null, tint = colors.primary, modifier = Modifier.size(24.dp)) },
+        trailingContent = { Switch(checked = on, onCheckedChange = null, enabled = enabled) },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        modifier = Modifier.toggleable(value = on, enabled = enabled, role = Role.Switch, onValueChange = onChange)
+    )
+}
+
+/** Packages that open web links: the browsers Website filtering already covers at the network. */
+private fun browserPackages(context: android.content.Context): Set<String> = runCatching {
+    val view = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://example.com"))
+        .addCategory(android.content.Intent.CATEGORY_BROWSABLE)
+    context.packageManager.queryIntentActivities(view, android.content.pm.PackageManager.MATCH_ALL)
+        .mapNotNull { it.activityInfo?.packageName }
+        .toSet()
+}.getOrDefault(emptySet())
+
 /** One question, its answers as numbered cards; picking a card is the answer. */
 @Composable
 private fun QuestionPage(
@@ -938,7 +1121,9 @@ private fun ReadyPage(
     hard: String,
     before: String,
     directBuild: Boolean,
-    granted: Map<String, Boolean>
+    granted: Map<String, Boolean>,
+    checks: Map<String, Boolean> = emptyMap(),
+    checkedCount: Int = 0
 ) {
     val colors = MaterialTheme.colorScheme
     val status = LocalHisnStatusColors.current
@@ -1005,7 +1190,38 @@ private fun ReadyPage(
                     color = if (on) status.success else colors.onSurfaceVariant
                 )
             }
-            if (index < OnboardingKeys.NEEDED.lastIndex) InsetDivider()
+            InsetDivider()
+        }
+        // The checks inside apps, with how many apps they look at.
+        listOf(
+            Triple("tags", Icons.Rounded.LocalOffer, R.string.welcome_check_tags),
+            Triple("images", Icons.Rounded.Image, R.string.welcome_check_images)
+        ).forEachIndexed { index, (key, icon, title) ->
+            val saved = checks[key] == true && checkedCount > 0
+            // Running only once App protection is on; until then the choice is saved, not running.
+            val on = saved && granted["accessibility"] == true
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 14.dp)
+                    .semantics(mergeDescendants = true) { },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(icon, contentDescription = null,
+                    tint = if (on) status.success else colors.onSurfaceVariant, modifier = Modifier.size(24.dp))
+                Spacer(Modifier.width(14.dp))
+                Text(stringResource(title), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                Text(
+                    when {
+                        on -> stringResource(R.string.welcome_check_on_apps, checkedCount)
+                        saved -> stringResource(R.string.welcome_check_saved)
+                        else -> stringResource(R.string.perm_off)
+                    },
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (on) status.success else colors.onSurfaceVariant
+                )
+            }
+            if (index == 0) InsetDivider()
         }
     }
     if (OnboardingKeys.NEEDED.none { granted[it] == true }) {

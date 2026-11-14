@@ -146,6 +146,71 @@ class WelcomeActivity : ComponentActivity(), OnboardingActions {
         finish()
     }
 
+    override fun checkOn(key: String): Boolean = try {
+        val rules = settings?.snapshot()
+        when (key) {
+            "tags" -> rules?.adultWordsEnabled == true
+            "images" -> rules?.visualEnabled == true
+            else -> false
+        }
+    } catch (unreadable: RuntimeException) {
+        false
+    }
+
+    /** Turning a check on shows the same disclosure as the shell's switch; off saves at once. */
+    override fun setCheck(key: String, on: Boolean) {
+        val write = { saveCheck(key, on) }
+        if (!on) {
+            write()
+            return
+        }
+        when (key) {
+            "tags" -> confirm(R.string.adult_mode_enable, R.string.adult_mode_short, R.string.adult_mode_disclosure, write)
+            "images" -> confirm(R.string.visual_enable, R.string.visual_short, R.string.visual_disclosure, write)
+        }
+    }
+
+    override fun checkedApps(): Set<String> = try {
+        settings?.snapshot()?.scannedApps ?: emptySet()
+    } catch (unreadable: RuntimeException) {
+        emptySet()
+    }
+
+    override fun setCheckedApps(packages: Set<String>) {
+        val store = settings ?: return
+        try {
+            val rules = store.snapshot()
+            store.update(store.domainText(), store.wordText(), rules.blockedApps, packages, rules.adultWordsEnabled)
+        } catch (refused: RuntimeException) {
+            // A running protection lock keeps the chosen apps; the shell says why in Rules.
+            toast(R.string.policy_unavailable)
+        }
+        refresh++
+    }
+
+    private fun saveCheck(key: String, on: Boolean) {
+        val store = settings ?: return
+        try {
+            val rules = store.snapshot()
+            when (key) {
+                "tags" -> store.update(store.domainText(), store.wordText(), rules.blockedApps, rules.scannedApps, on)
+                "images" -> store.updateVisual(on)
+            }
+        } catch (refused: RuntimeException) {
+            toast(R.string.policy_unavailable)
+        }
+        refresh++
+    }
+
+    private fun confirm(title: Int, short: Int, disclosure: Int, onAccept: () -> Unit) {
+        AlertDialog.Builder(this)
+            .setTitle(title)
+            .setMessage(getString(short) + "\n\n" + getString(R.string.full_disclosure) + "\n\n" + getString(disclosure))
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(R.string.save_rules) { _, _ -> onAccept() }
+            .show()
+    }
+
     // ------------------------------------------------------------------ system hand-offs
 
     /** The same disclosure the shell and the classic page show before Android's VPN prompt. */

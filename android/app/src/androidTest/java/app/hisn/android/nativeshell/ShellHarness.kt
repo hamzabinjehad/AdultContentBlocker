@@ -38,6 +38,17 @@ class FakeShellActions : ShellActions {
     override fun openGuardian() = record("openGuardian")
     override fun openUninstall(onChanged: () -> Unit) = record("openUninstall")
     override fun uninstallSummary() = "Off. Android can uninstall Hisn."
+    /** A phone with one measured gap, so the phone screen has something to show in tests. */
+    var phoneState = PhoneState(
+        maker = "Samsung",
+        model = "SM-G990B2",
+        android = "Android 16 · API 36",
+        family = app.hisn.core.DeviceFamily.SAMSUNG,
+        batteryUnrestricted = false,
+        backgroundRestricted = null
+    )
+    override fun phone() = phoneState
+    override fun openPhoneSetting(key: String) = record("openPhoneSetting:$key")
     override fun personal() = PersonalSummary()
     override fun savePersonal(name: String, preset: String, reason: String) = record("savePersonal")
     override fun clearPersonal() = record("clearPersonal")
@@ -66,11 +77,14 @@ fun ComposeContentTestRule.showShell(
     val context = InstrumentationRegistry.getInstrumentation().targetContext
     setContent {
         val base = LocalDensity.current
+        // One state object for the whole test: rebuilding it in the content lambda made every
+        // recomposition construct a fresh set of Compose states (and looped in phone tests).
+        val state = androidx.compose.runtime.remember { HisnState(context, actions) }
         CompositionLocalProvider(
             LocalDensity provides Density(base.density, fontScale),
             LocalLayoutDirection provides if (rtl) LayoutDirection.Rtl else LayoutDirection.Ltr
         ) {
-            NativeShell(state = HisnState(context, actions), initialTab = tab)
+            NativeShell(state = state, initialTab = tab)
         }
     }
     waitForIdle()

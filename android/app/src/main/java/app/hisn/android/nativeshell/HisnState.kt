@@ -11,6 +11,7 @@ import app.hisn.android.PolicyStore
 import app.hisn.core.AppTimeLimit
 import app.hisn.android.R
 import app.hisn.core.DailyAppSchedule
+import app.hisn.core.DeviceFamily
 import app.hisn.core.PolicyChangeError
 
 /**
@@ -43,6 +44,12 @@ interface ShellActions {
     fun remainingLabel(millis: Long): String
     fun openGuardian()
 
+    /** The phone-maker facts the setup screen shows; every reading is live. */
+    fun phone(): PhoneState
+
+    /** Opens the maker's or Android's screen for [key]: battery, appinfo, autostart or vpn. */
+    fun openPhoneSetting(key: String)
+
     /** Opens the uninstall-protection choices (direct build); the shell refreshes after a change. */
     fun openUninstall(onChanged: () -> Unit)
 
@@ -73,6 +80,35 @@ interface ShellActions {
 
 /** One hostname decision as display text; [host] is set only when it may be added as a rule. */
 data class SiteCheck(val message: String, val host: String? = null)
+
+/**
+ * What this phone's maker does to background apps, as the setup screen shows it.
+ *
+ * [batteryUnrestricted] and [backgroundRestricted] are live Android readings. The two
+ * confirmations are the owner's own ticks for OEM switches Android does not expose; they are
+ * saved on this phone and are never reported as protection.
+ */
+data class PhoneState(
+    val maker: String = "",
+    val model: String = "",
+    val android: String = "",
+    val family: DeviceFamily = DeviceFamily.OTHER,
+    val batteryUnrestricted: Boolean = false,
+    val backgroundRestricted: Boolean? = null,
+    val autostartConfirmed: Boolean = false,
+    val recentsConfirmed: Boolean = false,
+    /** Xiaomi's live pop-up answer; null where the maker does not answer. */
+    val popupsAllowed: Boolean? = null,
+    val popupsConfirmed: Boolean = false
+) {
+    /** How many checklist rows, pop-ups included, still need the owner. */
+    val open: Int get() = app.hisn.core.OemGuide.open(
+        family, batteryUnrestricted, backgroundRestricted, autostartConfirmed, recentsConfirmed,
+        popupsAllowed, popupsConfirmed
+    )
+    /** "Samsung SM-G990B2", or just the maker when the build has no model name. */
+    val name: String get() = listOf(maker, model).filter { it.isNotEmpty() }.joinToString(" ")
+}
 
 /**
  * The optional personal layer, already turned into display text by the activity. Local only: a
@@ -189,6 +225,9 @@ class HisnState(private val context: Context, private val actions: ShellActions)
 
     var personal: PersonalSummary by mutableStateOf(PersonalSummary())
         private set
+    /** The phone's maker, family and live background readings; see [PhoneState]. */
+    var phone: PhoneState by mutableStateOf(PhoneState())
+        private set
     var blockedLookups: Long by mutableStateOf(DnsVpnService.blocked.get())
         private set
     var uninstallSummary: String by mutableStateOf("")
@@ -202,6 +241,24 @@ class HisnState(private val context: Context, private val actions: ShellActions)
     fun openUninstall() = actions.openUninstall { refreshAll() }
 
     fun openIntroduction() = actions.openIntroduction()
+    fun openPhoneSetting(key: String) = actions.openPhoneSetting(key)
+
+    /**
+     * Saves the owner's tick for an OEM switch Android does not expose. It is a local note, not
+     * a permission check: the phone screen still shows the live battery and background readings.
+     */
+    fun confirmPhoneStep(key: String, done: Boolean) {
+        val name = when (key) {
+            "autostart" -> KEY_AUTOSTART
+            "recents" -> KEY_RECENTS
+            "popups" -> KEY_POPUPS
+            else -> return
+        }
+        context.getSharedPreferences("hisn-native", Context.MODE_PRIVATE)
+            .edit().putBoolean(name, done).apply()
+        refreshAll()
+    }
+
     fun checkSite(raw: String, onResult: (SiteCheck) -> Unit) = actions.checkSite(raw, onResult)
     fun listUpdateSummary(): String = runCatching { actions.listUpdateSummary() }.getOrDefault("")
     fun checkListUpdate(onResult: (String) -> Unit) = actions.checkListUpdate(onResult)
@@ -232,6 +289,17 @@ class HisnState(private val context: Context, private val actions: ShellActions)
         blockedLookups = DnsVpnService.blocked.get()
         val summary = runCatching { actions.personal() }.getOrDefault(PersonalSummary())
         if (summary != personal) personal = summary
+        val phoneSummary = runCatching { actions.phone() }.getOrNull()
+        if (phoneSummary != null) {
+            // The two OEM switches cannot be read, so the owner's saved tick is the only source.
+            val saved = context.getSharedPreferences("hisn-native", Context.MODE_PRIVATE)
+            val merged = phoneSummary.copy(
+                autostartConfirmed = saved.getBoolean(KEY_AUTOSTART, false),
+                recentsConfirmed = saved.getBoolean(KEY_RECENTS, false),
+                popupsConfirmed = saved.getBoolean(KEY_POPUPS, false)
+            )
+            if (merged != phone) phone = merged
+        }
     }
 
     init { refreshStatus() }
@@ -546,6 +614,9 @@ class HisnState(private val context: Context, private val actions: ShellActions)
         const val MIN_MINUTES = 5
         const val MAX_MINUTES = 480
         const val DEFAULT_MINUTES = 30
+        private const val KEY_AUTOSTART = "phone.autostart"
+        private const val KEY_RECENTS = "phone.recents"
+        private const val KEY_POPUPS = "phone.popups"
         val PERMISSIONS = listOf("accessibility", "dns", "usage", "overlay", "notifications", "battery")
     }
 }

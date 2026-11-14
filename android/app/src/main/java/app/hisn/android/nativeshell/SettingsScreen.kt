@@ -5,6 +5,7 @@ import androidx.compose.material.icons.rounded.PlayCircle
 import androidx.compose.material.icons.rounded.Update
 import androidx.compose.ui.res.stringResource
 import app.hisn.android.BuildConfig
+import app.hisn.core.OemGuide
 import app.hisn.android.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -153,17 +154,21 @@ fun SettingsScreen(
                     onClick = { onOpen("permissions") }
                 )
                 InsetDivider()
+                val phoneOpen = state.phone.open
+                val phoneState = if (phoneOpen == 0) {
+                    stringResource(R.string.phone_state_ready)
+                } else {
+                    stringResource(R.string.phone_state_check, phoneOpen)
+                }
                 SettingRow(
                     icon = Icons.Rounded.BatteryChargingFull,
                     title = tr("Keep protection running"),
                     supporting = stringResource(
-                        if (state.permissions["battery"] == true) R.string.settings_battery_on
-                        else R.string.settings_battery_off
+                        R.string.settings_keep_summary,
+                        state.phone.maker.ifEmpty { "Android" },
+                        phoneState
                     ),
-                    onClick = {
-                        if (state.permissions["battery"] == true) onOpen("info:keep")
-                        else state.openPermission("battery")
-                    }
+                    onClick = { onOpen("phone") }
                 )
                 InsetDivider()
                 SettingRow(

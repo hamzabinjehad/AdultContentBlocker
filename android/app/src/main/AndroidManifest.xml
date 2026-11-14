@@ -53,6 +53,11 @@
         </activity>
         <activity android:name=".RestrictionActivity" android:exported="false" android:excludeFromRecents="true" />
         <activity android:name=".WelcomeActivity" android:exported="false" android:excludeFromRecents="true" />
+        <!-- Wait before opening: its own task, so Close and Open never bring up Hisn's other screens. -->
+        <activity android:name=".OpenWaitActivity" android:exported="false" android:excludeFromRecents="true"
+            android:taskAffinity="app.hisn.android.wait" android:launchMode="singleTask" android:noHistory="true" />
+        <activity android:name=".OpenWaitSettingsActivity" android:exported="false"
+            android:label="@string/open_wait_rule" />
         <activity android:name=".GuardianPairActivity" android:exported="false"
             android:launchMode="singleTop"
             android:label="@string/guardian_pair_title" android:windowSoftInputMode="adjustResize" />
