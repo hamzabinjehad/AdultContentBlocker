@@ -26,4 +26,4 @@ Captures are from the `hisn_ui` emulator, debug build, dark theme.
 
 `bash android/test-ui.sh emulator-5554 direct`: 22 of 22 pass, including two new tests
 (swipe and back arrow; swiping off the personal page saves it). Not checked: a real phone,
-light theme and Arabic by eye, and tapping the rule chip (no test covers it).
+and the onboarding in light theme and Arabic by eye.

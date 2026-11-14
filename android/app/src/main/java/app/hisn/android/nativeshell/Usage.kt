@@ -48,6 +48,21 @@ object Usage {
         }.getOrDefault(0L)
     }
 
+    /** Foreground milliseconds per package since local midnight; empty without usage access. */
+    fun usedTodayAll(context: Context): Map<String, Long> = runCatching {
+        val manager = context.getSystemService(UsageStatsManager::class.java)
+            ?: return@runCatching emptyMap()
+        val midnight = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        manager.queryAndAggregateUsageStats(midnight.timeInMillis, System.currentTimeMillis())
+            ?.mapValues { it.value.totalTimeInForeground.coerceAtLeast(0L) }
+            ?: emptyMap()
+    }.getOrDefault(emptyMap())
+
     fun usedTodayMinutes(context: Context, packageName: String): Int =
         (usedTodayMs(context, packageName) / 60_000L).toInt()
 

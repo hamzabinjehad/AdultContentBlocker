@@ -8,6 +8,8 @@ import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performImeAction
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.hisn.android.BuildConfig
@@ -37,6 +39,63 @@ class ShellNavigationTest {
         tab("Protection").performClick()
         rule.waitForIdle()
         rule.onNodeWithText("Uninstall protection").assertDoesNotExist()
+    }
+
+    @Test fun aSavedRuleWithItsLayerOffOffersTheFixOnItsTile() {
+        val context = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext
+        val actions = FakeShellActions()
+        val state = HisnState(context, actions)
+        state.addDomain("tile-test.example")
+        org.junit.Assert.assertEquals(1, state.domains.count { it == "tile-test.example" })
+        try {
+            rule.setContent { NativeShell(state = state, initialTab = 1) }
+            rule.waitForIdle()
+            val chip = rule.onNode(hasText("DNS filtering is off") and hasClickAction()).performScrollTo()
+            val bounds = chip.fetchSemanticsNode().touchBoundsInRoot
+            val density = context.resources.displayMetrics.density
+            org.junit.Assert.assertTrue(
+                "chip is ${bounds.width / density}x${bounds.height / density} dp",
+                bounds.height / density + 0.5f >= 48f && bounds.width / density + 0.5f >= 48f
+            )
+            chip.performClick()
+            rule.waitForIdle()
+            // The chip asks Android for the tunnel; it does not open the editor or claim success.
+            org.junit.Assert.assertEquals(listOf("requestDns"), actions.calls)
+        } finally {
+            state.removeDomain("tile-test.example")
+        }
+    }
+
+    @Test fun appPickerOffersUsageAccessWhenItCannotSuggest() {
+        val actions = rule.showShell(tab = 1)
+        rule.onNode(hasText("Apps to block", substring = true) and hasClickAction())
+            .performScrollTo().performClick()
+        rule.waitForIdle()
+        rule.waitUntil(5_000) {
+            rule.onAllNodes(hasText("Show most-used apps first", substring = true))
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        rule.onNode(hasText("Show most-used apps first", substring = true) and hasClickAction()).performClick()
+        org.junit.Assert.assertTrue("openPermission:usage" in actions.calls)
+    }
+
+    @Test fun keyboardDoneAddsADomain() {
+        val context = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext
+        val state = HisnState(context, FakeShellActions())
+        try {
+            rule.setContent { NativeShell(state = state, initialTab = 1) }
+            rule.waitForIdle()
+            rule.onNode(hasText("Blocked domains", substring = true) and hasClickAction())
+                .performScrollTo().performClick()
+            rule.waitForIdle()
+            val field = rule.onNode(androidx.compose.ui.test.hasSetTextAction())
+            field.performTextInput("done-key.example")
+            field.performImeAction()
+            rule.waitForIdle()
+            org.junit.Assert.assertTrue("done-key.example" in state.domains)
+        } finally {
+            state.removeDomain("done-key.example")
+        }
     }
 
     @Test fun homeNeverClaimsProtectedWhileNothingRuns() {

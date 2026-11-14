@@ -414,7 +414,9 @@ class HisnState(private val context: Context, private val actions: ShellActions)
         if (locked()) { refuseLocked(); return }
         if (domains.contains(clean)) return
         writeLists(domains = domains + clean)
-        domains.add(clean)
+        // The write reloads the list from the store, so the entry is normally there already; adding
+        // it again unguarded put it in twice and crashed the editor on its duplicate key.
+        if (!domains.contains(clean)) domains.add(clean)
     }
 
     fun removeDomain(domain: String) {
@@ -429,7 +431,7 @@ class HisnState(private val context: Context, private val actions: ShellActions)
         if (locked()) { refuseLocked(); return }
         if (words.contains(clean)) return
         writeLists(words = words + clean)
-        words.add(clean)
+        if (!words.contains(clean)) words.add(clean)
     }
 
     fun removeWord(word: String) {

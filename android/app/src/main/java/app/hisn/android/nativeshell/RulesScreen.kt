@@ -219,7 +219,8 @@ fun RulesScreen(
             // A saved rule does nothing while its layer is off, so the tile says so where the
             // person is looking instead of leaving it to the Protection tab.
             val guardReady = state.apps.on && state.guardConnected
-            val guardIssue = if (state.apps.on) tr("App protection not connected") else tr("App protection is off")
+            // Short enough for a half-width tile; the tile's own title says which rule it is about.
+            val guardIssue = if (state.apps.on) tr("Not connected") else tr("Protection is off")
             val fixGuard = { state.openPermission("accessibility") }
             val limitedApps = state.appLimits.size
             TileGrid(

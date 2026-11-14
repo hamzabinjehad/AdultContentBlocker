@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -858,7 +859,9 @@ fun RuleTile(
                         labelColor = status.onWarningContainer,
                         leadingIconContentColor = status.onWarningContainer
                     ),
-                    border = null
+                    border = null,
+                    // A full 48 dp control, not a 32 dp chip with an invisible touch margin.
+                    modifier = Modifier.heightIn(min = 48.dp)
                 )
             }
         }

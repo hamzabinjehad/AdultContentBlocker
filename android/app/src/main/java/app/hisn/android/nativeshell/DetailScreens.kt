@@ -114,7 +114,7 @@ private fun DetailScaffold(
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = tr("Back")
                         )
                     }
                 },
@@ -144,14 +144,14 @@ fun DomainsScreen(
         haptics.tick()
         snackbar(
             HisnMessage(
-                text = "Removed $domain",
-                actionLabel = "Undo",
+                text = String.format(tr("Removed %1\$s"), domain),
+                actionLabel = tr("Undo"),
                 onAction = { state.addDomain(domain) }
             )
         )
     }
 
-    DetailScaffold("Blocked domains", onBack) { innerPadding ->
+    DetailScaffold(tr("Blocked domains"), onBack) { innerPadding ->
         LazyColumn(
             modifier = Modifier
                 .padding(innerPadding)
@@ -160,13 +160,43 @@ fun DomainsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
+                val submit: () -> Unit = {
+                    val domain = input.trim().lowercase()
+                    val problem = when {
+                        domain.isBlank() -> tr("Enter a domain first")
+                        !domain.contains(".") -> tr("That does not look like a domain")
+                        state.domains.contains(domain) -> String.format(tr("%1\$s is already blocked"), domain)
+                        else -> null
+                    }
+                    if (problem != null) {
+                        error = problem
+                        haptics.reject()
+                    } else {
+                        state.addDomain(domain)
+                        focusManager.clearFocus()
+                        input = ""
+                        error = null
+                        haptics.confirm()
+                        snackbar(
+                            HisnMessage(
+                                text = String.format(tr("Added %1\$s"), domain),
+                                actionLabel = tr("Undo"),
+                                onAction = { state.removeDomain(domain) }
+                            )
+                        )
+                    }
+                }
                 OutlinedTextField(
                     value = input,
                     onValueChange = {
                         input = it
                         if (error != null) error = null
                     },
-                    label = { Text("Add a domain") },
+                    label = { Text(tr("Add a domain")) },
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        imeAction = androidx.compose.ui.text.input.ImeAction.Done
+                    ),
+                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { submit() }),
                     placeholder = { Text("example.com") },
                     singleLine = true,
                     isError = error != null,
@@ -177,51 +207,26 @@ fun DomainsScreen(
                 )
                 Spacer(Modifier.height(8.dp))
                 Button(
-                    onClick = {
-                        val domain = input.trim().lowercase()
-                        val problem = when {
-                            domain.isBlank() -> "Enter a domain first"
-                            !domain.contains(".") -> "That does not look like a domain"
-                            state.domains.contains(domain) -> "$domain is already blocked"
-                            else -> null
-                        }
-                        if (problem != null) {
-                            error = problem
-                            haptics.reject()
-                        } else {
-                            state.addDomain(domain)
-                            focusManager.clearFocus()
-                            input = ""
-                            error = null
-                            haptics.confirm()
-                            snackbar(
-                                HisnMessage(
-                                    text = "Added $domain",
-                                    actionLabel = "Undo",
-                                    onAction = { state.removeDomain(domain) }
-                                )
-                            )
-                        }
-                    },
+                    onClick = submit,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(Icons.Rounded.Add, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Add domain")
+                    Text(tr("Add domain"))
                 }
             }
 
             item {
                 SectionHeader(
                     title = when (state.domains.size) {
-                        0 -> "No domains yet"
-                        1 -> "1 blocked domain"
-                        else -> "${state.domains.size} blocked domains"
+                        0 -> tr("No domains yet")
+                        1 -> tr("1 blocked domain")
+                        else -> String.format(tr("%1\$d blocked domains"), state.domains.size)
                     },
                     supporting = if (state.domains.isEmpty()) {
-                        "Domains are matched on this phone. Settings and dialers are excluded."
+                        tr("Domains are matched on this phone. Settings and dialers are excluded.")
                     } else {
-                        "Swipe a row to remove it. Domains are matched on this phone; settings and dialers are excluded."
+                        tr("Swipe a row to remove it. Domains are matched on this phone; settings and dialers are excluded.")
                     }
                 )
             }
@@ -237,10 +242,10 @@ fun DomainsScreen(
                     ) {
                         HisnCard {
                             ListItem(
-                                headlineContent = { Text("Nothing blocked yet", style = MaterialTheme.typography.titleMedium) },
+                                headlineContent = { Text(tr("Nothing blocked yet"), style = MaterialTheme.typography.titleMedium) },
                                 supportingContent = {
                                     Text(
-                                        "Add a domain above. This list is the one place domains are added.",
+                                        tr("Add a domain above. This list is the one place domains are added."),
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -262,7 +267,7 @@ fun DomainsScreen(
                                 headlineContent = { Text(domain, style = MaterialTheme.typography.titleMedium) },
                                 supportingContent = {
                                     Text(
-                                        "Blocked on this phone",
+                                        tr("Blocked on this phone"),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -270,7 +275,7 @@ fun DomainsScreen(
                                 leadingContent = { Icon(Icons.Rounded.Language, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                                 trailingContent = {
                                     IconButton(onClick = { removeDomain(domain) }) {
-                                        Icon(Icons.Rounded.Delete, contentDescription = "Remove $domain")
+                                        Icon(Icons.Rounded.Delete, contentDescription = String.format(tr("Remove %1\$s"), domain))
                                     }
                                 },
                                 colors = ListItemDefaults.colors(containerColor = Color.Transparent)
@@ -283,7 +288,7 @@ fun DomainsScreen(
             item {
                 ReassuranceRow(
                     icon = Icons.Rounded.Lock,
-                    text = "Saved on this phone. Nothing is uploaded."
+                    text = tr("Saved on this phone. Nothing is uploaded.")
                 )
             }
         }
@@ -306,14 +311,14 @@ fun WordsScreen(
         haptics.tick()
         snackbar(
             HisnMessage(
-                text = "Removed \"$word\"",
-                actionLabel = "Undo",
+                text = String.format(tr("Removed “%1\$s”"), word),
+                actionLabel = tr("Undo"),
                 onAction = { state.addWord(word) }
             )
         )
     }
 
-    DetailScaffold("Blocked words", onBack) { innerPadding ->
+    DetailScaffold(tr("Blocked words"), onBack) { innerPadding ->
         LazyColumn(
             modifier = Modifier
                 .padding(innerPadding)
@@ -322,14 +327,44 @@ fun WordsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
+                val submit: () -> Unit = {
+                    val word = input.trim()
+                    val problem = when {
+                        word.isBlank() -> tr("Enter a word first")
+                        word.length > 128 -> tr("Keep each rule under 128 characters")
+                        state.words.contains(word) -> tr("Already saved")
+                        else -> null
+                    }
+                    if (problem != null) {
+                        error = problem
+                        haptics.reject()
+                    } else {
+                        state.addWord(word)
+                        focusManager.clearFocus()
+                        input = ""
+                        error = null
+                        haptics.confirm()
+                        snackbar(
+                            HisnMessage(
+                                text = String.format(tr("Added “%1\$s”"), word),
+                                actionLabel = tr("Undo"),
+                                onAction = { state.removeWord(word) }
+                            )
+                        )
+                    }
+                }
                 OutlinedTextField(
                     value = input,
                     onValueChange = {
                         input = it
                         if (error != null) error = null
                     },
-                    label = { Text("Add a word or phrase") },
-                    placeholder = { Text("literal match") },
+                    label = { Text(tr("Add a word or phrase")) },
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        imeAction = androidx.compose.ui.text.input.ImeAction.Done
+                    ),
+                    keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { submit() }),
+                    placeholder = { Text(tr("literal match")) },
                     singleLine = true,
                     isError = error != null,
                     supportingText = error?.let {
@@ -339,51 +374,26 @@ fun WordsScreen(
                 )
                 Spacer(Modifier.height(8.dp))
                 Button(
-                    onClick = {
-                        val word = input.trim()
-                        val problem = when {
-                            word.isBlank() -> "Enter a word first"
-                            word.length > 128 -> "Keep each rule under 128 characters"
-                            state.words.contains(word) -> "Already saved"
-                            else -> null
-                        }
-                        if (problem != null) {
-                            error = problem
-                            haptics.reject()
-                        } else {
-                            state.addWord(word)
-                            focusManager.clearFocus()
-                            input = ""
-                            error = null
-                            haptics.confirm()
-                            snackbar(
-                                HisnMessage(
-                                    text = "Added \"$word\"",
-                                    actionLabel = "Undo",
-                                    onAction = { state.removeWord(word) }
-                                )
-                            )
-                        }
-                    },
+                    onClick = submit,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(Icons.Rounded.Add, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Add word rule")
+                    Text(tr("Add word rule"))
                 }
             }
 
             item {
                 SectionHeader(
                     title = when (state.words.size) {
-                        0 -> "No word rules yet"
-                        1 -> "1 word rule"
-                        else -> "${state.words.size} word rules"
+                        0 -> tr("No word rules yet")
+                        1 -> tr("1 word rule")
+                        else -> String.format(tr("%1\$d word rules"), state.words.size)
                     },
                     supporting = if (state.words.isEmpty()) {
-                        "Literal matches, saved on this phone. The built-in adult-tag layer is separate."
+                        tr("Literal matches, saved on this phone. The built-in adult-tag layer is separate.")
                     } else {
-                        "Swipe a row to remove it. Literal matches, saved on this phone."
+                        tr("Swipe a row to remove it. Literal matches, saved on this phone.")
                     }
                 )
             }
@@ -392,10 +402,10 @@ fun WordsScreen(
                 item {
                     HisnCard {
                         ListItem(
-                            headlineContent = { Text("No word rules", style = MaterialTheme.typography.titleMedium) },
+                            headlineContent = { Text(tr("No word rules"), style = MaterialTheme.typography.titleMedium) },
                             supportingContent = {
                                 Text(
-                                    "Try the word tester from Settings to see how a rule behaves.",
+                                    tr("Try the word tester from Settings to see how a rule behaves."),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -416,7 +426,7 @@ fun WordsScreen(
                                 headlineContent = { Text(word, style = MaterialTheme.typography.titleMedium) },
                                 supportingContent = {
                                     Text(
-                                        "Literal match",
+                                        tr("Literal match"),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -424,7 +434,7 @@ fun WordsScreen(
                                 leadingContent = { Icon(Icons.Rounded.TextFields, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                                 trailingContent = {
                                     IconButton(onClick = { removeWord(word) }) {
-                                        Icon(Icons.Rounded.Delete, contentDescription = "Remove $word")
+                                        Icon(Icons.Rounded.Delete, contentDescription = String.format(tr("Remove %1\$s"), word))
                                     }
                                 },
                                 colors = ListItemDefaults.colors(containerColor = Color.Transparent)
@@ -546,7 +556,21 @@ fun AppsScreen(
         loading = false
     }
 
+    // Today's screen time, read once from Android's own record; empty without usage access.
+    var usage by remember { mutableStateOf<Map<String, Long>>(emptyMap()) }
+    val usageAccess = state.permissions["usage"] == true
+    LaunchedEffect(usageAccess) {
+        usage = if (usageAccess) withContext(Dispatchers.IO) { Usage.usedTodayAll(context) } else emptyMap()
+    }
+
     val blocked = state.blockedApps.toList()
+    // The apps used most today, so the likely choices are one tap away instead of a search.
+    // A row stays put after it is switched on; it only leaves when the screen is reopened.
+    val suggested = remember(apps, usage) {
+        apps.filter { (usage[it.packageName] ?: 0L) >= 60_000L && !blocked.contains(it.packageName) }
+            .sortedByDescending { usage[it.packageName] ?: 0L }
+            .take(5)
+    }
     val visible = remember(apps, query, blocked) {
         val needle = query.trim().lowercase()
         apps
@@ -561,7 +585,7 @@ fun AppsScreen(
             }
     }
 
-    DetailScaffold("Apps to block", onBack) { innerPadding ->
+    DetailScaffold(tr("Apps to block"), onBack) { innerPadding ->
         LazyColumn(
             modifier = Modifier
                 .padding(innerPadding)
@@ -571,21 +595,23 @@ fun AppsScreen(
         ) {
             item {
                 PageIntro(
-                    "Pick from the apps installed on this phone. A selected app is blocked entirely — " +
-                        "not just filtered. The choice is saved on this phone."
+                    tr(
+                        "Pick from the apps installed on this phone. A selected app is blocked entirely — " +
+                            "not just filtered. The choice is saved on this phone."
+                    )
                 )
             }
             item {
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
-                    label = { Text("Search installed apps") },
+                    label = { Text(tr("Search installed apps")) },
                     singleLine = true,
                     leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
                     trailingIcon = if (query.isNotEmpty()) {
                         {
                             IconButton(onClick = { query = "" }) {
-                                Icon(Icons.Rounded.Close, contentDescription = "Clear search")
+                                Icon(Icons.Rounded.Close, contentDescription = tr("Clear search"))
                             }
                         }
                     } else {
@@ -597,16 +623,53 @@ fun AppsScreen(
             item {
                 SectionHeader(
                     title = if (blocked.isEmpty()) {
-                        "No apps blocked"
+                        tr("No apps blocked")
                     } else {
-                        "${blocked.size} ${if (blocked.size == 1) "app" else "apps"} blocked"
+                        if (blocked.size == 1) tr("1 app blocked") else String.format(tr("%1\$d apps blocked"), blocked.size)
                     },
                     supporting = when {
-                        loading -> "Reading this phone's apps…"
-                        apps.isEmpty() -> "No launchable apps were returned by this phone."
-                        else -> "${apps.size} launchable apps on this phone. Toggle a row to block it."
+                        loading -> tr("Reading this phone's apps…")
+                        apps.isEmpty() -> tr("No launchable apps were returned by this phone.")
+                        else -> String.format(tr("%1\$d launchable apps on this phone. Toggle a row to block it."), apps.size)
                     }
                 )
+            }
+
+            if (!loading && query.isBlank() && suggested.isNotEmpty()) {
+                item {
+                    SectionHeader(
+                        title = tr("Most used today"),
+                        supporting = tr("From Android's screen-time record on this phone.")
+                    )
+                }
+                item {
+                    HisnCard {
+                        suggested.forEachIndexed { index, app ->
+                            InstalledAppRow(
+                                app = app,
+                                blocked = blocked.contains(app.packageName),
+                                onBlockedChange = { state.setAppBlocked(app.packageName, it) },
+                                detail = String.format(
+                                    tr("%1\$s today"),
+                                    Usage.formatDuration(usage[app.packageName] ?: 0L)
+                                )
+                            )
+                            if (index < suggested.lastIndex) InsetDivider()
+                        }
+                    }
+                }
+                item { SectionHeader(tr("All apps")) }
+            } else if (!loading && query.isBlank() && !usageAccess && apps.isNotEmpty()) {
+                item {
+                    HisnCard {
+                        SettingRow(
+                            icon = Icons.Rounded.BarChart,
+                            title = tr("Show most-used apps first"),
+                            supporting = tr("Needs Android's usage access. The record stays on this phone."),
+                            onClick = { state.openPermission("usage") }
+                        )
+                    }
+                }
             }
 
             if (loading) {
@@ -615,13 +678,13 @@ fun AppsScreen(
                 item {
                     HisnCard {
                         ListItem(
-                            headlineContent = { Text("No app matches", style = MaterialTheme.typography.titleMedium) },
+                            headlineContent = { Text(tr("No app matches"), style = MaterialTheme.typography.titleMedium) },
                             supportingContent = {
                                 Text(
                                     if (query.isBlank()) {
-                                        "This phone returned no launchable apps."
+                                        tr("This phone returned no launchable apps.")
                                     } else {
-                                        "Nothing installed matches \"$query\"."
+                                        String.format(tr("Nothing installed matches “%1\$s”."), query)
                                     },
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -650,7 +713,7 @@ fun AppsScreen(
             item {
                 ReassuranceRow(
                     icon = Icons.Rounded.Lock,
-                    text = "${blocked.size} apps selected. The list stays on this phone."
+                    text = String.format(tr("%1\$d apps selected. The list stays on this phone."), blocked.size)
                 )
             }
         }
@@ -661,7 +724,8 @@ fun AppsScreen(
 private fun InstalledAppRow(
     app: InstalledApp,
     blocked: Boolean,
-    onBlockedChange: (Boolean) -> Unit
+    onBlockedChange: (Boolean) -> Unit,
+    detail: String = app.packageName
 ) {
     val haptics = rememberHisnHaptics()
     ListItem(
@@ -675,7 +739,7 @@ private fun InstalledAppRow(
         },
         supportingContent = {
             Text(
-                text = if (blocked) "${app.packageName} · Blocked entirely" else "${app.packageName} · Allowed",
+                text = String.format(tr(if (blocked) "%1\$s · Blocked entirely" else "%1\$s · Allowed"), detail),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
