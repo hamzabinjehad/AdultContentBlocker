@@ -644,8 +644,8 @@ final class NativeMessagingInstallerTests: XCTestCase {
         // not writable by this test (that is the entire point), so the
         // meaningful assertion is behavioural: whatever hasSystemManifest
         // reports for the real path, installIfNeeded's per-browser branch is
-        // provably gated on it (see the `if hasSystemManifest(for:) { continue }`
-        // in installIfNeeded) — this test pins that the check itself is
+        // provably gated on it (see `hasUsableSystemManifest` in
+        // installIfNeeded) — this test pins that the check itself is
         // reading the same path a `sudo install_native_host.sh` run would
         // have written to, not a path that happens to always be empty.
         XCTAssertEqual(chrome.systemDir,
@@ -654,6 +654,101 @@ final class NativeMessagingInstallerTests: XCTestCase {
             atPath: "\(chrome.systemDir)/app.hisn.bridge.json")
         XCTAssertEqual(NativeMessagingInstaller.hasSystemManifest(for: chrome),
                        exists)
+    }
+
+    /// The app was replaced under a different name on this Mac, and the
+    /// admin-owned manifest still named the old bundle: the extension could
+    /// not reach the app, while the app deleted the working user-scope copy
+    /// merely because a system file existed. A system link whose bridge is
+    /// gone must fall through to a user-scope link instead.
+    func testStaleSystemManifestFallsBackToAUserScopeLink() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let browser = NativeMessagingInstaller.Browser(name: "Test", systemDir: directory.path,
+            userSupportDir: "Test", bundleID: "test.browser")
+        let manifestPath = directory.appendingPathComponent("app.hisn.bridge.json")
+        let missingBridge = directory.appendingPathComponent("gone/HisnBridge")
+        try JSONSerialization.data(withJSONObject:
+            NativeMessagingInstaller.hostManifest(bridgePath: missingBridge.path))
+            .write(to: manifestPath)
+
+        XCTAssertTrue(NativeMessagingInstaller.hasSystemManifest(for: browser))
+        XCTAssertFalse(NativeMessagingInstaller.hasUsableSystemManifest(for: browser))
+
+        let liveBridge = directory.appendingPathComponent("HisnBridge")
+        XCTAssertTrue(FileManager.default.createFile(atPath: liveBridge.path, contents: Data(),
+            attributes: [.posixPermissions: 0o755]))
+        try JSONSerialization.data(withJSONObject:
+            NativeMessagingInstaller.hostManifest(bridgePath: liveBridge.path))
+            .write(to: manifestPath)
+        XCTAssertTrue(NativeMessagingInstaller.hasUsableSystemManifest(for: browser),
+            "a system link to a live bridge must still be deferred to, not shadowed")
+    }
+
+    /// Runtime repair: a linked browser with no usable route can never check
+    /// in, so the guard rebuilds the user-scope link instead of closing it and
+    /// looping. The system file is never written.
+    func testRuntimeRepairRebuildsAUserLinkWhenTheSystemLinkIsBroken() throws {
+        let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let system = base.appendingPathComponent("system")
+        let user = base.appendingPathComponent("user")
+        try FileManager.default.createDirectory(at: system, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: user, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: base) }
+        let browser = NativeMessagingInstaller.Browser(name: "Test", systemDir: system.path,
+            userSupportDir: "Test", bundleID: "test.browser")
+        let stale = system.appendingPathComponent("app.hisn.bridge.json")
+        try JSONSerialization.data(withJSONObject:
+            NativeMessagingInstaller.hostManifest(bridgePath: system.appendingPathComponent("gone").path))
+            .write(to: stale)
+
+        XCTAssertFalse(NativeMessagingInstaller.linkIsUsable(for: browser, userSupport: user))
+        XCTAssertTrue(NativeMessagingInstaller.repairLinkIfNeeded(for: browser, userSupport: user))
+        XCTAssertTrue(NativeMessagingInstaller.linkIsUsable(for: browser, userSupport: user))
+
+        let userManifest = user.appendingPathComponent("NativeMessagingHosts/app.hisn.bridge.json")
+        let data = try Data(contentsOf: userManifest)
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        XCTAssertEqual(object["path"] as? String, NativeMessagingInstaller.bridgeExecutablePath())
+    }
+
+    /// A working system link means there is nothing to repair: do not shadow
+    /// it with a user-writable copy.
+    func testRuntimeRepairLeavesAWorkingSystemLinkAlone() throws {
+        let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let system = base.appendingPathComponent("system")
+        let user = base.appendingPathComponent("user")
+        try FileManager.default.createDirectory(at: system, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: user, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: base) }
+        let browser = NativeMessagingInstaller.Browser(name: "Test", systemDir: system.path,
+            userSupportDir: "Test", bundleID: "test.browser")
+        let liveBridge = system.appendingPathComponent("HisnBridge")
+        XCTAssertTrue(FileManager.default.createFile(atPath: liveBridge.path, contents: Data(),
+            attributes: [.posixPermissions: 0o755]))
+        try JSONSerialization.data(withJSONObject:
+            NativeMessagingInstaller.hostManifest(bridgePath: liveBridge.path))
+            .write(to: system.appendingPathComponent("app.hisn.bridge.json"))
+
+        XCTAssertTrue(NativeMessagingInstaller.linkIsUsable(for: browser, userSupport: user))
+        XCTAssertTrue(NativeMessagingInstaller.repairLinkIfNeeded(for: browser, userSupport: user))
+        XCTAssertFalse(FileManager.default.fileExists(atPath:
+            user.appendingPathComponent("NativeMessagingHosts/app.hisn.bridge.json").path))
+    }
+
+    /// A present-but-unreadable system file is not proof of a broken install:
+    /// leaving it alone keeps a local file from impersonating the admin copy.
+    func testUnreadableSystemManifestIsStillDeferredTo() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let browser = NativeMessagingInstaller.Browser(name: "Test", systemDir: directory.path,
+            userSupportDir: "Test", bundleID: "test.browser")
+        try Data("not a manifest".utf8)
+            .write(to: directory.appendingPathComponent("app.hisn.bridge.json"))
+        XCTAssertTrue(NativeMessagingInstaller.hasSystemManifest(for: browser))
+        XCTAssertTrue(NativeMessagingInstaller.hasUsableSystemManifest(for: browser))
     }
 
     /// The gap this change closes. Helium is the one non-Safari browser the

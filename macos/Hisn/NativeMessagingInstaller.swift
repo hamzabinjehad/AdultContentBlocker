@@ -2,8 +2,8 @@ import Foundation
 
 /// Registers `HisnBridge` as a native messaging host for every Chromium-family
 /// browser with a configured native link — Chrome (including Beta/Dev/Canary), Edge, Brave,
-/// Vivaldi, Opera, Arc, Chromium and Helium — at user-scope, only when nobody
-/// has already set it up at system-scope. Covering only Chrome and Edge left
+/// Vivaldi, Opera, Arc, Chromium and Helium — at user-scope, only when no
+/// working copy is already set up at system-scope. Covering only Chrome and Edge left
 /// the extension mute on Helium, the one non-Safari browser the user runs.
 ///
 /// Without a manifest *somewhere*, the browser extension has no working
@@ -26,12 +26,12 @@ import Foundation
 ///
 /// **This must never write where the hardened script writes, or race it**:
 /// on macOS, Chrome resolves a native messaging host by checking user-scope
-/// *before* system-scope, so a user-writable copy sitting next to an
+/// *before* system-scope, so a user-writable copy sitting next to a working
 /// admin-owned one does not add redundancy — it silently wins, and quietly
 /// hands the very protection `install_native_host.sh` exists for back to the
-/// person the lock is supposed to constrain. `installIfNeeded` checks for a
-/// system-scope manifest first and defers to it completely when one is
-/// there — see `hasSystemManifest`.
+/// person the lock is supposed to constrain. `installIfNeeded` checks the
+/// system copy first and defers to it whenever it still points at a bridge
+/// that exists — see `hasUsableSystemManifest`.
 ///
 /// Two more things below are not optional shortcuts:
 ///
@@ -197,7 +197,7 @@ public enum NativeMessagingInstaller {
         else { return }
 
         for browser in browsers {
-            if hasSystemManifest(for: browser) {
+            if hasUsableSystemManifest(for: browser) {
                 if let support = userSupportDirectory(for: browser) {
                     let userManifest = support.appendingPathComponent("NativeMessagingHosts/\(hostName).json")
                     do {
@@ -207,10 +207,19 @@ public enum NativeMessagingInstaller {
                               browser.name, error.localizedDescription)
                     }
                 }
-                NSLog("[Hisn] %@ already has a system-scope native messaging "
+                NSLog("[Hisn] %@ already has a working system-scope native messaging "
                     + "host (see install_native_host.sh) — leaving it alone",
                     browser.name)
                 continue
+            }
+            if hasSystemManifest(for: browser) {
+                // The admin-owned manifest names a bridge that is no longer
+                // there (the app was replaced or moved). Deferring to it would
+                // leave the extension unable to reach the app, and would also
+                // delete a working user-scope copy. Never touch /Library: use
+                // the user-scope location Chrome checks first instead.
+                NSLog("[Hisn] %@'s system-scope browser link points at a missing "
+                    + "bridge — writing a user-scope link instead", browser.name)
             }
             guard let dir = userSupportDirectory(for: browser) else { continue }
             let hostsDir = dir.appendingPathComponent("NativeMessagingHosts",
@@ -259,19 +268,94 @@ public enum NativeMessagingInstaller {
     // MARK: - Locating things
 
     /// True if an admin has already run `install_native_host.sh` (default,
-    /// system scope) for this browser.
-    ///
-    /// Existence is enough — this deliberately does not check that the
-    /// system copy's `path` still points at a live `HisnBridge`, or that its
-    /// `allowed_origins` matches our pinned ID. Trying to "fix" someone else's
-    /// file, or fall through to a user-scope write because we judged their
-    /// copy stale, is precisely the second-guessing that would let a person
-    /// route around the admin-only file by making it look broken. A stale
-    /// system manifest is the admin's to repair, with `sudo`, same as they
-    /// installed it.
+    /// system scope) for this browser, whether or not it still works.
     static func hasSystemManifest(for browser: Browser) -> Bool {
         FileManager.default.fileExists(
             atPath: "\(browser.systemDir)/\(hostName).json")
+    }
+
+    /// Whether the admin-owned manifest still deserves to be deferred to.
+    ///
+    /// Existence alone is not enough. `install_native_host.sh` writes the
+    /// bridge path it found at install time; replacing or moving the app
+    /// leaves that path pointing at nothing. Deferring then gives the
+    /// extension no route to the app at all — and because the old code also
+    /// removed any user-scope copy whenever a system manifest existed, it
+    /// actively deleted the one link that worked. The admin-owned file is
+    /// still never modified or bypassed while it is usable; only a bridge that
+    /// is gone falls through to the user-scope location Chrome checks first.
+    /// A file we cannot read or parse is left alone, so a local file cannot
+    /// impersonate a broken admin installation.
+    static func hasUsableSystemManifest(for browser: Browser) -> Bool {
+        manifestIsUsable(at: URL(fileURLWithPath: "\(browser.systemDir)/\(hostName).json"))
+    }
+
+    /// Whether a host manifest names a bridge that exists. A readable but
+    /// malformed file counts as usable so it is never shadowed by a local
+    /// one; a missing file is not usable.
+    static func manifestIsUsable(at url: URL) -> Bool {
+        guard FileManager.default.fileExists(atPath: url.path) else { return false }
+        guard let data = FileManager.default.contents(atPath: url.path),
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let bridge = object["path"] as? String, !bridge.isEmpty
+        else { return true }
+        return FileManager.default.isExecutableFile(atPath: bridge)
+    }
+
+    /// The user-scope manifest Chrome resolves before the system one, when
+    /// that browser's support directory exists.
+    static func userManifestURL(for browser: Browser, userSupport: URL? = nil) -> URL? {
+        guard let support = userSupport ?? userSupportDirectory(for: browser) else { return nil }
+        return support.appendingPathComponent("NativeMessagingHosts/\(hostName).json")
+    }
+
+    /// Whether this browser currently has a route the extension could use.
+    /// Chrome checks user scope first, so a present-but-broken user manifest
+    /// decides even when a working system manifest sits beside it.
+    static func linkIsUsable(for browser: Browser, userSupport: URL? = nil) -> Bool {
+        if let user = userManifestURL(for: browser, userSupport: userSupport),
+           FileManager.default.fileExists(atPath: user.path) {
+            return manifestIsUsable(at: user)
+        }
+        return hasUsableSystemManifest(for: browser)
+    }
+
+    /// Restore the user-scope route when the effective link is missing or
+    /// points at a bridge that is gone. Never writes to /Library. Returns
+    /// true when a usable route exists afterwards.
+    @discardableResult
+    static func repairLinkIfNeeded(for browser: Browser, userSupport: URL? = nil) -> Bool {
+        if linkIsUsable(for: browser, userSupport: userSupport) { return true }
+        guard let support = userSupport ?? userSupportDirectory(for: browser),
+              let bridge = bridgeExecutablePath()
+        else { return false }
+        let manifest = hostManifest(bridgePath: bridge)
+        guard let json = try? JSONSerialization.data(
+            withJSONObject: manifest, options: [.prettyPrinted, .sortedKeys])
+        else { return false }
+        let hosts = support.appendingPathComponent("NativeMessagingHosts", isDirectory: true)
+        let path = hosts.appendingPathComponent("\(hostName).json")
+        do {
+            try FileManager.default.createDirectory(at: hosts, withIntermediateDirectories: true)
+            try json.write(to: path, options: .atomic)
+            NSLog("[Hisn] repaired the native messaging link for %@", browser.name)
+            return true
+        } catch {
+            NSLog("[Hisn] could not repair the native messaging link for %@: %@",
+                  browser.name, error.localizedDescription)
+            return false
+        }
+    }
+
+    static func linkIsUsable(bundleID: String) -> Bool {
+        guard let browser = browsers.first(where: { $0.bundleID == bundleID }) else { return false }
+        return linkIsUsable(for: browser)
+    }
+
+    @discardableResult
+    static func repairLinkIfNeeded(bundleID: String) -> Bool {
+        guard let browser = browsers.first(where: { $0.bundleID == bundleID }) else { return false }
+        return repairLinkIfNeeded(for: browser)
     }
 
     /// Only the browsers actually present get a manifest written. Chrome's own

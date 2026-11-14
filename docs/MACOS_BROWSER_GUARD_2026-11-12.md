@@ -16,11 +16,17 @@ read is now a visible recovery countdown:
 | Linked browser, remembered locked-authority IPC outage | check-ins cannot be read at all | no countdown (`attention`); the browser is shown as waiting |
 
 A heartbeat that returns inside the window cancels the close. A browser
-relaunched without repair after a silence closure gets the five-second repeat
-warning; a profile-confirmed loss keeps the full five minutes. The delayed
+relaunched without repair after a silence closure gets the full one-minute
+warning again; a profile-confirmed loss keeps the full five minutes. The delayed
 force-close recheck now accepts either still-confirmed profile loss or a
 heartbeat that is still absent, and refuses to act when the check-in source is
 unreadable.
+
+Build 33 also rebuilds a missing or stale user-scope native-messaging link
+while the guard runs, before deciding to close a browser whose extension has
+not checked in. A working system link is still deferred to and `/Library` is
+never written; without a rebuildable route the one-minute countdown still
+applies.
 
 ## Why
 
@@ -45,7 +51,7 @@ the recovery allowance.
 - Authority handling: a live empty check-in record remains authoritative-empty;
   editable local defaults are still not trusted during a remembered locked
   outage.
-- Wake/launch recovery floors, repeat-closure handling and the visible panel.
+- Wake/launch recovery floors and the visible panel.
 
 ## The outage exception
 

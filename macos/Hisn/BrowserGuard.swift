@@ -317,12 +317,6 @@ public enum BrowserGuardPolicy {
     /// may disable an extension after an update through no action of theirs.
     public static let warnProfileLoss: TimeInterval = 300
     public static let warnUncovered: TimeInterval = 60
-    /// An unsupported browser, or a linked one with no profile evidence,
-    /// relaunched without fixing what got it closed gets a short warning, not
-    /// a second long one. A profile-confirmed loss keeps the full five minutes
-    /// because its profile is the only positive evidence.
-    public static let warnRepeat: TimeInterval = 5
-    public static let repeatWindow: TimeInterval = 10 * 60
 
     /// Only unknown detected apps may be trusted as false positives.
     /// Stored exceptions cannot exempt a known browser, including Safari.
@@ -345,12 +339,6 @@ public enum BrowserGuardPolicy {
         guard let lastSeen else { return nil }
         if let launchedAt, lastSeen < launchedAt { return nil }
         return lastSeen
-    }
-
-    public static func isRepeatClosure(closedAt: Date?, awakeSince: Date, now: Date) -> Bool {
-        guard let closedAt else { return false }
-        let age = now.timeIntervalSince(closedAt)
-        return closedAt >= awakeSince && age >= 0 && age < repeatWindow
     }
 
     /// Pending termination must not override a visible countdown or the
@@ -413,15 +401,13 @@ public enum BrowserGuardPolicy {
     ///     renew it.
     ///   - firstViolation: when the guard first found it in breach, if it has.
     ///     The caller records it the first time this returns `.warn`.
-    ///   - recentlyClosed: the guard closed this browser within
-    ///     `repeatWindow` and it has been relaunched.
     ///   - checkInsTrustworthy: false while a remembered locked authority is
     ///     unreachable. An absent check-in is then unknown, not a closure
     ///     signal; confirmed profile loss still counts.
     public static func verdict(coverage: Coverage, lastSeen: Date?, now: Date,
                                graceStart: Date? = nil,
                                firstViolation: Date?,
-                               recentlyClosed: Bool, profileLoss: Bool = false,
+                               profileLoss: Bool = false,
                                profileRefreshPending: Bool = false,
                                checkInsTrustworthy: Bool = true) -> Verdict {
         let reason: Reason
@@ -438,16 +424,17 @@ public enum BrowserGuardPolicy {
                 return .attention(.extensionSilent)
             }
             reason = profileLoss ? .profileUnprotected : .extensionSilent
-            warning = profileLoss ? warnProfileLoss : (recentlyClosed ? warnRepeat : warnSilent)
+            warning = profileLoss ? warnProfileLoss : warnSilent
         case .uncovered:
             reason = .uncovered
-            warning = recentlyClosed ? warnRepeat : warnUncovered
+            warning = warnUncovered
         }
         let since = firstViolation ?? now
         var closeAt = since.addingTimeInterval(warning)
         // A browser only just launched or woken keeps the full recovery
-        // warning even when the violation was first seen before the wake.
-        if reason == .extensionSilent && !recentlyClosed, let graceStart {
+        // warning even when the violation was first seen before the wake,
+        // including a relaunch after an earlier closure.
+        if reason == .extensionSilent, let graceStart {
             closeAt = max(closeAt, graceStart.addingTimeInterval(launchGrace))
         }
         // A repaired, relaunched browser deserves a new reading before an
@@ -550,7 +537,8 @@ public final class BrowserGuard: ObservableObject {
     private var session = BrowserGuardPolicy.Session()
     private var enforcing = false
     private var enforcementBegan = Date()
-    private var recentlyClosed: [String: Date] = [:]
+    /// Last attempt to rebuild a linked browser's native-messaging route.
+    private var linkRepairAt: [String: Date] = [:]
     private var notified: Set<pid_t> = []
     private var closing: [pid_t: Task<Void, Never>] = [:]
     private var closingIDs: [pid_t: UUID] = [:]
@@ -741,7 +729,7 @@ public final class BrowserGuard: ObservableObject {
         guard BrowserGuardPolicy.isActive() else {
             session.reset()
             enforcing = false
-            recentlyClosed.removeAll()
+            linkRepairAt.removeAll()
             notified.removeAll()
             for task in closing.values { task.cancel() }
             closing.removeAll()
@@ -800,6 +788,25 @@ public final class BrowserGuard: ObservableObject {
             }
             let coverage = BrowserGuardPolicy.coverage(bundleID: id, linked: linked,
                                                        userAllowed: allowed)
+            let profileLoss = !(profileChecks[id]?.confirmed(at: now).isEmpty ?? true)
+            // A linked browser with no usable native-messaging route can never
+            // check in, so closing it cannot fix the silence. Rebuild the
+            // user-scope route (never /Library) and give the extension a fresh
+            // recovery window instead of looping closed -> reopened -> closed.
+            if coverage == .needsExtension && !profileLoss {
+                let lastAttempt = linkRepairAt[id]
+                if !NativeMessagingInstaller.linkIsUsable(bundleID: id),
+                   lastAttempt == nil || now.timeIntervalSince(lastAttempt!) >= 30 {
+                    linkRepairAt[id] = now
+                    if NativeMessagingInstaller.repairLinkIfNeeded(bundleID: id) {
+                        session.observe(.ok, browser: id, at: now)
+                        linkRepairAt.removeValue(forKey: id)
+                        NSLog("[Hisn] repaired the browser link for %@; waiting for its extension", id)
+                    }
+                }
+            } else {
+                linkRepairAt.removeValue(forKey: id)
+            }
             let lastSeen = BrowserGuardPolicy.instanceCheckIn(
                 lastSeen: BrowserGuardPolicy.checkIn(browser: id, processID: pid, authority: authorityCheckIns,
                     local: ExtensionPresence.lastSeen(browser: id, processID: pid, in: defaults)),
@@ -809,9 +816,6 @@ public final class BrowserGuard: ObservableObject {
             let graceStart = session.graceStart(browser: id, now: now,
                 notBefore: max(awakeSince, max(started, enforcementBegan)),
                 instance: instance)
-            let repeatOffender = BrowserGuardPolicy.isRepeatClosure(
-                closedAt: recentlyClosed[id], awakeSince: awakeSince, now: now)
-            let profileLoss = !(profileChecks[id]?.confirmed(at: now).isEmpty ?? true)
             if coverage == .needsExtension && BrowserGuardPolicy.profileRefreshRequired(
                 profileLoss: profileLoss, checkedAt: profileCheckedAt[id], now: now,
                 firstViolation: session.firstViolation(browser: id)) {
@@ -822,7 +826,6 @@ public final class BrowserGuard: ObservableObject {
                 lastSeen: lastSeen,
                 now: now, graceStart: graceStart,
                 firstViolation: session.firstViolation(browser: id),
-                recentlyClosed: repeatOffender,
                 profileLoss: profileLoss, profileRefreshPending: needsFreshProfile.contains(id),
                 checkInsTrustworthy: checkInsTrustworthy)
             let name = app.localizedName ?? id
@@ -838,9 +841,6 @@ public final class BrowserGuard: ObservableObject {
 
             switch verdict {
             case .ok:
-                if verifiedConnection && !session.hasUnresolvedWarning(browser: id) {
-                    recentlyClosed.removeValue(forKey: id)
-                }
                 notified.remove(pid)
                 closing.removeValue(forKey: pid)?.cancel()
                 closingIDs.removeValue(forKey: pid)
@@ -855,13 +855,11 @@ public final class BrowserGuard: ObservableObject {
                 // the connection list, and cancel any pending force-close that
                 // would rely on evidence we cannot read.
                 notified.remove(pid)
-                recentlyClosed.removeValue(forKey: id)
                 closing.removeValue(forKey: pid)?.cancel()
                 closingIDs.removeValue(forKey: pid)
             case .close:
                 NSLog("[Hisn] guard closing browser %@ (%@)", name, id)
                 notified.remove(pid)
-                recentlyClosed[id] = now
                 close(app)
             }
         }

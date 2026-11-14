@@ -288,8 +288,7 @@ final class FilterRecoveryTests: XCTestCase {
         XCTAssertNil(BrowserGuardPolicy.checkIn(browser: "custom.browser", processID: 42,
             authority: checkIns, local: stamp))
         XCTAssertEqual(BrowserGuardPolicy.verdict(coverage: .needsExtension, lastSeen: nil,
-            now: stamp, firstViolation: nil, recentlyClosed: false,
-            checkInsTrustworthy: false),
+            now: stamp, firstViolation: nil, checkInsTrustworthy: false),
             .attention(.extensionSilent),
             "an authority outage keeps the browser open; unreadable check-ins are not evidence")
     }
