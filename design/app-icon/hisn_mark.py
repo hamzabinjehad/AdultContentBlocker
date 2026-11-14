@@ -4,7 +4,7 @@
 The mark is drawn in a 108 x 108 canvas (Android adaptive-icon units):
   base - the battlement shield (ink)
   cut  - the skull, knocked out of the shield (paper); jaw notches form teeth
-  back - eye sockets and nose, drawn back in ink
+  back - eye sockets and nasal cavity, drawn back in ink
 
 Running this script writes:
   design/app-icon/hisn-mark.svg             vector master (light colours)
@@ -25,17 +25,27 @@ from PIL import Image, ImageDraw
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 BASE = ['M28 24 H37 V29 H45.5 V24 H62.5 V29 H71 V24 H80 V53 '
-        'C80 70.5 69.5 81.5 54 88 C38.5 81.5 28 70.5 28 53 Z']
-CUT = ['M54 37 C64 37 71 43.6 71 53 C71 58.6 68.8 62.2 65.4 64 L65.4 72 '
-       'Q65.4 74 63.4 74 L59.2 74 L59.2 68 L56.8 68 L56.8 74 L51.2 74 L51.2 68 '
-       'L48.8 68 L48.8 74 L44.6 74 Q42.6 74 42.6 72 L42.6 64 '
-       'C39.2 62.2 37 58.6 37 53 C37 43.6 44 37 54 37 Z']
+    'C80 70.5 69.5 81.5 54 88 C38.5 81.5 28 70.5 28 53 Z']
+# Skull: cranium, cheekbones curving into a tapered jaw, four teeth with
+# rounded tips (the gaps are notches in the jaw).
+CUT = [
+    'M54 34.5 C65 34.5 72.5 42 72.5 51.6 C72.5 56.4 71 59.6 68.4 61.8 C66.6 '
+    '63.3 65 64.4 64.6 66.4 L64 74.6 Q63.8 77 61.4 77 L60.65 77 Q59.75 77 '
+    '59.75 76.1 L59.75 70.8 L57.85 70.8 L57.85 76.1 Q57.85 77 56.95 77 '
+    'L55.85 77 Q54.95 77 54.95 76.1 L54.95 70.8 L53.05 70.8 L53.05 76.1 '
+    'Q53.05 77 52.15 77 L51.05 77 Q50.15 77 50.15 76.1 L50.15 70.8 L48.25 '
+    '70.8 L48.25 76.1 Q48.25 77 47.35 77 L46.6 77 Q44.2 77 44 74.6 L43.4 '
+    '66.4 C43 64.4 41.4 63.3 39.6 61.8 C37 59.6 35.5 56.4 35.5 51.6 C35.5 '
+    '42 43 34.5 54 34.5 Z',
+]
+# Eye sockets with a slightly lowered inner brow, and the nasal cavity.
 BACK = [
-    'M40.6 51 C42.2 48.6 46 48.4 48 50.2 C49.4 51.6 48.8 54.6 46.8 56.2 '
-    'C44.8 57.8 41.8 57.4 40.8 55.2 C40.2 53.8 40 52 40.6 51 Z',
-    'M67.4 51 C65.8 48.6 62 48.4 60 50.2 C58.6 51.6 59.2 54.6 61.2 56.2 '
-    'C63.2 57.8 66.2 57.4 67.2 55.2 C67.8 53.8 68 52 67.4 51 Z',
-    'M54 58.6 L56.4 63.4 Q54 64.6 51.6 63.4 Z',
+    'M39.2 51.6 C39.2 48.4 42 46.6 45.4 46.8 C48.6 47 51.4 49.2 51.2 52.2 '
+    'C51 56 48.2 58.8 45 58.8 C41.6 58.8 39.2 55.6 39.2 51.6 Z',
+    'M68.8 51.6 C68.8 48.4 66 46.6 62.6 46.8 C59.4 47 56.6 49.2 56.8 52.2 '
+    'C57 56 59.8 58.8 63 58.8 C66.4 58.8 68.8 55.6 68.8 51.6 Z',
+    'M54 59.6 C55.2 61.4 57 64 56.6 65.6 C56.3 66.6 55 66.6 54 65.6 C53 '
+    '66.6 51.7 66.6 51.4 65.6 C51 64 52.8 61.4 54 59.6 Z',
 ]
 # Bounding box of the mark: x 28..80, y 24..88, centre (54, 56).
 MARK_CX, MARK_CY = 54, 56
@@ -236,17 +246,17 @@ def main():
     # Android adaptive-icon layers and in-app marks (vectors).
     res = 'android/app/src/main/res/'
     write(res + 'drawable/ic_launcher_foreground.xml', vector_drawable(
-        'Launcher foreground: navy fortress shield, pearl skull.',
+    'Launcher foreground: navy fortress shield, pearl skull.',
         colour_layers(dict(ink=NAVY, paper=PEARL)), ANDROID_SCALE))
     write(res + 'drawable/ic_launcher_monochrome.xml', vector_drawable(
-        'Themed-icon layer: one silhouette, the skull is a hole.',
+    'Themed-icon layer: one silhouette, the skull is a hole.',
         SILHOUETTE, ANDROID_SCALE))
     write(res + 'drawable/ic_splash_mark.xml', vector_drawable(
-        'Android 12 splash: pearl shield on the navy splash background.',
+    'Android 12 splash: pearl shield on the navy splash background.',
         colour_layers(dict(ink=PEARL, paper=NAVY)), ANDROID_SCALE))
     # Brand mark is tinted in code, so it is a silhouette cropped to the mark.
     write(res + 'drawable/ic_brand_mark.xml', vector_drawable(
-        'In-app brand mark, tinted at runtime: one silhouette cropped to the shield.',
+    'In-app brand mark, tinted at runtime: one silhouette cropped to the shield.',
         SILHOUETTE, 1.0, viewport=68, size_dp=24))
 
     # Pre-Android 8 launcher icons: the adaptive icon's visible 72 dp window.

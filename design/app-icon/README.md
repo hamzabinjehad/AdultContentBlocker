@@ -2,7 +2,7 @@
 
 A navy fortress shield with a pearl skull knocked out of it. The battlements on the shield's top edge tie the mark to the name Hisn (حصن, "fortress"); the skull says what the app keeps out. The normal appearance is a navy shield on pearl; the dark appearance is a bone-white shield on charcoal. All platforms share the same mark.
 
-The mark is drawn as vector paths in `hisn_mark.py`, the single source for every platform. It uses a 108 × 108 canvas (Android adaptive-icon units). The shield is the ink layer, the skull is cut out of it (the jaw notches form the teeth), and the eyes and nose are drawn back in ink. The same paths produce the colour icons and a solid one-colour silhouette for themed, tinted and clear modes. `skull-concepts/` holds the three explored directions; this mark is concept C.
+The mark is drawn as vector paths in `hisn_mark.py`, the single source for every platform. It uses a 108 × 108 canvas (Android adaptive-icon units). The shield is the ink layer, the skull is cut out of it (the jaw notches form the teeth), and the eyes and nose are drawn back in ink. The same paths produce the colour icons and a solid one-colour silhouette for themed, tinted and clear modes. `skull-concepts/` holds the explored directions: the shield is concept C, the skull is the refined "Anatomical" redraw.
 
 | Token | Hex | Use |
 | --- | --- | --- |
