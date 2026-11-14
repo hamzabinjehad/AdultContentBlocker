@@ -1,4 +1,8 @@
-# Hisn Android 1.6.0: development candidate
+# Hisn Android 1.0.0-beta1
+
+**Beta.** 1.0.0-beta1 (build 44) is the first public beta, built from the 1.6.0
+development candidate described below. See
+[the beta note](../docs/ANDROID_1.0.0_BETA1.md) for what was and was not verified.
 
 The Android app contains an opt-in DNS-only VPN, saved custom rules, selected-app
 accessibility restrictions, opt-in daily app schedules, opt-in daily app time

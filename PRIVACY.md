@@ -135,8 +135,8 @@ vault is stored device-only; the app avoids logging browsing data. No system is
 unbreakable. If you find a security problem, report it privately as described in
 [SUPPORT.md](SUPPORT.md).
 
-If this policy changes, the change is recorded in [CHANGELOG.md](CHANGELOG.md)
-and the effective date below is updated. A change that adds collection would
+If this policy changes, the change is recorded in this file's history and the
+effective date below is updated. A change that adds collection would
 need a new consent, not a silent edit.
 
 **Effective:** 2026-11-11 · **Applies to:** extension 1.5.0, Mac 1.1.7, iOS
