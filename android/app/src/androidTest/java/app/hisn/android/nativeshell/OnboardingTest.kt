@@ -15,6 +15,8 @@ import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
@@ -82,11 +84,19 @@ class OnboardingTest {
     /** Story pages are one big button; tapping anywhere goes on. */
     private fun tapStory() = primary("Tap to continue")
 
-    private fun toYou() = repeat(6) { tapStory() }
+    private fun toYou() = repeat(8) { tapStory() }
 
+    /** The five questions left unanswered, then every promise put off at once. */
     private fun toPermissions() {
         toYou()
-        primary("Continue")
+        repeat(5) { primary("Continue") }
+        primary("Not now")
+    }
+
+    /** Permissions, then the setup summary, then the guard (direct build). */
+    private fun toGuard() {
+        toPermissions()
+        repeat(2) { primary("Continue") }
     }
 
     @Test fun storyThenSetupSteps() {
@@ -100,8 +110,14 @@ class OnboardingTest {
         rule.onNodeWithText("How it works").assertIsDisplayed()
         rule.onNodeWithText("Hisn steps in before it loads.").assertDoesNotExist()
         repeat(3) { tapStory() }
-        rule.onNodeWithText("Step 1 of 3").assertIsDisplayed()
+        rule.onNodeWithText("Four layers, one shield").assertIsDisplayed()
+        rule.onNodeWithText("Closes the apps you choose.").assertIsDisplayed()
+        tapStory()
+        rule.onNodeWithText("A slip is not a reset").assertIsDisplayed()
+        tapStory()
+        rule.onNodeWithText("Step 1 of 11").assertIsDisplayed()
         rule.onNodeWithText("What should I call you?").assertIsDisplayed()
+        rule.onNodeWithText("Your answers stay on this phone.").assertIsDisplayed()
     }
 
     @Test fun swipeAndBackArrowMoveBetweenPages() {
@@ -120,19 +136,59 @@ class OnboardingTest {
     @Test fun swipingOffThePersonalPageSavesIt() {
         val actions = show()
         toYou()
-        rule.onNodeWithText("For my family").performScrollTo().performClick()
+        rule.onNode(hasText("Your name (optional)") and SemanticsMatcher.keyIsDefined(
+            SemanticsProperties.EditableText)).performTextInput("Sam")
         rule.onNodeWithTag(ONBOARDING_PAGER).performTouchInput { swipeLeft() }
         rule.waitForIdle()
-        assertEquals(Triple("", "family", ""), actions.saved)
+        assertEquals(Triple("Sam", "", ""), actions.saved)
+        rule.onNodeWithText("What are you protecting?").assertIsDisplayed()
+    }
+
+    @Test fun whereItStartsOrdersTheGrants() {
+        show()
+        toYou()
+        repeat(2) { primary("Continue") }
+        rule.onNodeWithText("In the browser").performClick()
+        rule.waitForIdle()
+        repeat(2) { primary("Continue") }
+        primary("Not now")
+        rule.onNodeWithText("You said it usually starts in the browser, so Website filtering comes first.")
+            .assertIsDisplayed()
         rule.onNodeWithText("0 of 2 on").assertIsDisplayed()
+        val website = rule.onNode(hasText("Website filtering", substring = true) and isToggleable())
+            .fetchSemanticsNode().boundsInRoot.top
+        val apps = rule.onNode(hasText("App protection", substring = true) and isToggleable())
+            .fetchSemanticsNode().boundsInRoot.top
+        assertTrue("Website filtering should come first", website < apps)
+    }
+
+    @Test fun thePromiseIsHeldOrPutOff() {
+        show()
+        toYou()
+        repeat(5) { primary("Continue") }
+        rule.onNodeWithText("Promise 1 of 3").assertIsDisplayed()
+        rule.onNodeWithText("I will guard what I see.").assertIsDisplayed()
+        // TalkBack has no long press to give; its double tap makes the same promise.
+        rule.onNode(hasText("Hold to promise") and hasClickAction())
+            .performSemanticsAction(SemanticsActions.OnClick)
+        rule.waitForIdle()
+        rule.onNodeWithText("Promise 2 of 3").assertIsDisplayed()
+        rule.onNodeWithText("If I slip, I will start again, not give up.").assertIsDisplayed()
+        // The next promise starts empty, not already "Promised".
+        rule.onNode(hasText("Hold to promise") and hasClickAction()).assertIsDisplayed()
+        // "Not now" puts off the rest at once.
+        primary("Not now")
+        rule.onNodeWithText("Needed for blocking").assertIsDisplayed()
     }
 
     @Test fun playBuildHasNoGuardStep() {
         val actions = show(direct = false)
-        toYou()
-        rule.onNodeWithText("Step 1 of 2").assertIsDisplayed()
+        toPermissions()
+        rule.onNodeWithText("Step 9 of 10").assertIsDisplayed()
         primary("Continue")
-        primary("Continue")
+        rule.onNodeWithText("Step 10 of 10").assertIsDisplayed()
+        rule.onNodeWithText("Here is your setup").assertIsDisplayed()
+        primary("Open Hisn")
         assertEquals(false, actions.finished)
     }
 
@@ -148,10 +204,51 @@ class OnboardingTest {
         toYou()
         rule.onNode(hasText("Your name (optional)") and SemanticsMatcher.keyIsDefined(
             SemanticsProperties.EditableText)).performTextInput("Sam")
-        rule.onNodeWithText("For my family").performScrollTo().performClick()
         primary("Continue")
+        // Picking an answer is the answer: the next question comes without a Continue.
+        rule.onNodeWithText("For my family").performScrollTo().performClick()
+        rule.waitForIdle()
+        rule.onNodeWithText("Where does it usually start?").assertIsDisplayed()
         assertEquals(Triple("Sam", "family", ""), actions.saved)
+        rule.onNodeWithText("I’m not sure").performClick()
+        rule.waitForIdle()
+        rule.onNodeWithText("Late at night").performClick()
+        rule.waitForIdle()
+        rule.onNodeWithText("I deleted the blocker").performClick()
+        rule.waitForIdle()
+        rule.onNodeWithText("“For my family”").assertIsDisplayed()
+        primary("Not now")
         rule.onNodeWithText("I can help with that, Sam.").assertIsDisplayed()
+        primary("Continue")
+        // The summary repeats the person's words and points at the rule for the hour they named.
+        rule.onNodeWithText("Here is your setup, Sam").assertIsDisplayed()
+        rule.onNodeWithText("“For my family”").assertIsDisplayed()
+        rule.onNodeWithText("Late nights are hardest for you. Rules › Schedule closes the apps you choose from 22:00 to 06:00.")
+            .performScrollTo().assertIsDisplayed()
+        rule.onNodeWithText("You said you deleted a blocker before. The uninstall guard on the next page closes Hisn’s removal screens.")
+            .performScrollTo().assertIsDisplayed()
+    }
+
+    @Test fun playBuildNeverOffersTheGuardItLacks() {
+        show(direct = false)
+        toYou()
+        repeat(4) { primary("Continue") }
+        rule.onNodeWithText("I deleted the blocker").performClick()
+        rule.waitForIdle()
+        primary("Not now")
+        primary("Continue")
+        rule.onNodeWithText("Here is your setup").assertIsDisplayed()
+        rule.onNodeWithText("You said you deleted a blocker before. The uninstall guard on the next page closes Hisn’s removal screens.")
+            .assertDoesNotExist()
+    }
+
+    @Test fun summaryShowsWhatAndroidReportsRunning() {
+        show(FakeOnboardingActions(grants = mutableSetOf("dns")))
+        toPermissions()
+        primary("Continue")
+        rule.onNodeWithText("Running now").assertIsDisplayed()
+        rule.onNodeWithText("Nothing is running yet. You can turn it on from the Protection tab at any time.")
+            .assertDoesNotExist()
     }
 
     @Test fun grantsAreSwitchesThatReadAndroid() {
@@ -172,8 +269,7 @@ class OnboardingTest {
 
     @Test fun guardStepTurnsTheGuardOnOrFinishesWithout() {
         val actions = show()
-        toPermissions()
-        primary("Continue")
+        toGuard()
         rule.onNodeWithText("Keep Hisn in place").assertIsDisplayed()
         rule.onNodeWithText("Requires App protection above.").assertIsDisplayed()
         primary("Turn on and finish")
@@ -182,8 +278,7 @@ class OnboardingTest {
 
     @Test fun guardAlreadyOnJustFinishes() {
         val actions = show(FakeOnboardingActions(guard = true))
-        toPermissions()
-        primary("Continue")
+        toGuard()
         primary("Finish")
         assertEquals(false, actions.finished)
     }
@@ -204,7 +299,8 @@ class OnboardingTest {
     private fun checkConfiguration(scale: Float, rtl: Boolean): List<String> {
         show(fontScale = scale, rtl = rtl)
         val problems = mutableListOf<String>()
-        val buttons = List(6) { "Tap to continue" } + listOf("Continue", "Continue")
+        val buttons = List(8) { "Tap to continue" } +
+            listOf("Continue", "Continue", "Continue", "Continue", "Continue", "Not now", "Continue", "Continue")
         for (index in 0..buttons.size) {
             val width = rule.onNode(isRoot()).fetchSemanticsNode().boundsInRoot.width
             rule.onAllNodes(hasClickAction()).fetchSemanticsNodes().forEach { node ->

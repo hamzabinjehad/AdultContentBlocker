@@ -3,6 +3,7 @@ package app.hisn.android.nativeshell
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -14,6 +15,10 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -24,6 +29,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -43,6 +49,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.BatteryChargingFull
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Apps
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.Image
+import androidx.compose.material.icons.rounded.LocalOffer
+import androidx.compose.material.icons.rounded.Wifi
+import androidx.compose.material.icons.rounded.NightsStay
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Notifications
@@ -67,6 +80,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -74,6 +88,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
@@ -88,6 +103,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -127,27 +144,84 @@ private val Grants = mapOf(
 
 /** The story pages: one sentence each, tap anywhere to go on. */
 private sealed interface Story
-private data class Intro(val title: Int, val body: Int) : Story
+private data class Intro(val title: Int, val body: Int, val icon: ImageVector = Icons.Rounded.Shield) : Story
 private data class How(val text: Int, val frame: Int) : Story
+private data object Layers : Story
 
-private val Stories: List<Story> = listOf(
-    Intro(R.string.welcome_title_1, R.string.welcome_body_1),
-    Intro(R.string.welcome_title_2, R.string.welcome_body_2),
-    Intro(R.string.welcome_title_3, R.string.welcome_body_3),
-    How(R.string.welcome_how_1, 0),
-    How(R.string.welcome_how_2, 1),
-    How(R.string.welcome_how_3, 2)
+/** The four layers as Hisn's Home tab names them, each with what it actually does. */
+private val LayerTiles = listOf(
+    Triple(Icons.Rounded.Wifi, R.string.welcome_layer_dns, R.string.welcome_layer_dns_body),
+    Triple(Icons.Rounded.Apps, R.string.welcome_layer_apps, R.string.welcome_layer_apps_body),
+    Triple(Icons.Rounded.LocalOffer, R.string.welcome_layer_tags, R.string.welcome_layer_tags_body),
+    Triple(Icons.Rounded.Image, R.string.welcome_layer_images, R.string.welcome_layer_images_body)
 )
 
-private val PAGE_YOU = Stories.size
-private val PAGE_PERMISSIONS = PAGE_YOU + 1
-private val PAGE_GUARD = PAGE_YOU + 2
+private val Stories: List<Story> = listOf(
+    Intro(R.string.welcome_title_1, R.string.welcome_body_1, Icons.Rounded.Shield),
+    Intro(R.string.welcome_title_2, R.string.welcome_body_2, Icons.Rounded.PauseCircle),
+    Intro(R.string.welcome_title_3, R.string.welcome_body_3, Icons.Rounded.Lock),
+    How(R.string.welcome_how_1, 0),
+    How(R.string.welcome_how_2, 1),
+    How(R.string.welcome_how_3, 2),
+    // Where Unchaind shows shame slides, Hisn shows what each of its parts does.
+    Layers,
+    // Hisn counts days with it and pauses taken, never clean days, so this page is simply true.
+    Intro(R.string.welcome_title_4, R.string.welcome_body_4, Icons.Rounded.Favorite)
+)
+
+/** Setup is one question per page, as on the quiz-style onboardings people know. */
+private val PAGE_NAME = Stories.size
+private val PAGE_REASON = PAGE_NAME + 1
+private val PAGE_START = PAGE_NAME + 2
+private val PAGE_HARD = PAGE_NAME + 3
+private val PAGE_BEFORE = PAGE_NAME + 4
+private val PAGE_PLEDGE = PAGE_NAME + 5
+private val PLEDGES = listOf(
+    R.string.welcome_pledge_text,
+    R.string.welcome_pledge_text_2,
+    R.string.welcome_pledge_text_3
+)
+private val PAGE_PERMISSIONS = PAGE_PLEDGE + PLEDGES.size
+private val PAGE_READY = PAGE_PERMISSIONS + 1
+private val PAGE_GUARD = PAGE_PERMISSIONS + 2
+private val PLEDGE_PAGES = PAGE_PLEDGE until PAGE_PERMISSIONS
+private val PERSONAL_PAGES = setOf(PAGE_NAME, PAGE_REASON)
+
+/** Where the pull usually starts. It only orders the next page; it is not saved anywhere. */
+private val StartAnswers = listOf(
+    "browser" to R.string.welcome_start_browser,
+    "social" to R.string.welcome_start_social,
+    "videos" to R.string.welcome_start_videos,
+    "unsure" to R.string.welcome_start_unsure
+)
+
+/**
+ * What got in the way before. Unchaind and Unrot both name it ("app blockers: you delete them");
+ * Hisn answers each with the part built for it, on the setup summary.
+ */
+private val BeforeAnswers = listOf(
+    "first" to R.string.welcome_before_first,
+    "switched" to R.string.welcome_before_switched,
+    "deleted" to R.string.welcome_before_deleted,
+    "private" to R.string.welcome_before_private,
+    "late" to R.string.welcome_before_late
+)
+
+/** When it is hardest. Only the setup summary uses it, to point at the rule that fits. */
+private val HardAnswers = listOf(
+    "morning" to R.string.welcome_hard_morning,
+    "day" to R.string.welcome_hard_day,
+    "evening" to R.string.welcome_hard_evening,
+    "night" to R.string.welcome_hard_night,
+    "varies" to R.string.welcome_hard_varies
+)
 
 /**
  * First run, told as a story and then a short conversation: six one-sentence pages (three
- * promises, then "how it works" on a drawn phone), the person's name and reason as chips, the
- * Android grants as switches with one line of why, and on the direct build the uninstall guard.
- * Skipping is always available, and nothing is granted by this screen itself.
+ * promises, then "how it works" on a drawn phone), then one question per page (name, reason,
+ * where the pull starts), a held promise in the person's own words, the Android grants as
+ * switches with one line of why, and on the direct build the uninstall guard. Answers move on
+ * when tapped. Skipping is always available, and nothing is granted by this screen itself.
  *
  * The pages sit in a pager, so a swipe moves between them the way Android's own setup does; a
  * tap, the buttons, the back arrow and the system back gesture do the same.
@@ -164,8 +238,8 @@ fun Onboarding(
     initialReason: String = "",
     refresh: Int = 0
 ) {
-    val lastPage = if (directBuild) PAGE_GUARD else PAGE_PERMISSIONS
-    val setupSteps = lastPage - PAGE_YOU + 1
+    val lastPage = if (directBuild) PAGE_GUARD else PAGE_READY
+    val setupSteps = lastPage - PAGE_NAME + 1
     val pager = rememberPagerState(pageCount = { lastPage + 1 })
     val page = pager.currentPage
     val scope = rememberCoroutineScope()
@@ -173,18 +247,21 @@ fun Onboarding(
     var name by rememberSaveable { mutableStateOf(initialName) }
     var preset by rememberSaveable { mutableStateOf(initialPreset) }
     var reason by rememberSaveable { mutableStateOf(initialReason) }
+    var start by rememberSaveable { mutableStateOf("") }
+    var hard by rememberSaveable { mutableStateOf("") }
+    var before by rememberSaveable { mutableStateOf("") }
     val haptics = rememberHisnHaptics()
     val reduceMotion = systemReduceMotion(LocalContext.current)
 
     fun savePersonal() {
-            val custom = preset == app.hisn.core.PersonalProfile.CUSTOM
-            val words = if (custom) reason.trim() else ""
-            // A custom reason with no words is saved as no reason, not as an empty choice.
-            actions.savePersonal(name.trim(), if (custom && words.isEmpty()) "" else preset, words)
+        val custom = preset == app.hisn.core.PersonalProfile.CUSTOM
+        val words = if (custom) reason.trim() else ""
+        // A custom reason with no words is saved as no reason, not as an empty choice.
+        actions.savePersonal(name.trim(), if (custom && words.isEmpty()) "" else preset, words)
     }
 
     fun savePersonalIfShown() {
-        if (pager.currentPage == PAGE_YOU) savePersonal()
+        if (pager.currentPage in PERSONAL_PAGES) savePersonal()
     }
 
     fun go(target: Int) {
@@ -193,11 +270,11 @@ fun Onboarding(
         }
     }
 
-    // A swipe leaves the personal page without pressing anything, so it saves here too.
+    // A swipe leaves a personal page without pressing anything, so it saves here too.
     LaunchedEffect(pager) {
         var last = pager.settledPage
         snapshotFlow { pager.settledPage }.collect { now ->
-            if (last == PAGE_YOU && now != PAGE_YOU) savePersonal()
+            if (last in PERSONAL_PAGES && now != last) savePersonal()
             if (last != now) focus.clearFocus()
             last = now
         }
@@ -211,16 +288,29 @@ fun Onboarding(
     fun next() {
         haptics.tick()
         savePersonalIfShown()
+        val current = pager.currentPage
         when {
-            page < lastPage -> go(page + 1)
-            page == PAGE_GUARD -> finish(enableGuard = !actions.guardOn())
+            current < lastPage -> go(current + 1)
+            current == PAGE_GUARD -> finish(enableGuard = !actions.guardOn())
             else -> finish(enableGuard = false)
         }
+    }
+
+    // A tapped answer is the answer: the card shows as chosen while the next question slides
+    // in. A second tap while the page moves, or on a page already left, does not skip a page.
+    fun answered(onPage: Int) {
+        if (pager.currentPage == onPage && !pager.isScrollInProgress) next()
     }
 
     BackHandler {
         savePersonalIfShown()
         if (page > 0) go(page - 1) else finish(enableGuard = false)
+    }
+
+    val reasonText = when (preset) {
+        "" -> ""
+        app.hisn.core.PersonalProfile.CUSTOM -> reason.trim()
+        else -> PersonalPresets.firstOrNull { it.first == preset }?.let { stringResource(it.second) }.orEmpty()
     }
 
     val granted = remember(refresh, page) {
@@ -276,7 +366,7 @@ fun Onboarding(
                 }
                 Text(
                     text = when {
-                        page >= PAGE_YOU -> stringResource(R.string.welcome_step, page - PAGE_YOU + 1, setupSteps)
+                        page >= PAGE_NAME -> stringResource(R.string.welcome_step, page - PAGE_NAME + 1, setupSteps)
                         page >= 3 -> stringResource(R.string.welcome_how)
                         else -> ""
                     },
@@ -307,30 +397,76 @@ fun Onboarding(
                     else Modifier.fillMaxSize().clearAndSetSemantics { }
                 ) {
                     when {
-                        shown < PAGE_YOU -> StoryPage(Stories[shown], onTap = { next() })
-                        shown == PAGE_YOU -> ConversationPage {
-                            YouPage(
-                                name = name,
-                                onName = {
-                                    name = limitCodePoints(it, app.hisn.core.PersonalProfile.MAX_NAME_CODE_POINTS)
-                                },
+                        shown < PAGE_NAME -> StoryPage(Stories[shown], onTap = { next() })
+                        shown == PAGE_NAME -> ConversationPage {
+                            NamePage(name = name, onDone = { next() }) {
+                                name = limitCodePoints(it, app.hisn.core.PersonalProfile.MAX_NAME_CODE_POINTS)
+                            }
+                        }
+                        shown == PAGE_REASON -> ConversationPage {
+                            ReasonPage(
                                 preset = preset,
-                                onPreset = { preset = if (preset == it) "" else it },
+                                onPreset = {
+                                    preset = it
+                                    if (it != app.hisn.core.PersonalProfile.CUSTOM) answered(PAGE_REASON)
+                                },
                                 reason = reason,
                                 onReason = {
                                     reason = limitCodePoints(it, app.hisn.core.PersonalProfile.MAX_REASON_CODE_POINTS)
                                 }
                             )
                         }
+                        shown == PAGE_START -> ConversationPage {
+                            QuestionPage(R.string.welcome_start_question, StartAnswers, start) {
+                                start = it
+                                answered(PAGE_START)
+                            }
+                        }
+                        shown == PAGE_HARD -> ConversationPage {
+                            QuestionPage(R.string.welcome_hard_question, HardAnswers, hard) {
+                                hard = it
+                                answered(PAGE_HARD)
+                            }
+                        }
+                        shown == PAGE_BEFORE -> ConversationPage {
+                            QuestionPage(R.string.welcome_before_question, BeforeAnswers, before) {
+                                before = it
+                                answered(PAGE_BEFORE)
+                            }
+                        }
+                        shown in PLEDGE_PAGES -> ConversationPage {
+                            PledgePage(PLEDGES[shown - PAGE_PLEDGE], shown - PAGE_PLEDGE + 1, PLEDGES.size, reasonText)
+                        }
                         shown == PAGE_PERMISSIONS -> ConversationPage {
-                            PermissionsPage(name.trim(), granted) { actions.request(it) }
+                            PermissionsPage(name.trim(), start, granted) { actions.request(it) }
+                        }
+                        shown == PAGE_READY -> ConversationPage {
+                            ReadyPage(name.trim(), reasonText, hard, before, directBuild, granted)
                         }
                         else -> ConversationPage { GuardPage(guardOn, granted["accessibility"] == true) }
                     }
                 }
             }
 
-            if (page >= PAGE_YOU) {
+            if (page in PLEDGE_PAGES) {
+                // One button per promise: a fresh fill, not the last promise's finished one.
+                key(page) {
+                    HoldToPromise(
+                        label = stringResource(R.string.welcome_pledge_hold),
+                        onDone = { answered(page) }
+                    )
+                }
+                TextButton(
+                    // "Not now" puts off every remaining promise, not just this one.
+                    onClick = {
+                        haptics.tick()
+                        go(PAGE_PERMISSIONS)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp)
+                ) { Text(stringResource(R.string.welcome_pledge_later)) }
+            } else if (page >= PAGE_NAME) {
                 Button(
                     onClick = { next() },
                     modifier = Modifier
@@ -342,6 +478,7 @@ fun Onboarding(
                             when {
                                 page == PAGE_GUARD && guardOn -> R.string.welcome_lock_finish
                                 page == PAGE_GUARD -> R.string.welcome_lock_action
+                                page == lastPage -> R.string.welcome_ready_finish
                                 else -> R.string.welcome_perm_continue
                             }
                         ),
@@ -414,9 +551,42 @@ private fun StoryPage(story: Story, onTap: () -> Unit) {
                     textAlign = TextAlign.Center
                 )
                 Spacer(Modifier.weight(0.3f))
-                ShieldGem()
+                ShieldGem(story.icon)
                 Spacer(Modifier.weight(0.6f))
                 if (story.title == R.string.welcome_title_1) PrivacyLine()
+            }
+            is Layers -> {
+                Spacer(Modifier.height(20.dp))
+                Text(
+                    stringResource(R.string.welcome_layers_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.semantics { heading() }
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    stringResource(R.string.welcome_layers_body),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(Modifier.height(20.dp))
+                // Tiles as tall as their words, the pair in a row matched, the grid centred.
+                Column(
+                    Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically)
+                ) {
+                    LayerTiles.chunked(2).forEach { row ->
+                        Row(
+                            Modifier.height(androidx.compose.foundation.layout.IntrinsicSize.Min),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            row.forEach { (icon, title, body) ->
+                                LayerTile(icon, title, body, Modifier.weight(1f).fillMaxHeight())
+                            }
+                        }
+                    }
+                }
             }
             is How -> {
                 Spacer(Modifier.height(20.dp))
@@ -440,9 +610,39 @@ private fun StoryPage(story: Story, onTap: () -> Unit) {
     }
 }
 
+/** One layer: its mark, its name and one line on what it does. TalkBack reads all three. */
+@Composable
+private fun LayerTile(icon: ImageVector, title: Int, body: Int, modifier: Modifier) {
+    val colors = MaterialTheme.colorScheme
+    Column(
+        modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(colors.surfaceContainerHigh)
+            .padding(16.dp)
+    ) {
+        Box(
+            Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(colors.primary.copy(alpha = 0.16f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, contentDescription = null, tint = colors.primary, modifier = Modifier.size(24.dp))
+        }
+        Spacer(Modifier.height(12.dp))
+        Text(stringResource(title), style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.height(4.dp))
+        Text(
+            stringResource(body),
+            style = MaterialTheme.typography.bodyMedium,
+            color = colors.onSurfaceVariant
+        )
+    }
+}
+
 /** Hisn's mark as something to look at: a shield inside a slowly breathing glow. */
 @Composable
-private fun ShieldGem() {
+private fun ShieldGem(icon: ImageVector) {
     val colors = MaterialTheme.colorScheme
     val reduceMotion = systemReduceMotion(LocalContext.current)
     val breath = rememberInfiniteTransition(label = "gem")
@@ -471,7 +671,7 @@ private fun ShieldGem() {
                 .background(Brush.linearGradient(listOf(colors.primary, colors.tertiary.copy(alpha = 0.9f)))),
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Rounded.Shield, contentDescription = null, tint = colors.onPrimary,
+            Icon(icon, contentDescription = null, tint = colors.onPrimary,
                 modifier = Modifier.size(56.dp))
         }
     }
@@ -624,18 +824,35 @@ private fun Said(text: String, dim: Boolean = false) {
     )
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+/** The promise Unchaind and Unrot ask for, kept honest: whatever the answers were, no data leaves. */
 @Composable
-private fun YouPage(
-    name: String,
-    onName: (String) -> Unit,
-    preset: String,
-    onPreset: (String) -> Unit,
-    reason: String,
-    onReason: (String) -> Unit
-) {
+private fun AnswersStayHere() {
+    Spacer(Modifier.height(20.dp))
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            Icons.Rounded.Lock,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(16.dp)
+        )
+        Spacer(Modifier.width(6.dp))
+        Text(
+            stringResource(R.string.welcome_answers_private),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun NamePage(name: String, onDone: () -> Unit, onName: (String) -> Unit) {
+    Spacer(Modifier.height(24.dp))
     Said(stringResource(R.string.welcome_chat_name))
-    Spacer(Modifier.height(12.dp))
+    Spacer(Modifier.height(16.dp))
     OutlinedTextField(
         value = name,
         onValueChange = onName,
@@ -643,24 +860,36 @@ private fun YouPage(
         singleLine = true,
         keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
             capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Words,
-            autoCorrectEnabled = false
+            autoCorrectEnabled = false,
+            imeAction = androidx.compose.ui.text.input.ImeAction.Next
         ),
+        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onNext = { onDone() }),
         modifier = Modifier.fillMaxWidth()
     )
-    Spacer(Modifier.height(28.dp))
+    Spacer(Modifier.height(16.dp))
+    Text(
+        stringResource(R.string.welcome_personal_body),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth()
+    )
+    AnswersStayHere()
+}
+
+@Composable
+private fun ReasonPage(
+    preset: String,
+    onPreset: (String) -> Unit,
+    reason: String,
+    onReason: (String) -> Unit
+) {
+    Spacer(Modifier.height(24.dp))
     Said(stringResource(R.string.personal_reason_question))
-    Spacer(Modifier.height(12.dp))
-    FlowRow(
-        Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
-    ) {
-        PersonalPresets.forEach { (key, label) ->
-            FilterChip(
-                selected = preset == key,
-                onClick = { onPreset(key) },
-                label = { Text(stringResource(label)) },
-                modifier = Modifier.heightIn(min = 48.dp)
-            )
+    Spacer(Modifier.height(16.dp))
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        PersonalPresets.forEachIndexed { index, (key, label) ->
+            AnswerCard(index + 1, stringResource(label), preset == key) { onPreset(key) }
         }
     }
     AnimatedVisibility(preset == app.hisn.core.PersonalProfile.CUSTOM) {
@@ -672,29 +901,377 @@ private fun YouPage(
             maxLines = 3,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 8.dp)
+                .padding(top = 12.dp)
+        )
+    }
+    AnswersStayHere()
+}
+
+/** One question, its answers as numbered cards; picking a card is the answer. */
+@Composable
+private fun QuestionPage(
+    question: Int,
+    answers: List<Pair<String, Int>>,
+    chosen: String,
+    onChoose: (String) -> Unit
+) {
+    Spacer(Modifier.height(24.dp))
+    Said(stringResource(question))
+    Spacer(Modifier.height(16.dp))
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        answers.forEachIndexed { index, (key, label) ->
+            AnswerCard(index + 1, stringResource(label), chosen == key) { onChoose(key) }
+        }
+    }
+    AnswersStayHere()
+}
+
+/**
+ * Unrot and Unchaind end with a "personalised plan" and a date you will be free by. Hisn ends
+ * with what is true: the reason in the person's words, which layers Android reports running
+ * right now, and the one rule that fits the hour they said is hardest.
+ */
+@Composable
+private fun ReadyPage(
+    name: String,
+    reason: String,
+    hard: String,
+    before: String,
+    directBuild: Boolean,
+    granted: Map<String, Boolean>
+) {
+    val colors = MaterialTheme.colorScheme
+    val status = LocalHisnStatusColors.current
+    Spacer(Modifier.height(16.dp))
+    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Box(
+            Modifier
+                .size(72.dp)
+                .clip(CircleShape)
+                .background(status.successContainer),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = status.success, modifier = Modifier.size(40.dp))
+        }
+    }
+    Spacer(Modifier.height(12.dp))
+    Said(
+        if (name.isEmpty()) stringResource(R.string.welcome_ready_title)
+        else stringResource(R.string.welcome_ready_title_name, name)
+    )
+    if (reason.isNotEmpty()) {
+        Text(
+            stringResource(R.string.personal_quote, reason),
+            style = MaterialTheme.typography.titleMedium,
+            color = colors.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
         )
     }
     Spacer(Modifier.height(20.dp))
     Text(
-        stringResource(R.string.welcome_personal_body),
+        stringResource(R.string.welcome_ready_running),
+        style = MaterialTheme.typography.titleSmall,
+        color = colors.primary,
+        modifier = Modifier
+            .padding(start = 4.dp, bottom = 8.dp)
+            .semantics { heading() }
+    )
+    HisnCard {
+        OnboardingKeys.NEEDED.forEachIndexed { index, key ->
+            val on = granted[key] == true
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 14.dp)
+                    .semantics(mergeDescendants = true) { },
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Grants.getValue(key).icon,
+                    contentDescription = null,
+                    tint = if (on) status.success else colors.onSurfaceVariant,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(Modifier.width(14.dp))
+                Text(
+                    stringResource(Grants.getValue(key).title),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    stringResource(if (on) R.string.perm_on else R.string.perm_off),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (on) status.success else colors.onSurfaceVariant
+                )
+            }
+            if (index < OnboardingKeys.NEEDED.lastIndex) InsetDivider()
+        }
+    }
+    if (OnboardingKeys.NEEDED.none { granted[it] == true }) {
+        Spacer(Modifier.height(10.dp))
+        Text(
+            stringResource(R.string.welcome_ready_none),
+            style = MaterialTheme.typography.bodyMedium,
+            color = colors.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+    // One tip per answer, never the same tip twice. The Play build has no uninstall guard, so it
+    // does not offer one.
+    val tips = buildList {
+        when (hard) {
+            "" -> Unit
+            "night" -> add(Icons.Rounded.NightsStay to R.string.welcome_ready_tip_night)
+            else -> add(Icons.Rounded.Timer to R.string.welcome_ready_tip_limit)
+        }
+        when (before) {
+            "switched" -> add(Icons.Rounded.Lock to R.string.welcome_ready_tip_lock)
+            "deleted" -> if (directBuild) add(Icons.Rounded.Shield to R.string.welcome_ready_tip_guard)
+            "private" -> add(Icons.Rounded.Language to R.string.welcome_ready_tip_private)
+            "late" -> add(Icons.Rounded.NightsStay to R.string.welcome_ready_tip_night)
+        }
+    }.distinctBy { it.second }
+    tips.forEach { (icon, tip) ->
+        Spacer(Modifier.height(12.dp))
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(colors.primaryContainer)
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(icon, contentDescription = null, tint = colors.onPrimaryContainer, modifier = Modifier.size(24.dp))
+            Spacer(Modifier.width(12.dp))
+            Text(
+                stringResource(tip),
+                style = MaterialTheme.typography.bodyLarge,
+                color = colors.onPrimaryContainer
+            )
+        }
+    }
+    Spacer(Modifier.height(16.dp))
+    Text(
+        stringResource(R.string.welcome_ready_next),
         style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = colors.onSurfaceVariant,
         textAlign = TextAlign.Center,
         modifier = Modifier.fillMaxWidth()
     )
 }
 
+/**
+ * One answer as a numbered card. It is a radio button to a screen reader; picking it is the
+ * answer, so there is nothing else to press on most question pages.
+ */
+@Composable
+private fun AnswerCard(number: Int, label: String, selected: Boolean, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val container by animateColorAsState(
+        if (selected) colors.primaryContainer else colors.surfaceContainerHigh,
+        label = "answer container"
+    )
+    val outline by animateColorAsState(
+        if (selected) colors.primary else colors.outlineVariant.copy(alpha = 0.6f),
+        label = "answer outline"
+    )
+    val shape = RoundedCornerShape(16.dp)
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp)
+            .clip(shape)
+            .background(container)
+            .border(if (selected) 2.dp else 1.dp, outline, shape)
+            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            Modifier
+                .size(28.dp)
+                .clip(CircleShape)
+                .background(if (selected) colors.primary else colors.surfaceContainerHighest),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                number.toString(),
+                style = MaterialTheme.typography.labelLarge,
+                color = if (selected) colors.onPrimary else colors.onSurfaceVariant,
+                modifier = Modifier.clearAndSetSemantics { }
+            )
+        }
+        Spacer(Modifier.width(14.dp))
+        Text(
+            label,
+            style = MaterialTheme.typography.titleMedium,
+            color = if (selected) colors.onPrimaryContainer else colors.onSurface
+        )
+    }
+}
+
+/**
+ * The person's reason, held as a promise. Unchaind and Unrot make this moment physical with a
+ * long press; so does Hisn, but it says plainly that nothing is locked by it.
+ */
+@Composable
+private fun PledgePage(text: Int, number: Int, count: Int, reason: String) {
+    val colors = MaterialTheme.colorScheme
+    Spacer(Modifier.height(16.dp))
+    Text(
+        stringResource(R.string.welcome_pledge_count, number, count),
+        style = MaterialTheme.typography.labelLarge,
+        color = colors.primary,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth()
+    )
+    Spacer(Modifier.height(8.dp))
+    Said(stringResource(R.string.welcome_pledge_title))
+    Spacer(Modifier.height(20.dp))
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
+            .background(colors.primaryContainer)
+            .padding(horizontal = 20.dp, vertical = 28.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(Icons.Rounded.Shield, contentDescription = null, tint = colors.primary, modifier = Modifier.size(36.dp))
+        Spacer(Modifier.height(14.dp))
+        Text(
+            stringResource(text),
+            style = MaterialTheme.typography.headlineSmall,
+            color = colors.onPrimaryContainer,
+            textAlign = TextAlign.Center
+        )
+        if (reason.isNotEmpty()) {
+            Spacer(Modifier.height(10.dp))
+            Text(
+                stringResource(R.string.personal_quote, reason),
+                style = MaterialTheme.typography.titleMedium,
+                color = colors.onPrimaryContainer.copy(alpha = 0.8f),
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+    Spacer(Modifier.height(16.dp))
+    Text(
+        stringResource(R.string.welcome_pledge_note),
+        style = MaterialTheme.typography.bodyMedium,
+        color = colors.onSurfaceVariant,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
+/**
+ * Press and hold to promise: the fill grows while the finger stays down and drains if it lifts
+ * early. A screen reader gets one ordinary double-tap action with the same label.
+ */
+@Composable
+private fun HoldToPromise(label: String, onDone: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val haptics = rememberHisnHaptics()
+    val scope = rememberCoroutineScope()
+    val progress = remember { Animatable(0f) }
+    var done by remember { mutableStateOf(false) }
+    val doneLabel = stringResource(R.string.welcome_pledge_done)
+
+    fun complete() {
+        if (done) return
+        done = true
+        haptics.confirm()
+        scope.launch { progress.snapTo(1f) }
+        onDone()
+    }
+
+    val shape = RoundedCornerShape(28.dp)
+    // A fixed height: the fill inside grows to the button's height, not to the page's.
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .clip(shape)
+            .background(colors.primary.copy(alpha = 0.16f))
+            .border(1.dp, colors.primary.copy(alpha = 0.5f), shape)
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    awaitFirstDown()
+                    if (done) return@awaitEachGesture
+                    haptics.tick()
+                    val fill = scope.launch {
+                        progress.animateTo(1f, tween(1200, easing = LinearEasing))
+                        complete()
+                    }
+                    waitForUpOrCancellation()
+                    if (!done) {
+                        fill.cancel()
+                        scope.launch { progress.animateTo(0f, tween(220)) }
+                    }
+                }
+            }
+            .semantics(mergeDescendants = true) {
+                role = Role.Button
+                onClick(label = label) {
+                    complete()
+                    true
+                }
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            Modifier
+                .align(Alignment.CenterStart)
+                .fillMaxHeight()
+                .fillMaxWidth(progress.value)
+                .background(colors.primary)
+        )
+        Text(
+            if (done) doneLabel else label,
+            style = MaterialTheme.typography.titleMedium,
+            color = if (progress.value > 0.5f) colors.onPrimary else colors.primary
+        )
+    }
+}
+
 /** "I can help with that", then each grant as a switch with one line of why. */
 @Composable
-private fun PermissionsPage(name: String, granted: Map<String, Boolean>, onRequest: (String) -> Unit) {
+private fun PermissionsPage(
+    name: String,
+    start: String,
+    granted: Map<String, Boolean>,
+    onRequest: (String) -> Unit
+) {
     Said(
         if (name.isEmpty()) stringResource(R.string.welcome_chat_help)
         else stringResource(R.string.welcome_chat_help_name, name),
         dim = true
     )
     Said(stringResource(R.string.welcome_chat_permission))
-    GrantGroup(R.string.welcome_needed_group, OnboardingKeys.NEEDED, granted, onRequest, count = true)
+    // The earlier answer decides which grant comes first and says why, in one line.
+    val focus = when (start) {
+        "browser" -> R.string.welcome_focus_browser
+        "social" -> R.string.welcome_focus_social
+        "videos" -> R.string.welcome_focus_videos
+        else -> null
+    }
+    if (focus != null) {
+        Spacer(Modifier.height(12.dp))
+        Text(
+            stringResource(focus),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.primaryContainer)
+                .padding(16.dp)
+        )
+    }
+    val needed = if (start == "browser") OnboardingKeys.NEEDED.sortedBy { it != "dns" } else OnboardingKeys.NEEDED
+    GrantGroup(R.string.welcome_needed_group, needed, granted, onRequest, count = true)
     GrantGroup(R.string.welcome_optional_group, OnboardingKeys.OPTIONAL, granted, onRequest)
     Spacer(Modifier.height(16.dp))
     Text(
