@@ -19,18 +19,22 @@ because a system file existed.
   earlier closure. Confirmed profile loss keeps its five minutes.
 - A system link whose bridge is missing falls through to the user-scope link
   Chrome checks first; a readable system link to a live bridge is still
-  deferred to and a malformed one is left alone. Mac build 32.
+  deferred to and a malformed one is left alone.
+- While the guard runs, a linked browser with no usable link gets the
+  user-scope manifest rewritten and a fresh heartbeat window, instead of a
+  closed -> reopened -> closed loop. Mac build 33.
 
 ## Verified
 
 - `xcodebuild ... -only-testing:HisnTests/BrowserGuardPolicyTests
-  -only-testing:HisnTests/NativeMessagingInstallerTests`: 61 tests, 0 failures.
+  -only-testing:HisnTests/NativeMessagingInstallerTests`: 63 tests, 0 failures.
 - Chrome for Testing 157 with `dist/hisn-unpacked-cft` and a test-scope native
   host manifest: its service worker loaded and the Hisn app row read
   **App connected** (`popup-connected.png`).
-- Build 32 installed as `/Applications/Hisn.app`; the repaired system manifest
+- Build 33 installed as `/Applications/Hisn.app`; the repaired system manifest
   points at `/Applications/Hisn.app/Contents/MacOS/HisnBridge`. A fresh Helium
   profile loaded the unpacked extension, checked in at
   `extensionSeen.process:<pid>:net.imput.helium`, and stayed open past the
-  guard's former deadline.
+  guard's former deadline. After the build-33 install the same Helium process
+  checked in again at 23:21:46 and was left open.
 - The person's own phone was not touched.
