@@ -36,20 +36,52 @@ data class InstalledApp(
  * `AndroidManifest.xml` declares a `<queries>` element for the same intent; without it Android 11+
  * hides the list from the app.
  */
-fun installedApps(context: Context): List<InstalledApp> {
+fun installedApps(context: Context, all: Boolean = false): List<InstalledApp> {
     val manager = context.packageManager
     val launchable = Intent(Intent.ACTION_MAIN, null).addCategory(Intent.CATEGORY_LAUNCHER)
     val resolved = runCatching {
         manager.queryIntentActivities(launchable, PackageManager.MATCH_ALL)
     }.getOrDefault(emptyList())
-    return resolved
+    val launchableApps = resolved
         .mapNotNull { info ->
             val packageName = info.activityInfo?.packageName ?: return@mapNotNull null
             if (packageName == context.packageName) return@mapNotNull null
             InstalledApp(packageName, info.loadLabel(manager).toString().ifBlank { packageName })
         }
+    // "Show all apps": every package Android lets Hisn see, including system apps with no
+    // home-screen icon. The direct build may see all of them; the Play build sees fewer.
+    val others = if (!all) emptyList() else runCatching {
+        manager.getInstalledApplications(0).mapNotNull { info ->
+            if (info.packageName == context.packageName) return@mapNotNull null
+            InstalledApp(info.packageName, manager.getApplicationLabel(info).toString().ifBlank { info.packageName })
+        }
+    }.getOrDefault(emptyList())
+    return (launchableApps + others)
         .distinctBy { it.packageName }
         .sortedBy { it.label.lowercase() }
+}
+
+/** Whether "Show all apps" can really list every app: always before Android 11, else by permission. */
+fun canListEveryApp(context: Context): Boolean =
+    android.os.Build.VERSION.SDK_INT < 30 ||
+        context.checkSelfPermission("android.permission.QUERY_ALL_PACKAGES") == PackageManager.PERMISSION_GRANTED
+
+/** The switch every app list shares; it says plainly when Android limits what "all" means. */
+@Composable
+fun ShowAllAppsRow(checked: Boolean, onChange: (Boolean) -> Unit) {
+    val context = LocalContext.current
+    HisnCard {
+        SwitchRow(
+            icon = androidx.compose.material.icons.Icons.Rounded.Apps,
+            title = androidx.compose.ui.res.stringResource(app.hisn.android.R.string.apps_show_all),
+            supporting = androidx.compose.ui.res.stringResource(
+                if (canListEveryApp(context)) app.hisn.android.R.string.apps_show_all_body
+                else app.hisn.android.R.string.apps_show_all_limited
+            ),
+            checked = checked,
+            onCheckedChange = onChange
+        )
+    }
 }
 
 /** Resolves the label the phone shows for a saved package, falling back to the package name. */

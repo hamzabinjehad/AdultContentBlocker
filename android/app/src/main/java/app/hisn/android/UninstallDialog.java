@@ -40,13 +40,15 @@ final class UninstallDialog {
         LinearLayout form = new LinearLayout(activity);
         form.setOrientation(LinearLayout.VERTICAL);
         form.setPadding(Ui.dp(activity, 20), Ui.dp(activity, 4), Ui.dp(activity, 20), Ui.dp(activity, 12));
-        form.addView(Ui.body(activity, activity.getString(status.deviceOwner
+        // The current state comes first, then the switches; the explanation follows them.
+        // The dialog's title already says "Uninstall protection"; the state line drops that prefix.
+        String state = longStatus(activity, settings, status);
+        int prefix = state.indexOf(" \u00b7 ");
+        form.addView(Ui.body(activity, prefix >= 0 ? state.substring(prefix + 3) : state));
+        TextView explanation = Ui.caption(activity, activity.getString(status.deviceOwner
                 ? R.string.uninstall_dialog_body_owner
                 : screenGuard ? R.string.self_protection_dialog_body
-                : R.string.uninstall_dialog_body_unmanaged)));
-        TextView current = Ui.caption(activity, longStatus(activity, settings, status));
-        current.setPadding(0, Ui.dp(activity, 12), 0, 0);
-        form.addView(current);
+                : R.string.uninstall_dialog_body_unmanaged));
 
         Switch keepSwitch = null;
         if (status.deviceOwner || screenGuard) {
@@ -105,6 +107,7 @@ final class UninstallDialog {
                         Ui.margins(activity, 8, 0));
             }
         }
+        form.addView(explanation, Ui.margins(activity, 14, 0));
         if (!status.deviceOwner && !screenGuard) {
             form.addView(Ui.caption(activity, activity.getString(R.string.uninstall_command_label)),
                     Ui.margins(activity, 10, 0));
@@ -121,7 +124,9 @@ final class UninstallDialog {
         final Switch strict = strictSwitch;
         final Switch suspend = suspendSwitch;
         AlertDialog dialog = new AlertDialog.Builder(activity)
-                .setTitle(R.string.uninstall_title).setView(scroll).create();
+                // "Managed" describes device-owner mode; the direct build's guard is simply this.
+                .setTitle(screenGuard ? R.string.self_protection_title : R.string.uninstall_title)
+                .setView(scroll).create();
         form.addView(Ui.divider(activity), Ui.margins(activity, 14, 2));
         Button primary;
         if (status.deviceOwner || screenGuard) {

@@ -47,7 +47,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Bedtime
+import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.Loop
+import androidx.compose.material.icons.outlined.Spa
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.PauseCircle
 import androidx.compose.material.icons.outlined.Shield
@@ -160,9 +164,21 @@ private val Grants = mapOf(
 
 /** The story pages: one sentence each, tap anywhere to go on. */
 private sealed interface Story
-private data class Intro(val title: Int, val body: Int, val icon: ImageVector = Icons.Rounded.Shield) : Story
+private data class Intro(
+    val title: Int,
+    val body: Int,
+    val icon: ImageVector = Icons.Rounded.Shield,
+    /** A small line under the body, for saying how far a claim goes. */
+    val note: Int? = null
+) : Story
 private data class How(val text: Int, val frame: Int) : Story
 private data object Layers : Story
+
+/**
+ * What Hisn is for, one problem per page with its answer under it. Unchaind and Unrot make this
+ * case with shame slides and invented numbers; these three say only what is plainly true.
+ */
+private data class Problem(val title: Int, val body: Int, val answer: Int, val icon: ImageVector) : Story
 
 /** The four layers as Hisn's Home tab names them, each with what it actually does. */
 private val LayerTiles = listOf(
@@ -174,8 +190,16 @@ private val LayerTiles = listOf(
 
 private val Stories: List<Story> = listOf(
     Intro(R.string.welcome_title_1, R.string.welcome_body_1, Icons.Outlined.Shield),
-    Intro(R.string.welcome_title_2, R.string.welcome_body_2, Icons.Outlined.PauseCircle),
-    Intro(R.string.welcome_title_3, R.string.welcome_body_3, Icons.Outlined.Lock),
+    // Why it is hard: what feeds and adult content do, in terms the research supports. Unchaind's
+    // slides here say "pornography is a drug" and "it rewires your body"; these say what is
+    // established (novelty and reward, habit loops), mark the rest as links, and end on change.
+    Intro(R.string.welcome_brain_1, R.string.welcome_brain_1_body, Icons.Outlined.Bolt),
+    Intro(R.string.welcome_brain_2, R.string.welcome_brain_2_body, Icons.Outlined.Loop),
+    Intro(R.string.welcome_brain_3, R.string.welcome_brain_3_body, Icons.Outlined.Bedtime, R.string.welcome_brain_3_note),
+    Intro(R.string.welcome_brain_4, R.string.welcome_brain_4_body, Icons.Outlined.Spa),
+    Problem(R.string.welcome_problem_1, R.string.welcome_problem_1_body, R.string.welcome_answer_1, Icons.Outlined.Shield),
+    Problem(R.string.welcome_problem_2, R.string.welcome_problem_2_body, R.string.welcome_answer_2, Icons.Outlined.PauseCircle),
+    Problem(R.string.welcome_problem_3, R.string.welcome_problem_3_body, R.string.welcome_answer_3, Icons.Outlined.Lock),
     How(R.string.welcome_how_1, 0),
     How(R.string.welcome_how_2, 1),
     How(R.string.welcome_how_3, 2),
@@ -391,7 +415,10 @@ fun Onboarding(
                 Text(
                     text = when {
                         page >= PAGE_NAME -> stringResource(R.string.welcome_step, page - PAGE_NAME + 1, setupSteps)
-                        page >= 3 -> stringResource(R.string.welcome_how)
+                        // From the first "How it works" frame on, wherever that page sits.
+                        page >= Stories.indexOfFirst { it is How } -> stringResource(R.string.welcome_how)
+                        // The pages between the welcome and the first problem explain the pull.
+                        page in 1 until Stories.indexOfFirst { it is Problem } -> stringResource(R.string.welcome_why)
                         else -> ""
                     },
                     style = MaterialTheme.typography.labelLarge,
@@ -459,7 +486,7 @@ fun Onboarding(
                             }
                         }
                         shown in PLEDGE_PAGES -> ConversationPage {
-                            PledgePage(PLEDGES[shown - PAGE_PLEDGE], shown - PAGE_PLEDGE + 1, PLEDGES.size, reasonText)
+                            PledgePage(PLEDGES[shown - PAGE_PLEDGE], shown - PAGE_PLEDGE + 1, PLEDGES.size, reasonText, name.trim())
                         }
                         shown == PAGE_PERMISSIONS -> ConversationPage {
                             PermissionsPage(name.trim(), start, granted) { actions.request(it) }
@@ -575,7 +602,7 @@ private fun StoryPage(story: Story, onTap: () -> Unit) {
                 Spacer(Modifier.weight(0.7f))
                 Text(
                     stringResource(story.title),
-                    style = MaterialTheme.typography.headlineLarge,
+                    style = MaterialTheme.typography.headlineLarge.formal(),
                     textAlign = TextAlign.Center,
                     modifier = Modifier.semantics { heading() }
                 )
@@ -586,6 +613,15 @@ private fun StoryPage(story: Story, onTap: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
                 )
+                if (story.note != null) {
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        stringResource(story.note),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                }
                 Spacer(Modifier.weight(0.3f))
                 ShieldGem(story.icon)
                 Spacer(Modifier.weight(0.6f))
@@ -595,7 +631,7 @@ private fun StoryPage(story: Story, onTap: () -> Unit) {
                 Spacer(Modifier.height(20.dp))
                 Text(
                     stringResource(R.string.welcome_layers_title),
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.headlineSmall.formal(),
                     textAlign = TextAlign.Center,
                     modifier = Modifier.semantics { heading() }
                 )
@@ -624,11 +660,55 @@ private fun StoryPage(story: Story, onTap: () -> Unit) {
                     }
                 }
             }
+            is Problem -> {
+                val colors = MaterialTheme.colorScheme
+                Spacer(Modifier.weight(0.5f))
+                Text(
+                    stringResource(R.string.welcome_problem_label).uppercase(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = colors.onSurfaceVariant
+                )
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    stringResource(story.title),
+                    style = MaterialTheme.typography.headlineMedium.formal(),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.semantics { heading() }
+                )
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    stringResource(story.body),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = colors.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(Modifier.height(28.dp))
+                androidx.compose.material3.HorizontalDivider(
+                    Modifier.width(40.dp), thickness = 1.5.dp, color = colors.outlineVariant
+                )
+                Spacer(Modifier.height(28.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(story.icon, contentDescription = null, tint = colors.primary, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        stringResource(R.string.welcome_answer_label).uppercase(),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = colors.primary
+                    )
+                }
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    stringResource(story.answer),
+                    style = MaterialTheme.typography.titleMedium,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(Modifier.weight(0.7f))
+            }
             is How -> {
                 Spacer(Modifier.height(20.dp))
                 Text(
                     stringResource(story.text),
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.headlineSmall.formal(),
                     textAlign = TextAlign.Center,
                     modifier = Modifier.semantics { heading() }
                 )
@@ -676,6 +756,15 @@ private fun LayerTile(icon: ImageVector, title: Int, body: Int, modifier: Modifi
     }
 }
 
+/**
+ * Onboarding headings are set in the system serif, as Unchaind's are: formal, and it needs no
+ * bundled font. Arabic falls to the system's Naskh face. Body text stays in the app's sans.
+ */
+private fun androidx.compose.ui.text.TextStyle.formal() = copy(
+    fontFamily = androidx.compose.ui.text.font.FontFamily.Serif,
+    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
+)
+
 /** The page's mark, kept formal: one outlined icon in a thin ring. No glow, gradient or motion. */
 @Composable
 private fun ShieldGem(icon: ImageVector) {
@@ -690,14 +779,24 @@ private fun ShieldGem(icon: ImageVector) {
     }
 }
 
+/** What you get, on the first page: two things Hisn does and the privacy promise. */
 @Composable
 private fun PrivacyLine() {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        BenefitRow(Icons.Outlined.Shield, R.string.welcome_benefit_1)
+        BenefitRow(Icons.Outlined.PauseCircle, R.string.welcome_benefit_2)
+        BenefitRow(Icons.Rounded.Security, R.string.welcome_privacy_line)
+    }
+}
+
+@Composable
+private fun BenefitRow(icon: ImageVector, text: Int) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(Icons.Rounded.Security, contentDescription = null,
+        Icon(icon, contentDescription = null,
             tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(10.dp))
         Text(
-            stringResource(R.string.welcome_privacy_line),
+            stringResource(text),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -827,7 +926,7 @@ private fun ConversationPage(content: @Composable () -> Unit) {
 private fun Said(text: String, dim: Boolean = false) {
     Text(
         text,
-        style = MaterialTheme.typography.titleLarge,
+        style = MaterialTheme.typography.titleLarge.formal(),
         textAlign = TextAlign.Center,
         color = if (dim) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
         modifier = Modifier
@@ -935,14 +1034,15 @@ private fun ChecksPage(
 ) {
     val context = LocalContext.current
     val colors = MaterialTheme.colorScheme
-    val apps by androidx.compose.runtime.produceState(initialValue = emptyList<InstalledApp>()) {
-        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { installedApps(context) }
+    var showAll by rememberSaveable { mutableStateOf(false) }
+    // "Show all apps" also brings the apps that have no home-screen icon.
+    val apps by androidx.compose.runtime.produceState(initialValue = emptyList<InstalledApp>(), showAll) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { installedApps(context, showAll) }
     }
     val browsers = remember(apps) { browserPackages(context) }
     val usage = remember(apps) {
         if (Usage.hasAccess(context)) Usage.usedTodayAll(context) else emptyMap()
     }
-    var showAll by rememberSaveable { mutableStateOf(false) }
     val ordered = remember(apps, browsers, usage) {
         apps.sortedWith(
             compareByDescending<InstalledApp> { it.packageName in browsers }
@@ -1314,7 +1414,7 @@ private fun AnswerCard(number: Int, label: String, selected: Boolean, onClick: (
  * long press; so does Hisn, but it says plainly that nothing is locked by it.
  */
 @Composable
-private fun PledgePage(text: Int, number: Int, count: Int, reason: String) {
+private fun PledgePage(text: Int, number: Int, count: Int, reason: String, name: String = "") {
     val colors = MaterialTheme.colorScheme
     Spacer(Modifier.height(16.dp))
     Text(
@@ -1325,7 +1425,11 @@ private fun PledgePage(text: Int, number: Int, count: Int, reason: String) {
         modifier = Modifier.fillMaxWidth()
     )
     Spacer(Modifier.height(8.dp))
-    Said(stringResource(R.string.welcome_pledge_title))
+    Said(
+        // Only the first promise greets by name; three in a row would be too much.
+        if (name.isNotEmpty() && number == 1) stringResource(R.string.welcome_pledge_title_name, name)
+        else stringResource(R.string.welcome_pledge_title)
+    )
     Spacer(Modifier.height(20.dp))
     Column(
         Modifier
@@ -1339,7 +1443,7 @@ private fun PledgePage(text: Int, number: Int, count: Int, reason: String) {
         Spacer(Modifier.height(14.dp))
         Text(
             stringResource(text),
-            style = MaterialTheme.typography.headlineSmall,
+            style = MaterialTheme.typography.headlineSmall.formal(),
             color = colors.onPrimaryContainer,
             textAlign = TextAlign.Center
         )

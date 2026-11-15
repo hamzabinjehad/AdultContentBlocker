@@ -552,8 +552,10 @@ fun AppsScreen(
     var apps by remember { mutableStateOf<List<InstalledApp>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
 
-    LaunchedEffect(Unit) {
-        apps = withContext(Dispatchers.IO) { installedApps(context) }
+    var showAll by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(showAll) {
+        loading = true
+        apps = withContext(Dispatchers.IO) { installedApps(context, showAll) }
         loading = false
     }
 
@@ -621,6 +623,7 @@ fun AppsScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
+            item { ShowAllAppsRow(showAll) { showAll = it } }
             item {
                 SectionHeader(
                     title = if (blocked.isEmpty()) {
@@ -631,6 +634,7 @@ fun AppsScreen(
                     supporting = when {
                         loading -> tr("Reading this phone's apps…")
                         apps.isEmpty() -> tr("No launchable apps were returned by this phone.")
+                        showAll -> String.format(tr("%1\$d apps on this phone. Toggle a row to block it."), apps.size)
                         else -> String.format(tr("%1\$d launchable apps on this phone. Toggle a row to block it."), apps.size)
                     }
                 )
@@ -1095,8 +1099,10 @@ fun LimitAppsScreen(
     val haptics = rememberHisnHaptics()
     val snackbar = LocalHisnSnackbar.current
 
-    LaunchedEffect(Unit) {
-        apps = withContext(Dispatchers.IO) { installedApps(context) }
+    var showAll by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(showAll) {
+        loading = true
+        apps = withContext(Dispatchers.IO) { installedApps(context, showAll) }
         loading = false
     }
 
@@ -1148,13 +1154,14 @@ fun LimitAppsScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
+            item { ShowAllAppsRow(showAll) { showAll = it } }
             item {
                 SectionHeader(
                     title = "${limited.size} ${if (limited.size == 1) "app" else "apps"} limited",
                     supporting = when {
                         loading -> "Reading this phone's apps…"
                         apps.isEmpty() -> "No launchable apps were returned by this phone."
-                        else -> "${apps.size} launchable apps on this phone."
+                        else -> "${apps.size} ${if (showAll) "apps" else "launchable apps"} on this phone."
                     }
                 )
             }

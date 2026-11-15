@@ -19,6 +19,9 @@
     <!-- Only for the optional gray screen. Never granted on install: adb grants it when wanted. -->
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"
         tools:ignore="ProtectedPermissions" />
+    <!-- Direct build: QUERY_ALL_PACKAGES for "Show all apps". Play build: a repeat of
+         ACCESS_NETWORK_STATE (see hisnAllApps in app/build.gradle). The list never leaves the phone. -->
+    <uses-permission android:name="${hisnAllApps}" />
     <queries>
         <intent><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent>
         <intent><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.HOME" /></intent>

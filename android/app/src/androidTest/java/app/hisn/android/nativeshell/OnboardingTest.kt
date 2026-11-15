@@ -92,7 +92,7 @@ class OnboardingTest {
     /** Story pages are one big button; tapping anywhere goes on. */
     private fun tapStory() = primary("Tap to continue")
 
-    private fun toYou() = repeat(8) { tapStory() }
+    private fun toYou() = repeat(13) { tapStory() }
 
     /** The five questions left unanswered, then every promise put off at once. */
     private fun toPermissions() {
@@ -110,11 +110,36 @@ class OnboardingTest {
     @Test fun storyThenSetupSteps() {
         show()
         rule.onNodeWithText("A shield for your phone").assertIsDisplayed()
-        // The privacy promise is on the first page.
+        // What you get is on the first page, with the privacy promise.
+        rule.onNodeWithText("Blocks adult sites across the whole phone.").assertIsDisplayed()
+        rule.onNodeWithText("A short wait before the apps that pull at you.").assertIsDisplayed()
         rule.onNodeWithText("Your rules and activity stay on this phone. No account.").assertIsDisplayed()
+        // Four pages on why it is hard, each claim only as strong as the research.
         tapStory()
-        rule.onNodeWithText("Break the autopilot").assertIsDisplayed()
-        repeat(2) { tapStory() }
+        rule.onNodeWithText("Built to keep you looking").assertIsDisplayed()
+        rule.onNodeWithText("Why it is hard").assertIsDisplayed()
+        tapStory()
+        rule.onNodeWithText("It becomes a loop").assertIsDisplayed()
+        tapStory()
+        rule.onNodeWithText("What it costs").assertIsDisplayed()
+        rule.onNodeWithText("From published research. These are links seen across many people, not a diagnosis of you.")
+            .assertIsDisplayed()
+        tapStory()
+        rule.onNodeWithText("A habit can be unlearned").assertIsDisplayed()
+        // Three pages say what Hisn is for: a problem, then its answer.
+        tapStory()
+        rule.onNodeWithText("It finds you first").assertIsDisplayed()
+        rule.onNodeWithText("Why it is hard").assertDoesNotExist()
+        rule.onNodeWithText("THE PROBLEM").assertIsDisplayed()
+        rule.onNodeWithText("WHAT HISN DOES").assertIsDisplayed()
+        tapStory()
+        rule.onNodeWithText("The moment is short").assertIsDisplayed()
+        rule.onNodeWithText("A short wait before the apps you choose, so the decision comes first.").assertIsDisplayed()
+        tapStory()
+        rule.onNodeWithText("A blocker is easy to switch off").assertIsDisplayed()
+        // The section label belongs to the next pages, not to this one.
+        rule.onNodeWithText("How it works").assertDoesNotExist()
+        tapStory()
         rule.onNodeWithText("How it works").assertIsDisplayed()
         rule.onNodeWithText("Hisn steps in before it loads.").assertDoesNotExist()
         repeat(3) { tapStory() }
@@ -133,7 +158,7 @@ class OnboardingTest {
         rule.onNodeWithContentDescription("Back").assertDoesNotExist()
         rule.onNodeWithTag(ONBOARDING_PAGER).performTouchInput { swipeLeft() }
         rule.waitForIdle()
-        rule.onNodeWithText("Break the autopilot").assertIsDisplayed()
+        rule.onNodeWithText("Built to keep you looking").assertIsDisplayed()
         // The page left behind is not offered to a screen reader.
         rule.onNodeWithText("A shield for your phone").assertDoesNotExist()
         rule.onNodeWithContentDescription("Back").performClick()
@@ -227,6 +252,8 @@ class OnboardingTest {
         rule.onNodeWithText("I deleted the blocker").performClick()
         rule.waitForIdle()
         rule.onNodeWithText("“For my family”").assertIsDisplayed()
+        // The first promise is addressed by name.
+        rule.onNodeWithText("Sam, make it a promise").assertIsDisplayed()
         primary("Not now")
         rule.onNodeWithText("I can help with that, Sam.").assertIsDisplayed()
         repeat(2) { primary("Continue") }
@@ -329,7 +356,7 @@ class OnboardingTest {
     private fun checkConfiguration(scale: Float, rtl: Boolean): List<String> {
         show(fontScale = scale, rtl = rtl)
         val problems = mutableListOf<String>()
-        val buttons = List(8) { "Tap to continue" } +
+        val buttons = List(13) { "Tap to continue" } +
             listOf("Continue", "Continue", "Continue", "Continue", "Continue", "Not now", "Continue", "Continue", "Continue")
         for (index in 0..buttons.size) {
             val width = rule.onNode(isRoot()).fetchSemanticsNode().boundsInRoot.width

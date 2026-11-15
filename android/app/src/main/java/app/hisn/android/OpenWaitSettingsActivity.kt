@@ -43,7 +43,8 @@ class OpenWaitSettingsActivity : ComponentActivity() {
             var seconds by remember { mutableIntStateOf(OpenWaitStore.seconds(this)) }
             var grows by remember { mutableStateOf(OpenWaitStore.grows(this)) }
             val guardOn = remember(resumed) { Permissions.accessibility(this) }
-            val apps by produceState(initialValue = emptyList<InstalledApp>()) {
+            var showAll by remember { mutableStateOf(false) }
+            val apps by produceState(initialValue = emptyList<InstalledApp>(), showAll) {
                 value = withContext(Dispatchers.IO) {
                     val context = this@OpenWaitSettingsActivity
                     val used = if (Usage.hasAccess(context)) Usage.usedTodayAll(context) else emptyMap()
@@ -51,7 +52,7 @@ class OpenWaitSettingsActivity : ComponentActivity() {
                     // Only apps the guard watches: never Settings, launchers or Hisn itself.
                     val skipped = runCatching { ChosenApps.excluded(context) }.getOrDefault(emptySet())
                     // Chosen apps first, then today's most used, then by name.
-                    installedApps(context).filter { it.packageName !in skipped }.sortedWith(
+                    installedApps(context, showAll).filter { it.packageName !in skipped }.sortedWith(
                         compareByDescending<InstalledApp> { it.packageName in saved }
                             .thenByDescending { used[it.packageName] ?: 0L }
                             .thenBy { it.label.lowercase() }
@@ -66,6 +67,8 @@ class OpenWaitSettingsActivity : ComponentActivity() {
                     seconds = seconds,
                     grows = grows,
                     guardOn = guardOn,
+                    showAll = showAll,
+                    onShowAll = { showAll = it },
                     onChange = { newApps, newSeconds, newGrows ->
                         if (OpenWaitStore.save(this, newApps, newSeconds, newGrows)) {
                             chosen = newApps

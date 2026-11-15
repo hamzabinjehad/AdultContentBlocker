@@ -136,6 +136,7 @@ private val ArabicShell: Map<String, String> = mapOf(
     "1 app blocked" to "تطبيق واحد محظور",
     "Reading this phone's apps…" to "جارٍ قراءة تطبيقات هذا الهاتف…",
     "No launchable apps were returned by this phone." to "لم يُرجع هذا الهاتف أي تطبيقات قابلة للتشغيل.",
+    "%1\$d apps on this phone. Toggle a row to block it." to "%1\$d تطبيقًا على هذا الهاتف. بدّل صفًا لحظره.",
     "%1\$d launchable apps on this phone. Toggle a row to block it." to "%1\$d تطبيقًا قابلًا للتشغيل على هذا الهاتف. بدّل صفًا لحظره.",
     "No app matches" to "لا تطبيق مطابق",
     "This phone returned no launchable apps." to "لم يُرجع هذا الهاتف أي تطبيقات قابلة للتشغيل.",

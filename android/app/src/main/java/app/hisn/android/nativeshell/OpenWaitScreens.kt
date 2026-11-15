@@ -212,6 +212,8 @@ fun OpenWaitSettings(
     seconds: Int,
     grows: Boolean,
     guardOn: Boolean,
+    showAll: Boolean = false,
+    onShowAll: (Boolean) -> Unit = {},
     onChange: (Set<String>, Int, Boolean) -> Unit,
     onFixGuard: () -> Unit,
     onBack: () -> Unit
@@ -271,6 +273,8 @@ fun OpenWaitSettings(
                         onCheckedChange = { onChange(chosen, seconds, it) }
                     )
                 }
+                Spacer(Modifier.height(8.dp))
+                ShowAllAppsRow(showAll, onShowAll)
                 Spacer(Modifier.height(20.dp))
                 Row(Modifier.padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(

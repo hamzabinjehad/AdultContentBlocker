@@ -82,6 +82,11 @@ android {
         // Accessibility API policy forbids that for personal self-control, so Play builds never do.
         def direct = providers.gradleProperty('hisnDistribution').orNull == 'direct'
         buildConfigField 'boolean', 'SELF_PROTECTION', direct.toString()
+        // "Show all apps" needs QUERY_ALL_PACKAGES to list apps with no launcher icon. Google Play
+        // restricts that permission, so only the direct build declares it; the Play build repeats
+        // a permission it already has, which adds nothing.
+        manifestPlaceholders.hisnAllApps = direct ? 'android.permission.QUERY_ALL_PACKAGES'
+                : 'android.permission.ACCESS_NETWORK_STATE'
         if (direct) versionNameSuffix '-direct'
     }
 

@@ -84,7 +84,7 @@ the Data safety answers as on-device processing, not collection.
 | `PACKAGE_USAGE_STATS` (Usage access, special access) | Opt-in daily app time limits read Android's on-device foreground-time record. No usage event leaves the phone; the owner grants it in Android Settings and can revoke it at any time. Not used for advertising, analytics or a parental dashboard. |
 | `SYSTEM_ALERT_WINDOW` | Direct build's boot shield only; not used by the Play-style build for protection. |
 | Device admin / device owner | Optional uninstall block and managed lockdown; no wipe/password/screen-lock powers. DPC/EMM declarations may be required for the managed edition. |
-| `QUERY_ALL_PACKAGES`? | Not declared; `queries` entries cover launcher/home/dial only. |
+| `QUERY_ALL_PACKAGES` | **Play build: not declared**; `queries` entries cover launcher, home, dial and browsers only. **Direct build: declared** (since 15 November 2026) so the "Show all apps" switch in the app lists can include apps with no launcher icon. The list is read on the phone to show the picker and is never stored or sent. `android/app/build.gradle` sets this per build (`hisnAllApps`). |
 | `WRITE_SECURE_SETTINGS` | Optional grayscale only; not granted on install. |
 
 Play policy review is required before claiming Play distribution. The direct
