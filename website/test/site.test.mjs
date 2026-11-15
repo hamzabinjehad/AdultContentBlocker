@@ -8,6 +8,7 @@ const read = (name) => readFileSync(new URL(`../${name}`, import.meta.url), 'utf
 const release = JSON.parse(read('release.json'));
 const index = read('index.html');
 const privacy = read('privacy.html');
+const limits = read('limits.html');
 const vault = read('vault.html');
 const partner = read('partner.html');
 const script = read('lib/site.js');
@@ -48,20 +49,24 @@ test('the public page carries no release-developer details', () => {
     assert.ok(!visible.includes(term), `public page still says ${term}`);
   }
   assert.ok(!index.includes('openai') && !index.includes('github.com'));
+  const limitsVisible = limits.replace(/<script[\s\S]*?<\/script>/g, ' ').replace(/<[^>]+>/g, ' ').toLowerCase();
+  for (const term of ['sha-256', 'version code', 'github', 'checksum', 'release.json']) {
+    assert.ok(!limitsVisible.includes(term), `limits page still says ${term}`);
+  }
 });
 
 test('the roadmap names every other version and labels it honestly', () => {
-  for (const text of ['Android', 'Mac', 'iPhone', 'Browser extension', 'Hisn Vault']) {
+  for (const text of ['Android', 'A new Android update', 'Mac &amp; iPhone', 'Linux &amp; Windows', 'Browser extension', 'Hisn Vault']) {
     assert.ok(index.includes(text), `missing roadmap entry ${text}`);
   }
-  assert.ok(index.includes('Other versions are coming.'));
+  assert.ok(index.includes('More platforms are coming.'));
   assert.ok(index.includes('data-i18n="status.soon"'));
   assert.ok(index.includes('data-i18n="road.androidNext.body"'));
 });
 
 test('every string on the landing and privacy pages has Arabic', () => {
   const missing = [];
-  for (const [page, html] of [['index.html', index], ['privacy.html', privacy]]) {
+  for (const [page, html] of [['index.html', index], ['privacy.html', privacy], ['limits.html', limits]]) {
     for (const key of keys(html)) if (!(key in ar)) missing.push(`${page}: ${key}`);
   }
   assert.deepEqual(missing, []);
@@ -110,6 +115,14 @@ test('the animation library is vendored, licensed and wired in', () => {
   assert.ok(index.includes('lib/motion-flag.js'));
   assert.match(animations, /anime/i);
   assert.match(animations, /prefers-reduced-motion/);
+});
+
+test('the limits page is separate from the sales page', () => {
+  assert.ok(limits.includes('What Hisn will not do.'));
+  assert.ok(limits.includes('href="privacy.html"'));
+  assert.ok(limits.includes('href="index.html"'));
+  assert.ok(limits.includes('data-i18n="limits.back"'));
+  assert.ok(!index.includes('What Hisn will not do'), 'the sales page repeats the limits wall');
 });
 
 test('the Vault moved to vault.html and both pages link correctly', () => {

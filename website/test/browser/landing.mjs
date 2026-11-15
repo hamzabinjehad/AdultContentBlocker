@@ -111,11 +111,11 @@ try {
   await load('/index.html');
 
   const h1 = await evaluate("document.querySelector('h1').textContent");
-  if (!h1.includes('Less adult content')) throw new Error(`unexpected hero: ${h1}`);
+  if (!h1.includes('Adult content, blocked')) throw new Error(`unexpected hero: ${h1}`);
   const downloads = await evaluate("document.querySelectorAll('a[href=\"downloads/hisn-android.apk\"]').length");
   if (downloads < 2) throw new Error(`expected hero and card downloads, got ${downloads}`);
   const roadmap = await evaluate("document.querySelector('#roadmap').textContent");
-  for (const name of ['A new Android update', 'Mac', 'iPhone', 'Browser extension', 'Hisn Vault']) {
+  for (const name of ['A new Android update', 'Mac & iPhone', 'Linux & Windows', 'Browser extension', 'Hisn Vault']) {
     if (!roadmap.includes(name)) throw new Error(`roadmap missing ${name}`);
   }
   const visible = await evaluate('document.body.innerText.toLowerCase()');
@@ -166,6 +166,12 @@ try {
   const privacy = await evaluate("document.querySelector('h1').textContent");
   if (!privacy.includes('stays on the phone')) throw new Error(`privacy page failed: ${privacy}`);
   await shot('privacy-en.png', 1280, 1600);
+
+  await send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 1600, deviceScaleFactor: 1, mobile: false });
+  await load('/limits.html');
+  const limits = await evaluate("document.querySelector('h1').textContent");
+  if (!limits.includes('What Hisn will not do')) throw new Error(`limits page failed: ${limits}`);
+  await shot('limits-en.png', 1280, 1600);
 
   if (errors.length) throw new Error(`console errors: ${errors.join(' | ')}`);
   console.log(`Landing OK — screenshots in ${shots}`);

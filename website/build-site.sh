@@ -14,7 +14,7 @@ case "$out" in
 esac
 rm -rf "$out"
 mkdir -p "$out/downloads"
-cp index.html vault.html partner.html privacy.html "$out"/
+cp index.html vault.html partner.html privacy.html limits.html "$out"/
 cp -R assets lib "$out"/
 # Keep the vendor notice inside the source tree; the public page needs only the
 # runtime and its license. The checksum file is for the release check, not the

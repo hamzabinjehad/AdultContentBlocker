@@ -30,3 +30,15 @@ Unchaind, 64 of Unrot); the originals stay outside the repository. These contact
   a year". Hisn shows only what it measures (see the 13 November competitor pass).
 - Shame slides ("it rewires your body", "it separates you from God").
 - Rating requests during onboarding, countdown discounts, paywalls, accounts.
+
+## Applied to the product page (15 November 2026)
+
+The page now leads with the app's **block screen** (“One breath first”) rather than a
+settings list, because that is the moment the whole product exists for: Unchaind's
+calm one-idea screens and Unrot's mascot-led onboarding both make the emotional
+moment the hero, not the feature list.
+
+The Hisn companion (the app's own `mascot_wave`) closes the page above the final
+download CTA, so the site has the same human guide as the app without importing
+Unrot's character, copy, ratings or coin/gamification system. The page stays one
+CTA, one short line and three real screens; the long limits list is separate.

@@ -11,7 +11,7 @@
   var anime = window.anime;
   var ease = 'easeOutCubic';
 
-  // The hero arrives as one gesture, then the phone and its layered screens.
+  // The hero arrives as one gesture, then the phone and its card.
   anime({
     targets: '.hero3-copy > *',
     translateY: [24, 0],
@@ -29,17 +29,9 @@
     delay: 260,
     easing: ease
   });
-  anime({
-    targets: '.phone-layer',
-    opacity: [0, 0.55],
-    duration: 1100,
-    delay: anime.stagger(120, { start: 380 }),
-    easing: ease
-  });
-
   // Sections arrive once, when they first enter the viewport.
   var items = document.querySelectorAll(
-    '.section-head, .benefit-card, .step-card, .limits-list li, .diff-grid article, .road-card, .faq details, .final-cta, .stat'
+    '.section-head, .band-line, .feature-panel, .how-copy, .how-visual, .trust-card, .road-card, .faq details, .final-cta, .limits-list li'
   );
   if (!('IntersectionObserver' in window)) {
     items.forEach(function (element) { element.style.opacity = '1'; });

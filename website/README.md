@@ -4,12 +4,15 @@ The product site for the Android app, plus the Vault. Static files, no account,
 no server, no analytics. The site is bilingual (English and Arabic), light and
 dark, and every page has a strict CSP with no third-party resource.
 
-- `/` — the product page: signed Android download, how it works, limits,
-  roadmap and FAQ.
+- `/` — the product page: a left-aligned hero with the free Android download
+  and the platforms still to come, a one-sentence statement with four features,
+  a four-step "How Hisn works" stepper over real app screens, a privacy row, the
+  roadmap, a short FAQ and a closing download.
 - `/vault.html` — Hisn Vault, the off-device time lock. See
   [`docs/WEB_VAULT.md`](../docs/WEB_VAULT.md).
 - `/partner.html` — the Vault's partner half.
 - `/privacy.html` — the short privacy page for the download site.
+- `/limits.html` — the opt-in list of what Hisn cannot do.
 
 The design and the competitor pass are recorded in
 [`docs/WEBSITE_2026-11-14.md`](../docs/WEBSITE_2026-11-14.md).
@@ -48,10 +51,11 @@ the vendored runtime keeps its license.
 
 | Path | What it is |
 |---|---|
-| `index.html` | The product page: hero, signed download, benefits, install steps with app captures, limits, roadmap, FAQ. |
+| `index.html` | The product page: hero, download, features, the step-by-step screens, privacy row, roadmap, FAQ. |
 | `vault.html` | The Vault: create, setup window, sealed, due, revealed. |
 | `partner.html` | The partner's half: keypair, public key, release. |
 | `privacy.html` | The short privacy page, linked from the product page and the app record. |
+| `limits.html` | The opt-in list of what Hisn cannot do, linked from the FAQ and footer rather than from the sales flow. |
 | `release.json` | Internal release identity: version, bytes, SHA-256, certificate, source record. Not copied to the public build. |
 | `index.html` / `lib/site.js` | Product-page English copy in HTML, Arabic in `lib/site.js`; the language switch updates the document direction. |
 | `lib/crypto.js` | Vault AES-GCM, P-256 ECDH + HKDF, passcode drawing. |
@@ -63,12 +67,13 @@ the vendored runtime keeps its license.
 | `lib/store.js` | Vault `localStorage`, file download/import, clipboard. |
 | `lib/tlock.bundle.js` | Committed tlock-js bundle; see `vendor/`. |
 | `assets/style.css` | Shared colour tokens, typography and Vault controls, light and dark. |
-| `assets/site.css` | Product-page layout, phone mockups, stat band, steps, roadmap. |
+| `assets/site.css` | The product, privacy and limits pages: navy tokens (light and dark), header, hero, stepper, cards, footer. |
+| `lib/how.js` | The "How Hisn works" stepper: choosing a step swaps the phone screen. Without it every step and the first screen still show. |
 | `assets/home.png`, `rules.png`, `phone-checks.png` | Real Hisn emulator captures used on the product page. |
 | `test/site.test.mjs` | Release manifest, download links, translation keys, CSP and Vault links. |
 | `lib/motion-flag.js`, `lib/animations.js` | The no-flash motion setup and the scroll/entrance animations, built on the vendored anime.js. |
 | `lib/vendor/anime.min.js`, `LICENSE.anime` | anime.js 3.2.2, MIT; vendored so the CSP allows no third-party script. See `lib/vendor/README.md`. |
-| `test/browser/landing.mjs` | Headless Chrome check of the product page in English and Arabic, desktop and mobile, with screenshots. |
+| `test/browser/landing.mjs` | Headless Chrome check of the product page in English and Arabic, desktop and mobile, plus the privacy and limits pages, with screenshots. |
 
 ## Tests
 

@@ -11,7 +11,8 @@ not on the page.
 Unchaind’s site ([unchaind.app](https://unchaind.app/)) supplied the atmosphere:
 a soft full-bleed aura, a centered promise, a phone with blurred screens layered
 behind it, product stats and calm space. ScreenZen supplied the section flow:
-benefit cards, step cards with real screens, FAQ and a final CTA. Hisn keeps
+short feature cards, a three-screen gallery, a compact download with three
+steps, a tiny FAQ and a final CTA. Hisn keeps
 that shape and refuses the parts it cannot honestly copy — no faith language,
 no invented test results or user counts, no shame, no streak ranks, no paywall.
 The animation is anime.js 3.2.2 (MIT), vendored so the page makes no
@@ -23,13 +24,15 @@ no-JavaScript fallback.
 
 | File | What it shows |
 | --- | --- |
-| [landing-en-light.png](landing-en-light.png) | The full product page in light mode, 1280 px. Centered hero, layered phone, stats, benefits, download, four install cards, limits, roadmap, FAQ, final CTA. |
+| [landing-en-light.png](landing-en-light.png) | The full product page in light mode, 1280 px. Centered hero, layered phone, four feature cards, three-screen gallery, compact download, privacy strip, roadmap, FAQ, final CTA. |
 | [landing-en.png](landing-en.png) | The same page in dark mode. |
 | [landing-mobile.png](landing-mobile.png) | 390 px viewport, full page: stacked hero and phone, two-column stats, single-column cards. |
 | [hero-ar.png](hero-ar.png) | The Arabic hero at 1280×1600, `dir=rtl`. A viewport capture: headless Chrome’s full-page `captureBeyondViewport` shifts RTL pages at the right edge, so the full-page Arabic file is not kept. The page reports no horizontal overflow in either language. |
+| [limits-en.png](limits-en.png) | The separate limits page, linked from the FAQ and footer instead of interrupting the sales flow. |
 | [privacy-en.png](privacy-en.png) | The short, plain-language privacy page. |
 
 The app screens on the page are real Hisn captures:
+`assets/block.png` (the enforced block screen, “One breath first”),
 `assets/home.png` (native shell), `assets/rules.png` (rule tiles) and
 `assets/phone-checks.png` (the phone check on a Xiaomi-labelled AVD).
 

@@ -47,11 +47,13 @@ you the lock; Hisn adds the coverage those built-in filters miss. Read
 - **Website — the Android download and the roadmap, 14 November 2026.** A
   bilingual product page at `website/index.html` offers the Android app as a
   free download, explains the four layers and the bypasses, and shows
-  **the next Android update, Mac, iPhone/iPad, the browser extension and the
-  Vault** as available or coming soon. It borrows the atmosphere and motion of
-  Unchaind and the section flow of ScreenZen — a centered promise, layered
-  phone screens, a stat band, benefits, step cards and an FAQ — without
-  inventing ratings, testimonials or a subscription. Version numbers, hashes,
+  **the next Android update, Mac, iPhone/iPad, Linux, Windows, the browser
+  extension and the Vault** as available or coming soon. It follows the
+  layout of ScreenZen's page — a left-aligned promise beside a phone, a
+  one-sentence statement over four features, a step-by-step "How Hisn works"
+  with real app screens, a privacy row and a short FAQ — in the app's own navy,
+  without inventing ratings, testimonials or a subscription. The longer limits
+  list moved to its own page. Version numbers, hashes,
   checksums and source links are kept off the public page; the release identity
   is still checked in `website/release.json` before a build. The Vault moved to
   `/vault.html`; a privacy page was added. `bash website/build-site.sh` stages

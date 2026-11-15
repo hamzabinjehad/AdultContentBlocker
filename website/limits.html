@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light dark">
+<title>Hisn limits</title>
+<meta name="description" content="What Hisn can and cannot do: force stop, second spaces, other VPNs, direct IPs and image checks.">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<script src="lib/motion-flag.js"></script>
+<link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body class="site">
+<a class="skip" href="#main" data-i18n="skip">Skip to content</a>
+
+<header class="top site-top">
+  <a class="brand" href="./index.html" aria-label="Hisn home"><span class="ar">حصن</span><span class="dot">·</span><span>Hisn</span></a>
+  <nav class="site-nav" aria-label="Main" data-i18n-aria="nav.label">
+    <a href="index.html#features" data-i18n="nav.features">Features</a>
+    <a href="index.html#how" data-i18n="nav.how">How it works</a>
+    <a href="index.html#roadmap" data-i18n="nav.roadmap">Roadmap</a>
+    <a href="vault.html" data-i18n="nav.vault">Vault</a>
+  </nav>
+  <div class="top-actions">
+    <button class="ghost" type="button" data-lang-button aria-label="العربية">العربية</button>
+  </div>
+</header>
+
+<main id="main" class="site-main">
+  <section class="section">
+    <div class="section-head">
+      <p class="eyebrow" data-i18n="limits.eyebrow">The limits</p>
+      <h1 class="page-title" data-i18n="limits.title">What Hisn will not do.</h1>
+      <p class="lede" data-i18n="limits.lede">A blocker that hides its gaps is a false promise. These are the gaps this build has; the in-app page repeats them.</p>
+    </div>
+    <ul class="limits-list">
+      <li><h3 data-i18n="limits.force.title">Survive a force stop</h3><p data-i18n="limits.force.body">Android Settings' Force stop wins. The watchdog can notice a stopped layer; no ordinary app can restart itself from there.</p></li>
+      <li><h3 data-i18n="limits.space.title">Cover a second space</h3><p data-i18n="limits.space.body">A second space, Secure Folder or dual app is a separate Android profile. Hisn must be installed there too.</p></li>
+      <li><h3 data-i18n="limits.vpn.title">Outrank another VPN</h3><p data-i18n="limits.vpn.body">Android allows one VPN at a time. Another VPN, Private DNS or an app that uses its own encrypted DNS can bypass the DNS layer.</p></li>
+      <li><h3 data-i18n="limits.ip.title">See past a direct IP</h3><p data-i18n="limits.ip.body">DNS filtering sees names, not direct IP connections, cached answers or content inside an encrypted page.</p></li>
+      <li><h3 data-i18n="limits.os.title">Replace the operating system</h3><p data-i18n="limits.os.body">The protection lock freezes rules inside Hisn. It does not stop Android settings, a data wipe, or a managed-device policy that is set separately.</p></li>
+      <li><h3 data-i18n="limits.guarantee.title">Guarantee every image</h3><p data-i18n="limits.guarantee.body">Image checks are Android 14+ and act after content appears. No classifier catches every frame, and none should be sold as certainty.</p></li>
+    </ul>
+    <p class="note-line"><span data-i18n="limits.note">Read the privacy page for what stays on the phone and what leaves it.</span> <a href="privacy.html" data-i18n="nav.privacy">Privacy</a></p>
+    <p class="limits-back"><a class="button" href="index.html" data-i18n="limits.back">Back to the app</a></p>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-top">
+    <a class="brand" href="./index.html" aria-label="Hisn home"><span class="ar">حصن</span><span class="dot">·</span><span>Hisn</span></a>
+    <p data-i18n="footer.note">No account, no server, no analytics. Matching stays on the phone.</p>
+  </div>
+  <nav aria-label="Footer" data-i18n-aria="footer.label">
+    <a href="vault.html" data-i18n="nav.vault">Vault</a>
+    <a href="limits.html" data-i18n="nav.limits">Limits</a>
+    <a href="privacy.html" data-i18n="nav.privacy">Privacy</a>
+  </nav>
+</footer>
+
+<script src="lib/vendor/anime.min.js" defer></script>
+<script src="lib/animations.js" defer></script>
+<script type="module" src="lib/site.js"></script>
+</body>
+</html>
