@@ -18,6 +18,7 @@ private val ArabicShell: Map<String, String> = mapOf(
     "Images and video" to "الصور والفيديو",
     "Samples the screen while you browse" to "يفحص عيّنات من الشاشة أثناء التصفح",
     "Images and video are not sampled" to "لا تُفحص الصور والفيديو",
+    "A protection lock is running, so this stays on until it ends." to "قفل الحماية يعمل، فيبقى هذا مفعّلًا حتى ينتهي.",
     "Short videos" to "المقاطع القصيرة",
     "Blocks short-video feeds in the apps you choose" to "يحظر خلاصات المقاطع القصيرة في التطبيقات التي تختارها",
     "Short-video feeds are not blocked" to "خلاصات المقاطع القصيرة غير محظورة",

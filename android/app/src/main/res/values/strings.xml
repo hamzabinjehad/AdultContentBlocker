@@ -983,4 +983,9 @@
     <string name="apps_show_all">Show all apps</string>
     <string name="apps_show_all_body">Also lists system apps that have no icon on the home screen.</string>
     <string name="apps_show_all_limited">Also lists the system apps Android lets Hisn see. The Google Play version cannot see every app.</string>
+    <string name="private_tabs_title">Block private tabs</string>
+    <string name="private_tabs_on">On · Closes Chrome’s Incognito tabs, so browsing leaves no gap</string>
+    <string name="private_tabs_off">Off · Incognito tabs in Chrome are allowed</string>
+    <string name="private_tabs_needs_guard">On · Needs App protection to close tabs</string>
+    <string name="private_tabs_closed">Hisn closed a private tab</string>
 </resources>

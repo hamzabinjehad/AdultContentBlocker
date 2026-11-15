@@ -28,6 +28,7 @@ import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.LocalOffer
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.PlayCircle
+import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material3.AlertDialog
@@ -187,6 +188,27 @@ fun RulesScreen(
                     },
                     checked = state.shortVideos.on,
                     onCheckedChange = state.shortVideos::set
+                )
+                InsetDivider()
+                var privateTabs by remember(resumes) { mutableStateOf(app.hisn.android.PrivateTabsStore.on(context)) }
+                SwitchRow(
+                    icon = Icons.Rounded.VisibilityOff,
+                    title = androidx.compose.ui.res.stringResource(app.hisn.android.R.string.private_tabs_title),
+                    supporting = androidx.compose.ui.res.stringResource(
+                        when {
+                            privateTabs && !(state.apps.on && state.guardConnected) -> app.hisn.android.R.string.private_tabs_needs_guard
+                            privateTabs -> app.hisn.android.R.string.private_tabs_on
+                            else -> app.hisn.android.R.string.private_tabs_off
+                        }
+                    ),
+                    checked = privateTabs,
+                    onCheckedChange = { wanted ->
+                        if (app.hisn.android.PrivateTabsStore.set(context, wanted)) {
+                            privateTabs = wanted
+                        } else {
+                            snackbar(HisnMessage(tr("A protection lock is running, so this stays on until it ends.")))
+                        }
+                    }
                 )
                 InsetDivider()
                 SwitchRow(

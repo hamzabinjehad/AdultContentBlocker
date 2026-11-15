@@ -34,6 +34,7 @@ import app.hisn.core.LabelScan;
 import app.hisn.core.ProtectionLock;
 import app.hisn.core.SelfProtectionScreens;
 import app.hisn.core.SelfProtectionScreens.Guard;
+import app.hisn.core.PrivateBrowsing;
 import app.hisn.core.ShortVideoSurfaces;
 import app.hisn.core.VisibleTextSample;
 
@@ -404,6 +405,8 @@ public final class TextGuardService extends AccessibilityService {
         CharSequence pkg = event.getPackageName();
         if (pkg == null) return;
         String name = pkg.toString();
+        // Read before the selection filter below, which needs it to let a browser's events in.
+        privateTabsOn = PrivateTabsStore.on(this);
         if (BuildConfig.SELF_PROTECTION && SelfProtectionScreens.watches(name)) {
             // A new window is checked at once, first from the event's own text (no tree walk),
             // then from the window with a few short retries while Android swaps the active root.
@@ -592,6 +595,22 @@ public final class TextGuardService extends AccessibilityService {
                     try {
                         if (showsShortVideo(surface, window.app)) {
                             interveneShortVideo(false);
+                            return;
+                        }
+                    } finally { surface.recycle(); }
+                }
+            }
+            privateTabsOn = PrivateTabsStore.on(this);
+            if (privateTabsOn) {
+                for (GuardWindows.Window window : windows) {
+                    if (!PrivateBrowsing.watches(window.app)) continue;
+                    // Keep checking while the browser is on screen: a private tab can open at any time.
+                    shortVideoOnScreen = true;
+                    AccessibilityNodeInfo surface = windowRoot(this, window);
+                    if (surface == null) continue;
+                    try {
+                        if (showsPrivateTab(surface, window.app)) {
+                            closePrivateTab();
                             return;
                         }
                     } finally { surface.recycle(); }
@@ -1016,8 +1035,12 @@ public final class TextGuardService extends AccessibilityService {
         return rules.blockedApps.contains(name) || scans(rules, name)
                 || rules.timeLimits.monitored(name)
                 || rules.schedule.selects(name, minuteOfDay(), dayOfWeek())
-                || (rules.shortVideoEnabled && ShortVideoSurfaces.watches(name));
+                || (rules.shortVideoEnabled && ShortVideoSurfaces.watches(name))
+                || (privateTabsOn && PrivateBrowsing.watches(name));
     }
+
+    /** "Block private tabs", refreshed on each check; static so isSelected can read it. */
+    private static volatile boolean privateTabsOn;
 
     /** Whether Android's on-device foreground record has reached this app's saved daily limit.
      *  Without the Usage access special permission the answer is no, so the status page can show
@@ -1046,6 +1069,44 @@ public final class TextGuardService extends AccessibilityService {
     private static java.time.DayOfWeek dayOfWeek() {
         return java.time.LocalDate.now().getDayOfWeek();
     }
+
+    /** A visible private-tab marker, found by its view ID; no page text or address is read. */
+    private static boolean showsPrivateTab(AccessibilityNodeInfo root, String app) {
+        for (String id : PrivateBrowsing.markerViewIds(app)) {
+            java.util.List<AccessibilityNodeInfo> found = root.findAccessibilityNodeInfosByViewId(id);
+            if (found == null) continue;
+            boolean visible = false;
+            for (AccessibilityNodeInfo node : found) {
+                if (node.isVisibleToUser()) visible = true;
+                node.recycle();
+            }
+            if (visible) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Back walks the private tab's history and then closes the tab, so the browser stays usable.
+     * The heartbeat presses again while the marker is still there; one short note per closing.
+     */
+    private void closePrivateTab() {
+        long now = SystemClock.elapsedRealtime();
+        privateTabClosings++;
+        inspectionOutcome = "private-tab-closed";
+        handler.removeCallbacks(inspect);
+        inspectPending = false;
+        if (!performGlobalAction(GLOBAL_ACTION_BACK)) homeFailures++;
+        if (now - lastPrivateTabNote > 10_000) {
+            lastPrivateTabNote = now;
+            try {
+                android.widget.Toast.makeText(this, R.string.private_tabs_closed, android.widget.Toast.LENGTH_SHORT).show();
+            } catch (RuntimeException unavailable) { /* The tab is still closed. */ }
+        }
+        scheduleHeartbeat(600);
+    }
+
+    static volatile long privateTabClosings;
+    private long lastPrivateTabNote;
 
     /** A visible Shorts or Reels player, found by its view ID; no text is read. */
     private static boolean showsShortVideo(AccessibilityNodeInfo root, String app) {

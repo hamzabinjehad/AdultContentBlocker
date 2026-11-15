@@ -1063,4 +1063,9 @@
     <string name="apps_show_all">اعرض كل التطبيقات</string>
     <string name="apps_show_all_body">يعرض أيضًا تطبيقات النظام التي لا أيقونة لها على الشاشة الرئيسية.</string>
     <string name="apps_show_all_limited">يعرض أيضًا تطبيقات النظام التي يسمح أندرويد لحصن برؤيتها. نسخة Google Play لا تستطيع رؤية كل التطبيقات.</string>
+    <string name="private_tabs_title">حظر علامات التبويب الخاصة</string>
+    <string name="private_tabs_on">مفعّل · يغلق علامات التخفّي في Chrome، فلا يبقى في التصفح منفذ</string>
+    <string name="private_tabs_off">متوقف · علامات التخفّي في Chrome مسموحة</string>
+    <string name="private_tabs_needs_guard">مفعّل · يحتاج إلى حماية التطبيقات لإغلاق العلامات</string>
+    <string name="private_tabs_closed">أغلق حصن علامة تبويب خاصة</string>
 </resources>
