@@ -12,9 +12,12 @@ export JAVA_HOME="${JAVA_HOME:-/Applications/Android Studio.app/Contents/jbr/Con
 export ANDROID_HOME="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
 EXPECTED_CERT="2fbed657e6abc71c15cad0cd991c532f59772d1695d7c37e65a114385e9470c5"
 
-KEYSTORE="$ROOT/keys/android/hisn-release.jks"
-PASSWORD_FILE="$ROOT/keys/android/keystore-password.txt"
-[ -f "$KEYSTORE" ] && [ -f "$PASSWORD_FILE" ] || { echo "Missing keys/android/ key files." >&2; exit 1; }
+# HISN_ANDROID_KEYS_DIR lets a clean second checkout (a git worktree) sign with the key
+# where it already lives, so the key is never copied into another tree.
+KEYS_DIR="${HISN_ANDROID_KEYS_DIR:-$ROOT/keys/android}"
+KEYSTORE="$KEYS_DIR/hisn-release.jks"
+PASSWORD_FILE="$KEYS_DIR/keystore-password.txt"
+[ -f "$KEYSTORE" ] && [ -f "$PASSWORD_FILE" ] || { echo "Missing key files in $KEYS_DIR." >&2; exit 1; }
 
 # A release comes from a commit, so the APK can be rebuilt and traced.
 if [ -n "$(git status --porcelain)" ]; then
