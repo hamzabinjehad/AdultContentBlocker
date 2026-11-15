@@ -4,6 +4,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -132,22 +133,23 @@ fun OpenWaitScreen(
                 )
                 Spacer(Modifier.height(36.dp))
                 Box(Modifier.size(220.dp).testTag(OPEN_WAIT_CIRCLE), contentAlignment = Alignment.Center) {
+                    // A thin ring that breathes; nothing filled, nothing decorative.
                     Box(
                         Modifier
                             .size(220.dp)
                             .scale(breath.value)
-                            .background(colors.primaryContainer, CircleShape)
+                            .border(2.dp, colors.primary, CircleShape)
                     )
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             if (left > 0) left.toString() else "✓",
                             style = MaterialTheme.typography.displayMedium,
-                            color = colors.onPrimaryContainer
+                            color = colors.onSurface
                         )
                         Text(
                             stringResource(if (breathingIn) R.string.open_wait_in else R.string.open_wait_out),
                             style = MaterialTheme.typography.titleMedium,
-                            color = colors.onPrimaryContainer
+                            color = colors.onSurfaceVariant
                         )
                     }
                 }

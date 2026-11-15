@@ -47,6 +47,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.PauseCircle
+import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.BatteryChargingFull
 import androidx.compose.material.icons.rounded.CheckCircle
@@ -169,16 +173,16 @@ private val LayerTiles = listOf(
 )
 
 private val Stories: List<Story> = listOf(
-    Intro(R.string.welcome_title_1, R.string.welcome_body_1, Icons.Rounded.Shield),
-    Intro(R.string.welcome_title_2, R.string.welcome_body_2, Icons.Rounded.PauseCircle),
-    Intro(R.string.welcome_title_3, R.string.welcome_body_3, Icons.Rounded.Lock),
+    Intro(R.string.welcome_title_1, R.string.welcome_body_1, Icons.Outlined.Shield),
+    Intro(R.string.welcome_title_2, R.string.welcome_body_2, Icons.Outlined.PauseCircle),
+    Intro(R.string.welcome_title_3, R.string.welcome_body_3, Icons.Outlined.Lock),
     How(R.string.welcome_how_1, 0),
     How(R.string.welcome_how_2, 1),
     How(R.string.welcome_how_3, 2),
     // Where Unchaind shows shame slides, Hisn shows what each of its parts does.
     Layers,
     // Hisn counts days with it and pauses taken, never clean days, so this page is simply true.
-    Intro(R.string.welcome_title_4, R.string.welcome_body_4, Icons.Rounded.Favorite)
+    Intro(R.string.welcome_title_4, R.string.welcome_body_4, Icons.Outlined.FavoriteBorder)
 )
 
 /** Setup is one question per page, as on the quiz-style onboardings people know. */
@@ -672,40 +676,17 @@ private fun LayerTile(icon: ImageVector, title: Int, body: Int, modifier: Modifi
     }
 }
 
-/** Hisn's mark as something to look at: a shield inside a slowly breathing glow. */
+/** The page's mark, kept formal: one outlined icon in a thin ring. No glow, gradient or motion. */
 @Composable
 private fun ShieldGem(icon: ImageVector) {
     val colors = MaterialTheme.colorScheme
-    val reduceMotion = systemReduceMotion(LocalContext.current)
-    val breath = rememberInfiniteTransition(label = "gem")
-    val glow by breath.animateFloat(
-        initialValue = 0.85f,
-        targetValue = if (reduceMotion) 0.85f else 1.08f,
-        animationSpec = infiniteRepeatable(tween(4000, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "glow"
-    )
-    Box(Modifier.size(200.dp), contentAlignment = Alignment.Center) {
-        Box(
-            Modifier
-                .size(200.dp)
-                .scale(glow)
-                .clip(CircleShape)
-                .background(
-                    Brush.radialGradient(
-                        listOf(colors.primary.copy(alpha = 0.38f), colors.primary.copy(alpha = 0f))
-                    )
-                )
-        )
-        Box(
-            Modifier
-                .size(108.dp)
-                .clip(CircleShape)
-                .background(Brush.linearGradient(listOf(colors.primary, colors.tertiary.copy(alpha = 0.9f)))),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(icon, contentDescription = null, tint = colors.onPrimary,
-                modifier = Modifier.size(56.dp))
-        }
+    Box(
+        Modifier
+            .size(124.dp)
+            .border(1.5.dp, colors.outlineVariant, CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(icon, contentDescription = null, tint = colors.primary, modifier = Modifier.size(48.dp))
     }
 }
 
