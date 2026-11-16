@@ -105,7 +105,7 @@ public final class TfliteBenchmarkActivity extends Activity {
                 double elapsed = (SystemClock.elapsedRealtimeNanos() - frameStart) / 1_000_000.0;
                 results.put(new JSONObject().put("id", itemForResult.getString("id"))
                         .put("repeat", index / cases.length()).put("expected", itemForResult.getString("expected"))
-                        .put("actual", verdict).put("roundtrip_ms", elapsed));
+                        .put("actual", verdict.verdict).put("strong", verdict.strong).put("roundtrip_ms", elapsed));
                 index++;
                 report.put("results", results);
                 save();

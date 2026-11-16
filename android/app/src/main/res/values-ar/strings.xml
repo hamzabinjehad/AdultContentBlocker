@@ -454,11 +454,11 @@
     <string name="pause_tally_first">أول وقفة اليوم.</string>
     <string name="pause_tally_many">وقفات اليوم: %1$d. كل مرة تبتعد فيها يضعف هذا الاعتياد.</string>
     <string name="short_video_off">المقاطع القصيرة · غير محجوبة</string>
-    <string name="short_video_on">المقاطع القصيرة · محجوبة: YouTube Shorts وInstagram Reels وTikTok</string>
+    <string name="short_video_on">المقاطع القصيرة · محجوبة: YouTube Shorts وInstagram Reels وSnapchat Spotlight وTikTok</string>
     <string name="short_video_enable">احجب المقاطع القصيرة</string>
     <string name="short_video_disable">أوقف حجب المقاطع القصيرة</string>
-    <string name="short_video_short">يعيدك حصن للرئيسية عند اكتشاف YouTube Shorts أو Instagram Reels أو TikTok. الاكتشاف محدود.</string>
-    <string name="short_video_disclosure">سيغادر حصن YouTube Shorts وInstagram Reels عند فتحهما، ويغلق TikTok. يبقى باقي YouTube وInstagram قابلًا للاستخدام.\n\nيعتمد هذا على خدمة إمكانية الوصول في حصن، ويجب تفعيلها. يتعرّف على مشغّلي Shorts وReels من تخطيط الشاشة، لا من قراءة محتواها. قد يغيّر تحديث التطبيق هذا التخطيط، فتظهر شاشة أحيانًا قبل أن يلاحظها حصن.\n\nأثناء قفل الحماية لا يمكن تغيير هذا الإعداد داخل حصن في أي اتجاه.</string>
+    <string name="short_video_short">يعيدك حصن للرئيسية عند اكتشاف YouTube Shorts أو Instagram Reels أو Snapchat Spotlight أو TikTok. الاكتشاف محدود.</string>
+    <string name="short_video_disclosure">سيغادر حصن YouTube Shorts وInstagram Reels وSnapchat Spotlight عند فتحها، ويغلق TikTok. يبقى باقي YouTube وInstagram وSnapchat قابلًا للاستخدام.\n\nيعتمد هذا على خدمة إمكانية الوصول في حصن، ويجب تفعيلها. يتعرّف على مشغّلي Shorts وReels من تخطيط الشاشة، لا من قراءة محتواها. قد يغيّر تحديث التطبيق هذا التخطيط، فتظهر شاشة أحيانًا قبل أن يلاحظها حصن.\n\nأثناء قفل الحماية لا يمكن تغيير هذا الإعداد داخل حصن في أي اتجاه.</string>
     <string name="restriction_short_video">اخترت إبعاد خلاصات المقاطع القصيرة مثل Shorts وReels وTikTok.</string>
     <string name="restriction_self_protection">اخترت حماية حصن. تبقى شاشات إلغاء تثبيته وإيقافه والوضع الآمن وتثبيت تطبيق جديد مغلقة حتى توقف هذه الحماية من داخل حصن.</string>
     <string name="self_protection_title">حماية إلغاء التثبيت</string>
@@ -802,7 +802,7 @@
     <string name="toggle_visual">الصور والفيديو</string>
     <string name="visual_toggle_summary">يأخذ عينات من نوافذ التطبيقات التي تختارها. يتطلب أندرويد 14 أو أحدث.</string>
     <string name="toggle_short_video">المقاطع القصيرة</string>
-    <string name="short_video_toggle_summary">يغادر YouTube Shorts وInstagram Reels، ويغلق TikTok.</string>
+    <string name="short_video_toggle_summary">يغادر YouTube Shorts وInstagram Reels وSnapchat Spotlight، ويغلق TikTok.</string>
     <string name="short_video_on_short">يحجب Shorts وReels وTikTok.</string>
     <string name="attention_visual_no_apps">فحص الصور والفيديو مفعّل، لكن لم يُختر أي تطبيق لفحصه.</string>
     <string name="attention_visual_unsupported">فحص الصور والفيديو غير مدعوم على إصدار أندرويد هذا.</string>

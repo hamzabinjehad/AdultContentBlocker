@@ -50,6 +50,7 @@ public final class VisualCaptureTestActivity extends Activity {
                     + " ELIGIBILITY " + VisualGuard.eligibility
                     + " INTERVENTIONS " + VisualGuard.interventions + " DISCARDED " + VisualGuard.discarded
                     + " CAPTURE_FAILURES " + VisualGuard.captureFailures + " CAPTURE_ERROR " + VisualGuard.lastCaptureError
+                    + " OVERLAYS " + VisualOverlay.shows
                     + " BACKEND " + VisualGuard.backend + " FRAME_EDGE " + VisualGuard.FRAME_EDGE
                     + " LAST_CAPTURE_MS " + VisualGuard.lastCaptureMillis
                     + " LAST_INFERENCE_MS " + VisualGuard.lastInferenceMillis

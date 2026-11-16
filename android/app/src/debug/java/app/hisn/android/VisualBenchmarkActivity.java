@@ -116,7 +116,7 @@ public final class VisualBenchmarkActivity extends Activity {
             try {
                 double elapsed = (SystemClock.elapsedRealtimeNanos() - frameStart) / 1000000.0;
                 results.put(new JSONObject().put("id", item.getString("id")).put("repeat", index / cases.length())
-                        .put("expected", item.getString("expected")).put("actual", verdict).put("roundtrip_ms", elapsed));
+                        .put("expected", item.getString("expected")).put("actual", verdict.verdict).put("strong", verdict.strong).put("roundtrip_ms", elapsed));
                 index++;
                 report.put("state", "running").put("results", results);
                 if (index % cases.length() == 0) report.put("latest_resources", resources());

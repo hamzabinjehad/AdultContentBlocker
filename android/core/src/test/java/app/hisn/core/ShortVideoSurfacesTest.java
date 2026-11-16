@@ -14,6 +14,10 @@ public final class ShortVideoSurfacesTest {
         for (String id : ShortVideoSurfaces.surfaceViewIds("com.instagram.android")) {
             check(id.startsWith("com.instagram.android:id/"), "an app's IDs never name another app");
         }
+        check(!ShortVideoSurfaces.wholeApp("com.snapchat.android")
+                && ShortVideoSurfaces.surfaceViewIds("com.snapchat.android")
+                        .equals(java.util.Arrays.asList("com.snapchat.android:id/spotlight_container")),
+                "Snapchat is watched for Spotlight only, never by its general media viewer");
         check(!ShortVideoSurfaces.watches("com.android.chrome") && !ShortVideoSurfaces.watches(null)
                 && ShortVideoSurfaces.surfaceViewIds("com.android.chrome").isEmpty() && ShortVideoSurfaces.surfaceViewIds(null).isEmpty(),
                 "other apps are not watched");

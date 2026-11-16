@@ -25,6 +25,46 @@ export function strongBlock(adult) {
     || scores.Porn + scores.Hentai >= STRONG_SUM);
 }
 
+/** Porn + Hentai that the shape-keeping view needs before a block stands. */
+export const AGREE_SUM = 0.30;
+
+/** The shape-keeping view does not call the region clean. An unreadable view never cancels a block. */
+export function agrees(adult) {
+  const scores = adult?.scores;
+  return !scores || scores.Porn + scores.Hentai >= AGREE_SUM;
+}
+
+/** The model stretches its input to a square, which more than doubles the width of a phone
+ * screen and makes ordinary photos score as explicit. This pads the frame to a square on
+ * mid-grey instead, so the same region can be scored once more with its shape kept.
+ * Returns null for a malformed frame, or one that is already square. */
+export function padSquare(rgba, width, height) {
+  if (typeof rgba !== 'string' || !Number.isInteger(width) || !Number.isInteger(height)
+      || width < 1 || height < 1 || width === height) return null;
+  let bytes;
+  try { bytes = Uint8Array.from(atob(rgba), char => char.charCodeAt(0)); }
+  catch { return null; }
+  if (bytes.length !== width * height * 4) return null;
+  const edge = Math.max(width, height);
+  const left = Math.floor((edge - width) / 2), top = Math.floor((edge - height) / 2);
+  const padded = new Uint8Array(edge * edge * 4);
+  for (let index = 0; index < padded.length; index += 4) {
+    padded[index] = padded[index + 1] = padded[index + 2] = 128;
+    padded[index + 3] = 255;
+  }
+  for (let row = 0; row < height; row++) {
+    padded.set(bytes.subarray(row * width * 4, (row + 1) * width * 4), ((top + row) * edge + left) * 4);
+  }
+  bytes.fill(0);
+  let binary = '';
+  for (let index = 0; index < padded.length; index += 0x2000) {
+    binary += String.fromCharCode.apply(null, padded.subarray(index, Math.min(index + 0x2000, padded.length)));
+  }
+  padded.fill(0);
+  try { return { width: edge, height: edge, rgba: btoa(binary) }; }
+  catch { return null; }
+}
+
 /** Centred RGBA crop of a Base64 frame, or null when the frame is malformed. */
 export function centreCrop(rgba, width, height) {
   if (typeof rgba !== 'string' || !Number.isInteger(width) || !Number.isInteger(height)

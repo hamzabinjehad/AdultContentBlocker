@@ -11,9 +11,9 @@ import java.util.Set;
 /**
  * Where short-video feeds live in Android apps, for the opt-in short-video block.
  *
- * Whole apps are short video and nothing else. Inside YouTube and Instagram only the Shorts
- * and Reels players are, so those are recognised by their view IDs, and the rest of each app
- * stays usable. View IDs belong to each app and change between versions: a renamed ID is a
+ * Whole apps are short video and nothing else. Inside YouTube, Instagram and Snapchat only the
+ * Shorts, Reels and Spotlight players are, so those are recognised by their view IDs, and the
+ * rest of each app stays usable. View IDs belong to each app and change between versions: a renamed ID is a
  * missed screen, never a wrong block, so update this list from a device when one drifts.
  * The extension's matching rules for the web are in extension/rules/short_video.json.
  */
@@ -32,6 +32,10 @@ public final class ShortVideoSurfaces {
         // The Reels viewer, from the Reels tab, Explore or a shared reel.
         ids.put("com.instagram.android", Arrays.asList("clips_viewer_view_pager", "clips_viewer_container",
                 "clips_video_container"));
+        // The Spotlight feed. Read from Snapchat 14.32 on a Galaxy S21 FE (16 November 2026): the
+        // container is on screen in Spotlight and absent from the camera and Memories pages.
+        // opera_viewer is not listed: it is Snapchat's general media viewer, stories included.
+        ids.put("com.snapchat.android", Arrays.asList("spotlight_container"));
         SURFACE_IDS = Collections.unmodifiableMap(ids);
     }
 

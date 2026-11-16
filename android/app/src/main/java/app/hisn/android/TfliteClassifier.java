@@ -27,7 +27,8 @@ import java.util.function.Consumer;
  *
  * <p>The model is derived from the same pinned weights as the WebView engine and uses the same
  * 0.70/0.85 Porn/Hentai thresholds and the same centred near-miss second look. Preprocessing is NSFWJS's own bilinear 224×224 with
- * alignCorners and 0..1 normalization. The interpreter and preprocessing run on one worker; the
+ * alignCorners and 0..1 normalization. A tall or wide screen is stretched by that resize, so a block
+ * must also be supported by a second view of the same region that keeps its shape. The interpreter and preprocessing run on one worker; the
  * callback returns to the main thread. No pixels are retained after the frame is processed.</p>
  */
 final class TfliteClassifier implements VisualRuntime {
@@ -36,6 +37,8 @@ final class TfliteClassifier implements VisualRuntime {
     static final float STRONG = 0.90f, STRONG_SUM = 0.95f;
     /** region.js NEAR_PORN/NEAR_HENTAI, NEAR_SUM and CROP_FRACTION. */
     static final float NEAR = 0.45f, NEAR_SUM = 0.60f, CROP_FRACTION = 0.68f;
+    /** region.js AGREE_SUM: Porn + Hentai the shape-keeping view needs before a block stands. */
+    static final float AGREE_SUM = 0.30f;
     static final String MODEL_SHA256 = "01215075f6e759bac8931310ed95665295bd662eff547f27a33982bcf2cb4d46";
     private static final String BACKEND = "tflite-cpu";
     private final Handler main = new Handler(Looper.getMainLooper());
@@ -112,21 +115,34 @@ final class TfliteClassifier implements VisualRuntime {
 
     /** Same rule as the WebView path (decisions.js adultDecision and region.js nearMiss): a full
      * frame block, or an uncertain full frame whose centred crop blocks. A crop block is never
-     * strong, so the guard always takes a second look before acting on it. */
+     * strong, so the guard always takes a second look before acting on it.
+     *
+     * <p>The model's square input stretches a 9:20 phone screen to more than twice its width, and
+     * ordinary photos (a pet, a cup, a face) then score as explicit. So the region that blocked is
+     * looked at once more with its shape kept: a clean second view cancels the block, and only a
+     * block both views agree on is strong.</p> */
     private VisualResult classify(int[] source, int width, int height) {
-        float[] full = scores(source, width, height, 0, 0, width, height);
+        float[] full = scores(source, width, height, 0, 0, width, height, false);
         if (full == null) return new VisualResult("unknown", false);
         float porn = full[3], hentai = full[1];
         if (blocks(porn, hentai)) {
-            boolean strong = porn >= STRONG || hentai >= STRONG || porn + hentai >= STRONG_SUM;
+            float[] shaped = width == height ? full : scores(source, width, height, 0, 0, width, height, true);
+            if (shaped == null) return new VisualResult("unknown", false);
+            if (shaped[3] + shaped[1] < AGREE_SUM) return new VisualResult("allow", false);
+            boolean strong = (porn >= STRONG || hentai >= STRONG || porn + hentai >= STRONG_SUM)
+                    && blocks(shaped[3], shaped[1]);
             return new VisualResult("block", false, strong);
         }
         if (porn >= NEAR || hentai >= NEAR || porn + hentai >= NEAR_SUM) {
             int cropWidth = Math.max(1, Math.round(width * CROP_FRACTION));
             int cropHeight = Math.max(1, Math.round(height * CROP_FRACTION));
-            float[] crop = scores(source, width, height, (width - cropWidth) / 2, (height - cropHeight) / 2,
-                    cropWidth, cropHeight);
-            if (crop != null && blocks(crop[3], crop[1])) return new VisualResult("block", false, false);
+            int left = (width - cropWidth) / 2, top = (height - cropHeight) / 2;
+            float[] crop = scores(source, width, height, left, top, cropWidth, cropHeight, false);
+            if (crop != null && blocks(crop[3], crop[1])) {
+                float[] shaped = cropWidth == cropHeight ? crop
+                        : scores(source, width, height, left, top, cropWidth, cropHeight, true);
+                if (shaped != null && shaped[3] + shaped[1] >= AGREE_SUM) return new VisualResult("block", false, false);
+            }
         }
         return new VisualResult("allow", false);
     }
@@ -135,15 +151,27 @@ final class TfliteClassifier implements VisualRuntime {
         return porn >= 0.70f || hentai >= 0.70f || porn + hentai >= 0.85f;
     }
 
-    /** Model scores (Drawing, Hentai, Neutral, Porn, Sexy) for one region of the frame, or null. */
-    private float[] scores(int[] source, int width, int height, int left, int top, int regionWidth, int regionHeight) {
+    /** Model scores (Drawing, Hentai, Neutral, Porn, Sexy) for one region of the frame, or null.
+     * With keepShape the region is scaled evenly and centred on mid-grey instead of stretched. */
+    private float[] scores(int[] source, int width, int height, int left, int top, int regionWidth,
+            int regionHeight, boolean keepShape) {
+        int longer = Math.max(regionWidth, regionHeight);
+        int drawWidth = keepShape ? Math.max(1, Math.round(SIZE * regionWidth / (float) longer)) : SIZE;
+        int drawHeight = keepShape ? Math.max(1, Math.round(SIZE * regionHeight / (float) longer)) : SIZE;
+        int offsetX = (SIZE - drawWidth) / 2, offsetY = (SIZE - drawHeight) / 2;
         input.rewind();
         for (int y = 0; y < SIZE; y++) {
-            float sy = top + y * (regionHeight - 1) / (SIZE - 1f);
-            int y0 = (int) sy, y1 = Math.min(y0 + 1, height - 1);
-            float fy = sy - y0;
+            int dy = y - offsetY;
+            float sy = top + (drawHeight < 2 ? 0 : dy * (regionHeight - 1) / (drawHeight - 1f));
+            int y0 = Math.max(top, Math.min((int) sy, height - 1)), y1 = Math.min(y0 + 1, height - 1);
+            float fy = Math.max(0, sy - y0);
             for (int x = 0; x < SIZE; x++) {
-                float sx = left + x * (regionWidth - 1) / (SIZE - 1f);
+                int dx = x - offsetX;
+                if (dy < 0 || dy >= drawHeight || dx < 0 || dx >= drawWidth) {
+                    input.putFloat(0.5f); input.putFloat(0.5f); input.putFloat(0.5f);
+                    continue;
+                }
+                float sx = left + (drawWidth < 2 ? 0 : dx * (regionWidth - 1) / (drawWidth - 1f));
                 int x0 = (int) sx, x1 = Math.min(x0 + 1, width - 1);
                 float fx = sx - x0;
                 int p00 = source[y0 * width + x0], p10 = source[y0 * width + x1];
