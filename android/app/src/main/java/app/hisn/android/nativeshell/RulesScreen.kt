@@ -162,6 +162,45 @@ fun RulesScreen(
                     checked = state.tags.on,
                     onCheckedChange = state.tags::set
                 )
+                // Installed apps whose name or package id marks them as adult, blocked while
+                // Adult tags is on. Shown only when there is one, with a way to allow a mistake.
+                var flagged by remember(resumes, state.tags.on) {
+                    mutableStateOf(if (state.tags.on) app.hisn.android.AdultNamedApps.installedFlagged(context) else emptyList())
+                }
+                var reviewFlagged by remember { mutableStateOf(false) }
+                if (flagged.isNotEmpty()) {
+                    InsetDivider()
+                    SettingRow(
+                        icon = Icons.Rounded.VisibilityOff,
+                        title = tr("Blocked by their name"),
+                        supporting = flagged.joinToString(", ") { appLabel(context, it) },
+                        onClick = { reviewFlagged = true }
+                    )
+                }
+                if (reviewFlagged) {
+                    AlertDialog(
+                        onDismissRequest = { reviewFlagged = false },
+                        title = { Text(tr("Blocked by their name")) },
+                        text = {
+                            Column {
+                                Text(tr("These apps call themselves adult, by their name or their website. Allow one only if it was flagged by mistake."))
+                                for (packageName in flagged) {
+                                    TextButton(onClick = {
+                                        if (app.hisn.android.AdultNamedApps.allow(context, packageName)) {
+                                            flagged = flagged - packageName
+                                            if (flagged.isEmpty()) reviewFlagged = false
+                                        } else {
+                                            snackbar(HisnMessage(tr("A protection lock is running, so this stays on until it ends.")))
+                                        }
+                                    }) { Text(tr("Allow") + " " + appLabel(context, packageName)) }
+                                }
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = { reviewFlagged = false }) { Text(tr("Done")) }
+                        }
+                    )
+                }
                 InsetDivider()
                 SwitchRow(
                     icon = Icons.Rounded.Image,

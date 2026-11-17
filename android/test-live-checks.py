@@ -182,6 +182,16 @@ def adult_app():
     return ok, (present[0] + " blocked") if ok else (present[0] + " not blocked; front " + top)
 
 
+def adult_named(package, what):
+    def run():
+        if not installed(package):
+            return None, package + " is not installed (a harmless dummy app, see android/visual-eval)"
+        adb("shell", "monkey", "-p", package, "-c", "android.intent.category.LAUNCHER", "1")
+        (top, cover), ok = watch(8, lambda t, c: t.startswith(RESTRICTION) or (t and package not in t and "OpenWait" not in t))
+        return ok, what + " blocked" if ok else what + " not blocked; front " + top
+    return run
+
+
 def gray_screen():
     enabled = adb("shell", "settings", "get", "secure", "accessibility_display_daltonizer_enabled").strip()
     mode = adb("shell", "settings", "get", "secure", "accessibility_display_daltonizer").strip()
@@ -276,6 +286,8 @@ CASES = [
     ("Arabic adult text blocked", "words", expect_blocked("adult-ar")),
     ("dotted spelling blocked", "words", expect_blocked("adult-compact-en")),
     ("built-in adult app blocked", "apps", adult_app),
+    ("app of an adult website blocked", "apps", adult_named("com.xvideos.hisntest", "com.xvideos.* dummy")),
+    ("app with an adult name blocked", "apps", adult_named("com.example.hisnnametest", "'Porn Videos' dummy")),
     ("Incognito tab closed", "private", private_tab),
     ("YouTube Shorts left", "shorts", short_video),
     ("Reels in Chrome left", "shorts", shorts_in_chrome),

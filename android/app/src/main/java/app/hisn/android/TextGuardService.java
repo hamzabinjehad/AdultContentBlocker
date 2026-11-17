@@ -252,6 +252,7 @@ public final class TextGuardService extends AccessibilityService {
             excluded = ChosenApps.excluded(this);
             scanSkipped = scanSkipped(this, excluded);
             packages = getPackageManager();
+            AdultNamedApps.init(this);
             browserApps.clear();
             browserOnlyOn = BrowserOnlyStore.on(this);
             // Gray is applied now and restored the moment Settings or another app switches it off.
@@ -560,6 +561,7 @@ public final class TextGuardService extends AccessibilityService {
             for (GuardWindows.Window window : windows) {
                 if (rules.blockedApps.contains(window.app)
                         || app.hisn.core.AdultApps.blocks(rules.adultWordsEnabled, window.app)
+                        || (rules.adultWordsEnabled && AdultNamedApps.flagged(window.app))
                         || blocksBrowser(this, window.app)) {
                     recordInspection(InspectionHealth.Outcome.COMPLETE, PolicyReceipt.Kind.APP_DECISION);
                     intervene(window.app, window.id, window.active, false, false, false, false, false);
@@ -1074,6 +1076,7 @@ public final class TextGuardService extends AccessibilityService {
     private static boolean isSelected(PolicyStore.Snapshot rules, String name) {
         return rules.blockedApps.contains(name) || scans(rules, name)
                 || app.hisn.core.AdultApps.blocks(rules.adultWordsEnabled, name)
+                || (rules.adultWordsEnabled && AdultNamedApps.flagged(name))
                 || browserOnlyOn && isBrowser(name)
                 || rules.timeLimits.monitored(name)
                 || rules.schedule.selects(name, minuteOfDay(), dayOfWeek())
