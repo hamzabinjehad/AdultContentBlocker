@@ -237,6 +237,33 @@ def short_video():
 
 # Every "allowed" case runs before the first block: after a block, Hisn keeps the blocked app
 # (here the fixture) closed for its rest period, so an allowed page after it could not open.
+def shorts_in_chrome():
+    if not installed("com.android.chrome"):
+        return None, "Chrome is not installed"
+    # Instagram's Reels page: it opens in Chrome when the Instagram app is not installed.
+    adb("shell", "am", "start", "-a", "android.intent.action.VIEW", "-d", "https://www.instagram.com/reels/",
+        "-p", "com.android.chrome")
+    if not through_wait("com.android.chrome"):
+        return None, "Chrome did not come to the front"
+    def left(top, cover):
+        if top.startswith(RESTRICTION) or "com.android.chrome" not in top:
+            return True
+        return not any("reels" in n["text"] for n in ui_nodes() if n["id"].endswith("url_bar"))
+    _, ok = watch(10, left)
+    return ok, "Reels page left" if ok else "Reels page stayed open in Chrome"
+
+
+def other_browser():
+    others = [p for p in ("com.sec.android.app.sbrowser", "org.mozilla.firefox", "com.opera.browser",
+                          "com.brave.browser", "com.duckduckgo.mobile.android", "com.microsoft.emmx",
+                          "com.vivaldi.browser", "com.kiwibrowser.browser") if installed(p)]
+    if not others:
+        return None, "no browser other than Chrome is installed to try"
+    adb("shell", "monkey", "-p", others[0], "-c", "android.intent.category.LAUNCHER", "1")
+    (top, cover), ok = watch(8, lambda t, c: t.startswith(RESTRICTION) or (others[0] not in t and "OpenWait" not in t and t))
+    return ok, (others[0] + " blocked") if ok else (others[0] + " stayed open")
+
+
 CASES = [
     ("ordinary page allowed", "words", expect_allowed("ordinary")),
     ("health education allowed", "words", expect_allowed("medical")),
@@ -251,6 +278,8 @@ CASES = [
     ("built-in adult app blocked", "apps", adult_app),
     ("Incognito tab closed", "private", private_tab),
     ("YouTube Shorts left", "shorts", short_video),
+    ("Reels in Chrome left", "shorts", shorts_in_chrome),
+    ("other browser blocked", "browsers", other_browser),
     ("gray screen applied", "gray", gray_screen),
 ]
 

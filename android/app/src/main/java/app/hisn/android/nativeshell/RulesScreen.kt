@@ -222,6 +222,25 @@ fun RulesScreen(
                     }
                 )
                 InsetDivider()
+                var browserOnly by remember(resumes) { mutableStateOf(app.hisn.android.BrowserOnlyStore.on(context)) }
+                SwitchRow(
+                    icon = Icons.Rounded.VisibilityOff,
+                    title = tr("Only browsers Hisn controls"),
+                    supporting = when {
+                        browserOnly && !(state.apps.on && state.guardConnected) -> tr("On · Needs App protection to block other browsers")
+                        browserOnly -> tr("On · Other browsers are blocked; Chrome stays")
+                        else -> tr("Off · Every browser can be used")
+                    },
+                    checked = browserOnly,
+                    onCheckedChange = { wanted ->
+                        if (app.hisn.android.BrowserOnlyStore.set(context, wanted)) {
+                            browserOnly = wanted
+                        } else {
+                            snackbar(HisnMessage(tr("A protection lock is running, so this stays on until it ends.")))
+                        }
+                    }
+                )
+                InsetDivider()
                 SwitchRow(
                     icon = Icons.Rounded.Contrast,
                     title = tr("Gray screen"),

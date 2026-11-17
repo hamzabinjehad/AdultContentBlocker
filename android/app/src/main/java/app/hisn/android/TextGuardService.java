@@ -251,6 +251,9 @@ public final class TextGuardService extends AccessibilityService {
             // The uninstall guard needs nothing else, so it is armed before image setup.
             excluded = ChosenApps.excluded(this);
             scanSkipped = scanSkipped(this, excluded);
+            packages = getPackageManager();
+            browserApps.clear();
+            browserOnlyOn = BrowserOnlyStore.on(this);
             // Gray is applied now and restored the moment Settings or another app switches it off.
             ScreenGray.reassert(this);
             if (grayWatch == null) grayWatch = ScreenGray.watch(this, () -> ScreenGray.reassert(this));
@@ -407,6 +410,7 @@ public final class TextGuardService extends AccessibilityService {
         String name = pkg.toString();
         // Read before the selection filter below, which needs it to let a browser's events in.
         privateTabsOn = PrivateTabsStore.on(this);
+        browserOnlyOn = BrowserOnlyStore.on(this);
         if (BuildConfig.SELF_PROTECTION && SelfProtectionScreens.watches(name)) {
             // A new window is checked at once, first from the event's own text (no tree walk),
             // then from the window with a few short retries while Android swaps the active root.
@@ -555,7 +559,8 @@ public final class TextGuardService extends AccessibilityService {
             // Blocked, scheduled and nothing-to-read decisions are complete inspections too.
             for (GuardWindows.Window window : windows) {
                 if (rules.blockedApps.contains(window.app)
-                        || app.hisn.core.AdultApps.blocks(rules.adultWordsEnabled, window.app)) {
+                        || app.hisn.core.AdultApps.blocks(rules.adultWordsEnabled, window.app)
+                        || blocksBrowser(this, window.app)) {
                     recordInspection(InspectionHealth.Outcome.COMPLETE, PolicyReceipt.Kind.APP_DECISION);
                     intervene(window.app, window.id, window.active, false, false, false, false, false);
                     return;
@@ -1032,9 +1037,44 @@ public final class TextGuardService extends AccessibilityService {
         return rules.scannedApps.contains(name) || !scanSkipped.contains(name);
     }
 
+    /** "Only browsers Hisn controls", refreshed on each check; static so isSelected can read it. */
+    private static volatile boolean browserOnlyOn;
+    /** Whether each package seen is a browser; a newly installed one is asked the first time. */
+    private static final java.util.Map<String, Boolean> browserApps = new java.util.concurrent.ConcurrentHashMap<>();
+    private static volatile android.content.pm.PackageManager packages;
+
+    /** An app that opens ordinary web links or calls itself a browser (CATEGORY_APP_BROWSER). An
+     * app that only opens its own site (a video app opening its own links) is not one. */
+    private static boolean isBrowser(String name) {
+        android.content.pm.PackageManager manager = packages;
+        if (name == null || manager == null) return false;
+        Boolean known = browserApps.get(name);
+        if (known != null) return known;
+        boolean browser;
+        try {
+            android.content.Intent web = new android.content.Intent(android.content.Intent.ACTION_VIEW,
+                    android.net.Uri.parse("https://example.com/"))
+                    .addCategory(android.content.Intent.CATEGORY_BROWSABLE).setPackage(name);
+            android.content.Intent main = new android.content.Intent(android.content.Intent.ACTION_MAIN)
+                    .addCategory(android.content.Intent.CATEGORY_APP_BROWSER).setPackage(name);
+            browser = !manager.queryIntentActivities(web, 0).isEmpty()
+                    || !manager.queryIntentActivities(main, 0).isEmpty();
+        } catch (RuntimeException unknown) {
+            return false;
+        }
+        browserApps.put(name, browser);
+        return browser;
+    }
+
+    private static boolean blocksBrowser(android.content.Context context, String name) {
+        browserOnlyOn = BrowserOnlyStore.on(context);
+        return app.hisn.core.ControlledBrowsers.blocks(browserOnlyOn, name, browserOnlyOn && isBrowser(name));
+    }
+
     private static boolean isSelected(PolicyStore.Snapshot rules, String name) {
         return rules.blockedApps.contains(name) || scans(rules, name)
                 || app.hisn.core.AdultApps.blocks(rules.adultWordsEnabled, name)
+                || browserOnlyOn && isBrowser(name)
                 || rules.timeLimits.monitored(name)
                 || rules.schedule.selects(name, minuteOfDay(), dayOfWeek())
                 || (rules.shortVideoEnabled && ShortVideoSurfaces.watches(name))
