@@ -39,11 +39,49 @@ public final class ShortVideoSurfaces {
         SURFACE_IDS = Collections.unmodifiableMap(ids);
     }
 
+    /**
+     * Browsers whose address bar Hisn reads, by its view ID. Read from Chrome 157 on a Galaxy
+     * S21 FE (17 November 2026); Chrome Beta, Dev and Canary are the same app. Other browsers
+     * are not listed until their address bar ID is read from a device.
+     */
+    private static final Map<String, String> URL_BARS;
+    static {
+        Map<String, String> bars = new LinkedHashMap<>();
+        for (String chrome : new String[] {"com.android.chrome", "com.chrome.beta", "com.chrome.dev",
+                "com.chrome.canary"}) {
+            bars.put(chrome, chrome + ":id/url_bar");
+        }
+        URL_BARS = Collections.unmodifiableMap(bars);
+    }
+
+    /** The same feeds on the web, as extension/rules/short_video.json blocks them. */
+    private static final java.util.regex.Pattern SHORT_VIDEO_LINK = java.util.regex.Pattern.compile(
+            "^(?:[a-z0-9-]+\\.)*(?:youtube\\.com/shorts|instagram\\.com/(?:reels?|explore)"
+                    + "|facebook\\.com/(?:reels?|watch/reels?|share/reel)|snapchat\\.com/spotlight)(?:[/?#].*)?$"
+                    + "|^(?:[a-z0-9-]+\\.)*tiktok\\.com(?:[/?#].*)?$");
+
     private ShortVideoSurfaces() { }
+
+    /** Fully qualified view ID of this browser's address bar, or null when it is not read. */
+    public static String urlBarViewId(String packageName) {
+        return packageName == null ? null : URL_BARS.get(packageName);
+    }
+
+    /**
+     * True when an address bar shows a short-video feed. Browsers show the address without its
+     * scheme and sometimes with spaces trimmed oddly, so the scheme is optional and case ignored.
+     */
+    public static boolean shortVideoLink(CharSequence address) {
+        if (address == null) return false;
+        String text = address.toString().trim().toLowerCase(java.util.Locale.ROOT);
+        text = text.replaceFirst("^[a-z][a-z0-9+.-]*://", "");
+        return !text.isEmpty() && text.indexOf(' ') < 0 && SHORT_VIDEO_LINK.matcher(text).matches();
+    }
 
     /** True when the short-video block has anything to look at in this app. */
     public static boolean watches(String packageName) {
-        return packageName != null && (WHOLE_APPS.contains(packageName) || SURFACE_IDS.containsKey(packageName));
+        return packageName != null && (WHOLE_APPS.contains(packageName) || SURFACE_IDS.containsKey(packageName)
+                || URL_BARS.containsKey(packageName));
     }
 
     public static boolean wholeApp(String packageName) {

@@ -458,7 +458,7 @@
     <string name="short_video_enable">احجب المقاطع القصيرة</string>
     <string name="short_video_disable">أوقف حجب المقاطع القصيرة</string>
     <string name="short_video_short">يعيدك حصن للرئيسية عند اكتشاف YouTube Shorts أو Instagram Reels أو Snapchat Spotlight أو TikTok. الاكتشاف محدود.</string>
-    <string name="short_video_disclosure">سيغادر حصن YouTube Shorts وInstagram Reels وSnapchat Spotlight عند فتحها، ويغلق TikTok. يبقى باقي YouTube وInstagram وSnapchat قابلًا للاستخدام.\n\nيعتمد هذا على خدمة إمكانية الوصول في حصن، ويجب تفعيلها. يتعرّف على مشغّلي Shorts وReels من تخطيط الشاشة، لا من قراءة محتواها. قد يغيّر تحديث التطبيق هذا التخطيط، فتظهر شاشة أحيانًا قبل أن يلاحظها حصن.\n\nأثناء قفل الحماية لا يمكن تغيير هذا الإعداد داخل حصن في أي اتجاه.</string>
+    <string name="short_video_disclosure">سيغادر حصن YouTube Shorts وInstagram Reels وSnapchat Spotlight عند فتحها، ويغلق TikTok. وفي Chrome يغادر هذه الخلاصات أيضًا مع Facebook Reels وTikTok على الويب. يبقى باقي YouTube وInstagram وSnapchat قابلًا للاستخدام.\n\nيعتمد هذا على خدمة إمكانية الوصول في حصن، ويجب تفعيلها. يتعرّف على مشغّلي Shorts وReels من تخطيط الشاشة، لا من قراءة محتواها. قد يغيّر تحديث التطبيق هذا التخطيط، فتظهر شاشة أحيانًا قبل أن يلاحظها حصن.\n\nأثناء قفل الحماية لا يمكن تغيير هذا الإعداد داخل حصن في أي اتجاه.</string>
     <string name="restriction_short_video">اخترت إبعاد خلاصات المقاطع القصيرة مثل Shorts وReels وTikTok.</string>
     <string name="restriction_self_protection">اخترت حماية حصن. تبقى شاشات إلغاء تثبيته وإيقافه والوضع الآمن وتثبيت تطبيق جديد مغلقة حتى توقف هذه الحماية من داخل حصن.</string>
     <string name="self_protection_title">حماية إلغاء التثبيت</string>

@@ -1110,8 +1110,23 @@ public final class TextGuardService extends AccessibilityService {
     static volatile long privateTabClosings;
     private long lastPrivateTabNote;
 
-    /** A visible Shorts or Reels player, found by its view ID; no text is read. */
+    /** A visible Shorts or Reels player, found by its view ID, or a browser's address bar showing
+     * a short-video page. Only the address bar's text is read, and not while it is being typed in:
+     * the address counts once the page is open, not while it is being written. */
     private static boolean showsShortVideo(AccessibilityNodeInfo root, String app) {
+        String bar = ShortVideoSurfaces.urlBarViewId(app);
+        if (bar != null) {
+            java.util.List<AccessibilityNodeInfo> found = root.findAccessibilityNodeInfosByViewId(bar);
+            boolean link = false;
+            if (found != null) {
+                for (AccessibilityNodeInfo node : found) {
+                    if (node.isVisibleToUser() && !node.isFocused()
+                            && ShortVideoSurfaces.shortVideoLink(node.getText())) link = true;
+                    node.recycle();
+                }
+            }
+            if (link) return true;
+        }
         for (String id : ShortVideoSurfaces.surfaceViewIds(app)) {
             java.util.List<AccessibilityNodeInfo> found = root.findAccessibilityNodeInfosByViewId(id);
             if (found == null) continue;
