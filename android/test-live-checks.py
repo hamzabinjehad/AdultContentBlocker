@@ -185,7 +185,7 @@ def adult_app():
 def adult_named(package, what):
     def run():
         if not installed(package):
-            return None, package + " is not installed (a harmless dummy app, see android/visual-eval)"
+            return None, package + " is not installed (an empty dummy app with that name, built for this test)"
         adb("shell", "monkey", "-p", package, "-c", "android.intent.category.LAUNCHER", "1")
         (top, cover), ok = watch(8, lambda t, c: t.startswith(RESTRICTION) or (t and package not in t and "OpenWait" not in t))
         return ok, what + " blocked" if ok else what + " not blocked; front " + top
