@@ -554,7 +554,8 @@ public final class TextGuardService extends AccessibilityService {
             }
             // Blocked, scheduled and nothing-to-read decisions are complete inspections too.
             for (GuardWindows.Window window : windows) {
-                if (rules.blockedApps.contains(window.app)) {
+                if (rules.blockedApps.contains(window.app)
+                        || app.hisn.core.AdultApps.blocks(rules.adultWordsEnabled, window.app)) {
                     recordInspection(InspectionHealth.Outcome.COMPLETE, PolicyReceipt.Kind.APP_DECISION);
                     intervene(window.app, window.id, window.active, false, false, false, false, false);
                     return;
@@ -1033,6 +1034,7 @@ public final class TextGuardService extends AccessibilityService {
 
     private static boolean isSelected(PolicyStore.Snapshot rules, String name) {
         return rules.blockedApps.contains(name) || scans(rules, name)
+                || app.hisn.core.AdultApps.blocks(rules.adultWordsEnabled, name)
                 || rules.timeLimits.monitored(name)
                 || rules.schedule.selects(name, minuteOfDay(), dayOfWeek())
                 || (rules.shortVideoEnabled && ShortVideoSurfaces.watches(name))

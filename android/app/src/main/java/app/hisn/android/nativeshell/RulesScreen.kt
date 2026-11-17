@@ -144,7 +144,7 @@ fun RulesScreen(
                     icon = Icons.Rounded.LocalOffer,
                     title = tr("Adult tags"),
                     supporting = if (state.tags.on) {
-                        tr("Matches adult words and tags on this device")
+                        tr("Matches adult words and tags, and blocks known adult apps")
                     } else {
                         tr("Adult words and tags are not matched")
                     },

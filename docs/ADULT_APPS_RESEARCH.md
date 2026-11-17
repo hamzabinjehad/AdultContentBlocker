@@ -152,7 +152,11 @@ domain routes do:
   this; strict allowlist mode does not either. It is the honest limit of a
   network filter.
 - **App detection** — Android can see an installed package name (the table
-  above is the seed for such a list); iOS cannot introspect other apps, so the
+  above is the seed for such a list). Since 17 November 2026 the Android app
+  blocks the clearly adult-purpose entries on its own while the built-in adult
+  layer is on: the iPlayer family and `com.hdvideo.player.offline`, whose feed
+  showed adult clips on an owner's phone. General players stay off that list
+  (`android/core/.../AdultApps.java`); iOS cannot introspect other apps, so the
   Safari/DNS layer is the only lever there.
 
 ## Sources

@@ -13,7 +13,7 @@ private val ArabicShell: Map<String, String> = mapOf(
     "Built-in checks" to "الفحوص المضمّنة",
     "Each layer is independent and can be turned off." to "كل طبقة مستقلة ويمكن إيقافها.",
     "Adult tags" to "الوسوم الإباحية",
-    "Matches adult words and tags on this device" to "تُطابق الكلمات والوسوم الإباحية على هذا الجهاز",
+    "Matches adult words and tags, and blocks known adult apps" to "تُطابق الكلمات والوسوم الإباحية، وتحجب التطبيقات الإباحية المعروفة",
     "Adult words and tags are not matched" to "لا تُطابق الكلمات والوسوم الإباحية",
     "Images and video" to "الصور والفيديو",
     "Samples the screen while you browse" to "يفحص عيّنات من الشاشة أثناء التصفح",
