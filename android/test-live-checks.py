@@ -156,15 +156,21 @@ def tap_open_on_wait():
 
 def through_wait(package, seconds=20):
     """Hisn's 'wait before opening' screen: wait out the countdown and tap Open, as a person would."""
-    end = time.monotonic() + seconds
+    # The app is briefly in front before Hisn's wait screen covers it, so it counts only once it
+    # has stayed in front for two readings in a row.
+    end, steady = time.monotonic() + seconds, 0
     while time.monotonic() < end:
         top = front()
         if package in top:
-            return True
-        if "OpenWaitActivity" in top:
-            tap_open_on_wait()
+            steady += 1
+            if steady >= 2:
+                return True
+        else:
+            steady = 0
+            if "OpenWaitActivity" in top:
+                tap_open_on_wait()
         time.sleep(1)
-    return package in front()
+    return False
 
 
 def adult_app():
@@ -195,7 +201,9 @@ def private_tab():
         return None, "Chrome did not come to the front"
     time.sleep(2)
     if not tap_label("menu_button", "More options"):
-        return None, "Chrome's menu button was not found"
+        # A loading page can keep uiautomator from reading Chrome: the menu is top-right.
+        width, height = map(int, re.findall(r"(\d+)x(\d+)", adb("shell", "wm", "size"))[-1])
+        adb("shell", "input", "tap", str(int(width * 0.94)), str(int(height * 0.0735)))
     time.sleep(1.2)
     if not tap_label("New Incognito tab", "Neuer Inkognito-Tab", "New incognito tab"):
         return None, "Chrome's menu has no New Incognito tab item"
@@ -275,10 +283,16 @@ for name, group, run in CASES:
     if args.only and name not in args.only and group not in args.only:
         continue
     home()
-    try:
-        ok, why = run()
-    except Exception as error:  # A broken case is a failure, never a skip.
-        ok, why = False, type(error).__name__ + ": " + str(error)
+    for attempt in range(2):
+        try:
+            ok, why = run()
+        except Exception as error:  # A broken case is a failure, never a skip.
+            ok, why = False, type(error).__name__ + ": " + str(error)
+        # NOT RUN means the runner could not drive the phone (a slow app, a screen it could not
+        # read): try once more. A real FAIL is reported as it is.
+        if ok is not None:
+            break
+        home()
     label = "PASS" if ok else "NOT RUN" if ok is None else "FAIL"
     results.append((label, name, why))
     print(f"{label:8} {name:30} {why}", flush=True)
