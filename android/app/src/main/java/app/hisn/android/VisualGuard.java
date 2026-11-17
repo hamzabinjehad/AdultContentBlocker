@@ -95,6 +95,9 @@ final class VisualGuard implements AutoCloseable {
     private int adultConfirmWindow = -1, personConfirmWindow = -1;
     private long adultConfirmUntil, personConfirmUntil;
     private int lastWindow = -1;
+    /** The private window the cover is up for, or -1. A clean frame from another window of the
+     * same app (an ad, a second screen) must not lift a cover that window still needs. */
+    private int protectedWindow = -1;
     private VisualFrameGate.Frame pendingFrame;
     private long pendingStarted;
     private long pendingInferenceStart;
@@ -282,7 +285,7 @@ final class VisualGuard implements AutoCloseable {
             health.report(State.WAITING);
             // Nothing is sampled while the screen is off; while it is on the model stays warm.
             GuardWindows.Window target = interactive ? nextTarget(eligibleWindows(), now) : null;
-            if (target == null) overlay.hide();
+            if (target == null) { protectedWindow = -1; overlay.hide(); }
             // A person who chose the full-cover response should not see the screen while
             // the first sample is still running. Shown once per window, cleared by the result.
             if (target != null && PersonBlur.on(personMode)
@@ -388,6 +391,10 @@ final class VisualGuard implements AutoCloseable {
                     } catch (RuntimeException | OutOfMemoryError unavailable) { busy = false; fail(); }
                 }
                 @Override public void onFailure(int error) {
+                    if (!closed && pendingFrame == frame
+                            && error == AccessibilityService.ERROR_TAKE_SCREENSHOT_SECURE_WINDOW) {
+                        protectedWindow = target.id;
+                    }
                     if (!closed && pendingFrame == frame) {
                         handler.removeCallbacks(captureTimeout);
                         pendingFrame = null;
@@ -497,7 +504,7 @@ final class VisualGuard implements AutoCloseable {
                 health.report(State.WAITING);
                 return;
             }
-            if (!current(frame, target)) { discarded++; overlay.hide(); health.report(State.WAITING); return; }
+            if (!current(frame, target)) { discarded++; hideUnlessProtecting(target); health.report(State.WAITING); return; }
             String actual = verdict;
             verdict = VisualTestHooks.verdict(service.getPackageName(), target.app, verdict, now);
             if (!"block".equals(verdict) && !"allow".equals(verdict)) { fail(); return; }
@@ -508,7 +515,7 @@ final class VisualGuard implements AutoCloseable {
                     target.id, PolicyReceipt.Kind.VISUAL_SAMPLE, PolicyReceipt.Result.PASSED, completedAt));
             // The same pixels again: a pending first hit on this window is confirmed by a still screen.
             if ("block".equals(verdict)) adultHit(target, !verdict.equals(actual), now);
-            else { adultClear(target); overlay.hide(); }
+            else { adultClear(target); hideUnlessProtecting(target); }
         } catch (RuntimeException unavailable) { fail(); }
         finally { sampleEnded(); }
     }
@@ -538,7 +545,7 @@ final class VisualGuard implements AutoCloseable {
                 return;
             }
             if (!current(frame, target)) {
-                discarded++; overlay.hide(); health.report(State.WAITING); return;
+                discarded++; hideUnlessProtecting(target); health.report(State.WAITING); return;
             }
             String verdict = result.verdict;
             verdict = VisualTestHooks.verdict(service.getPackageName(), target.app, verdict, now);
@@ -596,13 +603,25 @@ final class VisualGuard implements AutoCloseable {
                     personConfirmUntil = 0;
                     personUnconfirmed++;
                 }
-                overlay.hide();
+                hideUnlessProtecting(target);
             }
         } catch (RuntimeException unavailable) { fail(); }
         finally {
             if (personFrame != null) personFrame.recycle();
             sampleEnded();
         }
+    }
+
+    /** Lifts the cover unless it is up for another private window that is still on screen. A
+     * readable frame from the private window itself means it is no longer private. */
+    private void hideUnlessProtecting(GuardWindows.Window cleared) {
+        if (protectedWindow != -1 && protectedWindow != cleared.id) {
+            for (GuardWindows.Window window : eligibleWindows()) {
+                if (window.id == protectedWindow) return;
+            }
+        }
+        protectedWindow = -1;
+        overlay.hide();
     }
 
     private void clearPendingPersonFrame() {
@@ -732,6 +751,7 @@ final class VisualGuard implements AutoCloseable {
         pendingInferenceStart = 0;
         pendingPolicy = -1;
         adultConfirmWindow = personConfirmWindow = -1;
+        if (!keepOverlay) protectedWindow = -1;
         adultConfirmUntil = personConfirmUntil = 0;
         fastGeneration++;
         loadGeneration++;
