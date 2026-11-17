@@ -45,6 +45,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 
+/** Set once the gray-screen steps were shown in this run of Hisn. */
+private var grayStepsShown = false
+
 @Composable
 fun RulesScreen(
     state: HisnState,
@@ -53,6 +56,14 @@ fun RulesScreen(
     val context = LocalContext.current
     val snackbar = LocalHisnSnackbar.current
     var showGrayDialog by remember { mutableStateOf(false) }
+    // Android has no prompt for this permission, so "waiting" would wait forever: while Gray
+    // screen is on but cannot apply, the steps are shown again once each time Hisn opens.
+    LaunchedEffect(state.gray.on, state.grayCanApply) {
+        if (state.gray.on && !state.grayCanApply && !grayStepsShown) {
+            grayStepsShown = true
+            showGrayDialog = true
+        }
+    }
     var showScanAllDialog by remember { mutableStateOf(false) }
     // The wait-before-opening screen is its own activity; re-read its count on coming back.
     var resumes by remember { androidx.compose.runtime.mutableIntStateOf(0) }
