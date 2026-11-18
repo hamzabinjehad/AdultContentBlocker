@@ -76,7 +76,10 @@
     <string name="person_overlay_title">Hisn hid this screen</string>
     <string name="person_overlay_body">A face matched your people setting. Tap Back to home or switch apps.</string>
     <string name="protected_overlay_safe">This app is safe, allow it</string>
-    <string name="protected_overlay_safe_locked">A protection lock is running, so this app stays covered until it ends.</string>
+    <plurals name="protected_overlay_safe_wait">
+        <item quantity="one">A protection lock is running. This app opens in %1$d minute.</item>
+        <item quantity="other">A protection lock is running. This app opens in %1$d minutes.</item>
+    </plurals>
     <string name="protected_overlay_title">Hisn can\'t check this window</string>
     <string name="protected_overlay_body">This is a private window, like incognito, so Hisn can’t see it. Close it or tap Back to home.</string>
     <string name="protected_overlay_hint">Image checks can’t see private windows. Website blocking, if it is on, still works here.</string>

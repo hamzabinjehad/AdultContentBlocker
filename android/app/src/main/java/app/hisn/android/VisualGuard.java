@@ -432,10 +432,11 @@ final class VisualGuard implements AutoCloseable {
                             captureFailures++;
                             lastCaptureError = error;
                             overlay.showProtected(() -> {
-                                if (!SecureWindowApps.allow(service, target.app)) return false;
+                                long left = SecureWindowApps.allow(service, target.app);
+                                if (left > 0) return left;
                                 protectedWindow = -1;
                                 overlay.hide();
-                                return true;
+                                return 0;
                             });
                             health.report(State.PROTECTED);
                             long wait = Math.max(VisualCadence.POLL_FLOOR_MILLIS, 2000);

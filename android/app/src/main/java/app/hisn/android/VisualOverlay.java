@@ -32,8 +32,8 @@ final class VisualOverlay implements AutoCloseable {
     private ImageView snapshotView;
     private TextView titleView, bodyView, hintView;
     private Button homeButton, safeButton;
-    /** Marks the covered private app safe; false when a protection lock refuses it. */
-    interface Allow { boolean run(); }
+    /** Marks the covered private app safe; milliseconds left when a protection lock makes it wait. */
+    interface Allow { long run(); }
     private Allow allow;
     private Bitmap snapshot;
     private boolean shown;
@@ -218,10 +218,13 @@ final class VisualOverlay implements AutoCloseable {
         safeButton.setVisibility(View.GONE);
         safeButton.setOnClickListener(view -> {
             Allow current = allow;
-            if (current == null || !current.run()) {
+            long left = current == null ? 1 : current.run();
+            if (left > 0) {
+                int minutes = (int) Math.max(1, (left + 59_999) / 60_000);
                 try {
-                    android.widget.Toast.makeText(service, R.string.protected_overlay_safe_locked,
-                            android.widget.Toast.LENGTH_SHORT).show();
+                    android.widget.Toast.makeText(service,
+                            service.getResources().getQuantityString(R.plurals.protected_overlay_safe_wait, minutes, minutes),
+                            android.widget.Toast.LENGTH_LONG).show();
                 } catch (RuntimeException unavailable) { /* The cover stays. */ }
             }
         });
