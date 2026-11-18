@@ -31,7 +31,10 @@ final class VisualOverlay implements AutoCloseable {
     private FrameLayout root;
     private ImageView snapshotView;
     private TextView titleView, bodyView, hintView;
-    private Button homeButton;
+    private Button homeButton, safeButton;
+    /** Marks the covered private app safe; false when a protection lock refuses it. */
+    interface Allow { boolean run(); }
+    private Allow allow;
     private Bitmap snapshot;
     private boolean shown;
 
@@ -61,7 +64,8 @@ final class VisualOverlay implements AutoCloseable {
     }
 
     /** A protected/private window cannot be inspected; cover it rather than expose pixels. */
-    void showProtected() {
+    void showProtected(Allow allow) {
+        this.allow = allow;
         if (snapshot != null && snapshotView != null) {
             snapshotView.setImageDrawable(null);
             snapshot.recycle();
@@ -69,11 +73,13 @@ final class VisualOverlay implements AutoCloseable {
         }
         show(null, R.string.protected_overlay_title, R.string.protected_overlay_body,
                 R.string.protected_overlay_hint);
+        if (safeButton != null) safeButton.setVisibility(View.VISIBLE);
     }
 
     private void show(Bitmap frame, int title, int body, int hint) {
         if (windows == null) return;
         if (root == null) build();
+        if (safeButton != null) safeButton.setVisibility(View.GONE);
         titleView.setText(title);
         bodyView.setText(body);
         hintView.setText(hint);
@@ -201,6 +207,29 @@ final class VisualOverlay implements AutoCloseable {
         buttonParams.gravity = Gravity.CENTER_HORIZONTAL;
         buttonParams.topMargin = dp(8);
         copy.addView(homeButton, buttonParams);
+
+        // Only on the private-window cover: a bank or authenticator the owner trusts. It is
+        // refused during a protection lock, so it is never a way around a commitment.
+        safeButton = new Button(service);
+        safeButton.setText(R.string.protected_overlay_safe);
+        safeButton.setAllCaps(false);
+        safeButton.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        safeButton.setMinHeight(dp(48));
+        safeButton.setVisibility(View.GONE);
+        safeButton.setOnClickListener(view -> {
+            Allow current = allow;
+            if (current == null || !current.run()) {
+                try {
+                    android.widget.Toast.makeText(service, R.string.protected_overlay_safe_locked,
+                            android.widget.Toast.LENGTH_SHORT).show();
+                } catch (RuntimeException unavailable) { /* The cover stays. */ }
+            }
+        });
+        LinearLayout.LayoutParams safeParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        safeParams.gravity = Gravity.CENTER_HORIZONTAL;
+        safeParams.topMargin = dp(4);
+        copy.addView(safeButton, safeParams);
     }
 
     private WindowManager.LayoutParams params() {

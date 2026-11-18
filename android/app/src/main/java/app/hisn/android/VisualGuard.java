@@ -116,6 +116,7 @@ final class VisualGuard implements AutoCloseable {
     };
 
     VisualGuard(AccessibilityService service, Block block) {
+        SecureWindowApps.refresh();
         this.service = service;
         this.block = block;
         power = service.getSystemService(PowerManager.class);
@@ -412,6 +413,17 @@ final class VisualGuard implements AutoCloseable {
                             schedule(wait);
                             return;
                         }
+                        if (error == AccessibilityService.ERROR_TAKE_SCREENSHOT_SECURE_WINDOW
+                                && SecureWindowApps.exempt(service, target.app)) {
+                            // A password manager, or a private app the owner marked safe:
+                            // leave it usable and lift any cover.
+                            protectedWindow = -1;
+                            overlay.hide();
+                            long wait = Math.max(VisualCadence.POLL_FLOOR_MILLIS, 2000);
+                            captureBackoffUntil = SystemClock.uptimeMillis() + wait;
+                            schedule(wait);
+                            return;
+                        }
                         if (error == AccessibilityService.ERROR_TAKE_SCREENSHOT_SECURE_WINDOW) {
                             // Incognito and other FLAG_SECURE windows cannot return pixels. Cover
                             // the selected window instead of leaving the private content visible;
@@ -419,7 +431,12 @@ final class VisualGuard implements AutoCloseable {
                             // will stay protected until it is left or closed.
                             captureFailures++;
                             lastCaptureError = error;
-                            overlay.showProtected();
+                            overlay.showProtected(() -> {
+                                if (!SecureWindowApps.allow(service, target.app)) return false;
+                                protectedWindow = -1;
+                                overlay.hide();
+                                return true;
+                            });
                             health.report(State.PROTECTED);
                             long wait = Math.max(VisualCadence.POLL_FLOOR_MILLIS, 2000);
                             captureBackoffUntil = SystemClock.uptimeMillis() + wait;

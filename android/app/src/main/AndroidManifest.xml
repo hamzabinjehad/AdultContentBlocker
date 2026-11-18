@@ -29,6 +29,8 @@
         <intent><action android:name="android.intent.action.VIEW" /><category android:name="android.intent.category.BROWSABLE" /><data android:scheme="https" /></intent>
         <intent><action android:name="android.intent.action.VIEW" /><category android:name="android.intent.category.BROWSABLE" /><data android:scheme="http" /></intent>
         <intent><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.APP_BROWSER" /></intent>
+        <intent><action android:name="android.service.autofill.AutofillService" /></intent>
+        <intent><action android:name="android.service.credentials.CredentialProviderService" /></intent>
     </queries>
     <!-- The signature-verified seed holds more than 236,000 domains. Android 6 device
          heaps are often 48-192 MB, so the list does not fit the default growth limit;

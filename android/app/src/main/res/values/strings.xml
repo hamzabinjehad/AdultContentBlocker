@@ -75,6 +75,8 @@
     <string name="person_response_cover">Cover the whole screen</string>
     <string name="person_overlay_title">Hisn hid this screen</string>
     <string name="person_overlay_body">A face matched your people setting. Tap Back to home or switch apps.</string>
+    <string name="protected_overlay_safe">This app is safe, allow it</string>
+    <string name="protected_overlay_safe_locked">A protection lock is running, so this app stays covered until it ends.</string>
     <string name="protected_overlay_title">Hisn can\'t check this window</string>
     <string name="protected_overlay_body">This is a private window, like incognito, so Hisn can’t see it. Close it or tap Back to home.</string>
     <string name="protected_overlay_hint">Image checks can’t see private windows. Website blocking, if it is on, still works here.</string>

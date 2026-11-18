@@ -315,6 +315,8 @@
     <string name="person_response_cover">تغطية الشاشة بالكامل</string>
     <string name="person_overlay_title">أخفى حِصن هذه الشاشة</string>
     <string name="person_overlay_body">طابق وجهٌ إعداد الأشخاص. اضغط «العودة للرئيسية» أو بدّل التطبيق.</string>
+    <string name="protected_overlay_safe">هذا التطبيق آمن، اسمح به</string>
+    <string name="protected_overlay_safe_locked">قفل الحماية يعمل، لذا يبقى هذا التطبيق مغطى حتى ينتهي.</string>
     <string name="protected_overlay_title">لا يستطيع حِصن فحص هذه النافذة</string>
     <string name="protected_overlay_body">هذه نافذة خاصة، مثل التصفح المتخفي، فلا يستطيع حِصن رؤيتها. أغلقها أو اضغط «العودة للرئيسية».</string>
     <string name="protected_overlay_hint">لا يرى فحص الصور النوافذ الخاصة. يبقى حجب المواقع سارياً هنا إن كان مفعّلاً.</string>
