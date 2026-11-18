@@ -349,7 +349,7 @@ final class VisualGuard implements AutoCloseable {
                         }
                         Bitmap hardware = Bitmap.wrapHardwareBuffer(buffer, screenshot.getColorSpace());
                         if (hardware == null) { unreadableFrame(); return; }
-                        Bitmap copy = null, scaled = null;
+                        Bitmap copy = null, scaled = null, picture = null;
                         try {
                             if ((long) hardware.getWidth() * hardware.getHeight() > 16777216) {
                                 unreadableFrame(); return;
@@ -357,9 +357,17 @@ final class VisualGuard implements AutoCloseable {
                             copy = hardware.copy(Bitmap.Config.ARGB_8888, false);
                             int edge = PersonBlur.on(personMode) ? PERSON_FRAME_EDGE : FRAME_EDGE;
                             lastFrameEdge = edge;
-                            double scale = Math.min(1.0, edge / (double) Math.max(copy.getWidth(), copy.getHeight()));
-                            scaled = Bitmap.createScaledBitmap(copy, Math.max(1, (int) (copy.getWidth() * scale)),
-                                    Math.max(1, (int) (copy.getHeight() * scale)), true);
+                            // A photo or video on a plain background reaches the model as the
+                            // picture itself, not as a thin strip of a tall screen. The people
+                            // cover keeps the whole frame: it draws over the whole screen.
+                            Bitmap source = copy;
+                            if (!PersonBlur.on(personMode)) {
+                                picture = picture(copy);
+                                if (picture != null) source = picture;
+                            }
+                            double scale = Math.min(1.0, edge / (double) Math.max(source.getWidth(), source.getHeight()));
+                            scaled = Bitmap.createScaledBitmap(source, Math.max(1, (int) (source.getWidth() * scale)),
+                                    Math.max(1, (int) (source.getHeight() * scale)), true);
                             if (PersonBlur.on(personMode)) {
                                 try {
                                     pendingPersonFrame = scaled.copy(Bitmap.Config.ARGB_8888, false);
@@ -385,7 +393,8 @@ final class VisualGuard implements AutoCloseable {
                             pendingInferenceStart = SystemClock.uptimeMillis();
                             classifier.inspect(scaled, result -> decided(frame, target, signature, key, result));
                         } finally {
-                            if (scaled != null && scaled != copy) scaled.recycle();
+                            if (scaled != null && scaled != copy && scaled != picture) scaled.recycle();
+                            if (picture != null && picture != copy) picture.recycle();
                             if (copy != null) copy.recycle();
                             hardware.recycle();
                         }
@@ -458,6 +467,30 @@ final class VisualGuard implements AutoCloseable {
                 }
             });
         } catch (RuntimeException unavailable) { busy = false; fail(); }
+    }
+
+    /** The picture inside the frame when it sits on a plain background (core ContentBox), or null. */
+    private static Bitmap picture(Bitmap frame) {
+        int width = frame.getWidth(), height = frame.getHeight();
+        double sample = 96.0 / Math.max(width, height);
+        if (sample >= 1) return null;
+        int sampleWidth = Math.max(8, (int) Math.round(width * sample)), sampleHeight = Math.max(8, (int) Math.round(height * sample));
+        Bitmap small = Bitmap.createScaledBitmap(frame, sampleWidth, sampleHeight, true);
+        int[] pixels = new int[sampleWidth * sampleHeight];
+        try {
+            small.getPixels(pixels, 0, sampleWidth, 0, 0, sampleWidth, sampleHeight);
+            int[] box = app.hisn.core.ContentBox.find(pixels, sampleWidth, sampleHeight);
+            if (box == null) return null;
+            int left = Math.max(0, (int) Math.floor(box[0] * (double) width / sampleWidth));
+            int top = Math.max(0, (int) Math.floor(box[1] * (double) height / sampleHeight));
+            int right = Math.min(width, (int) Math.ceil(box[2] * (double) width / sampleWidth));
+            int bottom = Math.min(height, (int) Math.ceil(box[3] * (double) height / sampleHeight));
+            if (right - left < 16 || bottom - top < 16) return null;
+            return Bitmap.createBitmap(frame, left, top, right - left, bottom - top);
+        } finally {
+            java.util.Arrays.fill(pixels, 0);
+            if (small != frame) small.recycle();
+        }
     }
 
     /** A coarse 16 x 16 summary that only tells whether the frame changed (VisualCadence.signature). */
