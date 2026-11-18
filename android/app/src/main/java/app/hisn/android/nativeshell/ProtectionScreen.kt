@@ -151,6 +151,18 @@ fun ProtectionScreen(
     val phoneAttention = state.phone.maker.isNotEmpty() &&
         (!state.phone.batteryUnrestricted || state.phone.backgroundRestricted == true)
 
+    // Two ways around every layer that only the owner can close: Android may stop the VPN (and
+    // let traffic past it), and a second space (Secure Folder, another profile) runs apps Hisn
+    // never sees.
+    val gapContext = androidx.compose.ui.platform.LocalContext.current
+    val vpnLoose = state.dns.on && (app.hisn.android.DnsVpnService.alwaysOn == false
+        || app.hisn.android.DnsVpnService.lockdown == false)
+    val otherSpace = remember {
+        runCatching {
+            gapContext.getSystemService(android.os.UserManager::class.java).userProfiles.size > 1
+        }.getOrDefault(false)
+    }
+
     val onCount = layers.count { it.on }
     val allOn = onCount == layers.size
     val partial = !showAttention && !allOn
@@ -281,6 +293,35 @@ fun ProtectionScreen(
                     summary = state.personal,
                     onSetUp = { onOpen("personal") }
                 )
+            }
+
+            if (vpnLoose || otherSpace) {
+                item {
+                    HisnCard {
+                        if (vpnLoose) {
+                            IssueRow(
+                                icon = Icons.Rounded.Security,
+                                title = tr("Make Hisn's VPN always-on"),
+                                supporting = tr("If Android stops the VPN, sites are no longer filtered. In Settings › VPN › Hisn, turn on Always-on VPN and Block connections without VPN."),
+                                onClick = {
+                                    runCatching {
+                                        gapContext.startActivity(android.content.Intent(android.provider.Settings.ACTION_VPN_SETTINGS)
+                                            .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                                    }
+                                }
+                            )
+                        }
+                        if (vpnLoose && otherSpace) InsetDivider()
+                        if (otherSpace) {
+                            IssueRow(
+                                icon = Icons.Rounded.Info,
+                                title = tr("A second space is not protected"),
+                                supporting = tr("Secure Folder or another profile runs its own apps. Hisn does not see them. Remove it, or install Hisn inside it too."),
+                                onClick = {}
+                            )
+                        }
+                    }
+                }
             }
 
             if (phoneAttention) {

@@ -51,6 +51,9 @@ public final class ShortVideoSurfaces {
                 "com.chrome.canary"}) {
             bars.put(chrome, chrome + ":id/url_bar");
         }
+        // Brave's address bar, read on the same Galaxy S21 FE (18 November 2026). Brave's private
+        // tab has no marker of its own, so Brave is not a browser Hisn controls.
+        bars.put("com.brave.browser", "com.brave.browser:id/url_bar");
         URL_BARS = Collections.unmodifiableMap(bars);
     }
 

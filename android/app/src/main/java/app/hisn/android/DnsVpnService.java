@@ -64,6 +64,9 @@ import java.util.concurrent.atomic.AtomicLong;
  * lockdown never enables VPN lockdown. A full-tunnel service would be a separate project.
  */
 public final class DnsVpnService extends VpnService {
+    /** Read when the tunnel is established (Android 10+); null when not known. */
+    public static volatile Boolean alwaysOn, lockdown;
+
     public enum State { OFF, STARTING, RUNNING, DEGRADED, ERROR }
     public enum CheckState { IDLE, CHECKING, PASSED, FAILED, STALE }
     /** A completed check verifies only this DNS tunnel path, not every app's DNS or traffic. */
@@ -564,6 +567,12 @@ public final class DnsVpnService extends VpnService {
                 if (established == null) throw new IOException("VPN permission unavailable");
                 tunnel = established;
                 if (closed) { established.close(); return; }
+                // Whether Android keeps this VPN up by itself and blocks traffic without it; the
+                // Protection screen asks the owner to switch both on when they are off.
+                if (Build.VERSION.SDK_INT >= 29) {
+                    alwaysOn = isAlwaysOn();
+                    lockdown = isLockdownEnabled();
+                }
                 // The tunnel exists now, so a device owner's always-on request can be
                 // applied without racing the VPN preparation. Non-owners are a no-op.
                 try { UninstallProtectionController.sync(DnsVpnService.this); }
