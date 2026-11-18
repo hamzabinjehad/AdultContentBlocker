@@ -414,9 +414,10 @@ final class VisualGuard implements AutoCloseable {
                             return;
                         }
                         if (error == AccessibilityService.ERROR_TAKE_SCREENSHOT_SECURE_WINDOW
-                                && SecureWindowApps.exempt(service, target.app)) {
-                            // A password manager, or a private app the owner marked safe:
-                            // leave it usable and lift any cover.
+                                && !SecureWindowApps.covered(service, target.app,
+                                        PolicyStore.get(service).snapshot().scannedApps.contains(target.app))) {
+                            // A bank, TAN app or password manager read only because every app is,
+                            // or a private app the owner marked safe: leave it usable.
                             protectedWindow = -1;
                             overlay.hide();
                             long wait = Math.max(VisualCadence.POLL_FLOOR_MILLIS, 2000);

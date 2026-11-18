@@ -281,7 +281,9 @@ CASES = [
     ("recovery resources allowed", "words", expect_allowed("recovery")),
     ("password field not read", "words", expect_allowed("password")),
     ("normal image allowed", "images", expect_allowed("visual-normal", 8)),
-    ("private window covered", "images", expect_cover("visual-secure", 8)),
+    # The fixture neither opens web pages nor plays video, like a bank or TAN app: while every
+    # app is read, its private window is left usable rather than covered.
+    ("private non-media window usable", "images", expect_allowed("visual-secure", 8)),
     ("English adult text blocked", "words", expect_blocked("adult-en")),
     ("Arabic adult text blocked", "words", expect_blocked("adult-ar")),
     ("dotted spelling blocked", "words", expect_blocked("adult-compact-en")),
