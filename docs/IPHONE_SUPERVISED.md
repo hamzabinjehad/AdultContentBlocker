@@ -47,6 +47,14 @@ still not absolute. See **Limits** below.
    | `--deny-enabling-restrictions` | `allowEnablingRestrictions=false` | Changing Content & Privacy restrictions |
    | `--force-automatic-date-time` | `forceAutomaticDateAndTime=true` | Manual clock changes that could move a date |
 
+   Two more switches are separate from `--maximum`:
+
+   | Flag | What it adds | Limit |
+   | --- | --- | --- |
+   | `--block-browsers` | `blockedAppBundleIDs` with 15 known browsers other than Safari | A list, not every browser; pair it with `--deny-app-installation` |
+   | `--block-safari` | `allowSafari=false` | Links other apps open in Safari stop working; install a filtering browser app first |
+   | `--block-short-video` | TikTok and the Shorts, Reels and Spotlight addresses in `DenyListURLs` | Page loads in Safari only, not the apps; not yet checked on a phone |
+
    Add only the ones the person and guardian have agreed to. `allowAppRemoval`
    is controlled separately by `--allow-app-removal`; leaving it unset keeps app
    deletion blocked. None of these keys apply on an unsupervised device.

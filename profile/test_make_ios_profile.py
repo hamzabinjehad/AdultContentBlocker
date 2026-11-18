@@ -94,6 +94,56 @@ class TestRemovalProtection(unittest.TestCase):
             ios.main(["--out", os.devnull, "--maximum", "--allow-app-removal"])
 
 
+    def test_other_browsers_are_blocked_only_when_asked_and_safari_stays(self):
+        """Blocking Safari would remove the one browser the filter covers."""
+        self.assertNotIn("blockedAppBundleIDs",
+                         by_type(generate()[0])["com.apple.applicationaccess"])
+        ids = by_type(generate("--block-browsers")[0])["com.apple.applicationaccess"]["blockedAppBundleIDs"]
+        self.assertIn("com.google.chrome.ios", ids)
+        self.assertIn("org.mozilla.ios.firefox", ids)
+        self.assertEqual(len(ids), len(set(ids)))
+        self.assertFalse([i for i in ids if "safari" in i.lower() or i.startswith("com.apple.")])
+
+    def test_no_removal_password_leaves_only_the_supervising_mac(self):
+        """A password on the phone is a way out on the phone."""
+        profile = generate("--no-removal-password")[0]
+        self.assertNotIn("com.apple.profileRemovalPassword", by_type(profile))
+        self.assertTrue(profile["PayloadRemovalDisallowed"])
+
+    def test_hisn_dns_replaces_the_public_resolver(self):
+        """Two DNS layers would leave it to iOS which one answers."""
+        types = by_type(generate("--hisn-dns")[0])
+        self.assertNotIn("com.apple.dnsSettings.managed", types)
+        proxy = types["com.apple.dnsProxy.managed"]
+        self.assertEqual(proxy["AppBundleIdentifier"], "app.hisn.mobile")
+        self.assertEqual(proxy["ProviderBundleIdentifier"], "app.hisn.mobile.dnsproxy")
+        self.assertIn("com.apple.dnsSettings.managed", by_type(generate()[0]))
+
+    def test_safari_is_hidden_only_when_asked(self):
+        """Hiding Safari breaks links from other apps; it must be a choice."""
+        self.assertNotIn("allowSafari", by_type(generate()[0])["com.apple.applicationaccess"])
+        self.assertIs(by_type(generate("--block-safari")[0])["com.apple.applicationaccess"]["allowSafari"], False)
+
+    def test_short_video_addresses_join_the_persons_sites(self):
+        """A short-video flag that dropped the person's own sites would unblock them."""
+        self.assertNotIn("DenyListURLs", by_type(generate()[0])["com.apple.webcontent-filter"])
+        urls = by_type(generate("--block-short-video", "--block-site", "example.org")[0])[
+            "com.apple.webcontent-filter"]["DenyListURLs"]
+        self.assertIn("https://example.org", urls)
+        self.assertIn("https://www.youtube.com/shorts", urls)
+        self.assertIn("https://www.tiktok.com", urls)
+        self.assertNotIn("https://www.youtube.com", urls)
+        self.assertEqual(len(urls), len(set(urls)))
+
+    def test_short_video_addresses_count_toward_apples_limit(self):
+        """Past the limit Apple may ignore the list; the build must refuse instead."""
+        with tempfile.TemporaryDirectory() as tmp:
+            sites = Path(tmp) / "sites.txt"
+            sites.write_text("\n".join(f"s{i}.example.org" for i in range(ios.MAX_DENY_URLS)))
+            with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
+                ios.main(["--allow-unreachable-resolver", "--out", str(Path(tmp) / "p"),
+                          "--block-short-video", "--block-sites-file", str(sites)])
+
     def test_dns_cannot_be_switched_off_and_uses_a_real_resolver(self):
         """A DNS setting the person can toggle off is a suggestion, not a layer."""
         dns = by_type(generate()[0])["com.apple.dnsSettings.managed"]["DNSSettings"]

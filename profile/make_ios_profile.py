@@ -57,6 +57,51 @@ ID_PREFIX = "app.hisn.profile.ios"
 # Apple documents DenyListURLs as "no more than 500 URLs".
 MAX_DENY_URLS = 500
 
+# Other browsers, by App Store bundle identifier. iOS has no "every browser"
+# switch, so this is a list of known ones and nothing more: a browser missing
+# here still opens. --deny-app-installation is what stops a new one arriving.
+# Safari stays, because the web filter and Safari's own extensions cover it.
+BROWSER_BUNDLE_IDS = sorted([
+    "com.google.chrome.ios",
+    "com.google.GoogleMobile",
+    "org.mozilla.ios.firefox",
+    "org.mozilla.ios.focus",
+    "com.brave.ios.browser",
+    "com.microsoft.msedge",
+    "com.opera.OperaTouch",
+    "com.opera.gx",
+    "com.opera.OperaMini",
+    "com.duckduckgo.mobile.ios",
+    "com.alohabrowser.alohabrowser",
+    "com.miketigas.OnionBrowser",
+    "company.thebrowser.ArcMobile2",
+    "com.ucweb.iphone.lowversion",
+    "com.dolphin.browser.iphone",
+])
+
+# Short-video feeds on the web. Whole sites where the site is the feed, and
+# the feed's address where the rest of the site stays useful. Apple's filter
+# compares the start of the address when a page loads; moving between videos
+# inside an already open page is not a page load and is not promised here.
+SHORT_VIDEO_URLS = sorted([
+    "https://tiktok.com",
+    "https://www.tiktok.com",
+    "https://m.tiktok.com",
+    "https://youtube.com/shorts",
+    "https://www.youtube.com/shorts",
+    "https://m.youtube.com/shorts",
+    "https://instagram.com/reels",
+    "https://www.instagram.com/reels",
+    "https://instagram.com/reel/",
+    "https://www.instagram.com/reel/",
+    "https://www.facebook.com/reel",
+    "https://m.facebook.com/reel",
+    "https://www.facebook.com/watch",
+    "https://m.facebook.com/watch",
+    "https://www.snapchat.com/spotlight",
+    "https://snapchat.com/spotlight",
+])
+
 
 def payload(ptype: str, identifier: str, name: str, description: str, **extra) -> dict:
     p = mac.payload(ptype, identifier, name, description, **extra)
@@ -101,12 +146,30 @@ def p_dns(doh_url: str, addresses: list[str]) -> dict:
     )
 
 
-def p_web_filter(blocked_hosts: list[str]) -> dict:
+HISN_APP_ID = "app.hisn.mobile"
+HISN_DNS_PROVIDER_ID = "app.hisn.mobile.dnsproxy"
+
+
+def p_hisn_dns_proxy(app_id: str, provider_id: str) -> dict:
+    # Apple's managed DNS proxy payload. On a supervised device the proxy is
+    # always on and the person has no switch for it; the app must already be
+    # installed and signed with the dns-proxy entitlement.
+    return payload(
+        "com.apple.dnsProxy.managed", "dnsproxy", "Hisn DNS Filter",
+        "Keeps Hisn's own DNS filter on for every app. Supervised devices only.",
+        AppBundleIdentifier=app_id,
+        ProviderBundleIdentifier=provider_id,
+    )
+
+
+def p_web_filter(blocked_hosts: list[str], extra_urls: list[str] | None = None) -> dict:
     extra: dict = {"FilterType": "BuiltIn", "AutoFilterEnabled": True,
                    # Required for unsupervised iOS 16+; harmless when supervised.
                    "ContentFilterUUID": str(uuid.uuid4()).upper()}
-    if blocked_hosts:
-        extra["DenyListURLs"] = [f"https://{host}" for host in blocked_hosts]
+    urls = [f"https://{host}" for host in blocked_hosts]
+    urls += [u for u in (extra_urls or []) if u not in urls]
+    if urls:
+        extra["DenyListURLs"] = urls
     return payload(
         "com.apple.webcontent-filter", "webfilter", "Adult Website Filter",
         "Apple's built-in adult-content filter for Safari and apps that use it, plus the sites "
@@ -156,17 +219,28 @@ def hardening(args: argparse.Namespace) -> dict:
     if args.deny_app_clips: keys["allowAppClips"] = False
     if args.deny_enabling_restrictions: keys["allowEnablingRestrictions"] = False
     if args.force_automatic_date_time: keys["forceAutomaticDateAndTime"] = True
+    if getattr(args, "block_browsers", False): keys["blockedAppBundleIDs"] = list(BROWSER_BUNDLE_IDS)
+    if getattr(args, "block_safari", False): keys["allowSafari"] = False
     return keys
+
+
+def short_video_urls(args: argparse.Namespace) -> list[str]:
+    return list(SHORT_VIDEO_URLS) if getattr(args, "block_short_video", False) else []
 
 
 def build(args: argparse.Namespace) -> tuple[dict, str]:
     password = args.removal_password or mac.gen_password()
     content = [
-        p_dns(args.doh, args.dns_addresses),
-        p_web_filter(args.blocked_hosts),
+        (p_hisn_dns_proxy(args.hisn_app_id, args.hisn_dns_provider_id)
+         if getattr(args, "hisn_dns", False) else p_dns(args.doh, args.dns_addresses)),
+        p_web_filter(args.blocked_hosts, short_video_urls(args)),
         p_restrictions(args.allow_app_removal, hardening(args)),
-        p_removal_password(password),
     ]
+    if not getattr(args, "no_removal_password", False):
+        # With a password, iOS shows Remove and asks for it. Without one, a
+        # supervised device shows no Remove at all; only the supervising Mac
+        # can take the profile off.
+        content.append(p_removal_password(password))
     profile = {
         "PayloadType": "Configuration",
         "PayloadVersion": 1,
@@ -232,6 +306,23 @@ def main(argv: list[str] | None = None) -> int:
                     help="Supervised only: block changes to Content & Privacy restrictions.")
     ap.add_argument("--force-automatic-date-time", action="store_true",
                     help="Supervised only: keep automatic date and time on.")
+    ap.add_argument("--block-browsers", action="store_true",
+                    help="Supervised only: hide and block the known browsers other than Safari. "
+                         "A list, not a guarantee; pair it with --deny-app-installation.")
+    ap.add_argument("--hisn-dns", action="store_true",
+                    help="Supervised only: use the installed Hisn app's DNS filter, always on, "
+                         "instead of a public filtering resolver.")
+    ap.add_argument("--hisn-app-id", default=HISN_APP_ID)
+    ap.add_argument("--hisn-dns-provider-id", default=HISN_DNS_PROVIDER_ID)
+    ap.add_argument("--no-removal-password", action="store_true",
+                    help="Supervised only: leave out the removal password, so the phone shows no "
+                         "Remove button and only the supervising Mac can remove the profile.")
+    ap.add_argument("--block-safari", action="store_true",
+                    help="Supervised only: hide Safari too, so a filtering browser app chosen by the "
+                         "person is the only way onto the web. Links apps open in Safari stop working.")
+    ap.add_argument("--block-short-video", action="store_true",
+                    help="Add TikTok and the Shorts, Reels and Spotlight addresses to the web "
+                         "filter. Covers page loads in Safari, not the apps.")
     ap.add_argument("--out", default="../dist/hisn-iphone.mobileconfig")
     args = ap.parse_args(argv)
     if args.maximum:
@@ -255,8 +346,9 @@ def main(argv: list[str] | None = None) -> int:
     args.blocked_hosts, rejected = read_sites(args)
     if rejected:
         ap.error("not a site: " + ", ".join(rejected))
-    if len(args.blocked_hosts) > MAX_DENY_URLS:
-        ap.error(f"{len(args.blocked_hosts)} sites; Apple's filter takes at most {MAX_DENY_URLS}")
+    denied = len(args.blocked_hosts) + len(short_video_urls(args))
+    if denied > MAX_DENY_URLS:
+        ap.error(f"{denied} sites; Apple's filter takes at most {MAX_DENY_URLS}")
 
     profile, password = build(args)
     out = Path(args.out)
