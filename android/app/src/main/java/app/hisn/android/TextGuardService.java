@@ -624,6 +624,23 @@ public final class TextGuardService extends AccessibilityService {
                     } finally { surface.recycle(); }
                 }
             }
+            if (rules.adultWordsEnabled) {
+                for (GuardWindows.Window window : windows) {
+                    if (!app.hisn.core.TelegramSearch.watches(true, window.app)) continue;
+                    // Keep checking while Telegram is on screen: a search or a channel can open at any time.
+                    shortVideoOnScreen = true;
+                    if (!window.active) continue;
+                    long checkAt = SystemClock.uptimeMillis();
+                    if (checkAt - lastTelegramCheckAt < TELEGRAM_CHECK_MILLIS) continue;
+                    lastTelegramCheckAt = checkAt;
+                    AdultPolicyAssets.ensureLoaded(this);
+                    AccessibilityNodeInfo surface = windowRoot(this, window);
+                    if (surface == null) continue;
+                    try {
+                        if (leaveAdultTelegramSearch(surface, rules, AdultPolicyAssets.policy())) return;
+                    } finally { surface.recycle(); }
+                }
+            }
             if (scanned.isEmpty()) {
                 recordInspection(InspectionHealth.Outcome.COMPLETE, PolicyReceipt.Kind.APP_DECISION);
                 // A static allowed screen must still be blocked when its daily window begins,
@@ -1081,7 +1098,8 @@ public final class TextGuardService extends AccessibilityService {
                 || rules.timeLimits.monitored(name)
                 || rules.schedule.selects(name, minuteOfDay(), dayOfWeek())
                 || (rules.shortVideoEnabled && ShortVideoSurfaces.watches(name))
-                || (privateTabsOn && PrivateBrowsing.watches(name));
+                || (privateTabsOn && PrivateBrowsing.watches(name))
+                || app.hisn.core.TelegramSearch.watches(rules.adultWordsEnabled, name);
     }
 
     /** "Block private tabs", refreshed on each check; static so isSelected can read it. */
@@ -1151,6 +1169,120 @@ public final class TextGuardService extends AccessibilityService {
     }
 
     static volatile long privateTabClosings;
+
+    /** Telegram fires an event per typed letter; one look per this interval, the heartbeat between. */
+    private static final long TELEGRAM_CHECK_MILLIS = 300;
+    private long lastTelegramCheckAt;
+    static volatile long telegramSearchClosings;
+    private long lastTelegramNote;
+
+    /**
+     * Reads Telegram's search field, the header (chat or channel title) and, while the search
+     * field or an inline "@bot" query is open or the chat is with a bot, the visible results. An
+     * ordinary message being typed and a person's messages under the header are never used
+     * (rule and tests in core TelegramSearch). Nothing read is kept after this call. On an adult
+     * search or channel the query is emptied and BACK leaves it, so the rest of Telegram stays usable.
+     */
+    private boolean leaveAdultTelegramSearch(AccessibilityNodeInfo root, PolicyStore.Snapshot rules,
+            app.hisn.core.AdultTextPolicy adult) {
+        android.graphics.Rect bounds = new android.graphics.Rect();
+        root.getBoundsInScreen(bounds);
+        final int top = bounds.top, bottom = bounds.bottom;
+        StringBuilder query = new StringBuilder(), header = new StringBuilder(), results = new StringBuilder();
+        AccessibilityNodeInfo searchField = null, composer = null;
+        String inline = null;
+        java.util.ArrayDeque<AccessibilityNodeInfo> queue = new java.util.ArrayDeque<>();
+        int visited = 0;
+        queue.add(AccessibilityNodeInfo.obtain(root));
+        try {
+            while (!queue.isEmpty()) {
+                AccessibilityNodeInfo node = queue.poll();
+                boolean keep = false;
+                try {
+                    if (++visited > app.hisn.core.TelegramSearch.MAX_NODES || !node.isVisibleToUser()) continue;
+                    node.getBoundsInScreen(bounds);
+                    boolean band = app.hisn.core.TelegramSearch.inTopBand(bounds.top, bounds.bottom, top, bottom,
+                            getResources().getDisplayMetrics().density);
+                    CharSequence type = node.getClassName();
+                    boolean field = node.isEditable() || (type != null && type.toString().contains("EditText"));
+                    if (node.isPassword()) continue;
+                    if (field) {
+                        boolean hint = Build.VERSION.SDK_INT >= 26 && node.isShowingHintText();
+                        CharSequence text = hint ? null : node.getText();
+                        if (band) {
+                            if (text != null) append(query, text);
+                            if (searchField == null) { searchField = node; keep = true; }
+                        } else if (composer == null) {
+                            // The message box: only an inline bot query ("@bot …") is used.
+                            inline = app.hisn.core.TelegramSearch.inlineQuery(text);
+                            if (inline != null) { composer = node; keep = true; }
+                        }
+                        continue;
+                    }
+                    CharSequence text = node.getText();
+                    CharSequence description = node.getContentDescription();
+                    if (band) { append(header, text); append(header, description); }
+                    append(results, text);
+                    append(results, description);
+                    for (int at = 0; at < node.getChildCount(); at++) {
+                        AccessibilityNodeInfo child = node.getChild(at);
+                        if (child != null) queue.add(child);
+                    }
+                } finally { if (!keep) node.recycle(); }
+            }
+            String headerText = header.toString().trim();
+            boolean searching = searchField != null || inline != null
+                    || app.hisn.core.TelegramSearch.botChat(headerText);
+            String typed = query.toString().trim();
+            if (inline != null) typed = typed.isEmpty() ? inline : typed + " " + inline;
+            app.hisn.core.TelegramSearch.Sample sample = new app.hisn.core.TelegramSearch.Sample(
+                    typed, headerText, searching ? results.toString().trim() : "");
+            if (!app.hisn.core.TelegramSearch.blocks(adult, rules.words, sample)) {
+                if (adult == null && rules.adultWordsEnabled) recordInspection(InspectionHealth.Outcome.INCOMPLETE);
+                return false;
+            }
+            android.os.Bundle empty = new android.os.Bundle();
+            empty.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, "");
+            if (searchField != null && query.length() > 0) searchField.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, empty);
+            if (composer != null) composer.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, empty);
+        } finally {
+            for (AccessibilityNodeInfo left : queue) left.recycle();
+            if (searchField != null) searchField.recycle();
+            if (composer != null) composer.recycle();
+        }
+        recordInspection(InspectionHealth.Outcome.COMPLETE, PolicyReceipt.Kind.TEXT_SCAN);
+        leaveTelegram();
+        return true;
+    }
+
+    /** One visible label per line, bounded; the core check skips a sample that is too long. */
+    private static void append(StringBuilder lines, CharSequence text) {
+        if (text == null || text.length() == 0) return;
+        if (lines.length() + text.length() + 1 > app.hisn.core.TelegramSearch.MAX_CHARS) return;
+        lines.append(text.toString().replace('\n', ' ')).append('\n');
+    }
+
+    /** BACK closes the search or the channel; the heartbeat presses again while it is still there. */
+    private void leaveTelegram() {
+        long now = SystemClock.elapsedRealtime();
+        telegramSearchClosings++;
+        wordInterventions++;
+        inspectionOutcome = "telegram-search-closed";
+        handler.removeCallbacks(inspect);
+        inspectPending = false;
+        if (!performGlobalAction(GLOBAL_ACTION_BACK)) homeFailures++;
+        scheduleHeartbeat(600);
+        if (now - lastTelegramNote < 1500) { cooldownEnforcements++; return; }
+        lastTelegramNote = now;
+        lastIntervention = now;
+        pendingWordReason = true;
+        pendingScheduleReason = false;
+        pendingLimitReason = false;
+        pendingVisualReason = false;
+        pendingShortVideoReason = false;
+        handler.removeCallbacks(showRestriction);
+        handler.postDelayed(showRestriction, 350);
+    }
     private long lastPrivateTabNote;
 
     /** A visible Shorts or Reels player, found by its view ID, or a browser's address bar showing

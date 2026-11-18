@@ -258,6 +258,70 @@ public final class AdultTextPolicy {
         return false;
     }
 
+    /** Longest search query judged by {@link #blocksQuery}; a longer one is prose, not a query. */
+    public static final int QUERY_TOKENS = 6;
+    /** Promotion token a query is judged with: a search is itself a request to find and watch. */
+    private static final String[] QUERY_REQUEST = {"watch"};
+
+    /**
+     * Classify a search query typed into an app's own search box (Telegram's, for example).
+     * Typing a query is the call to action, so a query blocks when it would block as "watch …",
+     * or when a short query names a strong, unambiguous adult term on its own ("xxx",
+     * "onlyfans", "شرموطه"). A query naming recovery, blocking or another protective context
+     * ("porn addiction help") never blocks, and the ambiguous words (Nick, Borno, couscous)
+     * still need clear evidence beside them.
+     */
+    public boolean blocksQuery(String query) { return blocksRequest(query, QUERY_TOKENS); }
+
+    /** Longest channel, group or listing name judged by {@link #blocksName}. */
+    public static final int NAME_TOKENS = 12;
+
+    /**
+     * Classify a chat, channel or group name, or one listing row, as {@link #blocksQuery} does: a
+     * name is a label its owner chose, not prose. "INDONESIA 18+ PORNO VIDEO SEX, private" is
+     * longer than a query and has no call to action, yet names exactly what it is. Recovery
+     * groups ("Porn Addiction Recovery") stay allowed.
+     */
+    public boolean blocksName(String name) { return blocksRequest(name, NAME_TOKENS); }
+
+    private boolean blocksRequest(String query, int maxTokens) {
+        String[] tokens = tokens(query);
+        if (tokens == null || tokens.length > maxTokens || protective(tokens)) return false;
+        for (String token : tokens) if (gluedExplicit(token)) return true;
+        for (int start = 0; start < tokens.length; start++) {
+            Trie branch = index;
+            for (int end = start; end < Math.min(tokens.length, start + MAX_PHRASE_TOKENS); end++) {
+                branch = branch.children.get(tokens[end]);
+                if (branch == null) break;
+                if (strongAlone(tokens[start], branch.entry)) return true;
+            }
+            if (strongAlone(tokens[start], variant(tokens[start]))) return true;
+        }
+        String[] request = new String[tokens.length + QUERY_REQUEST.length];
+        System.arraycopy(QUERY_REQUEST, 0, request, 0, QUERY_REQUEST.length);
+        System.arraycopy(tokens, 0, request, QUERY_REQUEST.length, tokens.length);
+        return judge(request, request.length, true, 0);
+    }
+
+    // Names run words together ("PornDrive", "xxxVideos"); a token that starts with one of these
+    // has no everyday reading. Not Arabic سكس, which also starts سكسونيا (Saxony), nor "sex",
+    // which starts sexton and sextant.
+    private static final String[] GLUED_PREFIXES = {"porn", "xxx", "hentai"};
+    // Place names that happen to start the same way (Pornic, a town in Brittany).
+    private static final Set<String> GLUED_PLACES = immutableSet("pornic", "pornichet");
+
+    private static boolean gluedExplicit(String token) {
+        if (GLUED_PLACES.contains(token)) return false;
+        for (String prefix : GLUED_PREFIXES) {
+            if (token.length() > prefix.length() + 1 && token.startsWith(prefix)) return true;
+        }
+        return false;
+    }
+
+    private static boolean strongAlone(String token, Entry entry) {
+        return entry != null && entry.weight >= STRONG_WEIGHT && !ambiguous(token, entry);
+    }
+
     /** A new incremental judge for one growing screen sample; see {@link ScreenScan}. */
     public ScreenScan screen() { return new ScreenScan(); }
 

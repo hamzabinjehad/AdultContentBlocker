@@ -50,6 +50,8 @@ for rule in rules:
     print(str(int(rule['w'])) + '\t' + rule.get('l', 'neg') + '\t' + rule['t'])
 PY
 "${hisn_java_bin}java" -cp "$hisn_test_output" app.hisn.core.AdultTextPolicyTest "$hisn_test_output/adult-terms.tsv"
+# Telegram's search box and channel titles, judged with the same signed terms.
+"${hisn_java_bin}java" -cp "$hisn_test_output" app.hisn.core.TelegramSearchTest "$hisn_test_output/adult-terms.tsv"
 # Hostname keyword fixture: the same signed terms, exemptions and shared cases the Mac and Chrome use.
 python3 - <<'PY' > "$hisn_test_output/host-policy.tsv"
 import json

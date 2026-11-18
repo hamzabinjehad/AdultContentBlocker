@@ -98,6 +98,29 @@ What actually works, in order of completeness:
    chats' end-to-end content.
 3. **DNS for links**: `t.me` links opened from other apps are ordinary
    hostnames and can be blocked by name.
+4. **Telegram's own search (on by default with the adult layer, 2026-11-18).**
+   Hisn reads Telegram's search box, the open chat or channel's title, and
+   the search results while search is open. An adult search ("سكس عربي",
+   "xxx", "onlyfans") or an adult channel name empties the search and presses
+   BACK, then shows the word-rule explanation; the rest of Telegram stays
+   usable. It never reads the message composer or the messages under the
+   title, and keeps nothing. Recovery and blocking searches ("porn addiction
+   help") stay allowed. Rule and tests: `core/.../TelegramSearch.java`, and
+   `AdultTextPolicy.blocksQuery` for search queries. Covers Telegram, Telegram X
+   and the common forks (Plus, Nekogram, NekoX, exteraGram, Cherrygram). A
+   channel with an innocent name still needs (2).
+
+   Search bots are the other road in. On the S21 FE a bot ("Searchee Bot",
+   235K monthly users) offered an "Adult" category and answered an inline
+   query typed into the message box (`@SearcheeBot #adult sex porno`) with
+   listings such as "INDONESIA 18+ PORNO VIDEO SEX, private" and the channel
+   "PornDrive". So Hisn also reads an inline `@bot …` query in the message box
+   (an ordinary message is never read), and reads a bot's chat in full: its
+   header says "bot" or "N monthly users", and a bot is a service, not a
+   person. Channel and listing names are judged as names
+   (`AdultTextPolicy.blocksName`), including run-together ones such as
+   "PornDrive". The header is the action bar's 104 dp, not a share of the
+   screen, so a message scrolled under the bar is never read as a title.
 
 The same shape applies to Discord, Snapchat, TikTok and Signal: app-level
 content is only reachable through the app block, the visible-text rules and the
