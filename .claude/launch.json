@@ -41,6 +41,15 @@
         "cd /private/tmp/claude-501/-Users-x-Desktop-GitHub-AdultContentBlocker/2f1a2188-1e16-47e7-8c7b-f99794d1d673/scratchpad/blockpreview && exec /usr/bin/python3 -m http.server 8734 --bind 127.0.0.1"
       ],
       "port": 8734
+    },
+    {
+      "name": "hisn-website",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": [
+        "-c",
+        "cd /private/tmp/claude-501/-Users-x-Desktop-GitHub-AdultContentBlocker/f82657af-b019-4cd9-91fc-77c58465719a/scratchpad/site && exec /usr/bin/python3 -m http.server 8765 --bind 127.0.0.1"
+      ],
+      "port": 8765
     }
   ]
 }

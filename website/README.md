@@ -5,9 +5,9 @@ no server, no analytics. The site is bilingual (English and Arabic), light and
 dark, and every page has a strict CSP with no third-party resource.
 
 - `/` — the product page: a left-aligned hero with the free Android download
-  and the platforms still to come, a one-sentence statement with four features,
-  a four-step "How Hisn works" stepper over real app screens, a privacy row, the
-  roadmap, a short FAQ and a closing download.
+  and the platforms still to come, a one-sentence statement with three benefits,
+  the Vault spotlight, a five-step "How Hisn works" stepper over real app
+  screens, a privacy row, the roadmap, a short FAQ and a closing download.
 - `/vault.html` — Hisn Vault, the off-device time lock. See
   [`docs/WEB_VAULT.md`](../docs/WEB_VAULT.md).
 - `/partner.html` — the Vault's partner half.
@@ -67,9 +67,9 @@ the vendored runtime keeps its license.
 | `lib/store.js` | Vault `localStorage`, file download/import, clipboard. |
 | `lib/tlock.bundle.js` | Committed tlock-js bundle; see `vendor/`. |
 | `assets/style.css` | Shared colour tokens, typography and Vault controls, light and dark. |
-| `assets/site.css` | The product, privacy and limits pages: navy tokens (light and dark), header, hero, stepper, cards, footer. |
+| `assets/site.css` | The product, privacy and limits pages: green tokens (light and dark), header, hero, stepper, cards, footer. |
 | `lib/how.js` | The "How Hisn works" stepper: choosing a step swaps the phone screen. Without it every step and the first screen still show. |
-| `assets/home.png`, `rules.png`, `phone-checks.png` | Real Hisn emulator captures used on the product page. |
+| `assets/home.png`, `apps.png`, `rules.png`, `block.png`, `phone-checks.png` | Real Hisn emulator captures used on the product page. |
 | `test/site.test.mjs` | Release manifest, download links, translation keys, CSP and Vault links. |
 | `lib/motion-flag.js`, `lib/animations.js` | The no-flash motion setup and the scroll/entrance animations, built on the vendored anime.js. |
 | `lib/vendor/anime.min.js`, `LICENSE.anime` | anime.js 3.2.2, MIT; vendored so the CSP allows no third-party script. See `lib/vendor/README.md`. |

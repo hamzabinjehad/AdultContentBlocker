@@ -50,8 +50,8 @@ you the lock; Hisn adds the coverage those built-in filters miss. Read
   **the next Android update, Mac, iPhone/iPad, Linux, Windows, the browser
   extension and the Vault** as available or coming soon. It follows the
   layout of ScreenZen's page — a left-aligned promise beside a phone, a
-  one-sentence statement over four features, a step-by-step "How Hisn works"
-  with real app screens, a privacy row and a short FAQ — in the app's own navy,
+  one-sentence statement over three benefits, a Vault spotlight, a step-by-step
+  "How Hisn works" with real app screens, a privacy row and a short FAQ —
   without inventing ratings, testimonials or a subscription. The longer limits
   list moved to its own page. Version numbers, hashes,
   checksums and source links are kept off the public page; the release identity

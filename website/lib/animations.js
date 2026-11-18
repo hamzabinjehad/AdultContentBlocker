@@ -31,7 +31,7 @@
   });
   // Sections arrive once, when they first enter the viewport.
   var items = document.querySelectorAll(
-    '.section-head, .band-line, .feature-panel, .how-copy, .how-visual, .trust-card, .road-card, .faq details, .final-cta, .limits-list li'
+    '.section-head, .band-line, .feature-panel, .spotlight > *, .how-copy, .how-visual, .trust-card, .road-card, .faq details, .final-cta, .limits-list li'
   );
   if (!('IntersectionObserver' in window)) {
     items.forEach(function (element) { element.style.opacity = '1'; });

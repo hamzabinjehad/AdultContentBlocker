@@ -7,7 +7,7 @@
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light dark">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0e1322" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#0f1513" media="(prefers-color-scheme: dark)">
 <title>Hisn — block adult content on your Android phone</title>
 <meta name="description" content="Block adult sites in every browser, block the apps you choose, and check what's on screen. All on your phone. Free, no account, no cloud.">
 <meta property="og:title" content="Hisn — block adult content on your phone">
@@ -28,6 +28,7 @@
   <symbol id="i-phone" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M12 18h.01"/></symbol>
   <symbol id="i-laptop" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="11" rx="2"/><path d="M2 20h20"/></symbol>
   <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
   <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></symbol>
   <symbol id="i-user" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
   <symbol id="i-cloud-off" viewBox="0 0 24 24"><path d="m2 2 20 20"/><path d="M5.8 5.8A7 7 0 0 0 9 19h8.5a4.5 4.5 0 0 0 1.3-.2"/><path d="M21.5 16.5A4.5 4.5 0 0 0 17.5 10h-1.8A7 7 0 0 0 10 5.1"/></symbol>
@@ -94,20 +95,30 @@
     <div class="feature-panel">
       <article class="feature-item">
         <span class="tick"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></span>
-        <div><h3 data-i18n="feature.one.title">Blocks adult websites</h3><p data-i18n="feature.one.body">In every browser, before the page loads.</p></div>
+        <div><h3 data-i18n="gain.one.title">Close the door on adult sites</h3><p data-i18n="gain.one.body">Blocked in every browser, before the page loads.</p></div>
       </article>
       <article class="feature-item">
         <span class="tick"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></span>
-        <div><h3 data-i18n="feature.two.title">Blocks apps and text</h3><p data-i18n="feature.two.body">Choose apps; matches Arabic and English terms.</p></div>
+        <div><h3 data-i18n="gain.two.title">Quiet the apps that pull you back</h3><p data-i18n="gain.two.body">Block a whole app, or the adult words and images inside it.</p></div>
       </article>
       <article class="feature-item">
         <span class="tick"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></span>
-        <div><h3 data-i18n="feature.three.title">Checks images</h3><p data-i18n="feature.three.body">On-device, on Android 14 and later.</p></div>
+        <div><h3 data-i18n="gain.three.title">Pause before the urge wins</h3><p data-i18n="gain.three.body">A slow breath and a way home, not a lecture.</p></div>
       </article>
-      <article class="feature-item">
-        <span class="tick"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></span>
-        <div><h3 data-i18n="feature.four.title">Sets your limits</h3><p data-i18n="feature.four.body">Schedules, daily limits and a breathing pause.</p></div>
-      </article>
+    </div>
+  </section>
+
+  <section class="section spotlight">
+    <p class="tag" data-i18n="vault.tag">Also from Hisn</p>
+    <h2 data-i18n="vault.title">Introducing Hisn Vault</h2>
+    <p class="spotlight-lede" data-i18n="vault.body">A time lock that lives off your phone. Seal the passcode you would rather not know, and it stays sealed until the date you choose.</p>
+    <a class="button outline" href="vault.html" data-i18n="vault.link">Learn about the Vault</a>
+    <div class="vault-art" aria-hidden="true">
+      <div class="vault-card">
+        <span class="tick"><svg class="icon"><use href="#i-lock"/></svg></span>
+        <span class="vault-dots"><i></i><i></i><i></i><i></i><i></i><i></i></span>
+        <span class="vault-bar"><i></i></span>
+      </div>
     </div>
   </section>
 
@@ -121,14 +132,18 @@
         </button></li>
         <li><button type="button" class="how-step" data-step="1" aria-pressed="false">
           <span class="how-num">2</span>
-          <span class="how-text"><span class="how-title" data-i18n="works.two.title">Choose what to block</span><span class="how-body" data-i18n="works.two.body">Add apps, sites and words, then set a schedule or a daily limit.</span></span>
+          <span class="how-text"><span class="how-title" data-i18n="works.apps.title">Choose your apps</span><span class="how-body" data-i18n="works.apps.body">Pick from the apps on your phone. A chosen app is blocked entirely.</span></span>
         </button></li>
         <li><button type="button" class="how-step" data-step="2" aria-pressed="false">
           <span class="how-num">3</span>
-          <span class="how-text"><span class="how-title" data-i18n="works.three.title">Breathe instead of scrolling</span><span class="how-body" data-i18n="works.three.body">A block shows one calm screen, then takes you back home.</span></span>
+          <span class="how-text"><span class="how-title" data-i18n="works.two.title">Set limits and schedules</span><span class="how-body" data-i18n="works.two.body">Add sites and words, then set quiet hours or a daily limit.</span></span>
         </button></li>
         <li><button type="button" class="how-step" data-step="3" aria-pressed="false">
           <span class="how-num">4</span>
+          <span class="how-text"><span class="how-title" data-i18n="works.three.title">Breathe before you open</span><span class="how-body" data-i18n="works.three.body">A block shows one calm screen, then takes you back home.</span></span>
+        </button></li>
+        <li><button type="button" class="how-step" data-step="4" aria-pressed="false">
+          <span class="how-num">5</span>
           <span class="how-text"><span class="how-title"><span data-i18n="works.four.title">Keep it running</span> <span class="soon" data-i18n="status.soon">Coming soon</span></span><span class="how-body" data-i18n="works.four.body">Hisn shows which settings keep it awake on Samsung, Xiaomi and Nothing phones.</span></span>
         </button></li>
       </ol>
@@ -137,9 +152,10 @@
     <div class="how-visual">
       <div class="how-phone">
         <img class="how-shot is-active" data-shot="0" src="assets/home.png" width="1080" height="2400" loading="lazy" alt="Hisn Protection screen with its four layers">
-        <img class="how-shot" data-shot="1" src="assets/rules.png" width="1080" height="2400" loading="lazy" alt="Hisn Rules screen: blocked domains, words, apps, daily limit and schedule">
-        <img class="how-shot" data-shot="2" src="assets/block.png" width="1080" height="2400" loading="lazy" alt="Hisn block screen: One breath first">
-        <img class="how-shot" data-shot="3" src="assets/phone-checks.png" width="1080" height="2400" loading="lazy" alt="Hisn phone check screen for a Xiaomi phone">
+        <img class="how-shot" data-shot="1" src="assets/apps.png" width="1080" height="2400" loading="lazy" alt="Hisn Apps to block screen listing installed apps">
+        <img class="how-shot" data-shot="2" src="assets/rules.png" width="1080" height="2400" loading="lazy" alt="Hisn Rules screen: blocked domains, words, apps, daily limit and schedule">
+        <img class="how-shot" data-shot="3" src="assets/block.png" width="1080" height="2400" loading="lazy" alt="Hisn block screen: One breath first">
+        <img class="how-shot" data-shot="4" src="assets/phone-checks.png" width="1080" height="2400" loading="lazy" alt="Hisn phone check screen for a Xiaomi phone">
       </div>
     </div>
   </section>
@@ -218,34 +234,44 @@
     </div>
     <div class="faq">
       <details open>
-        <summary data-i18n="faq.q1">Is Hisn free?</summary>
-        <p data-i18n="faq.a1">Yes. No account, no subscription, no in-app purchase.</p>
+        <summary data-i18n="faq.need.q">Will Hisn block apps I need?</summary>
+        <p data-i18n="faq.need.a">No. Site filtering only stops adult sites, and app blocking only touches the apps you pick. Messages, maps and work tools stay open.</p>
       </details>
       <details>
-        <summary data-i18n="faq.install.q">How do I install it?</summary>
-        <p data-i18n="faq.install.a">Download the file and open it. If Android asks, allow installs from this browser once.</p>
+        <summary data-i18n="faq.always.q">Are my apps locked all the time?</summary>
+        <p data-i18n="faq.always.a">No. You decide when, with a schedule or a daily limit.</p>
+      </details>
+      <details>
+        <summary data-i18n="faq.around.q">Can't I just delete Hisn or get around it?</summary>
+        <p><span data-i18n="faq.around.a">A protection lock freezes your rules until a date you set, and an optional guard stands in the way of uninstalling while it runs. No blocker is unbreakable. </span><a href="limits.html" data-i18n="faq.limits">Read the limits</a><span data-i18n="faq.a4end"> before you install.</span></p>
+      </details>
+      <details>
+        <summary data-i18n="faq.pay.q">Do I have to pay to use Hisn?</summary>
+        <p data-i18n="faq.pay.a">No. Hisn is free: no account, no subscription, no in-app purchase.</p>
       </details>
       <details>
         <summary data-i18n="faq.q2">What leaves my phone?</summary>
         <p data-i18n="faq.a2">The blocklist update and the DNS names your phone already looks up. Nothing else. The privacy page lists every request.</p>
       </details>
       <details>
-        <summary data-i18n="faq.q3">Does it work on Samsung, Xiaomi and Nothing?</summary>
-        <p data-i18n="faq.a3">Yes. The app runs on all three and shows which phone settings need changing.</p>
-      </details>
-      <details>
-        <summary data-i18n="faq.q4">Can it block everything?</summary>
-        <p><span data-i18n="faq.a4">No blocker catches everything. </span><a href="limits.html" data-i18n="faq.limits">Read the limits</a><span data-i18n="faq.a4end"> before you install.</span></p>
+        <summary data-i18n="faq.install.q">How do I install it?</summary>
+        <p data-i18n="faq.install.a">Download the file and open it. If Android asks, allow installs from this browser once.</p>
       </details>
     </div>
   </section>
 
   <section class="final-cta" id="download">
     <img class="final-mascot" src="assets/companion.webp" width="560" height="560" alt="" loading="lazy">
-    <h2 data-i18n="final.title">Start with the free Android app.</h2>
-    <p data-i18n="final.body">No account. No cloud. No subscription.</p>
+    <h2 data-i18n="final.title">Take your phone back, starting today.</h2>
+    <p data-i18n="final.body">A free adult-content blocker for Android. No account, no cloud, no subscription.</p>
     <a class="button primary big" href="downloads/hisn-android.apk" download><span data-i18n="hero.download">Download for Android</span><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg></a>
-    <p class="mini" data-i18n="final.note">Free · Android 6.0 and later</p>
+    <ul class="platform-pills" aria-label="Other platforms" data-i18n-aria="hero.platformsLabel">
+      <li class="soon" data-i18n="status.soon">Coming soon</li>
+      <li class="platform-pill"><svg class="icon" aria-hidden="true"><use href="#i-phone"/></svg><span data-i18n="platform.iphone">iPhone</span></li>
+      <li class="platform-pill"><svg class="icon" aria-hidden="true"><use href="#i-laptop"/></svg><span data-i18n="platform.mac">Mac</span></li>
+      <li class="platform-pill"><svg class="icon" aria-hidden="true"><use href="#i-monitor"/></svg><span data-i18n="platform.linux">Linux</span></li>
+      <li class="platform-pill"><svg class="icon" aria-hidden="true"><use href="#i-monitor"/></svg><span data-i18n="platform.windows">Windows</span></li>
+    </ul>
     <p class="mini" data-i18n="phone.line">Works on Samsung, Xiaomi, Nothing and stock Android.</p>
   </section>
 

@@ -1,22 +1,22 @@
 /* The product site: the landing page, the privacy page and the limits page.
    style.css (shared with the Vault) supplies the base typography and controls;
-   this file re-tints the tokens to the app's navy and lays the pages out.
+   this file sets the site's own tints of Hisn's green and lays the pages out.
    Logical properties keep the Arabic right-to-left layout honest. */
 
 body.site {
   --bg: #ffffff;
   --card: #ffffff;
-  --panel: #f4f4f8;
-  --ink: #1b2545;
-  --muted: #70768f;
-  --line: #e6e7ee;
-  --accent: #3552c8;
+  --panel: #f3f5f3;
+  --ink: #16211e;
+  --muted: #68736f;
+  --line: #e2e7e4;
+  --accent: #1f6f5c;
   --accent-ink: #ffffff;
-  --good-bg: #e9edfb;
-  --deep: #1b2545;
+  --good-bg: #e6f2ee;
+  --deep: #12332b;
   --deep-ink: #ffffff;
-  --deep-muted: #b9c0d9;
-  --stage: #4a63d8;
+  --deep-muted: #b4cbc4;
+  --stage: #1f6f5c;
   --wide: 1120px;
   --gutter: max(24px, calc((100% - var(--wide)) / 2));
   background: var(--bg);
@@ -24,21 +24,21 @@ body.site {
 }
 @media (prefers-color-scheme: dark) {
   body.site {
-    --bg: #0e1322;
-    --card: #161c2e;
-    --panel: #161c2e;
-    --ink: #eef0f8;
-    --muted: #9aa1b9;
-    --line: #283049;
-    --accent: #8ea5ff;
-    --accent-ink: #0e1530;
-    --good-bg: #1b2440;
-    --deep: #1b2440;
-    --deep-ink: #eef0f8;
-    --deep-muted: #9aa1b9;
-    --stage: #2a3670;
+    --bg: #0f1513;
+    --card: #17201d;
+    --panel: #17201d;
+    --ink: #eef3f1;
+    --muted: #9aa8a3;
+    --line: #2a3632;
+    --accent: #4cc2a0;
+    --accent-ink: #0c1f1a;
+    --good-bg: #16302a;
+    --deep: #16302a;
+    --deep-ink: #eef3f1;
+    --deep-muted: #9fb5ae;
+    --stage: #1b4a3e;
   }
-  /* Navy on near-black needs an edge. */
+  /* Deep green on near-black needs an edge. */
   .site :is(.phone-frame, .how-phone, .float-card, .trust-card.deep) { outline: 1px solid var(--line); }
 }
 
@@ -210,7 +210,7 @@ body.site {
   border-radius: 44px;
   overflow: hidden;
   background: #10131c;
-  box-shadow: 0 40px 80px -40px rgba(27, 37, 69, .55);
+  box-shadow: 0 40px 80px -40px rgba(18, 51, 43, .55);
 }
 .phone-frame img { width: 100%; height: auto; display: block; }
 .float-card {
@@ -223,7 +223,7 @@ body.site {
   border-radius: 26px;
   padding: 22px;
   transform: rotate(5deg);
-  box-shadow: 0 30px 60px -30px rgba(27, 37, 69, .7);
+  box-shadow: 0 30px 60px -30px rgba(18, 51, 43, .7);
 }
 [dir="rtl"] .float-card { transform: rotate(-5deg); }
 .float-card h3 { font-size: 1.05rem; line-height: 1.25; margin: 0 0 14px; font-weight: 600; }
@@ -249,7 +249,7 @@ body.site {
 .band-line em { font-style: normal; color: var(--accent); }
 .feature-panel {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 28px;
   background: var(--panel);
   border-radius: 28px;
@@ -268,6 +268,36 @@ body.site {
 .feature-item h3 { font-size: 1.02rem; margin: 2px 0 4px; font-weight: 600; }
 .feature-item p { font-size: .94rem; color: var(--muted); margin: 0; }
 
+/* ---------- product spotlight ---------- */
+.site .button.outline { background: none; border-color: var(--line); color: var(--ink); min-height: 48px; }
+.site .button.outline:hover { border-color: var(--ink); }
+.spotlight { text-align: center; display: flex; flex-direction: column; align-items: center; }
+.spotlight-lede { font-size: 1.2rem; line-height: 1.5; color: var(--muted); max-width: 34em; margin: 20px 0 28px; }
+.vault-art {
+  width: 100%;
+  margin-block-start: 56px;
+  border-radius: 32px;
+  background: var(--panel);
+  padding: 64px 24px;
+  display: grid;
+  place-items: center;
+}
+.vault-card {
+  width: min(100%, 340px);
+  background: var(--deep);
+  border-radius: 28px;
+  padding: 28px;
+  display: grid;
+  gap: 22px;
+  justify-items: start;
+  box-shadow: 0 40px 70px -40px rgba(18, 51, 43, .7);
+}
+.vault-card .tick { background: transparent; border-color: color-mix(in srgb, var(--deep-ink) 25%, transparent); color: var(--deep-ink); }
+.vault-dots { display: flex; gap: 12px; }
+.vault-dots i { width: 14px; height: 14px; border-radius: 50%; background: var(--deep-ink); opacity: .9; }
+.vault-bar { width: 100%; height: 6px; border-radius: 999px; background: color-mix(in srgb, var(--deep-ink) 18%, transparent); overflow: hidden; }
+.vault-bar i { display: block; width: 38%; height: 100%; border-radius: inherit; background: var(--deep-muted); }
+
 /* ---------- how it works ---------- */
 .how {
   display: grid;
@@ -276,7 +306,7 @@ body.site {
   align-items: center;
 }
 .how-copy h2 { max-width: 9ch; }
-.how-steps { list-style: none; margin: 34px 0 30px; padding: 0; display: grid; gap: 4px; }
+.how-steps { list-style: none; margin: 30px 0 28px; padding: 0; display: grid; gap: 2px; }
 .how-step {
   width: 100%;
   min-height: 0;
@@ -409,10 +439,11 @@ body.site {
 /* ---------- final call ---------- */
 .final-cta { text-align: center; scroll-margin-top: 96px; }
 .final-mascot { display: block; width: 104px; height: auto; margin: 0 auto 10px; }
-.final-cta h2 { max-width: 14ch; margin-inline: auto; }
+.final-cta h2 { max-width: 16ch; margin-inline: auto; }
 .final-cta > p { color: var(--muted); font-size: 1.15rem; margin: 18px auto 30px; }
 .final-cta > p.mini { font-size: .88rem; margin: 6px auto 0; }
-.final-cta .button + .mini { margin-block-start: 22px; }
+.final-cta .platform-pills { justify-content: center; margin-block-start: 22px; }
+.final-cta > p.mini { margin-block-start: 18px; }
 
 /* ---------- footer ---------- */
 .site-footer {
@@ -486,10 +517,10 @@ body.site {
 /* ---------- motion ---------- */
 /* motion-flag.js adds .js-motion only when the animation can finish; this list
    must match the targets in lib/animations.js or an element would stay hidden. */
-.js-motion :is(.hero3-copy > *, .hero3-phone, .section-head, .band-line, .feature-panel,
+.js-motion :is(.hero3-copy > *, .hero3-phone, .section-head, .band-line, .feature-panel, .spotlight > *,
   .how-copy, .how-visual, .trust-card, .road-card, .faq details, .final-cta, .limits-list li) { opacity: 0; }
 @media (prefers-reduced-motion: reduce) {
-  .js-motion :is(.hero3-copy > *, .hero3-phone, .section-head, .band-line, .feature-panel,
+  .js-motion :is(.hero3-copy > *, .hero3-phone, .section-head, .band-line, .feature-panel, .spotlight > *,
     .how-copy, .how-visual, .trust-card, .road-card, .faq details, .final-cta, .limits-list li) { opacity: 1; }
   .how-shot, .how-num, .how-title { transition: none; }
 }
@@ -504,7 +535,7 @@ body.site {
   .site-main { gap: 96px; padding-block-end: 96px; }
   .hero3 { grid-template-columns: minmax(0, 1fr); gap: 56px; padding-block-start: 48px; }
   .hero3 h1 { max-width: 14ch; }
-  .feature-panel { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .feature-panel { grid-template-columns: minmax(0, 1fr); }
   .how { grid-template-columns: minmax(0, 1fr); gap: 40px; }
   .how-copy h2 { max-width: none; }
   .how-visual { aspect-ratio: 1 / .95; max-width: 560px; width: 100%; justify-self: center; }
@@ -529,6 +560,8 @@ body.site {
   .how-visual { aspect-ratio: 1 / 1.1; border-radius: 24px; }
   .how-phone { inset-inline: 17%; border-radius: 30px; border-width: 6px; }
   .trust-row, .roadmap-grid { grid-template-columns: minmax(0, 1fr); }
+  .vault-art { padding: 40px 20px; border-radius: 24px; margin-block-start: 40px; }
+  .spotlight-lede { font-size: 1.08rem; }
   .trust-card { min-height: 0; }
   .trust-card .tick { margin-block-end: 8px; }
   .final-cta .button.big { width: auto; }
